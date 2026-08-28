@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import pathlib
 import sys
-import tempfile
 import traceback
 
 from PySide6.QtCore import QSize, Qt
@@ -29,8 +28,6 @@ from PySide6.QtWidgets import (
     QAbstractButton,
     QApplication,
     QCheckBox,
-    QHBoxLayout,
-    QLabel,
     QProgressBar,
     QPushButton,
     QStackedWidget,
@@ -38,34 +35,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from installer import actions, screens, theme, wording
+from installer import actions, appearance, running, screens, theme, wording
+from installer.steplog import StepLog
 from stellody.shared import resources
 from stellody.shared.version import APP_TAGLINE, read_version
 from stellody.ui.dialogs import LicenceDialog
 from stellody.ui.theme import Mode
 
-LOG_NAME = "stellody-setup.log"
 LICENCE_TITLE = "Setup licence (LGPL-3.0)"
 TICK = "✓"
 ALERT = "⚠"
-SCREEN_PROGRESS = 1
-SCREEN_VERDICT = 2
-
-
-class StepLog:
-    """A plain record of what the setup program did, in order."""
-
-    def __init__(self) -> None:
-        self.path = pathlib.Path(tempfile.gettempdir()) / LOG_NAME
-        self.lines: list[str] = []
-
-    def write(self, message: str) -> None:
-        """Record one step and flush it, so a crash still leaves the trail."""
-        self.lines.append(message)
-        try:
-            self.path.write_text("\n".join(self.lines), encoding="utf-8")
-        except OSError:
-            pass
+SCREEN_RUNNING = 1
+SCREEN_PROGRESS = 2
+SCREEN_VERDICT = 3
+CONTINUE_LABEL = "Close it and continue"
 
 
 class SetupWindow(QWidget):
@@ -149,10 +132,21 @@ class SetupWindow(QWidget):
             theme.SHELL_MARGIN_BOTTOM_PX,
         )
         shell.setSpacing(theme.HEADER_PAD_PX)
-        shell.addLayout(self._header())
+        shell.addLayout(
+            screens.header(
+                self,
+                f"{actions.APP_NAME} Setup",
+                APP_TAGLINE,
+                resources.window_icon_path(),
+                (self._licence, self._theme_button),
+            )
+        )
         shell.addWidget(screens.rule(self))
         self._body = QStackedWidget(self)
         self._body.addWidget(self._choices_screen())
+        self._body.addWidget(
+            screens.message(self, wording.RUNNING_HEADING, wording.RUNNING_LEAD)
+        )
         self._body.addWidget(
             screens.progress(
                 self, self._progress_title, self._progress, self._progress_status
@@ -165,82 +159,30 @@ class SetupWindow(QWidget):
         )
         shell.addWidget(self._body, 1)
         shell.addWidget(screens.rule(self))
-        shell.addLayout(self._footer())
-
-    def _header(self) -> QHBoxLayout:
-        """The identity, drawn at a size that can be read across the room."""
-        row = QHBoxLayout()
-        row.setSpacing(theme.HEADER_GAP_PX)
-        icon_path = resources.window_icon_path()
-        if icon_path is not None:
-            mark = QLabel(self)
-            mark.setPixmap(
-                QIcon(str(icon_path)).pixmap(QSize(theme.MARK_PX, theme.MARK_PX))
-            )
-            mark.setFixedSize(theme.MARK_PX, theme.MARK_PX)
-            row.addWidget(mark, alignment=Qt.AlignmentFlag.AlignVCenter)
-        who = QVBoxLayout()
-        who.setSpacing(0)
-        title = screens.label(self, f"{actions.APP_NAME} Setup", "HeaderTitle")
-        # The product name never breaks across two lines, whatever else shares
-        # the header row with it.
-        title.setWordWrap(False)
-        who.addWidget(title)
-        who.addWidget(screens.label(self, APP_TAGLINE, "HeaderSub"))
-        row.addLayout(who, 1)
         self._licence.clicked.connect(self._show_licence)
-        row.addWidget(self._licence, alignment=Qt.AlignmentFlag.AlignVCenter)
-        self._theme_button.clicked.connect(self._toggle_theme)
-        row.addWidget(self._theme_button, alignment=Qt.AlignmentFlag.AlignVCenter)
-        return row
-
-    def _footer(self) -> QHBoxLayout:
-        """The actions, right aligned, under a rule."""
-        row = QHBoxLayout()
-        row.setSpacing(theme.FOOTER_GAP_PX)
-        row.addStretch()
-        self._uninstall.clicked.connect(self._remove)
+        self._uninstall.clicked.connect(self._remove_requested)
         self._uninstall.setVisible(bool(self.installed) and not self.uninstalling)
-        row.addWidget(self._uninstall)
         self._close.clicked.connect(self.close)
-        row.addWidget(self._close)
         self._primary.clicked.connect(self._perform)
-        row.addWidget(self._primary)
-        return row
+        self._theme_button.clicked.connect(self._toggle_theme)
+        shell.addLayout(
+            screens.footer(self, (self._uninstall, self._close, self._primary))
+        )
 
     # --------------------------------------------------------------- screens
 
     def _choices_screen(self) -> QWidget:
         """The opening screen, with the options only when installing."""
+        heading = self._words(wording.heading)
+        lead = self._words(wording.lead)
         if self.uninstalling:
-            return screens.choices(
-                self, self._words(wording.heading), self._words(wording.lead), "", ()
-            )
-        self._desktop.setChecked(True)
-        self._start_menu.setChecked(True)
-        self._sign_in.toggled.connect(self._minimised.setEnabled)
-        self._minimised.setEnabled(False)
-        options = (
-            (self._desktop, ""),
-            (self._start_menu, ""),
-            (
-                self._sign_in,
-                (
-                    f"{actions.APP_NAME} opens with Windows instead of "
-                    "waiting to be asked."
-                ),
-            ),
-            (
-                self._minimised,
-                "It waits quietly in the notification area until you open it.",
-            ),
-        )
-        return screens.choices(
+            return screens.choices(self, heading, lead, "", ())
+        return screens.install_choices(
             self,
-            self._words(wording.heading),
-            self._words(wording.lead),
+            heading,
+            lead,
             str(actions.default_target()),
-            options,
+            (self._desktop, self._start_menu, self._sign_in, self._minimised),
         )
 
     def _words(self, decide) -> str:
@@ -251,17 +193,7 @@ class SetupWindow(QWidget):
 
     def _apply_theme(self) -> None:
         """Repaint everything in the current appearance."""
-        arriving = theme.next_mode(self.mode)
-        icon_path = (
-            resources.light_mode_icon_path()
-            if arriving is Mode.LIGHT
-            else resources.dark_mode_icon_path()
-        )
-        if icon_path is not None:
-            self._theme_button.setIcon(QIcon(str(icon_path)))
-        application = QApplication.instance()
-        if application is not None:
-            application.setStyleSheet(theme.installer_stylesheet(self.mode))
+        appearance.apply(self.mode, self._theme_button)
 
     def _toggle_theme(self) -> None:
         """Switch between the light and dark palettes."""
@@ -296,7 +228,43 @@ class SetupWindow(QWidget):
         self._body.setCurrentIndex(SCREEN_VERDICT)
 
     def _perform(self) -> None:
-        """Run the go-ahead action, then say how it ended."""
+        """Run the go-ahead action, once nothing is holding the files open."""
+        if self._blocked_by_running_app():
+            return
+        self._go()
+
+    def _blocked_by_running_app(self) -> bool:
+        """Offer to close a running Stellody rather than failing on its lock.
+
+        Extracting over a locked executable raises a permission error partway
+        through, so this is asked before any file is touched.
+        """
+        if not running.is_running():
+            return False
+        self.log.write("the application is running")
+        self._body.setCurrentIndex(SCREEN_RUNNING)
+        self._uninstall.setVisible(False)
+        self._primary.setText(CONTINUE_LABEL)
+        self._primary.clicked.disconnect()
+        self._primary.clicked.connect(self._close_then_go)
+        return True
+
+    def _close_then_go(self) -> None:
+        """Close the running application, then carry on with what was asked."""
+        self._working(f"Closing {actions.APP_NAME}")
+        self._report(actions.PCT_START, "Waiting for it to close...")
+        if not running.close():
+            self._verdict(
+                ALERT,
+                f"{actions.APP_NAME} is still open",
+                wording.STILL_RUNNING_LEAD,
+            )
+            return
+        self.log.write("the application was closed")
+        self._go()
+
+    def _go(self) -> None:
+        """Do the work the go-ahead stands for, then say how it ended."""
         if self.uninstalling:
             self._remove()
             return
@@ -336,6 +304,13 @@ class SetupWindow(QWidget):
         executable = actions.install(plan, archive, self._report)
         self.log.write(f"installed {executable}")
         return executable.parent
+
+    def _remove_requested(self) -> None:
+        """Uninstall, once nothing is holding the files open."""
+        self.uninstalling = True
+        if self._blocked_by_running_app():
+            return
+        self._remove()
 
     def _remove(self) -> None:
         """Remove the application, then say how it ended."""

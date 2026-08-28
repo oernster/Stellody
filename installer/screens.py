@@ -10,22 +10,70 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
     QFrame,
+    QHBoxLayout,
     QLabel,
     QProgressBar,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from installer import theme
+from installer import theme, wording
 
 HINT_INDENT_PX = theme.CHECK_PX + theme.OPTION_GAP_PX + 7
 HEADING_GAP_PX = 7
 LEAD_GAP_PX = 16
 TRACK_GAP_PX = 9
+
+
+def header(
+    parent: QWidget,
+    title: str,
+    tagline: str,
+    icon_path,
+    controls: Iterable[QPushButton],
+) -> QHBoxLayout:
+    """The identity, drawn at a size that can be read across the room.
+
+    The mark, then the name over its tagline, then the controls at the right.
+    The version is not here: it belongs in the heading of the screen talking
+    about it.
+    """
+    row = QHBoxLayout()
+    row.setSpacing(theme.HEADER_GAP_PX)
+    if icon_path is not None:
+        mark = QLabel(parent)
+        mark.setPixmap(
+            QIcon(str(icon_path)).pixmap(QSize(theme.MARK_PX, theme.MARK_PX))
+        )
+        mark.setFixedSize(theme.MARK_PX, theme.MARK_PX)
+        row.addWidget(mark, alignment=Qt.AlignmentFlag.AlignVCenter)
+    who = QVBoxLayout()
+    who.setSpacing(0)
+    name = label(parent, title, "HeaderTitle")
+    # The product name never breaks across two lines, whatever shares the row.
+    name.setWordWrap(False)
+    who.addWidget(name)
+    who.addWidget(label(parent, tagline, "HeaderSub"))
+    row.addLayout(who, 1)
+    for control in controls:
+        row.addWidget(control, alignment=Qt.AlignmentFlag.AlignVCenter)
+    return row
+
+
+def footer(parent: QWidget, buttons: Iterable[QPushButton]) -> QHBoxLayout:
+    """The actions, right aligned, under a rule."""
+    row = QHBoxLayout()
+    row.setSpacing(theme.FOOTER_GAP_PX)
+    row.addStretch()
+    for button in buttons:
+        row.addWidget(button)
+    return row
 
 
 def rule(parent: QWidget) -> QFrame:
@@ -90,6 +138,42 @@ def choices(
     for box, hint in options:
         column.addSpacing(theme.OPTION_SPACING_PX)
         column.addWidget(option(screen, box, hint))
+    column.addStretch()
+    return screen
+
+
+def install_choices(
+    parent: QWidget,
+    heading: str,
+    lead: str,
+    location: str,
+    boxes: tuple[QCheckBox, QCheckBox, QCheckBox, QCheckBox],
+) -> QWidget:
+    """The opening screen of an install, with its four options set up.
+
+    Starting in the tray only means something once starting at sign-in is
+    chosen, so it follows that box rather than standing on its own.
+    """
+    desktop, start_menu, sign_in, minimised = boxes
+    desktop.setChecked(True)
+    start_menu.setChecked(True)
+    sign_in.toggled.connect(minimised.setEnabled)
+    minimised.setEnabled(False)
+    options = (
+        (desktop, ""),
+        (start_menu, ""),
+        (sign_in, wording.SIGN_IN_HINT),
+        (minimised, wording.MINIMISED_HINT),
+    )
+    return choices(parent, heading, lead, location, options)
+
+
+def message(parent: QWidget, heading: str, lead: str) -> QWidget:
+    """A screen that only has something to say, such as the app being open."""
+    screen, column = _column(parent, centred=True)
+    column.addWidget(label(screen, heading, "Heading"))
+    column.addSpacing(HEADING_GAP_PX)
+    column.addWidget(label(screen, lead, "Lead"))
     column.addStretch()
     return screen
 

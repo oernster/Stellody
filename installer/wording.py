@@ -49,3 +49,15 @@ def lead(installed: str, version: str, uninstalling: bool) -> str:
             "Going ahead replaces it."
         )
     return "Reinstall puts the files back and asks for these choices again."
+
+
+SIGN_IN_HINT = f"{APP_NAME} opens with Windows instead of waiting to be asked."
+MINIMISED_HINT = "It waits quietly in the notification area until you open it."
+RUNNING_HEADING = f"{APP_NAME} is open"
+RUNNING_LEAD = (
+    "It has to close before setup can replace its files. Closing it affects "
+    f"nothing beyond stopping playback until you start {APP_NAME} again."
+)
+STILL_RUNNING_LEAD = (
+    "Setup could not close it. Close it yourself, then run setup again."
+)
