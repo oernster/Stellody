@@ -1,125 +1,180 @@
-"""The setup program's look: the house layout scale over Stellody's palette.
+"""The setup program's look: the house shell over Stellody's own palette.
 
-The installer wears the application's own colours, so this module holds no
-colour value of its own; it reads the same Palette the application does, which
-keeps every colour in one home. What it adds is the house geometry and type
-scale, because a setup program is read at arm's length and the application's
-default control sizes are too small for that.
+Translated from the reference setup program's stylesheet, so the geometry and
+the type scale are the house ones rather than anything invented here. Only the
+colours are Stellody's, read from the same Palette the application uses, which
+keeps every colour value in one home.
+
+The ring model is the house one and it is not the application's: no ring at
+rest, a green ring while an enabled control is hovered or focused and a
+permanent rose ring while a control is disabled. So this is a stylesheet in its
+own right rather than a layer over the application's, which carries a different
+model and would otherwise fight it.
 """
 
 from __future__ import annotations
 
-from stellody.ui.theme import Mode, palette_for, stylesheet
+from stellody.ui.theme import Mode, palette_for
 
-WINDOW_WIDTH_PX = 660
-WINDOW_HEIGHT_PX = 620
-ICON_PX = 56
-DIVIDER_PX = 1
-MARGIN_SIDE_PX = 36
-MARGIN_TOP_PX = 28
-MARGIN_BOTTOM_PX = 24
-SECTION_SPACING_PX = 14
-HEADER_SPACING_PX = 14
-BUTTON_GAP_PX = 10
+WINDOW_WIDTH_PX = 850
+WINDOW_HEIGHT_PX = 770
+MARK_PX = 126
+TOGGLE_PX = 74
+TOGGLE_ICON_PX = 55
+CHECK_PX = 24
+TRACK_PX = 9
+RING_PX = 2
 
-BASE_FONT_PX = 15
-TITLE_FONT_PX = 30
-VERSION_FONT_PX = 14
-SUBTITLE_FONT_PX = 19
-TAGLINE_FONT_PX = 15
-PATH_FONT_PX = 14
-STATUS_FONT_PX = 15
-CHECKBOX_FONT_PX = 15
-PRIMARY_FONT_PX = 16
-SECONDARY_FONT_PX = 15
-INDICATOR_PX = 18
-PILL_RADIUS_PX = 22
-LICENCE_RADIUS_PX = 16
-LICENCE_DIALOG_WIDTH_PX = 760
-LICENCE_DIALOG_HEIGHT_PX = 560
+SHELL_MARGIN_SIDE_PX = 26
+SHELL_MARGIN_TOP_PX = 22
+SHELL_MARGIN_BOTTOM_PX = 18
+HEADER_GAP_PX = 13
+HEADER_PAD_PX = 15
+FOOTER_PAD_PX = 15
+FOOTER_GAP_PX = 9
+OPTION_GAP_PX = 10
+OPTION_SPACING_PX = 11
+
+BASE_FONT_PX = 18
+TITLE_FONT_PX = 32
+SUB_FONT_PX = 18
+HEADING_FONT_PX = 28
+INFO_FONT_PX = 16
+HINT_FONT_PX = 15
+STATUS_FONT_PX = 16
+VERDICT_FONT_PX = 44
 LICENCE_FONT_PX = 13
 
 
 def installer_stylesheet(mode: Mode) -> str:
-    """The application's stylesheet plus the setup program's own scale."""
+    """The whole setup program stylesheet for one appearance."""
     colour = palette_for(mode)
-    return stylesheet(mode) + f"""
+    return f"""
     QWidget {{
+        background: {colour.window};
+        color: {colour.text};
         font-family: 'Segoe UI';
         font-size: {BASE_FONT_PX}px;
     }}
     QLabel#HeaderTitle {{
         font-size: {TITLE_FONT_PX}px;
         font-weight: 700;
-        color: {colour.accent};
     }}
-    QLabel#HeaderVersion {{
-        font-size: {VERSION_FONT_PX}px;
+    QLabel#HeaderSub {{
+        font-size: {SUB_FONT_PX}px;
         color: {colour.text_muted};
     }}
-    QLabel#SubTitle {{
-        font-size: {SUBTITLE_FONT_PX}px;
+    QLabel#Heading {{
+        font-size: {HEADING_FONT_PX}px;
         font-weight: 700;
-        color: {colour.accent};
     }}
-    QLabel#Tagline {{
-        font-size: {TAGLINE_FONT_PX}px;
+    QLabel#Lead {{
         color: {colour.text_muted};
     }}
-    QLabel#InstallPath {{
-        font-size: {PATH_FONT_PX}px;
+    QLabel#Hint {{
+        font-size: {HINT_FONT_PX}px;
         color: {colour.text_muted};
     }}
-    QLabel#StatusLine {{
+    QLabel#Status {{
         font-size: {STATUS_FONT_PX}px;
-        color: {colour.text};
+        color: {colour.text_muted};
     }}
-    QFrame#Divider {{
+    QLabel#Verdict {{
+        font-size: {VERDICT_FONT_PX}px;
+    }}
+    QLabel#InfoBox {{
+        background: {colour.surface};
+        border: 1px solid {colour.border};
+        border-radius: 9px;
+        padding: 13px 16px;
+        font-size: {INFO_FONT_PX}px;
+        color: {colour.text_muted};
+    }}
+    QFrame#Rule {{
         background: {colour.border};
         border: none;
     }}
     QCheckBox {{
-        spacing: 10px;
-        font-size: {CHECKBOX_FONT_PX}px;
-        color: {colour.text};
+        spacing: {OPTION_GAP_PX}px;
+        border: {RING_PX}px solid transparent;
+        border-radius: 8px;
+        padding: 5px 7px;
     }}
-    QCheckBox::indicator {{
-        width: {INDICATOR_PX}px;
-        height: {INDICATOR_PX}px;
+    QCheckBox:enabled:hover, QCheckBox:enabled:focus {{
+        border-color: {colour.ring};
     }}
-    QPushButton#LicenceButton, QPushButton#ThemeToggle {{
-        background: {colour.surface};
-        color: {colour.text};
-        padding: 8px 16px;
-        border-radius: {LICENCE_RADIUS_PX}px;
-        font-weight: 600;
-    }}
-    QPushButton#PrimaryAction {{
-        background: {colour.surface_alt};
-        color: {colour.text};
-        padding: 12px 28px;
-        border-radius: {PILL_RADIUS_PX}px;
-        font-size: {PRIMARY_FONT_PX}px;
-        font-weight: 700;
-        min-width: 150px;
-    }}
-    QPushButton#SecondaryAction, QPushButton#DangerAction {{
-        background: {colour.surface};
-        color: {colour.text};
-        padding: 12px 22px;
-        border-radius: {PILL_RADIUS_PX}px;
-        font-size: {SECONDARY_FONT_PX}px;
-        font-weight: 600;
-    }}
-    QPushButton#PrimaryAction:disabled,
-    QPushButton#SecondaryAction:disabled,
-    QPushButton#DangerAction:disabled {{
-        background: {colour.disabled_surface};
+    QCheckBox:disabled {{
         color: {colour.disabled_text};
     }}
-    QTextBrowser#LicenceView {{
+    QCheckBox::indicator {{
+        width: {CHECK_PX}px;
+        height: {CHECK_PX}px;
+        border: 1px solid {colour.border};
+        border-radius: 5px;
+        background: {colour.surface};
+    }}
+    QCheckBox::indicator:checked {{
+        background: {colour.accent};
+        border-color: {colour.accent};
+    }}
+    QCheckBox::indicator:disabled {{
+        background: {colour.disabled_surface};
+    }}
+    QPushButton {{
+        background: {colour.surface_alt};
+        color: {colour.text};
+        border: {RING_PX}px solid transparent;
+        border-radius: 9px;
+        padding: 11px 22px;
+        font-weight: 600;
+    }}
+    QPushButton:enabled:hover, QPushButton:enabled:focus {{
+        border-color: {colour.ring};
+    }}
+    QPushButton:disabled {{
+        border-color: {colour.danger};
+        color: {colour.disabled_text};
+    }}
+    QPushButton#Primary {{
+        background: {colour.selection};
+        color: {colour.accent};
+    }}
+    QPushButton#Danger {{
+        background: {colour.danger_soft};
+        color: {colour.danger};
+    }}
+    QPushButton#ThemeToggle {{
+        background: {colour.surface_alt};
+        border-radius: 12px;
+        padding: 0px;
+        min-width: {TOGGLE_PX}px;
+        max-width: {TOGGLE_PX}px;
+        min-height: {TOGGLE_PX}px;
+        max-height: {TOGGLE_PX}px;
+    }}
+    QProgressBar {{
+        background: {colour.surface_alt};
+        border: 1px solid {colour.border};
+        border-radius: 5px;
+        max-height: {TRACK_PX}px;
+        min-height: {TRACK_PX}px;
+        text-align: center;
+        color: transparent;
+    }}
+    QProgressBar::chunk {{
+        background: {colour.accent};
+        border-radius: 4px;
+    }}
+    QTextBrowser {{
+        background: {colour.surface};
+        border: 1px solid {colour.border};
+        border-radius: 9px;
+        color: {colour.text};
         font-family: 'Consolas', 'Courier New', monospace;
         font-size: {LICENCE_FONT_PX}px;
+    }}
+    QDialog {{
+        background: {colour.window};
     }}
     """
 

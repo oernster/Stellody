@@ -39,6 +39,9 @@ class Palette:
     disabled_surface: str
     disabled_text: str
     warning: str
+    ring: str
+    danger: str
+    danger_soft: str
 
 
 LIGHT = Palette(
@@ -58,6 +61,9 @@ LIGHT = Palette(
     disabled_surface="#e7eaf1",
     disabled_text="#a3abb9",
     warning="#a8560a",
+    ring="#047857",
+    danger="#be123c",
+    danger_soft="#ffe4e6",
 )
 
 DARK = Palette(
@@ -77,6 +83,9 @@ DARK = Palette(
     disabled_surface="#171e2e",
     disabled_text="#4d586e",
     warning="#e0a458",
+    ring="#34d399",
+    danger="#fb7185",
+    danger_soft="#35161f",
 )
 
 PALETTES: dict[Mode, Palette] = {Mode.LIGHT: LIGHT, Mode.DARK: DARK}

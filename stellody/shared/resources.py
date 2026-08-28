@@ -14,6 +14,8 @@ WINDOW_ICON = "stellody_icon_256.png"
 APPLICATION_ICON = "stellody.ico"
 MODEL_LICENCE = "LICENSE-GPL-3.0.txt"
 UI_LICENCE = "LICENSE-LGPL-3.0.txt"
+LIGHT_MODE_ICON = "light-mode.png"
+DARK_MODE_ICON = "dark-mode.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -44,6 +46,16 @@ def window_icon_path() -> pathlib.Path | None:
 def application_icon_path() -> pathlib.Path | None:
     """The multi-size icon used for shortcuts and the taskbar."""
     return find_asset(APPLICATION_ICON)
+
+
+def light_mode_icon_path() -> pathlib.Path | None:
+    """The artwork for switching to the light appearance."""
+    return find_asset(LIGHT_MODE_ICON)
+
+
+def dark_mode_icon_path() -> pathlib.Path | None:
+    """The artwork for switching to the dark appearance."""
+    return find_asset(DARK_MODE_ICON)
 
 
 def model_licence_path() -> pathlib.Path | None:

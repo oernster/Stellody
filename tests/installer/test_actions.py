@@ -7,7 +7,7 @@ import zipfile
 
 import pytest
 
-from installer import actions
+from installer import actions, registry, wording
 
 
 def _archive(path: pathlib.Path, entries: dict[str, str]) -> pathlib.Path:
@@ -56,17 +56,17 @@ def test_nothing_is_written_when_any_entry_is_refused(
 
 def test_installed_size_is_reported_in_kibibytes(tmp_path: pathlib.Path) -> None:
     (tmp_path / "a.bin").write_bytes(b"x" * 4096)
-    assert actions.installed_size_kib(tmp_path) == 4
+    assert registry.installed_size_kib(tmp_path) == 4
 
 
 def test_the_uninstall_registry_key_names_the_application() -> None:
-    assert actions.registry_key().endswith(actions.APP_NAME)
+    assert registry.registry_key().endswith(registry.APP_NAME)
 
 
 def test_shortcut_paths_cover_desktop_and_start_menu() -> None:
     paths = actions.shortcut_paths()
     assert len(paths) == 2
-    assert all(path.name == f"{actions.APP_NAME}.lnk" for path in paths)
+    assert all(path.name == f"{registry.APP_NAME}.lnk" for path in paths)
 
 
 def test_a_version_becomes_comparable_numbers() -> None:
@@ -128,27 +128,51 @@ def test_no_payload_anywhere_reports_none(
 
 
 def test_the_sign_in_command_quotes_the_path() -> None:
-    command = actions.sign_in_command(pathlib.Path("C:/Program Files/S.exe"), False)
+    command = registry.sign_in_command(pathlib.Path("C:/Program Files/S.exe"), False)
     assert command.startswith('"')
     assert command.endswith('"')
 
 
 def test_the_sign_in_command_carries_the_tray_flag_when_minimised() -> None:
-    command = actions.sign_in_command(pathlib.Path("C:/S.exe"), True)
-    assert command.endswith(actions.HIDDEN_FLAG)
+    command = registry.sign_in_command(pathlib.Path("C:/S.exe"), True)
+    assert command.endswith(registry.HIDDEN_FLAG)
 
 
 def test_the_tray_flag_is_the_one_the_application_reads() -> None:
     """Both sides of the sign-in handover must spell the flag the same way."""
     from stellody.shared import startup
 
-    assert actions.HIDDEN_FLAG == startup.HIDDEN_FLAG
-    command = actions.sign_in_command(pathlib.Path("C:/S.exe"), True)
+    assert registry.HIDDEN_FLAG == startup.HIDDEN_FLAG
+    command = registry.sign_in_command(pathlib.Path("C:/S.exe"), True)
     assert startup.starts_hidden(command.split())
 
 
 def test_a_plain_sign_in_command_does_not_start_hidden() -> None:
     from stellody.shared import startup
 
-    command = actions.sign_in_command(pathlib.Path("C:/S.exe"), False)
+    command = registry.sign_in_command(pathlib.Path("C:/S.exe"), False)
     assert not startup.starts_hidden(command.split())
+
+
+def test_the_go_ahead_names_what_it_will_do() -> None:
+    assert wording.primary_label("", "0.2.0", False) == "Install"
+    assert wording.primary_label("0.1.0", "0.2.0", False) == "Update"
+    assert wording.primary_label("0.2.0", "0.2.0", False) == "Reinstall"
+    assert wording.primary_label("0.3.0", "0.2.0", False) == "Reinstall"
+    assert wording.primary_label("0.2.0", "0.2.0", True) == "Uninstall"
+
+
+def test_the_heading_carries_the_version_rather_than_a_chip() -> None:
+    assert "0.2.0" in wording.heading("", "0.2.0", False)
+    upgrade = wording.heading("0.1.0", "0.2.0", False)
+    assert "0.1.0" in upgrade
+    assert "0.2.0" in upgrade
+    assert "0.2.0 is installed" in wording.heading("0.2.0", "0.2.0", False)
+
+
+def test_an_older_setup_over_a_newer_install_says_so() -> None:
+    assert "older" in wording.lead("0.3.0", "0.2.0", False)
+
+
+def test_removing_promises_the_music_is_untouched() -> None:
+    assert "never" in wording.lead("0.2.0", "0.2.0", True)

@@ -14,9 +14,16 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from dataclasses import dataclass
+from collections.abc import Callable
 
-from stellody.shared.startup import HIDDEN_FLAG
+from installer.plan import InstallPlan
+from installer.registry import (
+    clear_sign_in_entry,
+    read_registered,
+    register,
+    set_sign_in_entry,
+    unregister,
+)
 
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
@@ -28,22 +35,22 @@ UNINSTALL_DIR = "_uninstall"
 SETUP_NAME = f"{APP_NAME}Setup.exe"
 UNINSTALL_FLAG = "--uninstall"
 
-REGISTRY_ROOT = r"Software\Microsoft\Windows\CurrentVersion\Uninstall"
-RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-PUBLISHER = "Oliver Ernster"
-BYTES_PER_KIB = 1024
+
+# What the setup program reports as it works. The steps are named rather than
+# timed, because the only honest thing a bar can show here is which step is
+# running: the payload is one large file, so a byte count would sit still and
+# then jump.
+ProgressCallback = Callable[[int, str], None]
+PCT_START = 5
+PCT_EXTRACTED = 55
+PCT_UNINSTALLER = 70
+PCT_REGISTRY = 80
+PCT_SHORTCUTS = 95
+PCT_DONE = 100
 
 
-@dataclass(frozen=True, slots=True)
-class InstallPlan:
-    """Where an install will go and what it will register."""
-
-    target: pathlib.Path
-    version: str
-    desktop_shortcut: bool = True
-    start_menu_shortcut: bool = True
-    start_on_sign_in: bool = False
-    start_minimised: bool = False
+def silent(percent: int, message: str) -> None:
+    """The default progress sink, for callers that show nothing."""
 
 
 def programs_dir() -> pathlib.Path:
@@ -174,12 +181,6 @@ def extract_payload(archive: pathlib.Path, target: pathlib.Path) -> int:
     return written
 
 
-def installed_size_kib(target: pathlib.Path) -> int:
-    """How much space the install takes, as Windows records it."""
-    total = sum(item.stat().st_size for item in target.rglob("*") if item.is_file())
-    return total // BYTES_PER_KIB
-
-
 def _run_powershell(script: str) -> bool:
     """Run one PowerShell statement, reporting whether it succeeded."""
     result = subprocess.run(
@@ -219,100 +220,6 @@ def create_shortcut(
     return _run_powershell(script)
 
 
-def registry_key() -> str:
-    """The uninstall key Stellody registers itself under."""
-    return f"{REGISTRY_ROOT}\\{APP_NAME}"
-
-
-def register(plan: InstallPlan, uninstaller: pathlib.Path) -> None:
-    """Write the Apps list entry so Windows can offer to remove Stellody."""
-    import winreg
-
-    executable = plan.target / EXE_NAME
-    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, registry_key()) as key:
-        values = {
-            "DisplayName": APP_NAME,
-            "DisplayVersion": plan.version,
-            "InstallLocation": str(plan.target),
-            "UninstallString": f'"{uninstaller}" {UNINSTALL_FLAG}',
-            "DisplayIcon": str(executable),
-            "Publisher": PUBLISHER,
-        }
-        for name, value in values.items():
-            winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
-        for name in ("NoModify", "NoRepair"):
-            winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, 1)
-        winreg.SetValueEx(
-            key, "EstimatedSize", 0, winreg.REG_DWORD, installed_size_kib(plan.target)
-        )
-
-
-def sign_in_command(executable: pathlib.Path, minimised: bool) -> str:
-    """The value the sign-in entry holds: a quoted path, plus the tray flag."""
-    if minimised:
-        return f'"{executable}" {HIDDEN_FLAG}'
-    return f'"{executable}"'
-
-
-def set_sign_in_entry(executable: pathlib.Path, plan: InstallPlan) -> None:
-    """Write or clear the per-user Run entry, so the two never disagree.
-
-    One entry is written whichever way the choice went, because leaving a
-    stale entry behind is how an unticked box still launches something.
-    """
-    import winreg
-
-    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
-        if not plan.start_on_sign_in:
-            try:
-                winreg.DeleteValue(key, APP_NAME)
-            except OSError:
-                pass
-            return
-        command = sign_in_command(executable, plan.start_minimised)
-        winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, command)
-
-
-def clear_sign_in_entry() -> None:
-    """Remove the sign-in entry, so an uninstall leaves nothing launching."""
-    import winreg
-
-    try:
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE
-        ) as key:
-            winreg.DeleteValue(key, APP_NAME)
-    except OSError:
-        pass
-
-
-def read_registered() -> dict[str, str]:
-    """What the Apps list currently records, empty when nothing is installed."""
-    import winreg
-
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, registry_key()) as key:
-            found: dict[str, str] = {}
-            for name in ("DisplayVersion", "InstallLocation"):
-                try:
-                    found[name] = str(winreg.QueryValueEx(key, name)[0])
-                except OSError:
-                    continue
-            return found
-    except OSError:
-        return {}
-
-
-def unregister() -> None:
-    """Remove the Apps list entry."""
-    import winreg
-
-    try:
-        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, registry_key())
-    except OSError:
-        pass
-
-
 def shortcut_paths() -> tuple[pathlib.Path, ...]:
     """Every shortcut an install may have created."""
     return (
@@ -321,35 +228,50 @@ def shortcut_paths() -> tuple[pathlib.Path, ...]:
     )
 
 
-def install(plan: InstallPlan, archive: pathlib.Path) -> pathlib.Path:
+def install(
+    plan: InstallPlan,
+    archive: pathlib.Path,
+    progress: ProgressCallback = silent,
+) -> pathlib.Path:
     """Deploy the application, register it and place its shortcuts."""
+    progress(PCT_START, "Preparing the install folder...")
     if plan.target.exists():
         shutil.rmtree(plan.target, ignore_errors=True)
+    progress(PCT_START, "Extracting files...")
     extract_payload(archive, plan.target)
+    progress(PCT_EXTRACTED, "Files extracted.")
     executable = plan.target / EXE_NAME
     # The icon is read out of the executable itself, which carries it in its
     # PE resources. A onefile build ships no loose asset files to point at.
     icon = executable
     uninstaller = plan.target / UNINSTALL_DIR / SETUP_NAME
     uninstaller.parent.mkdir(parents=True, exist_ok=True)
+    progress(PCT_UNINSTALLER, "Registering the uninstaller...")
     shutil.copy2(setup_executable(), uninstaller)
+    progress(PCT_REGISTRY, "Writing the Apps list entry...")
     register(plan, uninstaller)
+    progress(PCT_SHORTCUTS, "Creating shortcuts...")
     if plan.desktop_shortcut:
         create_shortcut(desktop_dir() / f"{APP_NAME}.lnk", executable, icon)
     if plan.start_menu_shortcut:
         create_shortcut(start_menu_dir() / f"{APP_NAME}.lnk", executable, icon)
     set_sign_in_entry(executable, plan)
+    progress(PCT_DONE, "Done.")
     return executable
 
 
-def uninstall(target: pathlib.Path) -> None:
+def uninstall(target: pathlib.Path, progress: ProgressCallback = silent) -> None:
     """Remove the application, its shortcuts and its Apps list entry.
 
     Stellody's own database is left alone: it holds the user's library view,
     which they may want back if they reinstall.
     """
+    progress(PCT_START, "Removing shortcuts...")
     for link in shortcut_paths():
         link.unlink(missing_ok=True)
     clear_sign_in_entry()
+    progress(PCT_REGISTRY, "Removing the Apps list entry...")
     unregister()
+    progress(PCT_SHORTCUTS, "Removing files...")
     shutil.rmtree(target, ignore_errors=True)
+    progress(PCT_DONE, "Done.")
