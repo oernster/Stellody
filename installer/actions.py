@@ -7,6 +7,7 @@ thin shell over this module and owns no install logic of its own.
 
 from __future__ import annotations
 
+import itertools
 import os
 import pathlib
 import shutil
@@ -19,6 +20,7 @@ APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
 PAYLOAD_ZIP = "payload.zip"
 PAYLOAD_DIR = "payload"
+STAGE_DIR = "stage"
 ONEFILE_ENV = "NUITKA_ONEFILE_BINARY"
 UNINSTALL_DIR = "_uninstall"
 SETUP_NAME = f"{APP_NAME}Setup.exe"
@@ -63,31 +65,75 @@ def start_menu_dir() -> pathlib.Path:
     return base / "Microsoft" / "Windows" / "Start Menu" / "Programs"
 
 
-def bundle_root() -> pathlib.Path:
-    """Where this setup program's own bundled files were unpacked."""
-    frozen = getattr(sys, "frozen", False) or "__compiled__" in globals()
-    if frozen or not __file__.endswith(".py"):
-        return pathlib.Path(sys.argv[0]).resolve().parent
-    return pathlib.Path(__file__).resolve().parents[1]
+def version_key(version: str) -> tuple[int, ...]:
+    """A dotted version as comparable numbers, ignoring any trailing label."""
+    parts = []
+    for chunk in version.split("."):
+        digits = "".join(itertools.takewhile(str.isdigit, chunk))
+        parts.append(int(digits) if digits else 0)
+    return tuple(parts)
+
+
+def installed_version() -> str:
+    """The version recorded as installed; empty when there is no record."""
+    return read_registered().get("DisplayVersion", "")
+
+
+def upgrade_summary(installed: str, incoming: str) -> str:
+    """One line saying what this setup will do to what is already there."""
+    if not installed:
+        return f"{APP_NAME} is not currently installed on this account."
+    here, arriving = version_key(installed), version_key(incoming)
+    if here == arriving:
+        return f"Version {installed} is already installed; setup reinstalls it."
+    if here < arriving:
+        return f"Version {installed} is installed; setup updates it to {incoming}."
+    return (
+        f"Version {installed} is installed, which is newer than this setup's "
+        f"{incoming}; setup replaces it."
+    )
+
+
+def payload_roots() -> tuple[pathlib.Path, ...]:
+    """Every directory the bundled payload could reasonably sit under.
+
+    Measured under a Nuitka onefile build: `sys.argv[0]` is the ORIGINAL
+    executable the user launched, while `__file__` sits in the temporary
+    directory the bundle was unpacked into, with the bundled data beside it.
+    Resolving the bundle from `sys.argv[0]` therefore searches the folder the
+    setup file was downloaded to and finds nothing, which is exactly what made
+    setup report a missing payload. `NUITKA_ONEFILE_BINARY` is not set by this
+    Nuitka version, so it cannot stand in either.
+
+    The roots are searched rather than deduced, because the same module runs
+    from a source checkout, from the unpack directory and as a package
+    submodule one level below it.
+    """
+    here = pathlib.Path(__file__).resolve()
+    roots = [here.parents[1], here.parent, here.parent / STAGE_DIR]
+    main_file = getattr(sys.modules.get("__main__"), "__file__", None)
+    if main_file:
+        roots.insert(0, pathlib.Path(main_file).resolve().parent)
+    roots.append(pathlib.Path(sys.argv[0]).resolve().parent)
+    return tuple(dict.fromkeys(roots))
 
 
 def payload_zip() -> pathlib.Path | None:
     """The embedded application archive; None when it cannot be found."""
-    for candidate in (
-        bundle_root() / PAYLOAD_DIR / PAYLOAD_ZIP,
-        bundle_root() / PAYLOAD_ZIP,
-    ):
-        if candidate.is_file():
-            return candidate
+    for root in payload_roots():
+        for candidate in (root / PAYLOAD_DIR / PAYLOAD_ZIP, root / PAYLOAD_ZIP):
+            if candidate.is_file():
+                return candidate
     return None
 
 
 def setup_executable() -> pathlib.Path:
     """This setup program's own path, as the user launched it.
 
-    Under a Nuitka onefile build sys.argv[0] points at the unpacked temporary
-    bootstrap rather than the file the user double-clicked, so the real path
-    comes from the environment variable Nuitka sets for exactly this reason.
+    Measured under a Nuitka onefile build: `sys.argv[0]` already IS the file the
+    user double-clicked, so it is the answer rather than a fallback. The
+    environment variable is consulted first only because a future Nuitka may set
+    it; this version does not, which is why it must never be relied on alone.
     """
     original = os.environ.get(ONEFILE_ENV)
     if original:

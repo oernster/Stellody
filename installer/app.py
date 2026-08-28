@@ -17,6 +17,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -28,13 +29,14 @@ from PySide6.QtWidgets import (
 
 from installer import actions
 from stellody.shared import resources
-from stellody.shared.version import read_version
+from stellody.shared.version import APP_TAGLINE, read_version
 from stellody.ui.dialogs import LicenceDialog
 from stellody.ui.theme import Mode, stylesheet
 
 WINDOW_WIDTH_PX = 620
 WINDOW_HEIGHT_PX = 480
 BADGE_PX = 88
+HEADER_GAP_PX = 16
 LOG_NAME = "stellody-setup.log"
 
 
@@ -71,7 +73,37 @@ def _badge(parent: QWidget) -> QLabel | None:
             Qt.TransformationMode.SmoothTransformation,
         )
     )
+    label.setFixedSize(BADGE_PX, BADGE_PX)
+    label.setScaledContents(True)
     return label
+
+
+def _header(parent: QWidget, title: str, subtitle: str) -> QWidget:
+    """The banner every page opens with: the icon beside the name and a line.
+
+    The icon carries the identity, so it belongs on the page itself and not
+    only in the title bar corner, where it is too small to read as branding.
+    """
+    band = QWidget(parent)
+    row = QHBoxLayout(band)
+    row.setContentsMargins(0, 0, 0, HEADER_GAP_PX)
+    row.setSpacing(HEADER_GAP_PX)
+    badge = _badge(band)
+    if badge is not None:
+        row.addWidget(badge, alignment=Qt.AlignmentFlag.AlignVCenter)
+    text = QVBoxLayout()
+    text.setSpacing(0)
+    heading = QLabel(f"<h2>{title}</h2>", band)
+    caption = QLabel(subtitle, band)
+    caption.setWordWrap(True)
+    caption.setProperty("role", "muted")
+    text.addStretch()
+    text.addWidget(heading)
+    text.addWidget(caption)
+    text.addStretch()
+    row.addLayout(text)
+    row.addStretch()
+    return band
 
 
 class SetupWindow(QWidget):
@@ -81,6 +113,7 @@ class SetupWindow(QWidget):
         super().__init__()
         self.log = StepLog()
         self.version = read_version()
+        self.installed = actions.installed_version()
         self.uninstalling = uninstalling
         self.setWindowTitle(f"{actions.APP_NAME} Setup")
         self.resize(WINDOW_WIDTH_PX, WINDOW_HEIGHT_PX)
@@ -105,13 +138,10 @@ class SetupWindow(QWidget):
         """The first page: what will happen, plus where."""
         page = QWidget(self)
         layout = QVBoxLayout(page)
-        badge = _badge(page)
-        if badge is not None:
-            layout.addWidget(badge, alignment=Qt.AlignmentFlag.AlignHCenter)
-        heading = QLabel(f"<h2>{actions.APP_NAME} {self.version}</h2>", page)
-        heading.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(heading)
-        layout.addWidget(QLabel(self._explanation(), page))
+        layout.addWidget(_header(page, self._title(), self._status_line()))
+        body = QLabel(self._explanation(), page)
+        body.setWordWrap(True)
+        layout.addWidget(body)
         if not self.uninstalling:
             layout.addWidget(self._desktop)
             layout.addWidget(self._start_menu)
@@ -119,6 +149,19 @@ class SetupWindow(QWidget):
         layout.addLayout(self._licence_row(page))
         layout.addLayout(self._action_row(page))
         return page
+
+    def _title(self) -> str:
+        """The page heading, naming the version this setup file carries."""
+        if self.uninstalling:
+            return f"Remove {actions.APP_NAME}"
+        return f"{actions.APP_NAME} {self.version}"
+
+    def _status_line(self) -> str:
+        """What is installed right now, so the version is never left implicit."""
+        if self.uninstalling:
+            installed = self.installed or self.version
+            return f"Version {installed} is installed on this account."
+        return actions.upgrade_summary(self.installed, self.version)
 
     def _explanation(self) -> str:
         """What this run of the setup program is about to do."""
@@ -169,6 +212,9 @@ class SetupWindow(QWidget):
         """The page shown once the work has been done."""
         page = QWidget(self)
         layout = QVBoxLayout(page)
+        layout.addWidget(_header(page, actions.APP_NAME, APP_TAGLINE))
+        self._result.setFrameShape(QFrame.Shape.NoFrame)
+        self._result.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         layout.addWidget(self._result)
         row = QHBoxLayout()
         row.addStretch()

@@ -67,3 +67,61 @@ def test_shortcut_paths_cover_desktop_and_start_menu() -> None:
     paths = actions.shortcut_paths()
     assert len(paths) == 2
     assert all(path.name == f"{actions.APP_NAME}.lnk" for path in paths)
+
+
+def test_a_version_becomes_comparable_numbers() -> None:
+    assert actions.version_key("1.2.3") == (1, 2, 3)
+    assert actions.version_key("0.1.0") < actions.version_key("0.2.0")
+
+
+def test_a_version_suffix_is_ignored_rather_than_refused() -> None:
+    assert actions.version_key("0.0.0-dev") == (0, 0, 0)
+    assert actions.version_key("1.2.3rc1") == (1, 2, 3)
+
+
+def test_a_missing_install_is_summarised_as_such() -> None:
+    assert "not currently installed" in actions.upgrade_summary("", "0.2.0")
+
+
+def test_the_same_version_reads_as_a_reinstall() -> None:
+    summary = actions.upgrade_summary("0.2.0", "0.2.0")
+    assert "already installed" in summary
+    assert "reinstalls" in summary
+
+
+def test_an_older_install_reads_as_an_update_naming_both_versions() -> None:
+    summary = actions.upgrade_summary("0.1.0", "0.2.0")
+    assert "0.1.0" in summary
+    assert "0.2.0" in summary
+    assert "updates" in summary
+
+
+def test_a_newer_install_is_reported_as_newer_rather_than_hidden() -> None:
+    summary = actions.upgrade_summary("0.3.0", "0.2.0")
+    assert "newer" in summary
+    assert "replaces" in summary
+
+
+def test_the_payload_is_searched_for_beside_the_unpacked_module() -> None:
+    """argv[0] is the original exe under a onefile build, so it cannot lead."""
+    roots = actions.payload_roots()
+    here = pathlib.Path(actions.__file__).resolve()
+    assert here.parent in roots
+    assert here.parents[1] in roots
+
+
+def test_a_staged_payload_is_found_from_a_source_checkout(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    staged = tmp_path / actions.PAYLOAD_DIR
+    staged.mkdir()
+    archive = _archive(staged / actions.PAYLOAD_ZIP, {"a.txt": "a"})
+    monkeypatch.setattr(actions, "payload_roots", lambda: (tmp_path,))
+    assert actions.payload_zip() == archive
+
+
+def test_no_payload_anywhere_reports_none(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(actions, "payload_roots", lambda: (tmp_path,))
+    assert actions.payload_zip() is None

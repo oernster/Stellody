@@ -28,6 +28,7 @@ ICON_FILE = ROOT / "assets" / "stellody.ico"
 VERSION_FILE = ROOT / "VERSION"
 DEV_VERSION = "0.0.0-dev"
 
+ASSETS_DIR = ROOT / "assets"
 STAGE_DIR = ROOT / "installer" / "stage"
 ARCHIVE = STAGE_DIR / "payload.zip"
 MANIFEST = STAGE_DIR / "manifest.json"
@@ -120,6 +121,8 @@ def command(version: str) -> list[str]:
         f"--copyright=Copyright {APP_AUTHOR}",
         f"--include-data-dir={STAGE_DIR}=payload",
     ]
+    if ASSETS_DIR.is_dir():
+        parts.append(f"--include-data-dir={ASSETS_DIR}=assets")
     if ICON_FILE.exists():
         parts.append(f"--windows-icon-from-ico={ICON_FILE}")
     for item in DATA_FILES:
