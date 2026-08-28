@@ -57,19 +57,54 @@ distinction is captured in one value object, the queue, the progress bar, the
 album grid, shuffle and gapless playback are all written once and work for both
 shapes without knowing which they hold.
 
+## Grouping: folders group, tags name
+
+**A folder is one album.** Sibling folders whose names differ only by a disc
+marker, `CD1` and `CD2` or `(Disc 1)` and `(Disc 2)`, merge into one multi-disc
+album. The tags then supply that album's title, artist, date and genre, each
+taken as the most common value its tracks carry.
+
+Grouping by tags was tried first and measured against the reference library. It
+failed: classical rips frequently carry the composer in the `ALBUM` tag and a
+different `DATE` on every track, which fragmented one Mozart folder into five
+albums, two of them holding a single track. A folder boundary is what a ripper
+actually records, so that is what is trusted.
+
 ## Resolving damaged metadata
 
-Tags are primary. Folder layout is a fallback hint, not a source of truth.
+Tags name things. They do not decide structure; where they contradict
+something physical the physical thing wins. Three rules, each measured against
+real damage in the reference library:
 
-Where two tracks in one album claim the same disc and track number, the leading
-number in the file name is the tiebreaker, because in every observed case of tag
-damage the file names remained correct and distinct. Where the colliding tracks
-also share a title, the title comes from the file name too.
+| Conflict | Winner | Why |
+|---|---|---|
+| Two tracks in one album claim the same disc and track number | The leading number in the file name | In every observed case of tag damage the file names stayed correct and distinct |
+| A track's `DISCNUMBER` disagrees with a folder named `(Disc 2)` | The folder | One such folder holds tags claiming discs 1, 2 and 3; the folder name was written by a person, the tag by software |
+| A colliding track's title duplicates another's | The file name | A bulk tag overwrite copies the title along with the number |
 
-Every such fallback is recorded as a `LibraryIssue` and surfaced in a read-only
+Every fallback is recorded as a `LibraryIssue` and surfaced in a read-only
 health view, so the user gets a precise list of what to repair in a tagger of
-their own choosing. `stellody/domain/ordering.py` holds the rule and
-`stellody/domain/health.py` holds the reporting vocabulary.
+their own choosing. `stellody/domain/ordering.py` holds the track rules,
+`stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
+the reporting vocabulary.
+
+## Scanning
+
+The walker lists folders, the probe reads tags out of one file and the store
+caches a whole folder's result. A rescan compares each file's size and
+modification time against the store; a folder whose files are all unchanged is
+reused without opening a single file. On the reference library a cold scan of
+510 folders and 4,870 files takes about six seconds and a rescan about a third
+of a second.
+
+**The store holds raw tag values, not resolved ones.** Resolution happens on
+load, so improving any rule above takes effect on the next start without
+rescanning a library.
+
+**What the walker skips is named, never guessed.** An earlier version treated a
+leading dot as "hidden" and silently swallowed two real albums, `...And Justice
+for All` and `...Nothing Like The Sun`. It now skips a fixed list of system
+directories plus macOS AppleDouble stubs; nothing else.
 
 ## Design decisions
 

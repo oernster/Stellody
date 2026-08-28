@@ -15,6 +15,7 @@ class IssueKind(StrEnum):
     """The kinds of defect a scan can notice in a library."""
 
     DUPLICATE_TRACK_NUMBER = "duplicate-track-number"
+    DISC_NUMBER_CONFLICT = "disc-number-conflict"
     MISSING_TRACK_NUMBER = "missing-track-number"
     MISSING_TITLE = "missing-title"
     MISSING_ALBUM_ARTIST = "missing-album-artist"
@@ -24,17 +25,21 @@ class IssueKind(StrEnum):
 
 SEVERITY_ORDER: dict[IssueKind, int] = {
     IssueKind.DUPLICATE_TRACK_NUMBER: 0,
-    IssueKind.MISSING_TRACK_NUMBER: 1,
-    IssueKind.MISSING_TITLE: 2,
-    IssueKind.MISSING_ALBUM_ARTIST: 3,
-    IssueKind.UNREADABLE_FILE: 4,
-    IssueKind.NO_ARTWORK: 5,
+    IssueKind.DISC_NUMBER_CONFLICT: 1,
+    IssueKind.MISSING_TRACK_NUMBER: 2,
+    IssueKind.MISSING_TITLE: 3,
+    IssueKind.MISSING_ALBUM_ARTIST: 4,
+    IssueKind.UNREADABLE_FILE: 5,
+    IssueKind.NO_ARTWORK: 6,
 }
 
 _SUMMARIES: dict[IssueKind, str] = {
     IssueKind.DUPLICATE_TRACK_NUMBER: (
         "Several files claim the same disc and track number. "
         "Ordering fell back to the file names."
+    ),
+    IssueKind.DISC_NUMBER_CONFLICT: (
+        "Disc number tags disagree with the folder name. " "The folder was believed."
     ),
     IssueKind.MISSING_TRACK_NUMBER: (
         "No track number in the tags. Ordering came from the file name."
