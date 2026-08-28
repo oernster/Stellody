@@ -102,6 +102,7 @@ class LicenceDialog(NeutralDialog):
         self.setWindowTitle(title)
         layout = QVBoxLayout(self)
         self._body = QTextBrowser(self)
+        self._body.setObjectName("LicenceView")
         # Measured 2026-08-28: a fresh widget carries the fallback proportional
         # font until the style is applied to it; the stylesheet only reaches it
         # on polish. Sizing the dialog before that measures the wrong font

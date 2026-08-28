@@ -16,6 +16,9 @@ MODEL_LICENCE = "LICENSE-GPL-3.0.txt"
 UI_LICENCE = "LICENSE-LGPL-3.0.txt"
 LIGHT_MODE_ICON = "light-mode.png"
 DARK_MODE_ICON = "dark-mode.png"
+CHOOSE_FOLDER_ICON = "choose-folder.png"
+RESCAN_ICON = "rescan.png"
+INFO_ICON = "info.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -56,6 +59,21 @@ def light_mode_icon_path() -> pathlib.Path | None:
 def dark_mode_icon_path() -> pathlib.Path | None:
     """The artwork for switching to the dark appearance."""
     return find_asset(DARK_MODE_ICON)
+
+
+def choose_folder_icon_path() -> pathlib.Path | None:
+    """The artwork for choosing the music folder."""
+    return find_asset(CHOOSE_FOLDER_ICON)
+
+
+def rescan_icon_path() -> pathlib.Path | None:
+    """The artwork for rescanning the library."""
+    return find_asset(RESCAN_ICON)
+
+
+def info_icon_path() -> pathlib.Path | None:
+    """The artwork for the About dialog."""
+    return find_asset(INFO_ICON)
 
 
 def model_licence_path() -> pathlib.Path | None:

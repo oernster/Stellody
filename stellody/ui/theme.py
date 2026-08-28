@@ -91,6 +91,7 @@ DARK = Palette(
 PALETTES: dict[Mode, Palette] = {Mode.LIGHT: LIGHT, Mode.DARK: DARK}
 
 FOCUS_WIDTH_PX = 2
+LICENCE_FONT_PX = 13
 RADIUS_PX = 4
 ROW_HEIGHT_PX = 24
 
@@ -103,16 +104,22 @@ def palette_for(mode: Mode) -> Palette:
 def stylesheet(mode: Mode) -> str:
     """The whole application stylesheet for one appearance.
 
-    Every hover and focus rule is gated on :enabled, so a disabled control
-    never lights up under the mouse nor as a skipped focus target. The default
-    border is transparent and the same width as the focus ring, so gaining
-    focus never reflows the layout.
+    Three ring states and no others: an enabled control shows no ring at rest,
+    a green one while hovered or focused; a disabled one shows a permanent red
+    ring. The brand accent is never a ring; it carries meaning of its own.
+    Every rule is gated on :enabled; the default border is transparent at the
+    ring's own width, so gaining a ring never reflows the layout.
+
+    Rings belong to CONTROLS. An item view is pointed into rather than at; its
+    current row already says where the reader is, so it takes no ring in
+    any state.
     """
     colour = palette_for(mode)
     return f"""
     QWidget {{
         background-color: {colour.window};
         color: {colour.text};
+        outline: none;
     }}
     QMainWindow::separator {{
         background-color: {colour.border};
@@ -154,9 +161,25 @@ def stylesheet(mode: Mode) -> str:
         selection-background-color: {colour.selection};
         selection-color: {colour.on_selection};
     }}
-    QTreeView:enabled:focus, QListView:enabled:focus,
-    QTextBrowser:enabled:focus, QLineEdit:enabled:focus {{
-        border: {FOCUS_WIDTH_PX}px solid {colour.focus_ring};
+    /* An item view rings in NO state. Its current row is the indicator, so a
+       rectangle round the whole view outlines everything while selecting
+       nothing, which is what a click on the empty space below the last row
+       used to do. QTreeView and QListView deliberately gain no rule here. */
+    QTextBrowser:enabled:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
+    QLineEdit:enabled:hover, QLineEdit:enabled:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
+    QLineEdit:disabled, QTextBrowser:disabled {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.danger};
+    }}
+    /* A licence is hard wrapped for a fixed pitch font, so it is drawn in
+       one. In a proportional face every line falls short of the widest by a
+       different amount, which reads as a dialog wider than its own text. */
+    QTextBrowser#LicenceView {{
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: {LICENCE_FONT_PX}px;
     }}
     QTreeView::item {{
         padding: 2px 4px;
@@ -175,18 +198,34 @@ def stylesheet(mode: Mode) -> str:
         border-radius: {RADIUS_PX}px;
         padding: 5px 14px;
     }}
-    QPushButton:enabled:hover {{
-        border: {FOCUS_WIDTH_PX}px solid {colour.accent};
-    }}
-    QPushButton:enabled:focus {{
-        border: {FOCUS_WIDTH_PX}px solid {colour.focus_ring};
+    QPushButton:enabled:hover, QPushButton:enabled:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
     }}
     QPushButton:enabled:pressed {{
         background-color: {colour.selection};
     }}
+    /* Disabled is a permanent red ring, not a hover reaction: the border IS
+       the state, readable at a glance as present but inert. */
     QPushButton:disabled {{
         background-color: {colour.disabled_surface};
         color: {colour.disabled_text};
+        border: {FOCUS_WIDTH_PX}px solid {colour.danger};
+    }}
+    QWidget#Tray {{
+        background-color: {colour.surface};
+        border-bottom: 1px solid {colour.border};
+    }}
+    QPushButton#TrayButton {{
+        background-color: transparent;
+        border: {FOCUS_WIDTH_PX}px solid transparent;
+        border-radius: {RADIUS_PX}px;
+        padding: 0px;
+    }}
+    QPushButton#TrayButton:enabled:hover, QPushButton#TrayButton:enabled:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
+    QPushButton#TrayButton:disabled {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.danger};
     }}
     QStatusBar {{
         background-color: {colour.surface};

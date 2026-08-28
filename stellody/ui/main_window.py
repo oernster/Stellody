@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
+import itertools
+
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QAction, QCloseEvent, QIcon
+from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
-    QHeaderView,
     QMainWindow,
     QMenu,
-    QProgressBar,
-    QSystemTrayIcon,
-    QTreeView,
     QWidget,
 )
 
@@ -24,8 +22,17 @@ from stellody.shared.version import APP_NAME
 from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog, has_serious_issues
-from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.models import AlbumTreeModel
 from stellody.ui.theme import Mode, stylesheet
+from stellody.ui.toolbar import LibraryTray
+from stellody.ui.window_parts import (
+    application_icon,
+    build_body,
+    build_progress,
+    build_tray,
+    build_tree,
+    neutral_holder,
+)
 from stellody.ui.worker import ScanRunner
 
 SETTING_THEME = "theme"
@@ -59,24 +66,43 @@ class MainWindow(QMainWindow):
         self._started = False
         self._runner = ScanRunner(self)
         self._model = AlbumTreeModel(self)
-        self._neutral = _neutral_holder(self)
+        self._neutral = neutral_holder(self)
 
         self.setWindowTitle(APP_NAME)
         self.resize(WINDOW_WIDTH_PX, WINDOW_HEIGHT_PX)
-        icon = _application_icon()
+        icon = application_icon()
         if icon is not None:
             self.setWindowIcon(icon)
-        self._tree = _build_tree(self, self._model)
-        self.setCentralWidget(self._tree)
-        self._progress = _build_progress(self)
+        self._tree = build_tree(self, self._model)
+        self._tray = LibraryTray(
+            self,
+            choose_folder=self.choose_folder,
+            rescan=self.rescan,
+            toggle_theme=self.toggle_theme,
+            show_about=self.show_about,
+        )
+        self.setCentralWidget(build_body(self, self._tray, self._tree))
+        self._set_ring_order()
+        self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)
         self._build_menus()
-        self._tray = _build_tray(self, icon)
+        self._notification = build_tray(self, icon)
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
         self._runner.progressed.connect(self._on_progress)
         self._runner.completed.connect(self._on_completed)
         self._runner.failed.connect(self._on_failed)
+
+    def _set_ring_order(self) -> None:
+        """Tab reaches the tray before the library, which is how they are drawn.
+
+        Qt builds its chain in creation order; the tree is created first because
+        the tray is handed it. Reading order is what the ring must
+        follow, so it is stated rather than inherited.
+        """
+        stops = (*self._tray.ring_stops(), self._tree)
+        for earlier, later in itertools.pairwise(stops):
+            QWidget.setTabOrder(earlier, later)
 
     @property
     def theme_mode(self) -> Mode:
@@ -103,33 +129,35 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         """The whole menu bar."""
         file_menu = self.menuBar().addMenu("&File")
-        _add(file_menu, self, "Choose &music folder...", self.choose_folder)
-        self._rescan_action = _add(file_menu, self, "&Rescan", self.rescan)
+        menu_action(file_menu, self, "Choose &music folder...", self.choose_folder)
+        self._rescan_action = menu_action(file_menu, self, "&Rescan", self.rescan)
         file_menu.addSeparator()
-        _add(file_menu, self, "&Quit", self.quit_application)
+        menu_action(file_menu, self, "&Quit", self.quit_application)
 
         view_menu = self.menuBar().addMenu("&View")
-        self._light_action = _add(
+        self._light_action = menu_action(
             view_menu, self, "&Light appearance", self.use_light, checkable=True
         )
-        self._dark_action = _add(
+        self._dark_action = menu_action(
             view_menu, self, "&Dark appearance", self.use_dark, checkable=True
         )
         view_menu.addSeparator()
-        self._descending_action = _add(
+        self._descending_action = menu_action(
             view_menu, self, "Sort &Z to A", self.toggle_order, checkable=True
         )
         view_menu.addSeparator()
-        _add(view_menu, self, "&Expand all", self._tree.expandAll)
-        _add(view_menu, self, "&Collapse all", self._tree.collapseAll)
+        menu_action(view_menu, self, "&Expand all", self._tree.expandAll)
+        menu_action(view_menu, self, "&Collapse all", self._tree.collapseAll)
 
         help_menu = self.menuBar().addMenu("&Help")
-        _add(help_menu, self, "Library &health...", self.show_health)
+        menu_action(help_menu, self, "Library &health...", self.show_health)
         help_menu.addSeparator()
-        _add(help_menu, self, "&Model licence (GPL-3.0)", self.show_model_licence)
-        _add(help_menu, self, "&UI licence (LGPL-3.0)", self.show_ui_licence)
+        menu_action(
+            help_menu, self, "&Model licence (GPL-3.0)", self.show_model_licence
+        )
+        menu_action(help_menu, self, "&UI licence (LGPL-3.0)", self.show_ui_licence)
         help_menu.addSeparator()
-        _add(help_menu, self, f"&About {APP_NAME}", self.show_about)
+        menu_action(help_menu, self, f"&About {APP_NAME}", self.show_about)
 
     @Slot()
     def choose_folder(self) -> None:
@@ -157,7 +185,7 @@ class MainWindow(QMainWindow):
             return False
         if not self._runner.start(self._scanner, root):
             return False
-        self._rescan_action.setEnabled(False)
+        self._set_rescan_enabled(False)
         self._progress.setVisible(True)
         self.statusBar().showMessage(f"Scanning {root}")
         return True
@@ -173,15 +201,25 @@ class MainWindow(QMainWindow):
         self._issues = report.issues
         self._model.set_albums(report.albums)
         self._progress.setVisible(False)
-        self._rescan_action.setEnabled(True)
+        self._set_rescan_enabled(True)
         self.statusBar().showMessage(_summary(report), STATUS_TIMEOUT_MS)
 
     @Slot(str)
     def _on_failed(self, message: str) -> None:
         """Report a scan that could not finish."""
         self._progress.setVisible(False)
-        self._rescan_action.setEnabled(True)
+        self._set_rescan_enabled(True)
         self.statusBar().showMessage(f"Scan failed: {message}")
+
+    def _set_rescan_enabled(self, enabled: bool) -> None:
+        """Rescan is offered in two places, so both follow the same state."""
+        self._rescan_action.setEnabled(enabled)
+        self._tray.rescan_button.setEnabled(enabled)
+
+    @Slot()
+    def toggle_theme(self) -> None:
+        """Swap between the two appearances, from the tray."""
+        self._apply_theme(Mode.LIGHT if self.theme_mode is Mode.DARK else Mode.DARK)
 
     @Slot()
     def use_light(self) -> None:
@@ -201,6 +239,7 @@ class MainWindow(QMainWindow):
             application.setStyleSheet(stylesheet(mode))
         self._light_action.setChecked(mode is Mode.LIGHT)
         self._dark_action.setChecked(mode is Mode.DARK)
+        self._tray.set_mode(mode)
 
     @Slot()
     def toggle_order(self) -> None:
@@ -240,7 +279,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Honour the stored close behaviour, asking when none is stored."""
-        if self._quitting or not self._tray.isVisible():
+        if self._quitting or not self._notification.isVisible():
             self._runner.wait()
             event.accept()
             return
@@ -270,7 +309,7 @@ class MainWindow(QMainWindow):
         Starting hidden is only honest while this holds; without a tray there
         would be nothing on screen at all.
         """
-        return self._tray.isVisible()
+        return self._notification.isVisible()
 
     @Slot()
     def restore_from_tray(self) -> None:
@@ -294,83 +333,10 @@ def _summary(report: ScanReport) -> str:
     return "  |  ".join(parts)
 
 
-def _add(menu: QMenu, window: QMainWindow, label: str, slot, checkable=False):
+def menu_action(menu: QMenu, window: QMainWindow, label: str, slot, checkable=False):
     """Add one action to a menu and return it."""
     action = QAction(label, window)
     action.setCheckable(checkable)
     action.triggered.connect(slot)
     menu.addAction(action)
     return action
-
-
-def _application_icon() -> QIcon | None:
-    """The window and tray icon, when the asset resolves."""
-    path = resources.application_icon_path() or resources.window_icon_path()
-    if path is None:
-        return None
-    icon = QIcon(str(path))
-    return None if icon.isNull() else icon
-
-
-def _neutral_holder(window: QMainWindow) -> QWidget:
-    """A zero-size focus holder, so no menu is highlighted on launch."""
-    holder = QWidget(window)
-    holder.setFixedSize(0, 0)
-    holder.setFocusPolicy(Qt.FocusPolicy.TabFocus)
-    return holder
-
-
-def _build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
-    """The album tree, configured for a large library."""
-    tree = QTreeView(window)
-    tree.setModel(model)
-    tree.setUniformRowHeights(True)
-    tree.setAlternatingRowColors(True)
-    tree.setAllColumnsShowFocus(True)
-    tree.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
-    tree.setExpandsOnDoubleClick(True)
-    tree.setRootIsDecorated(True)
-    header = tree.header()
-    header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-    header.setStretchLastSection(False)
-    header.setSectionResizeMode(Column.DETAIL, QHeaderView.ResizeMode.Stretch)
-    tree.setColumnWidth(Column.TITLE, TITLE_COLUMN_PX)
-    tree.setColumnWidth(Column.ARTIST, ARTIST_COLUMN_PX)
-    return tree
-
-
-def _build_progress(window: QMainWindow) -> QProgressBar:
-    """The indeterminate scan indicator."""
-    progress = QProgressBar(window)
-    progress.setRange(0, 0)
-    progress.setMaximumWidth(160)
-    progress.setTextVisible(False)
-    progress.setVisible(False)
-    return progress
-
-
-def _build_tray(window: MainWindow, icon: QIcon | None) -> QSystemTrayIcon:
-    """The system tray presence and its menu."""
-    tray = QSystemTrayIcon(window)
-    if icon is not None:
-        tray.setIcon(icon)
-    tray.setToolTip(APP_NAME)
-    menu = QMenu()
-    show = QAction(f"Show {APP_NAME}", menu)
-    show.triggered.connect(window.restore_from_tray)
-    menu.addAction(show)
-    menu.addSeparator()
-    quit_action = QAction("Quit", menu)
-    quit_action.triggered.connect(window.quit_application)
-    menu.addAction(quit_action)
-    tray.setContextMenu(menu)
-    tray.activated.connect(lambda reason: _on_tray(window, reason))
-    if QSystemTrayIcon.isSystemTrayAvailable():
-        tray.show()
-    return tray
-
-
-def _on_tray(window: MainWindow, reason: QSystemTrayIcon.ActivationReason) -> None:
-    """Restore the window when the tray icon is clicked."""
-    if reason == QSystemTrayIcon.ActivationReason.Trigger:
-        window.restore_from_tray()
