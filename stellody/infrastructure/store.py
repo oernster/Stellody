@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS issues (
     detail TEXT NOT NULL DEFAULT '',
     paths  TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT ''
+);
 CREATE INDEX IF NOT EXISTS files_by_folder ON files (folder);
 CREATE INDEX IF NOT EXISTS sources_by_folder ON sources (folder);
 CREATE INDEX IF NOT EXISTS issues_by_folder ON issues (folder);
@@ -89,6 +93,22 @@ class SqliteLibraryStore:
     def close(self) -> None:
         """Release the database handle."""
         self._connection.close()
+
+    def get_setting(self, key: str, default: str = "") -> str:
+        """The stored value for a key; the default when it has never been set."""
+        row = self._connection.execute(
+            "SELECT value FROM settings WHERE key = ?", (key,)
+        ).fetchone()
+        return row["value"] if row is not None else default
+
+    def set_setting(self, key: str, value: str) -> None:
+        """Store a value against a key."""
+        with self._connection:
+            self._connection.execute(
+                "INSERT INTO settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (key, value),
+            )
 
     def file_signatures(self) -> Mapping[str, tuple[int, int]]:
         """Every present file against its recorded size and mtime."""

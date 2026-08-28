@@ -146,6 +146,18 @@ class TextReader(Protocol):
         ...
 
 
+class SettingsStore(Protocol):
+    """Small persistent preferences: appearance, library root, close behaviour."""
+
+    def get_setting(self, key: str, default: str = "") -> str:
+        """The stored value for a key; the default when it has never been set."""
+        ...
+
+    def set_setting(self, key: str, value: str) -> None:
+        """Store a value against a key."""
+        ...
+
+
 class LibraryStore(Protocol):
     """Stellody's own persistent state. The only thing it ever writes."""
 
