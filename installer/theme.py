@@ -36,6 +36,7 @@ OPTION_GAP_PX = 10
 OPTION_SPACING_PX = 11
 
 BASE_FONT_PX = 18
+FLOW_FONT_PX = 22
 TITLE_FONT_PX = 32
 SUB_FONT_PX = 18
 HEADING_FONT_PX = 28
@@ -46,15 +47,57 @@ VERDICT_FONT_PX = 44
 LICENCE_FONT_PX = 13
 
 
+GLOW_ALPHA = 0.11
+GLOW_CENTRE = -0.08
+GLOW_RADIUS = 0.9
+GLOW_EDGE = 0.7
+HEX_PAIRS = ((1, 3), (3, 5), (5, 7))
+
+
+def tinted(colour: str, alpha: float) -> str:
+    """One palette colour at a given transparency.
+
+    A derivation rather than a second colour value, so the glow can never
+    drift away from the accent it is a glow of.
+    """
+    red, green, blue = (int(colour[start:end], 16) for start, end in HEX_PAIRS)
+    return f"rgba({red}, {green}, {blue}, {alpha})"
+
+
 def installer_stylesheet(mode: Mode) -> str:
     """The whole setup program stylesheet for one appearance."""
     colour = palette_for(mode)
+    glow = tinted(colour.accent, GLOW_ALPHA)
     return f"""
     QWidget {{
         background: {colour.window};
         color: {colour.text};
         font-family: 'Segoe UI';
         font-size: {BASE_FONT_PX}px;
+    }}
+    /* The glow belongs to the window, so everything drawn over it says so
+       rather than painting the flat colour back on top of it. */
+    QWidget#Shell {{
+        background: qradialgradient(
+            cx: 0.5, cy: {GLOW_CENTRE}, radius: {GLOW_RADIUS},
+            fx: 0.5, fy: {GLOW_CENTRE},
+            stop: 0 {glow}, stop: {GLOW_EDGE} {colour.window}
+        );
+    }}
+    QWidget#Pane, QWidget#Body, QWidget#Footer, QLabel, QCheckBox {{
+        background: transparent;
+    }}
+    QLabel#FlowFrom {{
+        font-size: {FLOW_FONT_PX}px;
+        color: {colour.text_muted};
+    }}
+    QLabel#FlowArrow {{
+        font-size: {FLOW_FONT_PX}px;
+        color: {colour.accent};
+    }}
+    QLabel#FlowTo {{
+        font-size: {FLOW_FONT_PX}px;
+        font-weight: 700;
     }}
     QLabel#HeaderTitle {{
         font-size: {TITLE_FONT_PX}px;
@@ -104,6 +147,7 @@ def installer_stylesheet(mode: Mode) -> str:
         border-color: {colour.ring};
     }}
     QCheckBox:disabled {{
+        border-color: {colour.danger};
         color: {colour.disabled_text};
     }}
     QCheckBox::indicator {{

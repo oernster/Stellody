@@ -37,14 +37,22 @@ def _xdg_base() -> pathlib.Path:
     return pathlib.Path.home() / ".local" / "share" / APP_DIR_SLUG
 
 
+def data_location() -> pathlib.Path:
+    """Where Stellody's own directory belongs, whether or not it is there.
+
+    The setup program asks this when it offers to remove that directory;
+    an uninstaller that created what it was about to delete would be absurd.
+    """
+    if sys.platform == "win32":
+        return _windows_base()
+    if sys.platform == "darwin":
+        return _macos_base()
+    return _xdg_base()
+
+
 def data_dir() -> pathlib.Path:
     """Stellody's own directory, created if it is not there yet."""
-    if sys.platform == "win32":
-        base = _windows_base()
-    elif sys.platform == "darwin":
-        base = _macos_base()
-    else:
-        base = _xdg_base()
+    base = data_location()
     base.mkdir(parents=True, exist_ok=True)
     return base
 

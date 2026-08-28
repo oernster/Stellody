@@ -63,7 +63,9 @@ def sign_in_command(executable: pathlib.Path, minimised: bool) -> str:
     return f'"{executable}"'
 
 
-def set_sign_in_entry(executable: pathlib.Path, plan: InstallPlan) -> None:
+def write_sign_in_entry(
+    executable: pathlib.Path, wanted: bool, minimised: bool
+) -> None:
     """Write or clear the per-user Run entry, so the two never disagree.
 
     One entry is written whichever way the choice went, because leaving a
@@ -72,14 +74,30 @@ def set_sign_in_entry(executable: pathlib.Path, plan: InstallPlan) -> None:
     import winreg
 
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
-        if not plan.start_on_sign_in:
+        if not wanted:
             try:
                 winreg.DeleteValue(key, APP_NAME)
             except OSError:
                 pass
             return
-        command = sign_in_command(executable, plan.start_minimised)
+        command = sign_in_command(executable, minimised)
         winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, command)
+
+
+def set_sign_in_entry(executable: pathlib.Path, plan: InstallPlan) -> None:
+    """Record how an install asked to start."""
+    write_sign_in_entry(executable, plan.start_on_sign_in, plan.start_minimised)
+
+
+def read_sign_in_command() -> str:
+    """The command the Run entry currently holds; empty when there is none."""
+    import winreg
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
+            return str(winreg.QueryValueEx(key, APP_NAME)[0])
+    except OSError:
+        return ""
 
 
 def clear_sign_in_entry() -> None:

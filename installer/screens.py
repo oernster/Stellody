@@ -10,111 +10,53 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
-    QFrame,
     QHBoxLayout,
     QLabel,
     QProgressBar,
-    QPushButton,
-    QVBoxLayout,
     QWidget,
 )
 
-from installer import theme, wording
+from installer import theme
+from installer.shell import column, label, option
 
-HINT_INDENT_PX = theme.CHECK_PX + theme.OPTION_GAP_PX + 7
+# Which screen is which in the window's stack. The order is the order they are
+# added; naming them here keeps the window and the work half agreeing on it.
+SCREEN_ROUTE = 0
+SCREEN_UNINSTALL = 1
+SCREEN_RUNNING = 2
+SCREEN_PROGRESS = 3
+SCREEN_VERDICT = 4
+
 HEADING_GAP_PX = 7
 LEAD_GAP_PX = 16
 TRACK_GAP_PX = 9
+FLOW_GAP_PX = 11
+ARROW = "→"
+
+Options = Iterable[tuple[QCheckBox, str]]
 
 
-def header(
-    parent: QWidget,
-    title: str,
-    tagline: str,
-    icon_path,
-    controls: Iterable[QPushButton],
-) -> QHBoxLayout:
-    """The identity, drawn at a size that can be read across the room.
+def flow(parent: QWidget, leaving: str, arriving: str) -> QWidget:
+    """The two versions a change moves between, with the arrow between them.
 
-    The mark, then the name over its tagline, then the controls at the right.
-    The version is not here: it belongs in the heading of the screen talking
-    about it.
+    An update and a downgrade are about two versions, so neither goes in the
+    heading: naming one there leaves the other unsaid or contradicts it.
     """
-    row = QHBoxLayout()
-    row.setSpacing(theme.HEADER_GAP_PX)
-    if icon_path is not None:
-        mark = QLabel(parent)
-        mark.setPixmap(
-            QIcon(str(icon_path)).pixmap(QSize(theme.MARK_PX, theme.MARK_PX))
-        )
-        mark.setFixedSize(theme.MARK_PX, theme.MARK_PX)
-        row.addWidget(mark, alignment=Qt.AlignmentFlag.AlignVCenter)
-    who = QVBoxLayout()
-    who.setSpacing(0)
-    name = label(parent, title, "HeaderTitle")
-    # The product name never breaks across two lines, whatever shares the row.
-    name.setWordWrap(False)
-    who.addWidget(name)
-    who.addWidget(label(parent, tagline, "HeaderSub"))
-    row.addLayout(who, 1)
-    for control in controls:
-        row.addWidget(control, alignment=Qt.AlignmentFlag.AlignVCenter)
-    return row
-
-
-def footer(parent: QWidget, buttons: Iterable[QPushButton]) -> QHBoxLayout:
-    """The actions, right aligned, under a rule."""
-    row = QHBoxLayout()
-    row.setSpacing(theme.FOOTER_GAP_PX)
+    holder = QWidget(parent)
+    holder.setObjectName("Pane")
+    row = QHBoxLayout(holder)
+    row.setContentsMargins(0, 0, 0, 0)
+    row.setSpacing(FLOW_GAP_PX)
+    for text, name in (
+        (leaving, "FlowFrom"),
+        (ARROW, "FlowArrow"),
+        (arriving, "FlowTo"),
+    ):
+        row.addWidget(label(holder, text, name))
     row.addStretch()
-    for button in buttons:
-        row.addWidget(button)
-    return row
-
-
-def rule(parent: QWidget) -> QFrame:
-    """The hairline that separates the header and the footer from the body."""
-    line = QFrame(parent)
-    line.setObjectName("Rule")
-    line.setFixedHeight(1)
-    return line
-
-
-def label(parent: QWidget, text: str, name: str) -> QLabel:
-    """One styled line of text."""
-    made = QLabel(text, parent)
-    made.setObjectName(name)
-    made.setWordWrap(True)
-    return made
-
-
-def _column(parent: QWidget, centred: bool = False) -> tuple[QWidget, QVBoxLayout]:
-    """A bare screen and its column, with no margins of its own.
-
-    A centred column holds its content together in the middle of the body
-    rather than letting the stack stretch the gaps between its lines apart.
-    """
-    screen = QWidget(parent)
-    column = QVBoxLayout(screen)
-    column.setContentsMargins(0, 0, 0, 0)
-    column.setSpacing(0)
-    if centred:
-        column.addStretch()
-    return screen, column
-
-
-def option(parent: QWidget, box: QCheckBox, hint: str) -> QWidget:
-    """One choice, with the muted line that explains it underneath."""
-    holder, column = _column(parent)
-    column.addWidget(box)
-    if hint:
-        note = label(holder, hint, "Hint")
-        note.setContentsMargins(HINT_INDENT_PX, 0, 0, 0)
-        column.addWidget(note)
     return holder
 
 
@@ -122,59 +64,35 @@ def choices(
     parent: QWidget,
     heading: str,
     lead: str,
-    location: str,
-    options: Iterable[tuple[QCheckBox, str]],
+    options: Options,
+    location: str = "",
+    versions: tuple[str, str] | None = None,
 ) -> QWidget:
     """What setup is about to do, plus the choices that shape it."""
-    screen, column = _column(parent, centred=True)
-    column.addWidget(label(screen, heading, "Heading"))
-    column.addSpacing(HEADING_GAP_PX)
-    column.addWidget(label(screen, lead, "Lead"))
-    column.addSpacing(LEAD_GAP_PX)
-    if not location:
-        column.addStretch()
-        return screen
-    column.addWidget(label(screen, f"Install location<br>{location}", "InfoBox"))
+    screen, made = column(parent, centred=True)
+    made.addWidget(label(screen, heading, "Heading"))
+    made.addSpacing(HEADING_GAP_PX)
+    made.addWidget(label(screen, lead, "Lead"))
+    made.addSpacing(LEAD_GAP_PX)
+    if versions is not None:
+        made.addWidget(flow(screen, *versions))
+        made.addSpacing(LEAD_GAP_PX)
+    if location:
+        made.addWidget(label(screen, f"Install location<br>{location}", "InfoBox"))
     for box, hint in options:
-        column.addSpacing(theme.OPTION_SPACING_PX)
-        column.addWidget(option(screen, box, hint))
-    column.addStretch()
+        made.addSpacing(theme.OPTION_SPACING_PX)
+        made.addWidget(option(screen, box, hint))
+    made.addStretch()
     return screen
-
-
-def install_choices(
-    parent: QWidget,
-    heading: str,
-    lead: str,
-    location: str,
-    boxes: tuple[QCheckBox, QCheckBox, QCheckBox, QCheckBox],
-) -> QWidget:
-    """The opening screen of an install, with its four options set up.
-
-    Starting in the tray only means something once starting at sign-in is
-    chosen, so it follows that box rather than standing on its own.
-    """
-    desktop, start_menu, sign_in, minimised = boxes
-    desktop.setChecked(True)
-    start_menu.setChecked(True)
-    sign_in.toggled.connect(minimised.setEnabled)
-    minimised.setEnabled(False)
-    options = (
-        (desktop, ""),
-        (start_menu, ""),
-        (sign_in, wording.SIGN_IN_HINT),
-        (minimised, wording.MINIMISED_HINT),
-    )
-    return choices(parent, heading, lead, location, options)
 
 
 def message(parent: QWidget, heading: str, lead: str) -> QWidget:
     """A screen that only has something to say, such as the app being open."""
-    screen, column = _column(parent, centred=True)
-    column.addWidget(label(screen, heading, "Heading"))
-    column.addSpacing(HEADING_GAP_PX)
-    column.addWidget(label(screen, lead, "Lead"))
-    column.addStretch()
+    screen, made = column(parent, centred=True)
+    made.addWidget(label(screen, heading, "Heading"))
+    made.addSpacing(HEADING_GAP_PX)
+    made.addWidget(label(screen, lead, "Lead"))
+    made.addStretch()
     return screen
 
 
@@ -182,21 +100,21 @@ def progress(
     parent: QWidget, title: QLabel, bar: QProgressBar, status: QLabel
 ) -> QWidget:
     """What is happening now, with the bar that says how far in it is."""
-    screen, column = _column(parent, centred=True)
-    column.addWidget(title)
-    column.addSpacing(LEAD_GAP_PX)
-    column.addWidget(bar)
-    column.addSpacing(TRACK_GAP_PX)
-    column.addWidget(status)
-    column.addStretch()
+    screen, made = column(parent, centred=True)
+    made.addWidget(title)
+    made.addSpacing(LEAD_GAP_PX)
+    made.addWidget(bar)
+    made.addSpacing(TRACK_GAP_PX)
+    made.addWidget(status)
+    made.addStretch()
     return screen
 
 
 def verdict(parent: QWidget, mark: QLabel, title: QLabel, lead: QLabel) -> QWidget:
     """How it ended, centred, as one mark and two lines."""
-    screen, column = _column(parent, centred=True)
+    screen, made = column(parent, centred=True)
     for widget in (mark, title, lead):
         widget.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        column.addWidget(widget)
-    column.addStretch()
+        made.addWidget(widget)
+    made.addStretch()
     return screen

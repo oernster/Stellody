@@ -5,12 +5,13 @@ time and a footer of actions, with a rule between each. The body is centred
 rather than packed to the top, so a short screen sits in the middle of the
 window instead of leaving a hole above the buttons.
 
-The version is not a chip beside the title. It belongs in the heading of the
-screen that is talking about it, which is also where the reference puts it.
+What setup is FOR is decided once, from what the machine already holds: a first
+install, an update, a downgrade, a matching version to manage or a removal.
+That reading picks the screen, its heading, the versions it shows and the
+actions under it, so no two of those can contradict each other.
 
-The setup program is a Qt application, so it carries ONE licence, the LGPL-3.0
-that Qt asks for. Stellody's own split into a model licence and an interface
-licence belongs to Stellody, not to the program that installs it.
+The footer belongs to the screen rather than to the window. A screen with
+nothing safe to offer, the one that is working, offers nothing at all.
 
 Every step is written to a log, because the worst installer failures are the
 ones that never raise.
@@ -18,9 +19,7 @@ ones that never raise.
 
 from __future__ import annotations
 
-import pathlib
 import sys
-import traceback
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
@@ -35,7 +34,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from installer import actions, appearance, running, screens, theme, wording
+from installer import (
+    actions,
+    appearance,
+    existing,
+    registry,
+    screens,
+    shell,
+    theme,
+    wording,
+)
+from installer.footer import DANGER, PRIMARY, Action, Footer
+from installer.performing import Performing
+from installer.route import Route, route_for
 from installer.steplog import StepLog
 from stellody.shared import resources
 from stellody.shared.version import APP_TAGLINE, read_version
@@ -43,24 +54,27 @@ from stellody.ui.dialogs import LicenceDialog
 from stellody.ui.theme import Mode
 
 LICENCE_TITLE = "Setup licence (LGPL-3.0)"
-TICK = "✓"
-ALERT = "⚠"
-SCREEN_RUNNING = 1
-SCREEN_PROGRESS = 2
-SCREEN_VERDICT = 3
-CONTINUE_LABEL = "Close it and continue"
 
 
-class SetupWindow(QWidget):
-    """Install or remove Stellody, per user, without administrator rights."""
+class SetupWindow(Performing, QWidget):
+    """Install, repair or remove Stellody, per user, without admin rights.
+
+    The setup program is a Qt application, so it carries ONE licence, the
+    LGPL-3.0 that Qt asks for. Stellody's own split into a model licence and an
+    interface licence belongs to Stellody, not to the program that installs it.
+    """
 
     def __init__(self, uninstalling: bool) -> None:
         super().__init__()
         self.log = StepLog()
         self.version = read_version()
-        self.installed = actions.installed_version()
-        self.uninstalling = uninstalling
+        self.here = existing.look()
+        # The route never becomes UNINSTALL: removal is a screen reachable from
+        # every other one, so the screen behind it stays the one to come back to.
+        self.route = route_for(self.here.version, self.version, uninstalling=False)
+        self._uninstalling = uninstalling
         self.mode = Mode.DARK
+        self.setObjectName("Shell")
         self.setWindowTitle(f"{actions.APP_NAME} Setup")
         self.resize(theme.WINDOW_WIDTH_PX, theme.WINDOW_HEIGHT_PX)
         icon_path = resources.application_icon_path()
@@ -69,7 +83,10 @@ class SetupWindow(QWidget):
         self._build_widgets()
         self._build()
         self._apply_theme()
-        self.log.write(f"setup started, version {self.version}")
+        self._show_current()
+        self.log.write(f"setup started, version {self.version}, {self.route.value}")
+
+    # --------------------------------------------------------------- controls
 
     def _build_widgets(self) -> None:
         """Create every control the screens and the footer share."""
@@ -79,28 +96,69 @@ class SetupWindow(QWidget):
             QSize(theme.TOGGLE_ICON_PX, theme.TOGGLE_ICON_PX)
         )
         self._theme_button.setToolTip("Switch between light and dark")
-        self._desktop = QCheckBox("Create a desktop shortcut", self)
-        self._start_menu = QCheckBox("Create a Start Menu entry", self)
-        self._sign_in = QCheckBox(f"Start {actions.APP_NAME} when I sign in", self)
-        self._minimised = QCheckBox("Start minimised to the notification area", self)
+        self._licence = QPushButton("Licence", self)
+        self._desktop = QCheckBox(wording.DESKTOP_LABEL, self)
+        self._start_menu = QCheckBox(wording.START_MENU_LABEL, self)
+        self._sign_in = QCheckBox(wording.SIGN_IN_LABEL, self)
+        self._minimised = QCheckBox(wording.MINIMISED_LABEL, self)
+        self._launch = QCheckBox(wording.LAUNCH_LABEL, self)
+        self._forget = QCheckBox(wording.FORGET_LABEL, self)
         self._progress = QProgressBar(self)
         self._progress.setRange(0, actions.PCT_DONE)
         self._progress.setValue(0)
-        self._progress_title = screens.label(self, "", "Heading")
-        self._progress_status = screens.label(self, "", "Status")
-        self._verdict_mark = screens.label(self, "", "Verdict")
-        self._verdict_title = screens.label(self, "", "Heading")
-        self._verdict_lead = screens.label(self, "", "Lead")
-        self._primary = QPushButton(self._words(wording.primary_label), self)
-        self._primary.setObjectName("Primary")
-        self._uninstall = QPushButton("Uninstall", self)
-        self._uninstall.setObjectName("Danger")
-        self._licence = QPushButton("Licence", self)
-        self._close = QPushButton("Close", self)
+        self._progress_title = shell.label(self, "", "Heading")
+        self._progress_status = shell.label(self, "", "Status")
+        self._verdict_mark = shell.label(self, "", "Verdict")
+        self._verdict_title = shell.label(self, "", "Heading")
+        self._verdict_lead = shell.label(self, "", "Lead")
+        self._footer = Footer(self)
         self._shown = False
         self._start = QWidget(self)
         self._start.setFixedSize(0, 0)
         self._start.setFocusPolicy(Qt.FocusPolicy.TabFocus)
+        self._set_choices()
+
+    def _set_choices(self) -> None:
+        """Open every box on what is already true, then act on any change.
+
+        A box that says what is there is the whole point of reading the machine
+        first: setup used to offer a shortcut the user had deliberately deleted
+        as though they had asked for it back.
+        """
+        fresh = not self.here.installed
+        self._desktop.setChecked(True if fresh else self.here.desktop)
+        self._start_menu.setChecked(True if fresh else self.here.start_menu)
+        self._sign_in.setChecked(self.here.sign_in)
+        self._minimised.setChecked(self.here.minimised)
+        self._minimised.setEnabled(self._sign_in.isChecked())
+        self._launch.setChecked(True)
+        self._sign_in.toggled.connect(self._minimised.setEnabled)
+        if self.route is not Route.MANAGE:
+            return
+        # On a matching version there is nothing to install, so a box that only
+        # took effect on a go-ahead would never take effect at all.
+        for box in (self._desktop, self._start_menu):
+            box.toggled.connect(self._apply_shortcuts)
+        for box in (self._sign_in, self._minimised):
+            box.toggled.connect(self._apply_sign_in)
+
+    def _apply_shortcuts(self) -> None:
+        """Put the shortcuts where the boxes now say they should be."""
+        actions.set_shortcuts(
+            self.here.executable,
+            self._desktop.isChecked(),
+            self._start_menu.isChecked(),
+        )
+        self.log.write("shortcuts applied")
+
+    def _apply_sign_in(self) -> None:
+        """Record how it should start, the moment the choice is made."""
+        registry.write_sign_in_entry(
+            self.here.executable,
+            self._sign_in.isChecked(),
+            self._minimised.isChecked(),
+        )
+        self.log.write("sign-in entry applied")
 
     # ------------------------------------------------------------- behaviour
 
@@ -124,16 +182,16 @@ class SetupWindow(QWidget):
 
     def _build(self) -> None:
         """Header, a rule, the centred body, a rule, then the footer."""
-        shell = QVBoxLayout(self)
-        shell.setContentsMargins(
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(
             theme.SHELL_MARGIN_SIDE_PX,
             theme.SHELL_MARGIN_TOP_PX,
             theme.SHELL_MARGIN_SIDE_PX,
             theme.SHELL_MARGIN_BOTTOM_PX,
         )
-        shell.setSpacing(theme.HEADER_PAD_PX)
-        shell.addLayout(
-            screens.header(
+        layout.setSpacing(theme.HEADER_PAD_PX)
+        layout.addLayout(
+            shell.header(
                 self,
                 f"{actions.APP_NAME} Setup",
                 APP_TAGLINE,
@@ -141,53 +199,120 @@ class SetupWindow(QWidget):
                 (self._licence, self._theme_button),
             )
         )
-        shell.addWidget(screens.rule(self))
+        layout.addWidget(shell.rule(self))
         self._body = QStackedWidget(self)
-        self._body.addWidget(self._choices_screen())
-        self._body.addWidget(
-            screens.message(self, wording.RUNNING_HEADING, wording.RUNNING_LEAD)
-        )
-        self._body.addWidget(
+        self._body.setObjectName("Body")
+        for screen in self._screens():
+            self._body.addWidget(screen)
+        layout.addWidget(self._body, 1)
+        layout.addWidget(shell.rule(self))
+        layout.addWidget(self._footer)
+        self._licence.clicked.connect(self._show_licence)
+        self._theme_button.clicked.connect(self._toggle_theme)
+
+    def _screens(self) -> tuple[QWidget, ...]:
+        """Every screen, in the order the stack indices name them."""
+        return (
+            self._route_screen(),
+            self._uninstall_screen(),
+            screens.message(self, wording.RUNNING_HEADING, wording.RUNNING_LEAD),
             screens.progress(
                 self, self._progress_title, self._progress, self._progress_status
-            )
-        )
-        self._body.addWidget(
+            ),
             screens.verdict(
                 self, self._verdict_mark, self._verdict_title, self._verdict_lead
+            ),
+        )
+
+    def _route_screen(self) -> QWidget:
+        """What this run is for, with the choices that shape it."""
+        options = (
+            (self._start_menu, wording.START_MENU_HINT),
+            (self._desktop, ""),
+            (self._sign_in, wording.SIGN_IN_HINT),
+            (self._minimised, wording.MINIMISED_HINT),
+            (self._launch, ""),
+        )
+        location = str(self._target()) if self.route is Route.INSTALL else ""
+        versions = None
+        if self.route in (Route.UPDATE, Route.DOWNGRADE):
+            versions = (f"v{self.here.version}", f"v{self.version}")
+        return screens.choices(
+            self,
+            wording.heading(self.route, self.here.version, self.version),
+            wording.lead(self.route),
+            options,
+            location,
+            versions,
+        )
+
+    def _uninstall_screen(self) -> QWidget:
+        """The removal screen, reachable from every other one."""
+        return screens.choices(
+            self,
+            wording.heading(Route.UNINSTALL, self.here.version, self.version),
+            wording.lead(Route.UNINSTALL),
+            ((self._forget, wording.FORGET_HINT),),
+        )
+
+    # --------------------------------------------------------------- routing
+
+    def _show_current(self) -> None:
+        """Show whichever screen is due, after a start or an interruption."""
+        if self._uninstalling:
+            self._show_uninstall()
+            return
+        self._show_route()
+
+    def _show_route(self) -> None:
+        """The screen this run is for, with the actions that belong to it."""
+        self._uninstalling = False
+        self._body.setCurrentIndex(screens.SCREEN_ROUTE)
+        self._footer.show_actions(self._route_actions())
+
+    def _route_actions(self) -> tuple[Action, ...]:
+        """The actions under the route screen, destructive ones marked."""
+        go = Action(wording.primary_label(self.route), self._go, PRIMARY)
+        if self.route is Route.INSTALL:
+            return (Action("Cancel", self.close), go)
+        remove = Action("Uninstall", self._show_uninstall, DANGER)
+        if self.route is Route.MANAGE:
+            return (
+                remove,
+                Action("Close", self.close),
+                Action("Reinstall", self._reinstall),
+                go,
+            )
+        return (remove, Action("Not now", self.close), go)
+
+    def _show_uninstall(self) -> None:
+        """Ask before removing anything, with the one extra choice removal has."""
+        self._uninstalling = True
+        self._body.setCurrentIndex(screens.SCREEN_UNINSTALL)
+        self._footer.show_actions(
+            (
+                Action("Cancel", self._cancel_removal),
+                Action("Uninstall", lambda: self._guarded(self._remove), DANGER),
             )
         )
-        shell.addWidget(self._body, 1)
-        shell.addWidget(screens.rule(self))
-        self._licence.clicked.connect(self._show_licence)
-        self._uninstall.clicked.connect(self._remove_requested)
-        self._uninstall.setVisible(bool(self.installed) and not self.uninstalling)
-        self._close.clicked.connect(self.close)
-        self._primary.clicked.connect(self._perform)
-        self._theme_button.clicked.connect(self._toggle_theme)
-        shell.addLayout(
-            screens.footer(self, (self._uninstall, self._close, self._primary))
-        )
 
-    # --------------------------------------------------------------- screens
+    def _cancel_removal(self) -> None:
+        """Back to what setup was otherwise for; nothing, when it was only this."""
+        if self.here.installed:
+            self._show_route()
+            return
+        self.close()
 
-    def _choices_screen(self) -> QWidget:
-        """The opening screen, with the options only when installing."""
-        heading = self._words(wording.heading)
-        lead = self._words(wording.lead)
-        if self.uninstalling:
-            return screens.choices(self, heading, lead, "", ())
-        return screens.install_choices(
-            self,
-            heading,
-            lead,
-            str(actions.default_target()),
-            (self._desktop, self._start_menu, self._sign_in, self._minimised),
-        )
+    def _go(self) -> None:
+        """The go-ahead: a repair when the version already matches, else files."""
+        if self.route is Route.MANAGE:
+            self._guarded(self._repair)
+            return
+        self._guarded(self._write_files)
 
-    def _words(self, decide) -> str:
-        """Ask the wording module about the state this run is in."""
-        return decide(self.installed, self.version, self.uninstalling)
+    def _reinstall(self) -> None:
+        """Write the files again with the choices showing on screen."""
+        self._guarded(lambda: self._write_files(reinstalling=True))
 
     # --------------------------------------------------------------- actions
 
@@ -203,135 +328,6 @@ class SetupWindow(QWidget):
     def _show_licence(self) -> None:
         """Open the LGPL-3.0 text the setup program itself is covered by."""
         LicenceDialog(LICENCE_TITLE, resources.ui_licence_path(), self).exec()
-
-    def _report(self, percent: int, message: str) -> None:
-        """Move the bar and say which step is running."""
-        self._progress.setValue(percent)
-        self._progress_status.setText(message)
-        QApplication.processEvents()
-
-    def _working(self, title: str) -> None:
-        """Show the progress screen, with the actions withheld while it runs."""
-        self._progress_title.setText(title)
-        self._progress.setValue(0)
-        self._progress_status.setText("Starting...")
-        self._body.setCurrentIndex(SCREEN_PROGRESS)
-        for button in (self._primary, self._uninstall):
-            button.setVisible(False)
-        QApplication.processEvents()
-
-    def _verdict(self, mark: str, title: str, lead: str) -> None:
-        """Show how it ended, leaving only the licence and Close."""
-        self._verdict_mark.setText(mark)
-        self._verdict_title.setText(title)
-        self._verdict_lead.setText(lead)
-        self._body.setCurrentIndex(SCREEN_VERDICT)
-
-    def _perform(self) -> None:
-        """Run the go-ahead action, once nothing is holding the files open."""
-        if self._blocked_by_running_app():
-            return
-        self._go()
-
-    def _blocked_by_running_app(self) -> bool:
-        """Offer to close a running Stellody rather than failing on its lock.
-
-        Extracting over a locked executable raises a permission error partway
-        through, so this is asked before any file is touched.
-        """
-        if not running.is_running():
-            return False
-        self.log.write("the application is running")
-        self._body.setCurrentIndex(SCREEN_RUNNING)
-        self._uninstall.setVisible(False)
-        self._primary.setText(CONTINUE_LABEL)
-        self._primary.clicked.disconnect()
-        self._primary.clicked.connect(self._close_then_go)
-        return True
-
-    def _close_then_go(self) -> None:
-        """Close the running application, then carry on with what was asked."""
-        self._working(f"Closing {actions.APP_NAME}")
-        self._report(actions.PCT_START, "Waiting for it to close...")
-        if not running.close():
-            self._verdict(
-                ALERT,
-                f"{actions.APP_NAME} is still open",
-                wording.STILL_RUNNING_LEAD,
-            )
-            return
-        self.log.write("the application was closed")
-        self._go()
-
-    def _go(self) -> None:
-        """Do the work the go-ahead stands for, then say how it ended."""
-        if self.uninstalling:
-            self._remove()
-            return
-        self._working(f"Installing {actions.APP_NAME} {self.version}")
-        try:
-            where = self._install()
-        except (OSError, ValueError, RuntimeError) as error:
-            self.log.write(f"FAILED: {error}")
-            self.log.write(traceback.format_exc())
-            self._verdict(
-                ALERT,
-                "Setup could not finish",
-                f"{error}. A step by step log is at {self.log.path}.",
-            )
-            return
-        self._verdict(
-            TICK,
-            f"{actions.APP_NAME} {self.version} is installed",
-            f"It is at {where}. Open it from the Start Menu, then choose your "
-            "music folder from the File menu.",
-        )
-
-    def _install(self) -> pathlib.Path:
-        """Deploy the application, reporting each step as it goes."""
-        archive = actions.payload_zip()
-        if archive is None:
-            raise RuntimeError("the setup file does not contain an application payload")
-        plan = actions.InstallPlan(
-            target=actions.default_target(),
-            version=self.version,
-            desktop_shortcut=self._desktop.isChecked(),
-            start_menu_shortcut=self._start_menu.isChecked(),
-            start_on_sign_in=self._sign_in.isChecked(),
-            start_minimised=self._sign_in.isChecked() and self._minimised.isChecked(),
-        )
-        self.log.write(f"installing to {plan.target}")
-        executable = actions.install(plan, archive, self._report)
-        self.log.write(f"installed {executable}")
-        return executable.parent
-
-    def _remove_requested(self) -> None:
-        """Uninstall, once nothing is holding the files open."""
-        self.uninstalling = True
-        if self._blocked_by_running_app():
-            return
-        self._remove()
-
-    def _remove(self) -> None:
-        """Remove the application, then say how it ended."""
-        recorded = actions.read_registered()
-        target = pathlib.Path(
-            recorded.get("InstallLocation", str(actions.default_target()))
-        )
-        self._working(f"Removing {actions.APP_NAME}")
-        try:
-            actions.uninstall(target, self._report)
-        except OSError as error:
-            self.log.write(f"FAILED: {error}")
-            self._verdict(ALERT, "Setup could not finish", str(error))
-            return
-        self.log.write("removed")
-        self._verdict(
-            TICK,
-            f"{actions.APP_NAME} has been removed",
-            "Your music was never touched; the library database has been left "
-            "in place.",
-        )
 
 
 def main(argv: list[str] | None = None) -> int:

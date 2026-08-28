@@ -19,11 +19,11 @@ from collections.abc import Callable
 from installer.plan import InstallPlan
 from installer.registry import (
     clear_sign_in_entry,
-    read_registered,
     register,
     set_sign_in_entry,
     unregister,
 )
+from stellody.infrastructure.paths import data_location
 
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
@@ -94,26 +94,6 @@ def version_key(version: str) -> tuple[int, ...]:
         digits = "".join(itertools.takewhile(str.isdigit, chunk))
         parts.append(int(digits) if digits else 0)
     return tuple(parts)
-
-
-def installed_version() -> str:
-    """The version recorded as installed; empty when there is no record."""
-    return read_registered().get("DisplayVersion", "")
-
-
-def upgrade_summary(installed: str, incoming: str) -> str:
-    """One line saying what this setup will do to what is already there."""
-    if not installed:
-        return f"{APP_NAME} is not currently installed on this account."
-    here, arriving = version_key(installed), version_key(incoming)
-    if here == arriving:
-        return f"Version {installed} is already installed; setup reinstalls it."
-    if here < arriving:
-        return f"Version {installed} is installed; setup updates it to {incoming}."
-    return (
-        f"Version {installed} is installed, which is newer than this setup's "
-        f"{incoming}; setup replaces it."
-    )
 
 
 def payload_roots() -> tuple[pathlib.Path, ...]:
@@ -282,11 +262,44 @@ def install(
     return executable
 
 
-def uninstall(target: pathlib.Path, progress: ProgressCallback = silent) -> None:
+def repair(
+    target: pathlib.Path,
+    archive: pathlib.Path,
+    progress: ProgressCallback = silent,
+) -> pathlib.Path:
+    """Write the application files back over the install, changing nothing else.
+
+    The shortcuts, the Apps list entry and the sign-in choice are all left
+    exactly as they are: that is the whole of the difference between a repair
+    and a reinstall; it is also why a repair asks no questions.
+    """
+    progress(PCT_START, "Checking the install folder...")
+    progress(PCT_START, "Writing the files back...")
+    extract_payload(archive, target)
+    progress(PCT_DONE, "Done.")
+    return target / EXE_NAME
+
+
+def set_shortcuts(executable: pathlib.Path, desktop: bool, start_menu: bool) -> None:
+    """Put the two shortcuts where the boxes now say they should be."""
+    wanted = (desktop, start_menu)
+    for link, keep in zip(shortcut_paths(), wanted):
+        if keep:
+            create_shortcut(link, executable, executable)
+        else:
+            link.unlink(missing_ok=True)
+
+
+def uninstall(
+    target: pathlib.Path,
+    progress: ProgressCallback = silent,
+    remove_data: bool = False,
+) -> None:
     """Remove the application, its shortcuts and its Apps list entry.
 
-    Stellody's own database is left alone: it holds the user's library view,
-    which they may want back if they reinstall.
+    Stellody's own directory is left alone unless the user asked for it to go.
+    It holds the library index and what the window remembers, which they may
+    well want back if they reinstall, so keeping it is the default.
     """
     progress(PCT_START, "Removing shortcuts...")
     for link in shortcut_paths():
@@ -296,4 +309,7 @@ def uninstall(target: pathlib.Path, progress: ProgressCallback = silent) -> None
     unregister()
     progress(PCT_START_MENU, "Removing files...")
     shutil.rmtree(target, ignore_errors=True)
+    if remove_data:
+        progress(PCT_SIGN_IN, "Removing the library index...")
+        shutil.rmtree(data_location(), ignore_errors=True)
     progress(PCT_DONE, "Done.")

@@ -7,7 +7,7 @@ import zipfile
 
 import pytest
 
-from installer import actions, registry, wording
+from installer import actions, registry
 
 
 def _archive(path: pathlib.Path, entries: dict[str, str]) -> pathlib.Path:
@@ -79,29 +79,6 @@ def test_a_version_suffix_is_ignored_rather_than_refused() -> None:
     assert actions.version_key("1.2.3rc1") == (1, 2, 3)
 
 
-def test_a_missing_install_is_summarised_as_such() -> None:
-    assert "not currently installed" in actions.upgrade_summary("", "0.2.0")
-
-
-def test_the_same_version_reads_as_a_reinstall() -> None:
-    summary = actions.upgrade_summary("0.2.0", "0.2.0")
-    assert "already installed" in summary
-    assert "reinstalls" in summary
-
-
-def test_an_older_install_reads_as_an_update_naming_both_versions() -> None:
-    summary = actions.upgrade_summary("0.1.0", "0.2.0")
-    assert "0.1.0" in summary
-    assert "0.2.0" in summary
-    assert "updates" in summary
-
-
-def test_a_newer_install_is_reported_as_newer_rather_than_hidden() -> None:
-    summary = actions.upgrade_summary("0.3.0", "0.2.0")
-    assert "newer" in summary
-    assert "replaces" in summary
-
-
 def test_the_payload_is_searched_for_beside_the_unpacked_module() -> None:
     """argv[0] is the original exe under a onefile build, so it cannot lead."""
     roots = actions.payload_roots()
@@ -152,30 +129,6 @@ def test_a_plain_sign_in_command_does_not_start_hidden() -> None:
 
     command = registry.sign_in_command(pathlib.Path("C:/S.exe"), False)
     assert not startup.starts_hidden(command.split())
-
-
-def test_the_go_ahead_names_what_it_will_do() -> None:
-    assert wording.primary_label("", "0.2.0", False) == "Install"
-    assert wording.primary_label("0.1.0", "0.2.0", False) == "Update"
-    assert wording.primary_label("0.2.0", "0.2.0", False) == "Reinstall"
-    assert wording.primary_label("0.3.0", "0.2.0", False) == "Reinstall"
-    assert wording.primary_label("0.2.0", "0.2.0", True) == "Uninstall"
-
-
-def test_the_heading_carries_the_version_rather_than_a_chip() -> None:
-    assert "0.2.0" in wording.heading("", "0.2.0", False)
-    upgrade = wording.heading("0.1.0", "0.2.0", False)
-    assert "0.1.0" in upgrade
-    assert "0.2.0" in upgrade
-    assert "0.2.0 is installed" in wording.heading("0.2.0", "0.2.0", False)
-
-
-def test_an_older_setup_over_a_newer_install_says_so() -> None:
-    assert "older" in wording.lead("0.3.0", "0.2.0", False)
-
-
-def test_removing_promises_the_music_is_untouched() -> None:
-    assert "never" in wording.lead("0.2.0", "0.2.0", True)
 
 
 def test_powershell_is_given_no_console_window_of_its_own(
