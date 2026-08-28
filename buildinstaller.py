@@ -8,6 +8,7 @@ Run:  python buildinstaller.py
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import pathlib
 import shutil
@@ -40,8 +41,23 @@ DATA_FILES: tuple[pathlib.Path, ...] = (
     ROOT / "LICENSE-LGPL-3.0.txt",
 )
 
-UNLINK_RETRIES = 20
-UNLINK_DELAY_SECONDS = 0.15
+UNLINK_RETRIES = 40
+UNLINK_DELAY_SECONDS = 0.25
+
+
+def require(module: str, package: str) -> None:
+    """Stop with a useful message when a build tool is not installed.
+
+    Without this the failure is a bare import error naming a module the reader
+    has to map back to a package by themselves.
+    """
+    if importlib.util.find_spec(module) is None:
+        print(
+            f"{package} is not installed. It is a build dependency:\n"
+            "    python -m pip install -r requirements-dev.txt",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
 
 def read_version() -> str:
@@ -97,25 +113,35 @@ def command() -> list[str]:
 def move_into_place(built: pathlib.Path, final: pathlib.Path) -> bool:
     """Move the setup file into dist-installer, retrying past file locks.
 
-    Antivirus and Explorer both hold a new executable open briefly, so a single
+    Antivirus and Explorer hold a new executable open briefly, so a single
     attempt fails intermittently for reasons that have nothing to do with the
-    build.
+    build. A lock that outlasts the retries is almost always a previous setup
+    run still going: a onefile build starts a child process, so closing the
+    first window does not always end it.
     """
     final.parent.mkdir(parents=True, exist_ok=True)
+    last: OSError | None = None
     for attempt in range(UNLINK_RETRIES):
         try:
             final.unlink(missing_ok=True)
             shutil.move(str(built), str(final))
             return True
-        except OSError:
-            if attempt == UNLINK_RETRIES - 1:
-                return False
+        except OSError as error:
+            last = error
             time.sleep(UNLINK_DELAY_SECONDS)
+    waited = UNLINK_RETRIES * UNLINK_DELAY_SECONDS
+    print(f"gave up after {waited:.0f}s: {last}", file=sys.stderr)
+    print(
+        f"{final.name} is most likely still running. Close it; or run:\n"
+        f"    Stop-Process -Name {SETUP_NAME} -Force",
+        file=sys.stderr,
+    )
     return False
 
 
 def main() -> int:
     """Stage the payload, build the setup program and place it."""
+    require("PyInstaller", "PyInstaller")
     version = read_version()
     print(f"{SETUP_NAME} {version}")
     if not stage_payload():

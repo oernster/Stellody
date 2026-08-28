@@ -8,6 +8,7 @@ Run:  python buildexe.py
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import pathlib
 import shutil
@@ -39,6 +40,21 @@ DATA_FILES: tuple[pathlib.Path, ...] = (
 
 # Imports PyInstaller cannot see statically.
 HIDDEN_IMPORTS: tuple[str, ...] = ("mutagen.flac",)
+
+
+def require(module: str, package: str) -> None:
+    """Stop with a useful message when a build tool is not installed.
+
+    Without this the failure is a bare import error naming a module the reader
+    has to map back to a package by themselves.
+    """
+    if importlib.util.find_spec(module) is None:
+        print(
+            f"{package} is not installed. It is a build dependency:\n"
+            "    python -m pip install -r requirements-dev.txt",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
 
 def read_version() -> str:
@@ -88,6 +104,7 @@ def command() -> list[str]:
 
 def main() -> int:
     """Build the bundle and report where it landed."""
+    require("PyInstaller", "PyInstaller")
     version = read_version()
     print(f"{APP_NAME} {version}")
     clean()

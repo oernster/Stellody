@@ -12,7 +12,15 @@ from __future__ import annotations
 import pathlib
 import sys
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:  # pragma: no cover - a missing build tool, not a code path
+    print(
+        "Pillow is not installed. It is a build dependency:\n"
+        "    python -m pip install -r requirements-dev.txt",
+        file=sys.stderr,
+    )
+    raise SystemExit(1) from None
 
 ASSETS = pathlib.Path(__file__).resolve().parent / "assets"
 MASTER = ASSETS / "application-icon.png"
