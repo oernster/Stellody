@@ -135,6 +135,14 @@ class LibraryWalker(Protocol):
         """Yield one listing per folder containing audio."""
         ...
 
+    def count(self, root: str) -> int:
+        """How many folders the walk will yield, counted without reading one.
+
+        A scan cannot say how far through it is without knowing how far there
+        is to go; the walk itself only knows that once it has finished.
+        """
+        ...
+
 
 class MediaProbe(Protocol):
     """Reads properties and tags out of one audio file."""

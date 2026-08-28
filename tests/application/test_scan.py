@@ -13,7 +13,7 @@ from fakes import (
 )
 
 from stellody.application.ports import FolderListing
-from stellody.application.scan import ScanLibrary
+from stellody.application.scan import ScanLibrary, ScanProgress
 
 FOLDER = "H:/Music/Sasha/Involver"
 ONE = f"{FOLDER}/01. Wavy Gravy.flac"
@@ -104,9 +104,31 @@ def test_a_folder_of_tracks_becomes_one_album() -> None:
 
 def test_progress_is_reported_for_every_folder() -> None:
     scanner, _ = build([two_file_listing()], {ONE: properties(), TWO: properties()})
-    seen: list[str] = []
+    seen: list[ScanProgress] = []
     scanner.run("H:/Music", progress=seen.append)
-    assert seen == [FOLDER]
+    assert [step.folder for step in seen] == [FOLDER]
+
+
+def test_progress_counts_towards_a_total_known_in_advance() -> None:
+    """A bar with no number on it says only that something is happening."""
+    walker = FakeWalker((two_file_listing(),))
+    scanner = ScanLibrary(
+        walker,
+        FakeProbe({ONE: properties(), TWO: properties()}),
+        FakeTextReader(None),
+        FakeStore(),
+    )
+    seen: list[ScanProgress] = []
+    scanner.run("H:/Music", progress=seen.append)
+    assert walker.counted == ["H:/Music"]
+    assert seen[0].done == 1
+    assert seen[0].total == 1
+    assert seen[0].percent == 100
+
+
+def test_a_percentage_of_nothing_is_nought_rather_than_a_crash() -> None:
+    assert ScanProgress("H:/Music").percent == 0
+    assert ScanProgress("H:/Music", done=3, total=8).percent == 38
 
 
 def test_a_cue_sheet_expands_one_file_into_slices() -> None:

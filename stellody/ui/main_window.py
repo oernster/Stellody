@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.application.ports import SettingsStore
-from stellody.application.scan import ScanLibrary, ScanReport
+from stellody.application.scan import ScanLibrary, ScanProgress, ScanReport
 from stellody.domain.health import LibraryIssue
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
@@ -186,14 +186,26 @@ class MainWindow(QMainWindow):
         if not self._runner.start(self._scanner, root):
             return False
         self._set_rescan_enabled(False)
+        # Indeterminate again for the counting pass, which has no number yet.
+        self._progress.setRange(0, 0)
         self._progress.setVisible(True)
         self.statusBar().showMessage(f"Scanning {root}")
         return True
 
-    @Slot(str)
-    def _on_progress(self, folder: str) -> None:
-        """Show which folder is being read."""
-        self.statusBar().showMessage(folder)
+    @Slot(object)
+    def _on_progress(self, progress: ScanProgress) -> None:
+        """Say how far through the scan is, then which folder it is reading.
+
+        The percentage leads, because a folder path is long enough to push it
+        off the end of the line on a deep library.
+        """
+        if progress.total > 0:
+            self._progress.setRange(0, progress.total)
+            self._progress.setValue(progress.done)
+        self.statusBar().showMessage(
+            f"{progress.percent}% ({progress.done} of {progress.total}) "
+            f"{progress.folder}"
+        )
 
     @Slot(object)
     def _on_completed(self, report: ScanReport) -> None:

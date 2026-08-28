@@ -23,8 +23,32 @@ from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.track import MILLISECONDS_PER_SECOND
 
 SINGLE_FILE_ALBUM = 1
+PERCENT = 100
 
-ProgressCallback = Callable[[str], None]
+
+@dataclass(frozen=True, slots=True)
+class ScanProgress:
+    """How far through a scan is, plus which folder it is reading.
+
+    A library of a few thousand folders spends long enough scanning that a bar
+    with no number on it says only that something is happening. The count is
+    carried here rather than worked out on the interface thread, which has no
+    way of knowing how many folders there are.
+    """
+
+    folder: str
+    done: int = 0
+    total: int = 0
+
+    @property
+    def percent(self) -> int:
+        """How far through, as a whole number; nought when nothing is known."""
+        if self.total <= 0:
+            return 0
+        return round(self.done * PERCENT / self.total)
+
+
+ProgressCallback = Callable[[ScanProgress], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,10 +181,15 @@ class ScanLibrary:
         records: list[FolderRecord] = []
         probed_folders = 0
         reused_folders = 0
+        # Counted before the walk, because the walk knows the total only once
+        # it has finished, by which time the number is of no use to anybody.
+        total = self._walker.count(root)
+        done = 0
 
         for listing in self._walker.walk(root):
+            done += 1
             if progress is not None:
-                progress(listing.folder)
+                progress(ScanProgress(listing.folder, done, total))
             seen.update(item.path for item in listing.audio)
             reusable = cached.get(listing.folder)
             if reusable is not None and self._unchanged(listing, known, reusable):

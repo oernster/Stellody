@@ -42,11 +42,17 @@ class FakeWalker:
     def __init__(self, listings: tuple[FolderListing, ...]) -> None:
         self.listings = listings
         self.roots: list[str] = []
+        self.counted: list[str] = []
 
     def walk(self, root: str) -> Iterator[FolderListing]:
         """Record the root asked for, then replay the fixed listings."""
         self.roots.append(root)
         yield from self.listings
+
+    def count(self, root: str) -> int:
+        """Record the root asked about, then say how many are coming."""
+        self.counted.append(root)
+        return len(self.listings)
 
 
 class FakeProbe:

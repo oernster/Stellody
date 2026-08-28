@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
-from stellody.application.scan import ScanLibrary, ScanReport
+from stellody.application.scan import ScanLibrary, ScanProgress, ScanReport
 
 
 class ScanWorker(QObject):
     """Performs one scan and reports what happened."""
 
-    progressed = Signal(str)
+    progressed = Signal(object)
     completed = Signal(object)
     failed = Signal(str)
 
@@ -39,7 +39,7 @@ class ScanWorker(QObject):
 class ScanRunner(QObject):
     """Owns the worker thread and keeps its lifetime tidy."""
 
-    progressed = Signal(str)
+    progressed = Signal(object)
     completed = Signal(object)
     failed = Signal(str)
     stopped = Signal()
@@ -77,10 +77,10 @@ class ScanRunner(QObject):
             thread.quit()
             thread.wait(milliseconds)
 
-    @Slot(str)
-    def _on_progress(self, folder: str) -> None:
+    @Slot(object)
+    def _on_progress(self, progress: ScanProgress) -> None:
         """Relay progress on the interface thread."""
-        self.progressed.emit(folder)
+        self.progressed.emit(progress)
 
     @Slot(object)
     def _on_completed(self, report: ScanReport) -> None:
