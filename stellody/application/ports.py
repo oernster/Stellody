@@ -12,6 +12,12 @@ from typing import Protocol
 
 from stellody.domain.health import LibraryIssue
 from stellody.domain.ordering import TrackCandidate
+from stellody.domain.playback import (
+    OutputReport,
+    OutputRequest,
+    PlaybackPosition,
+    PlaybackState,
+)
 from stellody.domain.track import TrackSource
 
 
@@ -175,4 +181,54 @@ class LibraryStore(Protocol):
 
     def mark_absent(self, seen_paths: frozenset[str]) -> int:
         """Flag files no longer on disk. Never deletes their metadata."""
+        ...
+
+
+class PlaybackPort(Protocol):
+    """Turns a track source into sound. The only thing that touches a device.
+
+    Every method is safe to call in any state, so the application never has to
+    guard a transport command with a state check.
+    """
+
+    @property
+    def state(self) -> PlaybackState:
+        """Where the transport is right now."""
+        ...
+
+    def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
+        """Open `source` on a device and report what was actually opened.
+
+        Stops whatever was playing first. Raises when the source cannot be
+        decoded at all; a device refusing the requested mode is a fallback
+        recorded in the report, not an error.
+        """
+        ...
+
+    def play(self) -> None:
+        """Start or resume. Does nothing when no source is loaded."""
+        ...
+
+    def pause(self) -> None:
+        """Hold position without releasing the device."""
+        ...
+
+    def stop(self) -> None:
+        """End playback and release the device."""
+        ...
+
+    def seek(self, frame: int) -> None:
+        """Move to a frame offset within the loaded source, clamped to it."""
+        ...
+
+    def position(self) -> PlaybackPosition | None:
+        """How far in the transport has reached; None when nothing is loaded."""
+        ...
+
+    def set_volume(self, level: float) -> None:
+        """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
+        ...
+
+    def close(self) -> None:
+        """Release every resource. The port is unusable afterwards."""
         ...
