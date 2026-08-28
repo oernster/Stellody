@@ -181,9 +181,15 @@ class SetupWindow(QWidget):
             row.addWidget(mark, alignment=Qt.AlignmentFlag.AlignVCenter)
         who = QVBoxLayout()
         who.setSpacing(0)
-        who.addWidget(screens.label(self, f"{actions.APP_NAME} Setup", "HeaderTitle"))
+        title = screens.label(self, f"{actions.APP_NAME} Setup", "HeaderTitle")
+        # The product name never breaks across two lines, whatever else shares
+        # the header row with it.
+        title.setWordWrap(False)
+        who.addWidget(title)
         who.addWidget(screens.label(self, APP_TAGLINE, "HeaderSub"))
         row.addLayout(who, 1)
+        self._licence.clicked.connect(self._show_licence)
+        row.addWidget(self._licence, alignment=Qt.AlignmentFlag.AlignVCenter)
         self._theme_button.clicked.connect(self._toggle_theme)
         row.addWidget(self._theme_button, alignment=Qt.AlignmentFlag.AlignVCenter)
         return row
@@ -193,8 +199,6 @@ class SetupWindow(QWidget):
         row = QHBoxLayout()
         row.setSpacing(theme.FOOTER_GAP_PX)
         row.addStretch()
-        self._licence.clicked.connect(self._show_licence)
-        row.addWidget(self._licence)
         self._uninstall.clicked.connect(self._remove)
         self._uninstall.setVisible(bool(self.installed) and not self.uninstalling)
         row.addWidget(self._uninstall)

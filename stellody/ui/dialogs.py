@@ -8,6 +8,7 @@ import pathlib
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -19,12 +20,18 @@ from PySide6.QtWidgets import (
 
 from stellody.shared import resources
 from stellody.shared.version import APP_AUTHOR, APP_NAME, APP_TAGLINE, __version__
+from stellody.ui.auto_scroller import AutoScroller
 
 ABOUT_ICON_PX = 96
 ABOUT_MIN_WIDTH_PX = 560
 ABOUT_BODY_MIN_HEIGHT_PX = 330
 LICENCE_HEIGHT_PX = 520
-LICENCE_MAX_WIDTH_PX = 900
+# A licence arrives hard wrapped, so the dialog is fitted to the width its
+# own wrapping asks for. Measured: the LGPL text wants 1009px at the setup
+# program's monospace size, so the previous 900 cap cut 147px off the right
+# of every line. The cap guards a pathological line rather than a real
+# licence; the screen is the harder limit of the two.
+LICENCE_MAX_WIDTH_PX = 1400
 
 LICENCE_FALLBACK = (
     "The licence text could not be located beside the application. "
@@ -99,16 +106,30 @@ class LicenceDialog(NeutralDialog):
         self._body.setPlainText(_licence_text(path))
         layout.addWidget(self._body)
         layout.addLayout(close_row(self))
-        self.resize(self._fitted_width(), LICENCE_HEIGHT_PX)
+        natural = self._natural_width()
+        allowed = min(LICENCE_MAX_WIDTH_PX, _available_width(self))
+        if natural > allowed:
+            # The display cannot take the licence's own wrapping, so wrap it
+            # here instead of letting every line run off the right edge.
+            self._body.setLineWrapMode(QTextBrowser.LineWrapMode.WidgetWidth)
+        self.resize(min(natural, allowed), LICENCE_HEIGHT_PX)
+        self.scroller = AutoScroller(self._body)
 
-    def _fitted_width(self) -> int:
-        """Wide enough for the licence's own hard wrapping, up to a cap."""
+    def _natural_width(self) -> int:
+        """The width the licence's own hard wrapping asks for, plus the chrome."""
         document = math.ceil(self._body.document().idealWidth())
         scrollbar = self._body.verticalScrollBar().sizeHint().width()
         frame = 2 * self._body.frameWidth()
         margins = self.layout().contentsMargins()
-        chrome = scrollbar + frame + margins.left() + margins.right()
-        return min(document + chrome, LICENCE_MAX_WIDTH_PX)
+        return document + scrollbar + frame + margins.left() + margins.right()
+
+
+def _available_width(dialog: QDialog) -> int:
+    """How wide the display will actually allow, so nothing opens off screen."""
+    screen = dialog.screen() or QApplication.primaryScreen()
+    if screen is None:
+        return LICENCE_MAX_WIDTH_PX
+    return screen.availableGeometry().width()
 
 
 def _licence_text(path: pathlib.Path | None) -> str:
@@ -165,6 +186,7 @@ class AboutDialog(NeutralDialog):
         body.setHtml(about_html())
         layout.addWidget(body)
         layout.addLayout(close_row(self))
+        self.scroller = AutoScroller(body)
 
 
 def _icon_label(parent: QWidget) -> QLabel | None:
