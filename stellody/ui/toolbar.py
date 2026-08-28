@@ -20,8 +20,8 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 from stellody.shared import resources
 from stellody.ui.theme import Mode
 
-ICON_PX = 22
-BUTTON_PX = 34
+ICON_PX = 50
+BUTTON_PX = 76
 TRAY_MARGIN_PX = 6
 TRAY_GAP_PX = 6
 
