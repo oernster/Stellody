@@ -75,3 +75,30 @@ def test_the_licence_reads_itself(
     dialog = LicenceDialog("Licence", licence)
     assert dialog.scroller.timer.isActive()
     dialog.close()
+
+
+def test_the_licence_is_measured_in_the_font_it_will_be_drawn_in(
+    application: QApplication,
+    licence: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The regression: a fresh widget carries the fallback font until polish.
+
+    Sizing the dialog before the stylesheet reaches the body measured a
+    proportional face and drew a monospace one, so the right of every line fell
+    off the moment it was shown.
+    """
+    monkeypatch.setattr(dialogs, "_available_width", lambda _dialog: WIDE_SCREEN_PX)
+    previous = application.styleSheet()
+    application.setStyleSheet(
+        "QTextBrowser { font-family: 'Consolas', monospace; font-size: 20px; }"
+    )
+    try:
+        dialog = LicenceDialog("Licence", licence)
+        assert dialog._body.font().family() == "Consolas"
+        dialog.show()
+        application.processEvents()
+        assert dialog._body.horizontalScrollBar().maximum() == 0
+        dialog.close()
+    finally:
+        application.setStyleSheet(previous)

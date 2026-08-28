@@ -102,6 +102,12 @@ class LicenceDialog(NeutralDialog):
         self.setWindowTitle(title)
         layout = QVBoxLayout(self)
         self._body = QTextBrowser(self)
+        # Measured 2026-08-28: a fresh widget carries the fallback proportional
+        # font until the style is applied to it; the stylesheet only reaches it
+        # on polish. Sizing the dialog before that measures the wrong font
+        # entirely, so the licence opened 77px too narrow and lost the right of
+        # every line the moment polish switched it to the monospace face.
+        self._body.ensurePolished()
         self._body.setLineWrapMode(QTextBrowser.LineWrapMode.NoWrap)
         self._body.setPlainText(_licence_text(path))
         layout.addWidget(self._body)
