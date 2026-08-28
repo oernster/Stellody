@@ -1,0 +1,1 @@
+"""The Stellody setup program."""

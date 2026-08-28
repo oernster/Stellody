@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Stellody build output
+dist-pyinstaller/
+dist-installer/
+dist-installer.build/
+installer/payload/
+*.spec

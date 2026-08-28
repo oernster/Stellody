@@ -7,7 +7,15 @@ import sys
 
 from conftest import REPO_ROOT
 
-TARGETS = ("stellody", "tests")
+TARGETS = (
+    "stellody",
+    "installer",
+    "tests",
+    "main.py",
+    "buildexe.py",
+    "buildinstaller.py",
+    "generate_icons.py",
+)
 
 
 def _run(*command: str) -> subprocess.CompletedProcess[str]:

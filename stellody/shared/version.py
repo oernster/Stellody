@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pathlib
+import sys
 
 APP_NAME = "Stellody"
 APP_TAGLINE = "A calm, local-first FLAC music player."
@@ -16,7 +17,12 @@ VERSION_FILE = "VERSION"
 def _search_roots() -> tuple[pathlib.Path, ...]:
     """Places the VERSION file may sit, in development and once packaged."""
     here = pathlib.Path(__file__).resolve()
-    return (here.parents[2], here.parents[1], here.parent)
+    roots = [here.parents[2], here.parents[1], here.parent]
+    bundled = getattr(sys, "_MEIPASS", None)
+    if bundled:
+        roots.append(pathlib.Path(bundled))
+    roots.append(pathlib.Path(sys.argv[0]).resolve().parent)
+    return tuple(roots)
 
 
 def read_version() -> str:

@@ -33,10 +33,19 @@ BUILD_SCRIPTS = frozenset(
 
 
 def _measured() -> list[pathlib.Path]:
-    """Every source and test file the cap applies to."""
+    """Every source, installer and test file the cap applies to.
+
+    The setup program's interface is held to the cap like any other code. The
+    repo-root delivery scripts are not: they are linear recipes read top to
+    bottom, where splitting a sequence of flags across modules costs more than
+    it buys.
+    """
     tests = sorted((REPO_ROOT / "tests").rglob("*.py"))
+    installer = sorted((REPO_ROOT / "installer").rglob("*.py"))
     return [
-        path for path in [*package_modules(), *tests] if path.name not in BUILD_SCRIPTS
+        path
+        for path in [*package_modules(), *installer, *tests]
+        if path.name not in BUILD_SCRIPTS
     ]
 
 
