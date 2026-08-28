@@ -176,3 +176,50 @@ def test_an_older_setup_over_a_newer_install_says_so() -> None:
 
 def test_removing_promises_the_music_is_untouched() -> None:
     assert "never" in wording.lead("0.2.0", "0.2.0", True)
+
+
+def test_powershell_is_given_no_console_window_of_its_own(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A console child of a windowless build gets a black box, unless told not to."""
+    captured: dict[str, object] = {}
+
+    class Result:
+        returncode = 0
+
+    def fake_run(command, **kwargs):
+        captured.update(kwargs)
+        return Result()
+
+    monkeypatch.setattr(actions.subprocess, "run", fake_run)
+    assert actions._run_powershell("$x = 1") is True
+    assert actions.NO_WINDOW != 0, "the flag must be real on Windows"
+    assert captured["creationflags"] == actions.NO_WINDOW
+
+
+def test_the_progress_ladder_is_weighted_by_where_the_time_goes(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each shortcut is half the install's running time, so it owns the bar."""
+    archive = _archive(tmp_path / "payload.zip", {"Stellody.exe": "binary"})
+    reported: list[tuple[int, str]] = []
+    monkeypatch.setattr(actions, "setup_executable", lambda: archive)
+    monkeypatch.setattr(actions, "create_shortcut", lambda *args: True)
+    monkeypatch.setattr(actions, "register", lambda *args: None)
+    monkeypatch.setattr(actions, "set_sign_in_entry", lambda *args: None)
+    monkeypatch.setattr(actions, "desktop_dir", lambda: tmp_path / "desktop")
+    monkeypatch.setattr(actions, "start_menu_dir", lambda: tmp_path / "menu")
+    plan = actions.InstallPlan(target=tmp_path / "app", version="0.1.0")
+
+    actions.install(plan, archive, lambda pct, msg: reported.append((pct, msg)))
+
+    percentages = [percent for percent, _ in reported]
+    assert percentages == sorted(percentages), "the bar must never travel backwards"
+    assert percentages[-1] == actions.PCT_DONE
+    # Everything before the first shortcut is a twentieth of the running time,
+    # so it must not consume more than a small share of the bar.
+    assert actions.PCT_REGISTRY <= 10
+    shortcut_share = actions.PCT_START_MENU - actions.PCT_REGISTRY
+    assert (
+        shortcut_share >= 50
+    ), "the shortcuts own most of the time, so most of the bar"
