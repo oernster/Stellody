@@ -1,0 +1,81 @@
+"""Library health: what Stellody had to work around, reported not repaired.
+
+Stellody never writes to a music library, so a damaged tag is described rather
+than corrected. The reference library carries 21 albums whose tags collide,
+left behind by another player that did write to the files.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+
+
+class IssueKind(StrEnum):
+    """The kinds of defect a scan can notice in a library."""
+
+    DUPLICATE_TRACK_NUMBER = "duplicate-track-number"
+    MISSING_TRACK_NUMBER = "missing-track-number"
+    MISSING_TITLE = "missing-title"
+    MISSING_ALBUM_ARTIST = "missing-album-artist"
+    NO_ARTWORK = "no-artwork"
+    UNREADABLE_FILE = "unreadable-file"
+
+
+SEVERITY_ORDER: dict[IssueKind, int] = {
+    IssueKind.DUPLICATE_TRACK_NUMBER: 0,
+    IssueKind.MISSING_TRACK_NUMBER: 1,
+    IssueKind.MISSING_TITLE: 2,
+    IssueKind.MISSING_ALBUM_ARTIST: 3,
+    IssueKind.UNREADABLE_FILE: 4,
+    IssueKind.NO_ARTWORK: 5,
+}
+
+_SUMMARIES: dict[IssueKind, str] = {
+    IssueKind.DUPLICATE_TRACK_NUMBER: (
+        "Several files claim the same disc and track number. "
+        "Ordering fell back to the file names."
+    ),
+    IssueKind.MISSING_TRACK_NUMBER: (
+        "No track number in the tags. Ordering came from the file name."
+    ),
+    IssueKind.MISSING_TITLE: ("No title in the tags. The file name was used instead."),
+    IssueKind.MISSING_ALBUM_ARTIST: (
+        "No album artist in the tags. The track artist was used instead."
+    ),
+    IssueKind.NO_ARTWORK: "No cover art was found next to or inside the files.",
+    IssueKind.UNREADABLE_FILE: "The file could not be read as FLAC.",
+}
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryIssue:
+    """One thing worth telling the user about their files."""
+
+    kind: IssueKind
+    album: str
+    detail: str = ""
+    paths: tuple[str, ...] = ()
+
+    @property
+    def summary(self) -> str:
+        """A plain sentence explaining what Stellody did about this."""
+        return _SUMMARIES[self.kind]
+
+    @property
+    def sort_key(self) -> tuple[int, str, str]:
+        """Most serious first, then alphabetically by album."""
+        return (SEVERITY_ORDER[self.kind], self.album.casefold(), self.detail)
+
+
+def sorted_issues(issues: tuple[LibraryIssue, ...]) -> tuple[LibraryIssue, ...]:
+    """Order issues for display, most serious first."""
+    return tuple(sorted(issues, key=lambda issue: issue.sort_key))
+
+
+def issue_counts(issues: tuple[LibraryIssue, ...]) -> dict[IssueKind, int]:
+    """How many of each kind of issue a library carries."""
+    counts: dict[IssueKind, int] = {}
+    for issue in issues:
+        counts[issue.kind] = counts.get(issue.kind, 0) + 1
+    return counts
