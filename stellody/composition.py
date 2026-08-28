@@ -11,7 +11,7 @@ import sys
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
-from stellody.application.scan import ScanLibrary
+from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.infrastructure.paths import database_path
 from stellody.infrastructure.probe import FlacProbe
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -26,7 +26,7 @@ from stellody.ui.main_window import MainWindow
 def build_window(store: SqliteLibraryStore) -> MainWindow:
     """Assemble the window over a store, with real adapters behind every port."""
     scanner = ScanLibrary(FolderWalker(), FlacProbe(), SidecarTextReader(), store)
-    return MainWindow(scanner=scanner, settings=store)
+    return MainWindow(scanner=scanner, loader=LoadLibrary(store), settings=store)
 
 
 def configure(application: QApplication) -> None:
@@ -52,8 +52,10 @@ def main(argv: list[str] | None = None) -> int:
     # else the user would be left with nothing on screen at all.
     if not (starts_hidden(arguments) and window.tray_active):
         window.show()
-    if window.library_root:
-        window.start_scan()
+    # Launch reads the store and nothing else. Scanning on startup reached for
+    # the music folder every time the application opened, which on a large
+    # library is felt; nobody asked for it by starting the application.
+    window.load_remembered()
     code = application.exec()
     store.close()
     return code

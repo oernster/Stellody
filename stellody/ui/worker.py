@@ -12,9 +12,19 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 from stellody.application.scan import ScanLibrary, ScanProgress, ScanReport
 
+# Long enough for the folder being read when the cancel arrives, short enough
+# that a scan wedged on an unresponsive drive cannot hold the quit for ever.
+WAIT_MS = 5000
+
 
 class ScanWorker(QObject):
-    """Performs one scan and reports what happened."""
+    """Performs one scan and reports what happened.
+
+    The cancel flag is a plain attribute read by the scanning thread and
+    written by the interface thread. Nothing else touches it, the write is a
+    single store of True and a stale read costs one more folder, so no lock is
+    needed for it to do its job.
+    """
 
     progressed = Signal(object)
     completed = Signal(object)
@@ -24,12 +34,21 @@ class ScanWorker(QObject):
         super().__init__()
         self._scanner = scanner
         self._root = root
+        self._cancelled = False
+
+    def cancel(self) -> None:
+        """Ask the scan to stop at the next folder boundary."""
+        self._cancelled = True
 
     @Slot()
     def run(self) -> None:
         """Scan the root, emitting progress and then the report."""
         try:
-            report = self._scanner.run(self._root, progress=self.progressed.emit)
+            report = self._scanner.run(
+                self._root,
+                progress=self.progressed.emit,
+                cancelled=lambda: self._cancelled,
+            )
         except OSError as error:
             self.failed.emit(str(error))
             return
@@ -70,10 +89,23 @@ class ScanRunner(QObject):
         thread.start()
         return True
 
-    def wait(self, milliseconds: int = 30000) -> None:
-        """Block until the running scan finishes. For shutdown and for tests."""
+    def cancel(self) -> None:
+        """Ask a running scan to give up. Harmless when none is running."""
+        worker = self._worker
+        if worker is not None:
+            worker.cancel()
+
+    def wait(self, milliseconds: int = WAIT_MS) -> None:
+        """Block until the running scan finishes. For shutdown and for tests.
+
+        Qt cannot interrupt a slot that is already running, so quitting the
+        thread does nothing at all while a scan is in flight: it is the cancel
+        that ends it. Waiting without cancelling first froze the window for
+        the whole of the wait, which is what a mid-scan quit used to do.
+        """
         thread = self._thread
         if thread is not None:
+            self.cancel()
             thread.quit()
             thread.wait(milliseconds)
 

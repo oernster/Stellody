@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from stellody.application import tags
 from stellody.application.ports import (
     AudioProperties,
     FolderListing,
@@ -16,11 +15,15 @@ from stellody.application.ports import (
     SourceRecord,
     TextReader,
 )
+from stellody.application.records import (
+    _grouping_entries,
+    _record_from_file,
+    _records_from_cue,
+)
 from stellody.domain.album import Album
 from stellody.domain.cue import CueParseError, CueSheet, parse_cue
-from stellody.domain.grouping import SourceEntry, assemble_albums
+from stellody.domain.grouping import assemble_albums
 from stellody.domain.health import IssueKind, LibraryIssue
-from stellody.domain.track import MILLISECONDS_PER_SECOND
 
 SINGLE_FILE_ALBUM = 1
 PERCENT = 100
@@ -49,6 +52,28 @@ class ScanProgress:
 
 
 ProgressCallback = Callable[[ScanProgress], None]
+# Asked between folders, so a scan can be given up without waiting for it. A
+# scan of a large library takes long enough that quitting during one is an
+# ordinary thing to do; Qt cannot interrupt a running one from outside.
+CancelledCheck = Callable[[], bool]
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryView:
+    """A library as it stands, with nothing said about how it got here.
+
+    A scan reports counts of what it read; a load has read nothing, so it
+    reports none, rather than zeroes that would read as a scan finding
+    nothing.
+    """
+
+    albums: tuple[Album, ...] = ()
+    issues: tuple[LibraryIssue, ...] = ()
+
+    @property
+    def track_count(self) -> int:
+        """How many tracks the assembled library holds."""
+        return sum(album.track_count for album in self.albums)
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +87,7 @@ class ScanReport:
     files_probed: int = 0
     files_unreadable: int = 0
     files_absent: int = 0
+    cancelled: bool = False
 
     @property
     def track_count(self) -> int:
@@ -69,78 +95,28 @@ class ScanReport:
         return sum(album.track_count for album in self.albums)
 
 
-@dataclass(frozen=True, slots=True)
-class _FolderContext:
-    """The names a folder contributes when its tags fall short."""
+class LoadLibrary:
+    """Assembles the library the store already holds, reading no music at all.
 
-    folder_name: str
-    parent_path: str
-    parent_name: str
-
-
-def _duration_ms(frames: int, sample_rate: int) -> int:
-    """Milliseconds for a frame count at a sample rate.
-
-    The caller guarantees a positive rate: a file whose header claims none is
-    reported as unreadable rather than reaching here.
+    Starting the application is not a request to scan. On a library of any
+    size a walk is felt; it reaches for a drive that may be asleep, absent or
+    somebody else's machine over a network. What the store holds is
+    what the last scan found, which is what the user last saw; anything newer
+    arrives when they ask for it by rescanning.
     """
-    return frames * MILLISECONDS_PER_SECOND // sample_rate
 
+    def __init__(self, store: LibraryStore) -> None:
+        self._store = store
 
-def _record_from_file(
-    path: str, file_name: str, properties: AudioProperties
-) -> SourceRecord:
-    """One whole file as a single source."""
-    return SourceRecord(
-        path=path,
-        file_name=file_name,
-        duration_ms=_duration_ms(properties.frame_count, properties.sample_rate),
-        sample_rate=properties.sample_rate,
-        bit_depth=properties.bit_depth,
-        album=tags.first(properties.tags, tags.ALBUM),
-        album_artist=tags.first(properties.tags, tags.ALBUM_ARTIST),
-        artists=tags.artists(properties.tags),
-        title=tags.first(properties.tags, tags.TITLE),
-        date=tags.first(properties.tags, tags.DATE),
-        genre=tags.first(properties.tags, tags.GENRE),
-        disc=tags.number(properties.tags, tags.DISC),
-        track=tags.number(properties.tags, tags.TRACK),
-    )
-
-
-def _records_from_cue(
-    path: str,
-    file_name: str,
-    properties: AudioProperties,
-    sheet: CueSheet,
-) -> tuple[SourceRecord, ...]:
-    """A cue sheet's tracks as slices of one file."""
-    fallback = _record_from_file(path, file_name, properties)
-    records: list[SourceRecord] = []
-    for cue_track in sheet.tracks:
-        end = cue_track.end_frame
-        if end is None and properties.frame_count > cue_track.start_frame:
-            end = properties.frame_count
-        length = (end - cue_track.start_frame) if end is not None else 0
-        records.append(
-            SourceRecord(
-                path=path,
-                file_name=f"{cue_track.number:02d}. {cue_track.title}",
-                start_frame=cue_track.start_frame,
-                end_frame=end,
-                duration_ms=_duration_ms(length, properties.sample_rate),
-                sample_rate=properties.sample_rate,
-                bit_depth=properties.bit_depth,
-                album=sheet.album_title or fallback.album,
-                album_artist=sheet.album_performer or fallback.album_artist,
-                artists=cue_track.performers or fallback.artists,
-                title=cue_track.title,
-                date=sheet.date or fallback.date,
-                genre=sheet.genre or fallback.genre,
-                track=cue_track.number,
-            )
+    def run(self) -> LibraryView:
+        """The remembered library, assembled from stored records."""
+        records = tuple(self._store.load_folders())
+        albums, issues = assemble_albums(_grouping_entries(records))
+        return LibraryView(
+            albums=albums,
+            issues=tuple(issue for record in records for issue in record.issues)
+            + issues,
         )
-    return tuple(records)
 
 
 @dataclass(slots=True)
@@ -173,8 +149,19 @@ class ScanLibrary:
         self._cue_reader = cue_reader
         self._store = store
 
-    def run(self, root: str, progress: ProgressCallback | None = None) -> ScanReport:
-        """Scan a root folder and return the assembled library."""
+    def run(
+        self,
+        root: str,
+        progress: ProgressCallback | None = None,
+        cancelled: CancelledCheck | None = None,
+    ) -> ScanReport:
+        """Scan a root folder and return the assembled library.
+
+        A cancelled scan reports nothing found rather than a short library.
+        Every folder read before it stopped is already saved, so the work is
+        kept; what is NOT done is deciding which files have gone, since a scan
+        that stopped early has no idea what it did not reach.
+        """
         known = dict(self._store.file_signatures())
         cached = {record.folder: record for record in self._store.load_folders()}
         seen: set[str] = set()
@@ -187,6 +174,8 @@ class ScanLibrary:
         done = 0
 
         for listing in self._walker.walk(root):
+            if cancelled is not None and cancelled():
+                return ScanReport(cancelled=True)
             done += 1
             if progress is not None:
                 progress(ScanProgress(listing.folder, done, total))
@@ -202,7 +191,7 @@ class ScanLibrary:
             probed_folders += 1
 
         absent = self._store.mark_absent(frozenset(seen))
-        albums, issues = assemble_albums(self._entries(records))
+        albums, issues = assemble_albums(_grouping_entries(records))
         return ScanReport(
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)
@@ -230,27 +219,6 @@ class ScanLibrary:
         if set(current) != set(cached.signatures):
             return False
         return all(known.get(path) == signature for path, signature in current.items())
-
-    @staticmethod
-    def _entries(records: tuple[FolderRecord, ...] | list[FolderRecord]):
-        """Every stored source as a grouping entry, with its folder context."""
-        entries: list[SourceEntry] = []
-        for record in records:
-            context = _split_folder(record.folder)
-            for source in record.sources:
-                entries.append(
-                    SourceEntry(
-                        folder_name=context.folder_name,
-                        parent_path=context.parent_path,
-                        parent_name=context.parent_name,
-                        candidate=source.candidate,
-                        album=source.album,
-                        album_artist=source.album_artist,
-                        date=source.date,
-                        genre=source.genre,
-                    )
-                )
-        return tuple(entries)
 
     def _probe_folder(self, listing: FolderListing) -> FolderRecord:
         """Read every audio file in one folder, cue sheet included."""
@@ -314,19 +282,3 @@ class ScanLibrary:
             return parse_cue(text, properties.sample_rate)
         except CueParseError:
             return None
-
-
-def _split_folder(folder: str) -> _FolderContext:
-    """Split a folder path into its own name and its parent's name.
-
-    Path work rather than filesystem work: no directory is opened, so this
-    stays inside the application layer.
-    """
-    parts = [part for part in folder.replace("\\", "/").split("/") if part]
-    name = parts[-1] if parts else folder
-    parent = parts[-2] if len(parts) > 1 else ""
-    return _FolderContext(
-        folder_name=name,
-        parent_path="/".join(parts[:-1]),
-        parent_name=parent,
-    )

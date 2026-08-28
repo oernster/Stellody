@@ -15,14 +15,26 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.application.ports import SettingsStore
-from stellody.application.scan import ScanLibrary, ScanProgress, ScanReport
+from stellody.application.scan import (
+    LoadLibrary,
+    ScanLibrary,
+)
 from stellody.domain.health import LibraryIssue
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
-from stellody.ui.health import HealthDialog, has_serious_issues
+from stellody.ui.health import HealthDialog
 from stellody.ui.models import AlbumTreeModel
+from stellody.ui.scanning import Scanning
+from stellody.ui.settings_keys import (
+    FALSE,
+    SETTING_CLOSE,
+    SETTING_DESCENDING,
+    SETTING_ROOT,
+    SETTING_THEME,
+    TRUE,
+)
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.toolbar import LibraryTray
 from stellody.ui.window_parts import (
@@ -35,31 +47,25 @@ from stellody.ui.window_parts import (
 )
 from stellody.ui.worker import ScanRunner
 
-SETTING_THEME = "theme"
-SETTING_ROOT = "library_root"
-SETTING_CLOSE = "close_action"
-SETTING_DESCENDING = "sort_descending"
-
 WINDOW_WIDTH_PX = 1080
 WINDOW_HEIGHT_PX = 720
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
-STATUS_TIMEOUT_MS = 6000
-TRUE = "1"
-FALSE = "0"
 
 
-class MainWindow(QMainWindow):
+class MainWindow(Scanning, QMainWindow):
     """Stellody's window: a library, a menu bar and a status line."""
 
     def __init__(
         self,
         scanner: ScanLibrary,
+        loader: LoadLibrary,
         settings: SettingsStore,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._scanner = scanner
+        self._loader = loader
         self._settings = settings
         self._issues: tuple[LibraryIssue, ...] = ()
         self._quitting = False
@@ -115,9 +121,14 @@ class MainWindow(QMainWindow):
         """The music folder Stellody was last pointed at."""
         return self._settings.get_setting(SETTING_ROOT, "")
 
-    def _flag(self, key: str) -> bool:
-        """A stored boolean setting."""
-        return self._settings.get_setting(key, FALSE) == TRUE
+    def _flag(self, key: str, default: str = FALSE) -> bool:
+        """A stored boolean setting.
+
+        The default matters for a setting written by a version that did not
+        have it: a library scanned before the finished marker existed is a
+        finished one, not an interrupted one.
+        """
+        return self._settings.get_setting(key, default) == TRUE
 
     def showEvent(self, event) -> None:
         """Start with nothing highlighted, so no menu drops open on launch."""
@@ -169,64 +180,6 @@ class MainWindow(QMainWindow):
             return
         self._settings.set_setting(SETTING_ROOT, chosen)
         self.start_scan()
-
-    @Slot()
-    def rescan(self) -> None:
-        """Scan the remembered folder again."""
-        self.start_scan()
-
-    def start_scan(self) -> bool:
-        """Begin scanning the remembered folder; False when it cannot start."""
-        root = self.library_root
-        if not root:
-            self.statusBar().showMessage(
-                "Choose a music folder to begin.", STATUS_TIMEOUT_MS
-            )
-            return False
-        if not self._runner.start(self._scanner, root):
-            return False
-        self._set_rescan_enabled(False)
-        # Indeterminate again for the counting pass, which has no number yet.
-        self._progress.setRange(0, 0)
-        self._progress.setVisible(True)
-        self.statusBar().showMessage(f"Scanning {root}")
-        return True
-
-    @Slot(object)
-    def _on_progress(self, progress: ScanProgress) -> None:
-        """Say how far through the scan is, then which folder it is reading.
-
-        The percentage leads, because a folder path is long enough to push it
-        off the end of the line on a deep library.
-        """
-        if progress.total > 0:
-            self._progress.setRange(0, progress.total)
-            self._progress.setValue(progress.done)
-        self.statusBar().showMessage(
-            f"{progress.percent}% ({progress.done} of {progress.total}) "
-            f"{progress.folder}"
-        )
-
-    @Slot(object)
-    def _on_completed(self, report: ScanReport) -> None:
-        """Show the finished library."""
-        self._issues = report.issues
-        self._model.set_albums(report.albums)
-        self._progress.setVisible(False)
-        self._set_rescan_enabled(True)
-        self.statusBar().showMessage(_summary(report), STATUS_TIMEOUT_MS)
-
-    @Slot(str)
-    def _on_failed(self, message: str) -> None:
-        """Report a scan that could not finish."""
-        self._progress.setVisible(False)
-        self._set_rescan_enabled(True)
-        self.statusBar().showMessage(f"Scan failed: {message}")
-
-    def _set_rescan_enabled(self, enabled: bool) -> None:
-        """Rescan is offered in two places, so both follow the same state."""
-        self._rescan_action.setEnabled(enabled)
-        self._tray.rescan_button.setEnabled(enabled)
 
     @Slot()
     def toggle_theme(self) -> None:
@@ -329,20 +282,6 @@ class MainWindow(QMainWindow):
         self.showNormal()
         self.raise_()
         self.activateWindow()
-
-
-def _summary(report: ScanReport) -> str:
-    """The one-line result of a scan."""
-    parts = [
-        f"{len(report.albums)} albums",
-        f"{report.track_count} tracks",
-        f"{report.files_probed} files",
-    ]
-    if report.files_absent:
-        parts.append(f"{report.files_absent} missing")
-    if has_serious_issues(report.issues):
-        parts.append(f"{len(report.issues)} issues, see Help then Library health")
-    return "  |  ".join(parts)
 
 
 def menu_action(menu: QMenu, window: QMainWindow, label: str, slot, checkable=False):
