@@ -1,7 +1,7 @@
 """Locating the assets bundled beside the application.
 
-The same code runs from a source checkout, from a Nuitka or PyInstaller bundle
-and from a Flatpak, so the assets directory is searched for rather than assumed.
+The same code runs from a source checkout, from a compiled bundle and from a
+Flatpak, so the assets directory is searched for rather than assumed.
 """
 
 from __future__ import annotations

@@ -68,6 +68,21 @@ The suite gates at 100% branch coverage over the domain and application
 layers; it fails the build below that. It also runs black, flake8 and ruff as
 assertions, so a formatting or linting regression is a test failure.
 
+## Building
+
+```
+python buildexe.py
+python buildinstaller.py
+```
+
+The first compiles the application with Nuitka into a single file, using every
+core the machine has. The second zips that file as a payload and compiles the
+setup program around it, producing `dist-installer/StellodySetup.exe`.
+
+Everything the setup program writes is per user, so Windows never asks for
+administrator rights. Pass `--standalone` to the first script for a directory
+bundle instead, which is quicker to inspect when a build misbehaves.
+
 ## Licence
 
 Dual licensed. The model, meaning the domain, application and infrastructure

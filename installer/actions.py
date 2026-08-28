@@ -18,7 +18,8 @@ from dataclasses import dataclass
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
 PAYLOAD_ZIP = "payload.zip"
-PAYLOAD_DIR = "installer/payload"
+PAYLOAD_DIR = "payload"
+ONEFILE_ENV = "NUITKA_ONEFILE_BINARY"
 UNINSTALL_DIR = "_uninstall"
 SETUP_NAME = f"{APP_NAME}Setup.exe"
 UNINSTALL_FLAG = "--uninstall"
@@ -64,9 +65,9 @@ def start_menu_dir() -> pathlib.Path:
 
 def bundle_root() -> pathlib.Path:
     """Where this setup program's own bundled files were unpacked."""
-    bundled = getattr(sys, "_MEIPASS", None)
-    if bundled:
-        return pathlib.Path(bundled)
+    frozen = getattr(sys, "frozen", False) or "__compiled__" in globals()
+    if frozen or not __file__.endswith(".py"):
+        return pathlib.Path(sys.argv[0]).resolve().parent
     return pathlib.Path(__file__).resolve().parents[1]
 
 
@@ -82,7 +83,15 @@ def payload_zip() -> pathlib.Path | None:
 
 
 def setup_executable() -> pathlib.Path:
-    """This setup program's own path, as the user launched it."""
+    """This setup program's own path, as the user launched it.
+
+    Under a Nuitka onefile build sys.argv[0] points at the unpacked temporary
+    bootstrap rather than the file the user double-clicked, so the real path
+    comes from the environment variable Nuitka sets for exactly this reason.
+    """
+    original = os.environ.get(ONEFILE_ENV)
+    if original:
+        return pathlib.Path(original).resolve()
     return pathlib.Path(sys.argv[0]).resolve()
 
 
@@ -228,7 +237,9 @@ def install(plan: InstallPlan, archive: pathlib.Path) -> pathlib.Path:
         shutil.rmtree(plan.target, ignore_errors=True)
     extract_payload(archive, plan.target)
     executable = plan.target / EXE_NAME
-    icon = plan.target / "assets" / "stellody.ico"
+    # The icon is read out of the executable itself, which carries it in its
+    # PE resources. A onefile build ships no loose asset files to point at.
+    icon = executable
     uninstaller = plan.target / UNINSTALL_DIR / SETUP_NAME
     uninstaller.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(setup_executable(), uninstaller)

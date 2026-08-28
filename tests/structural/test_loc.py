@@ -18,6 +18,10 @@ COMFORTABLE_TARGET = 350
 
 DANGER_BAND_FLOOR = LINE_CAP - (LINE_CAP * DANGER_BAND_PERCENT // 100)
 
+# Build output written inside the source tree. Generated code is not held to
+# the cap; Nuitka writes its scons artifacts under installer/payload.
+GENERATED_DIRECTORIES = ("payload", "stage")
+
 BUILD_SCRIPTS = frozenset(
     {
         "buildexe.py",
@@ -41,7 +45,11 @@ def _measured() -> list[pathlib.Path]:
     it buys.
     """
     tests = sorted((REPO_ROOT / "tests").rglob("*.py"))
-    installer = sorted((REPO_ROOT / "installer").rglob("*.py"))
+    installer = [
+        path
+        for path in sorted((REPO_ROOT / "installer").rglob("*.py"))
+        if not any(part in GENERATED_DIRECTORIES for part in path.parts)
+    ]
     return [
         path
         for path in [*package_modules(), *installer, *tests]

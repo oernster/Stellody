@@ -1,6 +1,6 @@
-"""Build the Stellody setup program with PyInstaller.
+"""Build the Stellody setup program with Nuitka.
 
-Stages the application bundle as a zipped payload, then wraps the installer UI
+Stages the built application as a zipped payload, then compiles the installer
 into one file at dist-installer/StellodySetup.exe.
 
 Run:  python buildinstaller.py
@@ -9,6 +9,7 @@ Run:  python buildinstaller.py
 from __future__ import annotations
 
 import importlib.util
+import itertools
 import os
 import pathlib
 import shutil
@@ -18,21 +19,21 @@ import time
 
 ROOT = pathlib.Path(__file__).resolve().parent
 
-APP_NAME = "Stellody"
-SETUP_NAME = f"{APP_NAME}Setup"
+APP_DISPLAY_NAME = "Stellody"
+APP_DESCRIPTION = "A calm, local-first FLAC music player."
+APP_AUTHOR = "Oliver Ernster"
+SETUP_NAME = f"{APP_DISPLAY_NAME}Setup"
 INSTALLER_ENTRY = ROOT / "installer" / "app.py"
-ICON = ROOT / "assets" / "stellody.ico"
+ICON_FILE = ROOT / "assets" / "stellody.ico"
 VERSION_FILE = ROOT / "VERSION"
 DEV_VERSION = "0.0.0-dev"
 
-PAYLOAD_DIR = ROOT / "installer" / "payload"
-ARCHIVE = PAYLOAD_DIR / "payload.zip"
-MANIFEST = PAYLOAD_DIR / "manifest.json"
+STAGE_DIR = ROOT / "installer" / "stage"
+ARCHIVE = STAGE_DIR / "payload.zip"
+MANIFEST = STAGE_DIR / "manifest.json"
 
 DIST_DIR = ROOT / "dist-installer"
 TEMP_DIST_DIR = ROOT / "dist-installer.build"
-WORK_DIR = ROOT / "build" / "installer"
-SPEC_FILE = ROOT / f"{SETUP_NAME}.spec"
 
 DATA_FILES: tuple[pathlib.Path, ...] = (
     VERSION_FILE,
@@ -41,16 +42,15 @@ DATA_FILES: tuple[pathlib.Path, ...] = (
     ROOT / "LICENSE-LGPL-3.0.txt",
 )
 
+PE_VERSION_PARTS = 4
+CONSOLE_MODE = "disable"
 UNLINK_RETRIES = 40
 UNLINK_DELAY_SECONDS = 0.25
+BYTES_PER_MIB = 1024 * 1024
 
 
 def require(module: str, package: str) -> None:
-    """Stop with a useful message when a build tool is not installed.
-
-    Without this the failure is a bare import error naming a module the reader
-    has to map back to a package by themselves.
-    """
+    """Stop with a useful message when a build tool is not installed."""
     if importlib.util.find_spec(module) is None:
         print(
             f"{package} is not installed. It is a build dependency:\n"
@@ -68,6 +68,22 @@ def read_version() -> str:
         return DEV_VERSION
 
 
+def pe_version(version: str) -> str:
+    """A four part numeric version, which is all Windows PE metadata accepts."""
+    parts = [
+        "".join(itertools.takewhile(str.isdigit, part)) for part in version.split(".")
+    ]
+    numbers = [part for part in parts if part][:PE_VERSION_PARTS]
+    while len(numbers) < PE_VERSION_PARTS:
+        numbers.append("0")
+    return ".".join(numbers)
+
+
+def jobs() -> int:
+    """Compile on every core the machine has."""
+    return os.cpu_count() or 1
+
+
 def stage_payload() -> bool:
     """Zip the built application, aborting when it has not been built."""
     result = subprocess.run(
@@ -75,37 +91,40 @@ def stage_payload() -> bool:
     )
     if result.returncode != 0:
         return False
-    missing = [item for item in (ARCHIVE, MANIFEST) if not item.is_file()]
+    missing = [item.name for item in (ARCHIVE, MANIFEST) if not item.is_file()]
     if missing:
-        print(f"payload staging produced nothing at {missing}", file=sys.stderr)
+        print(f"payload staging produced no {missing}", file=sys.stderr)
         return False
     return True
 
 
-def command() -> list[str]:
-    """The whole PyInstaller invocation for the setup program."""
+def command(version: str) -> list[str]:
+    """The whole Nuitka invocation for the setup program."""
+    numeric = pe_version(version)
     parts = [
         sys.executable,
         "-m",
-        "PyInstaller",
-        "--noconfirm",
-        "--clean",
+        "nuitka",
         "--onefile",
-        "--windowed",
-        f"--name={SETUP_NAME}",
-        f"--paths={ROOT}",
-        f"--distpath={TEMP_DIST_DIR}",
-        f"--workpath={WORK_DIR}",
-        f"--specpath={ROOT}",
+        "--assume-yes-for-downloads",
+        "--enable-plugin=pyside6",
+        f"--jobs={jobs()}",
+        f"--windows-console-mode={CONSOLE_MODE}",
+        f"--output-dir={TEMP_DIST_DIR}",
+        f"--output-filename={SETUP_NAME}.exe",
+        f"--company-name={APP_AUTHOR}",
+        f"--product-name={APP_DISPLAY_NAME} Setup",
+        f"--file-version={numeric}",
+        f"--product-version={numeric}",
+        f"--file-description={APP_DESCRIPTION} Installer",
+        f"--copyright=Copyright {APP_AUTHOR}",
+        f"--include-data-dir={STAGE_DIR}=payload",
     ]
-    if ICON.exists():
-        parts.append(f"--icon={ICON}")
-    parts.append(f"--add-data={ARCHIVE}{os.pathsep}installer/payload")
-    parts.append(f"--add-data={MANIFEST}{os.pathsep}installer/payload")
-    parts.append(f"--add-data={ROOT / 'assets'}{os.pathsep}assets")
+    if ICON_FILE.exists():
+        parts.append(f"--windows-icon-from-ico={ICON_FILE}")
     for item in DATA_FILES:
-        if item.exists():
-            parts.append(f"--add-data={item}{os.pathsep}.")
+        if item.is_file():
+            parts.append(f"--include-data-file={item}={item.name}")
     parts.append(str(INSTALLER_ENTRY))
     return parts
 
@@ -121,7 +140,7 @@ def move_into_place(built: pathlib.Path, final: pathlib.Path) -> bool:
     """
     final.parent.mkdir(parents=True, exist_ok=True)
     last: OSError | None = None
-    for attempt in range(UNLINK_RETRIES):
+    for _ in range(UNLINK_RETRIES):
         try:
             final.unlink(missing_ok=True)
             shutil.move(str(built), str(final))
@@ -141,28 +160,26 @@ def move_into_place(built: pathlib.Path, final: pathlib.Path) -> bool:
 
 def main() -> int:
     """Stage the payload, build the setup program and place it."""
-    require("PyInstaller", "PyInstaller")
+    require("nuitka", "Nuitka")
     version = read_version()
-    print(f"{SETUP_NAME} {version}")
+    print(f"{SETUP_NAME} {version} ({jobs()} jobs)")
     if not stage_payload():
         return 1
     shutil.rmtree(TEMP_DIST_DIR, ignore_errors=True)
-    result = subprocess.run(command(), cwd=ROOT, check=False)
+    result = subprocess.run(command(version), cwd=ROOT, check=False)
     if result.returncode != 0:
-        print("PyInstaller failed", file=sys.stderr)
+        print("Nuitka failed", file=sys.stderr)
         return result.returncode
-    SPEC_FILE.unlink(missing_ok=True)
     built = TEMP_DIST_DIR / f"{SETUP_NAME}.exe"
     if not built.is_file():
         print(f"expected {built}, which is not there", file=sys.stderr)
         return 1
     final = DIST_DIR / f"{SETUP_NAME}.exe"
     if not move_into_place(built, final):
-        print(f"could not move the setup file to {final}", file=sys.stderr)
         return 1
     shutil.rmtree(TEMP_DIST_DIR, ignore_errors=True)
     print(f"built {final}")
-    print(f"size {final.stat().st_size / (1024 * 1024):.0f} MiB")
+    print(f"size {final.stat().st_size / BYTES_PER_MIB:.0f} MiB")
     return 0
 
 
