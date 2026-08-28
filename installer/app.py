@@ -100,7 +100,6 @@ class SetupWindow(Performing, QWidget):
         self._desktop = QCheckBox(wording.DESKTOP_LABEL, self)
         self._start_menu = QCheckBox(wording.START_MENU_LABEL, self)
         self._sign_in = QCheckBox(wording.SIGN_IN_LABEL, self)
-        self._minimised = QCheckBox(wording.MINIMISED_LABEL, self)
         self._launch = QCheckBox(wording.LAUNCH_LABEL, self)
         self._forget = QCheckBox(wording.FORGET_LABEL, self)
         self._progress = QProgressBar(self)
@@ -129,18 +128,14 @@ class SetupWindow(Performing, QWidget):
         self._desktop.setChecked(True if fresh else self.here.desktop)
         self._start_menu.setChecked(True if fresh else self.here.start_menu)
         self._sign_in.setChecked(self.here.sign_in)
-        self._minimised.setChecked(self.here.minimised)
-        self._minimised.setEnabled(self._sign_in.isChecked())
         self._launch.setChecked(True)
-        self._sign_in.toggled.connect(self._minimised.setEnabled)
         if self.route is not Route.MANAGE:
             return
         # On a matching version there is nothing to install, so a box that only
         # took effect on a go-ahead would never take effect at all.
         for box in (self._desktop, self._start_menu):
             box.toggled.connect(self._apply_shortcuts)
-        for box in (self._sign_in, self._minimised):
-            box.toggled.connect(self._apply_sign_in)
+        self._sign_in.toggled.connect(self._apply_sign_in)
 
     def _apply_shortcuts(self) -> None:
         """Put the shortcuts where the boxes now say they should be."""
@@ -153,11 +148,7 @@ class SetupWindow(Performing, QWidget):
 
     def _apply_sign_in(self) -> None:
         """Record how it should start, the moment the choice is made."""
-        registry.write_sign_in_entry(
-            self.here.executable,
-            self._sign_in.isChecked(),
-            self._minimised.isChecked(),
-        )
+        registry.write_sign_in_entry(self.here.executable, self._sign_in.isChecked())
         self.log.write("sign-in entry applied")
 
     # ------------------------------------------------------------- behaviour
@@ -230,7 +221,6 @@ class SetupWindow(Performing, QWidget):
             (self._start_menu, wording.START_MENU_HINT),
             (self._desktop, ""),
             (self._sign_in, wording.SIGN_IN_HINT),
-            (self._minimised, wording.MINIMISED_HINT),
             (self._launch, ""),
         )
         location = str(self._target()) if self.route is Route.INSTALL else ""

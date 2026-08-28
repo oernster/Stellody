@@ -105,13 +105,14 @@ def test_no_payload_anywhere_reports_none(
 
 
 def test_the_sign_in_command_quotes_the_path() -> None:
-    command = registry.sign_in_command(pathlib.Path("C:/Program Files/S.exe"), False)
+    command = registry.sign_in_command(pathlib.Path("C:/Program Files/S.exe"))
     assert command.startswith('"')
-    assert command.endswith('"')
+    assert "Program Files" in command
 
 
-def test_the_sign_in_command_carries_the_tray_flag_when_minimised() -> None:
-    command = registry.sign_in_command(pathlib.Path("C:/S.exe"), True)
+def test_a_sign_in_start_is_always_a_quiet_one() -> None:
+    """The other half of that choice is an app opening over your desktop."""
+    command = registry.sign_in_command(pathlib.Path("C:/S.exe"))
     assert command.endswith(registry.HIDDEN_FLAG)
 
 
@@ -120,15 +121,8 @@ def test_the_tray_flag_is_the_one_the_application_reads() -> None:
     from stellody.shared import startup
 
     assert registry.HIDDEN_FLAG == startup.HIDDEN_FLAG
-    command = registry.sign_in_command(pathlib.Path("C:/S.exe"), True)
+    command = registry.sign_in_command(pathlib.Path("C:/S.exe"))
     assert startup.starts_hidden(command.split())
-
-
-def test_a_plain_sign_in_command_does_not_start_hidden() -> None:
-    from stellody.shared import startup
-
-    command = registry.sign_in_command(pathlib.Path("C:/S.exe"), False)
-    assert not startup.starts_hidden(command.split())
 
 
 def test_powershell_is_given_no_console_window_of_its_own(

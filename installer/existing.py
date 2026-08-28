@@ -14,7 +14,6 @@ from dataclasses import dataclass
 
 from installer import actions
 from installer.registry import read_registered, read_sign_in_command
-from stellody.shared.startup import HIDDEN_FLAG
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +25,6 @@ class Existing:
     desktop: bool
     start_menu: bool
     sign_in: bool
-    minimised: bool
 
     @property
     def installed(self) -> bool:
@@ -53,5 +51,4 @@ def look() -> Existing:
         desktop=desktop.exists(),
         start_menu=start_menu.exists(),
         sign_in=bool(command),
-        minimised=HIDDEN_FLAG in command,
     )

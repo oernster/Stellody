@@ -15,4 +15,3 @@ class InstallPlan:
     desktop_shortcut: bool = True
     start_menu_shortcut: bool = True
     start_on_sign_in: bool = False
-    start_minimised: bool = False

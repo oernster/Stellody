@@ -119,7 +119,6 @@ class Performing:
             desktop_shortcut=self._desktop.isChecked(),
             start_menu_shortcut=self._start_menu.isChecked(),
             start_on_sign_in=self._sign_in.isChecked(),
-            start_minimised=self._sign_in.isChecked() and self._minimised.isChecked(),
         )
 
     def _archive(self) -> pathlib.Path:

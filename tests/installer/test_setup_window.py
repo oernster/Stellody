@@ -16,7 +16,7 @@ import pathlib
 import pytest
 from PySide6.QtWidgets import QApplication, QLabel
 
-from installer import actions, launching, registry, running, screens
+from installer import actions, launching, registry, running, screens, wording
 from installer import app as setup
 from installer.existing import Existing
 from installer.footer import DANGER, PRIMARY
@@ -41,7 +41,6 @@ def _here(version: str = "", **flags: bool) -> Existing:
         desktop=flags.get("desktop", False),
         start_menu=flags.get("start_menu", False),
         sign_in=flags.get("sign_in", False),
-        minimised=flags.get("minimised", False),
     )
 
 
@@ -93,13 +92,13 @@ def test_the_boxes_say_what_is_already_there(
     assert not window._desktop.isChecked()
 
 
-def test_a_disabled_choice_is_never_left_looking_available(
+def test_starting_at_sign_in_asks_one_question_rather_than_two(
     application: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Where it starts is settled: quietly, in the notification area."""
     window = _window(monkeypatch, _here())
-    assert not window._minimised.isEnabled()
-    window._sign_in.setChecked(True)
-    assert window._minimised.isEnabled()
+    assert "notification area" in wording.SIGN_IN_HINT
+    assert not hasattr(window, "_minimised")
 
 
 def test_an_update_offers_a_way_out_that_is_not_the_go_ahead(
@@ -238,14 +237,14 @@ def test_a_managed_sign_in_box_writes_one_entry_either_way(
     application: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     window = _window(monkeypatch, _here(THIS_VERSION))
-    written: list[tuple[bool, bool]] = []
+    written: list[bool] = []
     monkeypatch.setattr(
         registry,
         "write_sign_in_entry",
-        lambda executable, wanted, minimised: written.append((wanted, minimised)),
+        lambda executable, wanted: written.append(wanted),
     )
     window._sign_in.setChecked(True)
-    assert written == [(True, False)]
+    assert written == [True]
 
 
 def test_a_box_on_a_route_that_installs_waits_for_the_go_ahead(

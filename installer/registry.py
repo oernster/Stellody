@@ -56,16 +56,17 @@ def register(plan: InstallPlan, uninstaller: pathlib.Path) -> None:
         )
 
 
-def sign_in_command(executable: pathlib.Path, minimised: bool) -> str:
-    """The value the sign-in entry holds: a quoted path, plus the tray flag."""
-    if minimised:
-        return f'"{executable}" {HIDDEN_FLAG}'
-    return f'"{executable}"'
+def sign_in_command(executable: pathlib.Path) -> str:
+    """The value the sign-in entry holds: a quoted path, plus the tray flag.
+
+    A sign-in start is ALWAYS a quiet one. Asking a second question about it
+    offered a choice nobody wants the other half of: an application appearing
+    over whatever Windows has just finished putting on screen.
+    """
+    return f'"{executable}" {HIDDEN_FLAG}'
 
 
-def write_sign_in_entry(
-    executable: pathlib.Path, wanted: bool, minimised: bool
-) -> None:
+def write_sign_in_entry(executable: pathlib.Path, wanted: bool) -> None:
     """Write or clear the per-user Run entry, so the two never disagree.
 
     One entry is written whichever way the choice went, because leaving a
@@ -80,13 +81,13 @@ def write_sign_in_entry(
             except OSError:
                 pass
             return
-        command = sign_in_command(executable, minimised)
+        command = sign_in_command(executable)
         winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, command)
 
 
 def set_sign_in_entry(executable: pathlib.Path, plan: InstallPlan) -> None:
     """Record how an install asked to start."""
-    write_sign_in_entry(executable, plan.start_on_sign_in, plan.start_minimised)
+    write_sign_in_entry(executable, plan.start_on_sign_in)
 
 
 def read_sign_in_command() -> str:

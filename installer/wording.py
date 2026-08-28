@@ -73,9 +73,10 @@ DESKTOP_LABEL = "Add a Desktop shortcut"
 START_MENU_LABEL = "Add a Start Menu entry"
 START_MENU_HINT = "Find it by typing its name in the Start Menu."
 SIGN_IN_LABEL = f"Start {APP_NAME} when I sign in"
-SIGN_IN_HINT = f"{APP_NAME} opens with Windows instead of waiting to be asked."
-MINIMISED_LABEL = "Start minimised to the notification area"
-MINIMISED_HINT = "It waits quietly in the notification area until you open it."
+SIGN_IN_HINT = (
+    "It waits quietly in the notification area until you open it, rather than "
+    "opening over whatever Windows has just put on screen."
+)
 
 # The library index and the window's settings share one database, so removing
 # either removes both. The box says so rather than naming the smaller of them
