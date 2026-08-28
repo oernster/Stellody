@@ -18,6 +18,7 @@ from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
 from stellody.infrastructure.walker import FolderWalker
 from stellody.shared import resources
+from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
 from stellody.ui.main_window import MainWindow
 
@@ -40,13 +41,17 @@ def configure(application: QApplication) -> None:
         application.setWindowIcon(QIcon(str(icon_path)))
 
 
-def main() -> int:
-    """Start Stellody."""
-    application = QApplication(sys.argv)
+def main(argv: list[str] | None = None) -> int:
+    """Start Stellody, in the tray when the sign-in entry asked for that."""
+    arguments = list(sys.argv if argv is None else argv)
+    application = QApplication(arguments)
     configure(application)
     store = SqliteLibraryStore(str(database_path()))
     window = build_window(store)
-    window.show()
+    # Starting hidden is only honoured while there is a tray to restore from,
+    # else the user would be left with nothing on screen at all.
+    if not (starts_hidden(arguments) and window.tray_active):
+        window.show()
     if window.library_root:
         window.start_scan()
     code = application.exec()

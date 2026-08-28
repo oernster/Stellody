@@ -16,6 +16,8 @@ import sys
 import zipfile
 from dataclasses import dataclass
 
+from stellody.shared.startup import HIDDEN_FLAG
+
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
 PAYLOAD_ZIP = "payload.zip"
@@ -27,6 +29,7 @@ SETUP_NAME = f"{APP_NAME}Setup.exe"
 UNINSTALL_FLAG = "--uninstall"
 
 REGISTRY_ROOT = r"Software\Microsoft\Windows\CurrentVersion\Uninstall"
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 PUBLISHER = "Oliver Ernster"
 BYTES_PER_KIB = 1024
 
@@ -39,6 +42,8 @@ class InstallPlan:
     version: str
     desktop_shortcut: bool = True
     start_menu_shortcut: bool = True
+    start_on_sign_in: bool = False
+    start_minimised: bool = False
 
 
 def programs_dir() -> pathlib.Path:
@@ -242,6 +247,45 @@ def register(plan: InstallPlan, uninstaller: pathlib.Path) -> None:
         )
 
 
+def sign_in_command(executable: pathlib.Path, minimised: bool) -> str:
+    """The value the sign-in entry holds: a quoted path, plus the tray flag."""
+    if minimised:
+        return f'"{executable}" {HIDDEN_FLAG}'
+    return f'"{executable}"'
+
+
+def set_sign_in_entry(executable: pathlib.Path, plan: InstallPlan) -> None:
+    """Write or clear the per-user Run entry, so the two never disagree.
+
+    One entry is written whichever way the choice went, because leaving a
+    stale entry behind is how an unticked box still launches something.
+    """
+    import winreg
+
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
+        if not plan.start_on_sign_in:
+            try:
+                winreg.DeleteValue(key, APP_NAME)
+            except OSError:
+                pass
+            return
+        command = sign_in_command(executable, plan.start_minimised)
+        winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, command)
+
+
+def clear_sign_in_entry() -> None:
+    """Remove the sign-in entry, so an uninstall leaves nothing launching."""
+    import winreg
+
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE
+        ) as key:
+            winreg.DeleteValue(key, APP_NAME)
+    except OSError:
+        pass
+
+
 def read_registered() -> dict[str, str]:
     """What the Apps list currently records, empty when nothing is installed."""
     import winreg
@@ -294,6 +338,7 @@ def install(plan: InstallPlan, archive: pathlib.Path) -> pathlib.Path:
         create_shortcut(desktop_dir() / f"{APP_NAME}.lnk", executable, icon)
     if plan.start_menu_shortcut:
         create_shortcut(start_menu_dir() / f"{APP_NAME}.lnk", executable, icon)
+    set_sign_in_entry(executable, plan)
     return executable
 
 
@@ -305,5 +350,6 @@ def uninstall(target: pathlib.Path) -> None:
     """
     for link in shortcut_paths():
         link.unlink(missing_ok=True)
+    clear_sign_in_entry()
     unregister()
     shutil.rmtree(target, ignore_errors=True)

@@ -263,6 +263,15 @@ class MainWindow(QMainWindow):
             self._settings.set_setting(SETTING_CLOSE, prompt.choice.value)
         return prompt.choice.value
 
+    @property
+    def tray_active(self) -> bool:
+        """True when there is a tray icon to restore the window from.
+
+        Starting hidden is only honest while this holds; without a tray there
+        would be nothing on screen at all.
+        """
+        return self._tray.isVisible()
+
     @Slot()
     def restore_from_tray(self) -> None:
         """Bring the window back from the system tray."""

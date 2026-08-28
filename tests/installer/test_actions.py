@@ -125,3 +125,30 @@ def test_no_payload_anywhere_reports_none(
 ) -> None:
     monkeypatch.setattr(actions, "payload_roots", lambda: (tmp_path,))
     assert actions.payload_zip() is None
+
+
+def test_the_sign_in_command_quotes_the_path() -> None:
+    command = actions.sign_in_command(pathlib.Path("C:/Program Files/S.exe"), False)
+    assert command.startswith('"')
+    assert command.endswith('"')
+
+
+def test_the_sign_in_command_carries_the_tray_flag_when_minimised() -> None:
+    command = actions.sign_in_command(pathlib.Path("C:/S.exe"), True)
+    assert command.endswith(actions.HIDDEN_FLAG)
+
+
+def test_the_tray_flag_is_the_one_the_application_reads() -> None:
+    """Both sides of the sign-in handover must spell the flag the same way."""
+    from stellody.shared import startup
+
+    assert actions.HIDDEN_FLAG == startup.HIDDEN_FLAG
+    command = actions.sign_in_command(pathlib.Path("C:/S.exe"), True)
+    assert startup.starts_hidden(command.split())
+
+
+def test_a_plain_sign_in_command_does_not_start_hidden() -> None:
+    from stellody.shared import startup
+
+    command = actions.sign_in_command(pathlib.Path("C:/S.exe"), False)
+    assert not startup.starts_hidden(command.split())
