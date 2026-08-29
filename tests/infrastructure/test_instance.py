@@ -12,7 +12,7 @@ a local socket are the same three objects on Windows, Linux and macOS.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtNetwork import QLocalServer
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 
 from stellody.infrastructure.instance import SingleInstance
@@ -56,6 +56,37 @@ def test_a_second_copy_asks_the_first_to_come_forward(
     assert second.ask() is True, "somebody answered"
     application.processEvents()
     assert asked == ["came forward"]
+
+
+def _knock(word: bytes | None) -> None:
+    """Open the channel as any process on the machine may, saying `word`."""
+    caller = QLocalSocket()
+    caller.connectToServer(CHANNEL)
+    assert caller.waitForConnected(1000), "the channel accepted the connection"
+    if word is not None:
+        caller.write(word)
+        caller.flush()
+        caller.waitForBytesWritten(1000)
+    caller.disconnectFromServer()
+
+
+@pytest.mark.parametrize("word", [None, b"", b"who is there"])
+def test_a_caller_that_never_asks_leaves_the_window_where_it_is(
+    application: QApplication, copies, word: bytes | None
+) -> None:
+    """The bug this guards: connecting alone used to be taken as the ask.
+
+    Anything enumerating named pipes opens this one. Measured before the
+    guard existed: a connection carrying nothing at all brought the window
+    up out of the notification area.
+    """
+    first, _ = copies
+    first.take()
+    asked: list[str] = []
+    assert first.listen(lambda: asked.append("came forward")) is True
+    _knock(word)
+    application.processEvents()
+    assert asked == [], "nobody asked, so nothing came forward"
 
 
 def test_asking_where_nothing_listens_says_so_rather_than_waiting(copies) -> None:

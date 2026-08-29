@@ -42,16 +42,23 @@ not going to.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
-- Runs in the system tray and can start there. Opening Stellody again while
-  it is already running brings that window back rather than starting a
+- Runs in the system tray and can start there. The setup program offers to
+  start Stellody when you sign in, which brings it up in the tray rather than
+  over whatever Windows has just finished drawing. Opening Stellody again
+  while it is already running brings that window back rather than starting a
   second copy.
+- Asks what the window's close button should mean the first time you press it,
+  offering the notification area or a full quit; the tray is the default and
+  the answer can be remembered so it stops asking.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
-Stellody is early. Cover art, a grid view, search, ratings, play counts, an
-equalizer, gapless transitions and accepting the repairs the health report
-describes are not built; `PLAN.md` lists what is still to come and what is
-deliberately excluded. Where a control for one of those is already on screen it
+Stellody is early. Nothing yet shows where a track has reached, so there is no
+elapsed time, no progress bar and no way to seek within a track; a track plays
+from its beginning to its end. Cover art, a grid view, search, ratings, play
+counts, an equalizer, gapless transitions and accepting the repairs the health
+report describes are not built; `PLAN.md` lists what is still to come and what
+is deliberately excluded. Where a control for one of those is already on screen it
 is disabled and says so.
 
 ## What it deliberately does not do

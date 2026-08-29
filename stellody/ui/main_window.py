@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QAction, QCloseEvent
@@ -67,9 +68,14 @@ class MainWindow(Scanning, Playing, QMainWindow):
         loader: LoadLibrary,
         transport: Transport,
         settings: SettingsStore,
+        leave: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        # How the application is put down. Injected so a test can watch it
+        # happen without the test run quitting itself; the running
+        # application's own quit when nobody supplies one.
+        self._leave = leave
         self._scan_session = scan_session
         self._loader = loader
         self._transport = transport
@@ -310,23 +316,35 @@ class MainWindow(Scanning, Playing, QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         """Honour the stored close behaviour, asking when none is stored."""
         if self._quitting or not self._notification.isVisible():
-            self._transport_timer.stop()
-            self._transport.stop()
-            self._runner.wait()
-            event.accept()
+            self._leave_for_good(event)
             return
         action = self._settings.get_setting(SETTING_CLOSE, CloseAction.ASK.value)
         if action == CloseAction.ASK.value:
             action = self._ask_close_action()
         if action == CloseAction.QUIT.value:
             self._quitting = True
-            self._transport_timer.stop()
-            self._transport.stop()
-            self._runner.wait()
-            event.accept()
+            self._leave_for_good(event)
             return
         event.ignore()
         self.hide()
+
+    def _leave_for_good(self, event: QCloseEvent) -> None:
+        """Put the work down, then put the application down with it.
+
+        Ending the application has to be said out loud here. Quitting when the
+        last window closes is deliberately off, since that is what lets the
+        cross leave Stellody in the notification area; the cost is that
+        nothing then ends the event loop by itself. Without this the tray's
+        Quit closed a window nobody could see and left the process running,
+        still holding the tray icon and the claim to being the copy that runs,
+        so the one control that should have stopped Stellody could not.
+        """
+        self._transport_timer.stop()
+        self._transport.stop()
+        self._runner.wait()
+        event.accept()
+        depart = self._leave or QApplication.quit
+        depart()
 
     def _ask_close_action(self) -> str:
         """Ask what closing should mean, defaulting to staying in the tray."""

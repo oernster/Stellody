@@ -43,6 +43,32 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 thin entry point that only calls into it. Dependencies are supplied by
 constructor injection; there is no container and no service locator.
 
+## The setup program
+
+`installer/` is a second PySide6 application in the same repository, compiled
+by `buildinstaller.py` around the payload `buildexe.py` produces. It is a
+client of Stellody rather than a layer of it: it reads the identity, the theme
+and the licence viewer out of `stellody.shared` and `stellody.ui`, while
+nothing under `stellody/` imports it back. The line cap applies to it exactly
+as to the package.
+
+One reading of the machine picks the route. `installer/route.py` compares the
+version the Apps list records against the one being installed and returns
+install, update, downgrade, manage or uninstall; manage is where an install
+already at this version is offered repair or reinstall. `installer/actions.py`,
+`installer/registry.py` and `installer/performing.py` own everything written,
+which is per user throughout: the files under `%LOCALAPPDATA%\Programs`, the
+uninstall record and the sign-in entry under `HKCU`, so Windows never asks for
+administrator rights. `installer/screens.py`, `installer/shell.py`,
+`installer/wording.py` and `installer/theme.py` hold the interface, one screen
+to a step. `tests/installer/` covers it.
+
+**Setup never opens the library database.** It runs at the one moment that file
+is least safe to touch, having just ended the application by force, so where a
+fresh install has to clear the switches it leaves a marker file for the
+application to act on instead. `stellody/infrastructure/switch_reset.py` is
+both halves of that handover.
+
 ## The central abstraction
 
 **A track is a slice of a file, not a file.**

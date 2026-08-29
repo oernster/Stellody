@@ -36,6 +36,10 @@ SHOW_YOURSELF = b"show"
 # Long enough to cross the channel on a busy machine, short enough that a copy
 # which cannot be reached gives up rather than hanging on somebody's click.
 REPLY_TIMEOUT_MS = 1000
+# How long a caller that has connected is given to say what it came to say.
+# Short, because the window waits on it: a caller that says nothing is far
+# more likely to be something enumerating pipes than a Stellody launching.
+SPEAK_TIMEOUT_MS = 250
 
 
 class SingleInstance:
@@ -51,6 +55,11 @@ class SingleInstance:
         self._claim = QSharedMemory(claim)
         self._channel = channel
         self._server: QLocalServer | None = None
+        # The asking socket is held rather than left to the scope that made
+        # it. Measured: destroying it discards the word it had just written,
+        # so the copy already running was asked by a caller that then took
+        # the question back.
+        self._caller: QLocalSocket | None = None
 
     def take(self) -> bool:
         """Whether this copy is the one that runs.
@@ -73,6 +82,7 @@ class SingleInstance:
         if self._server is not None:
             self._server.close()
             self._server = None
+        self._caller = None
         self._claim.detach()
 
     def listen(self, when_asked: Callable[[], None]) -> bool:
@@ -92,16 +102,26 @@ class SingleInstance:
         return True
 
     def _answer(self, server: QLocalServer, when_asked: Callable[[], None]) -> None:
-        """Take one caller's word for it and act on it."""
+        """Take one caller's word for it, once it has actually given its word.
+
+        A connection is not the ask. Any process on the machine may open a
+        named pipe; one that merely opened this one used to bring the window
+        up out of the notification area with nobody having asked for it. The
+        word was written by every caller and read by none, so the protocol
+        decided nothing. The caller now has to say it.
+        """
         connection = server.nextPendingConnection()
         if connection is None:
             return
+        spoken = _spoken_by(connection)
         connection.disconnectFromServer()
-        when_asked()
+        if spoken == SHOW_YOURSELF:
+            when_asked()
 
     def ask(self) -> bool:
         """Ask the running copy to come forward; False when none answered."""
         caller = QLocalSocket()
+        self._caller = caller
         caller.connectToServer(self._channel)
         if not caller.waitForConnected(REPLY_TIMEOUT_MS):
             return False
@@ -110,3 +130,14 @@ class SingleInstance:
         caller.waitForBytesWritten(REPLY_TIMEOUT_MS)
         caller.disconnectFromServer()
         return True
+
+
+def _spoken_by(connection: QLocalSocket) -> bytes:
+    """What a caller said; empty when it said nothing in the time allowed.
+
+    The wait is skipped where the word has already arrived, which is the
+    ordinary case: a launch writes and flushes before it lets go.
+    """
+    if not connection.bytesAvailable():
+        connection.waitForReadyRead(SPEAK_TIMEOUT_MS)
+    return bytes(connection.readAll().data())

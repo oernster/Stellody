@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 import traceback
+from collections.abc import Callable
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
@@ -50,13 +51,16 @@ def scan_session(database: str):
     return open_session
 
 
-def build_window(store: SqliteLibraryStore) -> MainWindow:
+def build_window(
+    store: SqliteLibraryStore, leave: Callable[[], None] | None = None
+) -> MainWindow:
     """Assemble the window over a store, with real adapters behind every port."""
     return MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
         transport=Transport(WasapiPlayback()),
         settings=store,
+        leave=leave,
     )
 
 
@@ -97,7 +101,7 @@ def _start(argv: list[str] | None = None) -> int:
     if switch_reset.take(data_location()):
         for key in (SETTING_SHUFFLE, SETTING_REPEAT):
             store.set_setting(key, FALSE)
-    window = build_window(store)
+    window = build_window(store, application.quit)
     # Starting hidden is only honoured while there is a tray to restore from,
     # else the user would be left with nothing on screen at all.
     if not (starts_hidden(arguments) and window.tray_active):

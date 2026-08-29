@@ -77,7 +77,11 @@ class RememberingStore:
         """Nothing to release."""
 
 
-def build(store: RememberingStore, player: RecordingPlayer) -> MainWindow:
+def build(
+    store: RememberingStore,
+    player: RecordingPlayer,
+    leave=None,
+) -> MainWindow:
     """A real window over a recording player, holding one album."""
 
     def session():
@@ -88,6 +92,7 @@ def build(store: RememberingStore, player: RecordingPlayer) -> MainWindow:
         loader=LoadLibrary(store),
         transport=Transport(player),
         settings=store,
+        leave=leave,
     )
     made._model.set_albums((album(),))
     return made
