@@ -1,153 +1,119 @@
-"""What back means, which depends on whether it was just pressed already.
+"""What back means, which depends on where the transport already is.
 
-While a track is playing, back starts that track again. Pressing it again
-straight afterwards means the track before, started at its own beginning, so
-quick repeated presses walk back through the album while a single press never
-leaves the track in hand.
+While a track is playing, back returns to its beginning and waits there.
+Pressing back again while it is already waiting at that beginning means the
+track before, waiting at its beginning too, so repeated presses walk back
+through the album at whatever pace suits.
 
-The gap is measured between the presses, on an injected monotonic clock, so
-these tests press twice without waiting. It was measured from the position the
-device reported at first; that reading depends on a device being open and
-feeding, so in a real run back stepped back every time.
+What decides between the two is a state rather than a stopwatch. Two earlier
+attempts measured time instead and both failed in the hand: judging it by the
+position the device reported meant back stepped back on every press, since a
+reported position needs a device open and feeding; judging it by the gap
+between two presses meant a deliberate second press restarted the track, so
+going back a track took five to ten presses until two landed inside the window.
 
-Under shuffle back always restarts. The queue then runs scattered rather than
-in the order the listener heard it, so the track behind the playhead is not
-the one they would be asking for.
+Under shuffle back always returns to the start of the track in hand. The queue
+then runs scattered rather than in the order the listener heard, so the track
+behind the playhead is not the one they would be asking for.
 """
 
 from __future__ import annotations
 
 from transport_support import FakePlayer, album_of, reversed_order, track
 
-from stellody.application.transport import QUICK_PRESS_MS, Transport
-from stellody.domain.track import MILLISECONDS_PER_SECOND
-
-# Either side of the window, named rather than written into each test.
-SOON_MS = QUICK_PRESS_MS - 1
-LATER_MS = QUICK_PRESS_MS + 1
-# What somebody does when they hear the track restart, take that in and press
-# again meaning it: a beat, not a gesture.
-DELIBERATE_MS = 2000
-
-
-class Hand:
-    """A clock the tests move themselves, in whole milliseconds."""
-
-    def __init__(self) -> None:
-        self.elapsed_ms = 0
-
-    def __call__(self) -> float:
-        """The reading now, in seconds, as time.monotonic reports it."""
-        return self.elapsed_ms / MILLISECONDS_PER_SECOND
-
-    def advance(self, milliseconds: int) -> None:
-        """Move the clock on."""
-        self.elapsed_ms += milliseconds
+from stellody.application.transport import Transport
 
 
 def playing_the_middle_track():
-    """A transport playing the middle track of three, with a clock to hand."""
+    """A transport playing the middle track of three."""
     tracks = (track(1), track(2), track(3))
     player = FakePlayer()
-    clock = Hand()
-    transport = Transport(player, ordering=reversed_order, now=clock)
+    transport = Transport(player, ordering=reversed_order)
     transport.play_album(album_of(*tracks), tracks[1])
     player.calls.clear()
     player.loaded.clear()
-    return transport, player, clock, tracks
+    return transport, player, tracks
 
 
-def test_back_while_a_track_plays_starts_that_track_again_and_waits() -> None:
-    """However long it has been playing, one press never leaves the track."""
-    transport, player, clock, tracks = playing_the_middle_track()
-    clock.advance(LATER_MS * 100)
+def test_back_while_a_track_plays_returns_to_its_beginning_and_waits() -> None:
+    transport, player, tracks = playing_the_middle_track()
     transport.previous()
     assert transport.current is tracks[1], "the same track, not the one before"
-    assert player.loaded == [tracks[1].source], "and opened again from its start"
+    assert player.loaded == [tracks[1].source], "opened again from its start"
     assert player.calls == ["load"], "opened, not played on"
     assert transport.playing is False, "it waits at the beginning"
 
 
-def test_stepping_back_a_track_also_waits_at_its_beginning() -> None:
-    """The same everywhere back goes, so a second press is not a race."""
-    transport, player, clock, tracks = playing_the_middle_track()
+def test_back_again_while_waiting_there_goes_to_the_track_before() -> None:
+    transport, player, tracks = playing_the_middle_track()
     transport.previous()
-    clock.advance(SOON_MS)
     transport.previous()
     assert transport.current is tracks[0]
-    assert transport.playing is False
+    assert transport.playing is False, "waiting at its beginning too"
     assert player.calls == ["load", "load"]
 
 
-def test_back_pressed_again_straight_after_steps_to_the_track_before() -> None:
-    transport, player, clock, tracks = playing_the_middle_track()
-    transport.previous()
-    assert transport.current is tracks[1], "the first press restarted it"
-    clock.advance(SOON_MS)
-    transport.previous()
-    assert transport.current is tracks[0], "the second press stepped back"
-    assert player.loaded[-1] == tracks[0].source, "started at its own beginning"
+def test_back_again_however_long_afterwards_still_goes_to_the_track_before() -> None:
+    """Measured against a real complaint: this took five to ten presses.
 
-
-def test_back_pressed_again_much_later_starts_the_track_again() -> None:
-    """A press minutes after the last one is a fresh press, not a second one."""
-    transport, _, clock, tracks = playing_the_middle_track()
+    Nothing here advances a clock, which is the point. The transport is left
+    waiting at the beginning between the two presses and there is no window
+    for the second one to miss.
+    """
+    transport, _, tracks = playing_the_middle_track()
     transport.previous()
-    clock.advance(LATER_MS)
     transport.previous()
-    assert transport.current is tracks[1]
+    assert transport.current is tracks[0]
 
 
 def test_pressing_back_repeatedly_walks_back_through_the_album() -> None:
-    """Each press restarts the clock, so a third quick press steps again."""
-    transport, _, clock, tracks = playing_the_middle_track()
+    transport, _, tracks = playing_the_middle_track()
     transport.next()
     assert transport.current is tracks[2]
+    reached = []
     for _ in range(3):
         transport.previous()
-        clock.advance(SOON_MS)
-    assert transport.current is tracks[0], "restarted, then stepped back twice"
+        reached.append(transport.current)
+    assert reached == [tracks[2], tracks[1], tracks[0]], "the start, then back twice"
 
 
-def test_back_while_shuffled_always_starts_the_track_again() -> None:
-    """However quickly it is pressed, whatever the scatter left behind."""
-    transport, _, clock, _tracks = playing_the_middle_track()
+def test_playing_on_again_makes_the_next_press_a_fresh_one() -> None:
+    """Once the music is running the transport is no longer at the start."""
+    transport, _, tracks = playing_the_middle_track()
+    transport.previous()
+    transport.toggle()
+    assert transport.playing is True
+    transport.previous()
+    assert transport.current is tracks[1], "back to the start, not to track one"
+
+
+def test_a_track_reached_by_any_other_means_is_not_waiting_at_its_start() -> None:
+    """Next opens a track and plays it on, so back after it means its start."""
+    transport, _, tracks = playing_the_middle_track()
+    transport.previous()
+    transport.next()
+    assert transport.current is tracks[2]
+    transport.previous()
+    assert transport.current is tracks[2], "its own beginning, not track two"
+
+
+def test_back_while_shuffled_always_returns_to_the_start_of_the_track() -> None:
+    """However often it is pressed, whatever the scatter left behind it."""
+    transport, _, _tracks = playing_the_middle_track()
     transport.set_shuffled(True)
     transport.next()
     landed = transport.current
-    for _ in range(3):
+    for _ in range(5):
         transport.previous()
-        clock.advance(SOON_MS)
     assert transport.current is landed, "never stepped back"
 
 
 def test_back_at_the_start_of_a_repeating_queue_wraps_to_its_end() -> None:
     """Repeat still decides what lies before the first track."""
-    transport, _, clock, tracks = playing_the_middle_track()
+    transport, _, tracks = playing_the_middle_track()
     transport.previous()
-    clock.advance(SOON_MS)
     transport.previous()
     assert transport.current is tracks[0]
     transport.set_repeating(True)
-    clock.advance(SOON_MS)
     transport.previous()
     assert transport.current is tracks[2]
-
-
-def test_a_press_a_couple_of_seconds_later_is_not_a_double_press() -> None:
-    """Measured against a real complaint: a deliberate second press stepped back.
-
-    The window was two seconds, which is long enough to hear a track restart,
-    decide, then press again. That gap has to read as a fresh press, so only a
-    genuine double press reaches the track before.
-    """
-    transport, _, clock, tracks = playing_the_middle_track()
-    transport.previous()
-    clock.advance(DELIBERATE_MS)
-    transport.previous()
-    assert transport.current is tracks[1], "still the track in hand"
-
-
-def test_the_window_is_a_gesture_rather_than_a_decision() -> None:
-    """A double press is close to a double click, not seconds apart."""
-    assert QUICK_PRESS_MS < DELIBERATE_MS

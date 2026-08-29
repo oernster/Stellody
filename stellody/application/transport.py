@@ -11,7 +11,6 @@ No Qt, no device, no filesystem. The port is the only way out.
 from __future__ import annotations
 
 import random
-import time
 from collections.abc import Callable
 
 from stellody.application.ports import PlaybackPort
@@ -23,20 +22,9 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.queue import Queue, queue_from
-from stellody.domain.track import MILLISECONDS_PER_SECOND, Track
+from stellody.domain.track import Track
 
 Ordering = Callable[[tuple[Track, ...]], tuple[Track, ...]]
-
-Clock = Callable[[], float]
-
-# How close two presses of back must fall for the second to mean the previous
-# track. It is a double press, so it is measured against the gesture rather
-# than against a decision: two seconds was tried and was long enough that a
-# second press made deliberately, a beat after hearing the track restart,
-# landed inside it and stepped back when a restart was wanted. Slightly longer
-# than the Windows double click default of 500ms, since these are two presses
-# of a small button rather than two clicks in one place.
-QUICK_PRESS_MS = 750
 
 
 def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
@@ -47,17 +35,14 @@ def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
 class Transport:
     """The transport the window drives: a queue, plus a device to play it on."""
 
-    def __init__(
-        self,
-        player: PlaybackPort,
-        ordering: Ordering = scattered,
-        now: Clock = time.monotonic,
-    ) -> None:
+    def __init__(self, player: PlaybackPort, ordering: Ordering = scattered) -> None:
         self._player = player
-        # A monotonic clock, injected so a test can press back twice without
-        # waiting. It measures the gap between two presses and nothing else.
-        self._now = now
-        self._last_back: float | None = None
+        # Whether back has already been pressed and is waiting at the start of
+        # the track. It is what tells a second press to leave the track; it is
+        # a state rather than a stopwatch, because two presses timed against
+        # each other made the user hammer the button to land two inside the
+        # window.
+        self._waiting_at_the_start = False
         self._queue = Queue()
         self._album_order: tuple[Track, ...] = ()
         self._ordering = ordering
@@ -167,6 +152,7 @@ class Transport:
         With nothing loaded there is nothing to toggle. The queue is then what
         would be played rather than what is, so pressing play starts it.
         """
+        self._waiting_at_the_start = False
         if self._player.state is PlaybackState.PLAYING:
             self._player.pause()
             return
@@ -177,6 +163,7 @@ class Transport:
 
     def stop(self) -> None:
         """Give the device back, keeping the queue where it is."""
+        self._waiting_at_the_start = False
         self._player.stop()
 
     def next(self) -> None:
@@ -191,49 +178,35 @@ class Transport:
         self._move(self._queue.next())
 
     def previous(self) -> None:
-        """Start this track again, unless back was pressed a moment ago too.
+        """Return to the start of this track; leave it if already there.
 
-        While a track is playing, back means starting that track again: that
+        While a track is playing, back means the beginning of that track: it
         is what somebody who has heard enough of it to reach for the button
-        meant by it. Pressing back again straight afterwards means the track
-        before, started at ITS beginning, so quick repeated presses walk back
-        through the album while a single press never leaves it.
+        meant by it. It lands there and waits rather than playing on, so the
+        moment to carry on belongs to the listener.
 
-        Either way it lands at a beginning and waits there rather than playing
-        on. Back is the button somebody reaches for when they want to hear
-        something again or have gone past what they wanted, so it hands them
-        the start of a track and lets them choose the moment; carrying on
-        immediately makes a second press a race against the music.
+        Pressing back again while it is already waiting at that beginning
+        means the track before, waiting at ITS beginning, so repeated presses
+        walk back through the album at whatever pace suits. What decides
+        between the two is where the transport already is, not how quickly the
+        button was pressed twice: a window timed between presses made a
+        deliberate second press restart the track instead, so going back a
+        track meant hammering the button until two landed inside it.
 
-        Under shuffle it always means starting again. The queue then runs in a
-        scattered order rather than the order the listener heard, so the track
-        lying behind the playhead is not the one they would be asking for.
-        Anything played before the shuffle was switched on is not in the run at
-        all. Offering a step back there would be answering a different question
-        from the one asked.
+        Under shuffle it always means the start of the track in hand. The
+        queue then runs in a scattered order rather than the order the listener
+        heard, so the track lying behind the playhead is not the one they would
+        be asking for. Anything played before the shuffle was switched on is
+        not in the run at all. Offering a step back there would be answering a
+        different question from the one asked.
         """
-        again = self._pressed_back_again()
-        if self._shuffled or not again:
+        if self._shuffled or not self._waiting_at_the_start:
             self._open_paused(self._queue)
             return
         if self._repeating:
             self._open_paused(self._queue.wrapped_previous())
             return
         self._open_paused(self._queue.previous())
-
-    def _pressed_back_again(self) -> bool:
-        """Whether this press of back followed hard on the heels of the last.
-
-        The gap is measured between the presses rather than from where the
-        track has reached, because a reported position is the one thing here
-        that depends on a device being open and feeding.
-        """
-        pressed = self._now()
-        earlier = self._last_back
-        self._last_back = pressed
-        if earlier is None:
-            return False
-        return (pressed - earlier) * MILLISECONDS_PER_SECOND <= QUICK_PRESS_MS
 
     def _move(self, moved: Queue) -> None:
         """Take up a new position, unless it is the position already held."""
@@ -275,6 +248,9 @@ class Transport:
         track = self._queue.current
         if track is None:
             return
+        # Anything that opens a track and plays it on has left the start
+        # behind; anything that opens one and waits is sitting on it.
+        self._waiting_at_the_start = not playing
         self._player.set_volume(self._audible_level)
         self._player.load(
             track.source,
