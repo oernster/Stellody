@@ -38,8 +38,10 @@ not going to.
   browser.
 
 Stellody is early. Cover art, a grid view, search, ratings, play counts, an
-equalizer and gapless transitions are not built; `PLAN.md` lists what is still
-to come and what is deliberately excluded.
+equalizer, gapless transitions and accepting the repairs the health report
+describes are not built; `PLAN.md` lists what is still to come and what is
+deliberately excluded. Where a control for one of those is already on screen it
+is disabled and says so.
 
 ## What it deliberately does not do
 

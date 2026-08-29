@@ -17,6 +17,8 @@ has never been seen to fail is not yet a guard.
 | 7 | No module exceeds 400 lines. | `tests/structural/test_loc.py::test_no_module_exceeds_the_line_cap` |
 | 8 | No module sits in the 381 to 400 danger band; a file that reaches it is reduced to 350 or below rather than shaved. | `tests/structural/test_loc.py::test_no_module_sits_in_the_danger_band` |
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
+| 10 | A ring belongs to a control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain. | `tests/ui/test_focus_rings.py` |
+| 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
@@ -35,7 +37,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
 | `infrastructure` | SQLite, mutagen, soundfile, sounddevice, the filesystem. | `domain` and `application`. |
 | `ui` | PySide6 widgets, models, dialogs and theme tokens. | `domain` and `application`. |
-| `shared` | Version, paths and resource resolution. | The standard library. |
+| `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
 `stellody/composition.py` is the only composition root; `main.py` is a
 three line entry point that calls into it. Dependencies are supplied by
@@ -84,9 +86,12 @@ real damage in the reference library:
 | A track's `DISCNUMBER` disagrees with a folder named `(Disc 2)` | The folder | One such folder holds tags claiming discs 1, 2 and 3; the folder name was written by a person, the tag by software |
 | A colliding track's title duplicates another's | The file name | A bulk tag overwrite copies the title along with the number |
 
-Every fallback is recorded as a `LibraryIssue` and surfaced in a read-only
-health view, so the user gets a precise list of what to repair in a tagger of
-their own choosing. `stellody/domain/ordering.py` holds the track rules,
+Every fallback is recorded as a `LibraryIssue` and surfaced in a health
+view, so the user gets a precise list of what to repair in a tagger of their
+own choosing. That view is read-only today: it carries a repair control, drawn
+and disabled, because the corrections are computed on every load but there is
+nowhere yet to keep one that has been accepted. `PLAN.md` milestone 14 is that
+work. `stellody/domain/ordering.py` holds the track rules,
 `stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
 the reporting vocabulary.
 
