@@ -365,6 +365,54 @@ library shows the corrected values, both survive a restart and a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
+## 15. One loudness across albums
+
+Albums are mastered at whatever level their era and label chose, so moving from
+one to the next means reaching for the volume. Stellody should play them at a
+comparable loudness, on by default, remembered between runs.
+
+**Album gain, not track gain.** The point is that albums sit level with each
+other, so the whole album moves by one figure and the quiet track stays quiet
+against the loud one beside it. Track gain would flatten exactly the dynamics
+the album was mastered with.
+
+**The tags are not there.** Measured over 60 albums sampled at random from the
+library, three files each: not one carried a ReplayGain or R128 tag of any
+kind. So reading what the files already say, which would have been nearly free
+since the probe collects every tag as it walks, does nothing at all here. The
+loudness has to be measured.
+
+**Measuring it is affordable but not free.** Decoding and measuring one album
+of 42 minutes took 3.0 seconds, about 841 times real time. At that rate a
+6,877 track library is roughly 33 minutes of one core, against 2.5 seconds for
+the ordinary scan that reads tags alone. So it cannot ride along quietly with a
+scan. It is either a pass the user starts and watches or work spread behind
+playback; that decision is the one this milestone opens with. Whichever is
+chosen, an album that has not been measured plays at unity rather than waiting.
+
+**Where it is applied.** The engine already multiplies each decoded block by
+the volume, so the album's gain multiplies into the same figure: no second
+signal path and nothing to switch on and off in the hot loop. The measured peak
+is stored beside the gain; the applied gain is held below the point where that
+peak would clip, an album asking for more is left at the loudest that
+does not.
+
+**Where it is kept.** In Stellody's own store, keyed by album identity, never
+written back into the files: writing tags is a non-goal enforced by a
+structural test, which this does not change.
+
+**Its state.** One setting, on unless the user turned it off. An absent setting
+reads as on, so a fresh install has it on without the setup program being
+involved at all, unlike shuffle and repeat, which default off and therefore
+need clearing when a reinstall inherits the directory.
+
+Done when: two albums that differ by a known amount in measured loudness play
+within one decibel of each other with it on, differing by the original amount
+with it off; the setting survives a restart; an album with no measurement plays
+at exactly unity, with the same samples the file holds.
+
+Depends on: milestone 1.
+
 ## Not planned, so that this is not revisited
 
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as
