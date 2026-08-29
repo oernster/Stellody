@@ -245,6 +245,16 @@ class PlaybackPort(Protocol):
         """How far in the transport has reached; None when nothing is loaded."""
         ...
 
+    @property
+    def finished(self) -> bool:
+        """Whether the loaded source has played all the way through.
+
+        A track reaching its end is not a state the transport is in, it is an
+        event nothing was told about: the device is still open and the position
+        has simply stopped moving. Something has to ask.
+        """
+        ...
+
     def set_volume(self, level: float) -> None:
         """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
         ...

@@ -16,6 +16,8 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.ports import FolderListing, FolderRecord, SourceRecord
 from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.transport import Transport
+from stellody.domain.playback import PlaybackState
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import FALSE, SETTING_ROOT, SETTING_SCAN_FINISHED, TRUE
 from stellody.ui.worker import ScanRunner
@@ -43,6 +45,33 @@ class SpyWalker:
         """Record the ask. Launch must never reach here either."""
         self.calls.append(f"count {root}")
         return 0
+
+
+class SilentPlayer:
+    """A playback port with no device behind it. These tests play nothing."""
+
+    state = PlaybackState.STOPPED
+    finished = False
+
+    def load(self, source, request):
+        """Never called here."""
+        raise AssertionError("no track should be loaded")
+
+    def play(self) -> None:
+        """Never called here."""
+
+    def pause(self) -> None:
+        """Never called here."""
+
+    def stop(self) -> None:
+        """Stopping an idle transport is ordinary; the window does it on quit."""
+
+    def seek(self, frame: int) -> None:
+        """Never called here."""
+
+    def position(self):
+        """Nothing is loaded."""
+        return
 
 
 class FakeStore:
@@ -107,7 +136,12 @@ def window(
     def session():
         return ScanLibrary(walker, None, None, store), store
 
-    return MainWindow(scan_session=session, loader=LoadLibrary(store), settings=store)
+    return MainWindow(
+        scan_session=session,
+        loader=LoadLibrary(store),
+        transport=Transport(SilentPlayer()),
+        settings=store,
+    )
 
 
 def test_launch_reads_the_store_and_never_the_music_folder(

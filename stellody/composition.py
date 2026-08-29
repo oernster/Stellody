@@ -12,6 +12,8 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.transport import Transport
+from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.paths import database_path
 from stellody.infrastructure.probe import FlacProbe
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -44,6 +46,7 @@ def build_window(store: SqliteLibraryStore) -> MainWindow:
     return MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
+        transport=Transport(WasapiPlayback()),
         settings=store,
     )
 

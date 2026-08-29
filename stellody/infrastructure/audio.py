@@ -77,6 +77,12 @@ class WasapiPlayback:
         return PlaybackState.PAUSED
 
     @property
+    def finished(self) -> bool:
+        """Whether the loaded source has played all the way through."""
+        session = self._session
+        return session is not None and session.finished.is_set()
+
+    @property
     def report(self) -> OutputReport | None:
         """What the open stream actually delivers; None when nothing is loaded."""
         session = self._session

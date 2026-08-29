@@ -19,6 +19,13 @@ DARK_MODE_ICON = "dark-mode.png"
 CHOOSE_FOLDER_ICON = "choose-folder.png"
 RESCAN_ICON = "rescan.png"
 INFO_ICON = "info.png"
+PLAY_ICON = "play.png"
+PAUSE_ICON = "pause.png"
+STOP_ICON = "stop.png"
+# Named for where they sit rather than for what they do, as the artwork is.
+# The glyphs are the usual bar and triangle, so they mean previous and next.
+PREVIOUS_ICON = "jump-left.png"
+NEXT_ICON = "jump-right.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -74,6 +81,31 @@ def rescan_icon_path() -> pathlib.Path | None:
 def info_icon_path() -> pathlib.Path | None:
     """The artwork for the About dialog."""
     return find_asset(INFO_ICON)
+
+
+def play_icon_path() -> pathlib.Path | None:
+    """The artwork for starting or resuming playback."""
+    return find_asset(PLAY_ICON)
+
+
+def pause_icon_path() -> pathlib.Path | None:
+    """The artwork the play button wears while something is playing."""
+    return find_asset(PAUSE_ICON)
+
+
+def stop_icon_path() -> pathlib.Path | None:
+    """The artwork for ending playback."""
+    return find_asset(STOP_ICON)
+
+
+def previous_icon_path() -> pathlib.Path | None:
+    """The artwork for the track before this one."""
+    return find_asset(PREVIOUS_ICON)
+
+
+def next_icon_path() -> pathlib.Path | None:
+    """The artwork for the track after this one."""
+    return find_asset(NEXT_ICON)
 
 
 def model_licence_path() -> pathlib.Path | None:

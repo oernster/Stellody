@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -18,6 +18,7 @@ from stellody.application.ports import SettingsStore
 from stellody.application.scan import (
     LoadLibrary,
 )
+from stellody.application.transport import Transport
 from stellody.domain.health import LibraryIssue
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
@@ -25,6 +26,7 @@ from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.models import AlbumTreeModel
+from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.scanning import Scanning
 from stellody.ui.settings_keys import (
     FALSE,
@@ -52,19 +54,21 @@ TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
 
 
-class MainWindow(Scanning, QMainWindow):
+class MainWindow(Scanning, Playing, QMainWindow):
     """Stellody's window: a library, a menu bar and a status line."""
 
     def __init__(
         self,
         scan_session: ScanSession,
         loader: LoadLibrary,
+        transport: Transport,
         settings: SettingsStore,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._scan_session = scan_session
         self._loader = loader
+        self._transport = transport
         self._settings = settings
         self._issues: tuple[LibraryIssue, ...] = ()
         self._quitting = False
@@ -85,6 +89,10 @@ class MainWindow(Scanning, QMainWindow):
             rescan=self.rescan,
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
+            previous_track=self.previous_track,
+            toggle_playback=self.toggle_playback,
+            stop_playback=self.stop_playback,
+            next_track=self.next_track,
         )
         self.setCentralWidget(build_body(self, self._tray, self._tree))
         self._set_ring_order()
@@ -94,6 +102,11 @@ class MainWindow(Scanning, QMainWindow):
         self._notification = build_tray(self, icon)
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
+        self._tree.activated.connect(self.activate)
+        self._transport_timer = QTimer(self)
+        self._transport_timer.timeout.connect(self._poll_transport)
+        self._transport_timer.start(TRANSPORT_POLL_MS)
+        self._show_transport()
         self._runner.progressed.connect(self._on_progress)
         self._runner.completed.connect(self._on_completed)
         self._runner.failed.connect(self._on_failed)
@@ -244,6 +257,8 @@ class MainWindow(Scanning, QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         """Honour the stored close behaviour, asking when none is stored."""
         if self._quitting or not self._notification.isVisible():
+            self._transport_timer.stop()
+            self._transport.stop()
             self._runner.wait()
             event.accept()
             return
@@ -252,6 +267,8 @@ class MainWindow(Scanning, QMainWindow):
             action = self._ask_close_action()
         if action == CloseAction.QUIT.value:
             self._quitting = True
+            self._transport_timer.stop()
+            self._transport.stop()
             self._runner.wait()
             event.accept()
             return
