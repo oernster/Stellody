@@ -323,3 +323,26 @@ def test_a_desktop_that_will_not_open_a_browser_says_so(
     monkeypatch.setattr(window_module, "open_externally", lambda address: False)
     window._bottom_tray.donate_button.click()
     assert "Could not open a browser" in window.statusBar().currentMessage()
+
+
+def test_the_repair_button_follows_the_view_toggle_on_the_left(
+    window: MainWindow,
+) -> None:
+    """To the right of the other left-hand buttons, still before the gap."""
+    window.show()
+    tray = window._bottom_tray
+    row = tray.layout()
+    widgets = [row.itemAt(position).widget() for position in range(row.count())]
+    gap = widgets.index(None)
+    assert widgets.index(tray.donate_button) < widgets.index(tray.view_button)
+    assert widgets.index(tray.view_button) < widgets.index(tray.repair_button)
+    assert widgets.index(tray.repair_button) < gap, "still on the left of the strip"
+    assert tray.repair_button in tray.ring_stops()
+
+
+def test_the_repair_button_admits_it_is_not_built(window: MainWindow) -> None:
+    """Offered but honest, exactly as the view toggle beside it is."""
+    button = window._bottom_tray.repair_button
+    assert not button.isEnabled()
+    assert "not built yet" in button.toolTip()
+    assert not button.icon().isNull(), "drawn, not merely reserved"

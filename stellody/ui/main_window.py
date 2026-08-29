@@ -105,6 +105,7 @@ class MainWindow(Scanning, Playing, QMainWindow):
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
             open_donation=self.open_donation,
+            repair_library=self.repair_library,
         )
         self.setCentralWidget(
             build_body(self, self._tray, self._tree, self._bottom_tray)
@@ -253,7 +254,18 @@ class MainWindow(Scanning, Playing, QMainWindow):
     @Slot()
     def show_health(self) -> None:
         """Open the library health report."""
-        HealthDialog(self._issues, self).exec()
+        HealthDialog(self._issues, self, repair_library=self.repair_library).exec()
+
+    @Slot()
+    def repair_library(self) -> None:
+        """Accept the corrections the health report describes.
+
+        Nothing here yet. Resolution already happens on load, so what each
+        issue should become is worked out on every start; what is missing is
+        somewhere to keep an accepted correction. The buttons that would call
+        this are disabled until there is, so this is the seam rather than the
+        feature.
+        """
 
     @Slot()
     def show_model_licence(self) -> None:

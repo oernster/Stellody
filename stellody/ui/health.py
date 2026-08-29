@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
+from collections.abc import Callable
+
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QPushButton,
+    QTextBrowser,
+    QVBoxLayout,
+    QWidget,
+)
 
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
+from stellody.shared import resources
+from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, REPAIR_TOOLTIP
 from stellody.ui.dialogs import NeutralDialog, close_row
 from stellody.ui.display import native_path
 from stellody.ui.widgets import ReadingPane
@@ -87,16 +99,46 @@ def has_serious_issues(issues: tuple[LibraryIssue, ...]) -> bool:
     return any(issue.kind in serious for issue in issues)
 
 
+def _repair_button(parent: QWidget, on_click: Callable[[], None]) -> QPushButton:
+    """The repair control, drawn at the size the bottom strip draws its own.
+
+    Disabled for the same reason the one on that strip is: what each issue
+    should become is already worked out on every load; there is nowhere yet
+    to keep a correction once it has been accepted.
+    """
+    button = QPushButton(parent)
+    button.setObjectName("TrayButton")
+    button.setToolTip(REPAIR_TOOLTIP)
+    button.setFixedSize(BOTTOM_BUTTON_PX, BOTTOM_BUTTON_PX)
+    button.setIconSize(QSize(BOTTOM_ICON_PX, BOTTOM_ICON_PX))
+    path = resources.library_health_icon_path()
+    if path is not None:
+        button.setIcon(QIcon(str(path)))
+    button.clicked.connect(on_click)
+    button.setEnabled(False)
+    return button
+
+
 class HealthDialog(NeutralDialog):
     """Shows the library health report."""
 
     def __init__(
-        self, issues: tuple[LibraryIssue, ...], parent: QWidget | None = None
+        self,
+        issues: tuple[LibraryIssue, ...],
+        parent: QWidget | None = None,
+        repair_library: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Library health")
         self.resize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
         layout = QVBoxLayout(self)
+        # Above the report rather than inside it, so the report is the only
+        # thing that scrolls and the repair button stays where it was put.
+        self.repair_button = _repair_button(self, repair_library)
+        heading = QHBoxLayout()
+        heading.addWidget(self.repair_button)
+        heading.addStretch()
+        layout.addLayout(heading)
         body = QTextBrowser(self)
         body.setHtml(report_html(issues))
         layout.addWidget(body)

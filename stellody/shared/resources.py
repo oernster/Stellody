@@ -30,6 +30,7 @@ VOLUME_ICON = "volume.png"
 SHUFFLE_ICON = "shuffle.png"
 VIEW_ICON = "view.png"
 DONATE_ICON = "donate.png"
+LIBRARY_HEALTH_ICON = "library-health.png"
 REPEAT_ICON = "repeat.png"
 UNMUTE_ICON = "unmute.png"
 # The slash laid over one of the three switches above to say it is off. It is
@@ -136,6 +137,11 @@ def view_icon_path() -> pathlib.Path | None:
 def donate_icon_path() -> pathlib.Path | None:
     """The artwork for the button that offers to buy the author a drink."""
     return find_asset(DONATE_ICON)
+
+
+def library_health_icon_path() -> pathlib.Path | None:
+    """The artwork for repairing what the library health report lists."""
+    return find_asset(LIBRARY_HEALTH_ICON)
 
 
 def repeat_icon_path() -> pathlib.Path | None:

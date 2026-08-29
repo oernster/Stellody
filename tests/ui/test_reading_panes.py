@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication, QTextBrowser
 
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.shared import resources
+from stellody.ui.bottom_tray import REPAIR_TOOLTIP
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.theme import Mode, stylesheet
@@ -96,3 +97,44 @@ def test_the_stop_is_recomputed_rather_than_decided_once(
     application.processEvents()
     if view.verticalScrollBar().maximum() == 0:
         assert view.focusPolicy() == Qt.FocusPolicy.NoFocus, "it fits now"
+
+
+def test_the_repair_button_sits_above_the_report_it_would_repair(
+    application: QApplication,
+) -> None:
+    """Above the scrolling area rather than inside it, so it cannot scroll off."""
+    dialog, view = shown(application, HealthDialog(issues()))
+    row = dialog.layout()
+    positions = []
+    for index in range(row.count()):
+        item = row.itemAt(index)
+        inner = item.layout()
+        if inner is not None and inner.indexOf(dialog.repair_button) >= 0:
+            positions.append(("button", index))
+        if item.widget() is view:
+            positions.append(("report", index))
+    order = [name for name, _index in positions]
+    assert order == ["button", "report"], "the button is laid out before the report"
+
+
+def test_the_repair_button_does_not_move_when_the_report_is_scrolled(
+    application: QApplication,
+) -> None:
+    """The reported requirement: always at the top, whatever the reader does."""
+    dialog, view = shown(application, HealthDialog(issues()))
+    bar = view.verticalScrollBar()
+    assert bar.maximum() > 0, "expected a report long enough to scroll"
+    before = dialog.repair_button.mapTo(dialog, QPoint(0, 0))
+    bar.setValue(bar.maximum())
+    application.processEvents()
+    assert bar.value() > 0, "the report really did scroll"
+    assert dialog.repair_button.mapTo(dialog, QPoint(0, 0)) == before
+
+
+def test_the_repair_button_admits_it_is_not_built(application: QApplication) -> None:
+    """Offered but honest, exactly as the view toggle is."""
+    dialog, _view = shown(application, HealthDialog(issues()))
+    assert not dialog.repair_button.isEnabled()
+    assert "not built yet" in dialog.repair_button.toolTip()
+    assert dialog.repair_button.toolTip() == REPAIR_TOOLTIP, "one wording, one home"
+    assert not dialog.repair_button.icon().isNull(), "drawn, not merely reserved"
