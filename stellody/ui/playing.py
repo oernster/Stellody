@@ -124,21 +124,26 @@ class Playing:
     def show_transport_menu(self, where: QPoint) -> None:
         """Offer the transport over whatever was right clicked.
 
-        Play means the track under the cursor when there is one, since that is
-        what right clicking a track is asking about; over anything else it
-        resumes what is loaded.
+        Play means the track under the cursor when that is a DIFFERENT track,
+        since that is what right clicking another row is asking about. On the
+        track already loaded it means carry on, exactly as it does over empty
+        space: starting a track over is what next and previous are for;
+        losing your place in a long piece is not a small annoyance.
+
+        The distinction was not always this load bearing. The highlight now
+        follows the transport, so the row under the cursor is usually the one
+        being played, which is precisely the case that used to reload.
         """
         index = self._tree.indexAt(where)
         track = self._model.track_at(index)
         menu = QMenu(self._tree)
         playing = self._transport.playing
         loaded = self._transport.current is not None
+        elsewhere = track is not None and track is not self._transport.current
         play = menu.addAction("Play")
-        play.setEnabled(track is not None or (loaded and not playing))
+        play.setEnabled(elsewhere or (loaded and not playing))
         play.triggered.connect(
-            (lambda: self.activate(index))
-            if track is not None
-            else self.toggle_playback
+            (lambda: self.activate(index)) if elsewhere else self.toggle_playback
         )
         pause = menu.addAction("Pause")
         pause.setEnabled(playing)
