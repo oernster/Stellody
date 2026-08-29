@@ -1,4 +1,4 @@
-"""Mute, shuffle and repeat as the window drives them.
+"""The tray switches as the window drives them, plus the view toggle beside them.
 
 Three switches that outlast the track in hand. Each has to reach the transport,
 show its own state and be there again next time the application opens; a switch
@@ -32,6 +32,8 @@ from stellody.ui.settings_keys import (
 )
 
 ICON_PX = 30
+# Long enough for the walk to come back round to where it started.
+RING_WALK = 40
 
 
 def track(number: int) -> Track:
@@ -221,3 +223,58 @@ def test_the_mute_switch_is_ruled_off_from_the_buttons_after_it(
     theme = tray.theme_button.mapTo(tray, tray.theme_button.rect().center()).x()
     assert mute < centre < theme, "the line sits between the two groups"
     assert separator.focusPolicy() == 0, "a rule is not a control"
+
+
+def test_the_view_toggle_sits_at_the_left_of_the_strip(window: MainWindow) -> None:
+    """Under the library it would change, away from the settings.
+
+    Read off the layout as well as off the geometry. A button never added to
+    the layout also sits at the left, at nothing, which a comparison of
+    positions alone reports as a pass.
+    """
+    window.show()
+    tray = window._bottom_tray
+    row = tray.layout()
+    widgets = [row.itemAt(position).widget() for position in range(row.count())]
+    assert tray.view_button in widgets, "the toggle is actually laid out"
+    # The one item holding no widget is the stretch that splits the strip.
+    gap = widgets.index(None)
+    assert widgets.index(tray.view_button) < gap, "the toggle is before the gap"
+    for button in tray.switch_stops():
+        assert widgets.index(button) > gap, "every setting is after it"
+    view = tray.view_button.mapTo(tray, tray.view_button.rect().center()).x()
+    switches = [
+        button.mapTo(tray, button.rect().center()).x() for button in tray.switch_stops()
+    ]
+    assert view < min(switches), "and it is drawn there too"
+
+
+def test_the_view_toggle_says_it_is_not_built_rather_than_doing_nothing(
+    window: MainWindow,
+) -> None:
+    """Nothing reads album art yet, so the button admits it."""
+    button = window._bottom_tray.view_button
+    assert not button.isEnabled()
+    assert "not built yet" in button.toolTip()
+    assert not button.icon().isNull(), "it is drawn, not merely reserved"
+
+
+def test_the_disabled_view_toggle_is_not_a_stop_but_is_named_as_one(
+    application: QApplication, window: MainWindow
+) -> None:
+    """Named now so the ring picks it up the day it works, skipped until then."""
+    tray = window._bottom_tray
+    assert tray.view_button in tray.ring_stops()
+    window.show()
+    application.processEvents()
+    order = []
+    seen: set[int] = set()
+    for _ in range(RING_WALK):
+        window.focusNextChild()
+        current = application.focusWidget()
+        if current is None or id(current) in seen:
+            break
+        seen.add(id(current))
+        order.append(current)
+    assert tray.view_button not in order, "a disabled control is never a stop"
+    assert tray.volume_button in order, "the enabled ones still are"

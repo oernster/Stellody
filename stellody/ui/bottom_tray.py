@@ -7,7 +7,13 @@ derived from that tray's own sizes so the two cannot drift apart: subordinate
 to the tray without the artwork becoming too small to read.
 
 The switches sit at the right end, under About and the appearance toggle,
-which is where the application's own controls already are.
+which is where the application's own controls already are. The view toggle
+sits at the left instead, under the library it would change rather than among
+the settings.
+
+That toggle is drawn and placed before it does anything. Nothing reads album
+art off disk yet, so it is disabled and says so: an offered control that
+quietly does nothing is worse than one that plainly cannot be pressed.
 
 Shuffle and repeat show their STATE rather than the action a press would take,
 because "off" has no picture of its own: the switch is struck through while it
@@ -53,6 +59,10 @@ MAXIMUM_PERCENT = 100
 PERCENT_STEP = 5
 SLIDER_HEIGHT_PX = 220
 SLIDER_MARGIN_PX = 10
+
+# Said plainly, because the button is on screen before the feature behind it.
+# Nothing reads album art off disk or off a music database yet.
+VIEW_TOOLTIP = "Switch to album art (not built yet)"
 
 
 class VolumeSlider(QFrame):
@@ -114,6 +124,7 @@ class BottomTray(QWidget):
         on_change: Callable[[int], None],
         toggle_shuffle: Callable[[], None] = lambda: None,
         toggle_repeat: Callable[[], None] = lambda: None,
+        toggle_view: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -126,23 +137,38 @@ class BottomTray(QWidget):
             self, None, "Turn shuffle on", toggle_shuffle
         )
         self.repeat_button = _small_button(self, None, "Turn repeat on", toggle_repeat)
+        self.view_button = _small_button(
+            self, resources.view_icon_path(), VIEW_TOOLTIP, toggle_view
+        )
+        self.view_button.setEnabled(False)
         self._popup = VolumeSlider(self, on_change)
         row = QHBoxLayout(self)
         row.setContentsMargins(
             BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
         )
         row.setSpacing(TRAY_GAP_PX)
-        # The stretch comes first, so the switches finish at the right edge
-        # under the application's other controls.
+        row.addWidget(self.view_button)
+        # The stretch splits the strip. What changes the library sits under
+        # the library; the settings finish at the right edge under the
+        # application's other controls.
         row.addStretch()
-        for button in self.ring_stops():
+        for button in self.switch_stops():
             row.addWidget(button)
         self._percent = MAXIMUM_PERCENT
         self.set_shuffled(False)
         self.set_repeating(False)
 
     def ring_stops(self) -> tuple[QPushButton, ...]:
-        """This tray's controls, left to right as they are drawn."""
+        """This tray's controls, left to right as they are drawn.
+
+        The view toggle is named here while it is disabled, so the ring picks
+        it up on the day it works without the order being revisited. Qt skips
+        a disabled stop, so naming it costs nothing until then.
+        """
+        return (self.view_button, *self.switch_stops())
+
+    def switch_stops(self) -> tuple[QPushButton, ...]:
+        """The settings at the right end, left to right as they are drawn."""
         return (self.volume_button, self.shuffle_button, self.repeat_button)
 
     def set_percent(self, percent: int) -> None:

@@ -28,6 +28,7 @@ PREVIOUS_ICON = "jump-left.png"
 NEXT_ICON = "jump-right.png"
 VOLUME_ICON = "volume.png"
 SHUFFLE_ICON = "shuffle.png"
+VIEW_ICON = "view.png"
 REPEAT_ICON = "repeat.png"
 UNMUTE_ICON = "unmute.png"
 # The slash laid over one of the three switches above to say it is off. It is
@@ -124,6 +125,11 @@ def volume_icon_path() -> pathlib.Path | None:
 def shuffle_icon_path() -> pathlib.Path | None:
     """The artwork for playing an album out of order."""
     return find_asset(SHUFFLE_ICON)
+
+
+def view_icon_path() -> pathlib.Path | None:
+    """The artwork for switching between the list and album art."""
+    return find_asset(VIEW_ICON)
 
 
 def repeat_icon_path() -> pathlib.Path | None:
