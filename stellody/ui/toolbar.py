@@ -133,10 +133,19 @@ class LibraryTray(QWidget):
             self.play_button.setIcon(QIcon(str(path)))
         self.play_button.setToolTip("Pause" if playing else "Play")
 
-    def set_transport_enabled(self, loaded: bool, playing: bool) -> None:
-        """Offer only what can actually be done to what is queued."""
-        for button in self.transport_stops():
+    def set_transport_enabled(
+        self, loaded: bool, playing: bool, can_start: bool
+    ) -> None:
+        """Offer only what can actually be done right now.
+
+        Play is offered whenever there is something to start, which includes a
+        track merely selected in the library: a play button that does nothing
+        until a track has already been started by other means is a play button
+        that is never the way anybody starts one.
+        """
+        for button in (self.previous_button, self.next_button):
             button.setEnabled(loaded)
+        self.play_button.setEnabled(loaded or can_start)
         self.stop_button.setEnabled(playing)
 
     def set_mode(self, mode: Mode) -> None:

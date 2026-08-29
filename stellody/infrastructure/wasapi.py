@@ -29,8 +29,35 @@ MIXER_BIT_DEPTH = DTYPE_BIT_DEPTHS[SHARED_DTYPE]
 NO_EXCLUSIVE_FORMAT = "the device offers no exclusive format at this rate"
 
 
+WASAPI_API_NAME = "WASAPI"
+NO_DEVICE = -1
+
+
 class OutputUnavailableError(RuntimeError):
     """Raised when no stream at all could be opened for a request."""
+
+
+def default_device() -> int | None:
+    """The WASAPI host API's own default output device; None when there is none.
+
+    Measured; it is why nothing played at all. Sounddevice's global default
+    output resolves through MME on this machine, so handing WASAPI settings to
+    an MME stream fails outright with "Incompatible host API specific stream
+    info" (PaErrorCode -9984). Every route into playback died there. This module
+    speaks WASAPI, so it has to ask WASAPI which device it means.
+
+    Resolved per stream rather than once at startup, so headphones plugged in
+    after the application opened are the ones it plays through.
+    """
+    try:
+        apis = sounddevice.query_hostapis()
+    except Exception:  # noqa: BLE001 - no host APIs is an absent device, not a fault
+        return None
+    for api in apis:
+        if WASAPI_API_NAME in api.get("name", ""):
+            device = api.get("default_output_device", NO_DEVICE)
+            return None if device == NO_DEVICE else device
+    return None
 
 
 def native_dtype(device: int | None, request: OutputRequest) -> str | None:
@@ -113,6 +140,7 @@ def open_output(
     Raises OutputUnavailableError only when even the mixer path fails, which
     means there is no usable output device at all.
     """
+    device = default_device() if device is None else device
     if request.mode is not OutputMode.EXCLUSIVE:
         return _shared_result(device, request, "")
     dtype = native_dtype(device, request)

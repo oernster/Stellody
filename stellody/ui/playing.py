@@ -41,6 +41,11 @@ class Playing:
         self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._tree.customContextMenuRequested.connect(self.show_transport_menu)
 
+    @Slot(QModelIndex, QModelIndex)
+    def _on_selection(self, current: QModelIndex, previous: QModelIndex) -> None:
+        """Selecting a track is what makes the play button pressable."""
+        self._show_transport()
+
     @Slot(QPoint)
     def show_transport_menu(self, where: QPoint) -> None:
         """Offer the transport over whatever was right clicked.
@@ -95,7 +100,15 @@ class Playing:
 
     @Slot()
     def toggle_playback(self) -> None:
-        """Pause what is playing, resume what is not."""
+        """Pause what is playing, resume what is not, start what is chosen.
+
+        With an empty queue there is nothing to resume, so play means the track
+        highlighted in the library. That is what somebody who selected a track
+        and reached for the play button meant by it.
+        """
+        if self._transport.current is None:
+            self.activate(self._tree.currentIndex())
+            return
         self._drive(self._transport.toggle)
 
     @Slot()
@@ -145,4 +158,5 @@ class Playing:
         self._tray.set_transport_enabled(
             loaded=self._transport.current is not None,
             playing=self._transport.state.is_active,
+            can_start=self._model.track_at(self._tree.currentIndex()) is not None,
         )

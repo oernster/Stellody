@@ -293,3 +293,24 @@ def test_play_away_from_a_track_resumes_what_is_loaded(window: MainWindow) -> No
     assert items["Play"].isEnabled() is True
     items["Play"].trigger()
     assert window._player.calls[-1] == "play"
+
+
+def test_the_play_button_starts_the_track_that_is_selected(
+    window: MainWindow,
+) -> None:
+    """A play button that does nothing until something else started a track."""
+    window._tree.expandAll()
+    assert window._tray.play_button.isEnabled() is False
+    window._tree.setCurrentIndex(track_index(window, 1))
+    assert window._tray.play_button.isEnabled() is True
+    window.toggle_playback()
+    assert window._transport.current.title == "Track 2"
+    assert window._player.calls == ["load", "play"]
+
+
+def test_selecting_an_album_row_leaves_play_unpressable(
+    window: MainWindow,
+) -> None:
+    """An album is a container; there is no one track to start."""
+    window._tree.setCurrentIndex(album_index(window))
+    assert window._tray.play_button.isEnabled() is False

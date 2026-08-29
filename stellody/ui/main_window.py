@@ -103,6 +103,7 @@ class MainWindow(Scanning, Playing, QMainWindow):
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
         self.wire_tree()
+        self._tree.selectionModel().currentChanged.connect(self._on_selection)
         self._transport_timer = QTimer(self)
         self._transport_timer.timeout.connect(self._poll_transport)
         self._transport_timer.start(TRANSPORT_POLL_MS)
