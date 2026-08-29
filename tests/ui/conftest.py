@@ -16,6 +16,64 @@ import pytest
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 
+from stellody.domain.playback import (
+    OutputMode,
+    OutputReport,
+    OutputRequest,
+    PlaybackState,
+)
+from stellody.domain.track import TrackSource
+
+
+class RecordingPlayer:
+    """A playback port that records rather than plays.
+
+    Shared by every window test that needs a transport, because a real device
+    would make a noise in a test run and a silent one would prove nothing.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+        self.loaded: list[TrackSource] = []
+        self.state = PlaybackState.STOPPED
+        self.finished = False
+
+    def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
+        """Record the load and report a plain shared stream."""
+        self.calls.append("load")
+        self.loaded.append(source)
+        self.finished = False
+        self.state = PlaybackState.PAUSED
+        return OutputReport(
+            request=request,
+            mode=OutputMode.SHARED,
+            sample_rate=request.sample_rate,
+            bit_depth=request.bit_depth,
+        )
+
+    def play(self) -> None:
+        """Record the play."""
+        self.calls.append("play")
+        self.state = PlaybackState.PLAYING
+
+    def pause(self) -> None:
+        """Record the pause."""
+        self.calls.append("pause")
+        self.state = PlaybackState.PAUSED
+
+    def stop(self) -> None:
+        """Record the stop."""
+        self.calls.append("stop")
+        self.state = PlaybackState.STOPPED
+
+    def seek(self, frame: int) -> None:
+        """Record the seek."""
+        self.calls.append(f"seek {frame}")
+
+    def position(self):
+        """Nothing to report in these tests."""
+        return
+
 
 @pytest.fixture(scope="session")
 def application() -> QApplication:

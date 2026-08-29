@@ -30,11 +30,12 @@ Version 1.0 is a readiness call for the owner to make, so nothing below is
 sized against it. The near target is a 0.1.0 release. `VERSION` already
 reads 0.1.0 with no tag cut, so no bump is owed: the work is what goes in it.
 
-**Proposed scope, for the owner to confirm: milestones 1, 2, 3 and 13.** A music
+**Proposed scope, for the owner to confirm: milestones 1, 2, 3 and 14.** A music
 player that cannot play is not a release whatever else it does; a release whose
 README promises an equalizer it does not have is not an honest one. The amplitude monitor
 joins that scope because it is how this player shows position at all. Cover art,
-search, ratings and the rest are 0.2.0 and later, video playback among them.
+search, ratings and the rest are 0.2.0 and later, the wider formats and video
+among them.
 
 Cutting it means: the milestones in scope are done, the gate is green, the
 README describes only what the binary does, the release notes are written in
@@ -43,12 +44,9 @@ owner's to make.
 
 ## 1. Play something
 
-The audio engine exists and is tested. `WasapiPlayback` in
-`stellody/infrastructure/audio.py`, `stellody/domain/playback.py` and the decode
-layer are all real; **nothing in the interface or the composition root refers
-to any of them**, so the application cannot currently play a note.
-
-This is the largest gap between what Stellody is and what it is for.
+The audio engine was written, tested and then left unreferenced by anything, so
+the application could not play a note. The queue, the transport and the buttons
+that drive them are now built; what remains is the proving.
 
 Needed: a playback port bound in the composition root, the transport centred in
 the tray (previous, play toggling to pause, stop, next), activation from the
@@ -59,8 +57,13 @@ Volume and seeking are not in this milestone. Where playback has reached is
 shown by milestone 3 rather than by a plain bar, so this one ships with the
 transport and no position display at all.
 
-Done when: a track chosen in the window plays, pauses, resumes, seeks and stops;
-quitting mid-track leaves no process behind.
+Still to do: sound confirmed coming out of a real device, since a test harness
+cannot hear one, then the queue behaviour confirmed in the built application
+rather than only in the tests.
+
+Done when: a track chosen in the built application plays, pauses, resumes and
+stops, the queue moves on by itself at the end of a track; quitting mid-track
+leaves no process behind.
 
 Blocks: every milestone below except 6.
 
@@ -214,7 +217,43 @@ audio; the Windows build is untouched by either.
 Depends on: milestone 1, since there is no point porting an engine nothing
 uses.
 
-## 12. Play video files
+## 12. Play every audio format, not only FLAC
+
+Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
+reads FLAC stream info, a README calling it a FLAC player. A local library of
+any age holds more than that.
+
+**Measured, so the size of this is known rather than guessed.** The decoder
+already behind the application is libsndfile 1.2.2, which reads FLAC, MP3, WAV,
+AIFF, OGG, W64, CAF, AU and a long tail of older formats. So the work divides
+in two; the first half is far cheaper than it looks:
+
+- **What libsndfile already decodes.** Extend the walk beyond one suffix,
+  replace the FLAC-only probe with a general one (mutagen reads tags for
+  everything in this list), then let the existing decode path serve it. No new
+  dependency, no new licence, no change to the audio path.
+- **What it does not.** M4A with AAC or ALAC, WMA, Musepack, Monkey's Audio,
+  WavPack, DSD. Each needs a decoder Stellody does not carry, which means
+  either FFmpeg through a binding or Qt Multimedia.
+
+That second half asks the same question milestone 13 asks, so answer it once:
+**one media backend, chosen for both**. Deciding it separately is how a player
+ends up with two decoders that disagree about what a track is.
+
+Honesty applies as usual. A lossy format cannot be bit perfect however the
+device is opened, so anything the interface says about exclusive output has to
+say that too.
+
+Needed: suffixes from one table rather than a literal, a probe that reports what
+each format actually states (a missing bit depth is honest for a lossy file,
+not an error), the decode extended, plus the README's opening line rewritten:
+this stops being a FLAC player the day the first half ships.
+
+Done when: an album in each of the formats in the first half scans, groups and
+plays; a format Stellody cannot decode is reported as unreadable rather than
+silently skipped.
+
+## 13. Play video files
 
 Wanted for 0.2.0. A local library holds more than audio: a concert film sitting
 beside the albums it came from is part of the same collection.
@@ -239,9 +278,10 @@ Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
-Depends on: milestones 1 and 2, since it is the same transport.
+Depends on: milestones 1 and 2, since it is the same transport. Shares its
+backend decision with milestone 12.
 
-## 13. Make the README true
+## 14. Make the README true
 
 Today it describes a finished product. Measured against the tree, five claims
 are not built: the equalizer, shuffle, repeat, gapless transitions, the cover

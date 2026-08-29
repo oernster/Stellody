@@ -11,6 +11,8 @@ keeps the play button showing the right face.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import QModelIndex, Slot
 
 from stellody.ui.settings_keys import STATUS_TIMEOUT_MS
@@ -36,41 +38,53 @@ class Playing:
         album = self._model.album_at(index)
         if album is None:
             return
-        self._transport.play_album(album, track)
-        self._show_transport()
-        self.statusBar().showMessage(f"Playing {track.title}", STATUS_TIMEOUT_MS)
+        if self._drive(lambda: self._transport.play_album(album, track)):
+            self.statusBar().showMessage(f"Playing {track.title}", STATUS_TIMEOUT_MS)
 
     @Slot()
     def toggle_playback(self) -> None:
         """Pause what is playing, resume what is not."""
-        self._transport.toggle()
-        self._show_transport()
+        self._drive(self._transport.toggle)
 
     @Slot()
     def stop_playback(self) -> None:
         """End playback and give the device back."""
-        self._transport.stop()
-        self._show_transport()
+        self._drive(self._transport.stop)
 
     @Slot()
     def previous_track(self) -> None:
         """Play the track before this one."""
-        self._transport.previous()
-        self._show_transport()
+        self._drive(self._transport.previous)
 
     @Slot()
     def next_track(self) -> None:
         """Play the track after this one."""
-        self._transport.next()
-        self._show_transport()
+        self._drive(self._transport.next)
 
     @Slot()
     def _poll_transport(self) -> None:
         """Move on at the end of a track; keep the buttons honest."""
-        if self._transport.advance_if_finished():
+        self._drive(self._transport.advance_if_finished)
+
+    def _drive(self, action: Callable[[], object]) -> bool:
+        """Run one transport command, saying so when it cannot be done.
+
+        Opening a device is the one thing here that can fail: a file that will
+        not decode, a device another application holds exclusively, a drive
+        unplugged since the library was scanned. Every one of those raises out
+        of the port; an exception raised inside a Qt slot ends the slot in
+        silence: the buttons would keep their faces and nothing would play,
+        with nothing said. So it is caught here and reported.
+        """
+        try:
+            action()
+        except (OSError, RuntimeError, ValueError) as error:
+            self._transport.stop()
             self._show_transport()
-            return
+            self.statusBar().showMessage(f"Cannot play that: {error}")
+            return False
         self._show_transport()
+        return True
 
     def _show_transport(self) -> None:
         """Point the buttons at what can be done to what is loaded."""
