@@ -76,3 +76,31 @@ def test_an_order_missing_the_current_track_is_refused() -> None:
     queue = Queue((one, two), 0)
     with pytest.raises(ValueError, match="keep the track that is current"):
         queue.reordered((two,))
+
+
+def test_reordering_that_leads_puts_what_is_playing_at_the_head() -> None:
+    """So the whole of the rest of the run is still ahead of the playhead."""
+    one, two, three = track(1), track(2), track(3)
+    queue = Queue((one, two, three), 1)
+    moved = queue.reordered_leading((three, two, one))
+    assert moved.tracks == (two, three, one)
+    assert moved.current is two
+    assert moved.index == 0
+    assert moved.has_next is True
+    assert moved.has_previous is False, "nothing has been played in this run yet"
+
+
+def test_a_leading_reorder_of_an_idle_queue_simply_takes_the_new_order() -> None:
+    """Nothing is playing, so there is no track for the order to lead with."""
+    one, two = track(1), track(2)
+    moved = Queue((one, two)).reordered_leading((two, one))
+    assert moved.tracks == (two, one)
+    assert moved.current is None
+
+
+def test_a_leading_order_missing_the_current_track_is_refused() -> None:
+    """The same rule as any other reordering, for the same reason."""
+    one, two = track(1), track(2)
+    queue = Queue((one, two), 0)
+    with pytest.raises(ValueError, match="keep the track that is current"):
+        queue.reordered_leading((two,))

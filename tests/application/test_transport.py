@@ -6,97 +6,13 @@ is asserted is the sequence of commands the transport issues.
 
 from __future__ import annotations
 
+from transport_support import FakePlayer, album_of, track
+
 from stellody.application.transport import Transport
-from stellody.domain.album import Album
-from stellody.domain.identity import AlbumIdentity
-from stellody.domain.playback import (
-    SILENT_VOLUME,
-    UNITY_VOLUME,
-    OutputMode,
-    OutputReport,
-    OutputRequest,
-    PlaybackPosition,
-    PlaybackState,
-)
-from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
+from stellody.domain.playback import SILENT_VOLUME, UNITY_VOLUME, PlaybackState
 
 # Any level that is neither silence nor unity, so the two cannot be confused.
 HALF_VOLUME = 0.5
-
-
-def track(number: int) -> Track:
-    """One ordinary track of an album."""
-    return Track(
-        source=TrackSource(path=f"{number}.flac"),
-        disc_number=1,
-        track_number=number,
-        title=f"Track {number}",
-        artists=("Holst",),
-        duration_ms=1000,
-        sample_rate=CD_SAMPLE_RATE,
-        bit_depth=16,
-    )
-
-
-def album_of(*tracks: Track) -> Album:
-    """An album holding these tracks."""
-    return Album(
-        identity=AlbumIdentity(album_artist="Holst", title="The Planets"),
-        tracks=tracks,
-    )
-
-
-class FakePlayer:
-    """A playback port that records rather than plays."""
-
-    def __init__(self) -> None:
-        self.calls: list[str] = []
-        self.loaded: list[TrackSource] = []
-        self.requests: list[OutputRequest] = []
-        self.state = PlaybackState.STOPPED
-        self.finished = False
-        self.volume = UNITY_VOLUME
-
-    def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
-        """Record the load and report a plain shared stream."""
-        self.calls.append("load")
-        self.loaded.append(source)
-        self.requests.append(request)
-        self.finished = False
-        self.state = PlaybackState.PAUSED
-        return OutputReport(
-            request=request,
-            mode=OutputMode.SHARED,
-            sample_rate=request.sample_rate,
-            bit_depth=request.bit_depth,
-        )
-
-    def play(self) -> None:
-        """Record the play."""
-        self.calls.append("play")
-        self.state = PlaybackState.PLAYING
-
-    def pause(self) -> None:
-        """Record the pause."""
-        self.calls.append("pause")
-        self.state = PlaybackState.PAUSED
-
-    def stop(self) -> None:
-        """Record the stop."""
-        self.calls.append("stop")
-        self.state = PlaybackState.STOPPED
-
-    def seek(self, frame: int) -> None:
-        """Record the seek."""
-        self.calls.append(f"seek {frame}")
-
-    def position(self) -> PlaybackPosition | None:
-        """Nothing to report in these tests."""
-        return None
-
-    def set_volume(self, level: float) -> None:
-        """Record the level asked for."""
-        self.volume = level
 
 
 def test_activating_a_track_queues_its_album_and_plays_it() -> None:
@@ -229,11 +145,6 @@ def test_the_chosen_volume_is_held_and_re_applied_to_whatever_loads_next() -> No
     assert player.volume == SILENT_VOLUME
 
 
-def reversed_order(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
-    """A shuffle that is not random, so what it did can be asserted."""
-    return tuple(reversed(tracks))
-
-
 def test_muting_silences_the_device_without_forgetting_the_level() -> None:
     """Unmuting has to return to the level the listener chose, not to full."""
     player = FakePlayer()
@@ -266,51 +177,6 @@ def test_a_track_loaded_while_muted_stays_silent() -> None:
     transport.set_muted(True)
     transport.play_album(album_of(one), one)
     assert player.volume == SILENT_VOLUME
-
-
-def test_shuffling_reorders_the_queue_and_keeps_playing_what_was_playing() -> None:
-    one, two, three = track(1), track(2), track(3)
-    player = FakePlayer()
-    transport = Transport(player, ordering=reversed_order)
-    transport.play_album(album_of(one, two, three), two)
-    player.calls.clear()
-    transport.set_shuffled(True)
-    assert transport.shuffled is True
-    assert transport.queue.tracks == (three, two, one)
-    assert transport.current is two
-    assert player.calls == [], "reordering what comes next interrupts nothing"
-
-
-def test_unshuffling_puts_the_album_back_into_its_own_order() -> None:
-    one, two, three = track(1), track(2), track(3)
-    transport = Transport(FakePlayer(), ordering=reversed_order)
-    transport.play_album(album_of(one, two, three), one)
-    transport.set_shuffled(True)
-    transport.set_shuffled(False)
-    assert transport.queue.tracks == (one, two, three)
-    assert transport.current is one
-
-
-def test_shuffle_chosen_before_anything_plays_applies_to_the_next_album() -> None:
-    """The switch is remembered, so it does not have to be pressed twice."""
-    one, two = track(1), track(2)
-    transport = Transport(FakePlayer(), ordering=reversed_order)
-    transport.set_shuffled(True)
-    assert transport.queue.tracks == ()
-    transport.play_album(album_of(one, two), one)
-    assert transport.queue.tracks == (two, one)
-    assert transport.current is one
-
-
-def test_the_default_shuffle_keeps_every_track_and_loses_none() -> None:
-    """The real one is random, so what is asserted is what it preserves."""
-    tracks = tuple(track(number) for number in range(1, 6))
-    transport = Transport(FakePlayer())
-    transport.play_album(album_of(*tracks), tracks[0])
-    transport.set_shuffled(True)
-    assert set(transport.queue.tracks) == set(tracks)
-    assert len(transport.queue.tracks) == len(tracks)
-    assert transport.current is tracks[0]
 
 
 def test_repeat_carries_the_end_of_the_queue_round_to_its_start() -> None:

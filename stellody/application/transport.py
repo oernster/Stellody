@@ -25,6 +25,12 @@ from stellody.domain.track import Track
 
 Ordering = Callable[[tuple[Track, ...]], tuple[Track, ...]]
 
+# How far into a track back stops meaning the previous track and starts
+# meaning this one again. Three seconds is long enough to recognise a track
+# that was reached by accident and short enough that a second press, which
+# lands at the beginning, still steps back.
+RESTART_WINDOW_MS = 3000
+
 
 def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
     """These tracks in an arbitrary order. The default way shuffle shuffles."""
@@ -104,13 +110,17 @@ class Transport:
         """Scatter the queue, else put it back into the album's own order.
 
         What is playing keeps playing either way: changing the order of what
-        comes next is no reason to interrupt the track in hand.
+        comes next is no reason to interrupt the track in hand. Scattering
+        leads with that track, so next reaches the whole of the rest of the
+        album rather than whatever the new order left after it.
         """
         self._shuffled = shuffled
         if not self._album_order:
             return
-        order = self._ordering(self._album_order) if shuffled else self._album_order
-        self._queue = self._queue.reordered(order)
+        if not shuffled:
+            self._queue = self._queue.reordered(self._album_order)
+            return
+        self._queue = self._queue.reordered_leading(self._ordering(self._album_order))
 
     @property
     def repeating(self) -> bool:
@@ -130,7 +140,9 @@ class Transport:
         self._album_order = album.ordered_tracks()
         self._queue = queue_from(self._album_order, first)
         if self._shuffled:
-            self._queue = self._queue.reordered(self._ordering(self._album_order))
+            self._queue = self._queue.reordered_leading(
+                self._ordering(self._album_order)
+            )
         self._load_current()
 
     def toggle(self) -> None:
@@ -163,11 +175,41 @@ class Transport:
         self._move(self._queue.next())
 
     def previous(self) -> None:
-        """Play the preceding track; what the start does depends on repeat."""
+        """Start this track again, else step back to the one before it.
+
+        Part way through a track, back means starting that track again, which
+        is what a listener who has heard enough of it to reach for the button
+        meant by it. Only near the start does it mean the track before, so a
+        second press straight after the first steps back: the first press left
+        the playhead at the beginning.
+
+        Under shuffle it always means starting again. The queue then runs in a
+        scattered order rather than the order the listener heard, so the track
+        lying behind the playhead is not the one they would be asking for.
+        Anything played before the shuffle was switched on is not in the run at
+        all. Offering a step back there would be answering a different question
+        from the one asked.
+        """
+        if self._shuffled or self._past_the_restart_window:
+            self._restart_at(self._queue)
+            return
         if self._repeating:
             self._restart_at(self._queue.wrapped_previous())
             return
         self._move(self._queue.previous())
+
+    @property
+    def _past_the_restart_window(self) -> bool:
+        """Whether this track has run long enough for back to mean restart.
+
+        A device that cannot say where it is reports nothing rather than zero,
+        which is read as the start: stepping back is the older behaviour and
+        the safer one to fall back to.
+        """
+        position = self._player.position()
+        if position is None:
+            return False
+        return position.elapsed_ms >= RESTART_WINDOW_MS
 
     def _move(self, moved: Queue) -> None:
         """Take up a new position, unless it is the position already held."""

@@ -85,6 +85,23 @@ class Queue:
             raise ValueError("a reordering must keep the track that is current")
         return moved
 
+    def reordered_leading(self, tracks: tuple[Track, ...]) -> Queue:
+        """The same run under a given order, with what is playing at its head.
+
+        Shuffling mid-track must leave somewhere to go. Keeping the position
+        the new order happens to give the current track strands everything
+        scattered before it; where it falls last there is no next track at all,
+        measured as a next button that did nothing. Leading with the track in
+        hand puts the whole of the rest of the run ahead of it.
+        """
+        playing = self.current
+        if playing is None:
+            return Queue(tracks)
+        if not any(track is playing for track in tracks):
+            raise ValueError("a reordering must keep the track that is current")
+        rest = tuple(track for track in tracks if track is not playing)
+        return Queue((playing,) + rest, 0)
+
     def at(self, track: Track) -> Queue:
         """The same tracks, positioned at this one.
 

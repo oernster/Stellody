@@ -28,8 +28,12 @@ not going to.
 - Plays a track chosen by double click, by Return or from the right click
   menu, then works through the album on its own.
 - Offers previous, play and pause, stop and next, both on the tray and on that
-  menu, with the library highlight following whatever is playing.
+  menu, with the library highlight following whatever is playing. Back part way
+  through a track starts it again; near its beginning it steps to the track
+  before.
 - Carries volume, mute, shuffle and repeat, each remembered between sessions.
+  Shuffle leads its scattered run with the track already playing, so next
+  reaches the whole of the rest of the album.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
