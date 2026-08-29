@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QModelIndex, QPoint
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import LoadLibrary, ScanLibrary
@@ -271,3 +271,75 @@ def test_a_repeating_shuffled_album_is_scattered_again_for_the_next_time_round(
     heard = played_out(window, player, 3)
     assert len(asked) == scattered_when_switched_on + 1, "once, at the join"
     assert set(heard) == {"Track 1", "Track 2", "Track 3"}
+
+
+def five_track_album(window: MainWindow):
+    """An album long enough to reach its end and come round again."""
+    album = Album(
+        identity=AlbumIdentity(album_artist="Holst", title="The Planets"),
+        tracks=tuple(track(number) for number in range(1, 6)),
+    )
+    window._model.set_albums((album,))
+    window.show()
+    window._tree.expandAll()
+    return album
+
+
+def test_the_highlight_comes_round_with_a_repeating_album(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """The album starts again, so the highlight goes back to its first track."""
+    five_track_album(window)
+    album_index = window._model.index(0, 0)
+    window.activate(window._model.index(0, 0, album_index))
+    window.toggle_repeat()
+    for _ in range(5):
+        player.finished = True
+        window._poll_transport()
+    assert window._transport.current.title == "Track 1", "round to the beginning"
+    assert highlighted(window) is window._transport.current, "and so is the highlight"
+
+
+def test_a_placement_that_does_not_happen_is_tried_again(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """Measured after a repeat came round with the highlight left behind.
+
+    What was remembered as followed was set before the highlight moved, so a
+    placement that did not happen was remembered as one that had and every
+    later poll agreed there was nothing left to do.
+    """
+    five_track_album(window)
+    album_index = window._model.index(0, 0)
+    window.activate(window._model.index(0, 0, album_index))
+    placing = window._model.index_for
+    misses = [1]
+
+    def sometimes(track):
+        if misses:
+            misses.pop()
+            return QModelIndex()
+        return placing(track)
+
+    window._model.index_for = sometimes
+    player.finished = True
+    window._poll_transport()
+    assert highlighted(window) is not window._transport.current, "it missed"
+    window._poll_transport()
+    assert highlighted(window) is window._transport.current, "and tried again"
+
+
+def test_the_highlight_stays_where_the_listener_moved_it(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """Browsing during playback is the reason following is not unconditional."""
+    five_track_album(window)
+    album_index = window._model.index(0, 0)
+    window.activate(window._model.index(0, 0, album_index))
+    elsewhere = window._model.index(3, 0, album_index)
+    window._tree.setCurrentIndex(elsewhere)
+    window._poll_transport()
+    assert highlighted(window) is window._model.track_at(elsewhere), "left alone"
+    player.finished = True
+    window._poll_transport()
+    assert highlighted(window) is window._transport.current, "until the track changes"
