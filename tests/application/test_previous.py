@@ -25,6 +25,9 @@ from stellody.domain.track import MILLISECONDS_PER_SECOND
 # Either side of the window, named rather than written into each test.
 SOON_MS = QUICK_PRESS_MS - 1
 LATER_MS = QUICK_PRESS_MS + 1
+# What somebody does when they hear the track restart, take that in and press
+# again meaning it: a beat, not a gesture.
+DELIBERATE_MS = 2000
 
 
 class Hand:
@@ -117,3 +120,22 @@ def test_back_at_the_start_of_a_repeating_queue_wraps_to_its_end() -> None:
     clock.advance(SOON_MS)
     transport.previous()
     assert transport.current is tracks[2]
+
+
+def test_a_press_a_couple_of_seconds_later_is_not_a_double_press() -> None:
+    """Measured against a real complaint: a deliberate second press stepped back.
+
+    The window was two seconds, which is long enough to hear a track restart,
+    decide, then press again. That gap has to read as a fresh press, so only a
+    genuine double press reaches the track before.
+    """
+    transport, _, clock, tracks = playing_the_middle_track()
+    transport.previous()
+    clock.advance(DELIBERATE_MS)
+    transport.previous()
+    assert transport.current is tracks[1], "still the track in hand"
+
+
+def test_the_window_is_a_gesture_rather_than_a_decision() -> None:
+    """A double press is close to a double click, not seconds apart."""
+    assert QUICK_PRESS_MS < DELIBERATE_MS

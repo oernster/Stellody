@@ -29,9 +29,13 @@ Ordering = Callable[[tuple[Track, ...]], tuple[Track, ...]]
 Clock = Callable[[], float]
 
 # How close two presses of back must fall for the second to mean the previous
-# track. Longer than a double click, because this is a decision rather than a
-# gesture; short enough that a press made minutes later is plainly a fresh one.
-QUICK_PRESS_MS = 2000
+# track. It is a double press, so it is measured against the gesture rather
+# than against a decision: two seconds was tried and was long enough that a
+# second press made deliberately, a beat after hearing the track restart,
+# landed inside it and stepped back when a restart was wanted. Slightly longer
+# than the Windows double click default of 500ms, since these are two presses
+# of a small button rather than two clicks in one place.
+QUICK_PRESS_MS = 750
 
 
 def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
