@@ -19,7 +19,13 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.shared import resources
-from stellody.shared.version import APP_AUTHOR, APP_NAME, APP_TAGLINE, __version__
+from stellody.shared.version import (
+    APP_AUTHOR,
+    APP_NAME,
+    APP_TAGLINE,
+    COPYRIGHT_NOTICE,
+    __version__,
+)
 from stellody.ui.auto_scroller import AutoScroller
 
 ABOUT_ICON_PX = 96
@@ -164,6 +170,7 @@ def about_html() -> str:
         f"<p><b>{APP_TAGLINE}</b></p>"
         f"<p><b>Version:</b> {__version__}</p>"
         f"<p><b>Author:</b> {APP_AUTHOR}</p>"
+        f"<p>{COPYRIGHT_NOTICE}</p>"
         "<p>Stellody is dual licensed: the model under GPL-3.0 and the user "
         "interface under LGPL-3.0. See the Help menu for both licences.</p>"
         "<p>Stellody reads your music folder and never writes to it. Every "

@@ -8,6 +8,11 @@ import sys
 APP_NAME = "Stellody"
 APP_TAGLINE = "A calm, local-first FLAC music player."
 APP_AUTHOR = "Oliver Ernster"
+# Fixed rather than read from the clock. A copyright year that moves with the
+# machine's date is a claim about nothing; it would also make two machines
+# disagree about the same build.
+COPYRIGHT_YEAR = "2026"
+COPYRIGHT_NOTICE = f"© {COPYRIGHT_YEAR} {APP_AUTHOR}"
 APP_DOMAIN = "stellody.com"
 # Where the donate button sends a browser. The only address the application
 # knows; it is handed to the desktop rather than fetched, so nothing here ever

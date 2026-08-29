@@ -1,4 +1,4 @@
-"""The licence viewer: sized to the text, never cutting it off horizontally."""
+"""The dialogs: the licence viewer sized to its text; what About states."""
 
 from __future__ import annotations
 
@@ -7,8 +7,14 @@ import pathlib
 import pytest
 from PySide6.QtWidgets import QApplication, QTextBrowser
 
+from stellody.shared import version
+from stellody.shared.version import (
+    APP_AUTHOR,
+    COPYRIGHT_NOTICE,
+    COPYRIGHT_YEAR,
+)
 from stellody.ui import dialogs
-from stellody.ui.dialogs import LicenceDialog
+from stellody.ui.dialogs import AboutDialog, LicenceDialog
 
 WIDE_SCREEN_PX = 4000
 NARROW_SCREEN_PX = 400
@@ -95,3 +101,34 @@ def test_the_licence_is_measured_in_the_font_it_will_be_drawn_in(
         dialog.close()
     finally:
         application.setStyleSheet(previous)
+
+
+def test_about_states_the_copyright_with_its_symbol_and_year(
+    application: QApplication,
+) -> None:
+    """The year is written down rather than worked out, so it cannot drift."""
+    body = dialogs.about_html()
+    assert COPYRIGHT_NOTICE in body
+    assert "©" in body, "the symbol itself, not the word or (c)"
+    assert COPYRIGHT_YEAR in body
+    assert APP_AUTHOR in COPYRIGHT_NOTICE
+
+
+def test_the_copyright_year_is_written_down_not_worked_out() -> None:
+    """A year that moves with the machine's date is a claim about nothing.
+
+    Two machines with different clocks would otherwise disagree about the same
+    build, so the module that holds the year is read to prove it asks nothing.
+    """
+    source = pathlib.Path(version.__file__).read_text(encoding="utf-8")
+    assert COPYRIGHT_YEAR.isdigit()
+    for reach in ("datetime", "date.today", "time.", "now()"):
+        assert reach not in source, f"the year must not come from {reach}"
+
+
+def test_the_about_dialog_draws_that_notice(application: QApplication) -> None:
+    """Built from the same html, so the dialog cannot quietly say something else."""
+    dialog = AboutDialog()
+    shown = dialog.findChild(QTextBrowser)
+    assert shown is not None
+    assert COPYRIGHT_NOTICE in shown.toPlainText()
