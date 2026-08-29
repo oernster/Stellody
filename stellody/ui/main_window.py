@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
 from stellody.application.ports import SettingsStore
 from stellody.application.scan import (
     LoadLibrary,
-    ScanLibrary,
 )
 from stellody.domain.health import LibraryIssue
 from stellody.shared import resources
@@ -45,7 +44,7 @@ from stellody.ui.window_parts import (
     build_tree,
     neutral_holder,
 )
-from stellody.ui.worker import ScanRunner
+from stellody.ui.worker import ScanRunner, ScanSession
 
 WINDOW_WIDTH_PX = 1080
 WINDOW_HEIGHT_PX = 720
@@ -58,13 +57,13 @@ class MainWindow(Scanning, QMainWindow):
 
     def __init__(
         self,
-        scanner: ScanLibrary,
+        scan_session: ScanSession,
         loader: LoadLibrary,
         settings: SettingsStore,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self._scanner = scanner
+        self._scan_session = scan_session
         self._loader = loader
         self._settings = settings
         self._issues: tuple[LibraryIssue, ...] = ()

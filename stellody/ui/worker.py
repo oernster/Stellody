@@ -8,9 +8,19 @@ connected to a bare callable runs in the sender's thread instead.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
+from stellody.application.ports import ClosableStore
 from stellody.application.scan import ScanLibrary, ScanProgress, ScanReport
+
+# Builds the scanner ON THE THREAD THAT CALLS IT, returning the store it opened
+# so the thread can give the handle back. SQLite refuses a connection used from
+# a thread other than the one that created it, so a scanner built on the
+# interface thread raised on its first statement and the scan died there,
+# before a single folder was read or a single progress event sent.
+ScanSession = Callable[[], tuple[ScanLibrary, ClosableStore]]
 
 # Long enough for the folder being read when the cancel arrives, short enough
 # that a scan wedged on an unresponsive drive cannot hold the quit for ever.
@@ -30,9 +40,9 @@ class ScanWorker(QObject):
     completed = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, scanner: ScanLibrary, root: str) -> None:
+    def __init__(self, session: ScanSession, root: str) -> None:
         super().__init__()
-        self._scanner = scanner
+        self._session = session
         self._root = root
         self._cancelled = False
 
@@ -42,16 +52,29 @@ class ScanWorker(QObject):
 
     @Slot()
     def run(self) -> None:
-        """Scan the root, emitting progress and then the report."""
+        """Scan the root, emitting progress and then the report.
+
+        EVERY failure is reported, not just the ones reaching the disk. A scan
+        that raised anything else used to end the thread in silence: the bar
+        span on, the status line kept saying it was scanning and nothing ever
+        arrived. A scan that cannot finish must say so.
+        """
         try:
-            report = self._scanner.run(
+            scanner, store = self._session()
+        except Exception as error:  # noqa: BLE001 - reported, never swallowed
+            self.failed.emit(str(error))
+            return
+        try:
+            report = scanner.run(
                 self._root,
                 progress=self.progressed.emit,
                 cancelled=lambda: self._cancelled,
             )
-        except OSError as error:
+        except Exception as error:  # noqa: BLE001 - reported, never swallowed
             self.failed.emit(str(error))
             return
+        finally:
+            store.close()
         self.completed.emit(report)
 
 
@@ -73,12 +96,12 @@ class ScanRunner(QObject):
         """True while a scan is in flight."""
         return self._thread is not None
 
-    def start(self, scanner: ScanLibrary, root: str) -> bool:
+    def start(self, session: ScanSession, root: str) -> bool:
         """Begin a scan; False when one is already running."""
         if self._thread is not None:
             return False
         thread = QThread(self)
-        worker = ScanWorker(scanner, root)
+        worker = ScanWorker(session, root)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.progressed.connect(self._on_progress)

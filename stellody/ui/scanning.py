@@ -67,7 +67,7 @@ class Scanning:
                 "Choose a music folder to begin.", STATUS_TIMEOUT_MS
             )
             return False
-        if not self._runner.start(self._scanner, root):
+        if not self._runner.start(self._scan_session, root):
             return False
         self._set_rescan_enabled(False)
         # Recorded before the walk, so an interrupted scan is known for what it

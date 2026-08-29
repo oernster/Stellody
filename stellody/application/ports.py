@@ -192,6 +192,18 @@ class LibraryStore(Protocol):
         ...
 
 
+class ClosableStore(LibraryStore, Protocol):
+    """A store that holds a handle of its own and must give it back.
+
+    The scan opens its own store on its own thread, so something has to close
+    it when the thread is done.
+    """
+
+    def close(self) -> None:
+        """Release the handle."""
+        ...
+
+
 class PlaybackPort(Protocol):
     """Turns a track source into sound. The only thing that touches a device.
 

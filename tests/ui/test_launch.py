@@ -84,6 +84,9 @@ class FakeStore:
         """Store one setting."""
         self.settings[key] = value
 
+    def close(self) -> None:
+        """Nothing to release."""
+
 
 def remembered() -> tuple[FolderRecord, ...]:
     """One folder of two tracks, as a completed scan would have left it."""
@@ -108,8 +111,11 @@ def window(
     application: QApplication, store: FakeStore, walker: SpyWalker
 ) -> MainWindow:
     """A window over fakes, with nothing behind the walker but a spy."""
-    scanner = ScanLibrary(walker, None, None, store)
-    return MainWindow(scanner=scanner, loader=LoadLibrary(store), settings=store)
+
+    def session():
+        return ScanLibrary(walker, None, None, store), store
+
+    return MainWindow(scan_session=session, loader=LoadLibrary(store), settings=store)
 
 
 def test_launch_reads_the_store_and_never_the_music_folder(
@@ -201,7 +207,7 @@ def test_quitting_during_a_scan_stops_it_rather_than_waiting_it_out(
     scanner = ScanLibrary(walker, None, None, store)
     runner = ScanRunner()
     started = time.monotonic()
-    assert runner.start(scanner, ROOT) is True
+    assert runner.start(lambda: (scanner, store), ROOT) is True
     runner.wait()
     assert time.monotonic() - started < PATIENCE_S
     assert walker.yielded < FOLDERS_IN_A_LONG_SCAN

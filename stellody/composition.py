@@ -23,10 +23,29 @@ from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
 from stellody.ui.main_window import MainWindow
 
 
+def scan_session(database: str):
+    """Open a scanner and its own store, on whichever thread asks for one.
+
+    SQLite refuses a connection used from a thread other than the one that
+    made it, so the scan cannot borrow the window's. It opens its own against
+    the same file and hands it back to be closed when the scan ends.
+    """
+
+    def open_session() -> tuple[ScanLibrary, SqliteLibraryStore]:
+        store = SqliteLibraryStore(database)
+        scanner = ScanLibrary(FolderWalker(), FlacProbe(), SidecarTextReader(), store)
+        return scanner, store
+
+    return open_session
+
+
 def build_window(store: SqliteLibraryStore) -> MainWindow:
     """Assemble the window over a store, with real adapters behind every port."""
-    scanner = ScanLibrary(FolderWalker(), FlacProbe(), SidecarTextReader(), store)
-    return MainWindow(scanner=scanner, loader=LoadLibrary(store), settings=store)
+    return MainWindow(
+        scan_session=scan_session(store.database),
+        loader=LoadLibrary(store),
+        settings=store,
+    )
 
 
 def configure(application: QApplication) -> None:

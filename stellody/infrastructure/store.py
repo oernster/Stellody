@@ -81,12 +81,24 @@ def _split(value: str) -> tuple[str, ...]:
     return tuple(part for part in value.split(UNIT_SEPARATOR) if part)
 
 
+JOURNAL_MODE = "WAL"
+BUSY_TIMEOUT_MS = 5000
+
+
 class SqliteLibraryStore:
     """Stellody's library metadata, held in one SQLite file."""
 
     def __init__(self, database: str) -> None:
+        self.database = database
         self._connection = sqlite3.connect(database)
         self._connection.row_factory = sqlite3.Row
+        # SQLite refuses a connection used from a thread other than the one
+        # that made it, so the scan opens its own against the same file. Write
+        # ahead logging is what lets the two coexist: one writer and readers
+        # that are not blocked by it. The busy timeout covers the moment the
+        # scan commits a folder while the window stores a setting.
+        self._connection.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
+        self._connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
         self._connection.executescript(SCHEMA)
         self._connection.commit()
 
