@@ -9,7 +9,9 @@ to the tray without the artwork becoming too small to read.
 The switches sit at the right end, under About and the appearance toggle,
 which is where the application's own controls already are. The view toggle
 sits at the left instead, under the library it would change rather than among
-the settings.
+the settings, with the donate button outside it at the very end of the row:
+it belongs to nothing on screen, so it sits where nothing else is reached
+by accident.
 
 That toggle is drawn and placed before it does anything. Nothing reads album
 art off disk yet, so it is disabled and says so: an offered control that
@@ -63,6 +65,9 @@ SLIDER_MARGIN_PX = 10
 # Said plainly, because the button is on screen before the feature behind it.
 # Nothing reads album art off disk or off a music database yet.
 VIEW_TOOLTIP = "Switch to album art (not built yet)"
+# Said in the tooltip because pressing it leaves the application, which a
+# picture of a beer and a coffee does not on its own tell anybody.
+DONATE_TOOLTIP = "Buy the author a drink (opens your browser)"
 
 
 class VolumeSlider(QFrame):
@@ -125,6 +130,7 @@ class BottomTray(QWidget):
         toggle_shuffle: Callable[[], None] = lambda: None,
         toggle_repeat: Callable[[], None] = lambda: None,
         toggle_view: Callable[[], None] = lambda: None,
+        open_donation: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -141,12 +147,16 @@ class BottomTray(QWidget):
             self, resources.view_icon_path(), VIEW_TOOLTIP, toggle_view
         )
         self.view_button.setEnabled(False)
+        self.donate_button = _small_button(
+            self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
+        )
         self._popup = VolumeSlider(self, on_change)
         row = QHBoxLayout(self)
         row.setContentsMargins(
             BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
         )
         row.setSpacing(TRAY_GAP_PX)
+        row.addWidget(self.donate_button)
         row.addWidget(self.view_button)
         # The stretch splits the strip. What changes the library sits under
         # the library; the settings finish at the right edge under the
@@ -165,7 +175,7 @@ class BottomTray(QWidget):
         it up on the day it works without the order being revisited. Qt skips
         a disabled stop, so naming it costs nothing until then.
         """
-        return (self.view_button, *self.switch_stops())
+        return (self.donate_button, self.view_button, *self.switch_stops())
 
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""

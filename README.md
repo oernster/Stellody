@@ -34,6 +34,8 @@ not going to.
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
 - Runs in the system tray and can start there.
+- Offers to buy the author a drink, which opens a donation page in your
+  browser.
 
 Stellody is early. Cover art, a grid view, search, ratings, play counts, an
 equalizer and gapless transitions are not built; `PLAN.md` lists what is still
@@ -44,7 +46,9 @@ to come and what is deliberately excluded.
 - **It never writes to your music files.** This is enforced by a structural
   test, not by good intentions.
 - It does not send anything to the internet. There is no cover lookup, no
-  scrobbling, no telemetry and no update check.
+  scrobbling, no telemetry and no update check. The one outward thing it does
+  is hand a donation link to your browser when you press the button for it;
+  the browser does the asking, never Stellody.
 - It does not encrypt anything at rest. The store holds library metadata, not
   secrets.
 

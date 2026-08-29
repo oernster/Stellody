@@ -1,4 +1,4 @@
-"""The tray switches as the window drives them, plus the view toggle beside them.
+"""The tray switches as the window drives them, plus the two buttons beside them.
 
 Three switches that outlast the track in hand. Each has to reach the transport,
 show its own state and be there again next time the application opens; a switch
@@ -7,6 +7,10 @@ that does two of those and not the third is the one that gets reported as a bug.
 What is asserted about the pictures is that the two states DIFFER, not what the
 artwork is: the strike is a composite made at run time, so comparing it to a
 stored image would be testing the drawing rather than the wiring.
+
+The donate button is the one thing here that leaves the application, so what is
+asserted is the address handed outward, through a seam of our own rather than
+by mocking Qt or by opening a browser in the middle of a test run.
 """
 
 from __future__ import annotations
@@ -22,6 +26,8 @@ from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.playback import SILENT_VOLUME, UNITY_VOLUME
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
+from stellody.shared.version import DONATE_URL
+from stellody.ui import main_window as window_module
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
     FALSE,
@@ -34,6 +40,10 @@ from stellody.ui.settings_keys import (
 ICON_PX = 30
 # Long enough for the walk to come back round to where it started.
 RING_WALK = 40
+# Written out rather than read from the source it is checking. Comparing the
+# constant against itself passes whatever it is changed to, which for a payment
+# address is the one change that must never happen quietly.
+EXPECTED_DONATE_URL = "https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"
 
 
 def track(number: int) -> Track:
@@ -278,3 +288,38 @@ def test_the_disabled_view_toggle_is_not_a_stop_but_is_named_as_one(
         order.append(current)
     assert tray.view_button not in order, "a disabled control is never a stop"
     assert tray.volume_button in order, "the enabled ones still are"
+
+
+def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> None:
+    """It belongs to nothing on screen, so it sits where nothing else is."""
+    window.show()
+    tray = window._bottom_tray
+    row = tray.layout()
+    widgets = [row.itemAt(position).widget() for position in range(row.count())]
+    assert widgets[0] is tray.donate_button, "first in the row, before the toggle"
+    assert tray.donate_button in tray.ring_stops()
+    assert tray.donate_button.isEnabled(), "unlike the view toggle, this one works"
+    assert "opens your browser" in tray.donate_button.toolTip()
+
+
+def test_pressing_donate_asks_the_desktop_for_that_one_address(
+    window: MainWindow, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The seam is stood in front of, so no browser opens in a test run."""
+    asked: list[str] = []
+    monkeypatch.setattr(
+        window_module, "open_externally", lambda address: asked.append(address) or True
+    )
+    window._bottom_tray.donate_button.click()
+    assert asked == [EXPECTED_DONATE_URL]
+    assert DONATE_URL == EXPECTED_DONATE_URL, "the address changed"
+    assert DONATE_URL.startswith("https://"), "never handed out over plain http"
+
+
+def test_a_desktop_that_will_not_open_a_browser_says_so(
+    window: MainWindow, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Silence would leave a button that appears to do nothing at all."""
+    monkeypatch.setattr(window_module, "open_externally", lambda address: False)
+    window._bottom_tray.donate_button.click()
+    assert "Could not open a browser" in window.statusBar().currentMessage()

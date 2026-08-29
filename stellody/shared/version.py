@@ -9,6 +9,10 @@ APP_NAME = "Stellody"
 APP_TAGLINE = "A calm, local-first FLAC music player."
 APP_AUTHOR = "Oliver Ernster"
 APP_DOMAIN = "stellody.com"
+# Where the donate button sends a browser. The only address the application
+# knows; it is handed to the desktop rather than fetched, so nothing here ever
+# opens a connection of its own.
+DONATE_URL = "https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"
 
 DEV_VERSION = "0.0.0-dev"
 VERSION_FILE = "VERSION"

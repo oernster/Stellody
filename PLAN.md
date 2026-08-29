@@ -294,7 +294,9 @@ backend decision with milestone 12.
   deliberate non-goals. The last of them is enforced by a structural test rather
   than by intention.
 - **Anything over the network.** No cover lookup, no scrobbling, no telemetry,
-  no update check. The absence is the feature.
+  no update check. The absence is the feature. Handing the donation link to a
+  browser is not an exception to this: the address goes outward and the
+  browser does the asking, so Stellody still opens no connection of its own.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
 - **A second library root.** One folder, chosen once, rescanned incrementally.

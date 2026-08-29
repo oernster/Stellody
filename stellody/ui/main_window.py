@@ -22,11 +22,12 @@ from stellody.application.transport import Transport
 from stellody.domain.health import LibraryIssue
 from stellody.domain.track import Track
 from stellody.shared import resources
-from stellody.shared.version import APP_NAME
+from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
+from stellody.ui.links import open_externally
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.scanning import Scanning
@@ -36,6 +37,7 @@ from stellody.ui.settings_keys import (
     SETTING_DESCENDING,
     SETTING_ROOT,
     SETTING_THEME,
+    STATUS_TIMEOUT_MS,
     TRUE,
 )
 from stellody.ui.theme import Mode, stylesheet
@@ -102,6 +104,7 @@ class MainWindow(Scanning, Playing, QMainWindow):
             on_change=self.set_volume,
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
+            open_donation=self.open_donation,
         )
         self.setCentralWidget(
             build_body(self, self._tray, self._tree, self._bottom_tray)
@@ -268,6 +271,23 @@ class MainWindow(Scanning, Playing, QMainWindow):
     def show_about(self) -> None:
         """Open the About dialog."""
         AboutDialog(self).exec()
+
+    @Slot()
+    def open_donation(self) -> None:
+        """Hand the donation page to whatever the desktop opens links with.
+
+        Stellody opens no connection of its own here. The address goes outward
+        and the browser does the asking, which is why the local-first
+        guarantee is unchanged by this button existing.
+
+        A desktop that declines to open it says so in the status bar. Silence
+        would leave the user pressing a button that appears to do nothing.
+        """
+        if not open_externally(DONATE_URL):
+            self.statusBar().showMessage(
+                "Could not open a browser for the donation page",
+                STATUS_TIMEOUT_MS,
+            )
 
     @Slot()
     def quit_application(self) -> None:
