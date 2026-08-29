@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
@@ -29,13 +28,6 @@ from stellody.ui.worker import ScanRunner
 ROOT = "H:/FLACMusic"
 PATIENCE_S = 5.0
 POLL_S = 0.005
-
-
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
 
 
 class EmptyWalker:

@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
 from stellody.ui.dialogs import NeutralDialog, close_row
+from stellody.ui.display import native_path
 
 DIALOG_WIDTH_PX = 760
 DIALOG_HEIGHT_PX = 560
@@ -35,7 +36,7 @@ def _paths_html(issue: LibraryIssue) -> str:
     if not issue.paths:
         return ""
     shown = issue.paths[:MAX_PATHS_SHOWN]
-    items = "".join(f"<li>{_escape(path)}</li>" for path in shown)
+    items = "".join(f"<li>{_escape(native_path(path))}</li>" for path in shown)
     remainder = len(issue.paths) - len(shown)
     if remainder > 0:
         items += f"<li><i>and {remainder} more</i></li>"

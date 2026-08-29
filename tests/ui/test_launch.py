@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.ports import FolderListing, FolderRecord, SourceRecord
@@ -27,13 +26,6 @@ ROOT = "H:/FLACMusic"
 FOLDERS_IN_A_LONG_SCAN = 200_000
 PATIENCE_S = 5.0
 FOLDER = f"{ROOT}/Sasha/Involver"
-
-
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
 
 
 class SpyWalker:

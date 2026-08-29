@@ -28,13 +28,6 @@ BOTTOM_TICKS = ticks_for(auto_scroller.BOTTOM_PAUSE_MS)
 RESUME_TICKS = ticks_for(auto_scroller.RESUME_AFTER_MS)
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 @pytest.fixture
 def surface(application: QApplication) -> QTextBrowser:
     """A text surface whose content overflows, shown offscreen."""

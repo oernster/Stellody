@@ -41,12 +41,6 @@ RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
 COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    return QApplication.instance() or QApplication([])
-
-
 @pytest.fixture
 def window(application: QApplication):
     """The real main window over a throwaway store."""

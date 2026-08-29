@@ -17,13 +17,6 @@ NARROW_SCREEN_PX = 400
 LICENCE_LINE = "x" * 76
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 @pytest.fixture
 def licence(tmp_path: pathlib.Path) -> pathlib.Path:
     """A licence file hard wrapped well beyond a narrow display."""

@@ -13,6 +13,7 @@ from __future__ import annotations
 from PySide6.QtCore import Slot
 
 from stellody.application.scan import LibraryView, ScanProgress, ScanReport
+from stellody.ui.display import native_path
 from stellody.ui.health import has_serious_issues
 from stellody.ui.settings_keys import (
     FALSE,
@@ -76,7 +77,7 @@ class Scanning:
         # Indeterminate again for the counting pass, which has no number yet.
         self._progress.setRange(0, 0)
         self._progress.setVisible(True)
-        self.statusBar().showMessage(f"Scanning {root}")
+        self.statusBar().showMessage(f"Scanning {native_path(root)}")
         return True
 
     @Slot(object)
@@ -91,7 +92,7 @@ class Scanning:
             self._progress.setValue(progress.done)
         self.statusBar().showMessage(
             f"{progress.percent}% ({progress.done} of {progress.total}) "
-            f"{progress.folder}"
+            f"{native_path(progress.folder)}"
         )
 
     @Slot(object)
