@@ -222,8 +222,30 @@ class Playing:
             self._show_transport()
             self.statusBar().showMessage(f"Cannot play that: {error}")
             return False
+        self._follow_playback()
         self._show_transport()
         return True
+
+    def _follow_playback(self) -> None:
+        """Point the library at the track playing, whenever that changes.
+
+        Only on a change. The transport is polled four times a second, so
+        following on every poll would drag the highlight back from wherever
+        the listener had moved it to while the music carried on.
+
+        The parent is expanded first: a highlight on a row inside a collapsed
+        album is a highlight nobody can see.
+        """
+        track = self._transport.current
+        if track is None or track is self._followed:
+            return
+        self._followed = track
+        index = self._model.index_for(track)
+        if not index.isValid():
+            return
+        self._tree.expand(index.parent())
+        self._tree.setCurrentIndex(index)
+        self._tree.scrollTo(index)
 
     def _show_transport(self) -> None:
         """Point the buttons at what can be done to what is loaded."""

@@ -20,6 +20,7 @@ from stellody.application.scan import (
 )
 from stellody.application.transport import Transport
 from stellody.domain.health import LibraryIssue
+from stellody.domain.track import Track
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.bottom_tray import BottomTray
@@ -112,6 +113,9 @@ class MainWindow(Scanning, Playing, QMainWindow):
         self._notification = build_tray(self, icon)
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
+        # The track the highlight was last moved to, so the library follows
+        # the transport on a change rather than on every poll.
+        self._followed: Track | None = None
         self.wire_tree()
         self.restore_volume()
         self.restore_switches()

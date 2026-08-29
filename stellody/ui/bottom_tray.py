@@ -2,8 +2,12 @@
 
 Its own strip rather than a place in the tray above, because none of these is
 a transport command. They are settings that outlast the track in hand; they
-belong where a setting sits. Half the height of the tray above it, derived
-from that tray's own sizes so the two cannot drift apart.
+belong where a setting sits. Three quarters of the size of the tray above it,
+derived from that tray's own sizes so the two cannot drift apart: subordinate
+to the tray without the artwork becoming too small to read.
+
+The switches sit at the right end, under About and the appearance toggle,
+which is where the application's own controls already are.
 
 Shuffle and repeat show their STATE rather than the action a press would take,
 because "off" has no picture of its own: the switch is struck through while it
@@ -34,9 +38,13 @@ from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.toolbar import BUTTON_PX, ICON_PX, TRAY_GAP_PX, TRAY_MARGIN_PX
 
 HALF = 2
-VOLUME_BUTTON_PX = BUTTON_PX // HALF
-VOLUME_ICON_PX = ICON_PX // HALF
-VOLUME_MARGIN_PX = TRAY_MARGIN_PX // HALF
+# Three quarters of the tray above. Expressed against that tray's own sizes so
+# the two cannot drift apart when either is retuned.
+SWITCH_NUMERATOR = 3
+SWITCH_DENOMINATOR = 4
+BOTTOM_BUTTON_PX = BUTTON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
+BOTTOM_ICON_PX = ICON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
+BOTTOM_MARGIN_PX = TRAY_MARGIN_PX // HALF
 
 # The slider runs in whole percent, which is what the label says and what is
 # stored. The engine takes a fraction, so one conversion lives at that seam.
@@ -85,12 +93,12 @@ class VolumeSlider(QFrame):
 def _small_button(
     parent: QWidget, path, tip: str, on_click: Callable[[], None]
 ) -> QPushButton:
-    """One half-height picture button, matching the tray above at half scale."""
+    """One picture button, matching the tray above at three quarters scale."""
     button = QPushButton(parent)
     button.setObjectName("TrayButton")
     button.setToolTip(tip)
-    button.setFixedSize(VOLUME_BUTTON_PX, VOLUME_BUTTON_PX)
-    button.setIconSize(QSize(VOLUME_ICON_PX, VOLUME_ICON_PX))
+    button.setFixedSize(BOTTOM_BUTTON_PX, BOTTOM_BUTTON_PX)
+    button.setIconSize(QSize(BOTTOM_ICON_PX, BOTTOM_ICON_PX))
     if path is not None:
         button.setIcon(QIcon(str(path)))
     button.clicked.connect(on_click)
@@ -121,12 +129,14 @@ class BottomTray(QWidget):
         self._popup = VolumeSlider(self, on_change)
         row = QHBoxLayout(self)
         row.setContentsMargins(
-            VOLUME_MARGIN_PX, VOLUME_MARGIN_PX, VOLUME_MARGIN_PX, VOLUME_MARGIN_PX
+            BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
         )
         row.setSpacing(TRAY_GAP_PX)
+        # The stretch comes first, so the switches finish at the right edge
+        # under the application's other controls.
+        row.addStretch()
         for button in self.ring_stops():
             row.addWidget(button)
-        row.addStretch()
         self._percent = MAXIMUM_PERCENT
         self.set_shuffled(False)
         self.set_repeating(False)
@@ -157,7 +167,7 @@ class BottomTray(QWidget):
         button.setIcon(
             plain_icon(path)
             if on
-            else struck_through(path, resources.negative_icon_path(), VOLUME_ICON_PX)
+            else struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
         )
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
 

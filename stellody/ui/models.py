@@ -85,6 +85,21 @@ def _build(albums: tuple[Album, ...]) -> list[_Node]:
     return roots
 
 
+def _find_track(nodes: list[_Node], track: Track) -> _Node | None:
+    """The node holding this exact track, searched depth first.
+
+    Depth first rather than over the albums alone, because a multi-disc album
+    keeps its tracks a level further down.
+    """
+    for node in nodes:
+        if node.track is track:
+            return node
+        deeper = _find_track(node.children, track)
+        if deeper is not None:
+            return deeper
+    return None
+
+
 def _album_text(album: Album, column: Column) -> str:
     """One cell of an album row."""
     if column is Column.TITLE:
@@ -178,6 +193,18 @@ class AlbumTreeModel(QAbstractItemModel):
         """The track an index refers to, when it refers to one."""
         node = self._node(index)
         return node.track if node is not None else None
+
+    def index_for(self, track: Track) -> QModelIndex:
+        """Where a track sits in the tree; an invalid index when it is absent.
+
+        Found by identity rather than by equality, matching the queue: a
+        library may legitimately hold two identical tracks; the one being
+        played is a particular one of them.
+        """
+        found = _find_track(self._roots, track)
+        if found is None:
+            return QModelIndex()
+        return self.createIndex(found.row, 0, found)
 
     def _rebuild(self) -> None:
         """Rebuild the node tree in the current order."""
