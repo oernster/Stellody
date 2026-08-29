@@ -26,6 +26,14 @@ STOP_ICON = "stop.png"
 # The glyphs are the usual bar and triangle, so they mean previous and next.
 PREVIOUS_ICON = "jump-left.png"
 NEXT_ICON = "jump-right.png"
+VOLUME_ICON = "volume.png"
+SHUFFLE_ICON = "shuffle.png"
+REPEAT_ICON = "repeat.png"
+UNMUTE_ICON = "unmute.png"
+# The slash laid over one of the three switches above to say it is off. It is
+# artwork in its own right rather than a variant of each icon, so a change to
+# the slash reaches all three without three files being redrawn.
+NEGATIVE_ICON = "negative.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -106,6 +114,31 @@ def previous_icon_path() -> pathlib.Path | None:
 def next_icon_path() -> pathlib.Path | None:
     """The artwork for the track after this one."""
     return find_asset(NEXT_ICON)
+
+
+def volume_icon_path() -> pathlib.Path | None:
+    """The artwork for the volume control."""
+    return find_asset(VOLUME_ICON)
+
+
+def shuffle_icon_path() -> pathlib.Path | None:
+    """The artwork for playing an album out of order."""
+    return find_asset(SHUFFLE_ICON)
+
+
+def repeat_icon_path() -> pathlib.Path | None:
+    """The artwork for starting the album again at its end."""
+    return find_asset(REPEAT_ICON)
+
+
+def unmute_icon_path() -> pathlib.Path | None:
+    """The artwork for the mute switch, struck through while silent."""
+    return find_asset(UNMUTE_ICON)
+
+
+def negative_icon_path() -> pathlib.Path | None:
+    """The slash that says a switch is off."""
+    return find_asset(NEGATIVE_ICON)
 
 
 def model_licence_path() -> pathlib.Path | None:

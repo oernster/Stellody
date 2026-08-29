@@ -18,6 +18,11 @@ from stellody.domain.track import MILLISECONDS_PER_SECOND
 
 STEREO_CHANNELS = 2
 
+# Gain is a property of playback rather than of the device that produces it, so
+# the two ends of the range are stated here and every layer means the same two.
+UNITY_VOLUME = 1.0
+SILENT_VOLUME = 0.0
+
 
 class PlaybackState(Enum):
     """Where the transport is. Nothing else is a state."""

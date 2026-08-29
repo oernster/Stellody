@@ -22,6 +22,7 @@ from stellody.application.transport import Transport
 from stellody.domain.health import LibraryIssue
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
@@ -89,12 +90,21 @@ class MainWindow(Scanning, Playing, QMainWindow):
             rescan=self.rescan,
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
+            toggle_mute=self.toggle_mute,
             previous_track=self.previous_track,
             toggle_playback=self.toggle_playback,
             stop_playback=self.stop_playback,
             next_track=self.next_track,
         )
-        self.setCentralWidget(build_body(self, self._tray, self._tree))
+        self._bottom_tray = BottomTray(
+            self,
+            on_change=self.set_volume,
+            toggle_shuffle=self.toggle_shuffle,
+            toggle_repeat=self.toggle_repeat,
+        )
+        self.setCentralWidget(
+            build_body(self, self._tray, self._tree, self._bottom_tray)
+        )
         self._set_ring_order()
         self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)
@@ -103,6 +113,8 @@ class MainWindow(Scanning, Playing, QMainWindow):
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
         self.wire_tree()
+        self.restore_volume()
+        self.restore_switches()
         self._tree.selectionModel().currentChanged.connect(self._on_selection)
         self._transport_timer = QTimer(self)
         self._transport_timer.timeout.connect(self._poll_transport)
@@ -119,7 +131,11 @@ class MainWindow(Scanning, Playing, QMainWindow):
         the tray is handed it. Reading order is what the ring must
         follow, so it is stated rather than inherited.
         """
-        stops = (*self._tray.ring_stops(), self._tree)
+        stops = (
+            *self._tray.ring_stops(),
+            self._tree,
+            *self._bottom_tray.ring_stops(),
+        )
         for earlier, later in itertools.pairwise(stops):
             QWidget.setTabOrder(earlier, later)
 

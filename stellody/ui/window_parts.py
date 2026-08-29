@@ -41,10 +41,12 @@ def application_icon() -> QIcon | None:
     return None if icon.isNull() else icon
 
 
-def build_body(window: QMainWindow, tray: QWidget, tree: QWidget) -> QWidget:
-    """The tray above the library, as one central widget.
+def build_body(
+    window: QMainWindow, tray: QWidget, tree: QWidget, footer: QWidget
+) -> QWidget:
+    """The tray, the library, then the volume strip, as one central widget.
 
-    A plain container: it holds the two of them and is never a stop itself.
+    A plain container: it holds the three of them and is never a stop itself.
     """
     holder = QWidget(window)
     holder.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -53,12 +55,29 @@ def build_body(window: QMainWindow, tray: QWidget, tree: QWidget) -> QWidget:
     column.setSpacing(0)
     column.addWidget(tray)
     column.addWidget(tree, 1)
+    column.addWidget(footer)
     return holder
+
+
+class _NeutralStart(QWidget):
+    """A zero-size focus holder that leaves the ring once it has been left.
+
+    Something has to hold focus at launch or Qt gives it to the first control,
+    which highlights a menu title before the user has asked for anything. This
+    takes it instead, then drops out of the tab chain the moment focus moves on,
+    so the cycle that follows holds only real controls: without that, tabbing
+    around the window lands once per lap on a widget nobody can see.
+    """
+
+    def focusOutEvent(self, event) -> None:
+        """Leave the ring, having done the one job there was."""
+        super().focusOutEvent(event)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
 
 def neutral_holder(window: QMainWindow) -> QWidget:
     """A zero-size focus holder, so no menu is highlighted on launch."""
-    holder = QWidget(window)
+    holder = _NeutralStart(window)
     holder.setObjectName("NeutralStart")
     holder.setFixedSize(0, 0)
     holder.setFocusPolicy(Qt.FocusPolicy.TabFocus)

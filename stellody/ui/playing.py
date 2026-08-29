@@ -16,7 +16,16 @@ from collections.abc import Callable
 from PySide6.QtCore import QModelIndex, QPoint, Qt, Slot
 from PySide6.QtWidgets import QMenu
 
-from stellody.ui.settings_keys import STATUS_TIMEOUT_MS
+from stellody.ui.bottom_tray import MAXIMUM_PERCENT, MINIMUM_PERCENT
+from stellody.ui.settings_keys import (
+    FALSE,
+    SETTING_MUTED,
+    SETTING_REPEAT,
+    SETTING_SHUFFLE,
+    SETTING_VOLUME,
+    STATUS_TIMEOUT_MS,
+    TRUE,
+)
 
 # Often enough that the button never lies for long, rarely enough that an idle
 # window is not doing arithmetic sixty times a second.
@@ -40,6 +49,71 @@ class Playing:
         self._tree.activated.connect(self.activate)
         self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._tree.customContextMenuRequested.connect(self.show_transport_menu)
+
+    @Slot(int)
+    def set_volume(self, percent: int) -> None:
+        """Take the slider's whole percent down to the gain the engine wants.
+
+        Stored as percent because that is what the user set and what the
+        tooltip says; the fraction is the engine's business and the conversion
+        happens once, here.
+        """
+        self._transport.set_volume(percent / MAXIMUM_PERCENT)
+        self._bottom_tray.set_percent(percent)
+        self._settings.set_setting(SETTING_VOLUME, str(percent))
+
+    def restore_volume(self) -> None:
+        """Start at the volume last chosen, full when none has been."""
+        stored = self._settings.get_setting(SETTING_VOLUME, str(MAXIMUM_PERCENT))
+        try:
+            percent = int(stored)
+        except ValueError:
+            percent = MAXIMUM_PERCENT
+        self.set_volume(min(max(MINIMUM_PERCENT, percent), MAXIMUM_PERCENT))
+
+    def restore_switches(self) -> None:
+        """Bring mute, shuffle and repeat back as they were last left.
+
+        A switch that forgets itself between sessions is a switch the listener
+        has to set every time, which is the same as not having it.
+        """
+        self._apply_muted(self._flag(SETTING_MUTED))
+        self._apply_shuffled(self._flag(SETTING_SHUFFLE))
+        self._apply_repeating(self._flag(SETTING_REPEAT))
+
+    def toggle_mute(self) -> None:
+        """Silence the output, else give it back at the level already chosen."""
+        self._apply_muted(not self._transport.muted)
+
+    def toggle_shuffle(self) -> None:
+        """Scatter the queue, else put the album back into its own order."""
+        self._apply_shuffled(not self._transport.shuffled)
+
+    def toggle_repeat(self) -> None:
+        """Choose between the queue ending at its last track and looping."""
+        self._apply_repeating(not self._transport.repeating)
+
+    def _apply_muted(self, muted: bool) -> None:
+        """Set the switch, show it and remember it: the three go together."""
+        self._transport.set_muted(muted)
+        self._tray.set_muted(muted)
+        self._remember(SETTING_MUTED, muted)
+
+    def _apply_shuffled(self, shuffled: bool) -> None:
+        """Set the switch, show it and remember it."""
+        self._transport.set_shuffled(shuffled)
+        self._bottom_tray.set_shuffled(shuffled)
+        self._remember(SETTING_SHUFFLE, shuffled)
+
+    def _apply_repeating(self, repeating: bool) -> None:
+        """Set the switch, show it and remember it."""
+        self._transport.set_repeating(repeating)
+        self._bottom_tray.set_repeating(repeating)
+        self._remember(SETTING_REPEAT, repeating)
+
+    def _remember(self, key: str, on: bool) -> None:
+        """Store one switch under the name it is read back by."""
+        self._settings.set_setting(key, TRUE if on else FALSE)
 
     @Slot(QModelIndex, QModelIndex)
     def _on_selection(self, current: QModelIndex, previous: QModelIndex) -> None:

@@ -17,6 +17,7 @@ from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 
 from stellody.domain.playback import (
+    UNITY_VOLUME,
     OutputMode,
     OutputReport,
     OutputRequest,
@@ -37,6 +38,7 @@ class RecordingPlayer:
         self.loaded: list[TrackSource] = []
         self.state = PlaybackState.STOPPED
         self.finished = False
+        self.volume = UNITY_VOLUME
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Record the load and report a plain shared stream."""
@@ -73,6 +75,10 @@ class RecordingPlayer:
     def position(self):
         """Nothing to report in these tests."""
         return
+
+    def set_volume(self, level: float) -> None:
+        """Record the level asked for."""
+        self.volume = level
 
 
 @pytest.fixture(scope="session")

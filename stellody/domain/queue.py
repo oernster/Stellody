@@ -57,6 +57,34 @@ class Queue:
             return self
         return Queue(self.tracks, self.index + 1)
 
+    def wrapped_next(self) -> Queue:
+        """The queue one track later, back to the first one at the end."""
+        if self.index == NOTHING:
+            return self
+        return Queue(self.tracks, (self.index + 1) % len(self.tracks))
+
+    def wrapped_previous(self) -> Queue:
+        """The queue one track earlier, round to the last one at the start."""
+        if self.index == NOTHING:
+            return self
+        return Queue(self.tracks, (self.index - 1) % len(self.tracks))
+
+    def reordered(self, tracks: tuple[Track, ...]) -> Queue:
+        """The same run under a given order, still at whatever is current.
+
+        The order arrives rather than being worked out here, so the domain
+        needs no source of randomness of its own. An order that has lost the
+        track being played is refused: silently moving to a different track is
+        the one thing reordering must not do.
+        """
+        playing = self.current
+        if playing is None:
+            return Queue(tracks)
+        moved = Queue(tracks).at(playing)
+        if moved.current is not playing:
+            raise ValueError("a reordering must keep the track that is current")
+        return moved
+
     def at(self, track: Track) -> Queue:
         """The same tracks, positioned at this one.
 

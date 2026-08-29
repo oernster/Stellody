@@ -1,9 +1,14 @@
 """The icon tray under the menus.
 
 Picture-only buttons in reading order: choose the music folder and rescan it on
-the left, the transport centred, then the appearance toggle and About on the
-right. The library buttons repeat something the menus already offer, so they
-add reach rather than capability; nothing here owns any state of its own.
+the left, the transport centred, then the mute switch, the appearance toggle
+and About on the right. The library buttons repeat something the menus already
+offer, so they add reach rather than capability; nothing here owns any state of
+its own.
+
+Mute is ruled off from the two buttons after it. It acts on what is playing
+while they act on the application, so a line says they are different kinds of
+thing; the alternative is a run of eight buttons that all read as one group.
 
 The transport is centred because it is the one group that is about the track
 rather than about the library; also because a play button in the corner of a
@@ -19,15 +24,36 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QWidget
 
 from stellody.shared import resources
+from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.theme import Mode
 
 ICON_PX = 60
 BUTTON_PX = 91
 TRAY_MARGIN_PX = 6
 TRAY_GAP_PX = 6
+SEPARATOR_WIDTH_PX = 1
+# The line stops short of the tray's own edges, so it reads as a division
+# between buttons rather than as a border on the tray.
+SEPARATOR_INSET_PX = 12
+SEPARATOR_HEIGHT_PX = BUTTON_PX - SEPARATOR_INSET_PX - SEPARATOR_INSET_PX
+
+
+def _separator(parent: QWidget) -> QFrame:
+    """The hairline ruling one group of buttons off from the next.
+
+    Drawn as a plain frame carrying a background rather than as a Qt VLine,
+    because a VLine takes its colour from the palette and this one has to take
+    it from the appearance the application is wearing.
+    """
+    line = QFrame(parent)
+    line.setObjectName("TraySeparator")
+    line.setFrameShape(QFrame.Shape.NoFrame)
+    line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    line.setFixedSize(SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
+    return line
 
 
 def _icon_button(parent: QWidget, path, tip: str, on_click: Callable) -> QPushButton:
@@ -53,6 +79,7 @@ class LibraryTray(QWidget):
         rescan: Callable[[], None],
         toggle_theme: Callable[[], None],
         show_about: Callable[[], None],
+        toggle_mute: Callable[[], None] = lambda: None,
         previous_track: Callable[[], None] = lambda: None,
         toggle_playback: Callable[[], None] = lambda: None,
         stop_playback: Callable[[], None] = lambda: None,
@@ -83,6 +110,10 @@ class LibraryTray(QWidget):
         self.next_button = _icon_button(
             self, resources.next_icon_path(), "Next track", next_track
         )
+        self.mute_button = _icon_button(
+            self, resources.unmute_icon_path(), "Mute", toggle_mute
+        )
+        self.separator = _separator(self)
         self.theme_button = _icon_button(self, None, "", toggle_theme)
         self.about_button = _icon_button(
             self, resources.info_icon_path(), "About Stellody", show_about
@@ -100,6 +131,8 @@ class LibraryTray(QWidget):
         for button in self.transport_stops():
             row.addWidget(button)
         row.addStretch()
+        row.addWidget(self.mute_button)
+        row.addWidget(self.separator)
         row.addWidget(self.theme_button)
         row.addWidget(self.about_button)
 
@@ -118,6 +151,7 @@ class LibraryTray(QWidget):
             self.choose_button,
             self.rescan_button,
             *self.transport_stops(),
+            self.mute_button,
             self.theme_button,
             self.about_button,
         )
@@ -147,6 +181,21 @@ class LibraryTray(QWidget):
             button.setEnabled(loaded)
         self.play_button.setEnabled(loaded or can_start)
         self.stop_button.setEnabled(playing)
+
+    def set_muted(self, muted: bool) -> None:
+        """Strike the speaker through while it is silent.
+
+        This one shows the STATE rather than the action, which the play button
+        does not: silence has nothing of its own to show, so the picture has to
+        carry it. The tooltip names the action, so the pair still says both.
+        """
+        speaker = resources.unmute_icon_path()
+        self.mute_button.setIcon(
+            struck_through(speaker, resources.negative_icon_path(), ICON_PX)
+            if muted
+            else plain_icon(speaker)
+        )
+        self.mute_button.setToolTip("Unmute" if muted else "Mute")
 
     def set_mode(self, mode: Mode) -> None:
         """Show the appearance the toggle would switch TO, as the installer does."""

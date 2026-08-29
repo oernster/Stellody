@@ -19,6 +19,8 @@ import numpy as np
 import sounddevice
 
 from stellody.domain.playback import (
+    SILENT_VOLUME,
+    UNITY_VOLUME,
     OutputReport,
     OutputRequest,
     PlaybackPosition,
@@ -29,8 +31,6 @@ from stellody.infrastructure.decode import SourceReader
 from stellody.infrastructure.wasapi import open_output
 
 BLOCK_FRAMES = 4096
-UNITY_VOLUME = 1.0
-SILENT_VOLUME = 0.0
 JOIN_TIMEOUT_SECONDS = 2.0
 
 

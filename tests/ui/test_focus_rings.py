@@ -37,6 +37,10 @@ CONTAINER_SELECTORS = (
 ITEM_VIEWS = ("QTreeView", "QListView", "QTableView", "QListWidget", "QTreeWidget")
 # The one sanctioned zero-size stop: the neutral start the main window opens on.
 NEUTRAL_START = "NeutralStart"
+# The enabled stops on the top tray, ahead of the library: choose, rescan,
+# mute, theme and about. The four transport buttons sit between rescan and
+# mute and are disabled with nothing playing, so they are not stops at all.
+TOP_TRAY_STOPS = 5
 RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
 COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
@@ -115,8 +119,28 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         order.append(current)
     buttons = [w for w in order if isinstance(w, QPushButton)]
     trees = [w for w in order if isinstance(w, QTreeView)]
-    assert len(buttons) == 4, "the tray offers four stops"
     assert trees, "the library is a stop"
-    assert order.index(buttons[-1]) < order.index(trees[0])
-    centres = [w.mapTo(window, w.rect().center()).x() for w in buttons]
-    assert centres == sorted(centres), "the tray's stops run left to right"
+    # With nothing playing the four transport buttons are disabled; a
+    # disabled control is not a stop, so the ring must not stall on a dead one.
+    tips = [button.toolTip() for button in buttons]
+    assert tips == [
+        "Choose music folder",
+        "Rescan the library",
+        "Mute",
+        "Switch to the light appearance",
+        "About Stellody",
+        "Volume 100%",
+        "Turn shuffle on",
+        "Turn repeat on",
+    ]
+    top = buttons[:TOP_TRAY_STOPS]
+    bottom = buttons[TOP_TRAY_STOPS:]
+    assert order.index(trees[0]) > order.index(top[-1]), "the tray comes first"
+    assert order.index(trees[0]) < order.index(bottom[0]), "the strip comes after"
+    assert order[-1] is bottom[-1], "the bottom strip is the last thing reached"
+    # Each tray is its own row, so an x comparison across the two would be
+    # comparing different rows. Each is read on its own, where left to right
+    # is the reading order.
+    for row, name in ((top, "top tray"), (bottom, "bottom strip")):
+        centres = [w.mapTo(window, w.rect().center()).x() for w in row]
+        assert centres == sorted(centres), f"the {name}'s stops run left to right"

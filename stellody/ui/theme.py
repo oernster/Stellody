@@ -94,6 +94,17 @@ FOCUS_WIDTH_PX = 2
 LICENCE_FONT_PX = 13
 RADIUS_PX = 4
 ROW_HEIGHT_PX = 24
+HAIRLINE_PX = 1
+HALF = 2
+
+# The volume slider. The handle carries an outline in the window colour, so it
+# reads against the accent below it and against the empty groove above it in
+# both appearances without either being named per mode. The overhang is
+# negative so the handle sits wider than the channel it runs in.
+SLIDER_GROOVE_PX = 6
+SLIDER_HANDLE_PX = 18
+SLIDER_HANDLE_RADIUS_PX = SLIDER_HANDLE_PX // HALF
+SLIDER_HANDLE_OVERHANG_PX = -(SLIDER_HANDLE_PX - SLIDER_GROOVE_PX) // HALF
 
 
 def palette_for(mode: Mode) -> Palette:
@@ -256,6 +267,43 @@ def stylesheet(mode: Mode) -> str:
     QScrollBar::add-line, QScrollBar::sub-line {{
         height: 0px;
         width: 0px;
+    }}
+    QFrame#TraySeparator {{
+        background-color: {colour.border};
+        border: 0px;
+    }}
+    QFrame#VolumePopup {{
+        background-color: {colour.surface};
+        border: {HAIRLINE_PX}px solid {colour.border};
+        border-radius: {RADIUS_PX}px;
+    }}
+    QSlider#Volume {{
+        background-color: transparent;
+        border: {FOCUS_WIDTH_PX}px solid transparent;
+        border-radius: {RADIUS_PX}px;
+    }}
+    QSlider#Volume:enabled:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
+    QSlider#Volume::groove:vertical {{
+        background-color: {colour.window};
+        border: {HAIRLINE_PX}px solid {colour.border};
+        border-radius: {RADIUS_PX}px;
+        width: {SLIDER_GROOVE_PX}px;
+    }}
+    QSlider#Volume::add-page:vertical {{
+        background-color: {colour.accent};
+        border-radius: {RADIUS_PX}px;
+    }}
+    QSlider#Volume::sub-page:vertical {{
+        background-color: transparent;
+    }}
+    QSlider#Volume::handle:vertical {{
+        background-color: {colour.text};
+        border: {FOCUS_WIDTH_PX}px solid {colour.window};
+        border-radius: {SLIDER_HANDLE_RADIUS_PX}px;
+        height: {SLIDER_HANDLE_PX}px;
+        margin: 0px {SLIDER_HANDLE_OVERHANG_PX}px;
     }}
     QLabel[role="muted"] {{
         color: {colour.text_muted};
