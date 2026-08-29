@@ -34,7 +34,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QFrame,
@@ -86,12 +86,16 @@ class VolumeSlider(QFrame):
     """A vertical bar with a handle, floating above the button that opened it.
 
     A popup closes itself when the window is clicked elsewhere, which is what
-    makes this a control rather than a second window to manage.
+    makes this a control rather than a second window to manage. That same rule
+    is what makes the button hard to close it with, so where the closing press
+    landed is kept: see mousePressEvent below.
     """
 
     def __init__(self, parent: QWidget, on_change: Callable[[int], None]) -> None:
         super().__init__(parent, Qt.WindowType.Popup)
         self.setObjectName("VolumePopup")
+        # Where the press that closed this last landed, in screen coordinates.
+        self._dismissed_over: QPoint | None = None
         self.slider = QSlider(Qt.Orientation.Vertical, self)
         self.slider.setObjectName("Volume")
         self.slider.setRange(MINIMUM_PERCENT, MAXIMUM_PERCENT)
@@ -125,6 +129,7 @@ class VolumeSlider(QFrame):
 
     def open_at(self, percent: int, button: QWidget) -> None:
         """Show the slider above its button, set to where the volume is."""
+        self._dismissed_over = None
         self.slider.setValue(percent)
         corner = button.mapToGlobal(button.rect().topLeft())
         self.move(
@@ -133,6 +138,34 @@ class VolumeSlider(QFrame):
         )
         self.show()
         self.slider.setFocus(Qt.FocusReason.PopupFocusReason)
+
+    def mousePressEvent(self, event) -> None:
+        """Close on a press outside, remembering where that press landed.
+
+        Windows replays the press that dismisses a popup to whatever sits
+        under the cursor, so a press on the button that opened this closed it
+        and then immediately reopened it: measured as a slider that would not
+        go away, intermittently, since the replay is what decides it.
+
+        Keeping the position lets the button tell that replayed click apart
+        from a fresh one. Windows is the only platform built today; on one
+        that does not replay, the record is read by the next press instead,
+        which then puts the slider up on the press after it.
+        """
+        inside = self.rect().contains(event.position().toPoint())
+        self._dismissed_over = None if inside else event.globalPosition().toPoint()
+        super().mousePressEvent(event)
+
+    def dismissed_by(self, button: QWidget) -> bool:
+        """Whether the press that closed this landed on that button.
+
+        Reading forgets, so one press is answered once and never twice.
+        """
+        where = self._dismissed_over
+        self._dismissed_over = None
+        if where is None:
+            return False
+        return button.rect().contains(button.mapFromGlobal(where))
 
 
 def _small_button(
@@ -262,5 +295,10 @@ class BottomTray(QWidget):
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
 
     def _open(self) -> None:
-        """Show the slider where the volume currently stands."""
+        """Put the slider up; take it down when it is already up."""
+        if self._popup.isVisible():
+            self._popup.hide()
+            return
+        if self._popup.dismissed_by(self.volume_button):
+            return
         self._popup.open_at(self._percent, self.volume_button)

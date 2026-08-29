@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
@@ -87,3 +89,53 @@ def test_the_popup_shows_the_level_as_a_number_above_the_slider(
     assert popup.reading.text() == f"{DEFAULT_PERCENT}%"
     popup.slider.setValue(QUIET_PERCENT)
     assert popup.reading.text() == f"{QUIET_PERCENT}%", "driven by the slider"
+
+
+def press_over(popup, where: QPoint) -> None:
+    """A press inside the popup's window at a point given on the screen."""
+    QTest.mousePress(popup, Qt.MouseButton.LeftButton, pos=popup.mapFromGlobal(where))
+
+
+def test_the_volume_button_puts_the_slider_up_and_takes_it_down(
+    window: MainWindow,
+) -> None:
+    window.show()
+    tray = window._bottom_tray
+    QTest.mouseClick(tray.volume_button, Qt.MouseButton.LeftButton)
+    assert tray._popup.isVisible() is True
+    QTest.mouseClick(tray.volume_button, Qt.MouseButton.LeftButton)
+    assert tray._popup.isVisible() is False, "the same button puts it away"
+
+
+def test_the_press_that_closes_the_slider_does_not_reopen_it(
+    window: MainWindow,
+) -> None:
+    """Windows replays a dismissing press to whatever is under the cursor.
+
+    That replay reached the volume button, which reopened what its own press
+    had just closed: measured as a slider that would not go away, doing so
+    only sometimes, since the replay is what decides it.
+    """
+    window.show()
+    tray = window._bottom_tray
+    tray._open()
+    assert tray._popup.isVisible() is True
+    press_over(tray._popup, tray.volume_button.mapToGlobal(QPoint(0, 0)))
+    assert tray._popup.isVisible() is False, "the press closed it"
+    tray._open()
+    assert tray._popup.isVisible() is False, "and the replayed click left it down"
+    tray._open()
+    assert tray._popup.isVisible() is True, "while a fresh press puts it back up"
+
+
+def test_a_press_anywhere_else_closes_it_without_swallowing_the_next(
+    window: MainWindow,
+) -> None:
+    """Only a press on the button itself is ever replayed onto the button."""
+    window.show()
+    tray = window._bottom_tray
+    tray._open()
+    press_over(tray._popup, window.mapToGlobal(window.rect().topLeft()))
+    assert tray._popup.isVisible() is False
+    tray._open()
+    assert tray._popup.isVisible() is True, "the next press is a fresh one"
