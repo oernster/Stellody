@@ -10,14 +10,17 @@ asserted is what the window asked them for.
 
 from __future__ import annotations
 
+import pathlib
 import time
 
 from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
 
+from stellody import composition
 from stellody.application.ports import FolderListing, FolderRecord, SourceRecord
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
+from stellody.infrastructure import instance
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import FALSE, SETTING_ROOT, SETTING_SCAN_FINISHED, TRUE
 from stellody.ui.worker import ScanRunner
@@ -210,3 +213,76 @@ def test_quitting_during_a_scan_stops_it_rather_than_waiting_it_out(
     runner.wait()
     assert time.monotonic() - started < PATIENCE_S
     assert walker.yielded < FOLDERS_IN_A_LONG_SCAN
+
+
+def test_a_second_launch_brings_the_hidden_window_back(
+    application: QApplication, monkeypatch, tmp_path
+) -> None:
+    """Closed to the tray, the window is hidden and has no taskbar button.
+
+    So clicking the pinned shortcut starts another copy, which is almost never
+    what was meant by it. That copy asks this one to come forward instead.
+    """
+    store = FakeStore(remembered(), {SETTING_ROOT: ROOT})
+    made = window(application, store, SpyWalker())
+    made.show()
+    application.processEvents()
+    made.hide()
+    application.processEvents()
+    assert made.isVisible() is False, "closed to the tray"
+
+    monkeypatch.setattr(composition, "data_location", lambda: tmp_path)
+    assert instance.ask(tmp_path) is True
+    composition._come_forward(made)
+    application.processEvents()
+    assert made.isVisible() is True, "the running copy came forward"
+    assert not instance.attention_path(tmp_path).exists(), "and took the note"
+
+
+def test_a_tick_with_nobody_asking_leaves_the_window_where_it_is(
+    application: QApplication, monkeypatch, tmp_path
+) -> None:
+    """A window raising itself unbidden is worse than one that stays put."""
+    store = FakeStore(remembered(), {SETTING_ROOT: ROOT})
+    made = window(application, store, SpyWalker())
+    made.show()
+    application.processEvents()
+    made.hide()
+    application.processEvents()
+    monkeypatch.setattr(composition, "data_location", lambda: tmp_path)
+    composition._come_forward(made)
+    application.processEvents()
+    assert made.isVisible() is False
+
+
+class RefusedClaim:
+    """A claim taken by a copy that is already running."""
+
+    def __init__(self, *_: object) -> None:
+        self.released = False
+
+    def take(self) -> bool:
+        """Somebody else has it."""
+        return False
+
+    def release(self) -> None:
+        """Never reached, since this copy never had it."""
+        self.released = True
+
+
+def test_a_second_copy_asks_and_leaves_rather_than_opening_a_window(
+    application: QApplication, monkeypatch, tmp_path
+) -> None:
+    """It gets no store, no window and no event loop of its own."""
+    asked: list[pathlib.Path] = []
+    monkeypatch.setattr(composition, "QApplication", lambda argv: application)
+    monkeypatch.setattr(composition.instance, "Claim", RefusedClaim)
+    monkeypatch.setattr(composition, "data_location", lambda: tmp_path)
+    monkeypatch.setattr(composition.instance, "ask", lambda where: asked.append(where))
+
+    def never(*_: object, **__: object) -> None:
+        raise AssertionError("a second copy must not open the library")
+
+    monkeypatch.setattr(composition, "open_store", never)
+    assert composition._start([]) == composition.ALREADY_RUNNING
+    assert asked == [tmp_path], "it asked the running copy to come forward"

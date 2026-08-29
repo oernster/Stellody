@@ -39,7 +39,9 @@ not going to.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
-- Runs in the system tray and can start there.
+- Runs in the system tray and can start there. Opening Stellody again while
+  it is already running brings that window back rather than starting a
+  second copy.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
