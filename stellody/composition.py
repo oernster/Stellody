@@ -14,8 +14,10 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
+from stellody.infrastructure import switch_reset
 from stellody.infrastructure.audio import WasapiPlayback
-from stellody.infrastructure.paths import database_path
+from stellody.infrastructure.opening import open_store
+from stellody.infrastructure.paths import data_location, database_path
 from stellody.infrastructure.probe import FlacProbe
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -25,6 +27,7 @@ from stellody.shared import resources
 from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
 from stellody.ui.main_window import MainWindow
+from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE
 
 
 def scan_session(database: str):
@@ -80,7 +83,10 @@ def _start(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv if argv is None else argv)
     application = QApplication(arguments)
     configure(application)
-    store = SqliteLibraryStore(str(database_path()))
+    store, set_aside = open_store(database_path())
+    if switch_reset.take(data_location()):
+        for key in (SETTING_SHUFFLE, SETTING_REPEAT):
+            store.set_setting(key, FALSE)
     window = build_window(store)
     # Starting hidden is only honoured while there is a tray to restore from,
     # else the user would be left with nothing on screen at all.
@@ -90,6 +96,8 @@ def _start(argv: list[str] | None = None) -> int:
     # the music folder every time the application opened, which on a large
     # library is felt; nobody asked for it by starting the application.
     window.load_remembered()
+    if set_aside is not None:
+        window.report_library_set_aside(set_aside)
     code = application.exec()
     store.close()
     return code

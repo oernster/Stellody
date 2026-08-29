@@ -57,7 +57,11 @@ def test_a_failed_start_writes_the_reason_down_and_still_raises(
     def refuse(*_: object) -> None:
         raise Boom("database is locked")
 
-    monkeypatch.setattr(composition, "SqliteLibraryStore", refuse)
+    # Both of them, plus the path: a patch that misses lets main build a real
+    # window against the real database and sit in Qt's event loop forever,
+    # which is exactly what happened when open_store was introduced.
+    monkeypatch.setattr(composition, "database_path", lambda: tmp_path / "library")
+    monkeypatch.setattr(composition, "open_store", refuse)
     with pytest.raises(Boom):
         composition.main([])
     written = (tmp_path / startup_log.LOG_NAME).read_text(encoding="utf-8")

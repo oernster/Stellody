@@ -43,6 +43,17 @@ class Scanning:
         self._model.set_albums(view.albums)
         self.statusBar().showMessage(self._remembered_message(view))
 
+    def report_library_set_aside(self, moved) -> None:
+        """Say that the library index would not open and what became of it.
+
+        Said after the remembered library has been shown, so it is the last
+        thing on the status line rather than the first thing overwritten.
+        """
+        self.statusBar().showMessage(
+            f"The library index would not open, so it was set aside as "
+            f"{moved.name}. Rescan to build a new one."
+        )
+
     def _remembered_message(self, view: LibraryView) -> str:
         """What the status line says about a library nobody has just scanned."""
         if not self.library_root:

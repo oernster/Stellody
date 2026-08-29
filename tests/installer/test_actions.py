@@ -3,21 +3,17 @@
 from __future__ import annotations
 
 import pathlib
-import sqlite3
-import time
 import zipfile
 
 import pytest
 
 from installer import actions, registry
 from installer.plan import InstallPlan
-from stellody.infrastructure import paths
+from stellody.infrastructure import paths, switch_reset
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.settings_keys import (
-    FALSE,
     SETTING_REPEAT,
     SETTING_SHUFFLE,
-    SETTING_VOLUME,
     TRUE,
 )
 
@@ -215,70 +211,40 @@ def _quiet_install(
     actions.install(plan, archive, anew=anew)
 
 
-def test_installing_anew_leaves_shuffle_and_repeat_off(
+def test_installing_anew_asks_for_the_switches_to_start_off(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A reinstall inherits the directory, so it must not inherit the switches."""
-    database = _stored(
-        tmp_path / paths.DATABASE_NAME,
-        {SETTING_SHUFFLE: TRUE, SETTING_REPEAT: TRUE, SETTING_VOLUME: "52"},
-    )
     monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
     _quiet_install(tmp_path, monkeypatch, anew=True)
-    store = SqliteLibraryStore(str(database))
-    try:
-        # Read with each default in turn: the rows are gone rather than set,
-        # since a setting that is not there already reads as off.
-        assert store.get_setting(SETTING_SHUFFLE, ABSENT) == ABSENT
-        assert store.get_setting(SETTING_REPEAT, ABSENT) == ABSENT
-        assert store.get_setting(SETTING_SHUFFLE, FALSE) == FALSE, "so it reads off"
-        assert store.get_setting(SETTING_VOLUME, "") == "52", "the rest is untouched"
-    finally:
-        store.close()
+    assert switch_reset.marker_path(tmp_path).is_file(), "the note was left"
 
 
-def test_a_database_somebody_else_is_holding_does_not_stop_the_install(
+def test_the_note_is_left_beside_the_library_and_never_written_into_it(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The install hung here once, on a database the closing app still held.
+    """The database is at its least safe to touch when setup runs.
 
-    A second connection takes a write lock and never lets go, which is what a
-    process that has not finished exiting looks like. The reset must give up
-    inside its own timeout and the install must carry on regardless.
+    Setup has just ended the application by force, so writing there hung an
+    install once and left the application unable to start after another. The
+    database must come through an install untouched.
     """
-    database = _stored(tmp_path / paths.DATABASE_NAME, {SETTING_SHUFFLE: TRUE})
-    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
-    monkeypatch.setattr(actions, "FORGET_TIMEOUT_SECONDS", 0.1)
-    holder = sqlite3.connect(database)
-    holder.execute("BEGIN EXCLUSIVE")
-    started = time.monotonic()
-    try:
-        _quiet_install(tmp_path, monkeypatch, anew=True)
-    finally:
-        holder.close()
-    waited = time.monotonic() - started
-    assert (tmp_path / "install" / "Stellody.exe").is_file(), "the install finished"
-    # A bound rather than a measurement: the timeout above is a tenth of a
-    # second, while sqlite3's own default of five would sail past this.
-    assert waited < PATIENCE_SECONDS, f"waited {waited:.1f}s on a held database"
-
-
-def test_no_database_is_created_by_an_install_that_finds_none(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A first install must not leave an empty library behind it."""
+    database = _stored(
+        tmp_path / paths.DATABASE_NAME, {SETTING_SHUFFLE: TRUE, SETTING_REPEAT: TRUE}
+    )
+    before = database.read_bytes()
     monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
     _quiet_install(tmp_path, monkeypatch, anew=True)
-    assert not (tmp_path / paths.DATABASE_NAME).exists()
+    assert database.read_bytes() == before, "not one byte of it"
 
 
-def test_forgetting_the_switches_creates_nothing_when_there_is_no_database(
+def test_no_note_is_left_where_there_is_nothing_remembered(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A first install has nothing to forget; an installer must not make one."""
+    """A first install has nothing to clear, so nothing is created for it."""
     absent = tmp_path / "never-used"
     monkeypatch.setattr(actions, "data_location", lambda: absent)
-    actions.forget_switches()
+    _quiet_install(tmp_path, monkeypatch, anew=True)
     assert not absent.exists()
 
 
@@ -286,11 +252,6 @@ def test_an_update_leaves_the_switches_exactly_as_they_were(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """An update is the same install carrying on, so it changes no choices."""
-    database = _stored(tmp_path / paths.DATABASE_NAME, {SETTING_SHUFFLE: TRUE})
     monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
     _quiet_install(tmp_path, monkeypatch, anew=False)
-    store = SqliteLibraryStore(str(database))
-    try:
-        assert store.get_setting(SETTING_SHUFFLE, FALSE) == TRUE
-    finally:
-        store.close()
+    assert not switch_reset.marker_path(tmp_path).exists()

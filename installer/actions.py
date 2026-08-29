@@ -11,7 +11,6 @@ import itertools
 import os
 import pathlib
 import shutil
-import sqlite3
 import subprocess
 import sys
 import zipfile
@@ -24,8 +23,8 @@ from installer.registry import (
     set_sign_in_entry,
     unregister,
 )
-from stellody.infrastructure.paths import DATABASE_NAME, data_location
-from stellody.ui.settings_keys import SETTING_REPEAT, SETTING_SHUFFLE
+from stellody.infrastructure import switch_reset
+from stellody.infrastructure.paths import data_location
 
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
@@ -227,52 +226,16 @@ def shortcut_paths() -> tuple[pathlib.Path, ...]:
     )
 
 
-# How long the switch reset waits for a database somebody else still holds.
-# It is bounded because this runs on the way into an install: a reset that
-# cannot happen is a pair of switches left as they were, which is a far smaller
-# thing than an install that stops.
-FORGET_TIMEOUT_SECONDS = 2.0
-
-
 def forget_switches() -> None:
-    """Leave shuffle and repeat off for a copy that is being installed anew.
+    """Ask the application to start with shuffle and repeat off.
 
-    They are a choice about how the application behaves rather than part of
-    the library, so they do not carry across an install the way the index and
-    the music folder do. Stellody's own directory outlives an uninstall unless
-    the user asks for it to go, which is what made a reinstall come back
-    wearing the switches somebody set months ago.
-
-    The two rows are deleted rather than written, since a setting that is not
-    there already reads as off. It goes through sqlite3 directly rather than
-    through the application's own store: that store opens write ahead logging
-    and runs the whole schema, so on a database still held by the application
-    the setup program had only just closed it waited out its busy timeout and
-    raised "database is locked". Nothing in the setup window catches that, so
-    the install stopped on its progress screen with nothing more written to
-    the step log. Measured by holding the database open and running the old
-    version against it.
-
-    Nothing here creates a file, waits without a limit or raises: an install
-    must not stop over a pair of switches.
+    A note in Stellody's own directory rather than a write into its database.
+    The setup program runs at the one moment that database is least safe to
+    touch: it has just ended the application by force. Writing to it there
+    hung an install once and left the application unable to start after
+    another, so the application, which owns the database, does the writing.
     """
-    database = data_location() / DATABASE_NAME
-    if not database.exists():
-        return
-    try:
-        connection = sqlite3.connect(database, timeout=FORGET_TIMEOUT_SECONDS)
-    except sqlite3.Error:
-        return
-    try:
-        connection.execute(
-            "DELETE FROM settings WHERE key IN (?, ?)",
-            (SETTING_SHUFFLE, SETTING_REPEAT),
-        )
-        connection.commit()
-    except sqlite3.Error:
-        return
-    finally:
-        connection.close()
+    switch_reset.leave(data_location())
 
 
 def install(

@@ -97,10 +97,18 @@ class SqliteLibraryStore:
         # ahead logging is what lets the two coexist: one writer and readers
         # that are not blocked by it. The busy timeout covers the moment the
         # scan commits a folder while the window stores a setting.
-        self._connection.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
-        self._connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
-        self._connection.executescript(SCHEMA)
-        self._connection.commit()
+        # A constructor that raises leaves no object to close, so the handle
+        # would be held until something collected it. On Windows that is a
+        # file nobody can move: setting a damaged database aside was refused
+        # by the very connection that had just failed to open it.
+        try:
+            self._connection.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
+            self._connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
+            self._connection.executescript(SCHEMA)
+            self._connection.commit()
+        except Exception:
+            self._connection.close()
+            raise
 
     def close(self) -> None:
         """Release the database handle."""
