@@ -4,9 +4,11 @@ Three switches that outlast the track in hand. Each has to reach the transport,
 show its own state and be there again next time the application opens; a switch
 that does two of those and not the third is the one that gets reported as a bug.
 
-What is asserted about the pictures is that the two states DIFFER, not what the
-artwork is: the strike is a composite made at run time, so comparing it to a
-stored image would be testing the drawing rather than the wiring.
+Mute is the one switch whose picture changes: a struck speaker says there is no
+sound. What is asserted about it is that the two states DIFFER, not what the
+artwork is, since the strike is a composite made at run time. Shuffle and
+repeat keep one picture and light the button instead, so what is asserted
+there is the button's own state and that the artwork did NOT change.
 
 The donate button is the one thing here that leaves the application, so what is
 asserted is the address handed outward, through a seam of our own rather than
@@ -76,31 +78,38 @@ def test_muting_silences_the_device_and_strikes_the_speaker_through(
     assert picture(button) == unmuted
 
 
-def test_the_shuffle_switch_reaches_the_transport_and_changes_its_picture(
+def test_the_shuffle_switch_reaches_the_transport_and_lights_while_it_is_on(
     window: MainWindow,
 ) -> None:
     button = window._bottom_tray.shuffle_button
     off = picture(button)
+    assert button.isCheckable(), "the lit state is the button's own"
+    assert button.isChecked() is False
     window.toggle_shuffle()
     assert window._transport.shuffled is True
+    assert button.isChecked() is True
     assert button.toolTip() == "Turn shuffle off"
-    assert picture(button) != off, "the switch is struck through only while off"
+    assert picture(button) == off, "the artwork is never struck through"
     window.toggle_shuffle()
     assert window._transport.shuffled is False
+    assert button.isChecked() is False
     assert picture(button) == off
 
 
-def test_the_repeat_switch_reaches_the_transport_and_changes_its_picture(
+def test_the_repeat_switch_reaches_the_transport_and_lights_while_it_is_on(
     window: MainWindow,
 ) -> None:
     button = window._bottom_tray.repeat_button
     off = picture(button)
+    assert button.isCheckable()
     window.toggle_repeat()
     assert window._transport.repeating is True
+    assert button.isChecked() is True
     assert button.toolTip() == "Turn repeat off"
-    assert picture(button) != off
+    assert picture(button) == off, "the artwork is never struck through"
     window.toggle_repeat()
     assert window._transport.repeating is False
+    assert button.isChecked() is False
     assert picture(button) == off
 
 

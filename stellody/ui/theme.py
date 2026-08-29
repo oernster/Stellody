@@ -232,6 +232,9 @@ def stylesheet(mode: Mode) -> str:
         border-radius: {RADIUS_PX}px;
         padding: 0px;
     }}
+    QPushButton#TrayButton:checked {{
+        background-color: {colour.accent};
+    }}
     QPushButton#TrayButton:enabled:hover, QPushButton#TrayButton:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};
     }}

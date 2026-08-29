@@ -17,9 +17,13 @@ That toggle is drawn and placed before it does anything. Nothing reads album
 art off disk yet, so it is disabled and says so: an offered control that
 quietly does nothing is worse than one that plainly cannot be pressed.
 
-Shuffle and repeat show their STATE rather than the action a press would take,
-because "off" has no picture of its own: the switch is struck through while it
-is off. Their tooltips name the action, so the pair says both things at once.
+Shuffle and repeat show their STATE by being lit rather than by being struck
+through. The slash means one thing across the application, that what the
+picture depicts is not happening, which is true of a silenced speaker and is
+the wrong reading for a switch that is merely off: a row where the same mark
+meant "engaged" on one button and "not engaged" on the next was read exactly
+as the contradiction it was. Their tooltips name the action, so the pair still
+says both things at once.
 
 The slider is a popup rather than a permanent bar, so an application that is
 mostly a library does not spend a strip of window on something touched twice a
@@ -43,7 +47,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.shared import resources
-from stellody.ui.icons import plain_icon, struck_through
+from stellody.ui.icons import plain_icon
 from stellody.ui.toolbar import BUTTON_PX, ICON_PX, TRAY_GAP_PX, TRAY_MARGIN_PX
 
 HALF = 2
@@ -146,6 +150,19 @@ def _small_button(
     return button
 
 
+def _switch_button(
+    parent: QWidget, tip: str, on_click: Callable[[], None]
+) -> QPushButton:
+    """One picture button that stays down while whatever it names is on.
+
+    Checkable rather than repainted, so the lit state is the button's own and
+    a reader of the widget is told which of them are engaged.
+    """
+    button = _small_button(parent, None, tip, on_click)
+    button.setCheckable(True)
+    return button
+
+
 class BottomTray(QWidget):
     """The strip along the bottom, holding the settings that outlast a track."""
 
@@ -166,10 +183,8 @@ class BottomTray(QWidget):
         self.volume_button = _small_button(
             self, resources.volume_icon_path(), "Volume", self._open
         )
-        self.shuffle_button = _small_button(
-            self, None, "Turn shuffle on", toggle_shuffle
-        )
-        self.repeat_button = _small_button(self, None, "Turn repeat on", toggle_repeat)
+        self.shuffle_button = _switch_button(self, "Turn shuffle on", toggle_shuffle)
+        self.repeat_button = _switch_button(self, "Turn repeat on", toggle_repeat)
         self.view_button = _small_button(
             self, resources.view_icon_path(), VIEW_TOOLTIP, toggle_view
         )
@@ -236,12 +251,14 @@ class BottomTray(QWidget):
         )
 
     def _show_switch(self, button: QPushButton, path, on: bool, name: str) -> None:
-        """Draw one switch in the state it is in; say what a press would do."""
-        button.setIcon(
-            plain_icon(path)
-            if on
-            else struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
-        )
+        """Light one switch while it is on; say what a press would do.
+
+        The picture is the same either way. What changes is the button behind
+        it, which the stylesheet fills while it is checked, so the state is
+        carried by the control rather than by an alteration to the artwork.
+        """
+        button.setIcon(plain_icon(path))
+        button.setChecked(on)
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
 
     def _open(self) -> None:
