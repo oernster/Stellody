@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import itertools
+import pathlib
+import traceback
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QTimer, Slot
@@ -52,10 +54,25 @@ from stellody.ui.window_parts import (
 )
 from stellody.ui.worker import ScanRunner, ScanSession
 
+# Enough frames to name the door without printing the whole interpreter.
+TRAIL_FRAMES = 6
 WINDOW_WIDTH_PX = 1080
 WINDOW_HEIGHT_PX = 720
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
+
+
+def _say_nothing(message: str) -> None:
+    """The default diary: one that keeps no account at all."""
+
+
+def _trail() -> str:
+    """The calling frames, innermost last, on one line."""
+    frames = traceback.extract_stack()[:-2]
+    return " <- ".join(
+        f"{pathlib.PurePath(frame.filename).name}:{frame.lineno} {frame.name}"
+        for frame in frames[-TRAIL_FRAMES:]
+    )
 
 
 class MainWindow(Scanning, Playing, Leaving, QMainWindow):
@@ -68,9 +85,14 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         transport: Transport,
         settings: SettingsStore,
         leave: Callable[[], None] | None = None,
+        note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        # Where the window writes down what happened to it. Injected because
+        # the UI may not reach into infrastructure; a window given none keeps
+        # its own counsel, which is what every test wants.
+        self._note = note or _say_nothing
         # How the application is put down. Injected so a test can watch it
         # happen without the test run quitting itself; the running
         # application's own quit when nobody supplies one.
@@ -173,11 +195,23 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         return self._settings.get_setting(key, default) == TRUE
 
     def showEvent(self, event) -> None:
-        """Start with nothing highlighted, so no menu drops open on launch."""
+        """Start with nothing highlighted, so no menu drops open on launch.
+
+        Every appearance is written down with the frames that led to it. A
+        window coming up unbidden is the fault under investigation; the stack
+        is what names the door it came through, even when the door is one
+        nobody thought to watch.
+        """
         super().showEvent(event)
+        self._note(f"window shown, first time: {not self._started} <- {_trail()}")
         if not self._started:
             self._started = True
             self._neutral.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def hideEvent(self, event) -> None:
+        """Note the window going away, so the log has both halves."""
+        super().hideEvent(event)
+        self._note("window hidden")
 
     def _build_menus(self) -> None:
         """The whole menu bar."""

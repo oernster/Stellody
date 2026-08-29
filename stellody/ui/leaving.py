@@ -83,7 +83,32 @@ class Leaving:
 
     @Slot()
     def restore_from_tray(self) -> None:
-        """Bring the window back from the system tray."""
+        """Bring the window back, when nobody said what asked for it."""
+        self._restore("an unnamed request")
+
+    @Slot()
+    def restore_for_channel(self) -> None:
+        """A later launch asked, over the activation channel."""
+        self._restore("another launch asked over the channel")
+
+    @Slot()
+    def restore_for_tray_icon(self) -> None:
+        """Somebody clicked the icon in the notification area."""
+        self._restore("the tray icon was clicked")
+
+    @Slot()
+    def restore_for_tray_menu(self) -> None:
+        """Somebody chose Show on the notification area's menu."""
+        self._restore("Show was chosen on the tray menu")
+
+    def _restore(self, why: str) -> None:
+        """Bring the window back, writing down what asked for it.
+
+        Each door has its own slot rather than one shared one, because
+        knowing WHICH of them opened is the whole question when the window
+        appears and nobody asked for it.
+        """
+        self._note(f"restoring because {why}")
         self.showNormal()
         self.raise_()
         self.activateWindow()

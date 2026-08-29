@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
-from stellody.infrastructure import instance, switch_reset
+from stellody.infrastructure import diary, instance, switch_reset
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.paths import data_location, database_path
@@ -52,7 +52,9 @@ def scan_session(database: str):
 
 
 def build_window(
-    store: SqliteLibraryStore, leave: Callable[[], None] | None = None
+    store: SqliteLibraryStore,
+    leave: Callable[[], None] | None = None,
+    note: Callable[[str], None] | None = None,
 ) -> MainWindow:
     """Assemble the window over a store, with real adapters behind every port."""
     return MainWindow(
@@ -61,6 +63,7 @@ def build_window(
         transport=Transport(WasapiPlayback()),
         settings=store,
         leave=leave,
+        note=note,
     )
 
 
@@ -89,31 +92,42 @@ def main(argv: list[str] | None = None) -> int:
 def _start(argv: list[str] | None = None) -> int:
     """Everything main does, with the reporting wrapped around it."""
     arguments = list(sys.argv if argv is None else argv)
+    diary.note(f"launched with {arguments[1:]}")
     application = QApplication(arguments)
     configure(application)
     only = instance.SingleInstance()
     if not only.take():
         # Somebody asked for Stellody while it was already running, which
         # means the window they cannot see rather than a second copy of it.
-        only.ask()
+        diary.note("another copy holds the claim, so asking it to come forward")
+        answered = only.ask()
+        diary.note(f"the ask was answered: {answered}; leaving")
         return ALREADY_RUNNING
+    diary.note("took the claim, so this is the copy that runs")
     store, set_aside = open_store(database_path())
     if switch_reset.take(data_location()):
         for key in (SETTING_SHUFFLE, SETTING_REPEAT):
             store.set_setting(key, FALSE)
-    window = build_window(store, application.quit)
+    window = build_window(store, application.quit, diary.note)
     # Starting hidden is only honoured while there is a tray to restore from,
     # else the user would be left with nothing on screen at all.
-    if not (starts_hidden(arguments) and window.tray_active):
+    asked_to_hide = starts_hidden(arguments)
+    diary.note(f"asked to start hidden: {asked_to_hide}; tray: {window.tray_active}")
+    if not (asked_to_hide and window.tray_active):
+        diary.note("showing the window because this launch was not a quiet one")
         window.show()
+    else:
+        diary.note("staying in the tray, as this launch asked")
     # Launch reads the store and nothing else. Scanning on startup reached for
     # the music folder every time the application opened, which on a large
     # library is felt; nobody asked for it by starting the application.
     window.load_remembered()
     if set_aside is not None:
         window.report_library_set_aside(set_aside)
-    only.listen(window.restore_from_tray)
+    listening = only.listen(window.restore_for_channel)
+    diary.note(f"listening on the activation channel: {listening}")
     code = application.exec()
+    diary.note(f"the event loop ended with {code}")
     store.close()
     only.release()
     return code

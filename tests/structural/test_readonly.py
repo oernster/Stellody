@@ -20,6 +20,7 @@ WRITE_PERMITTED = frozenset(
         "stellody/infrastructure/store.py",
         "stellody/infrastructure/art_cache.py",
         "stellody/infrastructure/settings.py",
+        "stellody/infrastructure/diary.py",
         "stellody/infrastructure/startup_log.py",
         "stellody/infrastructure/switch_reset.py",
     }

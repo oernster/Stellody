@@ -132,7 +132,7 @@ def build_tray(window: QMainWindow, icon: QIcon | None) -> QSystemTrayIcon:
     tray.setToolTip(APP_NAME)
     menu = QMenu()
     show = QAction(f"Show {APP_NAME}", menu)
-    show.triggered.connect(window.restore_from_tray)
+    show.triggered.connect(window.restore_for_tray_menu)
     menu.addAction(show)
     menu.addSeparator()
     quit_action = QAction("Quit", menu)
@@ -148,4 +148,4 @@ def build_tray(window: QMainWindow, icon: QIcon | None) -> QSystemTrayIcon:
 def _on_tray(window: QMainWindow, reason: QSystemTrayIcon.ActivationReason) -> None:
     """Restore the window when the tray icon is clicked."""
     if reason == QSystemTrayIcon.ActivationReason.Trigger:
-        window.restore_from_tray()
+        window.restore_for_tray_icon()
