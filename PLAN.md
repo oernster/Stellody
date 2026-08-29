@@ -106,7 +106,7 @@ Needed: a cache under the data directory keyed by the album identity handle that
 `stellody/domain/identity.py` already provides, a decode step off the interface
 thread, plus a delegate that draws it in the library.
 
-The grid view is wanted, confirmed rather than assumed, so it is milestone 4
+The grid view is wanted, confirmed rather than assumed, so it is milestone 5
 rather than an open question. This milestone is the artwork itself, which that
 view needs.
 
@@ -262,8 +262,9 @@ silently skipped.
 
 ## 13. Play video files
 
-Wanted, though after the first release. A local library holds more than audio: a concert film sitting
-beside the albums it came from is part of the same collection.
+Wanted, though after the first release. A local library holds more than audio:
+a concert film sitting beside the albums it came from is part of the same
+collection.
 
 This is the one milestone that changes what Stellody IS, so it changes several
 things that currently assume audio: the walk takes only FLAC today, a track is

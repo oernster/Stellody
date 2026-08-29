@@ -1,6 +1,6 @@
 # <img width="128" height="128" alt="application-icon" src="https://github.com/user-attachments/assets/856669d1-6207-4f38-8ed6-816c6b05a40f" /> Stellody
 
-A calm, local-first music player for a library you already own.
+A calm, local-first FLAC player for a library you already own.
 
 Stellody reads your music folder and never writes to it. What it learns about
 your library, the problems it finds in your tags and your own settings live in
@@ -12,6 +12,9 @@ spent years ripping and tagging.
 For someone with a large local music library who wants it browsed, ordered and
 played properly; someone who would rather have a small player that works than a
 large one that does not.
+
+Stellody reads FLAC and nothing else today, so a library of MP3, M4A or WMA
+scans to nothing. `PLAN.md` milestone 12 is the work that widens it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is
@@ -110,6 +113,7 @@ Windows is the only platform built today.
 
 ## Licence
 
-Dual licensed. The model, meaning the domain, application and infrastructure
-layers together with the build scripts, is under GPL-3.0. The user interface
-layer is under LGPL-3.0, to align with Qt. See `LICENSE` for the mapping.
+Dual licensed. The model, meaning the domain, application, infrastructure and
+shared layers together with `main.py`, the build scripts and the tests, is
+under GPL-3.0. The user interface layer is under LGPL-3.0, to align with Qt.
+See `LICENSE` for the mapping.
