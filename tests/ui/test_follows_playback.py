@@ -222,3 +222,52 @@ def test_a_track_inside_a_collapsed_album_is_shown_before_it_is_highlighted(
     window.activate(track_index(window, 1))
     assert window._tree.isExpanded(album_index(window))
     assert highlighted(window) is window._transport.current
+
+
+def played_out(window: MainWindow, player: RecordingPlayer, steps: int) -> list[str]:
+    """The titles heard as the poll carries one track into the next.
+
+    Driven through the window's own timer slot rather than the transport, so
+    what is asserted is what a listener sitting in front of it would hear.
+    """
+    heard = [window._transport.current.title]
+    for _ in range(steps):
+        player.finished = True
+        window._poll_transport()
+        heard.append(window._transport.current.title)
+    return heard
+
+
+def test_an_album_left_to_play_out_stops_at_its_end(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """Without repeat the end is the end, which is what repeat is measured on."""
+    window.activate(track_index(window, 0))
+    heard = played_out(window, player, 4)
+    assert heard == ["Track 1", "Track 2", "Track 3", "Track 3", "Track 3"]
+    assert window._transport.playing is False
+
+
+def test_a_repeating_album_starts_again_rather_than_stopping(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """The album until repeat is turned off, never one track over and over."""
+    window.activate(track_index(window, 0))
+    window.toggle_repeat()
+    heard = played_out(window, player, 5)
+    assert heard == ["Track 1", "Track 2", "Track 3", "Track 1", "Track 2", "Track 3"]
+
+
+def test_a_repeating_shuffled_album_is_scattered_again_for_the_next_time_round(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """The order is asked for once a time round, with the whole album given."""
+    asked: list[int] = []
+    window._transport._ordering = lambda given: asked.append(len(given)) or given
+    window.activate(track_index(window, 0))
+    window.toggle_shuffle()
+    window.toggle_repeat()
+    scattered_when_switched_on = len(asked)
+    heard = played_out(window, player, 3)
+    assert len(asked) == scattered_when_switched_on + 1, "once, at the join"
+    assert set(heard) == {"Track 1", "Track 2", "Track 3"}

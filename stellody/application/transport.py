@@ -26,6 +26,10 @@ from stellody.domain.track import Track
 
 Ordering = Callable[[tuple[Track, ...]], tuple[Track, ...]]
 
+# Below this there is nothing to scatter and no join to avoid: one track
+# repeating is that track again, which is what repeat means there.
+SHUFFLE_NEEDS = 2
+
 
 def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
     """These tracks in an arbitrary order. The default way shuffle shuffles."""
@@ -172,10 +176,36 @@ class Transport:
         A repeating queue of one track wraps round to that same track, which
         means playing it again rather than doing nothing.
         """
+        if self._repeating and not self._queue.has_next:
+            self._begin_again()
+            return
         if self._repeating:
             self._restart_at(self._queue.wrapped_next())
             return
         self._move(self._queue.next())
+
+    def _begin_again(self) -> None:
+        """Start the album over, which is what repeat repeats.
+
+        Shuffled, the album is scattered afresh rather than replayed in the
+        order it happened to take last time: a shuffle that hands back the
+        same running order every time round is a fixed order with extra
+        steps. The track just heard is kept off the front of the new run,
+        since hearing it twice over the join is the one repeat nobody means.
+        """
+        if not self._shuffled or len(self._album_order) < SHUFFLE_NEEDS:
+            self._restart_at(self._queue.wrapped_next())
+            return
+        self._queue = Queue(self._without_a_join(self._ordering(self._album_order)), 0)
+        self._load_current()
+
+    def _without_a_join(self, order: tuple[Track, ...]) -> tuple[Track, ...]:
+        """The same order, not starting on the track that has just played."""
+        playing = self._queue.current
+        if playing is None or order[0] is not playing:
+            return order
+        first, second, *rest = order
+        return (second, first, *rest)
 
     def previous(self) -> None:
         """Return to the start of this track; leave it if already there.

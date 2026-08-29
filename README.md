@@ -33,7 +33,9 @@ not going to.
   there goes to the track before, waiting at its beginning too.
 - Carries volume, mute, shuffle and repeat, each remembered between sessions.
   Shuffle leads its scattered run with the track already playing, so next
-  reaches the whole of the rest of the album.
+  reaches the whole of the rest of the album. Repeat plays the album again
+  rather than the track, scattering it afresh each time round when shuffle is
+  on.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
