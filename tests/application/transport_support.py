@@ -17,15 +17,7 @@ from stellody.domain.playback import (
     PlaybackPosition,
     PlaybackState,
 )
-from stellody.domain.track import (
-    CD_SAMPLE_RATE,
-    MILLISECONDS_PER_SECOND,
-    Track,
-    TrackSource,
-)
-
-# Long enough that any elapsed time a test names falls inside the track.
-SECONDS_PER_TEST_TRACK = 600
+from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 
 
 def track(number: int) -> Track:
@@ -71,9 +63,6 @@ class FakePlayer:
         self.state = PlaybackState.STOPPED
         self.finished = False
         self.volume = UNITY_VOLUME
-        # None until a test says how far in it is, because a device that has
-        # not been asked to play anything genuinely does not know.
-        self.elapsed_ms: int | None = None
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Record the load and report a plain shared stream."""
@@ -109,14 +98,8 @@ class FakePlayer:
         self.calls.append(f"seek {frame}")
 
     def position(self) -> PlaybackPosition | None:
-        """How far in, once a test has said; nothing until then."""
-        if self.elapsed_ms is None:
-            return None
-        return PlaybackPosition(
-            frame=self.elapsed_ms * CD_SAMPLE_RATE // MILLISECONDS_PER_SECOND,
-            frame_count=CD_SAMPLE_RATE * SECONDS_PER_TEST_TRACK,
-            sample_rate=CD_SAMPLE_RATE,
-        )
+        """Nothing to report in these tests."""
+        return None
 
     def set_volume(self, level: float) -> None:
         """Record the level asked for."""

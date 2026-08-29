@@ -65,6 +65,7 @@ def test_the_toggle_does_nothing_at_all_with_an_empty_queue() -> None:
 
 
 def test_next_and_previous_move_through_the_album() -> None:
+    """Back twice in quick succession, because one press restarts the track."""
     one, two, three = track(1), track(2), track(3)
     player = FakePlayer()
     transport = Transport(player)
@@ -72,16 +73,17 @@ def test_next_and_previous_move_through_the_album() -> None:
     transport.next()
     assert transport.current is two
     transport.previous()
+    transport.previous()
     assert transport.current is one
-    assert player.loaded == [one.source, two.source, one.source]
+    assert player.loaded == [one.source, two.source, two.source, one.source]
 
 
-def test_neither_end_of_the_queue_reloads_what_is_already_playing() -> None:
+def test_the_end_of_the_queue_does_not_reload_what_is_already_playing() -> None:
+    """What back does at the start is its own rule, asserted in test_previous."""
     one, two = track(1), track(2)
     player = FakePlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two), one)
-    transport.previous()
     transport.next()
     transport.next()
     assert transport.current is two
@@ -198,7 +200,8 @@ def test_repeat_carries_the_start_of_the_queue_round_to_its_end() -> None:
     transport.play_album(album_of(one, two), one)
     transport.set_repeating(True)
     transport.previous()
-    assert transport.current is two
+    transport.previous()
+    assert transport.current is two, "the second press is the one that steps"
 
 
 def test_a_repeating_queue_of_one_track_plays_that_track_again() -> None:

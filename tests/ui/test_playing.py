@@ -153,9 +153,12 @@ def test_the_play_button_shows_what_pressing_it_would_do(
 
 
 def test_the_buttons_move_through_the_album(window: MainWindow) -> None:
+    """Back twice, since a single press starts the track in hand again."""
     window.activate(track_index(window, 0))
     window.next_track()
     assert window._transport.current.title == "Track 2"
+    window.previous_track()
+    assert window._transport.current.title == "Track 2", "the first press restarts"
     window.previous_track()
     assert window._transport.current.title == "Track 1"
 
@@ -275,7 +278,7 @@ def test_the_menu_offers_only_what_can_be_done_right_now(
     assert playing["Pause"].isEnabled() is True
     assert playing["Stop"].isEnabled() is True
     assert playing["Next track"].isEnabled() is True
-    assert playing["Previous track"].isEnabled() is False
+    assert playing["Previous track"].isEnabled() is True, "back restarts it"
 
 
 def test_pausing_from_the_menu_pauses(window: MainWindow) -> None:

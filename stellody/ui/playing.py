@@ -162,7 +162,9 @@ class Playing:
         stop.triggered.connect(self.stop_playback)
         menu.addSeparator()
         previous = menu.addAction("Previous track")
-        previous.setEnabled(self._transport.queue.has_previous)
+        # Offered wherever the button is, because back on the first track
+        # starts it again rather than doing nothing.
+        previous.setEnabled(self._transport.current is not None)
         previous.triggered.connect(self.previous_track)
         following = menu.addAction("Next track")
         following.setEnabled(self._transport.queue.has_next)

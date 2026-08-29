@@ -142,6 +142,7 @@ def test_the_previous_button_carries_the_highlight_with_it(
 ) -> None:
     window.activate(track_index(window, 2))
     window.previous_track()
+    window.previous_track()
     assert window._transport.current.title == "Track 2"
     assert highlighted(window) is window._transport.current
 
@@ -207,6 +208,7 @@ def test_the_right_click_menu_carries_the_highlight_too(window: MainWindow) -> N
     assert highlighted(window) is window._transport.current
     window.show_transport_menu(QPoint(0, 0))
     actions = {action.text(): action for action in window._menu.actions()}
+    actions["Previous track"].trigger()
     actions["Previous track"].trigger()
     assert window._transport.current.title == "Track 1"
     assert highlighted(window) is window._transport.current
