@@ -1,4 +1,4 @@
-# <img width="1254" height="1254" alt="application-icon" src="https://github.com/user-attachments/assets/856669d1-6207-4f38-8ed6-816c6b05a40f" /> Stellody
+# <img width="64" height="64" alt="application-icon" src="https://github.com/user-attachments/assets/856669d1-6207-4f38-8ed6-816c6b05a40f" /> Stellody
 
 A calm, local-first music player for a library you already own.
 
@@ -9,7 +9,7 @@ spent years ripping and tagging.
 
 ## Who this is for
 
-For someone with a large local FLAC library who wants it browsed, ordered and
+For someone with a large local music library who wants it browsed, ordered and
 played properly; someone who would rather have a small player that works than a
 large one that does not.
 
