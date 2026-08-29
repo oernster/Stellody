@@ -17,6 +17,11 @@ import subprocess
 import sys
 import time
 
+# The copyright notice comes from the package rather than being written
+# here as well: the exe's file properties and the About box have to say
+# the same thing, so they read the same constant.
+from stellody.shared.version import COPYRIGHT_NOTICE
+
 ROOT = pathlib.Path(__file__).resolve().parent
 
 APP_DISPLAY_NAME = "Stellody"
@@ -118,7 +123,7 @@ def command(version: str) -> list[str]:
         f"--file-version={numeric}",
         f"--product-version={numeric}",
         f"--file-description={APP_DESCRIPTION} Installer",
-        f"--copyright=Copyright {APP_AUTHOR}",
+        f"--copyright={COPYRIGHT_NOTICE}",
         f"--include-data-dir={STAGE_DIR}=payload",
     ]
     if ASSETS_DIR.is_dir():

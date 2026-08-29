@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
 from stellody.ui.dialogs import NeutralDialog, close_row
 from stellody.ui.display import native_path
+from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 760
 DIALOG_HEIGHT_PX = 560
@@ -100,3 +101,4 @@ class HealthDialog(NeutralDialog):
         body.setHtml(report_html(issues))
         layout.addWidget(body)
         layout.addLayout(close_row(self))
+        self.pane = ReadingPane(body)

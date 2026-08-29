@@ -27,6 +27,7 @@ from stellody.shared.version import (
     __version__,
 )
 from stellody.ui.auto_scroller import AutoScroller
+from stellody.ui.widgets import ReadingPane
 
 ABOUT_ICON_PX = 96
 ABOUT_MIN_WIDTH_PX = 560
@@ -127,6 +128,7 @@ class LicenceDialog(NeutralDialog):
             self._body.setLineWrapMode(QTextBrowser.LineWrapMode.WidgetWidth)
         self.resize(min(natural, allowed), LICENCE_HEIGHT_PX)
         self.scroller = AutoScroller(self._body)
+        self.pane = ReadingPane(self._body)
 
     def _natural_width(self) -> int:
         """The width the licence's own hard wrapping asks for, plus the chrome."""
@@ -201,6 +203,7 @@ class AboutDialog(NeutralDialog):
         layout.addWidget(body)
         layout.addLayout(close_row(self))
         self.scroller = AutoScroller(body)
+        self.pane = ReadingPane(body)
 
 
 def _icon_label(parent: QWidget) -> QLabel | None:
