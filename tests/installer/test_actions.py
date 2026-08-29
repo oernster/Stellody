@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pathlib
+import sqlite3
+import time
 import zipfile
 
 import pytest
@@ -18,6 +20,11 @@ from stellody.ui.settings_keys import (
     SETTING_VOLUME,
     TRUE,
 )
+
+# A default no setting could ever hold, so an absent row is unmistakable.
+ABSENT = "never stored"
+# Far above the timeout the test sets, far below sqlite3's own default.
+PATIENCE_SECONDS = 2.0
 
 
 def _archive(path: pathlib.Path, entries: dict[str, str]) -> pathlib.Path:
@@ -220,11 +227,49 @@ def test_installing_anew_leaves_shuffle_and_repeat_off(
     _quiet_install(tmp_path, monkeypatch, anew=True)
     store = SqliteLibraryStore(str(database))
     try:
-        assert store.get_setting(SETTING_SHUFFLE, TRUE) == FALSE
-        assert store.get_setting(SETTING_REPEAT, TRUE) == FALSE
+        # Read with each default in turn: the rows are gone rather than set,
+        # since a setting that is not there already reads as off.
+        assert store.get_setting(SETTING_SHUFFLE, ABSENT) == ABSENT
+        assert store.get_setting(SETTING_REPEAT, ABSENT) == ABSENT
+        assert store.get_setting(SETTING_SHUFFLE, FALSE) == FALSE, "so it reads off"
         assert store.get_setting(SETTING_VOLUME, "") == "52", "the rest is untouched"
     finally:
         store.close()
+
+
+def test_a_database_somebody_else_is_holding_does_not_stop_the_install(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The install hung here once, on a database the closing app still held.
+
+    A second connection takes a write lock and never lets go, which is what a
+    process that has not finished exiting looks like. The reset must give up
+    inside its own timeout and the install must carry on regardless.
+    """
+    database = _stored(tmp_path / paths.DATABASE_NAME, {SETTING_SHUFFLE: TRUE})
+    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
+    monkeypatch.setattr(actions, "FORGET_TIMEOUT_SECONDS", 0.1)
+    holder = sqlite3.connect(database)
+    holder.execute("BEGIN EXCLUSIVE")
+    started = time.monotonic()
+    try:
+        _quiet_install(tmp_path, monkeypatch, anew=True)
+    finally:
+        holder.close()
+    waited = time.monotonic() - started
+    assert (tmp_path / "install" / "Stellody.exe").is_file(), "the install finished"
+    # A bound rather than a measurement: the timeout above is a tenth of a
+    # second, while sqlite3's own default of five would sail past this.
+    assert waited < PATIENCE_SECONDS, f"waited {waited:.1f}s on a held database"
+
+
+def test_no_database_is_created_by_an_install_that_finds_none(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A first install must not leave an empty library behind it."""
+    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
+    _quiet_install(tmp_path, monkeypatch, anew=True)
+    assert not (tmp_path / paths.DATABASE_NAME).exists()
 
 
 def test_forgetting_the_switches_creates_nothing_when_there_is_no_database(

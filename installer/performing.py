@@ -139,12 +139,13 @@ class Performing:
         self._working(titles[Route.MANAGE if reinstalling else self.route])
         try:
             plan = self._plan()
-            self.log.write(f"installing to {plan.target}")
+            anew = reinstalling or self.route is Route.INSTALL
+            self.log.write(f"installing to {plan.target}, switches reset: {anew}")
             executable = actions.install(
                 plan,
                 self._archive(),
                 self._report,
-                anew=reinstalling or self.route is Route.INSTALL,
+                anew=anew,
             )
         except (OSError, ValueError, RuntimeError) as error:
             self._failed(error)

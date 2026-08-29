@@ -11,6 +11,7 @@ import itertools
 import os
 import pathlib
 import shutil
+import sqlite3
 import subprocess
 import sys
 import zipfile
@@ -24,8 +25,7 @@ from installer.registry import (
     unregister,
 )
 from stellody.infrastructure.paths import DATABASE_NAME, data_location
-from stellody.infrastructure.store import SqliteLibraryStore
-from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE
+from stellody.ui.settings_keys import SETTING_REPEAT, SETTING_SHUFFLE
 
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
@@ -227,6 +227,13 @@ def shortcut_paths() -> tuple[pathlib.Path, ...]:
     )
 
 
+# How long the switch reset waits for a database somebody else still holds.
+# It is bounded because this runs on the way into an install: a reset that
+# cannot happen is a pair of switches left as they were, which is a far smaller
+# thing than an install that stops.
+FORGET_TIMEOUT_SECONDS = 2.0
+
+
 def forget_switches() -> None:
     """Leave shuffle and repeat off for a copy that is being installed anew.
 
@@ -236,18 +243,36 @@ def forget_switches() -> None:
     the user asks for it to go, which is what made a reinstall come back
     wearing the switches somebody set months ago.
 
-    Nothing is created here: a machine with no directory yet has nothing to
-    forget, while an absent setting already reads as off.
+    The two rows are deleted rather than written, since a setting that is not
+    there already reads as off. It goes through sqlite3 directly rather than
+    through the application's own store: that store opens write ahead logging
+    and runs the whole schema, so on a database still held by the application
+    the setup program had only just closed it waited out its busy timeout and
+    raised "database is locked". Nothing in the setup window catches that, so
+    the install stopped on its progress screen with nothing more written to
+    the step log. Measured by holding the database open and running the old
+    version against it.
+
+    Nothing here creates a file, waits without a limit or raises: an install
+    must not stop over a pair of switches.
     """
     database = data_location() / DATABASE_NAME
     if not database.exists():
         return
-    store = SqliteLibraryStore(str(database))
     try:
-        for key in (SETTING_SHUFFLE, SETTING_REPEAT):
-            store.set_setting(key, FALSE)
+        connection = sqlite3.connect(database, timeout=FORGET_TIMEOUT_SECONDS)
+    except sqlite3.Error:
+        return
+    try:
+        connection.execute(
+            "DELETE FROM settings WHERE key IN (?, ?)",
+            (SETTING_SHUFFLE, SETTING_REPEAT),
+        )
+        connection.commit()
+    except sqlite3.Error:
+        return
     finally:
-        store.close()
+        connection.close()
 
 
 def install(
@@ -262,9 +287,10 @@ def install(
     switches off. An update and a downgrade are the same install carrying on,
     so they leave everything the user chose exactly where it was.
     """
-    progress(PCT_START, "Preparing the install folder...")
     if anew:
+        progress(PCT_START, "Clearing the remembered switches...")
         forget_switches()
+    progress(PCT_START, "Preparing the install folder...")
     if plan.target.exists():
         shutil.rmtree(plan.target, ignore_errors=True)
     progress(PCT_START, "Extracting files...")
