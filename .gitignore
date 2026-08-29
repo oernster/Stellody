@@ -226,3 +226,6 @@ installer/stage/
 
 # Release notes for the pending version, drafted then folded into the release
 NOTES.md
+
+# Session snapshot written by /ox and by the oxygen panic protocol
+.claude/resume.md
