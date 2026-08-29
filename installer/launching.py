@@ -29,6 +29,16 @@ from ctypes import wintypes
 FOREGROUND_WAIT_S = 5.0
 FOREGROUND_POLL_MS = 200
 
+# Started on its own: no console inherited, its own process group, out of any
+# job object this program is in, so nothing that happens to setup reaches it.
+# The values are Windows' own; subprocess only names the first two.
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+DETACHED = (
+    getattr(subprocess, "DETACHED_PROCESS", 0)
+    | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    | CREATE_BREAKAWAY_FROM_JOB
+)
+
 TH32CS_SNAPPROCESS = 0x00000002
 INVALID_HANDLE = -1
 MAX_PATH = 260
@@ -52,11 +62,22 @@ class _ProcessEntry(ctypes.Structure):
 
 
 def launch(executable: pathlib.Path) -> subprocess.Popen | None:
-    """Start the application; None when it could not be started at all."""
-    try:
-        return subprocess.Popen([str(executable)], cwd=str(executable.parent))
-    except OSError:
-        return None
+    """Start the application, on its own; None when it would not start at all.
+
+    Detached and broken out of any job object setup belongs to, so what is
+    started outlives the program that started it. Setup closes seconds later
+    by design; a launch tied to its lifetime would be ended by that.
+    A job that forbids breaking out refuses the flag rather than ignoring it,
+    so the plain start is tried after it.
+    """
+    for flags in (DETACHED, 0):
+        try:
+            return subprocess.Popen(
+                [str(executable)], cwd=str(executable.parent), creationflags=flags
+            )
+        except OSError:
+            continue
+    return None
 
 
 def family(root: int, parents: dict[int, int]) -> set[int]:

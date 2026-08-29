@@ -151,3 +151,52 @@ def test_setup_goes_even_when_looking_for_the_window_fails(
 def test_the_wait_is_short_enough_not_to_read_as_setup_hanging_about() -> None:
     """It is a worst case a user could sit through, not a target."""
     assert launching.FOREGROUND_WAIT_S <= MAX_LINGER_S
+
+
+class RecordingStart:
+    """A stand-in for Popen that records how it was asked to start things."""
+
+    def __init__(self, refuse_flags: int | None = None) -> None:
+        self.calls: list[int] = []
+        self.refuse_flags = refuse_flags
+        self.pid = 4242
+
+    def __call__(self, arguments, cwd, creationflags):
+        """Record the attempt, refusing the flags a locked down job would."""
+        self.calls.append(creationflags)
+        if self.refuse_flags is not None and creationflags == self.refuse_flags:
+            raise OSError("access is denied")
+        return self
+
+
+def test_the_application_is_started_out_of_setups_reach(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Setup closes seconds later, so what it starts must not be tied to it."""
+    start = RecordingStart()
+    monkeypatch.setattr(launching.subprocess, "Popen", start)
+    started = launching.launch(pathlib.Path("C:/Programs/Stellody/Stellody.exe"))
+    assert started is start
+    assert start.calls == [launching.DETACHED]
+    assert launching.DETACHED & launching.CREATE_BREAKAWAY_FROM_JOB
+
+
+def test_a_job_that_refuses_to_be_left_still_gets_the_application_started(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The flag is refused rather than ignored, so the plain start follows it."""
+    start = RecordingStart(refuse_flags=launching.DETACHED)
+    monkeypatch.setattr(launching.subprocess, "Popen", start)
+    started = launching.launch(pathlib.Path("C:/Programs/Stellody/Stellody.exe"))
+    assert started is start
+    assert start.calls == [launching.DETACHED, 0], "detached first, then plainly"
+
+
+def test_an_application_that_will_not_start_at_all_is_reported(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def refuse(*_: object, **__: object) -> None:
+        raise OSError("no such file")
+
+    monkeypatch.setattr(launching.subprocess, "Popen", refuse)
+    assert launching.launch(pathlib.Path("C:/nowhere/Stellody.exe")) is None
