@@ -6,7 +6,7 @@ import itertools
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QAction, QCloseEvent
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -25,16 +25,15 @@ from stellody.domain.track import Track
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.bottom_tray import BottomTray
-from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
+from stellody.ui.leaving import Leaving
 from stellody.ui.links import open_externally
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.scanning import Scanning
 from stellody.ui.settings_keys import (
     FALSE,
-    SETTING_CLOSE,
     SETTING_DESCENDING,
     SETTING_ROOT,
     SETTING_THEME,
@@ -59,7 +58,7 @@ TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
 
 
-class MainWindow(Scanning, Playing, QMainWindow):
+class MainWindow(Scanning, Playing, Leaving, QMainWindow):
     """Stellody's window: a library, a menu bar and a status line."""
 
     def __init__(
@@ -306,69 +305,6 @@ class MainWindow(Scanning, Playing, QMainWindow):
                 "Could not open a browser for the donation page",
                 STATUS_TIMEOUT_MS,
             )
-
-    @Slot()
-    def quit_application(self) -> None:
-        """Leave, whatever the close button is set to do."""
-        self._quitting = True
-        self.close()
-
-    def closeEvent(self, event: QCloseEvent) -> None:
-        """Honour the stored close behaviour, asking when none is stored."""
-        if self._quitting or not self._notification.isVisible():
-            self._leave_for_good(event)
-            return
-        action = self._settings.get_setting(SETTING_CLOSE, CloseAction.ASK.value)
-        if action == CloseAction.ASK.value:
-            action = self._ask_close_action()
-        if action == CloseAction.QUIT.value:
-            self._quitting = True
-            self._leave_for_good(event)
-            return
-        event.ignore()
-        self.hide()
-
-    def _leave_for_good(self, event: QCloseEvent) -> None:
-        """Put the work down, then put the application down with it.
-
-        Ending the application has to be said out loud here. Quitting when the
-        last window closes is deliberately off, since that is what lets the
-        cross leave Stellody in the notification area; the cost is that
-        nothing then ends the event loop by itself. Without this the tray's
-        Quit closed a window nobody could see and left the process running,
-        still holding the tray icon and the claim to being the copy that runs,
-        so the one control that should have stopped Stellody could not.
-        """
-        self._transport_timer.stop()
-        self._transport.stop()
-        self._runner.wait()
-        event.accept()
-        depart = self._leave or QApplication.quit
-        depart()
-
-    def _ask_close_action(self) -> str:
-        """Ask what closing should mean, defaulting to staying in the tray."""
-        prompt = ClosePrompt(self)
-        prompt.exec()
-        if prompt.remember:
-            self._settings.set_setting(SETTING_CLOSE, prompt.choice.value)
-        return prompt.choice.value
-
-    @property
-    def tray_active(self) -> bool:
-        """True when there is a tray icon to restore the window from.
-
-        Starting hidden is only honest while this holds; without a tray there
-        would be nothing on screen at all.
-        """
-        return self._notification.isVisible()
-
-    @Slot()
-    def restore_from_tray(self) -> None:
-        """Bring the window back from the system tray."""
-        self.showNormal()
-        self.raise_()
-        self.activateWindow()
 
 
 def menu_action(menu: QMenu, window: QMainWindow, label: str, slot, checkable=False):

@@ -23,20 +23,19 @@ module. Where the code and the shorthand disagree, the code wins.
 
 ## The first release
 
-The first tag is cut. `v0.1.0` sits on the head of `main` and is pushed, so
-the question is no longer whether anything ships; it is what the next release
-holds. A bump is owed against that tag rather than against the last thing
-written; `VERSION` holds the number for the release being cut.
+Version 1.0 is a readiness call for the owner to make, so nothing below is
+sized against it. No tag has been cut, so nothing is owed against one either:
+`VERSION` holds the number for the release being cut and the work is what goes
+into it.
 
-Version 1.0 is a separate readiness call for the owner to make, so nothing
-below is sized against it. What remains inside its scope is the position
-display: milestones 1 and 2, then the amplitude monitor that shows position at
-all. Cover art, search, ratings and the rest come later, the wider formats and
+What remains inside the first release's scope is the position display:
+milestones 1 and 2, then the amplitude monitor that shows position at all.
+Cover art, search, ratings and the rest come later, the wider formats and
 video among them.
 
-Cutting a release means: the milestones in scope are done, the gate is green,
-the release notes are written in `NOTES.md` (which is never staged), then the
-tag and the release are the owner's to make.
+Cutting it means: the milestones in scope are done, the gate is green, the
+release notes are written in `NOTES.md` (which is never staged), then the tag
+and the release are the owner's to make.
 
 ## 1. Play something
 
