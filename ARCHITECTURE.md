@@ -37,7 +37,8 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 | `ui` | PySide6 widgets, models, dialogs and theme tokens. | `domain` and `application`. |
 | `shared` | Version, paths and resource resolution. | The standard library. |
 
-`main.py` is the only composition root. Dependencies are supplied by
+`stellody/composition.py` is the only composition root; `main.py` is a
+three line entry point that calls into it. Dependencies are supplied by
 constructor injection; there is no container and no service locator.
 
 ## The central abstraction
@@ -51,11 +52,12 @@ TrackSource(path, start_frame, end_frame)
 A normal track is `TrackSource("07 Venus.flac")`. A cue-sheet track is
 `TrackSource("album.flac", 18_432_000, 32_532_000)`.
 
-171 of the 510 albums in the reference library are a single FLAC with a sidecar
+171 of the 485 albums in the reference library are a single FLAC with a sidecar
 cue sheet, so this is a main path rather than an edge case. Because the
-distinction is captured in one value object, the queue, the progress bar, the
-album grid, shuffle and gapless playback are all written once and work for both
-shapes without knowing which they hold.
+distinction is captured in one value object, the queue, the transport and
+shuffle are written once and work for both shapes without knowing which they
+hold. The displays still to be built, the position monitor and the cover grid
+among them, inherit the same property.
 
 ## Grouping: folders group, tags name
 
@@ -94,8 +96,8 @@ The walker lists folders, the probe reads tags out of one file and the store
 caches a whole folder's result. A rescan compares each file's size and
 modification time against the store; a folder whose files are all unchanged is
 reused without opening a single file. On the reference library a cold scan of
-510 folders and 4,870 files takes about six seconds and a rescan about a third
-of a second.
+510 folders and 4,870 files takes about eight seconds and a rescan about a
+third of a second, grouping into 485 albums of 6,877 tracks.
 
 **The store holds raw tag values, not resolved ones.** Resolution happens on
 load, so improving any rule above takes effect on the next start without
@@ -111,10 +113,18 @@ directories plus macOS AppleDouble stubs; nothing else.
 | Decision | Reason |
 |---|---|
 | PySide6 rather than Rust or Go | The requirement is a player that is not buggy. That comes from working where the coverage gate, the structural guards and the delivery lineage already exist. |
-| `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` has no equalizer and cannot present a cue-sheet slice as a track. Both are v1 requirements. |
-| A hand-rolled biquad cascade rather than scipy | The equalizer is pure arithmetic, so it belongs in the domain and tests without an audio device. scipy would add tens of megabytes to the packaged build for one function. |
-| Artwork keyed by album identity, not by path | A rescan after a folder rename reuses the cached image instead of refetching it. |
+| `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also has no equalizer for the one planned below. |
 | Missing files are flagged, never deleted | An unplugged drive, a failed restore or an interrupted scan must not destroy library metadata. |
+
+### Decided but not built
+
+**None of the following runs today.** They are recorded so the decision is not
+taken twice; `PLAN.md` holds the work itself.
+
+| Decision | Reason |
+|---|---|
+| A hand-rolled biquad cascade rather than scipy | The equalizer will be pure arithmetic, so it belongs in the domain and tests without an audio device. scipy would add tens of megabytes to the packaged build for one function. |
+| Artwork keyed by album identity, not by path | A rescan after a folder rename will reuse the cached image instead of reading it again. The scan already records where each folder's art sits; nothing loads it yet. |
 | Artwork is read locally only | Exactly one album in the reference library lacks local art, so the network buys nothing and costs the local-first guarantee. |
 
 ## Coverage

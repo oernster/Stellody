@@ -223,3 +223,6 @@ dist-installer.build/
 installer/payload/
 installer/stage/
 *.spec
+
+# Release notes for the pending version, drafted then folded into the release
+NOTES.md

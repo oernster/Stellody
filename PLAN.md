@@ -3,11 +3,8 @@
 What Stellody has not built yet, in the order it is worth building.
 
 This file exists because the plan lived in a conversation and the conversation
-ended. It was rebuilt on 2026-08-29 from two sources: the tree as it actually
-stands, read module by module, plus the surviving milestone shorthand from the
-last session. Where the two disagreed the code won. The four questions it could
-not settle were put to the owner on 2026-08-29; their answers are folded into
-the milestones below rather than kept as a list of loose ends.
+ended. It is rebuilt from the tree as it actually stands, read module by
+module. Where the code and the shorthand disagree, the code wins.
 
 ## How this file works
 
@@ -24,46 +21,43 @@ the milestones below rather than kept as a list of loose ends.
 - **The order is a recommendation, not a contract.** The dependencies named in
   each milestone are real; everything else can be taken in any order.
 
-## The next release: 0.1.0
+## The first release
 
 Version 1.0 is a readiness call for the owner to make, so nothing below is
-sized against it. The near target is a 0.1.0 release. `VERSION` already
-reads 0.1.0 with no tag cut, so no bump is owed: the work is what goes in it.
+sized against it. `VERSION` holds the number for the release being cut and no
+tag has been cut yet, so nothing is owed there either: the work is what goes
+into it.
 
-**Proposed scope, for the owner to confirm: milestones 1, 2, 3 and 14.** A music
-player that cannot play is not a release whatever else it does; a release whose
-README promises an equalizer it does not have is not an honest one. The amplitude monitor
-joins that scope because it is how this player shows position at all. Cover art,
-search, ratings and the rest are 0.2.0 and later, the wider formats and video
-among them.
+The README now describes only what the binary does, so the honesty half of the
+first release is met. What remains inside its scope is the position display:
+milestones 1 and 2, then the amplitude monitor that shows position at all.
+Cover art, search, ratings and the rest come later, the wider formats and
+video among them.
 
 Cutting it means: the milestones in scope are done, the gate is green, the
-README describes only what the binary does, the release notes are written in
-`NOTES.md` (which is never staged), then the tag and the release are the
-owner's to make.
+release notes are written in `NOTES.md` (which is never staged), then the tag
+and the release are the owner's to make.
 
 ## 1. Play something
 
-The audio engine was written, tested and then left unreferenced by anything, so
-the application could not play a note. The queue, the transport and the buttons
-that drive them are now built; what remains is the proving.
+Everything this milestone asked for is written: the playback port is bound in
+the composition root, the transport sits centred in the tray, a track is
+activated from the tree by double click, by Return or from the right click
+menu; the library highlight follows whatever is playing. Volume and mute
+arrived alongside, ahead of the plan.
 
-Needed: a playback port bound in the composition root, the transport centred in
-the tray (previous, play toggling to pause, stop, next), activation from the
-tree by double click and by Return, plus an engine closed on quit the way the
-store already is.
+Playing, pausing and resuming have been exercised in the built application by
+the owner, so those are confirmed. Two parts of the closing condition have
+not been watched in the built application: the queue moving on by itself at
+the end of a track, then quitting mid-track leaving no process behind. Both
+hold in the tests; neither has been seen in the binary.
 
-Volume and seeking are not in this milestone. Where playback has reached is
-shown by milestone 3 rather than by a plain bar, so this one ships with the
-transport and no position display at all.
+Seeking is still absent, deliberately. Where playback has reached is shown by
+milestone 3 rather than by a plain bar, so this milestone carries no position
+display at all.
 
-Still to do: sound confirmed coming out of a real device, since a test harness
-cannot hear one, then the queue behaviour confirmed in the built application
-rather than only in the tests.
-
-Done when: a track chosen in the built application plays, pauses, resumes and
-stops, the queue moves on by itself at the end of a track; quitting mid-track
-leaves no process behind.
+Done when: the two unwatched parts above are seen in the built application.
+That is the owner's observation to make, not a test's.
 
 Blocks: every milestone below except 6.
 
@@ -112,8 +106,9 @@ Needed: a cache under the data directory keyed by the album identity handle that
 `stellody/domain/identity.py` already provides, a decode step off the interface
 thread, plus a delegate that draws it in the library.
 
-The grid view the README promises is wanted, so it is milestone 4 rather than
-an open question. This milestone is the artwork itself, which that view needs.
+The grid view is wanted, confirmed rather than assumed, so it is milestone 4
+rather than an open question. This milestone is the artwork itself, which that
+view needs.
 
 Done when: an album with embedded or sidecar art shows it, an album without one
 shows a placeholder rather than a gap; a rescan does not rebuild a cache
@@ -124,8 +119,13 @@ entry that is still current.
 Confirmed as wanted: both views, with a toggle between them rather than one
 replacing the other. The text view in use today stays exactly as it is.
 
-Needed: a second view over the same model, a toggle in the View menu and on the
-tray, plus the choice remembered like the theme and the sort order already are.
+The toggle itself is already drawn, at the left of the bottom strip, disabled
+and saying so in its tooltip. It is named in the focus ring; the tray takes
+a handler for it with a no-op default, so this milestone enables it rather than
+placing it.
+
+Needed: a second view over the same model, that toggle enabled and wired, plus
+the choice remembered like the theme and the sort order already are.
 
 Done when: the toggle switches between the two views, each keeps the sort order
 the other was using; the choice survives a restart.
@@ -134,8 +134,9 @@ Depends on: milestone 4, which is what a grid of covers has to draw.
 
 ## 6. Search the library
 
-The stack table in the README names SQLite with FTS5. The schema has five plain
-tables and no search of any kind.
+The schema has five plain tables and no search of any kind. The README's
+stack table used to name FTS5; it no longer does, so this is a gap rather than
+a broken promise.
 
 Needed: an FTS table fed as sources are saved, a search box, plus a filtered view
 that leaves the sort order alone.
@@ -149,8 +150,9 @@ you type; clearing the box restores it.
 
 ## 7. Ratings and play counts
 
-The README's opening paragraph promises both, as the reason Stellody keeps its
-own store. Neither exists: no schema, no column, no code.
+Neither exists: no schema, no column, no code. The README's opening paragraph
+used to promise both as the reason Stellody keeps its own store; it now says
+only what the store actually holds.
 
 They are worth naming together because they share a decision: a play count means
 nothing until playback exists and something decides what counts as a play.
@@ -164,22 +166,27 @@ increments a count; neither ever reaches the music files.
 
 Depends on: milestone 1, for the play count half.
 
-## 8. Shuffle and repeat
+## 8. Repeat one track
 
-Neither appears anywhere in the source. Both are transport concerns: an order to
-take the queue in, plus what to do when it runs out.
+Shuffle and repeat both shipped: shuffle takes a permutation of the album and
+keeps playing whatever is playing, repeat carries the end of the queue round to
+its start; each is remembered between sessions. A queue holding one track
+already repeats that track, because wrapping lands back on it.
 
-Done when: shuffle reorders without repeating a track before the queue is
-exhausted, repeat covers both the queue and the single track; both survive a
-restart.
+What is missing is repeat-one as a MODE, so a single track can be held on
+repeat inside a queue of many. That is a third state on a switch drawn with one
+piece of artwork, so it needs a second image before it needs any code.
+
+Done when: a track can be set to repeat on its own within a full queue, the
+switch shows which of the three states it is in; the choice survives a restart.
 
 Depends on: milestone 1.
 
 ## 9. Gapless transitions
 
-Promised in the README and not present. This is the hardest item here: it wants
-the next track decoding before the current one ends, plus a device that is
-not stopped and restarted between them.
+Not present. This is the hardest item here: it wants the next track decoding
+before the current one ends, plus a device that is not stopped and restarted
+between them.
 
 Worth doing properly or not at all, since a nearly gapless player is more
 irritating than an honestly gapped one.
@@ -191,8 +198,8 @@ Depends on: milestone 1.
 
 ## 10. The equalizer
 
-Promised in the README, entirely absent. Needs a decision before any code:
-either a fixed set of bands applied to the decoded buffer or nothing at all.
+Entirely absent. Needs a decision before any code: either a fixed set of
+bands applied to the decoded buffer or nothing at all.
 
 Done when: the bands change what is heard, the setting survives a restart;
 switching it off costs nothing in the signal path.
@@ -255,7 +262,7 @@ silently skipped.
 
 ## 13. Play video files
 
-Wanted for 0.2.0. A local library holds more than audio: a concert film sitting
+Wanted, though after the first release. A local library holds more than audio: a concert film sitting
 beside the albums it came from is part of the same collection.
 
 This is the one milestone that changes what Stellody IS, so it changes several
@@ -280,23 +287,6 @@ library where it was left.
 
 Depends on: milestones 1 and 2, since it is the same transport. Shares its
 backend decision with milestone 12.
-
-## 14. Make the README true
-
-Today it describes a finished product. Measured against the tree, five claims
-are not built: the equalizer, shuffle, repeat, gapless transitions, the cover
-grid, plus ratings and play counts in the opening paragraph and FTS5 in the
-stack table.
-
-Every other README in the account states what its product does NOT do. This one
-currently promises what its binary cannot.
-
-Two honest ways out; this file assumes the first. Each milestone above trims
-its own claim as it lands, then anything abandoned is deleted from the README
-the day it is abandoned. The alternative is to trim every unbuilt claim
-now and add each back as it ships.
-
-Done when: no sentence in the README describes something the binary will not do.
 
 ## Not planned, so that this is not revisited
 

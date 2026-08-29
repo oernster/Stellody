@@ -2,9 +2,10 @@
 
 A calm, local-first FLAC music player for a library you already own.
 
-Stellody reads your music folder and never writes to it. Genres, ratings, play
-counts and cached artwork live in Stellody's own store, so a bug in this
-application cannot damage a file you spent years ripping and tagging.
+Stellody reads your music folder and never writes to it. What it learns about
+your library, the problems it finds in your tags and your own settings live in
+Stellody's own store, so a bug in this application cannot damage a file you
+spent years ripping and tagging.
 
 ## Who this is for
 
@@ -19,23 +20,31 @@ not going to.
 ## What it does
 
 - Scans a music folder you choose, then rescans incrementally when you add an
-  album, without disturbing what is already there.
+  album: a folder whose files are all unchanged is reused without opening one.
 - Handles the common shapes a real library takes: one file per track, a single
   file per album with a sidecar cue sheet, multi-disc sets split across
   sibling folders, compilations and tracks with several credited artists.
-- Reads cover art embedded in the files or sitting beside them.
-- Shows the library as a grid of covers or as an ordered text view, sortable
-  in either direction.
-- Plays with an equalizer, shuffle, repeat and gapless track transitions.
+- Shows the library as albums, discs and tracks, ordered either way.
+- Plays a track chosen by double click, by Return or from the right click
+  menu, then works through the album on its own.
+- Offers previous, play and pause, stop and next, both on the tray and on that
+  menu, with the library highlight following whatever is playing.
+- Carries volume, mute, shuffle and repeat, each remembered between sessions.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
+- Reaches everything from the keyboard, in the order the window is drawn.
+- Runs in the system tray and can start there.
+
+Stellody is early. Cover art, a grid view, search, ratings, play counts, an
+equalizer and gapless transitions are not built; `PLAN.md` lists what is still
+to come and what is deliberately excluded.
 
 ## What it deliberately does not do
 
 - **It never writes to your music files.** This is enforced by a structural
   test, not by good intentions.
 - It does not send anything to the internet. There is no cover lookup, no
-  scrobbling and no telemetry.
+  scrobbling, no telemetry and no update check.
 - It does not encrypt anything at rest. The store holds library metadata, not
   secrets.
 
@@ -47,9 +56,9 @@ not going to.
 | Interface | PySide6 |
 | Tags | mutagen |
 | Decode | soundfile |
-| Output | sounddevice |
+| Output | sounddevice, on WASAPI |
 | Buffers | numpy |
-| Store | SQLite with FTS5 |
+| Store | SQLite |
 
 ## Running from source
 
@@ -82,6 +91,8 @@ setup program around it, producing `dist-installer/StellodySetup.exe`.
 Everything the setup program writes is per user, so Windows never asks for
 administrator rights. Pass `--standalone` to the first script for a directory
 bundle instead, which is quicker to inspect when a build misbehaves.
+
+Windows is the only platform built today.
 
 ## Licence
 
