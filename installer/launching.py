@@ -7,6 +7,13 @@ second dismissal that says nothing.
 The order matters. A window that arrives AFTER the program that launched it has
 gone is denied the foreground by Windows and only flashes on the taskbar, so
 setup stays alive until the new window is up, fronts it and closes then.
+
+The window is not necessarily owned by the process setup started. A packaged
+application is commonly a bootstrap that unpacks itself and runs the real
+program as a child, so the pid setup holds owns no window at all and never
+will. Every process descended from it is therefore treated as the same
+application; matching the one pid meant waiting out the whole deadline before
+closing, which is the spent installer this was written to avoid.
 """
 
 from __future__ import annotations
@@ -17,9 +24,31 @@ import subprocess
 from ctypes import wintypes
 
 # How long setup waits for the window before giving up and closing anyway. A
-# missed foreground is a smaller fault than a setup program that will not go.
-FOREGROUND_WAIT_S = 15.0
+# missed foreground is a smaller fault than a setup program that will not go,
+# so this is the worst case a user could see setup linger for, not a target.
+FOREGROUND_WAIT_S = 5.0
 FOREGROUND_POLL_MS = 200
+
+TH32CS_SNAPPROCESS = 0x00000002
+INVALID_HANDLE = -1
+MAX_PATH = 260
+
+
+class _ProcessEntry(ctypes.Structure):
+    """One row of the system's process table, as Toolhelp reports it."""
+
+    _fields_ = (
+        ("dwSize", wintypes.DWORD),
+        ("cntUsage", wintypes.DWORD),
+        ("th32ProcessID", wintypes.DWORD),
+        ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+        ("th32ModuleID", wintypes.DWORD),
+        ("cntThreads", wintypes.DWORD),
+        ("th32ParentProcessID", wintypes.DWORD),
+        ("pcPriClassBase", ctypes.c_long),
+        ("dwFlags", wintypes.DWORD),
+        ("szExeFile", ctypes.c_char * MAX_PATH),
+    )
 
 
 def launch(executable: pathlib.Path) -> subprocess.Popen | None:
@@ -30,23 +59,72 @@ def launch(executable: pathlib.Path) -> subprocess.Popen | None:
         return None
 
 
-def front(pid: int) -> bool:
-    """Bring that process's first visible window forward; False if it has none.
+def family(root: int, parents: dict[int, int]) -> set[int]:
+    """A process and everything descended from it, given who parented whom.
 
-    Called on a timer, so a false answer means "not yet" as often as it means
-    "never": the caller decides when to stop asking.
+    Kept apart from the system call that gathers the table so the walk itself
+    can be exercised. A process table is a forest read at one instant; a
+    pid can be reused, so a cycle is possible rather than unthinkable: each
+    pid is visited once.
+    """
+    children: dict[int, list[int]] = {}
+    for child, parent in parents.items():
+        children.setdefault(parent, []).append(child)
+    seen = {root}
+    pending = [root]
+    while pending:
+        for child in children.get(pending.pop(), ()):
+            if child not in seen:
+                seen.add(child)
+                pending.append(child)
+    return seen
+
+
+def _parent_map() -> dict[int, int]:
+    """Every live process against the process that started it.
+
+    An empty map on any failure, which leaves the caller matching the one pid
+    it started: the same answer this gave before it could see a tree at all.
+    """
+    try:
+        kernel32 = ctypes.windll.kernel32
+    except (AttributeError, OSError):
+        return {}
+    snapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+    if snapshot == INVALID_HANDLE:
+        return {}
+    entry = _ProcessEntry()
+    entry.dwSize = ctypes.sizeof(_ProcessEntry)
+    parents: dict[int, int] = {}
+    try:
+        more = kernel32.Process32First(snapshot, ctypes.byref(entry))
+        while more:
+            parents[int(entry.th32ProcessID)] = int(entry.th32ParentProcessID)
+            more = kernel32.Process32Next(snapshot, ctypes.byref(entry))
+    finally:
+        kernel32.CloseHandle(snapshot)
+    return parents
+
+
+def front(pid: int) -> bool:
+    """Bring the launched application's first visible window forward.
+
+    False when it has none yet. Called on a timer, so a false answer means
+    "not yet" as often as it means "never": the caller decides when to stop
+    asking.
     """
     try:
         user32 = ctypes.windll.user32
     except (AttributeError, OSError):
         return False
+    ours = family(pid, _parent_map())
     found: list[int] = []
 
     @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
     def _on_window(handle, _extra):
         owner = wintypes.DWORD()
         user32.GetWindowThreadProcessId(handle, ctypes.byref(owner))
-        if owner.value == pid and user32.IsWindowVisible(handle):
+        if owner.value in ours and user32.IsWindowVisible(handle):
             found.append(handle)
             return False
         return True

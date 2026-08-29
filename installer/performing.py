@@ -213,7 +213,15 @@ class Performing:
         setup; the window arriving afterwards would then only flash on the
         taskbar. The wait is bounded, so a window that never comes still
         closes setup rather than leaving it running.
+
+        The deadline is read BEFORE the window is looked for; the two are
+        short circuited. Looking for a window is a walk through the system's
+        own tables; if that ever raises, the exception ends this slot in
+        silence and the timer goes on firing into it forever, which is a setup
+        program that never leaves. Once the deadline is past, nothing is
+        called that could keep it here.
         """
-        if launching.front(self._front_pid) or time.monotonic() > self._front_deadline:
+        expired = time.monotonic() > self._front_deadline
+        if expired or launching.front(self._front_pid):
             self._front_timer.stop()
             self.close()
