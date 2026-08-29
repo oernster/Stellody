@@ -28,17 +28,23 @@ class Leaving:
     @Slot()
     def quit_application(self) -> None:
         """Leave, whatever the close button is set to do."""
+        self._note("quit asked for; closing the window to get there")
         self._quitting = True
         self.close()
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Honour the stored close behaviour, asking when none is stored."""
         if self._quitting or not self._notification.isVisible():
+            self._note(
+                f"closing for good: quitting={self._quitting} "
+                f"tray={self._notification.isVisible()}"
+            )
             self._leave_for_good(event)
             return
         action = self._settings.get_setting(SETTING_CLOSE, CloseAction.ASK.value)
         if action == CloseAction.ASK.value:
             action = self._ask_close_action()
+        self._note(f"the close button means: {action}")
         if action == CloseAction.QUIT.value:
             self._quitting = True
             self._leave_for_good(event)
@@ -57,12 +63,18 @@ class Leaving:
         still holding the tray icon and the claim to being the copy that runs,
         so the one control that should have stopped Stellody could not.
         """
+        self._note("stopping the transport timer")
         self._transport_timer.stop()
+        self._note("stopping the transport")
         self._transport.stop()
+        self._note("waiting for the scan runner")
         self._runner.wait()
+        self._note("scan runner done; accepting the close")
         event.accept()
+        self._note("calling the departure")
         depart = self._leave or QApplication.quit
         depart()
+        self._note("the departure returned; the event loop should now end")
 
     def _ask_close_action(self) -> str:
         """Ask what closing should mean, defaulting to staying in the tray."""

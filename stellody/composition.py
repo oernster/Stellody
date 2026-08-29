@@ -129,5 +129,7 @@ def _start(argv: list[str] | None = None) -> int:
     code = application.exec()
     diary.note(f"the event loop ended with {code}")
     store.close()
+    diary.note("store closed")
     only.release()
+    diary.note(f"claim released; leaving with {code}")
     return code
