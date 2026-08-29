@@ -215,7 +215,7 @@ def test_a_repeating_queue_of_one_track_plays_that_track_again() -> None:
     transport.next()
     assert player.calls == ["load", "play"]
     transport.previous()
-    assert player.calls == ["load", "play", "load", "play"]
+    assert player.calls == ["load", "play", "load"], "back opens it and waits"
 
 
 def test_a_finished_last_track_loops_instead_of_stopping_while_repeating() -> None:

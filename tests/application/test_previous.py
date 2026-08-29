@@ -57,14 +57,26 @@ def playing_the_middle_track():
     return transport, player, clock, tracks
 
 
-def test_back_while_a_track_plays_starts_that_track_again() -> None:
+def test_back_while_a_track_plays_starts_that_track_again_and_waits() -> None:
     """However long it has been playing, one press never leaves the track."""
     transport, player, clock, tracks = playing_the_middle_track()
     clock.advance(LATER_MS * 100)
     transport.previous()
     assert transport.current is tracks[1], "the same track, not the one before"
     assert player.loaded == [tracks[1].source], "and opened again from its start"
-    assert player.calls == ["load", "play"]
+    assert player.calls == ["load"], "opened, not played on"
+    assert transport.playing is False, "it waits at the beginning"
+
+
+def test_stepping_back_a_track_also_waits_at_its_beginning() -> None:
+    """The same everywhere back goes, so a second press is not a race."""
+    transport, player, clock, tracks = playing_the_middle_track()
+    transport.previous()
+    clock.advance(SOON_MS)
+    transport.previous()
+    assert transport.current is tracks[0]
+    assert transport.playing is False
+    assert player.calls == ["load", "load"]
 
 
 def test_back_pressed_again_straight_after_steps_to_the_track_before() -> None:

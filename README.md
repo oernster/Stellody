@@ -28,9 +28,9 @@ not going to.
 - Plays a track chosen by double click, by Return or from the right click
   menu, then works through the album on its own.
 - Offers previous, play and pause, stop and next, both on the tray and on that
-  menu, with the library highlight following whatever is playing. Back starts
-  the track in hand again; pressing it twice in quick succession steps to the
-  track before, so repeated presses walk back through the album.
+  menu, with the library highlight following whatever is playing. Back returns
+  to the beginning of the track in hand and waits there; pressing it twice in
+  quick succession goes to the track before, also waiting at its beginning.
 - Carries volume, mute, shuffle and repeat, each remembered between sessions.
   Shuffle leads its scattered run with the track already playing, so next
   reaches the whole of the rest of the album.

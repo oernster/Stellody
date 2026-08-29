@@ -1,8 +1,9 @@
 """Playing a queue through whatever device is behind the playback port.
 
 The window presses buttons; this decides what they mean. It owns the queue and
-the one rule that ties the queue to the device: loading a track always leaves
-it playing, because nothing else is what pressing next means.
+the rule that ties the queue to the device: loading a track leaves it playing,
+because nothing else is what pressing next means. Back is the one exception;
+it says why where it is written.
 
 No Qt, no device, no filesystem. The port is the only way out.
 """
@@ -198,6 +199,12 @@ class Transport:
         before, started at ITS beginning, so quick repeated presses walk back
         through the album while a single press never leaves it.
 
+        Either way it lands at a beginning and waits there rather than playing
+        on. Back is the button somebody reaches for when they want to hear
+        something again or have gone past what they wanted, so it hands them
+        the start of a track and lets them choose the moment; carrying on
+        immediately makes a second press a race against the music.
+
         Under shuffle it always means starting again. The queue then runs in a
         scattered order rather than the order the listener heard, so the track
         lying behind the playhead is not the one they would be asking for.
@@ -207,12 +214,12 @@ class Transport:
         """
         again = self._pressed_back_again()
         if self._shuffled or not again:
-            self._restart_at(self._queue)
+            self._open_paused(self._queue)
             return
         if self._repeating:
-            self._restart_at(self._queue.wrapped_previous())
+            self._open_paused(self._queue.wrapped_previous())
             return
-        self._move(self._queue.previous())
+        self._open_paused(self._queue.previous())
 
     def _pressed_back_again(self) -> bool:
         """Whether this press of back followed hard on the heels of the last.
@@ -239,6 +246,15 @@ class Transport:
         self._queue = moved
         self._load_current()
 
+    def _open_paused(self, moved: Queue) -> None:
+        """Take up a position at its beginning, waiting rather than playing.
+
+        Opening a source leaves the device paused at its first frame, so this
+        is the load without the play that every other move makes.
+        """
+        self._queue = moved
+        self._load_current(playing=False)
+
     def advance_if_finished(self) -> bool:
         """Move on when the track has played out; True when something changed.
 
@@ -254,7 +270,7 @@ class Transport:
         self.next()
         return True
 
-    def _load_current(self) -> None:
+    def _load_current(self, playing: bool = True) -> None:
         """Open the current track and start it. Nothing to open is not a fault."""
         track = self._queue.current
         if track is None:
@@ -264,4 +280,5 @@ class Transport:
             track.source,
             OutputRequest(sample_rate=track.sample_rate, bit_depth=track.bit_depth),
         )
-        self._player.play()
+        if playing:
+            self._player.play()
