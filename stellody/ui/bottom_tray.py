@@ -35,6 +35,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
+    QLabel,
     QPushButton,
     QSlider,
     QVBoxLayout,
@@ -58,6 +59,9 @@ BOTTOM_MARGIN_PX = TRAY_MARGIN_PX // HALF
 # stored. The engine takes a fraction, so one conversion lives at that seam.
 MINIMUM_PERCENT = 0
 MAXIMUM_PERCENT = 100
+# Where the volume starts when nothing has been chosen yet. Full is loud
+# enough to be startling on a first run; three quarters leaves room to go up.
+DEFAULT_PERCENT = 75
 PERCENT_STEP = 5
 SLIDER_HEIGHT_PX = 220
 SLIDER_MARGIN_PX = 10
@@ -87,6 +91,7 @@ class VolumeSlider(QFrame):
         self.slider = QSlider(Qt.Orientation.Vertical, self)
         self.slider.setObjectName("Volume")
         self.slider.setRange(MINIMUM_PERCENT, MAXIMUM_PERCENT)
+        self.slider.setValue(DEFAULT_PERCENT)
         self.slider.setSingleStep(PERCENT_STEP)
         self.slider.setPageStep(PERCENT_STEP * HALF)
         self.slider.setFixedHeight(SLIDER_HEIGHT_PX)
@@ -95,7 +100,24 @@ class VolumeSlider(QFrame):
         column.setContentsMargins(
             SLIDER_MARGIN_PX, SLIDER_MARGIN_PX, SLIDER_MARGIN_PX, SLIDER_MARGIN_PX
         )
+        # Above the slider, where the eye lands first on a column that is read
+        # top down; also where the handle never covers it at full volume.
+        self.reading = QLabel(self)
+        self.reading.setObjectName("VolumeReading")
+        self.reading.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        column.addWidget(self.reading, alignment=Qt.AlignmentFlag.AlignHCenter)
         column.addWidget(self.slider, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.slider.valueChanged.connect(self._show_percent)
+        self._show_percent(self.slider.value())
+
+    def _show_percent(self, percent: int) -> None:
+        """Say the level in the whole percent the tooltip and the store use.
+
+        A slider on its own says roughly; a number says which. They are the
+        same value read two ways, so the number is driven by the slider rather
+        than set beside it; the two cannot disagree.
+        """
+        self.reading.setText(f"{percent}%")
 
     def open_at(self, percent: int, button: QWidget) -> None:
         """Show the slider above its button, set to where the volume is."""
@@ -174,7 +196,7 @@ class BottomTray(QWidget):
         row.addStretch()
         for button in self.switch_stops():
             row.addWidget(button)
-        self._percent = MAXIMUM_PERCENT
+        self._percent = DEFAULT_PERCENT
         self.set_shuffled(False)
         self.set_repeating(False)
 

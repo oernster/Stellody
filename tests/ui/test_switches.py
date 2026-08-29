@@ -17,17 +17,13 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
-from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
+from tray_support import RememberingStore, build, picture
 
-from stellody.application.scan import LoadLibrary, ScanLibrary
-from stellody.application.transport import Transport
-from stellody.domain.album import Album
-from stellody.domain.identity import AlbumIdentity
-from stellody.domain.playback import SILENT_VOLUME, UNITY_VOLUME
-from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
+from stellody.domain.playback import SILENT_VOLUME
 from stellody.shared.version import DONATE_URL
 from stellody.ui import main_window as window_module
+from stellody.ui.bottom_tray import DEFAULT_PERCENT, MAXIMUM_PERCENT
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
     FALSE,
@@ -37,84 +33,12 @@ from stellody.ui.settings_keys import (
     TRUE,
 )
 
-ICON_PX = 30
 # Long enough for the walk to come back round to where it started.
 RING_WALK = 40
 # Written out rather than read from the source it is checking. Comparing the
 # constant against itself passes whatever it is changed to, which for a payment
 # address is the one change that must never happen quietly.
 EXPECTED_DONATE_URL = "https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"
-
-
-def track(number: int) -> Track:
-    """One ordinary track."""
-    return Track(
-        source=TrackSource(path=f"{number}.flac"),
-        disc_number=1,
-        track_number=number,
-        title=f"Track {number}",
-        artists=("Holst",),
-        duration_ms=1000,
-        sample_rate=CD_SAMPLE_RATE,
-        bit_depth=16,
-    )
-
-
-def album() -> Album:
-    """One album of two tracks."""
-    return Album(
-        identity=AlbumIdentity(album_artist="Holst", title="The Planets"),
-        tracks=(track(1), track(2)),
-    )
-
-
-class RememberingStore:
-    """Enough of a store to answer a window, keeping what it is told."""
-
-    def __init__(self, settings: dict[str, str] | None = None) -> None:
-        self.settings = dict(settings or {})
-
-    def load_folders(self) -> tuple:
-        """Nothing remembered."""
-        return ()
-
-    def file_signatures(self) -> dict:
-        """Nothing on record."""
-        return {}
-
-    def save_folder(self, record) -> None:
-        """Never called here."""
-
-    def mark_absent(self, seen_paths) -> int:
-        """Nothing went missing."""
-        return 0
-
-    def get_setting(self, key: str, default: str = "") -> str:
-        """One stored setting."""
-        return self.settings.get(key, default)
-
-    def set_setting(self, key: str, value: str) -> None:
-        """Store one setting."""
-        self.settings[key] = value
-
-    def close(self) -> None:
-        """Nothing to release."""
-
-
-def build(store: RememberingStore, player: RecordingPlayer) -> MainWindow:
-    """A real window over a recording player, holding one album."""
-
-    def session():
-        return ScanLibrary(None, None, None, store), store
-
-    made = MainWindow(
-        scan_session=session,
-        loader=LoadLibrary(store),
-        transport=Transport(player),
-        settings=store,
-    )
-    made._model.set_albums((album(),))
-    return made
 
 
 @pytest.fixture
@@ -137,16 +61,6 @@ def window(
     return build(store, player)
 
 
-def picture(button) -> QImage:
-    """One button's icon as an image, so two states can be told apart.
-
-    A QImage rather than its raw bytes: reading bits() off a chain of
-    temporaries hands back a buffer whose owner is already gone, which was
-    measured here as a comparison that passed alone and failed in sequence.
-    """
-    return button.icon().pixmap(ICON_PX, ICON_PX).toImage()
-
-
 def test_muting_silences_the_device_and_strikes_the_speaker_through(
     window: MainWindow, player: RecordingPlayer
 ) -> None:
@@ -157,7 +71,7 @@ def test_muting_silences_the_device_and_strikes_the_speaker_through(
     assert button.toolTip() == "Unmute"
     assert picture(button) != unmuted, "the muted speaker is drawn struck through"
     window.toggle_mute()
-    assert player.volume == UNITY_VOLUME
+    assert player.volume == DEFAULT_PERCENT / MAXIMUM_PERCENT, "back to the level set"
     assert button.toolTip() == "Mute"
     assert picture(button) == unmuted
 

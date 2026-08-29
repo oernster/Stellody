@@ -16,7 +16,11 @@ from collections.abc import Callable
 from PySide6.QtCore import QModelIndex, QPoint, Qt, Slot
 from PySide6.QtWidgets import QMenu
 
-from stellody.ui.bottom_tray import MAXIMUM_PERCENT, MINIMUM_PERCENT
+from stellody.ui.bottom_tray import (
+    DEFAULT_PERCENT,
+    MAXIMUM_PERCENT,
+    MINIMUM_PERCENT,
+)
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_MUTED,
@@ -63,12 +67,17 @@ class Playing:
         self._settings.set_setting(SETTING_VOLUME, str(percent))
 
     def restore_volume(self) -> None:
-        """Start at the volume last chosen, full when none has been."""
-        stored = self._settings.get_setting(SETTING_VOLUME, str(MAXIMUM_PERCENT))
+        """Start at the volume last chosen, at the default when none has been.
+
+        A stored value that cannot be read as a number falls back to the same
+        default rather than to silence or to full: both of those are a worse
+        surprise than the level a first run would have used.
+        """
+        stored = self._settings.get_setting(SETTING_VOLUME, str(DEFAULT_PERCENT))
         try:
             percent = int(stored)
         except ValueError:
-            percent = MAXIMUM_PERCENT
+            percent = DEFAULT_PERCENT
         self.set_volume(min(max(MINIMUM_PERCENT, percent), MAXIMUM_PERCENT))
 
     def restore_switches(self) -> None:

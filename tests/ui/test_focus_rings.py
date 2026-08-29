@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QApplication, QPushButton, QTreeView
 
 from stellody.composition import build_window
 from stellody.infrastructure.store import SqliteLibraryStore
+from stellody.ui.bottom_tray import DEFAULT_PERCENT
 from stellody.ui.theme import Mode, stylesheet
 
 # A Qt class selector matches every SUBCLASS, so naming one of these reaches
@@ -131,7 +132,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Switch to the light appearance",
         "About Stellody",
         "Buy the author a drink (opens your browser)",
-        "Volume 100%",
+        f"Volume {DEFAULT_PERCENT}%",
         "Turn shuffle on",
         "Turn repeat on",
     ]
