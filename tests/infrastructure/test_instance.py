@@ -1,82 +1,99 @@
-"""One Stellody at a time, with a way to call the running one forward.
+"""One Stellody at a time, over the channel to the copy already running.
 
 Measured on a machine where the window had been closed to the notification
 area: the window existed but was hidden, so it had no button on the taskbar;
 clicking the pinned shortcut started a second copy rather than showing the one
 already there.
+
+Nothing here is Windows only. A system semaphore, a shared memory segment and
+a local socket are the same three objects on Windows, Linux and macOS.
 """
 
 from __future__ import annotations
 
-import pathlib
-
 import pytest
+from PySide6.QtNetwork import QLocalServer
+from PySide6.QtWidgets import QApplication
 
-from stellody.infrastructure import instance
+from stellody.infrastructure.instance import SingleInstance
 
-KEY = "Stellody.tests.claim"
-
-
-def test_the_first_copy_takes_the_claim_and_a_second_is_refused() -> None:
-    first = instance.Claim(KEY)
-    second = instance.Claim(KEY)
-    try:
-        assert first.take() is True
-        assert second.take() is False, "a second copy is not the one that runs"
-    finally:
-        first.release()
-        second.release()
+GUARD = "Stellody.tests.guard"
+CLAIM = "Stellody.tests.claim"
+CHANNEL = "Stellody.tests.activation"
 
 
-def test_releasing_is_safe_whether_or_not_the_claim_was_taken() -> None:
+@pytest.fixture(scope="session")
+def application() -> QApplication:
+    """One real QApplication, since these are Qt objects. Qt is never mocked."""
+    existing = QApplication.instance()
+    return existing or QApplication([])
+
+
+@pytest.fixture
+def copies(application: QApplication):
+    """Two copies of the application, as two launches would be."""
+    made = [SingleInstance(GUARD, CLAIM, CHANNEL) for _ in range(2)]
+    yield made
+    for copy in made:
+        copy.release()
+    QLocalServer.removeServer(CHANNEL)
+
+
+def test_the_first_copy_takes_the_claim_and_a_second_is_refused(copies) -> None:
+    first, second = copies
+    assert first.take() is True
+    assert second.take() is False, "a second copy is not the one that runs"
+
+
+def test_a_second_copy_asks_the_first_to_come_forward(
+    application: QApplication, copies
+) -> None:
+    """The whole point: the click reaches the window nobody can see."""
+    first, second = copies
+    first.take()
+    asked: list[str] = []
+    assert first.listen(lambda: asked.append("came forward")) is True
+    assert second.ask() is True, "somebody answered"
+    application.processEvents()
+    assert asked == ["came forward"]
+
+
+def test_asking_where_nothing_listens_says_so_rather_than_waiting(copies) -> None:
+    """A copy that cannot be reached must not hang on somebody's click."""
+    first, second = copies
+    first.take()
+    QLocalServer.removeServer(CHANNEL)
+    assert second.ask() is False
+
+
+def test_releasing_lets_the_next_launch_be_the_one_that_runs(copies) -> None:
+    """However a copy ends, the next one must not be locked out."""
+    first, second = copies
+    assert first.take() is True
+    first.release()
+    assert second.take() is True
+
+
+def test_releasing_is_safe_whether_or_not_the_claim_was_taken(copies) -> None:
     """It runs on the way out, where a fault would be the last thing said."""
-    instance.Claim(KEY + ".never").release()
+    first, _ = copies
+    first.release()
+    first.release()
 
 
-def test_a_note_asks_the_running_copy_to_come_forward(
-    tmp_path: pathlib.Path,
+def test_ownership_is_the_claim_rather_than_the_channel(
+    application: QApplication, copies
 ) -> None:
-    assert instance.asked(tmp_path) is False, "nobody has asked"
-    assert instance.ask(tmp_path) is True
-    assert instance.attention_path(tmp_path).is_file()
-    assert instance.asked(tmp_path) is True
+    """Which is why the two are separate objects.
 
-
-def test_the_note_is_read_once_and_then_gone(tmp_path: pathlib.Path) -> None:
-    """A note left behind would raise the window on every tick."""
-    instance.ask(tmp_path)
-    assert instance.asked(tmp_path) is True
-    assert instance.asked(tmp_path) is False
-    assert not instance.attention_path(tmp_path).exists()
-
-
-def test_nothing_is_created_where_there_is_no_directory(
-    tmp_path: pathlib.Path,
-) -> None:
-    """No directory means nothing is running, so there is nobody to ask."""
-    absent = tmp_path / "never-used"
-    assert instance.ask(absent) is False
-    assert not absent.exists()
-
-
-def test_a_note_that_cannot_be_left_is_not_a_fault(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def refuse(*_: object, **__: object) -> None:
-        raise OSError("access is denied")
-
-    monkeypatch.setattr(pathlib.Path, "write_text", refuse)
-    assert instance.ask(tmp_path) is False
-
-
-def test_a_note_that_cannot_be_removed_is_read_as_no_note(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Better a window not raised than one raised over and over."""
-    instance.ask(tmp_path)
-
-    def refuse(*_: object, **__: object) -> None:
-        raise OSError("in use")
-
-    monkeypatch.setattr(pathlib.Path, "unlink", refuse)
-    assert instance.asked(tmp_path) is False
+    Measured on Windows: a second listener binds the same pipe name quite
+    happily, so a channel that answers proves nothing about who owns the
+    application. On Unix the opposite trap waits, a socket left behind by a
+    copy the system ended, which is why listen clears the name first. That
+    path cannot be exercised here and is not claimed to be.
+    """
+    first, second = copies
+    assert first.take() is True
+    assert first.listen(lambda: None) is True
+    assert second.listen(lambda: None) is True, "the channel is not the claim"
+    assert second.take() is False, "the claim is"

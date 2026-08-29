@@ -1,79 +1,112 @@
-"""One Stellody at a time, with a way to call the running one to the front.
+"""One Stellody at a time, over a channel to the copy already running.
 
 Closing the window leaves the application in the notification area; a hidden
-window has no button on the taskbar. So what a second launch means,
-from a pinned shortcut or the Start menu, is almost always "show me the one I
-already have" rather than "give me another".
+window has no button on the taskbar. So a second launch, from a pinned
+shortcut, the Start menu, a dock or a desktop file, almost always means "show
+me the one I already have" rather than "give me another".
 
-Two pieces, because they answer different questions. A claim says whether this
-copy is the one that runs; it is held in shared memory the system reclaims
-when the process ends, so a copy that dies badly does not lock the next one
-out. A note in Stellody's own directory then asks the running copy to come
-forward: it is a file rather than a socket because the running copy is already
-watching that directory and a listening port is a thing to be got wrong.
+Three system objects and no files, the same three on Windows, Linux and macOS.
+A system semaphore is the mutex: it is held only across the moment ownership
+is decided, so two copies starting together cannot both decide they are first.
+A shared memory segment carries ownership itself, since it exists exactly as
+long as somebody holds it. A local socket carries the activation, which is a
+named pipe on Windows and a socket file the system owns elsewhere.
+
+Ownership and activation are deliberately separate. Asking a listener whether
+it is there answers "is one running" only once that listener is accepting,
+which is a race at the exact moment it matters.
 """
 
 from __future__ import annotations
 
-import pathlib
+from collections.abc import Callable
 
-from PySide6.QtCore import QSharedMemory
+from PySide6.QtCore import QSharedMemory, QSystemSemaphore
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
-# Named for the application rather than the file, since it is a system wide
-# name and the user may have the application in more than one place.
-CLAIM_KEY = "Stellody.single.instance"
+# System wide names rather than paths, since the application may live in more
+# than one place and there is still only one of it running.
+GUARD_NAME = "Stellody.instance.guard"
+CLAIM_NAME = "Stellody.instance.claim"
+CHANNEL_NAME = "Stellody.activation"
+
+GUARD_HOLDERS = 1
 CLAIM_BYTES = 1
-ATTENTION_NAME = "show-window"
+SHOW_YOURSELF = b"show"
+# Long enough to cross the channel on a busy machine, short enough that a copy
+# which cannot be reached gives up rather than hanging on somebody's click.
+REPLY_TIMEOUT_MS = 1000
 
 
-class Claim:
-    """The claim to being the running copy, held for as long as this lives."""
+class SingleInstance:
+    """The claim to being the running copy, plus the way to reach it."""
 
-    def __init__(self, key: str = CLAIM_KEY) -> None:
-        self._memory = QSharedMemory(key)
+    def __init__(
+        self,
+        guard: str = GUARD_NAME,
+        claim: str = CLAIM_NAME,
+        channel: str = CHANNEL_NAME,
+    ) -> None:
+        self._guard = QSystemSemaphore(guard, GUARD_HOLDERS)
+        self._claim = QSharedMemory(claim)
+        self._channel = channel
+        self._server: QLocalServer | None = None
 
     def take(self) -> bool:
         """Whether this copy is the one that runs.
 
-        Attaching first and detaching again clears a segment left behind by a
-        copy the system ended without unmapping, which on Linux outlives the
-        process. Windows reclaims it, so there the attach simply fails.
+        The segment is attached and let go again first. A copy the system ends
+        without unmapping leaves one behind on Unix, where the segment outlives
+        its process; that attach is what clears it. Windows reclaims its own,
+        so there the attach simply finds nothing.
         """
-        if self._memory.attach():
-            self._memory.detach()
-        return bool(self._memory.create(CLAIM_BYTES))
+        self._guard.acquire()
+        try:
+            if self._claim.attach():
+                self._claim.detach()
+            return bool(self._claim.create(CLAIM_BYTES))
+        finally:
+            self._guard.release()
 
     def release(self) -> None:
         """Give the claim up. Safe whether or not it was ever taken."""
-        self._memory.detach()
+        if self._server is not None:
+            self._server.close()
+            self._server = None
+        self._claim.detach()
 
+    def listen(self, when_asked: Callable[[], None]) -> bool:
+        """Answer later copies asking to be shown; False when nothing listens.
 
-def attention_path(directory: pathlib.Path) -> pathlib.Path:
-    """Where the note asking the running copy to come forward belongs."""
-    return directory / ATTENTION_NAME
-
-
-def ask(directory: pathlib.Path) -> bool:
-    """Ask the running copy to show itself; False when the note would not go."""
-    if not directory.is_dir():
-        return False
-    try:
-        attention_path(directory).write_text("", encoding="utf-8")
-    except OSError:
-        return False
-    return True
-
-
-def asked(directory: pathlib.Path) -> bool:
-    """Whether somebody asked, taking the note as it is read.
-
-    Read once: a note left behind would raise the window on every tick.
-    """
-    note = attention_path(directory)
-    try:
-        if not note.exists():
+        A channel left behind by a copy the system ended is removed first: it
+        names a listener that is not there and the name will not be handed out
+        twice. Failing to listen costs the handoff rather than the
+        application, so it is reported instead of raised.
+        """
+        QLocalServer.removeServer(self._channel)
+        server = QLocalServer()
+        if not server.listen(self._channel):
             return False
-        note.unlink()
-    except OSError:
-        return False
-    return True
+        server.newConnection.connect(lambda: self._answer(server, when_asked))
+        self._server = server
+        return True
+
+    def _answer(self, server: QLocalServer, when_asked: Callable[[], None]) -> None:
+        """Take one caller's word for it and act on it."""
+        connection = server.nextPendingConnection()
+        if connection is None:
+            return
+        connection.disconnectFromServer()
+        when_asked()
+
+    def ask(self) -> bool:
+        """Ask the running copy to come forward; False when none answered."""
+        caller = QLocalSocket()
+        caller.connectToServer(self._channel)
+        if not caller.waitForConnected(REPLY_TIMEOUT_MS):
+            return False
+        caller.write(SHOW_YOURSELF)
+        caller.flush()
+        caller.waitForBytesWritten(REPLY_TIMEOUT_MS)
+        caller.disconnectFromServer()
+        return True

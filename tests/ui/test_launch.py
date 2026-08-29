@@ -10,7 +10,6 @@ asserted is what the window asked them for.
 
 from __future__ import annotations
 
-import pathlib
 import time
 
 from conftest import RecordingPlayer
@@ -20,12 +19,17 @@ from stellody import composition
 from stellody.application.ports import FolderListing, FolderRecord, SourceRecord
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
-from stellody.infrastructure import instance
+from stellody.infrastructure.instance import SingleInstance
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import FALSE, SETTING_ROOT, SETTING_SCAN_FINISHED, TRUE
 from stellody.ui.worker import ScanRunner
 
 ROOT = "H:/FLACMusic"
+# Names of this test's own, so a real copy of the application running
+# on this machine is neither consulted nor disturbed.
+TEST_GUARD = "Stellody.launch.tests.guard"
+TEST_CLAIM = "Stellody.launch.tests.claim"
+TEST_CHANNEL = "Stellody.launch.tests.activation"
 # More folders than a cancelled scan will get through; more than the test is
 # willing to wait for one that ignores the ask.
 FOLDERS_IN_A_LONG_SCAN = 200_000
@@ -216,12 +220,12 @@ def test_quitting_during_a_scan_stops_it_rather_than_waiting_it_out(
 
 
 def test_a_second_launch_brings_the_hidden_window_back(
-    application: QApplication, monkeypatch, tmp_path
+    application: QApplication, tmp_path
 ) -> None:
     """Closed to the tray, the window is hidden and has no taskbar button.
 
-    So clicking the pinned shortcut starts another copy, which is almost never
-    what was meant by it. That copy asks this one to come forward instead.
+    So opening Stellody again starts another copy, which is almost never what
+    was meant by it. That copy reaches this one over the channel instead.
     """
     store = FakeStore(remembered(), {SETTING_ROOT: ROOT})
     made = window(application, store, SpyWalker())
@@ -231,58 +235,49 @@ def test_a_second_launch_brings_the_hidden_window_back(
     application.processEvents()
     assert made.isVisible() is False, "closed to the tray"
 
-    monkeypatch.setattr(composition, "data_location", lambda: tmp_path)
-    assert instance.ask(tmp_path) is True
-    composition._come_forward(made)
-    application.processEvents()
-    assert made.isVisible() is True, "the running copy came forward"
-    assert not instance.attention_path(tmp_path).exists(), "and took the note"
-
-
-def test_a_tick_with_nobody_asking_leaves_the_window_where_it_is(
-    application: QApplication, monkeypatch, tmp_path
-) -> None:
-    """A window raising itself unbidden is worse than one that stays put."""
-    store = FakeStore(remembered(), {SETTING_ROOT: ROOT})
-    made = window(application, store, SpyWalker())
-    made.show()
-    application.processEvents()
-    made.hide()
-    application.processEvents()
-    monkeypatch.setattr(composition, "data_location", lambda: tmp_path)
-    composition._come_forward(made)
-    application.processEvents()
-    assert made.isVisible() is False
+    running = SingleInstance(TEST_GUARD, TEST_CLAIM, TEST_CHANNEL)
+    later = SingleInstance(TEST_GUARD, TEST_CLAIM, TEST_CHANNEL)
+    try:
+        assert running.take() is True
+        assert running.listen(made.restore_from_tray) is True
+        assert later.ask() is True
+        application.processEvents()
+        assert made.isVisible() is True, "the running copy came forward"
+    finally:
+        running.release()
+        later.release()
 
 
 class RefusedClaim:
-    """A claim taken by a copy that is already running."""
+    """A copy launched while another already holds the claim."""
 
     def __init__(self, *_: object) -> None:
-        self.released = False
+        self.asked = False
 
     def take(self) -> bool:
         """Somebody else has it."""
         return False
 
+    def ask(self) -> bool:
+        """Which is what this copy does about it."""
+        self.asked = True
+        return True
+
     def release(self) -> None:
         """Never reached, since this copy never had it."""
-        self.released = True
 
 
 def test_a_second_copy_asks_and_leaves_rather_than_opening_a_window(
-    application: QApplication, monkeypatch, tmp_path
+    application: QApplication, monkeypatch
 ) -> None:
     """It gets no store, no window and no event loop of its own."""
-    asked: list[pathlib.Path] = []
+    refused = RefusedClaim()
     monkeypatch.setattr(composition, "QApplication", lambda argv: application)
-    monkeypatch.setattr(composition.instance, "Claim", RefusedClaim)
-    monkeypatch.setattr(composition, "data_location", lambda: tmp_path)
-    monkeypatch.setattr(composition.instance, "ask", lambda where: asked.append(where))
+    monkeypatch.setattr(composition.instance, "SingleInstance", lambda: refused)
 
     def never(*_: object, **__: object) -> None:
         raise AssertionError("a second copy must not open the library")
 
     monkeypatch.setattr(composition, "open_store", never)
     assert composition._start([]) == composition.ALREADY_RUNNING
-    assert asked == [tmp_path], "it asked the running copy to come forward"
+    assert refused.asked is True, "it asked the running copy to come forward"

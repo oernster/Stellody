@@ -11,13 +11,40 @@ from __future__ import annotations
 import pathlib
 
 import pytest
+from PySide6.QtWidgets import QApplication
 
 from stellody import composition
 from stellody.infrastructure import startup_log
 
 
+@pytest.fixture(scope="session")
+def application() -> QApplication:
+    """One real QApplication for the run. Qt is never mocked."""
+    existing = QApplication.instance()
+    return existing or QApplication([])
+
+
 class Boom(RuntimeError):
     """A startup fault of the kind that used to vanish."""
+
+
+class AlwaysTheFirst:
+    """A claim nobody else holds, so startup carries on into the fault."""
+
+    def __init__(self, *_: object) -> None:
+        self.released = False
+
+    def take(self) -> bool:
+        """This copy is the one that runs."""
+        return True
+
+    def listen(self, when_asked) -> bool:
+        """Never reached: startup fails before there is a window to show."""
+        return True
+
+    def release(self) -> None:
+        """Nor is this, since the fault is raised on the way up."""
+        self.released = True
 
 
 def test_the_report_lands_beside_the_setup_programs_own_log(
@@ -49,7 +76,7 @@ def test_an_earlier_report_is_dropped_before_a_run(
 
 
 def test_a_failed_start_writes_the_reason_down_and_still_raises(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    application: QApplication, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The instrument itself, proved by a startup that cannot succeed."""
     monkeypatch.setattr(startup_log.tempfile, "gettempdir", lambda: str(tmp_path))
@@ -62,6 +89,13 @@ def test_a_failed_start_writes_the_reason_down_and_still_raises(
     # which is exactly what happened when open_store was introduced.
     monkeypatch.setattr(composition, "database_path", lambda: tmp_path / "library")
     monkeypatch.setattr(composition, "open_store", refuse)
+    # And the claim. Without it this asserts nothing whenever a real Stellody
+    # is running on the machine the tests are run on, since the second copy
+    # would leave quietly instead of ever reaching the store.
+    monkeypatch.setattr(composition.instance, "SingleInstance", AlwaysTheFirst)
+    # There is one QApplication for the run and Qt allows no second one, so
+    # startup is handed the one that already exists.
+    monkeypatch.setattr(composition, "QApplication", lambda argv: application)
     with pytest.raises(Boom):
         composition.main([])
     written = (tmp_path / startup_log.LOG_NAME).read_text(encoding="utf-8")
