@@ -55,11 +55,13 @@ as to the package.
 One reading of the machine picks the route. `installer/route.py` compares the
 version the Apps list records against the one being installed and returns
 install, update, downgrade, manage or uninstall; manage is where an install
-already at this version is offered repair or reinstall. `installer/actions.py`,
-`installer/registry.py` and `installer/performing.py` own everything written,
-which is per user throughout: the files under `%LOCALAPPDATA%\Programs`, the
-uninstall record and the sign-in entry under `HKCU`, so Windows never asks for
-administrator rights. `installer/screens.py`, `installer/shell.py`,
+already at this version is offered repair or reinstall. `installer/actions.py`
+and `installer/registry.py` own everything written, which is per user
+throughout: the files under `%LOCALAPPDATA%\Programs`, the uninstall record and
+the sign-in entry under `HKCU`, so Windows never asks for administrator rights.
+`installer/performing.py` drives them a step at a time and reports how it went,
+owning the sequence rather than the writing. `installer/screens.py`,
+`installer/shell.py`,
 `installer/wording.py` and `installer/theme.py` hold the interface, one screen
 to a step. `tests/installer/` covers it.
 
@@ -147,6 +149,8 @@ directories plus macOS AppleDouble stubs; nothing else.
 | PySide6 rather than Rust or Go | The requirement is a player that is not buggy. That comes from working where the coverage gate, the structural guards and the delivery lineage already exist. |
 | `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also has no equalizer for the one planned below. |
 | Missing files are flagged, never deleted | An unplugged drive, a failed restore or an interrupted scan must not destroy library metadata. |
+| The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
+| The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
 
 ### Decided but not built
 

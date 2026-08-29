@@ -25,17 +25,19 @@ module. Where the code and the shorthand disagree, the code wins.
 
 Version 1.0 is a readiness call for the owner to make, so nothing below is
 sized against it. No tag has been cut, so nothing is owed against one either:
-`VERSION` holds the number for the release being cut and the work is what goes
-into it.
+`VERSION` holds the number for the release being cut.
 
-What remains inside the first release's scope is the position display:
-milestones 1 and 2, then the amplitude monitor that shows position at all.
-Cover art, search, ratings and the rest come later, the wider formats and
-video among them.
+What this plan counts as the first release's scope is the position display:
+milestones 1 and 2, then the amplitude monitor that shows position at all. Two
+of those three are unbuilt, so a tag cut before them releases what works today
+rather than the release this section describes. Which of the two is being cut
+is the owner's call; the scope is written down so the difference is deliberate
+rather than accidental. Cover art, search, ratings and the rest come later, the
+wider formats and video among them.
 
-Cutting it means: the milestones in scope are done, the gate is green, the
-release notes are written in `NOTES.md` (which is never staged), then the tag
-and the release are the owner's to make.
+Cutting either means: the gate is green, the release notes are written in
+`NOTES.md` (which is never staged), then the tag and the release are the
+owner's to make.
 
 ## 1. Play something
 
