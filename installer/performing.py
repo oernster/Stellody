@@ -140,7 +140,12 @@ class Performing:
         try:
             plan = self._plan()
             self.log.write(f"installing to {plan.target}")
-            executable = actions.install(plan, self._archive(), self._report)
+            executable = actions.install(
+                plan,
+                self._archive(),
+                self._report,
+                anew=reinstalling or self.route is Route.INSTALL,
+            )
         except (OSError, ValueError, RuntimeError) as error:
             self._failed(error)
             return

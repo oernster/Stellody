@@ -8,6 +8,16 @@ import zipfile
 import pytest
 
 from installer import actions, registry
+from installer.plan import InstallPlan
+from stellody.infrastructure import paths
+from stellody.infrastructure.store import SqliteLibraryStore
+from stellody.ui.settings_keys import (
+    FALSE,
+    SETTING_REPEAT,
+    SETTING_SHUFFLE,
+    SETTING_VOLUME,
+    TRUE,
+)
 
 
 def _archive(path: pathlib.Path, entries: dict[str, str]) -> pathlib.Path:
@@ -170,3 +180,72 @@ def test_the_progress_ladder_is_weighted_by_where_the_time_goes(
     assert (
         shortcut_share >= 50
     ), "the shortcuts own most of the time, so most of the bar"
+
+
+def _stored(database: pathlib.Path, settings: dict[str, str]) -> pathlib.Path:
+    """A library database holding these settings, as the application writes it."""
+    store = SqliteLibraryStore(str(database))
+    for key, value in settings.items():
+        store.set_setting(key, value)
+    store.close()
+    return database
+
+
+def _quiet_install(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, anew: bool
+) -> None:
+    """Run a real install with only the parts that touch Windows stood in for."""
+    archive = _archive(tmp_path / "payload.zip", {"Stellody.exe": "binary"})
+    monkeypatch.setattr(actions, "register", lambda *_: None)
+    monkeypatch.setattr(actions, "set_sign_in_entry", lambda *_: None)
+    monkeypatch.setattr(actions, "setup_executable", lambda: archive)
+    plan = InstallPlan(
+        target=tmp_path / "install",
+        version="0.1.0",
+        desktop_shortcut=False,
+        start_menu_shortcut=False,
+    )
+    actions.install(plan, archive, anew=anew)
+
+
+def test_installing_anew_leaves_shuffle_and_repeat_off(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A reinstall inherits the directory, so it must not inherit the switches."""
+    database = _stored(
+        tmp_path / paths.DATABASE_NAME,
+        {SETTING_SHUFFLE: TRUE, SETTING_REPEAT: TRUE, SETTING_VOLUME: "52"},
+    )
+    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
+    _quiet_install(tmp_path, monkeypatch, anew=True)
+    store = SqliteLibraryStore(str(database))
+    try:
+        assert store.get_setting(SETTING_SHUFFLE, TRUE) == FALSE
+        assert store.get_setting(SETTING_REPEAT, TRUE) == FALSE
+        assert store.get_setting(SETTING_VOLUME, "") == "52", "the rest is untouched"
+    finally:
+        store.close()
+
+
+def test_forgetting_the_switches_creates_nothing_when_there_is_no_database(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A first install has nothing to forget; an installer must not make one."""
+    absent = tmp_path / "never-used"
+    monkeypatch.setattr(actions, "data_location", lambda: absent)
+    actions.forget_switches()
+    assert not absent.exists()
+
+
+def test_an_update_leaves_the_switches_exactly_as_they_were(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An update is the same install carrying on, so it changes no choices."""
+    database = _stored(tmp_path / paths.DATABASE_NAME, {SETTING_SHUFFLE: TRUE})
+    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
+    _quiet_install(tmp_path, monkeypatch, anew=False)
+    store = SqliteLibraryStore(str(database))
+    try:
+        assert store.get_setting(SETTING_SHUFFLE, FALSE) == TRUE
+    finally:
+        store.close()

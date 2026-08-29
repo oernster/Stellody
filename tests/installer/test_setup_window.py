@@ -325,3 +325,49 @@ def test_removing_says_which_way_the_library_went(
     window._forget.setChecked(True)
     window._remove()
     assert "are gone" in window._verdict_lead.text()
+
+
+def _anew_passed(
+    monkeypatch: pytest.MonkeyPatch,
+    window: setup.SetupWindow,
+    reinstalling: bool = False,
+) -> bool:
+    """What the window asked the install for, with the install itself stood in."""
+    asked: list[bool] = []
+
+    def record(plan, archive, progress=None, anew=False):
+        asked.append(anew)
+        return plan.target / actions.EXE_NAME
+
+    monkeypatch.setattr(actions, "payload_zip", lambda: INSTALLED_AT / "payload.zip")
+    monkeypatch.setattr(actions, "install", record)
+    window._write_files(reinstalling=reinstalling)
+    return asked[0]
+
+
+def test_a_first_install_asks_for_the_switches_to_start_off(
+    application: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nothing was installed, so nothing the user chose is being carried on."""
+    window = _window(monkeypatch, _here())
+    assert window.route is Route.INSTALL
+    assert _anew_passed(monkeypatch, window) is True
+
+
+def test_a_reinstall_asks_for_the_switches_to_start_off(
+    application: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The directory survives an uninstall, so the switches must not survive it."""
+    window = _window(monkeypatch, _here(THIS_VERSION))
+    assert window.route is Route.MANAGE
+    assert _anew_passed(monkeypatch, window, reinstalling=True) is True
+
+
+@pytest.mark.parametrize("installed", ("0.1.0", "0.3.0"))
+def test_an_update_or_a_downgrade_leaves_the_switches_alone(
+    application: QApplication, monkeypatch: pytest.MonkeyPatch, installed: str
+) -> None:
+    """Both are the same install carrying on, so neither resets a choice."""
+    window = _window(monkeypatch, _here(installed))
+    assert window.route in (Route.UPDATE, Route.DOWNGRADE)
+    assert _anew_passed(monkeypatch, window) is False

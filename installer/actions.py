@@ -23,7 +23,9 @@ from installer.registry import (
     set_sign_in_entry,
     unregister,
 )
-from stellody.infrastructure.paths import data_location
+from stellody.infrastructure.paths import DATABASE_NAME, data_location
+from stellody.infrastructure.store import SqliteLibraryStore
+from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE
 
 APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
@@ -225,13 +227,44 @@ def shortcut_paths() -> tuple[pathlib.Path, ...]:
     )
 
 
+def forget_switches() -> None:
+    """Leave shuffle and repeat off for a copy that is being installed anew.
+
+    They are a choice about how the application behaves rather than part of
+    the library, so they do not carry across an install the way the index and
+    the music folder do. Stellody's own directory outlives an uninstall unless
+    the user asks for it to go, which is what made a reinstall come back
+    wearing the switches somebody set months ago.
+
+    Nothing is created here: a machine with no directory yet has nothing to
+    forget, while an absent setting already reads as off.
+    """
+    database = data_location() / DATABASE_NAME
+    if not database.exists():
+        return
+    store = SqliteLibraryStore(str(database))
+    try:
+        for key in (SETTING_SHUFFLE, SETTING_REPEAT):
+            store.set_setting(key, FALSE)
+    finally:
+        store.close()
+
+
 def install(
     plan: InstallPlan,
     archive: pathlib.Path,
     progress: ProgressCallback = silent,
+    anew: bool = False,
 ) -> pathlib.Path:
-    """Deploy the application, register it and place its shortcuts."""
+    """Deploy the application, register it and place its shortcuts.
+
+    Installing anew, which is a first install or a reinstall, starts the
+    switches off. An update and a downgrade are the same install carrying on,
+    so they leave everything the user chose exactly where it was.
+    """
     progress(PCT_START, "Preparing the install folder...")
+    if anew:
+        forget_switches()
     if plan.target.exists():
         shutil.rmtree(plan.target, ignore_errors=True)
     progress(PCT_START, "Extracting files...")
