@@ -64,6 +64,6 @@ def test_a_switch_that_is_on_is_filled_rather_than_struck_through(mode: Mode) ->
     """Shuffle and repeat say they are on by being lit, so the fill must read."""
     colour = palette_for(mode)
     declarations = block(SWITCH_ON, stylesheet(mode))
-    assert f"background-color: {colour.accent}" in declarations
-    assert colour.accent != colour.window, "against the strip it sits on"
-    assert colour.accent != colour.ring, "and against its own focus border"
+    assert f"background-color: {colour.switch_on}" in declarations
+    assert colour.switch_on != colour.window, "against the strip it sits on"
+    assert colour.switch_on != colour.ring, "and against its own focus border"

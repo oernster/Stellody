@@ -32,6 +32,7 @@ class Palette:
     text_dim: str
     accent: str
     accent_hover: str
+    switch_on: str
     on_accent: str
     selection: str
     on_selection: str
@@ -54,6 +55,7 @@ LIGHT = Palette(
     text_dim="#8a94a6",
     accent="#1b5fd0",
     accent_hover="#1750b3",
+    switch_on="#ffe135",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -76,6 +78,7 @@ DARK = Palette(
     text_dim="#6b7891",
     accent="#4c8dff",
     accent_hover="#69a1ff",
+    switch_on="#ffe135",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",
@@ -233,7 +236,7 @@ def stylesheet(mode: Mode) -> str:
         padding: 0px;
     }}
     QPushButton#TrayButton:checked {{
-        background-color: {colour.accent};
+        background-color: {colour.switch_on};
     }}
     QPushButton#TrayButton:enabled:hover, QPushButton#TrayButton:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};
