@@ -7,6 +7,7 @@ package is allowed to reach both sides.
 from __future__ import annotations
 
 import sys
+import traceback
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
@@ -16,6 +17,7 @@ from stellody.application.transport import Transport
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.paths import database_path
 from stellody.infrastructure.probe import FlacProbe
+from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
 from stellody.infrastructure.walker import FolderWalker
@@ -65,6 +67,16 @@ def configure(application: QApplication) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     """Start Stellody, in the tray when the sign-in entry asked for that."""
+    clear()
+    try:
+        return _start(argv)
+    except Exception:
+        report_failure(traceback.format_exc())
+        raise
+
+
+def _start(argv: list[str] | None = None) -> int:
+    """Everything main does, with the reporting wrapped around it."""
     arguments = list(sys.argv if argv is None else argv)
     application = QApplication(arguments)
     configure(application)

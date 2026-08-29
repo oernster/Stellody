@@ -205,6 +205,7 @@ class Performing:
             self.log.write("could not start it")
             self._verdict(TICK, title, f"{lead} Setup could not start it, though.")
             return
+        self.log.write(f"started {executable} as pid {process.pid}")
         self._verdict(TICK, title, f"{lead} {wording.LAUNCHING_LEAD}")
         self._front_pid = process.pid
         self._front_deadline = time.monotonic() + launching.FOREGROUND_WAIT_S
@@ -229,5 +230,8 @@ class Performing:
         """
         expired = time.monotonic() > self._front_deadline
         if expired or launching.front(self._front_pid):
+            self.log.write(
+                "gave up waiting for its window" if expired else "its window came up"
+            )
             self._front_timer.stop()
             self.close()
