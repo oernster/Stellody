@@ -13,7 +13,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QModelIndex, Slot
+from PySide6.QtCore import QModelIndex, QPoint, Qt, Slot
+from PySide6.QtWidgets import QMenu
 
 from stellody.ui.settings_keys import STATUS_TIMEOUT_MS
 
@@ -24,6 +25,57 @@ TRANSPORT_POLL_MS = 250
 
 class Playing:
     """The transport half of the window."""
+
+    def wire_tree(self) -> None:
+        """Give the library the two ways of starting a track, plus its menu.
+
+        Measured on this tree: one double click emits BOTH `doubleClicked` and
+        `activated`; Return emits `activated` alone. So `activated` covers
+        both gestures and is the only one connected. Connecting the pair loads
+        the track twice for one double click, which restarts it audibly.
+
+        Measured again in isolation, a bare QTreeView emitted `doubleClicked`
+        only, which is why this says which tree it was measured on.
+        """
+        self._tree.activated.connect(self.activate)
+        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tree.customContextMenuRequested.connect(self.show_transport_menu)
+
+    @Slot(QPoint)
+    def show_transport_menu(self, where: QPoint) -> None:
+        """Offer the transport over whatever was right clicked.
+
+        Play means the track under the cursor when there is one, since that is
+        what right clicking a track is asking about; over anything else it
+        resumes what is loaded.
+        """
+        index = self._tree.indexAt(where)
+        track = self._model.track_at(index)
+        menu = QMenu(self._tree)
+        playing = self._transport.playing
+        loaded = self._transport.current is not None
+        play = menu.addAction("Play")
+        play.setEnabled(track is not None or (loaded and not playing))
+        play.triggered.connect(
+            (lambda: self.activate(index))
+            if track is not None
+            else self.toggle_playback
+        )
+        pause = menu.addAction("Pause")
+        pause.setEnabled(playing)
+        pause.triggered.connect(self.toggle_playback)
+        stop = menu.addAction("Stop")
+        stop.setEnabled(self._transport.state.is_active)
+        stop.triggered.connect(self.stop_playback)
+        menu.addSeparator()
+        previous = menu.addAction("Previous track")
+        previous.setEnabled(self._transport.queue.has_previous)
+        previous.triggered.connect(self.previous_track)
+        following = menu.addAction("Next track")
+        following.setEnabled(self._transport.queue.has_next)
+        following.triggered.connect(self.next_track)
+        self._menu = menu
+        menu.popup(self._tree.viewport().mapToGlobal(where))
 
     @Slot(QModelIndex)
     def activate(self, index: QModelIndex) -> None:

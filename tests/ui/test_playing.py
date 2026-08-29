@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import LoadLibrary, ScanLibrary
@@ -22,6 +24,7 @@ from stellody.ui.settings_keys import SETTING_ROOT
 
 ROOT = "H:/FLACMusic"
 FIRST_ALBUM_ROW = 0
+NO_MODIFIER = Qt.KeyboardModifier.NoModifier
 
 
 def track(number: int) -> Track:
@@ -198,3 +201,95 @@ def test_a_refused_track_leaves_the_transport_offering_nothing(
     window._player.load = refuse
     window.activate(track_index(window, 0))
     assert window._tray.stop_button.isEnabled() is False
+
+
+def menu_items(window: MainWindow, where) -> dict:
+    """The context menu the tree would show at a point, by label."""
+    window.show_transport_menu(where)
+    return {action.text(): action for action in window._menu.actions() if action.text()}
+
+
+def point_of(window: MainWindow, index) -> object:
+    """A point inside the row for an index."""
+    return window._tree.visualRect(index).center()
+
+
+def test_double_clicking_a_track_plays_it(window: MainWindow) -> None:
+    """A real double click, because the point is which signals that emits.
+
+    Measured on this tree: one double click emits BOTH doubleClicked and
+    activated, so connecting the pair loads the track twice and restarts it
+    audibly. A test that emitted a signal by hand would pass either way, which
+    is why this drives the mouse.
+    """
+    window.show()
+    window._tree.expandAll()
+    QApplication.processEvents()
+    index = track_index(window, 0)
+    window._tree.scrollTo(index)
+    spot = window._tree.visualRect(index).center()
+    QTest.mouseClick(
+        window._tree.viewport(), Qt.MouseButton.LeftButton, NO_MODIFIER, spot
+    )
+    QTest.mouseDClick(
+        window._tree.viewport(), Qt.MouseButton.LeftButton, NO_MODIFIER, spot
+    )
+    QApplication.processEvents()
+    assert window._player.calls == ["load", "play"]
+    assert window._transport.current.title == "Track 1"
+
+
+def test_return_on_a_track_plays_it_too(window: MainWindow) -> None:
+    """Measured: Return emits activated, which a double click does not."""
+    window._tree.activated.emit(track_index(window, 1))
+    assert window._transport.current.title == "Track 2"
+
+
+def test_the_right_click_menu_offers_the_whole_transport(
+    window: MainWindow,
+) -> None:
+    window._tree.expandAll()
+    items = menu_items(window, point_of(window, track_index(window, 0)))
+    assert list(items) == ["Play", "Pause", "Stop", "Previous track", "Next track"]
+
+
+def test_play_over_a_track_plays_that_track(window: MainWindow) -> None:
+    window._tree.expandAll()
+    items = menu_items(window, point_of(window, track_index(window, 1)))
+    items["Play"].trigger()
+    assert window._transport.current.title == "Track 2"
+
+
+def test_the_menu_offers_only_what_can_be_done_right_now(
+    window: MainWindow,
+) -> None:
+    window._tree.expandAll()
+    idle = menu_items(window, point_of(window, album_index(window)))
+    assert idle["Play"].isEnabled() is False
+    assert idle["Pause"].isEnabled() is False
+    assert idle["Stop"].isEnabled() is False
+    assert idle["Next track"].isEnabled() is False
+
+    window.activate(track_index(window, 0))
+    playing = menu_items(window, point_of(window, album_index(window)))
+    assert playing["Pause"].isEnabled() is True
+    assert playing["Stop"].isEnabled() is True
+    assert playing["Next track"].isEnabled() is True
+    assert playing["Previous track"].isEnabled() is False
+
+
+def test_pausing_from_the_menu_pauses(window: MainWindow) -> None:
+    window._tree.expandAll()
+    window.activate(track_index(window, 0))
+    menu_items(window, point_of(window, album_index(window)))["Pause"].trigger()
+    assert window._player.calls[-1] == "pause"
+
+
+def test_play_away_from_a_track_resumes_what_is_loaded(window: MainWindow) -> None:
+    window._tree.expandAll()
+    window.activate(track_index(window, 0))
+    window.toggle_playback()
+    items = menu_items(window, point_of(window, album_index(window)))
+    assert items["Play"].isEnabled() is True
+    items["Play"].trigger()
+    assert window._player.calls[-1] == "play"

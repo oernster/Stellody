@@ -102,7 +102,7 @@ class MainWindow(Scanning, Playing, QMainWindow):
         self._notification = build_tray(self, icon)
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
-        self._tree.activated.connect(self.activate)
+        self.wire_tree()
         self._transport_timer = QTimer(self)
         self._transport_timer.timeout.connect(self._poll_transport)
         self._transport_timer.start(TRANSPORT_POLL_MS)
