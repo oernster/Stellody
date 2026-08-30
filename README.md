@@ -13,8 +13,10 @@ For someone with a large local music library who wants it browsed, ordered and
 played properly; someone who would rather have a small player that works than a
 large one that does not.
 
-Stellody reads FLAC and nothing else today, so a library of MP3, M4A or WMA
-scans to nothing. `PLAN.md` milestone 11 is the work that widens it.
+Stellody reads FLAC and nothing else today, so a folder of MP3, M4A or WMA
+scans to nothing. Measured over the library it is developed against, that hides
+146 of the 656 folders holding audio and part of 23 more, most of them M4A.
+`PLAN.md` milestone 11 is the work that widens it and sizes both halves of it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is
@@ -38,6 +40,13 @@ not going to.
 - Shows each album's cover beside it, taken from a file next to the music or
   from the picture inside the audio itself, then kept so it is read once. An
   album with neither keeps a plain square rather than a gap.
+- Offers to look a cover up for an album whose own files carry none, from the
+  right click menu and only from there. The chooser shows every picture
+  MusicBrainz and the Cover Art Archive have for that album, each labelled with
+  the release it belongs to; it keeps whichever is picked. That picture then
+  outlives a rescan, since it has no file beside the music to be checked
+  against. It is one of the two things Stellody does that reach outside the
+  machine and it happens only when asked.
 - Plays a track chosen by double click, by Return or from the right click
   menu, then works through the album on its own.
 - Offers previous, play and pause, stop and next, both on the toolbar across
@@ -79,26 +88,23 @@ not going to.
   browser.
 
 Stellody is early. Search, ratings, play counts, an equalizer, gapless
-transitions, choosing a cover for an album whose own files carry none and
-accepting the repairs the health report describes are not built; `PLAN.md`
-lists what is still to come and what is deliberately excluded. Where a control
-for one of those is already on screen it is disabled and says so.
+transitions and accepting the repairs the health report describes are not
+built; `PLAN.md` lists what is still to come and what is deliberately excluded.
+Where a control for one of those is already on screen it is disabled and says
+so.
 
 ## What it deliberately does not do
 
 - **It never writes to your music files.** This is enforced by a structural
   test, not by good intentions.
-- It does not send anything to the internet. No scrobbling, no telemetry and
-  no update check. The one outward thing it does is hand a donation link to
-  your browser when you press the button for it; the browser does the asking,
-  never Stellody.
-- **A cover lookup is written but nothing reaches it.** One module can talk to
-  MusicBrainz and the Cover Art Archive; no part of the running application
-  calls it, so starting Stellody opens no connection. A structural test keeps
-  both halves of that true: it permits exactly one module to hold the machinery
-  for a connection and permits only the composition root to name that module.
-  `PLAN.md` milestone 4 is the chooser that would put the lookup behind a
-  gesture somebody makes, which is the only way it will ever run.
+- It sends nothing to the internet on its own. No scrobbling, no telemetry and
+  no update check. Two things reach outward and both wait to be asked: the
+  donation button hands a link to your browser, which then does the asking;
+  "Find cover art online..." on an album's right click menu opens the chooser
+  described above. Starting Stellody, scanning a library and playing it open no
+  connection at all. A structural test holds that in place rather than a
+  promise: exactly one module may hold the machinery for a connection and only
+  the composition root may name it.
 - It does not encrypt anything at rest. The store holds library metadata, not
   secrets.
 - It keeps a plain-text account of its own comings and goings at

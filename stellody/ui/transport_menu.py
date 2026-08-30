@@ -76,6 +76,13 @@ class TransportMenu:
         following = menu.addAction("Next track")
         following.setEnabled(self._transport.queue.has_next)
         following.triggered.connect(self.next_track)
+        # Over an album rather than over a track, since a cover belongs to the
+        # album. It is the one entry here that reaches outside the machine, so
+        # it sits apart from the transport and says what it will go and do.
+        if album is not None and self.can_choose_covers:
+            menu.addSeparator()
+            covers = menu.addAction("Find cover art online...")
+            covers.triggered.connect(lambda: self.choose_cover(album))
         self._menu = menu
         menu.popup(over.viewport().mapToGlobal(where))
 

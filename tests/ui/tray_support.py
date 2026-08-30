@@ -81,8 +81,14 @@ def build(
     store: RememberingStore,
     player: RecordingPlayer,
     leave=None,
+    chooser=None,
 ) -> MainWindow:
-    """A real window over a recording player, holding one album."""
+    """A real window over a recording player, holding one album.
+
+    The chooser is left out by default, because a window built without one
+    offers no cover lookup at all: that is what lets every test here raise the
+    transport menu with no network in the room.
+    """
 
     def session():
         return ScanLibrary(None, None, None, store), store
@@ -93,6 +99,7 @@ def build(
         transport=Transport(player),
         settings=store,
         leave=leave,
+        chooser=chooser,
     )
     made._model.set_albums((album(),))
     return made

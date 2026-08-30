@@ -14,12 +14,14 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.artwork import AlbumArt
+from stellody.application.choosing_covers import ChooseCover
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
 from stellody.infrastructure import diary, instance, switch_reset
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
+from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import FlacPictures
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.paths import (
@@ -72,14 +74,26 @@ def build_window(
     leave: Callable[[], None] | None = None,
     note: Callable[[str], None] | None = None,
 ) -> MainWindow:
-    """Assemble the window over a store, with real adapters behind every port."""
+    """Assemble the window over a store, with real adapters behind every port.
+
+    One artwork store rather than two. Reading a cover and keeping a chosen one
+    are separate services over the same directory, so a picture chosen from the
+    archive is found by the reader afterwards instead of sitting in a second
+    cache nothing consults.
+
+    This is the only module that may name the search client, since it is the
+    only thing in Stellody that can open a connection; a structural test says
+    so rather than a comment.
+    """
+    artwork = FileArtwork(art_cache_dir(), FlacPictures())
     return MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
         transport=Transport(WasapiPlayback()),
         settings=store,
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
-        art=AlbumArt(FileArtwork(art_cache_dir(), FlacPictures())),
+        art=AlbumArt(artwork),
+        chooser=ChooseCover(ArchiveCovers(), artwork),
         leave=leave,
         note=note,
     )

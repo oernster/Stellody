@@ -91,28 +91,33 @@ Depends on: milestone 1.
 
 ## 4. Choose a cover when the local files carry none
 
-The looking up is built: the domain candidate, the port, the service that
-offers and accepts, the MusicBrainz and Cover Art Archive client behind it,
-plus the structural test saying no other module can open a connection at all,
-proved by planting an import and watching it fail. What is not built is the
-chooser itself, which is the half a listener can see.
+**All of it is built.** The domain candidate, the port, the service that offers
+and accepts, the MusicBrainz and Cover Art Archive client behind it, the
+structural test saying no other module can open a connection at all, then the
+half a listener sees: the chooser dialog, the worker holding the search off the
+interface thread, the entry on the right click menu and the redraw once a
+picture is kept.
 
 **Nothing happens without being asked.** Stellody opens no connection of its
 own. Right clicking an album offers to go looking; that gesture is the only
 thing that reaches outward, so a listener who never uses it runs an application
-that still touches nothing.
+that still touches nothing. A window built without the service offers no entry
+at all, which is how every test here raises that menu with no network in the
+room.
 
-**What the chooser shows.** Every candidate the search returns, arranged as a
-grid of thumbnails, each labelled with the release it belongs to and the
-largest size the archive will serve. Several releases of one album may each
-carry several images, so the count is not small; the layout arranges itself
-rather than asking for a window size.
+**It opens on a wait rather than on a result.** Measured against the live
+services on 2026-08-30, searching Ether Song returned 19 candidates across 8
+releases in 13.5 seconds, since the terms allow one request a second and a
+release has to be asked about before there is a picture. So the dialog says
+what it is doing, draws each tile as its own thumbnail lands and can be closed
+at any point in that.
 
-Measured against the live services on 2026-08-30, searching Ether Song
-returned 19 candidates across 8 releases in 13.5 seconds. That is what the
-rate limit costs, so the chooser has to open on a wait rather than on a result,
-say what it is doing and be cancellable. It also has to run off the interface
-thread, as the cover reading and the waveform measurement already do.
+**What closing it can and cannot do.** The cancel flag is read between
+requests, so a search stops at the next boundary rather than in the middle of
+one. A request already in flight runs to its own timeout and its answer is
+dropped rather than drawn. That is asserted rather than asserted about: a test
+holds a search open, lets go of it, releases it and watches nothing arrive. It
+failed first, against a sender check that a queued cross thread signal defeats.
 
 **What the listing cannot say.** The archive names the thumbnail sizes it will
 serve, 250, 500 and 1200; it never names the pixel size of the original. So a
@@ -120,14 +125,15 @@ candidate is labelled with the largest size on offer rather than with true
 dimensions. Reading the real size would mean fetching every original, which is
 tens of megabytes to draw a grid of squares.
 
-Needed: the chooser dialog, the right-click entry that opens it, a worker to
-hold the search off the interface thread, then the redraw once a choice is
-kept.
+What tests can pin is pinned, with the archive stood in for: what a tile says,
+that a picture arrives on its own tile, that nothing can be kept until
+something is picked, that a fetch which fails keeps nothing and leaves the
+chooser open, that a chosen picture reaches the library under the album's own
+key. What is left needs the live services and the owner's eyes.
 
-Done when: an album with no local art can be given one from the chooser and
-keeps it across a restart and a rescan; declining leaves the placeholder; no
-connection is opened until the chooser is, which the structural test already
-states.
+Done when: an album with no local art is given one from the chooser against the
+real archive, then keeps it across a restart and a rescan; declining leaves the
+placeholder. That is the owner's observation to make, not a test's.
 
 ## 5. Search the library
 
@@ -216,10 +222,21 @@ Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
 reads FLAC stream info, a README calling it a FLAC player. A local library of
 any age holds more than that.
 
+**What that costs, measured over the reference library on 2026-08-30.** Of 656
+folders holding audio, 487 are FLAC throughout and Stellody shows all of them;
+23 hold FLAC beside something else, so part of the folder is shown and the rest
+is not; 146 hold no FLAC at all and are invisible, which is more than a fifth
+of the library. Those 146 hold 1,356 M4A, 147 OGG, 24 MP3 and 13 WAV tracks.
+The split between the two halves below is therefore lopsided: extending the
+walk brings back 19 of those folders, while 127 of them are M4A and wait on a
+decoder. An album asked after by name, BT's Emotional Technology, is one of the
+127.
+
 **Measured, so the size of this is known rather than guessed.** The decoder
-already behind the application is libsndfile 1.2.2, which reads FLAC, MP3, WAV,
-AIFF, OGG, W64, CAF, AU and a long tail of older formats. So the work divides
-in two; the first half is far cheaper than it looks:
+already behind the application is libsndfile 1.2.2, which reports 26 formats
+including FLAC, MP3, OGG, WAV, AIFF, W64, CAF and AU. So the work divides in
+two; the first half is far cheaper than it looks, though the numbers above say
+it is also the smaller half of the gain:
 
 - **What libsndfile already decodes.** Extend the walk beyond one suffix,
   replace the FLAC-only probe with a general one (mutagen reads tags for

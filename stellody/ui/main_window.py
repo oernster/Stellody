@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.application.artwork import AlbumArt
+from stellody.application.choosing_covers import ChooseCover
 from stellody.application.ports import SettingsStore
 from stellody.application.scan import (
     LoadLibrary,
@@ -29,6 +30,7 @@ from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
+from stellody.ui.choosing import Choosing
 from stellody.ui.covering import Covering
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.geometry import Geometry
@@ -89,6 +91,7 @@ class MainWindow(
     Scanning,
     Playing,
     TransportMenu,
+    Choosing,
     Geometry,
     Leaving,
     Covering,
@@ -106,6 +109,7 @@ class MainWindow(
         settings: SettingsStore,
         shapes: TrackShapes | None = None,
         art: AlbumArt | None = None,
+        chooser: ChooseCover | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -140,6 +144,7 @@ class MainWindow(
             self.setWindowIcon(icon)
         self._tree = build_tree(self, self._model)
         self.start_covering(art)
+        self.start_choosing(chooser)
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
