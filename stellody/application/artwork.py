@@ -35,11 +35,6 @@ class AlbumArtSources:
         if not self.key:
             raise ValueError("art sources need an album to belong to")
 
-    @property
-    def is_empty(self) -> bool:
-        """True when there is nowhere at all to look."""
-        return not self.sidecars and not self.audio
-
 
 def sources_for(
     albums: tuple[Album, ...], records: tuple[FolderRecord, ...]
@@ -95,10 +90,15 @@ class AlbumArt:
     def reading(self, sources: AlbumArtSources) -> bytes | None:
         """This album's cover, reading it when it is not already kept.
 
-        Slow. It belongs off the interface thread. None when the album has
-        nowhere to look or when nothing there yields an image, which is not
-        an error: an album without a cover shows a placeholder.
+        Slow. It belongs off the interface thread. None when nothing is kept
+        and nothing there yields an image, which is not an error: an album
+        without a cover shows a placeholder.
+
+        **The store is asked whatever the candidates say.** An album with
+        nowhere local to look was once answered here without asking, on the
+        reasoning that opening nothing is cheaper than asking a decoder to
+        open nothing. That is the only album a chooser is ever offered for;
+        a chosen picture has no file beside the music to be found by, so the
+        saving cost every chosen cover its next restart.
         """
-        if sources.is_empty:
-            return None
         return self._artwork.read(sources.key, sources.sidecars, sources.audio)

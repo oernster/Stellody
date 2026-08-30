@@ -30,9 +30,9 @@ rather than against the last thing written.
 The position display is done. The corrected position and the amplitude
 monitor that draws it against the music have both been watched in the built
 application, so both are gone from this file, as the grid of covers was before
-them. The cover chooser of milestone 4 is built and gate green but not
-finished: a chosen picture does not survive a restart, which its own section
-records. Version 1.0 is a separate readiness call for the owner to make;
+them. The cover chooser of milestone 4 is built and gate green; what it has
+not had is the owner's own observation against the real archive, which is what
+its closing condition asks for. Version 1.0 is a separate readiness call for the owner to make;
 nothing below is sized against it. Search, ratings and the rest come later,
 the wider formats and video among them.
 
@@ -90,16 +90,6 @@ that a picture arrives on its own tile, that nothing can be kept until
 something is picked, that a fetch which fails keeps nothing and leaves the
 chooser open, that a chosen picture reaches the library under the album's own
 key. What is left needs the live services and the owner's eyes.
-
-**A chosen cover does not survive a restart.** Observed on Future Funk 2: the
-picture is kept and drawn at once, then the album shows a placeholder again on
-the next start. Two chosen records sit in the artwork cache with their images
-beside them, so the write is sound. The read is not. `AlbumArt.reading`
-answers nothing for an album with nowhere local to look, before it asks the
-store anything; an album with nowhere local to look is the only kind this
-chooser is ever offered for. `AlbumArt.remembered` would answer correctly and
-has no caller anywhere. That is read from the source rather than reproduced,
-so a test that fails on it comes before any fix.
 
 Done when: an album with no local art is given one from the chooser against the
 real archive, then keeps it across a restart and a rescan; declining leaves the

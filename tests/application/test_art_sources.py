@@ -60,9 +60,9 @@ class _Artwork:
         return self.kept
 
     def read(self, key, sidecars, audio) -> bytes | None:
-        """Record the ask, then answer."""
+        """Record the ask, then answer as the store does: what is kept first."""
         self.asked.append((key, sidecars, audio))
-        return self.read_back
+        return self.kept if self.kept is not None else self.read_back
 
 
 class TestGatheringCandidates:
@@ -85,7 +85,8 @@ class TestGatheringCandidates:
     def test_a_folder_with_neither_offers_nothing(self) -> None:
         album = _album(_track(FIRST, "01.flac"))
         (found,) = sources_for((album,), (_record(FIRST),))
-        assert found.is_empty
+        assert found.sidecars == ()
+        assert found.audio == ()
 
     def test_a_cue_album_offers_its_one_file_once(self) -> None:
         """Many tracks share the file, so opening it once is the point."""
@@ -140,11 +141,6 @@ class TestSources:
         with pytest.raises(ValueError):
             AlbumArtSources(key="")
 
-    def test_somewhere_to_look_is_not_empty(self) -> None:
-        assert not AlbumArtSources(key="k", sidecars=("a.jpg",)).is_empty
-        assert not AlbumArtSources(key="k", audio=("a.flac",)).is_empty
-        assert AlbumArtSources(key="k").is_empty
-
 
 class TestAsking:
     def test_a_kept_cover_comes_back_without_reading(self) -> None:
@@ -158,8 +154,19 @@ class TestAsking:
         assert AlbumArt(artwork).reading(sources) == b"read"
         assert artwork.asked == [("k", ("a.jpg",), ("b.flac",))]
 
-    def test_an_album_with_nowhere_to_look_is_never_read(self) -> None:
-        """Opening nothing is cheaper than asking a decoder to open nothing."""
-        artwork = _Artwork(read_back=b"read")
+    def test_a_chosen_cover_survives_having_nowhere_local_to_look(self) -> None:
+        """An album with nowhere to look is the only kind a chooser serves.
+
+        So it is exactly the case that must still ask the store. A chosen
+        picture has no file beside the music to be found by; deciding there is
+        nothing to find before asking discards the one somebody went looking
+        for, which is what lost it across a restart.
+        """
+        artwork = _Artwork(kept=b"chosen")
+        assert AlbumArt(artwork).reading(AlbumArtSources(key="k")) == b"chosen"
+
+    def test_an_album_with_nowhere_to_look_still_asks_the_store(self) -> None:
+        """Nothing local to open is not the same as nothing kept."""
+        artwork = _Artwork()
         assert AlbumArt(artwork).reading(AlbumArtSources(key="k")) is None
-        assert artwork.asked == []
+        assert artwork.asked == [("k", (), ())]
