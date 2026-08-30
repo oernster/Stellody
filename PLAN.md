@@ -41,19 +41,41 @@ owner's to make.
 
 ## 5. Search the library
 
-The schema has five plain tables and no search of any kind. The README's
-stack table used to name FTS5; it no longer does, so this is a gap rather than
-a broken promise.
+**The filter is built and gate green.** `stellody/domain/searching.py` narrows
+albums against a phrase, keeps each survivor whole and names the tracks the
+phrase hit. What is left is the half a listener sees.
 
-Needed: an FTS table fed as sources are saved, a search box, plus a filtered view
-that leaves the sort order alone.
+**No index, measured rather than assumed.** An FTS table was the first plan and
+the measurements refused it. A pass over the whole library, 485 albums of 6,877
+tracks, costs under half a millisecond once the text is normalised, against the
+hundred and twenty a typed character allows. An index would also hold the wrong
+text, since the store keeps raw tags while the library shows resolved ones, so
+a title the resolver corrected would be unfindable. It would be empty besides:
+rows are written only where a folder is probed and a rescan reuses every folder
+that has not changed, so an existing library would search nothing at all until
+it was scanned cold.
+
+Normalising is the part that costs. `comparison_key` over 6,877 titles takes
+9.2 milliseconds against 0.24 for a plain fold; the answer cannot change
+between keystrokes, so it is done once as the library is assembled.
+
+**An album is kept whole.** A phrase that hits one track leaves every track in
+place, so the album reads the way it always does. The hit track is highlighted
+as though it were about to play, then its background flashes gently a couple of
+times, so the eye is taken to it without the album being taken apart.
 
 Filtering by rating and by play count is wanted too. Those columns arrive with
-milestone 6, so the filter is built to take a condition rather than a phrase
-alone; it gains the second kind when there is something to read.
+milestone 6, so `Search` is a condition rather than a phrase alone; it gains
+the second kind when there is something to read.
 
-Done when: typing part of an album, artist or track title narrows the library as
-you type; clearing the box restores it.
+Needed: the box in the top tray to the right of the repair button, drawn with
+`assets/search.png`, the narrowing wired to what it types, one colour for the
+flash stated in the theme beside every other colour, plus the grid keeping a
+sleeve only while its album survives.
+
+Done when: typing part of an album, artist or track title narrows the library
+as you type, the hit track is highlighted and flashes; clearing the box
+restores everything.
 
 ## 6. Ratings and play counts
 
