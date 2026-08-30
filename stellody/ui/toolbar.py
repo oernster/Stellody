@@ -61,6 +61,9 @@ REPAIR_TOOLTIP = "Repair what library health reports (not built yet)"
 # Wide enough for an album title rather than for a word, since that is what
 # somebody types when they are looking for one.
 SEARCH_BOX_PX = 260
+# Sized against the buttons beside it rather than against a dialog field:
+# a default line edit is a third of a tray button and reads as a mistake.
+SEARCH_BOX_HEIGHT_PX = 48
 SEARCH_PLACEHOLDER = "Album, artist or track"
 
 
@@ -136,7 +139,7 @@ class LibraryTray(QWidget):
         self.search_box = QLineEdit(self)
         self.search_box.setObjectName("SearchBox")
         self.search_box.setPlaceholderText(SEARCH_PLACEHOLDER)
-        self.search_box.setFixedWidth(SEARCH_BOX_PX)
+        self.search_box.setFixedSize(SEARCH_BOX_PX, SEARCH_BOX_HEIGHT_PX)
         # Hidden until asked for, so the tray is pictures until it is not.
         self.search_box.setVisible(False)
         self.search_box.textChanged.connect(search_changed)

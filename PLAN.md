@@ -74,9 +74,11 @@ same one, which clears the phrase so a narrowed library can never be left
 behind a box nobody can see. Both routes into the library, a load and a scan,
 go through one seam now, so a search survives either. The flash is a role of
 its own in the palette, `found`, because the hit row is selected at the same
-moment and a pulse in the selection colour would show nothing at all: measured
-at 16.09 to 1 against the text it sits behind in the light appearance and 7.98
-to 1 in the dark.
+moment and a pulse in the selection colour would show nothing at all. It is a
+highlighter rather than a tint: the same banana yellow in both appearances,
+with the ink switched rather than the yellow dimmed, measured at 13.72 to 1
+either way. Against the light appearance's selection it is the same
+brightness, so there it separates by hue alone.
 
 What a headless run can settle is settled: what narrows, that the album keeps
 every track, that the hit track is the one selected, that its row is painted

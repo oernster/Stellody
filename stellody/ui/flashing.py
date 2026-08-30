@@ -14,14 +14,20 @@ the model holds no clock and the pulse can be changed without touching it.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QModelIndex, QObject, QPersistentModelIndex, QTimer
+from PySide6.QtCore import (
+    QModelIndex,
+    QObject,
+    QPersistentModelIndex,
+    Qt,
+    QTimer,
+)
 from PySide6.QtGui import QBrush, QColor
 
 # Twice, which reads as "look here" rather than as a fault. A third pulse is
 # where a gentle thing starts to nag.
 PULSES = 2
 # Slow enough to read as a fade rather than a blink.
-HALF_CYCLE_MS = 260
+HALF_CYCLE_MS = 450
 # On, off, on, off: two turns to a pulse.
 TURNS_PER_PULSE = 2
 TURNS = PULSES * TURNS_PER_PULSE
@@ -38,6 +44,7 @@ class RowFlash(QObject):
         self._timer.timeout.connect(self._turn)
         self._where: QPersistentModelIndex | None = None
         self._colour: QColor | None = None
+        self._ink: QColor | None = None
         self._lit = False
         self._left = 0
         model.set_flash(self)
@@ -52,11 +59,17 @@ class RowFlash(QObject):
         """True between starting a flash and its last turn."""
         return self._timer.isActive()
 
-    def start(self, where: QModelIndex, colour: str) -> None:
-        """Pulse this row in this colour, replacing whatever was pulsing."""
+    def start(self, where: QModelIndex, colour: str, ink: str) -> None:
+        """Pulse this row in this colour, replacing whatever was pulsing.
+
+        The ink comes with it because this is a highlighter rather than a
+        tint: the same yellow serves both appearances and the writing on it
+        changes instead, which is what keeps it readable in either.
+        """
         self.stop()
         self._where = QPersistentModelIndex(where)
         self._colour = QColor(colour)
+        self._ink = QColor(ink)
         self._lit = True
         self._left = TURNS
         self._redraw()
@@ -70,19 +83,26 @@ class RowFlash(QObject):
         was = self._where
         self._where = None
         self._colour = None
+        self._ink = None
         if was is not None and was.isValid():
             self._model.redraw_row(QModelIndex(was))
 
-    def brush(self, index: QModelIndex) -> QBrush | None:
-        """The paint for one cell; None for every cell that is not the row."""
+    def paint(self, index: QModelIndex, role: int) -> QBrush | None:
+        """The paint for one cell in one role; None for anything else."""
+        if not self._on(index):
+            return None
+        if role == Qt.ItemDataRole.BackgroundRole:
+            return QBrush(self._colour)
+        return QBrush(self._ink)
+
+    def _on(self, index: QModelIndex) -> bool:
+        """True when this cell is in the row currently being painted."""
         where = self._where
-        if not self._lit or self._colour is None or where is None:
-            return None
-        if not where.isValid():
-            return None
-        if index.row() != where.row() or index.parent() != where.parent():
-            return None
-        return QBrush(self._colour)
+        if not self._lit or self._colour is None or self._ink is None:
+            return False
+        if where is None or not where.isValid():
+            return False
+        return index.row() == where.row() and index.parent() == where.parent()
 
     def _turn(self) -> None:
         """One half of a pulse: lit becomes dark, dark becomes lit."""

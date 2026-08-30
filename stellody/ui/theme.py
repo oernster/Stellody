@@ -33,11 +33,15 @@ class Palette:
     accent: str
     accent_hover: str
     switch_on: str
-    # What a search flashes behind the track it hit. A role of its own rather
-    # than `selection`, because the hit track is selected at the same moment,
-    # so a flash in the selection colour would show nothing at all. Measured
-    # against the text of a selected row: 16.09 to 1 light, 7.98 to 1 dark.
+    # What a search flashes behind the track it hit, with the ink that goes on
+    # it. A role of its own rather than `selection`, because the hit track is
+    # selected at the same moment, so a flash in the selection colour would
+    # show nothing at all. It is a highlighter, so it is the same yellow in
+    # both appearances and the ink changes instead of the yellow: measured at
+    # 13.72 to 1 either way. Against the light selection it is the same
+    # brightness, so there it separates by hue alone.
     found: str
+    on_found: str
     on_accent: str
     selection: str
     on_selection: str
@@ -61,7 +65,8 @@ LIGHT = Palette(
     accent="#1b5fd0",
     accent_hover="#1750b3",
     switch_on="#fff5a3",
-    found="#fff5a3",
+    found="#ffe135",
+    on_found="#101725",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -85,7 +90,8 @@ DARK = Palette(
     accent="#4c8dff",
     accent_hover="#69a1ff",
     switch_on="#fff5a3",
-    found="#5c4715",
+    found="#ffe135",
+    on_found="#101725",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",
@@ -102,6 +108,9 @@ PALETTES: dict[Mode, Palette] = {Mode.LIGHT: LIGHT, Mode.DARK: DARK}
 
 FOCUS_WIDTH_PX = 2
 LICENCE_FONT_PX = 13
+# The search box sits among the tray's buttons, so it is sized against them
+# rather than against a dialog's default field.
+SEARCH_FONT_PX = 20
 RADIUS_PX = 4
 ROW_HEIGHT_PX = 24
 HAIRLINE_PX = 1
@@ -188,6 +197,10 @@ def stylesheet(mode: Mode) -> str:
        used to do. QTreeView and QListView deliberately gain no rule here. */
     QTextBrowser:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
+    QLineEdit#SearchBox {{
+        font-size: {SEARCH_FONT_PX}px;
+        padding-left: {RADIUS_PX}px;
     }}
     QLineEdit:enabled:hover, QLineEdit:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};

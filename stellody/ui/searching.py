@@ -15,6 +15,8 @@ it were about to play, then its row is flashed to take the eye to it.
 
 from __future__ import annotations
 
+from PySide6.QtCore import QModelIndex
+
 from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album
 from stellody.domain.searching import AlbumText, Found, Search, narrowed, prepared
@@ -83,11 +85,32 @@ class Searching:
                 return
 
     def _show_track(self, track: Track) -> None:
-        """Open the album, select the track, then flash its row."""
+        """Open whichever view is showing, put the highlight on the track,
+        then flash its row."""
         where = self._model.index_for(track)
         if not where.isValid():
             return
-        self._tree.expand(where.parent())
-        self._tree.setCurrentIndex(where)
-        self._tree.scrollTo(where)
-        self._flash.start(where, palette_for(self.theme_mode).found)
+        if self.showing_covers:
+            self._open_sleeve(where)
+        else:
+            self._tree.setCurrentIndex(where)
+            # Scrolling to the row is what opens every level above it, which a
+            # multi-disc album needs since its tracks sit under a disc.
+            # Measured: scrolling alone leaves both the disc and the album
+            # open, where expanding the parent alone leaves the album shut.
+            self._tree.scrollTo(where)
+        colour = palette_for(self.theme_mode)
+        self._flash.start(where, colour.found, colour.on_found)
+
+    def _open_sleeve(self, where: QModelIndex) -> None:
+        """Open the album under the grid, with the highlight on the track.
+
+        Picking the sleeve is what opens the pane; opening it leaves the
+        highlight on the album's first track, so the track that was actually
+        hit is chosen afterwards rather than before.
+        """
+        album = where
+        while album.parent().isValid():
+            album = album.parent()
+        self._grid.setCurrentIndex(album)
+        self._album_pane.columns[0].setCurrentIndex(where)

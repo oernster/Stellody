@@ -21,13 +21,14 @@ from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 from stellody.ui.flashing import TURNS
 from stellody.ui.models import Column
 from stellody.ui.theme import palette_for
+from stellody.ui.toolbar import SEARCH_BOX_HEIGHT_PX
 
 
-def _track(title: str, number: int) -> Track:
+def _track(title: str, number: int, disc: int = 1) -> Track:
     """One track carrying a real title, since a title is what is searched."""
     return Track(
         source=TrackSource(path=f"{number:02d} {title}.flac"),
-        disc_number=1,
+        disc_number=disc,
         track_number=number,
         title=title,
         artists=("Holst",),
@@ -162,3 +163,71 @@ class TestTheButton:
         assert _titles(window) == ["The Planets"]
         window.toggle_search()
         assert _titles(window) == ["The Planets", "Simple Things"]
+
+
+NEPTUNE = _track("Neptune", 1, disc=2)
+DOUBLE = Album(
+    identity=AlbumIdentity(album_artist="Holst", title="Both Suites"),
+    tracks=(_track("Venus", 1), NEPTUNE),
+)
+
+
+class TestAMultiDiscAlbum:
+    """A disc sits between the album and its tracks, so one expand is not enough."""
+
+    @pytest.fixture
+    def window(self, application: QApplication):
+        made = build(RememberingStore(), RecordingPlayer())
+        made.show_library((DOUBLE,), ())
+        application.processEvents()
+        yield made
+        made.close()
+
+    def test_the_track_really_does_sit_under_a_disc(self, window) -> None:
+        """The premise of the fix, stated so the next test cannot pass by luck."""
+        where = window._model.index_for(NEPTUNE)
+        assert where.isValid()
+        assert where.parent().isValid()
+        assert where.parent().parent().isValid()
+
+    def test_the_track_ends_up_where_it_can_be_seen(self, window) -> None:
+        """The outcome, not the mechanism: a row of no height is a row nobody
+        can see, whichever call opened the levels above it."""
+        assert window._tree.visualRect(window._model.index_for(NEPTUNE)).height() == 0
+        window.search_changed("neptune")
+        where = window._model.index_for(NEPTUNE)
+        assert window._tree.isExpanded(where.parent())
+        assert window._tree.isExpanded(where.parent().parent())
+        assert window._tree.visualRect(where).height() > 0
+
+    def test_the_track_is_the_one_selected(self, window) -> None:
+        window.search_changed("neptune")
+        assert window._model.track_at(window._tree.currentIndex()) is NEPTUNE
+
+
+class TestTheCoverView:
+    """The sleeves have no rows to expand, so the pane under them is opened."""
+
+    def test_the_sleeve_opens_on_the_track_that_was_hit(self, window) -> None:
+        window.toggle_view()
+        assert window.showing_covers
+        window.search_changed("venus")
+        assert window._shown_album is PLANETS
+        showing = window._model.track_at(window._album_pane.current_index())
+        assert showing is not None
+        assert showing.title == "Venus"
+
+
+class TestHowItLooks:
+    def test_the_ink_changes_with_the_highlighter(self, window) -> None:
+        """A yellow the same in both appearances needs its own writing."""
+        window.search_changed("venus")
+        where = window._model.index_for(
+            window._model.track_at(window._tree.currentIndex())
+        )
+        ink = window._model.data(where, Qt.ItemDataRole.ForegroundRole)
+        assert ink is not None
+        assert ink.color().name() == palette_for(window.theme_mode).on_found
+
+    def test_the_box_is_sized_against_the_buttons_beside_it(self, window) -> None:
+        assert window._tray.search_box.height() == SEARCH_BOX_HEIGHT_PX
