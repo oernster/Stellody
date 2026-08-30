@@ -16,9 +16,10 @@ from PySide6.QtWidgets import (
 
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
 from stellody.shared import resources
-from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, REPAIR_TOOLTIP
+from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX
 from stellody.ui.dialogs import NeutralDialog, close_row
 from stellody.ui.display import native_path
+from stellody.ui.toolbar import REPAIR_TOOLTIP
 from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 760
@@ -100,9 +101,12 @@ def has_serious_issues(issues: tuple[LibraryIssue, ...]) -> bool:
 
 
 def _repair_button(parent: QWidget, on_click: Callable[[], None]) -> QPushButton:
-    """The repair control, drawn at the size the bottom strip draws its own.
+    """The repair control, drawn at the smaller of the two tray sizes.
 
-    Disabled for the same reason the one on that strip is: what each issue
+    Small because it sits in a dialog rather than in the tray under the menus,
+    where the one it mirrors is.
+
+    Disabled for the same reason that one is: what each issue
     should become is already worked out on every load; there is nowhere yet
     to keep a correction once it has been accepted.
     """

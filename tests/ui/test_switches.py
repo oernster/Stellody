@@ -214,7 +214,7 @@ def test_the_view_toggle_is_a_stop_now_that_it_works(
         seen.add(id(current))
         order.append(current)
     assert tray.view_button in order, "an enabled control is a stop"
-    assert tray.repair_button not in order, "a disabled one still is not"
+    assert window._tray.repair_button not in order, "a disabled one still is not"
 
 
 def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> None:
@@ -252,24 +252,29 @@ def test_a_desktop_that_will_not_open_a_browser_says_so(
     assert "Could not open a browser" in window.statusBar().currentMessage()
 
 
-def test_the_repair_button_follows_the_view_toggle_on_the_left(
+def test_the_repair_button_sits_beside_rescan_under_the_menus(
     window: MainWindow,
 ) -> None:
-    """To the right of the other left-hand buttons, still before the gap."""
+    """Repair is the answer to what a rescan finds, so it follows rescan.
+
+    It used to sit on the bottom strip beside the view toggle, which put it
+    among the settings that outlast a track rather than beside the control it
+    follows from.
+    """
     window.show()
-    tray = window._bottom_tray
+    tray = window._tray
     row = tray.layout()
     widgets = [row.itemAt(position).widget() for position in range(row.count())]
     gap = widgets.index(None)
-    assert widgets.index(tray.donate_button) < widgets.index(tray.view_button)
-    assert widgets.index(tray.view_button) < widgets.index(tray.repair_button)
-    assert widgets.index(tray.repair_button) < gap, "still on the left of the strip"
+    assert widgets.index(tray.rescan_button) < widgets.index(tray.repair_button)
+    assert widgets.index(tray.repair_button) < gap, "still on the left of the tray"
     assert tray.repair_button in tray.ring_stops()
+    assert not hasattr(window._bottom_tray, "repair_button"), "one home, not two"
 
 
 def test_the_repair_button_admits_it_is_not_built(window: MainWindow) -> None:
-    """Offered but honest, exactly as the view toggle beside it is."""
-    button = window._bottom_tray.repair_button
+    """Offered but honest, exactly as the one in the health report is."""
+    button = window._tray.repair_button
     assert not button.isEnabled()
     assert "not built yet" in button.toolTip()
     assert not button.icon().isNull(), "drawn, not merely reserved"

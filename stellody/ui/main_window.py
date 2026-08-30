@@ -138,6 +138,7 @@ class MainWindow(
             self,
             choose_folder=self.choose_folder,
             rescan=self.rescan,
+            repair_library=self.repair_library,
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
             toggle_mute=self.toggle_mute,
@@ -155,7 +156,6 @@ class MainWindow(
             toggle_view=self.toggle_view,
             toggle_cover_size=self.toggle_cover_size,
             open_donation=self.open_donation,
-            repair_library=self.repair_library,
         )
         self.setCentralWidget(
             build_body(

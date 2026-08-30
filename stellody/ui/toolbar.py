@@ -1,10 +1,14 @@
 """The icon tray under the menus.
 
-Picture-only buttons in reading order: choose the music folder and rescan it on
-the left, the transport centred, then the mute switch, the appearance toggle
-and About on the right. The library buttons repeat something the menus already
-offer, so they add reach rather than capability; nothing here owns any state of
-its own.
+Picture-only buttons in reading order: choose the music folder, rescan it and
+repair what the rescan reports on the left, the transport centred, then the
+mute switch, the appearance toggle and About on the right. The library buttons
+repeat something the menus already offer, so they add reach rather than
+capability; nothing here owns any state of its own.
+
+Repair sits beside rescan because it is the answer to what a rescan finds.
+It was down on the bottom strip with the view toggle, which put it among the
+settings that outlast a track rather than beside the control it follows from.
 
 Mute is ruled off from the two buttons after it. It acts on what is playing
 while they act on the application, so a line says they are different kinds of
@@ -39,6 +43,9 @@ SEPARATOR_WIDTH_PX = 1
 # between buttons rather than as a border on the tray.
 SEPARATOR_INSET_PX = 12
 SEPARATOR_HEIGHT_PX = BUTTON_PX - SEPARATOR_INSET_PX - SEPARATOR_INSET_PX
+# One wording, one home. The dialog's own repair control reads it from here, so
+# the two cannot come to say different things about the same unbuilt feature.
+REPAIR_TOOLTIP = "Repair what library health reports (not built yet)"
 
 
 def _separator(parent: QWidget) -> QFrame:
@@ -79,6 +86,7 @@ class LibraryTray(QWidget):
         rescan: Callable[[], None],
         toggle_theme: Callable[[], None],
         show_about: Callable[[], None],
+        repair_library: Callable[[], None] = lambda: None,
         toggle_mute: Callable[[], None] = lambda: None,
         previous_track: Callable[[], None] = lambda: None,
         toggle_playback: Callable[[], None] = lambda: None,
@@ -98,6 +106,12 @@ class LibraryTray(QWidget):
         self.rescan_button = _icon_button(
             self, resources.rescan_icon_path(), "Rescan the library", rescan
         )
+        self.repair_button = _icon_button(
+            self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
+        )
+        # Nothing to press yet: what each issue should become is worked out on
+        # every load; there is nowhere to keep a correction once accepted.
+        self.repair_button.setEnabled(False)
         self.previous_button = _icon_button(
             self, resources.previous_icon_path(), "Previous track", previous_track
         )
@@ -125,6 +139,7 @@ class LibraryTray(QWidget):
         row.setSpacing(TRAY_GAP_PX)
         row.addWidget(self.choose_button)
         row.addWidget(self.rescan_button)
+        row.addWidget(self.repair_button)
         # A stretch either side is what centres the transport, whatever the
         # window is widened to and whatever sits at the two ends.
         row.addStretch()
@@ -146,10 +161,16 @@ class LibraryTray(QWidget):
         )
 
     def ring_stops(self) -> tuple[QPushButton, ...]:
-        """This tray's controls, left to right as they are drawn."""
+        """This tray's controls, left to right as they are drawn.
+
+        The repair control is named here while it is disabled, so the ring
+        picks it up on the day it works without the order being revisited. Qt
+        skips a disabled stop, so naming it costs nothing until then.
+        """
         return (
             self.choose_button,
             self.rescan_button,
+            self.repair_button,
             *self.transport_stops(),
             self.mute_button,
             self.theme_button,

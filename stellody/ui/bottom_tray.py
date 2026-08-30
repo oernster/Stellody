@@ -90,7 +90,6 @@ SIZE_NAMES = {
 # The same honesty as the view toggle. What the health report lists can be
 # worked out, since resolution already happens on load; nothing yet lets a
 # correction be accepted and kept, so there is nothing for this to do.
-REPAIR_TOOLTIP = "Repair what library health reports (not built yet)"
 # Said in the tooltip because pressing it leaves the application, which a
 # picture of a beer and a coffee does not on its own tell anybody.
 DONATE_TOOLTIP = "Buy the author a drink (opens your browser)"
@@ -222,7 +221,6 @@ class BottomTray(QWidget):
         toggle_view: Callable[[], None] = lambda: None,
         toggle_cover_size: Callable[[], None] = lambda: None,
         open_donation: Callable[[], None] = lambda: None,
-        repair_library: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -239,10 +237,6 @@ class BottomTray(QWidget):
         # Named for the size it would move to, like the view toggle beside it:
         # a button naming what is already on show reads as a label.
         self.size_button = _small_button(self, None, "", toggle_cover_size)
-        self.repair_button = _small_button(
-            self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
-        )
-        self.repair_button.setEnabled(False)
         self.donate_button = _small_button(
             self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
         )
@@ -255,7 +249,6 @@ class BottomTray(QWidget):
         row.addWidget(self.donate_button)
         row.addWidget(self.view_button)
         row.addWidget(self.size_button)
-        row.addWidget(self.repair_button)
         # The stretch splits the strip. What changes the library sits under
         # the library; the settings finish at the right edge under the
         # application's other controls.
@@ -269,15 +262,14 @@ class BottomTray(QWidget):
     def ring_stops(self) -> tuple[QPushButton, ...]:
         """This tray's controls, left to right as they are drawn.
 
-        The repair control is named here while it is disabled, so the ring
-        picks it up on the day it works without the order being revisited. Qt
-        skips a disabled stop, so naming it costs nothing until then.
+        The size button is named here while it is dead over the list, so the
+        ring picks it up in the grid without the order being revisited. Qt
+        skips a disabled stop, so naming it costs nothing while it is one.
         """
         return (
             self.donate_button,
             self.view_button,
             self.size_button,
-            self.repair_button,
             *self.switch_stops(),
         )
 
