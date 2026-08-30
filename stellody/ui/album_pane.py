@@ -13,7 +13,7 @@ are the ones already built rather than a second set that could disagree.
 from __future__ import annotations
 
 from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from stellody.domain.album import Album
 from stellody.shared import resources
 from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
 PANE_COVER_PX = 72
 PANE_BUTTON_PX = 28
@@ -33,6 +34,7 @@ PANE_ICON_PX = 16
 PANE_GAP_PX = 10
 PANE_MARGIN_PX = 10
 TRACK_COLUMN_PX = 420
+YEAR_LENGTH = 4
 
 
 def _button(parent: QWidget, path, tip: str, on_click) -> QPushButton:
@@ -58,6 +60,7 @@ class AlbumPane(QWidget):
         super().__init__(parent)
         # A holder, never a stop: the ring belongs to the controls inside it.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self._mode = Mode.DARK
         self.cover = QLabel(self)
         self.cover.setFixedSize(PANE_COVER_PX, PANE_COVER_PX)
         self.cover.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -102,11 +105,30 @@ class AlbumPane(QWidget):
         column.addLayout(header)
         column.addWidget(self.tracks, 1)
 
+    def show_appearance(self, mode: Mode) -> None:
+        """Follow the appearance the rest of the window is wearing."""
+        self._mode = mode
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        """A panel of its own, so it reads as opened rather than as more list."""
+        palette = palette_for(self._mode)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(palette.surface_alt))
+        painter.drawRoundedRect(self.rect(), RADIUS_PX, RADIUS_PX)
+        painter.end()
+
     def show_album(
         self, album: Album, where: QModelIndex, cover: QPixmap | None
     ) -> None:
         """Open on one album, listing what is on it."""
-        self.title.setText(album.identity.title)
+        year = album.identity.date[:YEAR_LENGTH]
+        named = album.identity.title
+        if year:
+            named = f"{named}  ({year})"
+        self.title.setText(named)
         self.artist.setText(album.identity.album_artist)
         if cover is None:
             self.cover.clear()

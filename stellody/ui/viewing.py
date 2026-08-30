@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QWidget
 
 from stellody.ui.album_pane import AlbumPane
 from stellody.ui.settings_keys import FALSE, SETTING_COVERS, SETTING_DESCENDING, TRUE
+from stellody.ui.tiles import NO_ROW
 from stellody.ui.window_parts import build_covers_page, build_grid, build_library
 
 DECORATION = Qt.ItemDataRole.DecorationRole
@@ -26,6 +27,7 @@ class Viewing:
     def start_viewing(self) -> QWidget:
         """Build the grid and its pane, then give back the holder to place."""
         self._grid = build_grid(self, self._model)
+        self._tiles = self._grid.itemDelegate()
         self._album_pane = AlbumPane(self._model, self)
         self._album_pane.setVisible(False)
         self._album_pane.closed.connect(self.close_album)
@@ -66,6 +68,7 @@ class Viewing:
         self._shown_album = None
         self._album_pane.setVisible(False)
         self._album_pane.tracks.setRootIndex(QModelIndex())
+        self._ring_open(NO_ROW)
 
     @Slot()
     def play_shown_album(self) -> None:
@@ -90,6 +93,18 @@ class Viewing:
             album, current, self._model.data(current, DECORATION)
         )
         self._album_pane.setVisible(True)
+        self._ring_open(current.row())
+
+    def show_tile_appearance(self, mode) -> None:
+        """Draw the sleeves in the appearance the window is wearing."""
+        self._tiles.show_appearance(mode)
+        self._album_pane.show_appearance(mode)
+        self._grid.viewport().update()
+
+    def _ring_open(self, row: int) -> None:
+        """Say which sleeve is the one showing underneath, then redraw."""
+        self._tiles.show_open(row)
+        self._grid.viewport().update()
 
     @Slot()
     def toggle_order(self) -> None:

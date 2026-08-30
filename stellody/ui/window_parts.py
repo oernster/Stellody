@@ -27,12 +27,11 @@ from PySide6.QtWidgets import (
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
-from stellody.ui.covering import GRID_COVER_PX
 from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.tiles import TILE_HEIGHT_PX, TILE_WIDTH_PX, AlbumTile
 
-# A tile is the cover plus room under it for a title over an artist. Derived
-# from the cover so the two cannot drift apart when one is changed.
-GRID_LABEL_PX = 44
+# The gap between tiles. A tile's own size is the delegate's, so the two
+# cannot drift apart when one of them is changed.
 GRID_GAP_PX = 12
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
@@ -131,9 +130,8 @@ def build_grid(window: QMainWindow, model: AlbumTreeModel) -> QListView:
     grid.setResizeMode(QListView.ResizeMode.Adjust)
     grid.setMovement(QListView.Movement.Static)
     grid.setUniformItemSizes(True)
-    grid.setWordWrap(True)
-    grid.setIconSize(QSize(GRID_COVER_PX, GRID_COVER_PX))
-    grid.setGridSize(QSize(GRID_COVER_PX + GRID_GAP_PX, GRID_COVER_PX + GRID_LABEL_PX))
+    grid.setItemDelegate(AlbumTile(grid))
+    grid.setGridSize(QSize(TILE_WIDTH_PX + GRID_GAP_PX, TILE_HEIGHT_PX + GRID_GAP_PX))
     return grid
 
 

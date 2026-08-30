@@ -109,10 +109,22 @@ the durations and both ways of starting a track are the ones already built. It
 carries the cover, the title, the album artist, a control that plays the album
 from its first track and one that shuts the pane.
 
-MediaMonkey, which this follows, inserts that pane inline after the row holding
-the chosen sleeve. A list view cannot do that without a view written from
-scratch, so the pane sits below the grid instead. Whether the inline version is
-worth a bespoke view is an open question rather than a decision.
+A tile is drawn rather than left to the item view, since a view puts one line
+of text under a picture and lets it run as wide as it likes. Every tile is the
+same size whatever the names on it, the sleeve is centred, the title sits over
+the artist and a name too long for its tile is cut with an ellipsis.
+
+The album whose pane is open wears the accent ring the rest of the application
+uses to say where attention is. Deliberately NOT a pointer drawn at the tile:
+that is MediaMonkey's own device, while the ring is a word Stellody already
+speaks.
+
+Two things about the pane are still open. MediaMonkey inserts it inline after
+the row holding the chosen sleeve, which a list view cannot do without a view
+written from scratch, so it sits below the grid instead. Its tracks are also
+one column where MediaMonkey runs two; two columns means a track list built
+from widgets rather than the model, which costs the keyboard reachability the
+model view gives for nothing. Neither is settled.
 
 Done when: the grid is seen showing sleeves, a picked album is seen opening
 beneath it and the toggle is seen moving between the two views. That is the
