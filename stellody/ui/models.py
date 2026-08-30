@@ -17,9 +17,6 @@ from stellody.domain.album import Album, Disc
 from stellody.domain.track import Track
 from stellody.ui.covering import GRID_COVER_PX
 
-# The two roles a flashed row paints: its background and the ink on it.
-FLASH_ROLES = (Qt.ItemDataRole.BackgroundRole, Qt.ItemDataRole.ForegroundRole)
-
 MILLISECONDS_PER_SECOND = 1000
 SECONDS_PER_MINUTE = 60
 MINUTES_PER_HOUR = 60
@@ -354,8 +351,8 @@ class AlbumTreeModel(QAbstractItemModel):
             and node.album is not None
         ):
             return self._cover(node)
-        if self._flash is not None and role in FLASH_ROLES:
-            return self._flash.paint(index, role)
+        if role == Qt.ItemDataRole.BackgroundRole and self._flash is not None:
+            return self._flash.brush(index)
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (
             Column.LENGTH,
         ):

@@ -74,11 +74,13 @@ same one, which clears the phrase so a narrowed library can never be left
 behind a box nobody can see. Both routes into the library, a load and a scan,
 go through one seam now, so a search survives either. The flash is a role of
 its own in the palette, `found`, because the hit row is selected at the same
-moment and a pulse in the selection colour would show nothing at all. It is a
-highlighter rather than a tint: the same banana yellow in both appearances,
-with the ink switched rather than the yellow dimmed, measured at 13.72 to 1
-either way. Against the light appearance's selection it is the same
-brightness, so there it separates by hue alone.
+moment and a pulse in the selection colour would show nothing at all. The
+writing is never repainted, so each appearance carries the colour its own text
+can be read on: banana yellow in the light one at 13.33 to 1, a deep amber in
+the dark one at 5.10 to 1. Qt draws a selected row's background from the
+selection and never asks the model for one, so the delegate fills the flash in
+itself; a test paints a row and reads the pixel back, since a role returned is
+not a row painted.
 
 What a headless run can settle is settled: what narrows, that the album keeps
 every track, that the hit track is the one selected, that its row is painted

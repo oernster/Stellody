@@ -33,15 +33,14 @@ class Palette:
     accent: str
     accent_hover: str
     switch_on: str
-    # What a search flashes behind the track it hit, with the ink that goes on
-    # it. A role of its own rather than `selection`, because the hit track is
-    # selected at the same moment, so a flash in the selection colour would
-    # show nothing at all. It is a highlighter, so it is the same yellow in
-    # both appearances and the ink changes instead of the yellow: measured at
-    # 13.72 to 1 either way. Against the light selection it is the same
-    # brightness, so there it separates by hue alone.
+    # What a search flashes behind the track it hit. A role of its own rather
+    # than `selection`, because the hit track is selected at the same moment,
+    # so a flash in the selection colour would show nothing at all. The text
+    # keeps its own colour throughout, so this has to be readable behind it:
+    # banana yellow carries the dark writing of the light appearance at 13.33
+    # to 1, while the dark appearance needs a deep amber to carry its light
+    # writing, measured at 5.10 to 1.
     found: str
-    on_found: str
     on_accent: str
     selection: str
     on_selection: str
@@ -66,7 +65,6 @@ LIGHT = Palette(
     accent_hover="#1750b3",
     switch_on="#fff5a3",
     found="#ffe135",
-    on_found="#101725",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -90,8 +88,7 @@ DARK = Palette(
     accent="#4c8dff",
     accent_hover="#69a1ff",
     switch_on="#fff5a3",
-    found="#ffe135",
-    on_found="#101725",
+    found="#7a5f14",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",

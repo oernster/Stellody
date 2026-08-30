@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 
 from stellody.domain.album import Album
 from stellody.shared import resources
+from stellody.ui.covering import RowCover
 from stellody.ui.models import AlbumTreeModel, Column
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
@@ -78,6 +79,7 @@ def _spans(rows: int) -> tuple[tuple[int, int], ...]:
 def _track_column(parent: QWidget, model: AlbumTreeModel) -> QTreeView:
     """One column of an album's tracks, on the library's own model."""
     view = QTreeView(parent)
+    view.setItemDelegate(RowCover(view))
     view.setModel(model)
     view.setUniformRowHeights(True)
     view.setAllColumnsShowFocus(True)

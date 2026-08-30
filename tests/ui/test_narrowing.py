@@ -10,18 +10,23 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
-from PySide6.QtCore import QModelIndex, Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QModelIndex, QRect, Qt
+from PySide6.QtGui import QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QApplication, QStyle, QStyleOptionViewItem
 from tray_support import RememberingStore, build
 
 from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
+from stellody.ui.covering import RowCover
 from stellody.ui.flashing import TURNS
 from stellody.ui.models import Column
 from stellody.ui.theme import palette_for
 from stellody.ui.toolbar import SEARCH_BOX_HEIGHT_PX
+
+# A canvas big enough to hold one row and read a pixel out of the middle.
+PAINT_PX = 40
 
 
 def _track(title: str, number: int, disc: int = 1) -> Track:
@@ -219,15 +224,64 @@ class TestTheCoverView:
 
 
 class TestHowItLooks:
-    def test_the_ink_changes_with_the_highlighter(self, window) -> None:
-        """A yellow the same in both appearances needs its own writing."""
+    def test_the_writing_is_never_repainted(self, window) -> None:
+        """The row's colour changes; the text on it does not.
+
+        A flash that repaints the writing put dark text on a dark row in the
+        dark appearance, because Qt honours the foreground of a selected row
+        while drawing its background from the selection. The colour is
+        readable behind the appearance's own text instead.
+        """
         window.search_changed("venus")
         where = window._model.index_for(
             window._model.track_at(window._tree.currentIndex())
         )
-        ink = window._model.data(where, Qt.ItemDataRole.ForegroundRole)
-        assert ink is not None
-        assert ink.color().name() == palette_for(window.theme_mode).on_found
+        assert window._model.data(where, Qt.ItemDataRole.ForegroundRole) is None
 
     def test_the_box_is_sized_against_the_buttons_beside_it(self, window) -> None:
         assert window._tray.search_box.height() == SEARCH_BOX_HEIGHT_PX
+
+
+class TestItReallyPaints:
+    """Read the pixel back, because a role returned is not a row painted.
+
+    Qt draws a selected row's background from the selection colour and never
+    asks the model for `BackgroundRole`. The flash lands on a row a search has
+    just selected, which is precisely the case, so the delegate fills it in.
+    Nothing short of painting and looking settles whether that works.
+    """
+
+    def _painted(self, window, index, selected: bool) -> QColor:
+        """The colour the delegate leaves in the middle of one row."""
+        delegate = window._tree.itemDelegate()
+        option = QStyleOptionViewItem()
+        delegate.initStyleOption(option, index)
+        option.rect = QRect(0, 0, PAINT_PX, PAINT_PX)
+        if selected:
+            option.state |= QStyle.StateFlag.State_Selected
+        canvas = QPixmap(PAINT_PX, PAINT_PX)
+        canvas.fill(QColor("#ff00ff"))
+        painter = QPainter(canvas)
+        delegate.paint(painter, option, index)
+        painter.end()
+        return canvas.toImage().pixelColor(PAINT_PX // 2, PAINT_PX - 1)
+
+    def test_a_flashed_row_is_painted_even_while_selected(self, window) -> None:
+        window.search_changed("venus")
+        where = window._model.index_for(
+            window._model.track_at(window._tree.currentIndex())
+        )
+        painted = self._painted(window, where, selected=True)
+        assert painted.name() == palette_for(window.theme_mode).found
+
+    def test_a_row_that_is_not_flashing_is_left_to_the_style(self, window) -> None:
+        """Only the flashed row is filled; everything else draws as it always did."""
+        window.search_changed("venus")
+        other = window._model.index(0, Column.TITLE, QModelIndex())
+        assert self._painted(window, other, selected=False).name() != (
+            palette_for(window.theme_mode).found
+        )
+
+    def test_the_pane_draws_rows_the_same_way(self, window) -> None:
+        """One delegate for both views, so a flash cannot differ between them."""
+        assert isinstance(window._album_pane.columns[0].itemDelegate(), RowCover)

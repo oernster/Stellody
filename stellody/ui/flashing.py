@@ -18,7 +18,6 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     QPersistentModelIndex,
-    Qt,
     QTimer,
 )
 from PySide6.QtGui import QBrush, QColor
@@ -44,7 +43,6 @@ class RowFlash(QObject):
         self._timer.timeout.connect(self._turn)
         self._where: QPersistentModelIndex | None = None
         self._colour: QColor | None = None
-        self._ink: QColor | None = None
         self._lit = False
         self._left = 0
         model.set_flash(self)
@@ -59,17 +57,16 @@ class RowFlash(QObject):
         """True between starting a flash and its last turn."""
         return self._timer.isActive()
 
-    def start(self, where: QModelIndex, colour: str, ink: str) -> None:
+    def start(self, where: QModelIndex, colour: str) -> None:
         """Pulse this row in this colour, replacing whatever was pulsing.
 
-        The ink comes with it because this is a highlighter rather than a
-        tint: the same yellow serves both appearances and the writing on it
-        changes instead, which is what keeps it readable in either.
+        The writing on the row is never touched, so the colour has to be one
+        the appearance's own text can be read on. That is why the two
+        appearances carry different ones rather than sharing a yellow.
         """
         self.stop()
         self._where = QPersistentModelIndex(where)
         self._colour = QColor(colour)
-        self._ink = QColor(ink)
         self._lit = True
         self._left = TURNS
         self._redraw()
@@ -83,22 +80,17 @@ class RowFlash(QObject):
         was = self._where
         self._where = None
         self._colour = None
-        self._ink = None
         if was is not None and was.isValid():
             self._model.redraw_row(QModelIndex(was))
 
-    def paint(self, index: QModelIndex, role: int) -> QBrush | None:
-        """The paint for one cell in one role; None for anything else."""
-        if not self._on(index):
-            return None
-        if role == Qt.ItemDataRole.BackgroundRole:
-            return QBrush(self._colour)
-        return QBrush(self._ink)
+    def brush(self, index: QModelIndex) -> QBrush | None:
+        """The paint for one cell; None for every cell that is not the row."""
+        return QBrush(self._colour) if self._on(index) else None
 
     def _on(self, index: QModelIndex) -> bool:
         """True when this cell is in the row currently being painted."""
         where = self._where
-        if not self._lit or self._colour is None or self._ink is None:
+        if not self._lit or self._colour is None:
             return False
         if where is None or not where.isValid():
             return False

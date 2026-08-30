@@ -99,8 +99,7 @@ class Searching:
             # Measured: scrolling alone leaves both the disc and the album
             # open, where expanding the parent alone leaves the album shut.
             self._tree.scrollTo(where)
-        colour = palette_for(self.theme_mode)
-        self._flash.start(where, colour.found, colour.on_found)
+        self._flash.start(where, palette_for(self.theme_mode).found)
 
     def _open_sleeve(self, where: QModelIndex) -> None:
         """Open the album under the grid, with the highlight on the track.

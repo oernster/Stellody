@@ -14,8 +14,8 @@ from __future__ import annotations
 from enum import IntEnum
 
 from PySide6.QtCore import QSize, Qt, Slot
-from PySide6.QtGui import QColor, QPainter, QPixmap
-from PySide6.QtWidgets import QStyledItemDelegate
+from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from stellody.application.artwork import AlbumArt, AlbumArtSources
 from stellody.ui.art_worker import ArtRunner
@@ -72,6 +72,25 @@ class RowCover(QStyledItemDelegate):
         super().initStyleOption(option, index)
         if not option.icon.isNull():
             option.decorationSize = QSize(ROW_COVER_PX, ROW_COVER_PX)
+
+    def paint(self, painter, option, index) -> None:
+        """Fill a flashed row's colour in first, selected or not.
+
+        Qt draws a selected row's background from the selection colour and
+        never asks for `BackgroundRole`, so a flash on the row a search has
+        just selected painted nothing at all. Only the writing changed, which
+        in the dark appearance put dark text on a dark row.
+
+        So the colour is filled here and the selection is taken off the copied
+        option, leaving the row showing the flash rather than the selection.
+        The writing is left alone in both cases.
+        """
+        brush = index.data(Qt.ItemDataRole.BackgroundRole)
+        if isinstance(brush, QBrush):
+            painter.fillRect(option.rect, brush)
+            option = QStyleOptionViewItem(option)
+            option.state &= ~QStyle.StateFlag.State_Selected
+        super().paint(painter, option, index)
 
 
 def placeholder_for(mode: Mode) -> QPixmap:
