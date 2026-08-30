@@ -87,8 +87,9 @@ rather than one file per track, 157 of them a single FLAC holding the whole
 album, so this is a main path rather than an edge case. Because the
 distinction is captured in one value object, the queue, the transport and
 shuffle are written once and work for both shapes without knowing which they
-hold. The displays still to be built, the position monitor and the cover grid
-among them, inherit the same property.
+hold. The amplitude monitor inherits the same property: a shape is measured
+for the file, then each track takes its own share of it. The displays still to
+be built, the cover grid among them, inherit it too.
 
 ## Grouping: folders group, tags name
 
@@ -119,7 +120,7 @@ Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
 own choosing. That view is read-only today: it carries a repair control, drawn
 and disabled, because the corrections are computed on every load but there is
-nowhere yet to keep one that has been accepted. `PLAN.md` milestone 14 is that
+nowhere yet to keep one that has been accepted. `PLAN.md` milestone 13 is that
 work. `stellody/domain/ordering.py` holds the track rules,
 `stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
 the reporting vocabulary.
@@ -152,6 +153,8 @@ directories plus macOS AppleDouble stubs; nothing else.
 | The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
 | The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
 | Ending the application is said out loud, never left to Qt | Quitting when the last window closes is off, which is what lets the cross leave Stellody in the notification area. Nothing then ends the event loop by itself, so every path that means to leave says so. |
+| A file's shape is measured once and shared by its tracks | A cue-sheet album is one file holding many tracks, so measuring per track would decode the same file once for every track cut from it. `stellody/application/shapes.py` slices one measurement; the record is keyed by a digest of the file's path rather than by the path itself, since a music folder's names are arbitrary where a filesystem's are not. |
+| Peaks are rounded where they are measured, not on the way to the record | A measurement differing from its own record by a rounding would redraw slightly differently after a restart, for no reason anybody could see. Four places also holds a record to roughly a third of the size, measured at 13.6 against 34.1 kilobytes. |
 | The application keeps an account of its own appearances | A window arriving unbidden cannot be traced after the fact: whatever caused it has finished. `stellody/infrastructure/diary.py` records every show with the frames that led to it, every restore with the door that opened, then each step of a shutdown. It found two faults that reading the source had not. |
 
 ### Decided but not built

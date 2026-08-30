@@ -14,7 +14,7 @@ played properly; someone who would rather have a small player that works than a
 large one that does not.
 
 Stellody reads FLAC and nothing else today, so a library of MP3, M4A or WMA
-scans to nothing. `PLAN.md` milestone 12 is the work that widens it.
+scans to nothing. `PLAN.md` milestone 11 is the work that widens it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is
@@ -40,6 +40,12 @@ not going to.
   reaches the whole of the rest of the album. Repeat plays the album again
   rather than the track, scattering it afresh each time round when shuffle is
   on.
+- Draws the track's own waveform along the bottom, with a line marking where
+  playback has reached and the time either side of it. Clicking anywhere along
+  it moves there. The figure is corrected for the buffer the engine runs ahead
+  by, so it follows what is audible rather than what has been decoded. A file's
+  shape is measured once, kept and shared by every track a cue sheet album cuts
+  from it.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
@@ -59,9 +65,7 @@ not going to.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
-Stellody is early. Nothing yet shows where a track has reached, so there is no
-elapsed time, no progress bar and no way to seek within a track; a track plays
-from its beginning to its end. Cover art, a grid view, search, ratings, play
+Stellody is early. Cover art, a grid view, search, ratings, play
 counts, an equalizer, gapless transitions and accepting the repairs the health
 report describes are not built; `PLAN.md` lists what is still to come and what
 is deliberately excluded. Where a control for one of those is already on screen it
