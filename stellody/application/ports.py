@@ -344,3 +344,13 @@ class ArtworkPort(Protocol):
         belongs off the interface thread.
         """
         ...
+
+    def keep_chosen(self, key: str, data: bytes) -> bytes | None:
+        """Keep a picture somebody chose; the kept copy, else None.
+
+        Kept apart from what a read keeps, because a chosen cover has no file
+        beside the music to be checked against. It therefore outlives a rescan
+        and is preferred to whatever the folder holds, which is the whole
+        point of having chosen it.
+        """
+        ...

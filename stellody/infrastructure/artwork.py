@@ -11,6 +11,12 @@ rename reuses it. What was read is recorded beside it, checked against that
 file's size and modification time, so a cover replaced on disk is read again
 while a rescan that changed nothing reuses what is here.
 
+A cover somebody CHOSE is kept the same way but marked as chosen. A chosen
+record is not checked against any file: there is no file, while the choice is
+meant to outlive the folder it was made over. It therefore survives a rescan
+and is preferred to whatever sits beside the music, which is the whole point
+of having gone looking.
+
 Covers are kept scaled down. The largest picture measured in the reference
 library is 1.3 megabytes and the median is 94 kilobytes, sizes worth decoding
 once rather than every time a library is drawn.
@@ -33,6 +39,8 @@ JPEG_QUALITY = 85
 IMAGE_FORMAT = "JPEG"
 IMAGE_SUFFIX = ".jpg"
 RECORD_SUFFIX = ".json"
+# The source written down for a chosen cover, which has no file to point at.
+CHOSEN_SOURCE = "chosen"
 FORMAT_VERSION = 1
 
 
@@ -108,6 +116,20 @@ class FileArtwork:
             return thumbnail
         return None
 
+    def keep_chosen(self, key: str, data: bytes) -> bytes | None:
+        """Keep a picture somebody chose; the kept copy, else None.
+
+        Scaled down like any other cover, so one album's art is one size
+        whatever it came from. A picture that will not decode keeps nothing
+        and says so, rather than leaving a record pointing at rubbish.
+        """
+        thumbnail = _thumbnail(data)
+        if thumbnail is None:
+            return None
+        if not self._write(key, {"source": CHOSEN_SOURCE, "chosen": True}, thumbnail):
+            return None
+        return thumbnail
+
     def _candidates(self, sidecars: tuple[str, ...], audio: tuple[str, ...]):
         """Every place to look, cheapest first: files beside, then inside."""
         for path in sidecars:
@@ -131,6 +153,9 @@ class FileArtwork:
             return None
         if record.get("version") != FORMAT_VERSION:
             return None
+        if record.get("chosen"):
+            # Nothing to check it against; nothing that should override it.
+            return record
         stamp = _stamp(record.get("source", ""))
         if stamp is None:
             return None
@@ -139,22 +164,34 @@ class FileArtwork:
         return record
 
     def _keep(self, key: str, source: str, thumbnail: bytes) -> None:
-        """Keep a cover and its source. A cache that cannot be written is fine."""
+        """Keep a cover and the file it was read from, with that file's stamp."""
         stamp = _stamp(source)
         if stamp is None:
             return
         size, modified = stamp
-        record = {
-            "version": FORMAT_VERSION,
-            "source": source,
-            "size": size,
-            "modified": modified,
-        }
+        self._write(
+            key,
+            {"source": source, "size": size, "modified": modified},
+            thumbnail,
+        )
+
+    def _write(self, key: str, record: dict, thumbnail: bytes) -> bool:
+        """Put a cover and its note on disk; False when neither could go.
+
+        A cache that cannot be written is not a failure worth raising over for
+        a cover read from a file, which will simply be read again. It IS worth
+        reporting for one that was chosen, since nothing will ever go looking
+        for that picture a second time.
+        """
         try:
             self._cache_dir.mkdir(parents=True, exist_ok=True)
             self._image_path(key).write_bytes(thumbnail)
             self._record_path(key).write_text(
-                json.dumps(record, separators=(",", ":")), encoding="utf-8"
+                json.dumps(
+                    {"version": FORMAT_VERSION, **record}, separators=(",", ":")
+                ),
+                encoding="utf-8",
             )
         except OSError:
-            return
+            return False
+        return True

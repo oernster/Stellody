@@ -31,7 +31,8 @@ What this plan counts as the release that finishes the job is the position
 display: the corrected position of milestone 1, then the amplitude monitor of
 milestone 2 that draws it against the music. Both are now built and gate
 green; what neither has had is the owner's own observation in the built
-application, which is what each closing condition asks for. Version 1.0 is a separate readiness call for the owner to
+application, which is what each closing condition asks for. The grid of covers
+has had that observation and is gone from this file. Version 1.0 is a separate readiness call for the owner to
 make; nothing below is sized against it. Cover art, search, ratings and the
 rest come later, the wider formats and video among them.
 
@@ -88,97 +89,45 @@ make, not a test's.
 
 Depends on: milestone 1.
 
-## 3. A grid of covers, with the album opened underneath
-
-Both views, with a toggle between them rather than one replacing the other.
-The list stays exactly as it was.
-
-All of it is built. The grid is a second view over the SAME model, so neither
-view can disagree with the other about what the library holds or the order it
-is in; switching keeps that order because there is only one of it. One cover
-is kept at the size the grid draws it and Qt scales it down for a row, so
-switching costs no second reading. The toggle at the left of the bottom strip
-is enabled and names the view it would move to rather than the one on show,
-since a button that names the current state is read as a label and pressed to
-confirm it. The choice is remembered like the appearance and the sort order.
-
-Picking a sleeve opens that album in a pane beneath the grid rather than
-replacing the grid, so the sleeves stay where they were. The pane lists the
-album's tracks from the same model rooted at that album, not a second copy, so
-the durations and both ways of starting a track are the ones already built. It
-carries the cover, the title, the album artist, a control that plays the album
-from its first track and one that shuts the pane.
-
-A tile is drawn rather than left to the item view, since a view puts one line
-of text under a picture and lets it run as wide as it likes. Every tile is the
-same size whatever the names on it, the sleeve is centred, the title sits over
-the artist and a name too long for its tile is cut with an ellipsis.
-
-The album whose pane is open wears the accent ring the rest of the application
-uses to say where attention is. Deliberately NOT a pointer drawn at the tile:
-that is MediaMonkey's own device, while the ring is a word Stellody already
-speaks.
-
-The tracks now run down two columns; the fear that this meant building the
-list out of widgets was misplaced. Two item views on the same model at the
-same album, each hiding the rows belonging to the other, gives two columns
-without a second copy of anything and without giving up the keyboard reach an
-item view carries for nothing. One selection is shared between them, so the
-highlight is somewhere in the album rather than once in each column.
-
-One thing about the pane is still open. MediaMonkey inserts it inline after
-the row holding the chosen sleeve, which a list view cannot do without a view
-written from scratch, so it sits below the grid instead. That is not settled.
-
-Done when: the grid is seen showing sleeves, a picked album is seen opening
-beneath it and the toggle is seen moving between the two views. That is the
-owner's observation to make, not a test's.
-
 ## 4. Choose a cover when the local files carry none
 
-Cover art draws what the files already hold. One album in the reference
-library holds nothing; a library ripped by a tool that writes neither a
-sidecar nor an embedded picture would hold nothing throughout. This is the way
-out of that, deliberately a person's hand rather than the application's
-guess.
+The looking up is built: the domain candidate, the port, the service that
+offers and accepts, the MusicBrainz and Cover Art Archive client behind it,
+plus the structural test saying no other module can open a connection at all,
+proved by planting an import and watching it fail. What is not built is the
+chooser itself, which is the half a listener can see.
 
 **Nothing happens without being asked.** Stellody opens no connection of its
 own. Right clicking an album offers to go looking; that gesture is the only
 thing that reaches outward, so a listener who never uses it runs an application
 that still touches nothing.
 
-**The user chooses, because the application cannot.** Measured across the
-reference library: not one file carries a MusicBrainz identifier, one carries a
-DISCID and four carry an ISRC. A lookup therefore has nothing exact to match
-on and falls back to searching by artist and title, which can find the wrong
-release without knowing that it has. Showing the candidates and letting
-somebody pick turns a silent defect into an ordinary choice.
-
 **What the chooser shows.** Every candidate the search returns, arranged as a
-grid of thumbnails, each labelled with its pixel dimensions so a scan can be
-told from a thumbnail. Several releases of one album may each carry several
-images, so the count is not small; the layout arranges itself rather than
-asking for a window size.
+grid of thumbnails, each labelled with the release it belongs to and the
+largest size the archive will serve. Several releases of one album may each
+carry several images, so the count is not small; the layout arranges itself
+rather than asking for a window size.
 
-**What applying one does.** The chosen image lands in Stellody's own store,
-keyed by album identity exactly as a local cover is, so it survives a restart,
-a rescan and a folder rename. It is never written into the music folder,
-sidecar or otherwise. The invariant that the library is read-only does not bend
-for artwork somebody asked for.
+Measured against the live services on 2026-08-30, searching Ether Song
+returned 19 candidates across 8 releases in 13.5 seconds. That is what the
+rate limit costs, so the chooser has to open on a wait rather than on a result,
+say what it is doing and be cancellable. It also has to run off the interface
+thread, as the cover reading and the waveform measurement already do.
 
-The same chooser serves an album that already has art, since a listener may
-prefer a different cover to the one the ripper left.
+**What the listing cannot say.** The archive names the thumbnail sizes it will
+serve, 250, 500 and 1200; it never names the pixel size of the original. So a
+candidate is labelled with the largest size on offer rather than with true
+dimensions. Reading the real size would mean fetching every original, which is
+tens of megabytes to draw a grid of squares.
 
-Needed: a search client carrying the identifying user agent and the rate limit
-the terms require, an image fetch, the chooser itself, plus a stored choice
-that resolution prefers over the local file. A lookup that fails says so and
-changes nothing.
+Needed: the chooser dialog, the right-click entry that opens it, a worker to
+hold the search off the interface thread, then the redraw once a choice is
+kept.
 
 Done when: an album with no local art can be given one from the chooser and
 keeps it across a restart and a rescan; declining leaves the placeholder; no
-connection is opened until the chooser is, which a test proves the way the
-read-only guard does.
-
+connection is opened until the chooser is, which the structural test already
+states.
 
 ## 5. Search the library
 
