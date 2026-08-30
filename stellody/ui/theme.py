@@ -198,6 +198,20 @@ def stylesheet(mode: Mode) -> str:
     QTreeView::item {{
         padding: 2px 4px;
     }}
+    /* The cover chooser's tiles. A picture is picked rather than merely
+       highlighted, so the one picked wears the ring the rest of the
+       application wears when something is chosen; the tint alone was too
+       quiet to read against a wall of sleeves. Scoped by name, since the
+       library's own views are not choosing anything. */
+    QListWidget#CoverGrid::item {{
+        border: {FOCUS_WIDTH_PX}px solid transparent;
+        border-radius: {RADIUS_PX}px;
+    }}
+    QListWidget#CoverGrid::item:selected {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+        background-color: {colour.selection};
+        color: {colour.on_selection};
+    }}
     QHeaderView::section {{
         background-color: {colour.surface_alt};
         color: {colour.text_muted};

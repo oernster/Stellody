@@ -28,7 +28,7 @@ megabytes to find out.
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt, Signal, Slot
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -54,6 +54,9 @@ from stellody.ui.theme import Mode
 TILE_PX = 180
 TILE_TEXT_PX = 56
 TILE_MARGIN_PX = 16
+# The name the theme styles the tiles by, so the ring on a picked picture is
+# stated once in the palette rather than painted here.
+GRID_NAME = "CoverGrid"
 DIALOG_WIDTH_PX = 860
 DIALOG_HEIGHT_PX = 620
 
@@ -174,7 +177,7 @@ class CoverChooser(NeutralDialog):
             self.progress.setValue(0)
         for candidate in self._candidates:
             item = QListWidgetItem(candidate.described, self.grid)
-            item.setIcon(QIcon(self._placeholder))
+            item.setIcon(_steady_icon(self._placeholder))
             item.setTextAlignment(Qt.AlignmentFlag.AlignHCenter)
 
     @Slot(int, object)
@@ -183,7 +186,7 @@ class CoverChooser(NeutralDialog):
         item = self.grid.item(position)
         picture = cover_pixmap(thumbnail, TILE_PX)
         if item is not None and picture is not None:
-            item.setIcon(QIcon(picture))
+            item.setIcon(_steady_icon(picture))
         self.progress.setValue(position + 1)
 
     @Slot()
@@ -225,6 +228,21 @@ class CoverChooser(NeutralDialog):
         self.close_button.setText(CANCEL if busy else CLOSE)
 
 
+def _steady_icon(picture: QPixmap) -> QIcon:
+    """One picture, drawn the same whether it is picked or not.
+
+    Qt draws a selected icon in its own Selected mode, which washed the colour
+    out of exactly the picture somebody had just chosen: the one tile a
+    listener is comparing against the others was the one they could no longer
+    see properly. Registering the same pixmap for every mode leaves the ring to
+    say what is picked, which is its job.
+    """
+    icon = QIcon()
+    for mode in QIcon.Mode:
+        icon.addPixmap(picture, mode)
+    return icon
+
+
 def _busy_bar(dialog: CoverChooser) -> QProgressBar:
     """The indicator, indeterminate until there is something to count.
 
@@ -240,6 +258,7 @@ def _busy_bar(dialog: CoverChooser) -> QProgressBar:
 def _picture_grid(dialog: CoverChooser) -> QListWidget:
     """The wall of tiles, arranged to the width the dialog happens to have."""
     grid = QListWidget(dialog)
+    grid.setObjectName(GRID_NAME)
     grid.setViewMode(QListWidget.ViewMode.IconMode)
     grid.setResizeMode(QListWidget.ResizeMode.Adjust)
     grid.setMovement(QListWidget.Movement.Static)

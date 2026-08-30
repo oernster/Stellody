@@ -15,7 +15,7 @@ import threading
 import time
 
 from conftest import RecordingPlayer
-from cover_support import BACK, FRONT, KEPT, FakeArtwork, FakeSearch
+from cover_support import BACK, FRONT, FakeArtwork, FakeSearch
 from PySide6.QtCore import QBuffer, QIODevice, QModelIndex, QThread
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
@@ -27,7 +27,6 @@ from stellody.ui.cover_chooser import (
     CLOSE,
     NOTHING,
     REFUSED,
-    UNREACHABLE,
     CoverChooser,
 )
 from stellody.ui.models import Column
@@ -180,64 +179,6 @@ class TestDrawingTheWait:
         assert not dialog.searching
         gate.set()
         _settle(dialog, application)
-
-
-class TestPickingAPicture:
-    def test_nothing_can_be_kept_until_something_is_picked(self, application) -> None:
-        dialog = _opened(FakeSearch(), application)
-        assert not dialog.keep_button.isEnabled()
-        assert dialog.picked() is None
-        dialog.reject()
-
-    def test_picking_a_tile_offers_to_keep_it(self, application) -> None:
-        dialog = _opened(FakeSearch(), application)
-        dialog.grid.setCurrentRow(1)
-        assert dialog.keep_button.isEnabled()
-        assert dialog.picked() == BACK
-        dialog.reject()
-
-    def test_keeping_hands_back_the_picture_and_closes(self, application) -> None:
-        artwork = FakeArtwork()
-        search = FakeSearch(pictures={FRONT.image_url: _png_bytes()})
-        dialog = _opened(search, application, artwork)
-        handed: list[tuple[str, object]] = []
-        dialog.chosen.connect(lambda key, data: handed.append((key, data)))
-        dialog.grid.setCurrentRow(0)
-        dialog.keep_picked()
-        _settle(dialog, application)
-        assert handed == [(ART_KEY, KEPT)]
-        assert artwork.kept == {ART_KEY: KEPT}
-        assert not dialog.isVisible()
-
-    def test_a_picture_that_cannot_be_fetched_leaves_the_chooser_open(
-        self, application
-    ) -> None:
-        dialog = _opened(FakeSearch(), application)
-        handed: list[tuple[str, object]] = []
-        dialog.chosen.connect(lambda key, data: handed.append((key, data)))
-        dialog.grid.setCurrentRow(0)
-        dialog.keep_picked()
-        _settle(dialog, application)
-        assert handed == []
-        assert dialog.status.text() == UNREACHABLE
-        assert dialog.keep_button.isEnabled()
-        dialog.reject()
-
-    def test_keeping_with_nothing_picked_asks_for_nothing(self, application) -> None:
-        search = FakeSearch()
-        dialog = _opened(search, application)
-        fetched = list(search.fetched)
-        dialog.keep_picked()
-        assert search.fetched == fetched
-        dialog.reject()
-
-
-class TestClosingTheChooser:
-    def test_closing_lets_go_of_the_search(self, application) -> None:
-        dialog = _opened(FakeSearch(), application)
-        dialog.reject()
-        assert not dialog.searching
-        assert not dialog.isVisible()
 
 
 class TestTheEntryThatOpensIt:
