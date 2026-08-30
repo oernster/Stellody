@@ -6,12 +6,14 @@ that order, because there is only one of it.
 
 Picking a sleeve opens the album underneath the grid rather than replacing
 the grid, so the sleeves a listener was looking through stay where they were.
+Pressing that sleeve again rolls the pane back up, which is the gesture that
+opened it asked to undo itself. The pane's own close button does the same.
 """
 
 from __future__ import annotations
 
-from PySide6.QtCore import QModelIndex, Qt, Slot
-from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import QEvent, QModelIndex, QObject, Qt, Slot
+from PySide6.QtWidgets import QListView, QWidget
 
 from stellody.ui.album_pane import AlbumPane
 from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize, next_cover_size
@@ -31,6 +33,39 @@ from stellody.ui.window_parts import (
 )
 
 DECORATION = Qt.ItemDataRole.DecorationRole
+
+
+class SleeveToggle(QObject):
+    """Turns a second press on the open sleeve into a request to shut it.
+
+    Read at the PRESS rather than at the click, because Qt moves the current
+    index during the press: by the time `clicked` arrives, a first press on a
+    fresh sleeve and a second press on the open one look alike. Pressing at all
+    is also what makes a sleeve whose pane was closed open again, since it is
+    still the current one and a selection that does not change says nothing.
+    """
+
+    def __init__(self, grid: QListView, viewing) -> None:
+        super().__init__(grid)
+        self._grid = grid
+        self._viewing = viewing
+        grid.viewport().installEventFilter(self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        """Shut the pane on a second press; open it on any other."""
+        if event.type() is not QEvent.Type.MouseButtonPress:
+            return False
+        where = self._grid.indexAt(event.position().toPoint())
+        if not where.isValid():
+            return False
+        if where == self._viewing.shown_index:
+            self._viewing.close_album()
+            # Eaten, so the sleeve stays the current one with its pane shut.
+            # Qt would otherwise leave the selection exactly as it was anyway;
+            # saying so here is what stops the press reopening what it closed.
+            return True
+        self._viewing.open_album_at(where)
+        return False
 
 
 class Viewing:
@@ -54,7 +89,9 @@ class Viewing:
         for column in self._album_pane.columns:
             self.wire_transport_menu(column)
         self._grid.selectionModel().currentChanged.connect(self._on_album_picked)
+        self._sleeve_toggle = SleeveToggle(self._grid, self)
         self._shown_album = None
+        self._shown_index = QModelIndex()
         self._cover_size = DEFAULT_COVER_SIZE
         self._library = build_library(
             self, self._tree, build_covers_page(self, self._grid, self._album_pane)
@@ -112,10 +149,16 @@ class Viewing:
         self._bottom_tray.set_next_cover_size(next_cover_size(size))
         self._settings.set_setting(SETTING_COVER_SIZE, str(int(size)))
 
+    @property
+    def shown_index(self) -> QModelIndex:
+        """Where the open album sits; an invalid index while none is open."""
+        return self._shown_index
+
     @Slot()
     def close_album(self) -> None:
         """Shut the pane. The grid keeps the place it was scrolled to."""
         self._shown_album = None
+        self._shown_index = QModelIndex()
         self._album_pane.setVisible(False)
         self._album_pane.clear()
         self._ring_open(NO_ROW)
@@ -131,16 +174,27 @@ class Viewing:
     @Slot(QModelIndex, QModelIndex)
     def _on_album_picked(self, current: QModelIndex, _previous: QModelIndex) -> None:
         """Open the picked album under the grid; shut the pane when none is."""
-        album = self._model.album_at(current)
+        self.open_album_at(current)
+
+    def open_album_at(self, where: QModelIndex) -> None:
+        """Show this album under the grid, unless it is the one already on.
+
+        Reopening the album already open would put the highlight back on its
+        first track, undoing whatever the listener had chosen since; a press
+        and the selection change it causes both arrive, so this is asked twice
+        for one gesture.
+        """
+        if where == self._shown_index and self._shown_album is not None:
+            return
+        album = self._model.album_at(where)
         if album is None:
             self.close_album()
             return
         self._shown_album = album
-        self._album_pane.show_album(
-            album, current, self._model.data(current, DECORATION)
-        )
+        self._shown_index = where
+        self._album_pane.show_album(album, where, self._model.data(where, DECORATION))
         self._album_pane.setVisible(True)
-        self._ring_open(current.row())
+        self._ring_open(where.row())
 
     def show_tile_appearance(self, mode) -> None:
         """Draw the sleeves in the appearance the window is wearing."""
