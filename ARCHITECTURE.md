@@ -19,11 +19,18 @@ has never been seen to fail is not yet a guard.
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
 | 10 | A ring belongs to a control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain. | `tests/ui/test_focus_rings.py` |
 | 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
+| 12 | Exactly one module may open a connection; only the composition root may name it. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
 files, duplicating and overwriting metadata across 21 albums. Stellody
 describes a damaged tag; it never repairs one.
+
+Invariant 12 is the second of that kind. A local-first player that quietly
+talks to the internet is not local-first whatever its README says, so the
+guarantee is held by a test rather than by a promise. The module it permits is
+`stellody/infrastructure/cover_search.py`; no module names it today, so the
+running application opens nothing.
 
 ## Layers
 
@@ -88,8 +95,9 @@ album, so this is a main path rather than an edge case. Because the
 distinction is captured in one value object, the queue, the transport and
 shuffle are written once and work for both shapes without knowing which they
 hold. The amplitude monitor inherits the same property: a shape is measured
-for the file, then each track takes its own share of it. The displays still to
-be built, the cover grid among them, inherit it too.
+for the file, then each track takes its own share of it. The grid of sleeves
+and the album pane under it inherit it too: both are views over the same
+albums, so neither knows which shape a track holds.
 
 ## Grouping: folders group, tags name
 
@@ -118,10 +126,13 @@ real damage in the reference library:
 
 Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
-own choosing. That view is read-only today: it carries a repair control, drawn
-and disabled, because the corrections are computed on every load but there is
-nowhere yet to keep one that has been accepted. `PLAN.md` milestone 13 is that
-work. `stellody/domain/ordering.py` holds the track rules,
+own choosing. That view is read-only today. Two repair controls are drawn and both are
+disabled: one in the top tray beside the rescan whose findings it would answer,
+one pinned at the top of the health dialog. Their tooltip is stated once in
+`stellody/ui/toolbar.py` and read from there by the dialog, so the two cannot
+come to say different things about the same unbuilt feature. They are disabled
+because the corrections are computed on every load while there is nowhere yet
+to keep one that has been accepted. `PLAN.md` milestone 13 is that work. `stellody/domain/ordering.py` holds the track rules,
 `stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
 the reporting vocabulary.
 
@@ -157,8 +168,10 @@ directories plus macOS AppleDouble stubs; nothing else.
 | Peaks are rounded where they are measured, not on the way to the record | A measurement differing from its own record by a rounding would redraw slightly differently after a restart, for no reason anybody could see. Four places also holds a record to roughly a third of the size, measured at 13.6 against 34.1 kilobytes. |
 | A cover is read by one module and kept by another | The module that can open music files should not also be the one encoding and writing them. `infrastructure/covers.py` opens audio and reads a picture out of it, nothing more; `infrastructure/artwork.py` decodes, scales and writes without importing a tag library at all. That is what lets the second be granted permission to write without granting it to anything holding a tag library, which invariant 1 then enforces rather than merely describes. |
 | A cover is kept against the album's identity, not a path | A rescan after a folder rename reuses the picture instead of reading it again. What it was read from is recorded beside it and checked against that file's size and modification time, so a cover replaced on disk is still read afresh. |
-| One kept size serves every place a cover is drawn | Measured on the reference library, a kept cover is about 30 kilobytes at 512 pixels, against sources whose median is 94 kilobytes and whose largest is 1.3 megabytes. That is large enough for the grid still to be built and small enough for a row, so a grid will not mean reading every cover a second time. |
+| One kept size serves every place a cover is drawn | Measured on the reference library, a kept cover is about 30 kilobytes at 512 pixels, against sources whose median is 94 kilobytes and whose largest is 1.3 megabytes. One pixmap then serves both views: it is held at the size the grid draws it and Qt scales it down for a row, so switching view costs no second reading. Changing the grid size does read every sleeve again, out of Stellody's own store rather than out of the music, which is what holds memory to the size chosen instead of to the largest on offer. |
+| A row states its own decoration size | A `QPixmap` in `DecorationRole` sizes the row itself and a view's icon size is never consulted for it. Measured here: a 40 pixel icon size on the tree still gave a 166 pixel album row. `RowCover` states `option.decorationSize` in the delegate instead, which takes it to 46. Only a row carrying a picture is touched, so a track stays the height of the line of text it is. |
 | The application keeps an account of its own appearances | A window arriving unbidden cannot be traced after the fact: whatever caused it has finished. `stellody/infrastructure/diary.py` records every show with the frames that led to it, every restore with the door that opened, then each step of a shutdown. It found two faults that reading the source had not. |
+| A chosen cover would be kept apart from a read one | A picture somebody chose has no file beside the music to be checked against, so its record carries a chosen marker instead of a size and a modification time. It is therefore never invalidated by a rescan and is preferred to whatever the folder holds, which is the whole point of having gone looking. `keep_chosen` is built and tested; nothing calls it yet, since the chooser that would is milestone 4. |
 
 ### Decided but not built
 
@@ -168,7 +181,7 @@ taken twice; `PLAN.md` holds the work itself.
 | Decision | Reason |
 |---|---|
 | A hand-rolled biquad cascade rather than scipy | The equalizer will be pure arithmetic, so it belongs in the domain and tests without an audio device. scipy would add tens of megabytes to the packaged build for one function. |
-| Artwork is local first, with a remote chooser somebody opens | Exactly one album in the reference library lacks local art, so an automatic lookup would buy one cover at the price of the local-first guarantee. A chooser keeps that guarantee for anyone who never opens it. It has to be a chooser rather than a fetch because no file in the library carries a MusicBrainz identifier, so a search has nothing exact to match on and could attach the wrong cover without knowing it had. |
+| Artwork is local first, with a remote chooser somebody opens | Exactly one album in the reference library lacks local art, so an automatic lookup would buy one cover at the price of the local-first guarantee. A chooser keeps that guarantee for anyone who never opens it. It has to be a chooser rather than a fetch because no file in the library carries a MusicBrainz identifier, so a search has nothing exact to match on and could attach the wrong cover without knowing it had. The looking up is written: the candidate, the port, the service that offers and accepts, the client behind it and invariant 12 over the lot. The half a listener could see is not, so nothing calls any of it. |
 
 ## Coverage
 

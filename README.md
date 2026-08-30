@@ -26,11 +26,15 @@ not going to.
   album: a folder whose files are all unchanged is reused without opening one.
 - Handles the common shapes a real library takes: one file per track, a single
   file per album with a sidecar cue sheet, multi-disc sets split across
-  sibling folders, compilations and tracks with several credited artists.
+  sibling folders, a bonus disc whose folder names no number among them,
+  compilations and tracks with several credited artists.
 - Shows the library as albums, discs and tracks, ordered either way, else as
   a grid of covers with a toggle at the left of the bottom strip between the two.
-  Picking a sleeve opens that album underneath the grid with its tracks listed,
-  so the sleeves stay where they were. The choice of view is remembered.
+  Picking a sleeve opens that album underneath the grid, its tracks running down
+  two columns with the first ready to play, so the sleeves stay where they were;
+  picking the same sleeve again rolls that pane back up. The sleeves are drawn
+  at three sizes, cycled from the bottom strip. The view and the size are both
+  remembered.
 - Shows each album's cover beside it, taken from a file next to the music or
   from the picture inside the audio itself, then kept so it is read once. An
   album with neither keeps a plain square rather than a gap.
@@ -55,6 +59,9 @@ not going to.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
+- Opens at the size it was left at, maximised again if that is how it was left.
+  A size is clamped to the screen actually attached, so a window sized for a
+  monitor that has since gone opens somewhere you can reach it.
 - Runs in the notification area and can start there. The setup program offers to
   start Stellody when you sign in, which brings it up there rather than over
   whatever Windows has just finished drawing. Opening Stellody again
@@ -71,20 +78,27 @@ not going to.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
-Stellody is early. Cover art, a grid view, search, ratings, play
-counts, an equalizer, gapless transitions and accepting the repairs the health
-report describes are not built; `PLAN.md` lists what is still to come and what
-is deliberately excluded. Where a control for one of those is already on screen it
-is disabled and says so.
+Stellody is early. Search, ratings, play counts, an equalizer, gapless
+transitions, choosing a cover for an album whose own files carry none and
+accepting the repairs the health report describes are not built; `PLAN.md`
+lists what is still to come and what is deliberately excluded. Where a control
+for one of those is already on screen it is disabled and says so.
 
 ## What it deliberately does not do
 
 - **It never writes to your music files.** This is enforced by a structural
   test, not by good intentions.
-- It does not send anything to the internet. There is no cover lookup, no
-  scrobbling, no telemetry and no update check. The one outward thing it does
-  is hand a donation link to your browser when you press the button for it;
-  the browser does the asking, never Stellody.
+- It does not send anything to the internet. No scrobbling, no telemetry and
+  no update check. The one outward thing it does is hand a donation link to
+  your browser when you press the button for it; the browser does the asking,
+  never Stellody.
+- **A cover lookup is written but nothing reaches it.** One module can talk to
+  MusicBrainz and the Cover Art Archive; no part of the running application
+  calls it, so starting Stellody opens no connection. A structural test keeps
+  both halves of that true: it permits exactly one module to hold the machinery
+  for a connection and permits only the composition root to name that module.
+  `PLAN.md` milestone 4 is the chooser that would put the lookup behind a
+  gesture somebody makes, which is the only way it will ever run.
 - It does not encrypt anything at rest. The store holds library metadata, not
   secrets.
 - It keeps a plain-text account of its own comings and goings at

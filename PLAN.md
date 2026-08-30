@@ -343,9 +343,9 @@ reported and cannot be accepted, since there is nothing to accept.
 
 Needed: an overrides table keyed by album identity, that third layer in the
 load-time resolution, an accept and a reset at each of the three granularities,
-plus the two repair buttons enabled: the one on the bottom strip and the one
-pinned at the top of the health dialog, both of which are already drawn and
-already wired to a seam that does nothing.
+plus the two repair buttons enabled: the one in the top tray beside the rescan
+whose findings it answers and the one pinned at the top of the health dialog,
+both of which are already drawn and already wired to a seam that does nothing.
 
 Done when: accepting everything the report lists empties it in one gesture, the
 library shows the corrected values, both survive a restart and a rescan, then

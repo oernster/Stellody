@@ -62,10 +62,10 @@ from stellody.ui.worker import ScanRunner, ScanSession
 
 # Enough frames to name the door without printing the whole interpreter.
 TRAIL_FRAMES = 6
-# The size the window opens at. Nothing remembers a size between sessions yet,
-# so this is what every launch gets. Grown from the 1080 by 720 it used to open
-# at, a tenth wider and a fifth taller, which is a row of sleeves more library
-# to look at before anything has been scrolled.
+# The size the window opens at when nothing has been remembered, which is a
+# first run and a stored value that is not a number. Grown from the 1080 by 720
+# it used to open at, a tenth wider and a fifth taller, which is a row of
+# sleeves more library to look at before anything has been scrolled.
 WINDOW_WIDTH_PX = 1188
 WINDOW_HEIGHT_PX = 864
 TITLE_COLUMN_PX = 460
