@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
+from stellody.shared import resources
 from stellody.ui.covering import (
     COVER_SIZES,
     DEFAULT_COVER_SIZE,
@@ -136,3 +138,37 @@ class TestReadingAgainAtTheNewSize:
         window._model.set_cover(album.identity.art_key, None)
         window.show_cover_size_choice(window._cover_size)
         assert album.identity.art_key in window._model._covers
+
+
+class TestTheArtwork:
+    """One picture per size; three different pictures.
+
+    Worth asserting because the three arrived in the wrong repository once and
+    the only symptom was a button drawing nothing at all.
+    """
+
+    def test_each_size_has_a_picture_that_loads(
+        self, application: QApplication
+    ) -> None:
+        for resolver in (
+            resources.medium_grid_icon_path,
+            resources.large_grid_icon_path,
+            resources.extra_large_grid_icon_path,
+        ):
+            path = resolver()
+            assert path is not None, resolver.__name__
+            assert not QImage(str(path)).isNull(), resolver.__name__
+
+    def test_the_three_are_different_pictures(self, application: QApplication) -> None:
+        """A button that draws the same thing at every size says nothing."""
+        drawn = set()
+        for resolver in (
+            resources.medium_grid_icon_path,
+            resources.large_grid_icon_path,
+            resources.extra_large_grid_icon_path,
+        ):
+            # Named rather than read off a chain of temporaries: bits() on one
+            # hands back a buffer whose owner is already gone, which segfaults.
+            image = QImage(str(resolver()))
+            drawn.add(image.constBits().tobytes())
+        assert len(drawn) == 3
