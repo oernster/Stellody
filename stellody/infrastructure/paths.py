@@ -14,6 +14,7 @@ APP_DIR_NAME = "Stellody"
 APP_DIR_SLUG = "stellody"
 DATABASE_NAME = "library.sqlite3"
 ART_CACHE_DIR = "artwork"
+SHAPE_CACHE_DIR = "shapes"
 
 
 def _windows_base() -> pathlib.Path:
@@ -65,5 +66,12 @@ def database_path() -> pathlib.Path:
 def art_cache_dir() -> pathlib.Path:
     """The directory holding cached cover thumbnails."""
     cache = data_dir() / ART_CACHE_DIR
+    cache.mkdir(parents=True, exist_ok=True)
+    return cache
+
+
+def shape_cache_dir() -> pathlib.Path:
+    """The directory holding measured waveforms, beside the artwork."""
+    cache = data_dir() / SHAPE_CACHE_DIR
     cache.mkdir(parents=True, exist_ok=True)
     return cache

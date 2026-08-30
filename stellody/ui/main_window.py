@@ -21,6 +21,7 @@ from stellody.application.ports import SettingsStore
 from stellody.application.scan import (
     LoadLibrary,
 )
+from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
 from stellody.domain.health import LibraryIssue
 from stellody.domain.track import Track
@@ -43,6 +44,7 @@ from stellody.ui.settings_keys import (
     STATUS_TIMEOUT_MS,
     TRUE,
 )
+from stellody.ui.shape_worker import ShapeRunner
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.toolbar import LibraryTray
 from stellody.ui.window_parts import (
@@ -85,6 +87,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         loader: LoadLibrary,
         transport: Transport,
         settings: SettingsStore,
+        shapes: TrackShapes | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -106,6 +109,9 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         self._quitting = False
         self._started = False
         self._runner = ScanRunner(self)
+        self._shapes = shapes
+        self._shape_shown = None
+        self._shape_runner = ShapeRunner(shapes, self) if shapes is not None else None
         self._model = AlbumTreeModel(self)
         self._neutral = neutral_holder(self)
 
@@ -159,6 +165,8 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         self._transport_timer.timeout.connect(self._poll_transport)
         self._transport_timer.start(TRANSPORT_POLL_MS)
         self._show_transport()
+        if self._shape_runner is not None:
+            self._shape_runner.ready.connect(self._on_shape)
         self._runner.progressed.connect(self._on_progress)
         self._runner.completed.connect(self._on_completed)
         self._runner.failed.connect(self._on_failed)
@@ -296,6 +304,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         self._light_action.setChecked(mode is Mode.LIGHT)
         self._dark_action.setChecked(mode is Mode.DARK)
         self._tray.set_mode(mode)
+        self._position_bar.show_appearance(mode)
 
     @Slot()
     def toggle_order(self) -> None:

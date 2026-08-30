@@ -27,6 +27,7 @@ WRITE_PERMITTED = frozenset(
         "stellody/infrastructure/diary.py",
         "stellody/infrastructure/startup_log.py",
         "stellody/infrastructure/switch_reset.py",
+        "stellody/infrastructure/waveform.py",
     }
 )
 

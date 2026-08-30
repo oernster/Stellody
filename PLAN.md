@@ -28,9 +28,10 @@ the number for the release being cut; a bump is owed against the newest tag
 rather than against the last thing written.
 
 What this plan counts as the release that finishes the job is the position
-display: milestones 1 and 2, then the amplitude monitor that shows position at
-all. Two of those three are unbuilt, so that is a later release rather than
-the one already out. Version 1.0 is a separate readiness call for the owner to
+display: the corrected position of milestone 1, then the amplitude monitor of
+milestone 2 that draws it against the music. Both are now built and gate
+green; what neither has had is the owner's own observation in the built
+application, which is what each closing condition asks for. Version 1.0 is a separate readiness call for the owner to
 make; nothing below is sized against it. Cover art, search, ratings and the
 rest come later, the wider formats and video among them.
 
@@ -38,38 +39,7 @@ Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
 
-## 1. Play something
-
-Everything this milestone asked for is written: the playback port is bound in
-the composition root, the transport sits centred in the tray, a track is
-activated from the tree by double click, by Return or from the right click
-menu; the library highlight follows whatever is playing. Volume and mute
-arrived alongside, ahead of the plan.
-
-Playing, pausing and resuming have been exercised in the built application by
-the owner, so those are confirmed. Quitting has since been watched too: the
-application's own account records a shutdown running to its end, with no
-process remaining. What that run did not settle is whether it was quitting
-MID-TRACK, which is the case that has something to stop.
-
-So one part of the closing condition is still unwatched in the built
-application: the queue moving on by itself at the end of a track. It holds in
-the tests; it has not been seen in the binary.
-
-Seeking was deliberately absent, on the grounds that milestone 3 would show
-position rather than a plain bar. That was the wrong order: this milestone's
-own closing condition asks somebody to watch a track end, which without
-seeking means waiting out a whole track for each attempt, on a library with no
-short tracks in it. So a bar arrived early, as a stepping stone rather than a
-decision reversed; milestone 3 replaces what it draws.
-
-Done when: the queue is seen moving on by itself at the end of a track, then
-a quit taken mid-track is seen to leave no process behind. That is the owner's
-observation to make, not a test's.
-
-Blocks: every milestone below except 6.
-
-## 2. Report the position that is audible
+## 1. Report the position that is audible
 
 The correction is built. The port reports what has been DECODED, which runs a
 buffer ahead of what is leaving the speakers, so the port now states its own
@@ -85,7 +55,7 @@ speakers.
 Done when: the bar is watched against the music and does not run ahead of it.
 That is the owner's observation to make, not a test's.
 
-## 3. The amplitude monitor
+## 2. The amplitude monitor
 
 Where a track has reached is shown as a line crossing the track's own waveform,
 rather than as a bar filling up. The amplitude is the point: it says what is
@@ -97,22 +67,28 @@ playback, so it is done off the interface thread and cached beside the artwork,
 keyed on the source rather than on the track: a cue sheet album is one file
 holding many tracks, so one shape serves all of them.
 
-Needed: an envelope of peaks per bucket, a cache that survives a restart, a
-widget drawing it in the palette's own colours, plus a playhead driven by the
-position that milestone 2 makes honest.
+All of it is built: an envelope of peaks per bucket, a cache keyed on the file
+that survives a restart, a widget drawing the shape in the palette's own
+colours, plus a playhead driven by the position that milestone 1 makes honest.
+It sits inside the bar that arrived before it, which already held the corrected
+position, the poll that refreshes it, the arithmetic from a point along the
+track to a frame, the seek behind it, its place in the keyboard order and the
+rule that a poll never takes the handle from somebody holding it. What this
+milestone replaced is the painting.
 
-Most of what surrounds it already exists in the bar built for milestone 1: the
-corrected position, the poll that refreshes it, the arithmetic from a point
-along the track to a frame, the seek behind it, its place in the keyboard order, plus the
-rule that a poll never takes the handle from somebody holding it. What this milestone replaces is the painting.
+What tests can pin is pinned: a track played twice does not decode twice; a
+shape read back after a restart is the shape that was measured. What is left
+needs eyes, since a test cannot watch a line move against music it cannot
+hear, nor judge whether a first shape arrives quickly enough to feel immediate.
 
 Done when: playing a track draws its shape immediately from the cache or
-within a second or two of starting without it, the line crosses the shape in
-time with the music; a track played twice does not decode twice.
+within a second or two of starting without it, then the line is watched
+crossing the shape in time with the music. That is the owner's observation to
+make, not a test's.
 
-Depends on: milestones 1 and 2.
+Depends on: milestone 1.
 
-## 4. Show the cover art
+## 3. Show the cover art
 
 The scan already records one image path per source, chosen by the ripper-name
 ranking in the walker, so the data is in the store. Nothing loads it.
@@ -121,7 +97,7 @@ Needed: a cache under the data directory keyed by the album identity handle that
 `stellody/domain/identity.py` already provides, a decode step off the interface
 thread, plus a delegate that draws it in the library.
 
-The grid view is wanted, confirmed rather than assumed, so it is milestone 5
+The grid view is wanted, confirmed rather than assumed, so it is milestone 4
 rather than an open question. This milestone is the artwork itself, which that
 view needs.
 
@@ -129,7 +105,7 @@ Done when: an album with embedded or sidecar art shows it, an album without one
 shows a placeholder rather than a gap; a rescan does not rebuild a cache
 entry that is still current.
 
-## 5. A grid of covers, toggled with the text view
+## 4. A grid of covers, toggled with the text view
 
 Confirmed as wanted: both views, with a toggle between them rather than one
 replacing the other. The text view in use today stays exactly as it is.
@@ -145,9 +121,9 @@ the choice remembered like the theme and the sort order already are.
 Done when: the toggle switches between the two views, each keeps the sort order
 the other was using; the choice survives a restart.
 
-Depends on: milestone 4, which is what a grid of covers has to draw.
+Depends on: milestone 3, which is what a grid of covers has to draw.
 
-## 6. Search the library
+## 5. Search the library
 
 The schema has five plain tables and no search of any kind. The README's
 stack table used to name FTS5; it no longer does, so this is a gap rather than
@@ -157,13 +133,13 @@ Needed: an FTS table fed as sources are saved, a search box, plus a filtered vie
 that leaves the sort order alone.
 
 Filtering by rating and by play count is wanted too. Those columns arrive with
-milestone 7, so the filter is built to take a condition rather than a phrase
+milestone 6, so the filter is built to take a condition rather than a phrase
 alone; it gains the second kind when there is something to read.
 
 Done when: typing part of an album, artist or track title narrows the library as
 you type; clearing the box restores it.
 
-## 7. Ratings and play counts
+## 6. Ratings and play counts
 
 Neither exists: no schema, no column, no code. The README's opening paragraph
 used to promise both as the reason Stellody keeps its own store; it now says
@@ -173,15 +149,13 @@ They are worth naming together because they share a decision: a play count means
 nothing until playback exists and something decides what counts as a play.
 
 Both are wanted, as is filtering by them later, so each is stored as a first
-class column rather than derived: milestone 6 filters on what
+class column rather than derived: milestone 5 filters on what
 this one records.
 
 Done when: a rating can be set and survives a restart, a completed play
 increments a count; neither ever reaches the music files.
 
-Depends on: milestone 1, for the play count half.
-
-## 8. Repeat one track
+## 7. Repeat one track
 
 Shuffle and repeat both shipped: shuffle takes a permutation of the album and
 keeps playing whatever is playing, repeat carries the end of the queue round to
@@ -195,9 +169,7 @@ piece of artwork, so it needs a second image before it needs any code.
 Done when: a track can be set to repeat on its own within a full queue, the
 switch shows which of the three states it is in; the choice survives a restart.
 
-Depends on: milestone 1.
-
-## 9. Gapless transitions
+## 8. Gapless transitions
 
 Not present. This is the hardest item here: it wants the next track decoding
 before the current one ends, plus a device that is not stopped and restarted
@@ -209,9 +181,7 @@ irritating than an honestly gapped one.
 Done when: two tracks that run together on the disc run together through
 Stellody; a test measures the seam rather than a listener judging it.
 
-Depends on: milestone 1.
-
-## 10. The equalizer
+## 9. The equalizer
 
 Entirely absent. Needs a decision before any code: either a fixed set of
 bands applied to the decoded buffer or nothing at all.
@@ -219,9 +189,7 @@ bands applied to the decoded buffer or nothing at all.
 Done when: the bands change what is heard, the setting survives a restart;
 switching it off costs nothing in the signal path.
 
-Depends on: milestone 1.
-
-## 11. macOS and Flatpak
+## 10. macOS and Flatpak
 
 Windows first, which is where it stands. macOS and Linux come later, built to
 the house pattern rather than invented here: `build_flatpak.sh` with
@@ -236,10 +204,7 @@ the packaging, plus an output that works where WASAPI is not.
 Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the Windows build is untouched by either.
 
-Depends on: milestone 1, since there is no point porting an engine nothing
-uses.
-
-## 12. Play every audio format, not only FLAC
+## 11. Play every audio format, not only FLAC
 
 Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
 reads FLAC stream info, a README calling it a FLAC player. A local library of
@@ -258,7 +223,7 @@ in two; the first half is far cheaper than it looks:
   WavPack, DSD. Each needs a decoder Stellody does not carry, which means
   either FFmpeg through a binding or Qt Multimedia.
 
-That second half asks the same question milestone 13 asks, so answer it once:
+That second half asks the same question milestone 12 asks, so answer it once:
 **one media backend, chosen for both**. Deciding it separately is how a player
 ends up with two decoders that disagree about what a track is.
 
@@ -275,7 +240,7 @@ Done when: an album in each of the formats in the first half scans, groups and
 plays; a format Stellody cannot decode is reported as unreadable rather than
 silently skipped.
 
-## 13. Play video files
+## 12. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -301,10 +266,10 @@ Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
-Depends on: milestones 1 and 2, since it is the same transport. Shares its
-backend decision with milestone 12.
+Depends on: milestone 1, since it is the same transport. Shares its
+backend decision with milestone 11.
 
-## 14. Accept the repairs the health report describes
+## 13. Accept the repairs the health report describes
 
 The report says what Stellody worked around. It cannot yet be told "yes, keep
 that", so the same 142 findings are recomputed and re-read on every start.
@@ -381,7 +346,7 @@ library shows the corrected values, both survive a restart and a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
-## 15. One loudness across albums
+## 14. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -427,8 +392,6 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-Depends on: milestone 1.
-
 ## Not planned, so that this is not revisited
 
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as
@@ -440,7 +403,7 @@ Depends on: milestone 1.
   browser does the asking, so Stellody still opens no connection of its own.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 14 records a correction in
+- **Repairing the files themselves.** Milestone 13 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **A second library root.** One folder, chosen once, rescanned incrementally.

@@ -14,16 +14,22 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
 from stellody.infrastructure import diary, instance, switch_reset
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.opening import open_store
-from stellody.infrastructure.paths import data_location, database_path
+from stellody.infrastructure.paths import (
+    data_location,
+    database_path,
+    shape_cache_dir,
+)
 from stellody.infrastructure.probe import FlacProbe
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
 from stellody.infrastructure.walker import FolderWalker
+from stellody.infrastructure.waveform import FileWaveforms
 from stellody.shared import resources
 from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
@@ -68,6 +74,7 @@ def build_window(
         loader=LoadLibrary(store),
         transport=Transport(WasapiPlayback()),
         settings=store,
+        shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
         leave=leave,
         note=note,
     )

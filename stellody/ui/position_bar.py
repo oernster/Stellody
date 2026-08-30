@@ -1,24 +1,24 @@
-"""Where the track has reached, plus a way to move within it.
+"""Where the track has reached, drawn across the track's own shape.
 
-A plain bar, deliberately. The plan wants position shown as a line crossing the
-track's own waveform rather than as a filling bar, which needs the track
-decoded ahead of playback and an envelope cached beside the artwork. This is
-the stepping stone to that: what it draws is a groove, what it does is the
-thing the waveform will also have to do, so the transport wiring, the arithmetic
-from a click to a frame and the place in the keyboard order all survive the
-change. Only the painting is provisional.
+The amplitude is the point. A groove filling up says how far through a track
+playback is; a waveform says that AND what is coming, so the quiet passage
+ahead and the moment the piece opens out are both visible before they arrive.
 
-Clicking the groove moves there, rather than nudging a page at a time as Qt
-would by default: somebody clicking three quarters of the way along a track
-means three quarters of the way along, not one page further on.
+It is a slider underneath, which is deliberate: everything a listener does to
+it, clicking anywhere along it, dragging, walking it with the arrow keys, is
+behaviour Qt already has right and a control the keyboard ring already knows
+about. What is replaced is the painting.
+
+A track whose file has not been measured yet draws a flat line and behaves
+exactly as it did before. The shape arrives when the measurement does.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -29,6 +29,8 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.domain.playback import PlaybackPosition, clock_text
+from stellody.domain.waveform import Envelope
+from stellody.ui.theme import Mode, palette_for
 
 # The groove is addressed in thousandths rather than in frames. A frame count
 # overruns the range Qt gives a slider on a long track at a high sample rate,
@@ -36,15 +38,81 @@ from stellody.domain.playback import PlaybackPosition, clock_text
 GROOVE_STEPS = 1000
 NO_POSITION_TEXT = "0:00 / 0:00"
 
+# The shape is drawn as one column per pixel, mirrored about the middle.
+MINIMUM_COLUMN_HEIGHT = 1.0
+PLAYHEAD_WIDTH = 2
+# A shape drawn at its measured height would be a thin line for a quiet track
+# and full height for a loud one, which says more about mastering than about
+# the music. Each track is drawn against its own loudest point instead.
+QUIETEST_USEFUL_PEAK = 0.05
+FLAT_LINE_HEIGHT = 0.06
+
 
 class _SeekSlider(QSlider):
-    """A slider that goes where it is clicked."""
+    """A slider that goes where it is clicked, drawn as a waveform."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(Qt.Orientation.Horizontal, parent)
         self.setRange(0, GROOVE_STEPS)
         self.setSingleStep(GROOVE_STEPS // 100)
         self.setPageStep(GROOVE_STEPS // 20)
+        self._shape: Envelope | None = None
+        self._mode = Mode.DARK
+
+    def show_shape(self, shape: Envelope | None) -> None:
+        """Draw this shape from now on; a flat line when there is none."""
+        self._shape = shape
+        self.update()
+
+    def show_appearance(self, mode: Mode) -> None:
+        """Follow the appearance the rest of the window is wearing."""
+        self._mode = mode
+        self.update()
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        """The track's shape, with what has been played marked out in it."""
+        palette = palette_for(self._mode)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        middle = self.height() / 2
+        played_to = self._played_columns()
+        behind = QColor(palette.accent)
+        ahead = QColor(palette.text_dim)
+        for column, level in enumerate(self._columns()):
+            reach = max(MINIMUM_COLUMN_HEIGHT, level * middle)
+            painter.fillRect(
+                QRectF(column, middle - reach, 1.0, reach * 2),
+                behind if column < played_to else ahead,
+            )
+        painter.fillRect(
+            QRectF(played_to, 0.0, PLAYHEAD_WIDTH, float(self.height())),
+            QColor(palette.text),
+        )
+        painter.end()
+
+    def _played_columns(self) -> float:
+        """How far along the width the playhead sits."""
+        span = self.maximum() - self.minimum()
+        if span <= 0:
+            return 0.0
+        return self.width() * (self.value() - self.minimum()) / span
+
+    def _columns(self) -> tuple[float, ...]:
+        """One height per pixel of width, on a scale where 1.0 is full height.
+
+        Drawn against the track's own loudest point rather than against full
+        scale, so a quietly mastered record is a shape rather than a smear
+        along the middle. A track with nothing in it (or one not yet measured)
+        draws a flat line: something has to be there to click on.
+        """
+        width = max(1, self.width())
+        if self._shape is None:
+            return (FLAT_LINE_HEIGHT,) * width
+        loudest = max(QUIETEST_USEFUL_PEAK, self._shape.loudest)
+        return tuple(
+            max(FLAT_LINE_HEIGHT, level / loudest)
+            for level in self._shape.scaled_to(width)
+        )
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Jump to the point under the pointer, then let the drag carry on."""
@@ -101,6 +169,14 @@ class PositionBar(QWidget):
         row.addWidget(self.clock)
         self.slider.sliderMoved.connect(self._moved)
         self.slider.sliderReleased.connect(self._released)
+
+    def show_shape(self, shape: Envelope | None) -> None:
+        """Draw this track's shape; a flat line while there is none."""
+        self.slider.show_shape(shape)
+
+    def show_appearance(self, mode: Mode) -> None:
+        """Follow the appearance the rest of the window is wearing."""
+        self.slider.show_appearance(mode)
 
     def show_position(self, position: PlaybackPosition | None) -> None:
         """Draw where playback has reached; empty when there is nothing to draw.

@@ -19,6 +19,7 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
+from stellody.domain.waveform import Envelope
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,6 +202,35 @@ class ClosableStore(LibraryStore, Protocol):
 
     def close(self) -> None:
         """Release the handle."""
+        ...
+
+
+class WaveformPort(Protocol):
+    """Measures how loud a file is all the way along, then remembers it.
+
+    Measuring is a decode of the whole file, so the two questions are kept
+    apart: one is instant and may know nothing, the other is slow and settles
+    it. Nothing here raises for a file that cannot be read; a picture that
+    cannot be drawn is not a reason to stop a track playing.
+    """
+
+    def remembered(self, path: str) -> Envelope | None:
+        """The shape of this file if it has been measured; None otherwise."""
+        ...
+
+    def measure(self, path: str) -> Envelope | None:
+        """The shape of this file, measuring it if need be; None if it cannot be.
+
+        Slow. Belongs off the interface thread.
+        """
+        ...
+
+    def frames_in(self, path: str) -> int | None:
+        """How many frames the whole file holds; None when it cannot be read.
+
+        A track takes its share of a file's shape by frame, so the share
+        cannot be worked out without this.
+        """
         ...
 
 
