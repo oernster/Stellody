@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from stellody.application.artwork import AlbumArt
 from stellody.application.ports import SettingsStore
 from stellody.application.scan import (
     LoadLibrary,
@@ -28,6 +29,7 @@ from stellody.domain.track import Track
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.bottom_tray import BottomTray
+from stellody.ui.covering import Covering
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.leaving import Leaving
@@ -78,7 +80,7 @@ def _trail() -> str:
     )
 
 
-class MainWindow(Scanning, Playing, Leaving, QMainWindow):
+class MainWindow(Scanning, Playing, Leaving, Covering, QMainWindow):
     """Stellody's window: a library, a menu bar and a status line."""
 
     def __init__(
@@ -88,6 +90,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         transport: Transport,
         settings: SettingsStore,
         shapes: TrackShapes | None = None,
+        art: AlbumArt | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -121,6 +124,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         if icon is not None:
             self.setWindowIcon(icon)
         self._tree = build_tree(self, self._model)
+        self.start_covering(art)
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
@@ -305,6 +309,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         self._dark_action.setChecked(mode is Mode.DARK)
         self._tray.set_mode(mode)
         self._position_bar.show_appearance(mode)
+        self.show_cover_appearance(mode)
 
     @Slot()
     def toggle_order(self) -> None:

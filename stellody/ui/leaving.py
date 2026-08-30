@@ -73,6 +73,8 @@ class Leaving:
         if self._shape_runner is not None:
             self._note("letting go of any measurement in flight")
             self._shape_runner.stop()
+        self._note("letting go of any cover being read")
+        self.stop_covering()
         self._note("scan runner done; accepting the close")
         event.accept()
         self._note("calling the departure")

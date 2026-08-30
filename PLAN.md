@@ -90,20 +90,40 @@ Depends on: milestone 1.
 
 ## 3. Show the cover art
 
-The scan already records one image path per source, chosen by the ripper-name
-ranking in the walker, so the data is in the store. Nothing loads it.
+All of it is built. The scan records one image path per FOLDER, chosen by the
+ripper-name ranking in the walk, which is the right unit since sibling disc
+folders merge into one album; candidates are gathered across every folder an
+album spans.
 
-Needed: a cache under the data directory keyed by the album identity handle that
-`stellody/domain/identity.py` already provides, a decode step off the interface
-thread, plus a delegate that draws it in the library.
+What the earlier reading of this milestone missed is that the store does not
+hold enough on its own. Measured over the reference library: 395 folders of 510
+carry a file beside the music, 114 carry only a picture inside the audio and
+one carries nothing at all. For those 114 the store holds a flag saying a
+picture is in there and no bytes, so drawing from the recorded path alone would
+have left 22 percent of the library showing a placeholder with a good cover
+sitting inside the file. Extraction was always in the closing condition below;
+it was the description above it that was short.
+
+A cover is read on a thread of its own, the first time a row asks for one
+rather than up front, then kept scaled against the album's identity so a folder
+rename reuses it. What it was read from is recorded beside it and checked
+against that file's size and modification time, so a cover replaced on disk is
+read again while a rescan that changed nothing reuses what is there.
+
+What tests can pin is pinned: a cover already read is served without going back
+to disk, a source that changed is read again, an album with nothing anywhere
+keeps its placeholder. Both real paths were run against the reference library
+outside the suite, a file beside the music and a picture inside one, each
+coming back as a decodable image. What is left needs eyes, since a test cannot
+say whether a wall of sleeves looks right.
 
 The grid view is wanted, confirmed rather than assumed, so it is milestone 4
 rather than an open question. This milestone is the artwork itself, which that
 view needs.
 
-Done when: an album with embedded or sidecar art shows it, an album without one
-shows a placeholder rather than a gap; a rescan does not rebuild a cache
-entry that is still current.
+Done when: an album with embedded or sidecar art is seen showing it and an
+album without one is seen keeping its placeholder rather than leaving a gap.
+That is the owner's observation to make, not a test's.
 
 ## 4. A grid of covers, toggled with the text view
 

@@ -306,3 +306,41 @@ class PlaybackPort(Protocol):
     def close(self) -> None:
         """Release every resource. The port is unusable afterwards."""
         ...
+
+
+class EmbeddedPicturePort(Protocol):
+    """Reads a cover picture out of an audio file; nothing else.
+
+    Kept apart from the store that keeps covers so that the module opening
+    music files and the module writing to disk are never the same module.
+    """
+
+    def picture(self, path: str) -> bytes | None:
+        """The cover embedded in this file; None when it holds none."""
+        ...
+
+
+class ArtworkPort(Protocol):
+    """Reads an album's cover, then remembers it at the size it is drawn.
+
+    Reading decodes an image; an embedded cover means opening the audio
+    file to reach it, so the two questions are kept apart exactly as they are
+    for a waveform: one is instant and may know nothing, the other is slow and
+    settles it. Nothing here raises for a file that cannot be read; an album
+    without a cover shows a placeholder rather than an error.
+    """
+
+    def remembered(self, key: str) -> bytes | None:
+        """The cover kept for this album; None when none is kept."""
+        ...
+
+    def read(
+        self, key: str, sidecars: tuple[str, ...], audio: tuple[str, ...]
+    ) -> bytes | None:
+        """The cover from the first candidate that yields one; None if none does.
+
+        Files beside the music are tried before pictures inside the audio,
+        since reading a file is cheaper than opening a decoder. Slow. It
+        belongs off the interface thread.
+        """
+        ...

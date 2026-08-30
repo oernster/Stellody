@@ -13,13 +13,17 @@ from collections.abc import Callable
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+from stellody.application.artwork import AlbumArt
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
 from stellody.infrastructure import diary, instance, switch_reset
+from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
+from stellody.infrastructure.covers import FlacPictures
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.paths import (
+    art_cache_dir,
     data_location,
     database_path,
     shape_cache_dir,
@@ -75,6 +79,7 @@ def build_window(
         transport=Transport(WasapiPlayback()),
         settings=store,
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
+        art=AlbumArt(FileArtwork(art_cache_dir(), FlacPictures())),
         leave=leave,
         note=note,
     )

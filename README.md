@@ -28,6 +28,9 @@ not going to.
   file per album with a sidecar cue sheet, multi-disc sets split across
   sibling folders, compilations and tracks with several credited artists.
 - Shows the library as albums, discs and tracks, ordered either way.
+- Shows each album's cover beside it, taken from a file next to the music or
+  from the picture inside the audio itself, then kept so it is read once. An
+  album with neither keeps a plain square rather than a gap.
 - Plays a track chosen by double click, by Return or from the right click
   menu, then works through the album on its own.
 - Offers previous, play and pause, stop and next, both on the toolbar across

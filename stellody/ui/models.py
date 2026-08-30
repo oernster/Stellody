@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Signal
+from PySide6.QtGui import QPixmap
 
+from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album, Disc
 from stellody.domain.track import Track
 
@@ -151,18 +153,68 @@ def _text(node: _Node, column: Column) -> str:
 class AlbumTreeModel(QAbstractItemModel):
     """Presents a scanned library as albums, discs and tracks."""
 
+    cover_wanted = Signal(object)
+
     def __init__(self, parent: object | None = None) -> None:
         super().__init__(parent)
         self._albums: tuple[Album, ...] = ()
         self._roots: list[_Node] = []
         self._descending = False
+        self._art: dict[str, AlbumArtSources] = {}
+        self._covers: dict[str, QPixmap | None] = {}
+        self._placeholder: QPixmap | None = None
 
     def set_albums(self, albums: tuple[Album, ...]) -> None:
         """Replace the whole library."""
         self.beginResetModel()
         self._albums = albums
+        self._covers.clear()
         self._rebuild()
         self.endResetModel()
+
+    def set_art(self, art: tuple[AlbumArtSources, ...]) -> None:
+        """Say where each album's cover might be found."""
+        self._art = {sources.key: sources for sources in art}
+
+    def set_placeholder(self, placeholder: QPixmap | None) -> None:
+        """The square drawn for an album whose cover is not there yet."""
+        self._placeholder = placeholder
+        self._redraw_covers()
+
+    def set_cover(self, key: str, cover: QPixmap | None) -> None:
+        """Take one album's cover, else the news that it has none."""
+        self._covers[key] = cover
+        for node in self._roots:
+            if node.album is not None and node.album.identity.art_key == key:
+                self._redraw(node)
+
+    def _redraw_covers(self) -> None:
+        """Ask the view to draw every album's first column again."""
+        for node in self._roots:
+            self._redraw(node)
+
+    def _redraw(self, node: _Node) -> None:
+        """Ask the view to draw one album's first column again."""
+        where = self.index(node.row, Column.TITLE, QModelIndex())
+        self.dataChanged.emit(where, where, [Qt.ItemDataRole.DecorationRole])
+
+    def _cover(self, node: _Node) -> QPixmap | None:
+        """An album's cover, asking for it the first time it is wanted.
+
+        Asked for from here rather than up front, so a library of a few
+        hundred albums does not read a few hundred covers to draw a dozen
+        rows. Reading happens on another thread; the placeholder stands in
+        until an answer arrives.
+        """
+        if node.album is None:
+            return None
+        key = node.album.identity.art_key
+        if key in self._covers:
+            return self._covers[key] or self._placeholder
+        sources = self._art.get(key)
+        if sources is not None:
+            self.cover_wanted.emit(sources)
+        return self._placeholder
 
     def set_descending(self, descending: bool) -> None:
         """Order albums Z to A rather than A to Z."""
@@ -262,6 +314,12 @@ class AlbumTreeModel(QAbstractItemModel):
             return None
         if role == Qt.ItemDataRole.DisplayRole:
             return _text(node, Column(index.column()))
+        if (
+            role == Qt.ItemDataRole.DecorationRole
+            and index.column() == Column.TITLE
+            and node.album is not None
+        ):
+            return self._cover(node)
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (
             Column.LENGTH,
         ):

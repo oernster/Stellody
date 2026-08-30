@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from stellody.application.artwork import AlbumArtSources, sources_for
 from stellody.application.ports import (
     AudioProperties,
     FolderListing,
@@ -69,6 +70,7 @@ class LibraryView:
 
     albums: tuple[Album, ...] = ()
     issues: tuple[LibraryIssue, ...] = ()
+    art: tuple[AlbumArtSources, ...] = ()
 
     @property
     def track_count(self) -> int:
@@ -82,6 +84,7 @@ class ScanReport:
 
     albums: tuple[Album, ...] = ()
     issues: tuple[LibraryIssue, ...] = ()
+    art: tuple[AlbumArtSources, ...] = ()
     folders_probed: int = 0
     folders_reused: int = 0
     files_probed: int = 0
@@ -116,6 +119,7 @@ class LoadLibrary:
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)
             + issues,
+            art=sources_for(albums, records),
         )
 
 
@@ -196,6 +200,7 @@ class ScanLibrary:
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)
             + issues,
+            art=sources_for(albums, tuple(records)),
             folders_probed=probed_folders,
             folders_reused=reused_folders,
             files_probed=sum(len(record.stats) for record in records),
