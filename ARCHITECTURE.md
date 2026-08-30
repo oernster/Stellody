@@ -127,15 +127,17 @@ real damage in the reference library:
 
 Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
-own choosing. That view is read-only today. Two repair controls are drawn and both are
-disabled: one in the top tray beside the rescan whose findings it would answer,
-one pinned at the top of the health dialog. Their tooltip is stated once in
-`stellody/ui/toolbar.py` and read from there by the dialog, so the two cannot
-come to say different things about the same unbuilt feature. They are disabled
-because the corrections are computed on every load while there is nowhere yet
-to keep one that has been accepted. `PLAN.md` milestone 13 is that work. `stellody/domain/ordering.py` holds the track rules,
-`stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
-the reporting vocabulary.
+own choosing. That view is read-only today. Two repair controls are drawn and
+both are disabled: one in the top tray beside the rescan whose findings it
+would answer, one pinned at the top of the health dialog. Their tooltip is
+stated once in `stellody/ui/toolbar.py` and read from there by the dialog, so
+the two cannot come to say different things about the same unbuilt feature.
+They are disabled because the corrections are computed on every load while
+there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 13
+is that work.
+
+`stellody/domain/ordering.py` holds the track rules, `stellody/domain/grouping.py`
+the album rules and `stellody/domain/health.py` the reporting vocabulary.
 
 ## Scanning
 
@@ -173,7 +175,7 @@ directories plus macOS AppleDouble stubs; nothing else.
 | A row states its own decoration size | A `QPixmap` in `DecorationRole` sizes the row itself and a view's icon size is never consulted for it. Measured here: a 40 pixel icon size on the tree still gave a 166 pixel album row. `RowCover` states `option.decorationSize` in the delegate instead, which takes it to 46. Only a row carrying a picture is touched, so a track stays the height of the line of text it is. |
 | A shape is drawn as it is read, not when the reading finishes | Reading a file through is the only way to know its loudest sample in each bucket, so the wait cannot be avoided; it can be watched instead. The reader offers the shape so far every five seconds of the music, the bar draws it and the picture builds from the left. Measured cold: an ordinary 28 megabyte track put its first picture up at 0.02 seconds and finished at 0.49; a 272 megabyte album FLAC put one up at 0.01 and finished at 8.17. Only the finished measurement is kept, since a part written down would be wrong on every redraw afterwards without ever looking wrong enough to notice. A part and a finish are separate signals: a runner that could not tell them apart let go of its thread on the first part while the reading carried on behind it. |
 | Folding is done by numpy over blocks, not by walking frames | The fold used to step through every frame in Python to find which bucket it belonged to. Measured, that was most of the time: a 60 megabyte track folded in 3.2 seconds a frame at a time and 0.84 vectorised, while a 390 megabyte album FLAC went from 21.8 seconds to 5.3, bit for bit the same answer. |
-| A measurement is given up on, never waited out | Measured on the reference library, reading a per-track FLAC through takes 3.5 seconds and a whole album FLAC of 390 megabytes takes 22.5; a measurement already kept comes back in 0.6 milliseconds. The bar follows the highlight, so a step through the library replaces a measurement that is very likely still decoding. Asking its thread to quit does not touch a decode, so letting one go used to block the interface thread for the full two second wait: measured at 2.00 seconds a step. The check is therefore handed down to the reader, which gives up at the next block it reads and keeps nothing; letting go never waits. Measured after: 0.2 milliseconds a step, with a shutdown mid-decode in 0.01 seconds. |
+| A measurement is given up on, never waited out | Reading a file through takes 0.49 seconds for an ordinary track and 8.17 for a whole album FLAC, measured cold; a measurement already kept comes back in 0.6 milliseconds. The bar follows the highlight, so a step through the library replaces a measurement that is very likely still decoding. Asking its thread to quit does not touch a decode, so letting one go used to block the interface thread for the full two second wait: measured at 2.00 seconds a step. The check is therefore handed down to the reader, which gives up at the next block it reads and keeps nothing; letting go never waits. Measured after: 0.2 milliseconds a step, with a shutdown mid-decode in 0.01 seconds. |
 | The application keeps an account of its own appearances | A window arriving unbidden cannot be traced after the fact: whatever caused it has finished. `stellody/infrastructure/diary.py` records every show with the frames that led to it, every restore with the door that opened, then each step of a shutdown. It found two faults that reading the source had not. |
 | Artwork is local first, with a remote chooser somebody opens | Exactly one album in the reference library lacks local art, so an automatic lookup would buy one cover at the price of the local-first guarantee. A chooser keeps that guarantee for anyone who never opens it. It has to be a chooser rather than a fetch because no file in the library carries a MusicBrainz identifier, so a search has nothing exact to match on and could attach the wrong cover without knowing it had. |
 | A chosen cover is kept apart from a read one | A picture somebody chose has no file beside the music to be checked against, so its record carries a chosen marker instead of a size and a modification time. It is therefore never invalidated by a rescan and is preferred to whatever the folder holds, which is the whole point of having gone looking. |

@@ -30,11 +30,13 @@ rather than against the last thing written.
 What this plan counts as the release that finishes the job is the position
 display: the corrected position of milestone 1, then the amplitude monitor of
 milestone 2 that draws it against the music. Both are now built and gate
-green; what neither has had is the owner's own observation in the built
+green; the cover chooser of milestone 4 is built and gate green beside them.
+What none of the three has had is the owner's own observation in the built
 application, which is what each closing condition asks for. The grid of covers
-has had that observation and is gone from this file. Version 1.0 is a separate readiness call for the owner to
-make; nothing below is sized against it. Cover art, search, ratings and the
-rest come later, the wider formats and video among them.
+has had that observation and is gone from this file. Version 1.0 is a separate
+readiness call for the owner to make; nothing below is sized against it.
+Search, ratings and the rest come later, the wider formats and video among
+them.
 
 Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
@@ -93,14 +95,15 @@ FLAC puts one up at 0.01 and finishes at 8.17.
 
 What tests can pin is pinned: a track played twice does not decode twice; a
 shape read back after a restart is the shape that was measured; the row
-stopped on is the one measured; a loaded track is measured without waiting. What is left
-needs eyes, since a test cannot watch a line move against music it cannot
-hear, nor judge whether a first shape arrives quickly enough to feel immediate.
+stopped on is the one measured; a loaded track is measured without waiting.
+What is left needs eyes, since a test cannot watch a line move against music it
+cannot hear, nor judge whether a first shape arrives quickly enough to feel
+immediate.
 
-Done when: playing a track draws its shape immediately from the cache or
-within a second or two of starting without it, then the line is watched
-crossing the shape in time with the music. That is the owner's observation to
-make, not a test's.
+Done when: playing a track draws its shape at once from the cache, else starts
+drawing it immediately and fills it in from the left as the file is read, then
+the line is watched crossing the shape in time with the music. That is the
+owner's observation to make, not a test's.
 
 Depends on: milestone 1.
 
