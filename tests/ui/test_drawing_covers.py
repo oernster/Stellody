@@ -15,7 +15,12 @@ from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
-from stellody.ui.covering import GRID_COVER_PX, cover_pixmap, placeholder_for
+from stellody.ui.covering import (
+    GRID_COVER_PX,
+    CoverSize,
+    cover_pixmap,
+    placeholder_for,
+)
 from stellody.ui.models import AlbumTreeModel, Column
 from stellody.ui.theme import Mode
 
@@ -67,10 +72,11 @@ def _decoration(model: AlbumTreeModel):
 
 
 class TestStandingIn:
-    def test_a_placeholder_is_a_square_of_the_row_size(
+    def test_a_placeholder_is_drawn_at_the_largest_size_on_offer(
         self, application: QApplication
     ) -> None:
-        assert placeholder_for(Mode.DARK).width() == GRID_COVER_PX
+        """Drawn once and scaled down, so a grown grid never shows it blurred."""
+        assert placeholder_for(Mode.DARK).width() == int(CoverSize.EXTRA_LARGE)
 
     def test_each_appearance_gets_its_own_placeholder(
         self, application: QApplication
@@ -83,19 +89,19 @@ class TestStandingIn:
     def test_a_cover_that_was_read_becomes_something_drawable(
         self, application: QApplication
     ) -> None:
-        drawn = cover_pixmap(_png())
+        drawn = cover_pixmap(_png(), GRID_COVER_PX)
         assert drawn is not None
         assert drawn.width() == GRID_COVER_PX
 
     def test_an_album_with_no_cover_has_nothing_to_draw(
         self, application: QApplication
     ) -> None:
-        assert cover_pixmap(None) is None
+        assert cover_pixmap(None, GRID_COVER_PX) is None
 
     def test_bytes_that_are_not_an_image_have_nothing_to_draw(
         self, application: QApplication
     ) -> None:
-        assert cover_pixmap(b"not an image at all") is None
+        assert cover_pixmap(b"not an image at all", GRID_COVER_PX) is None
 
 
 class TestAskingFromTheRow:
@@ -125,7 +131,7 @@ class TestAskingFromTheRow:
         album = _album()
         model = _model(album, application)
         model.set_placeholder(placeholder_for(Mode.DARK))
-        cover = cover_pixmap(_png())
+        cover = cover_pixmap(_png(), GRID_COVER_PX)
         model.set_cover(album.identity.art_key, cover)
         assert _decoration(model) is cover
 
@@ -157,7 +163,7 @@ class TestAskingFromTheRow:
         """A rescan can change what an album's cover is read from."""
         album = _album()
         model = _model(album, application)
-        model.set_cover(album.identity.art_key, cover_pixmap(_png()))
+        model.set_cover(album.identity.art_key, cover_pixmap(_png(), GRID_COVER_PX))
         model.set_albums((album,))
         asked: list[str] = []
         model.cover_wanted.connect(lambda sources: asked.append(sources.key))

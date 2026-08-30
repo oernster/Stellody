@@ -29,7 +29,7 @@ from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.covering import RowCover
 from stellody.ui.models import AlbumTreeModel, Column
-from stellody.ui.tiles import TILE_HEIGHT_PX, TILE_WIDTH_PX, AlbumTile
+from stellody.ui.tiles import AlbumTile, tile_size
 
 # The gap between tiles. A tile's own size is the delegate's, so the two
 # cannot drift apart when one of them is changed.
@@ -141,8 +141,19 @@ def build_grid(window: QMainWindow, model: AlbumTreeModel) -> QListView:
     grid.setMovement(QListView.Movement.Static)
     grid.setUniformItemSizes(True)
     grid.setItemDelegate(AlbumTile(grid))
-    grid.setGridSize(QSize(TILE_WIDTH_PX + GRID_GAP_PX, TILE_HEIGHT_PX + GRID_GAP_PX))
+    fit_grid(grid)
     return grid
+
+
+def fit_grid(grid: QListView) -> None:
+    """Space the grid for the size its delegate is drawing sleeves at.
+
+    Called again whenever that size changes: a view keeps the grid size it was
+    given, so growing the tiles without this overlaps them.
+    """
+    tile = tile_size(grid.itemDelegate().cover_px)
+    grid.setGridSize(QSize(tile.width() + GRID_GAP_PX, tile.height() + GRID_GAP_PX))
+    grid.doItemsLayout()
 
 
 def build_covers_page(window: QMainWindow, grid: QWidget, pane: QWidget) -> QWidget:

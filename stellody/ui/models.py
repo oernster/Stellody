@@ -15,6 +15,7 @@ from PySide6.QtGui import QPixmap
 from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album, Disc
 from stellody.domain.track import Track
+from stellody.ui.covering import GRID_COVER_PX
 
 MILLISECONDS_PER_SECOND = 1000
 SECONDS_PER_MINUTE = 60
@@ -163,6 +164,20 @@ class AlbumTreeModel(QAbstractItemModel):
         self._art: dict[str, AlbumArtSources] = {}
         self._covers: dict[str, QPixmap | None] = {}
         self._placeholder: QPixmap | None = None
+        self._cover_px = GRID_COVER_PX
+
+    @property
+    def cover_px(self) -> int:
+        """The size the covers held here were read at."""
+        return self._cover_px
+
+    def set_cover_px(self, size_px: int) -> None:
+        """Read covers at a new size, dropping what was read at the old one."""
+        if size_px == self._cover_px:
+            return
+        self._cover_px = size_px
+        self._covers.clear()
+        self._redraw_covers()
 
     def set_albums(self, albums: tuple[Album, ...]) -> None:
         """Replace the whole library."""

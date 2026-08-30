@@ -11,6 +11,8 @@ gap where every other row has a picture.
 
 from __future__ import annotations
 
+from enum import IntEnum
+
 from PySide6.QtCore import QSize, Qt, Slot
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QStyledItemDelegate
@@ -19,12 +21,37 @@ from stellody.application.artwork import AlbumArt, AlbumArtSources
 from stellody.ui.art_worker import ArtRunner
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
+
+class CoverSize(IntEnum):
+    """How large a sleeve is drawn in the grid, in pixels.
+
+    The value IS the size, so there is one number per choice rather than a
+    name and a table mapping it to a number. None of them passes the 512 the
+    store keeps a cover at, because scaling one up past what was kept invents
+    detail the file never held.
+    """
+
+    MEDIUM = 160
+    LARGE = 240
+    EXTRA_LARGE = 320
+
+
+COVER_SIZES = tuple(CoverSize)
+DEFAULT_COVER_SIZE = CoverSize.MEDIUM
 # One pixmap serves both views. It is kept at the size the grid draws it and
 # Qt scales it down for a row, so switching views costs no second reading.
-GRID_COVER_PX = 160
+# Changing the grid size therefore reads again, from Stellody's own store
+# rather than from the music, which is what keeps memory to the size chosen
+# instead of to the largest on offer.
+GRID_COVER_PX = int(DEFAULT_COVER_SIZE)
 # Big enough to tell one sleeve from another down a list, small enough that a
 # row stays a row.
 ROW_COVER_PX = 40
+
+
+def next_cover_size(size: CoverSize) -> CoverSize:
+    """The size a press would move to, wrapping round at the largest."""
+    return COVER_SIZES[(COVER_SIZES.index(size) + 1) % len(COVER_SIZES)]
 
 
 class RowCover(QStyledItemDelegate):
@@ -48,9 +75,14 @@ class RowCover(QStyledItemDelegate):
 
 
 def placeholder_for(mode: Mode) -> QPixmap:
-    """The square drawn where a cover has not arrived yet or is not there at all."""
+    """The square drawn where a cover has not arrived yet or is not there at all.
+
+    Drawn once at the largest size on offer and scaled down like any cover, so
+    changing the grid size does not have to redraw it and a grown grid never
+    shows a blurred square while it waits for the real ones.
+    """
     palette = palette_for(mode)
-    pixmap = QPixmap(GRID_COVER_PX, GRID_COVER_PX)
+    pixmap = QPixmap(int(CoverSize.EXTRA_LARGE), int(CoverSize.EXTRA_LARGE))
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -61,7 +93,7 @@ def placeholder_for(mode: Mode) -> QPixmap:
     return pixmap
 
 
-def cover_pixmap(cover: object) -> QPixmap | None:
+def cover_pixmap(cover: object, size_px: int) -> QPixmap | None:
     """A read cover as something drawable; None when there was none to read."""
     if not isinstance(cover, bytes):
         return None
@@ -69,8 +101,8 @@ def cover_pixmap(cover: object) -> QPixmap | None:
     if not pixmap.loadFromData(cover):
         return None
     return pixmap.scaled(
-        GRID_COVER_PX,
-        GRID_COVER_PX,
+        size_px,
+        size_px,
         Qt.AspectRatioMode.KeepAspectRatio,
         Qt.TransformationMode.SmoothTransformation,
     )
@@ -100,6 +132,19 @@ class Covering:
         """Redraw the placeholder in the appearance the window is wearing."""
         self._model.set_placeholder(placeholder_for(mode))
 
+    def show_cover_size(self, size: CoverSize) -> None:
+        """Draw the sleeves at this size, reading them again to suit it.
+
+        What was read is at the old size, so keeping it would either blur a
+        grown grid or hold more memory than the chosen size asks for. The
+        second read comes out of Stellody's own store rather than the music.
+        """
+        if size == self._model.cover_px:
+            return
+        if self._art_runner is not None:
+            self._art_runner.forget()
+        self._model.set_cover_px(int(size))
+
     def stop_covering(self) -> None:
         """Let go of the reading thread on the way out."""
         if self._art_runner is not None:
@@ -108,4 +153,4 @@ class Covering:
     @Slot(str, object)
     def _on_cover(self, key: str, cover: object) -> None:
         """Take one album's cover, else the news that it has none."""
-        self._model.set_cover(key, cover_pixmap(cover))
+        self._model.set_cover(key, cover_pixmap(cover, self._model.cover_px))

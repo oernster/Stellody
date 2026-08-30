@@ -47,6 +47,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.shared import resources
+from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon
 from stellody.ui.toolbar import BUTTON_PX, ICON_PX, TRAY_GAP_PX, TRAY_MARGIN_PX
 
@@ -74,6 +75,18 @@ SLIDER_MARGIN_PX = 10
 # Nothing reads album art off disk or off a music database yet.
 COVERS_TOOLTIP = "Switch to album art"
 LIST_TOOLTIP = "Switch to the list"
+# One picture per size, named against the size itself rather than by position,
+# so adding a fourth size cannot silently shift the other three.
+SIZE_ICONS = {
+    CoverSize.MEDIUM: resources.medium_grid_icon_path,
+    CoverSize.LARGE: resources.large_grid_icon_path,
+    CoverSize.EXTRA_LARGE: resources.extra_large_grid_icon_path,
+}
+SIZE_NAMES = {
+    CoverSize.MEDIUM: "medium",
+    CoverSize.LARGE: "large",
+    CoverSize.EXTRA_LARGE: "extra large",
+}
 # The same honesty as the view toggle. What the health report lists can be
 # worked out, since resolution already happens on load; nothing yet lets a
 # correction be accepted and kept, so there is nothing for this to do.
@@ -207,6 +220,7 @@ class BottomTray(QWidget):
         toggle_shuffle: Callable[[], None] = lambda: None,
         toggle_repeat: Callable[[], None] = lambda: None,
         toggle_view: Callable[[], None] = lambda: None,
+        toggle_cover_size: Callable[[], None] = lambda: None,
         open_donation: Callable[[], None] = lambda: None,
         repair_library: Callable[[], None] = lambda: None,
     ) -> None:
@@ -222,6 +236,9 @@ class BottomTray(QWidget):
         self.view_button = _small_button(
             self, resources.view_icon_path(), COVERS_TOOLTIP, toggle_view
         )
+        # Named for the size it would move to, like the view toggle beside it:
+        # a button naming what is already on show reads as a label.
+        self.size_button = _small_button(self, None, "", toggle_cover_size)
         self.repair_button = _small_button(
             self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
         )
@@ -237,6 +254,7 @@ class BottomTray(QWidget):
         row.setSpacing(TRAY_GAP_PX)
         row.addWidget(self.donate_button)
         row.addWidget(self.view_button)
+        row.addWidget(self.size_button)
         row.addWidget(self.repair_button)
         # The stretch splits the strip. What changes the library sits under
         # the library; the settings finish at the right edge under the
@@ -258,13 +276,25 @@ class BottomTray(QWidget):
         return (
             self.donate_button,
             self.view_button,
+            self.size_button,
             self.repair_button,
             *self.switch_stops(),
         )
 
     def set_showing_covers(self, covers: bool) -> None:
-        """Say what pressing the view toggle would do from here."""
+        """Say what pressing the view toggle would do from here.
+
+        The size button means nothing over the list, so it is disabled there
+        rather than left to do nothing: a dead stop is skipped by the ring and
+        shows no border, which is how this application says not now.
+        """
         self.view_button.setToolTip(LIST_TOOLTIP if covers else COVERS_TOOLTIP)
+        self.size_button.setEnabled(covers)
+
+    def set_next_cover_size(self, size: CoverSize) -> None:
+        """Show the size a press would move to; say it in the tooltip too."""
+        self.size_button.setIcon(plain_icon(SIZE_ICONS[size]()))
+        self.size_button.setToolTip(f"Show {SIZE_NAMES[size]} album art")
 
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""

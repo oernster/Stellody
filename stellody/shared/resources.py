@@ -29,6 +29,9 @@ NEXT_ICON = "jump-right.png"
 VOLUME_ICON = "volume.png"
 SHUFFLE_ICON = "shuffle.png"
 VIEW_ICON = "view.png"
+MEDIUM_GRID_ICON = "medium-grid.png"
+LARGE_GRID_ICON = "large-grid.png"
+EXTRA_LARGE_GRID_ICON = "extra-large-grid.png"
 DONATE_ICON = "donate.png"
 LIBRARY_HEALTH_ICON = "library-health.png"
 REPEAT_ICON = "repeat.png"
@@ -132,6 +135,21 @@ def shuffle_icon_path() -> pathlib.Path | None:
 def view_icon_path() -> pathlib.Path | None:
     """The artwork for switching between the list and album art."""
     return find_asset(VIEW_ICON)
+
+
+def medium_grid_icon_path() -> pathlib.Path | None:
+    """The artwork for moving the grid to medium sleeves."""
+    return find_asset(MEDIUM_GRID_ICON)
+
+
+def large_grid_icon_path() -> pathlib.Path | None:
+    """The artwork for moving the grid to large sleeves."""
+    return find_asset(LARGE_GRID_ICON)
+
+
+def extra_large_grid_icon_path() -> pathlib.Path | None:
+    """The artwork for moving the grid to extra large sleeves."""
+    return find_asset(EXTRA_LARGE_GRID_ICON)
 
 
 def donate_icon_path() -> pathlib.Path | None:

@@ -17,7 +17,7 @@ from PySide6.QtCore import QModelIndex, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
-from stellody.ui.covering import GRID_COVER_PX
+from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize
 from stellody.ui.models import Column
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
@@ -29,15 +29,20 @@ ARTIST_LINE_PX = 16
 OPEN_RING_PX = 2
 NO_ROW = -1
 
-TILE_WIDTH_PX = GRID_COVER_PX + 2 * TILE_PAD_PX
-TILE_HEIGHT_PX = (
-    GRID_COVER_PX
-    + 2 * TILE_PAD_PX
-    + TITLE_GAP_PX
-    + NAME_LINE_PX
-    + LINE_GAP_PX
-    + ARTIST_LINE_PX
-)
+NAMES_HEIGHT_PX = TITLE_GAP_PX + NAME_LINE_PX + LINE_GAP_PX + ARTIST_LINE_PX
+
+
+def tile_size(cover_px: int) -> QSize:
+    """A tile holding a sleeve that size with its two lines under it.
+
+    Derived rather than stated per size, so three grid sizes cannot drift into
+    three different amounts of room for the same two lines of text. The names
+    do not grow with the sleeve: a title is the same title at any size.
+    """
+    return QSize(
+        cover_px + 2 * TILE_PAD_PX,
+        cover_px + 2 * TILE_PAD_PX + NAMES_HEIGHT_PX,
+    )
 
 
 class AlbumTile(QStyledItemDelegate):
@@ -47,10 +52,20 @@ class AlbumTile(QStyledItemDelegate):
         super().__init__(parent)
         self._mode = Mode.DARK
         self._open_row = NO_ROW
+        self._cover_px = int(DEFAULT_COVER_SIZE)
 
     def show_appearance(self, mode: Mode) -> None:
         """Follow the appearance the rest of the window is wearing."""
         self._mode = mode
+
+    def show_cover_size(self, size: CoverSize) -> None:
+        """Draw the sleeves at this size, with the tiles to match."""
+        self._cover_px = int(size)
+
+    @property
+    def cover_px(self) -> int:
+        """The size a sleeve is drawn at here."""
+        return self._cover_px
 
     def show_open(self, row: int) -> None:
         """Ring the album whose pane is open; NO_ROW when none is."""
@@ -58,7 +73,7 @@ class AlbumTile(QStyledItemDelegate):
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         """Every tile the same size, whatever the names on it are."""
-        return QSize(TILE_WIDTH_PX, TILE_HEIGHT_PX)
+        return tile_size(self._cover_px)
 
     def paint(
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
@@ -88,13 +103,13 @@ class AlbumTile(QStyledItemDelegate):
         if not isinstance(cover, QPixmap) or cover.isNull():
             return
         drawn = cover.scaled(
-            GRID_COVER_PX,
-            GRID_COVER_PX,
+            self._cover_px,
+            self._cover_px,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
         left = rect.left() + (rect.width() - drawn.width()) // 2
-        top = rect.top() + TILE_PAD_PX + (GRID_COVER_PX - drawn.height()) // 2
+        top = rect.top() + TILE_PAD_PX + (self._cover_px - drawn.height()) // 2
         painter.drawPixmap(left, top, drawn)
 
     def _draw_names(
@@ -102,7 +117,7 @@ class AlbumTile(QStyledItemDelegate):
     ) -> None:
         """The title, then the artist under it, each cut to fit its tile."""
         width = rect.width() - 2 * TILE_PAD_PX
-        top = rect.top() + TILE_PAD_PX + GRID_COVER_PX + TITLE_GAP_PX
+        top = rect.top() + TILE_PAD_PX + self._cover_px + TITLE_GAP_PX
         for text, colour, height in (
             (index.data(Qt.ItemDataRole.DisplayRole), palette.text, NAME_LINE_PX),
             (

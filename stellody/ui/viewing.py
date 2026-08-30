@@ -14,9 +14,21 @@ from PySide6.QtCore import QModelIndex, Qt, Slot
 from PySide6.QtWidgets import QWidget
 
 from stellody.ui.album_pane import AlbumPane
-from stellody.ui.settings_keys import FALSE, SETTING_COVERS, SETTING_DESCENDING, TRUE
+from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize, next_cover_size
+from stellody.ui.settings_keys import (
+    FALSE,
+    SETTING_COVER_SIZE,
+    SETTING_COVERS,
+    SETTING_DESCENDING,
+    TRUE,
+)
 from stellody.ui.tiles import NO_ROW
-from stellody.ui.window_parts import build_covers_page, build_grid, build_library
+from stellody.ui.window_parts import (
+    build_covers_page,
+    build_grid,
+    build_library,
+    fit_grid,
+)
 
 DECORATION = Qt.ItemDataRole.DecorationRole
 
@@ -43,6 +55,7 @@ class Viewing:
             self.wire_transport_menu(column)
         self._grid.selectionModel().currentChanged.connect(self._on_album_picked)
         self._shown_album = None
+        self._cover_size = DEFAULT_COVER_SIZE
         self._library = build_library(
             self, self._tree, build_covers_page(self, self._grid, self._album_pane)
         )
@@ -68,7 +81,36 @@ class Viewing:
 
     def restore_view(self) -> None:
         """Start in the view last chosen, the list when none has been."""
+        self.restore_cover_size()
         self.show_covers(self._flag(SETTING_COVERS))
+
+    @Slot()
+    def toggle_cover_size(self) -> None:
+        """Step the sleeves to the next size up, round to the smallest."""
+        self.show_cover_size_choice(next_cover_size(self._cover_size))
+
+    def restore_cover_size(self) -> None:
+        """Start at the size last chosen, the middle one when none has been.
+
+        A stored value that is not one of the sizes on offer falls back to the
+        default rather than to whatever it says, since a grid drawn at a number
+        nobody chose is worse than a grid drawn at the size a first run uses.
+        """
+        stored = self._settings.get_setting(SETTING_COVER_SIZE, "")
+        try:
+            size = CoverSize(int(stored))
+        except ValueError:
+            size = DEFAULT_COVER_SIZE
+        self.show_cover_size_choice(size)
+
+    def show_cover_size_choice(self, size: CoverSize) -> None:
+        """Draw the sleeves at this size, show what is next and remember it."""
+        self._cover_size = size
+        self._tiles.show_cover_size(size)
+        fit_grid(self._grid)
+        self.show_cover_size(size)
+        self._bottom_tray.set_next_cover_size(next_cover_size(size))
+        self._settings.set_setting(SETTING_COVER_SIZE, str(int(size)))
 
     @Slot()
     def close_album(self) -> None:
