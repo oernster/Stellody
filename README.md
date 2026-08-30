@@ -40,13 +40,16 @@ not going to.
 - Shows each album's cover beside it, taken from a file next to the music or
   from the picture inside the audio itself, then kept so it is read once. An
   album with neither keeps a plain square rather than a gap.
-- Offers to look a cover up for an album whose own files carry none, from the
-  right click menu and only from there. The chooser shows every picture
-  MusicBrainz and the Cover Art Archive have for that album, each labelled with
-  the release it belongs to; it keeps whichever is picked. That picture then
-  outlives a rescan, since it has no file beside the music to be checked
-  against. It is one of the two things Stellody does that reach outside the
-  machine and it happens only when asked.
+- Offers to look a cover up for an album, from the right click menu and only
+  from there. It is meant for an album whose own files carry none; it is
+  offered for any album, so it will also replace one you would rather not
+  keep, since a chosen picture is preferred to whatever sits beside the music.
+  The chooser shows every picture MusicBrainz and the Cover Art Archive have
+  for that album, each labelled with the release it belongs to; it keeps
+  whichever is picked. That picture then outlives a restart and a rescan, since
+  it has no file beside the music to be checked against. It is one of the two
+  things Stellody does that reach outside the machine and it happens only when
+  asked.
 - Plays a track chosen by double click, by Return or from the right click
   menu, then works through the album on its own.
 - Offers previous, play and pause, stop and next, both on the toolbar across
