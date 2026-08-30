@@ -123,7 +123,54 @@ the other was using; the choice survives a restart.
 
 Depends on: milestone 3, which is what a grid of covers has to draw.
 
-## 5. Search the library
+## 5. Choose a cover when the local files carry none
+
+Milestone 3 draws what the files already hold. One album in the reference
+library holds nothing; a library ripped by a tool that writes neither a
+sidecar nor an embedded picture would hold nothing throughout. This is the way
+out of that, deliberately a person's hand rather than the application's
+guess.
+
+**Nothing happens without being asked.** Stellody opens no connection of its
+own. Right clicking an album offers to go looking; that gesture is the only
+thing that reaches outward, so a listener who never uses it runs an application
+that still touches nothing.
+
+**The user chooses, because the application cannot.** Measured across the
+reference library: not one file carries a MusicBrainz identifier, one carries a
+DISCID and four carry an ISRC. A lookup therefore has nothing exact to match
+on and falls back to searching by artist and title, which can find the wrong
+release without knowing that it has. Showing the candidates and letting
+somebody pick turns a silent defect into an ordinary choice.
+
+**What the chooser shows.** Every candidate the search returns, arranged as a
+grid of thumbnails, each labelled with its pixel dimensions so a scan can be
+told from a thumbnail. Several releases of one album may each carry several
+images, so the count is not small; the layout arranges itself rather than
+asking for a window size.
+
+**What applying one does.** The chosen image lands in Stellody's own store,
+keyed by album identity exactly as a local cover is, so it survives a restart,
+a rescan and a folder rename. It is never written into the music folder,
+sidecar or otherwise. The invariant that the library is read-only does not bend
+for artwork somebody asked for.
+
+The same chooser serves an album that already has art, since a listener may
+prefer a different cover to the one the ripper left.
+
+Needed: a search client carrying the identifying user agent and the rate limit
+the terms require, an image fetch, the chooser itself, plus a stored choice
+that resolution prefers over the local file. A lookup that fails says so and
+changes nothing.
+
+Done when: an album with no local art can be given one from the chooser and
+keeps it across a restart and a rescan; declining leaves the placeholder; no
+connection is opened until the chooser is, which a test proves the way the
+read-only guard does.
+
+Depends on: milestone 3, which is where a cover is drawn and cached.
+
+## 6. Search the library
 
 The schema has five plain tables and no search of any kind. The README's
 stack table used to name FTS5; it no longer does, so this is a gap rather than
@@ -133,13 +180,13 @@ Needed: an FTS table fed as sources are saved, a search box, plus a filtered vie
 that leaves the sort order alone.
 
 Filtering by rating and by play count is wanted too. Those columns arrive with
-milestone 6, so the filter is built to take a condition rather than a phrase
+milestone 7, so the filter is built to take a condition rather than a phrase
 alone; it gains the second kind when there is something to read.
 
 Done when: typing part of an album, artist or track title narrows the library as
 you type; clearing the box restores it.
 
-## 6. Ratings and play counts
+## 7. Ratings and play counts
 
 Neither exists: no schema, no column, no code. The README's opening paragraph
 used to promise both as the reason Stellody keeps its own store; it now says
@@ -149,13 +196,13 @@ They are worth naming together because they share a decision: a play count means
 nothing until playback exists and something decides what counts as a play.
 
 Both are wanted, as is filtering by them later, so each is stored as a first
-class column rather than derived: milestone 5 filters on what
+class column rather than derived: milestone 6 filters on what
 this one records.
 
 Done when: a rating can be set and survives a restart, a completed play
 increments a count; neither ever reaches the music files.
 
-## 7. Repeat one track
+## 8. Repeat one track
 
 Shuffle and repeat both shipped: shuffle takes a permutation of the album and
 keeps playing whatever is playing, repeat carries the end of the queue round to
@@ -169,7 +216,7 @@ piece of artwork, so it needs a second image before it needs any code.
 Done when: a track can be set to repeat on its own within a full queue, the
 switch shows which of the three states it is in; the choice survives a restart.
 
-## 8. Gapless transitions
+## 9. Gapless transitions
 
 Not present. This is the hardest item here: it wants the next track decoding
 before the current one ends, plus a device that is not stopped and restarted
@@ -181,7 +228,7 @@ irritating than an honestly gapped one.
 Done when: two tracks that run together on the disc run together through
 Stellody; a test measures the seam rather than a listener judging it.
 
-## 9. The equalizer
+## 10. The equalizer
 
 Entirely absent. Needs a decision before any code: either a fixed set of
 bands applied to the decoded buffer or nothing at all.
@@ -189,7 +236,7 @@ bands applied to the decoded buffer or nothing at all.
 Done when: the bands change what is heard, the setting survives a restart;
 switching it off costs nothing in the signal path.
 
-## 10. macOS and Flatpak
+## 11. macOS and Flatpak
 
 Windows first, which is where it stands. macOS and Linux come later, built to
 the house pattern rather than invented here: `build_flatpak.sh` with
@@ -204,7 +251,7 @@ the packaging, plus an output that works where WASAPI is not.
 Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the Windows build is untouched by either.
 
-## 11. Play every audio format, not only FLAC
+## 12. Play every audio format, not only FLAC
 
 Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
 reads FLAC stream info, a README calling it a FLAC player. A local library of
@@ -223,7 +270,7 @@ in two; the first half is far cheaper than it looks:
   WavPack, DSD. Each needs a decoder Stellody does not carry, which means
   either FFmpeg through a binding or Qt Multimedia.
 
-That second half asks the same question milestone 12 asks, so answer it once:
+That second half asks the same question milestone 13 asks, so answer it once:
 **one media backend, chosen for both**. Deciding it separately is how a player
 ends up with two decoders that disagree about what a track is.
 
@@ -240,7 +287,7 @@ Done when: an album in each of the formats in the first half scans, groups and
 plays; a format Stellody cannot decode is reported as unreadable rather than
 silently skipped.
 
-## 12. Play video files
+## 13. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -267,9 +314,9 @@ transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
 Depends on: milestone 1, since it is the same transport. Shares its
-backend decision with milestone 11.
+backend decision with milestone 12.
 
-## 13. Accept the repairs the health report describes
+## 14. Accept the repairs the health report describes
 
 The report says what Stellody worked around. It cannot yet be told "yes, keep
 that", so the same 142 findings are recomputed and re-read on every start.
@@ -346,7 +393,7 @@ library shows the corrected values, both survive a restart and a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
-## 14. One loudness across albums
+## 15. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -397,13 +444,14 @@ at exactly unity, with the same samples the file holds.
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as
   deliberate non-goals. The last of them is enforced by a structural test rather
   than by intention.
-- **Anything over the network.** No cover lookup, no scrobbling, no telemetry,
-  no update check. The absence is the feature. Handing the donation link to a
-  browser is not an exception to this: the address goes outward and the
-  browser does the asking, so Stellody still opens no connection of its own.
+- **Anything over the network that nobody asked for.** No scrobbling, no
+  telemetry, no update check. Stellody opens no connection of its own; the
+  cover chooser in milestone 5 is the single outward reach and it happens only
+  when a listener opens it. Handing the donation link to a browser is not an
+  exception either: the address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 13 records a correction in
+- **Repairing the files themselves.** Milestone 14 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **A second library root.** One folder, chosen once, rescanned incrementally.

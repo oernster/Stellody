@@ -120,7 +120,7 @@ Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
 own choosing. That view is read-only today: it carries a repair control, drawn
 and disabled, because the corrections are computed on every load but there is
-nowhere yet to keep one that has been accepted. `PLAN.md` milestone 13 is that
+nowhere yet to keep one that has been accepted. `PLAN.md` milestone 14 is that
 work. `stellody/domain/ordering.py` holds the track rules,
 `stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
 the reporting vocabulary.
@@ -166,7 +166,7 @@ taken twice; `PLAN.md` holds the work itself.
 |---|---|
 | A hand-rolled biquad cascade rather than scipy | The equalizer will be pure arithmetic, so it belongs in the domain and tests without an audio device. scipy would add tens of megabytes to the packaged build for one function. |
 | Artwork keyed by album identity, not by path | A rescan after a folder rename will reuse the cached image instead of reading it again. The scan already records where each folder's art sits; nothing loads it yet. |
-| Artwork is read locally only | Exactly one album in the reference library lacks local art, so the network buys nothing and costs the local-first guarantee. |
+| Artwork is local first, with a remote chooser somebody opens | Exactly one album in the reference library lacks local art, so an automatic lookup would buy one cover at the price of the local-first guarantee. A chooser keeps that guarantee for anyone who never opens it. It has to be a chooser rather than a fetch because no file in the library carries a MusicBrainz identifier, so a search has nothing exact to match on and could attach the wrong cover without knowing it had. |
 
 ## Coverage
 

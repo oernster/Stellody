@@ -14,7 +14,7 @@ played properly; someone who would rather have a small player that works than a
 large one that does not.
 
 Stellody reads FLAC and nothing else today, so a library of MP3, M4A or WMA
-scans to nothing. `PLAN.md` milestone 11 is the work that widens it.
+scans to nothing. `PLAN.md` milestone 12 is the work that widens it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is
