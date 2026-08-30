@@ -82,6 +82,7 @@ def build(
     player: RecordingPlayer,
     leave=None,
     chooser=None,
+    shapes=None,
 ) -> MainWindow:
     """A real window over a recording player, holding one album.
 
@@ -100,6 +101,7 @@ def build(
         settings=store,
         leave=leave,
         chooser=chooser,
+        shapes=shapes,
     )
     made._model.set_albums((album(),))
     return made

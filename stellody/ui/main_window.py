@@ -49,6 +49,7 @@ from stellody.ui.settings_keys import (
     TRUE,
 )
 from stellody.ui.shape_worker import ShapeRunner
+from stellody.ui.showing_shapes import ShowingShapes
 from stellody.ui.toolbar import LibraryTray
 from stellody.ui.transport_menu import TransportMenu
 from stellody.ui.viewing import Viewing
@@ -92,6 +93,7 @@ class MainWindow(
     Playing,
     TransportMenu,
     Choosing,
+    ShowingShapes,
     Geometry,
     Leaving,
     Covering,
@@ -145,6 +147,7 @@ class MainWindow(
         self._tree = build_tree(self, self._model)
         self.start_covering(art)
         self.start_choosing(chooser)
+        self.start_shapes()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,

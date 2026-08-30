@@ -60,7 +60,10 @@ not going to.
   rather than the track, scattering it afresh each time round when shuffle is
   on.
 - Draws the track's own waveform along the bottom, with a line marking where
-  playback has reached and the time either side of it. Clicking anywhere along
+  playback has reached and the time either side of it. A track that is merely
+  highlighted draws its shape too, so you can see what a track looks like
+  before deciding to play it; what is playing takes the bar back the moment
+  there is something playing. Clicking anywhere along
   it moves there. The figure is corrected for the buffer the engine runs ahead
   by, so it follows what is audible rather than what has been decoded. A file's
   shape is measured once, kept and shared by every track a cue sheet album cuts

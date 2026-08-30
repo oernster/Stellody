@@ -202,36 +202,7 @@ class Playing:
         """Move on at the end of a track; keep the buttons and the bar honest."""
         self._drive(self._transport.advance_if_finished)
         self._position_bar.show_position(self._transport.position)
-        self._follow_shape()
-
-    def _follow_shape(self) -> None:
-        """Draw the shape of whatever is loaded, measuring it when it is new.
-
-        The kept measurement is asked for first and drawn at once when it is
-        there, which is the ordinary case for anything played before. Only a
-        file nobody has measured costs a decode; that happens on a thread
-        while the track plays.
-        """
-        if self._shape_runner is None:
-            return
-        track = self._transport.current
-        source = None if track is None else track.source
-        if source == self._shape_shown:
-            return
-        self._shape_shown = source
-        if source is None:
-            self._position_bar.show_shape(None)
-            return
-        remembered = self._shapes.remembered(source) if self._shapes else None
-        self._position_bar.show_shape(remembered)
-        if remembered is None:
-            self._shape_runner.measure(source)
-
-    @Slot(object, object)
-    def _on_shape(self, source, shape) -> None:
-        """Draw a measurement that has just arrived, if it is still wanted."""
-        if source == self._shape_shown:
-            self._position_bar.show_shape(shape)
+        self.follow_shape()
 
     @Slot(int)
     def seek_to(self, frame: int) -> None:

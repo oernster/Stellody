@@ -77,8 +77,16 @@ track to a frame, the seek behind it, its place in the keyboard order and the
 rule that a poll never takes the handle from somebody holding it. What this
 milestone replaced is the painting.
 
+The bar no longer waits for a press to have something to draw. With nothing
+loaded it follows the highlight, so a track shows its shape while somebody is
+deciding whether to play it; what is loaded takes the bar back, since the
+playhead belongs to that track. A highlight is left to settle before anything
+is measured, so stepping down a list does not set a decode going for every row
+passed on the way.
+
 What tests can pin is pinned: a track played twice does not decode twice; a
-shape read back after a restart is the shape that was measured. What is left
+shape read back after a restart is the shape that was measured; the row
+stopped on is the one measured; a loaded track is measured without waiting. What is left
 needs eyes, since a test cannot watch a line move against music it cannot
 hear, nor judge whether a first shape arrives quickly enough to feel immediate.
 
