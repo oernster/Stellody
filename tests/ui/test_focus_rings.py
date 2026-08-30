@@ -121,9 +121,9 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     buttons = [w for w in order if isinstance(w, QPushButton)]
     trees = [w for w in order if isinstance(w, QTreeView)]
     assert trees, "the library is a stop"
-    # Two controls are disabled here and neither is a stop: the four transport
-    # buttons with nothing playing, plus the view toggle that is not built
-    # yet. The ring must not stall on a dead one.
+    # The disabled controls are not stops: the four transport buttons with
+    # nothing playing, plus the repair control that is not built yet. The ring
+    # must not stall on a dead one.
     tips = [button.toolTip() for button in buttons]
     assert tips == [
         "Choose music folder",
@@ -132,6 +132,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Switch to the light appearance",
         "About Stellody",
         "Buy the author a drink (opens your browser)",
+        "Switch to album art",
         f"Volume {DEFAULT_PERCENT}%",
         "Turn shuffle on",
         "Turn repeat on",

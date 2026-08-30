@@ -10,7 +10,6 @@ from collections.abc import Callable
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QApplication,
     QFileDialog,
     QMainWindow,
     QMenu,
@@ -28,6 +27,7 @@ from stellody.domain.health import LibraryIssue
 from stellody.domain.track import Track
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
+from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.covering import Covering
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
@@ -42,13 +42,12 @@ from stellody.ui.settings_keys import (
     FALSE,
     SETTING_DESCENDING,
     SETTING_ROOT,
-    SETTING_THEME,
     STATUS_TIMEOUT_MS,
     TRUE,
 )
 from stellody.ui.shape_worker import ShapeRunner
-from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.toolbar import LibraryTray
+from stellody.ui.viewing import Viewing
 from stellody.ui.window_parts import (
     application_icon,
     build_body,
@@ -80,7 +79,9 @@ def _trail() -> str:
     )
 
 
-class MainWindow(Scanning, Playing, Leaving, Covering, QMainWindow):
+class MainWindow(
+    Scanning, Playing, Leaving, Covering, Appearance, Viewing, QMainWindow
+):
     """Stellody's window: a library, a menu bar and a status line."""
 
     def __init__(
@@ -148,7 +149,11 @@ class MainWindow(Scanning, Playing, Leaving, Covering, QMainWindow):
         )
         self.setCentralWidget(
             build_body(
-                self, self._tray, self._tree, self._position_bar, self._bottom_tray
+                self,
+                self._tray,
+                self.start_viewing(),
+                self._position_bar,
+                self._bottom_tray,
             )
         )
         self._set_ring_order()
@@ -164,6 +169,7 @@ class MainWindow(Scanning, Playing, Leaving, Covering, QMainWindow):
         self.wire_tree()
         self.restore_volume()
         self.restore_switches()
+        self.restore_view()
         self._tree.selectionModel().currentChanged.connect(self._on_selection)
         self._transport_timer = QTimer(self)
         self._transport_timer.timeout.connect(self._poll_transport)
@@ -185,17 +191,12 @@ class MainWindow(Scanning, Playing, Leaving, Covering, QMainWindow):
         stops = (
             *self._tray.ring_stops(),
             self._tree,
+            self._grid,
             self._position_bar.slider,
             *self._bottom_tray.ring_stops(),
         )
         for earlier, later in itertools.pairwise(stops):
             QWidget.setTabOrder(earlier, later)
-
-    @property
-    def theme_mode(self) -> Mode:
-        """The appearance currently stored."""
-        stored = self._settings.get_setting(SETTING_THEME, Mode.DARK.value)
-        return Mode(stored) if stored in tuple(Mode) else Mode.DARK
 
     @property
     def library_root(self) -> str:
@@ -283,41 +284,6 @@ class MainWindow(Scanning, Playing, Leaving, Covering, QMainWindow):
             return
         self._settings.set_setting(SETTING_ROOT, chosen)
         self.start_scan()
-
-    @Slot()
-    def toggle_theme(self) -> None:
-        """Swap between the two appearances, from the tray."""
-        self._apply_theme(Mode.LIGHT if self.theme_mode is Mode.DARK else Mode.DARK)
-
-    @Slot()
-    def use_light(self) -> None:
-        """Switch to the light appearance."""
-        self._apply_theme(Mode.LIGHT)
-
-    @Slot()
-    def use_dark(self) -> None:
-        """Switch to the dark appearance."""
-        self._apply_theme(Mode.DARK)
-
-    def _apply_theme(self, mode: Mode) -> None:
-        """Paint the application in one appearance and remember the choice."""
-        self._settings.set_setting(SETTING_THEME, mode.value)
-        application = QApplication.instance()
-        if application is not None:
-            application.setStyleSheet(stylesheet(mode))
-        self._light_action.setChecked(mode is Mode.LIGHT)
-        self._dark_action.setChecked(mode is Mode.DARK)
-        self._tray.set_mode(mode)
-        self._position_bar.show_appearance(mode)
-        self.show_cover_appearance(mode)
-
-    @Slot()
-    def toggle_order(self) -> None:
-        """Invert the album order and remember it."""
-        descending = not self._model.descending
-        self._model.set_descending(descending)
-        self._descending_action.setChecked(descending)
-        self._settings.set_setting(SETTING_DESCENDING, TRUE if descending else FALSE)
 
     @Slot()
     def show_health(self) -> None:

@@ -10,13 +10,15 @@ of them, so it is never a stop and never paints a ring.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
     QHeaderView,
+    QListView,
     QMainWindow,
     QMenu,
     QProgressBar,
+    QStackedWidget,
     QSystemTrayIcon,
     QTreeView,
     QVBoxLayout,
@@ -25,8 +27,13 @@ from PySide6.QtWidgets import (
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui.covering import GRID_COVER_PX
 from stellody.ui.models import AlbumTreeModel, Column
 
+# A tile is the cover plus room under it for a title over an artist. Derived
+# from the cover so the two cannot drift apart when one is changed.
+GRID_LABEL_PX = 44
+GRID_GAP_PX = 12
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
 PROGRESS_WIDTH_PX = 160
@@ -106,6 +113,53 @@ def build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
     tree.setColumnWidth(Column.TITLE, TITLE_COLUMN_PX)
     tree.setColumnWidth(Column.ARTIST, ARTIST_COLUMN_PX)
     return tree
+
+
+def build_grid(window: QMainWindow, model: AlbumTreeModel) -> QListView:
+    """The album covers, laid out as a grid over the same model as the tree.
+
+    A list view over a tree model shows the root's children, which is exactly
+    the albums, so the two views cannot disagree about what the library holds
+    or about the order it is in.
+    """
+    grid = QListView(window)
+    grid.setModel(model)
+    grid.setModelColumn(Column.TITLE)
+    grid.setViewMode(QListView.ViewMode.IconMode)
+    grid.setFlow(QListView.Flow.LeftToRight)
+    grid.setWrapping(True)
+    grid.setResizeMode(QListView.ResizeMode.Adjust)
+    grid.setMovement(QListView.Movement.Static)
+    grid.setUniformItemSizes(True)
+    grid.setWordWrap(True)
+    grid.setIconSize(QSize(GRID_COVER_PX, GRID_COVER_PX))
+    grid.setGridSize(QSize(GRID_COVER_PX + GRID_GAP_PX, GRID_COVER_PX + GRID_LABEL_PX))
+    return grid
+
+
+def build_covers_page(window: QMainWindow, grid: QWidget, pane: QWidget) -> QWidget:
+    """The grid with the album pane under it, which starts closed."""
+    page = QWidget(window)
+    page.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    column = QVBoxLayout(page)
+    column.setContentsMargins(0, 0, 0, 0)
+    column.setSpacing(0)
+    column.addWidget(grid, 1)
+    column.addWidget(pane)
+    return page
+
+
+def build_library(window: QMainWindow, tree: QWidget, grid: QWidget) -> QStackedWidget:
+    """The two library views, one showing at a time.
+
+    A plain holder: it never takes focus and never wears a ring, so the view
+    inside it is the stop rather than the box around it.
+    """
+    stack = QStackedWidget(window)
+    stack.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    stack.addWidget(tree)
+    stack.addWidget(grid)
+    return stack
 
 
 def build_progress(window: QMainWindow) -> QProgressBar:

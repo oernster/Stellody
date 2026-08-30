@@ -120,7 +120,7 @@ Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
 own choosing. That view is read-only today: it carries a repair control, drawn
 and disabled, because the corrections are computed on every load but there is
-nowhere yet to keep one that has been accepted. `PLAN.md` milestone 14 is that
+nowhere yet to keep one that has been accepted. `PLAN.md` milestone 13 is that
 work. `stellody/domain/ordering.py` holds the track rules,
 `stellody/domain/grouping.py` the album rules and `stellody/domain/health.py`
 the reporting vocabulary.

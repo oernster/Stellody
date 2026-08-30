@@ -15,7 +15,7 @@ from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
-from stellody.ui.covering import COVER_PX, cover_pixmap, placeholder_for
+from stellody.ui.covering import GRID_COVER_PX, cover_pixmap, placeholder_for
 from stellody.ui.models import AlbumTreeModel, Column
 from stellody.ui.theme import Mode
 
@@ -70,7 +70,7 @@ class TestStandingIn:
     def test_a_placeholder_is_a_square_of_the_row_size(
         self, application: QApplication
     ) -> None:
-        assert placeholder_for(Mode.DARK).width() == COVER_PX
+        assert placeholder_for(Mode.DARK).width() == GRID_COVER_PX
 
     def test_each_appearance_gets_its_own_placeholder(
         self, application: QApplication
@@ -85,7 +85,7 @@ class TestStandingIn:
     ) -> None:
         drawn = cover_pixmap(_png())
         assert drawn is not None
-        assert drawn.width() == COVER_PX
+        assert drawn.width() == GRID_COVER_PX
 
     def test_an_album_with_no_cover_has_nothing_to_draw(
         self, application: QApplication

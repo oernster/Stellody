@@ -182,20 +182,24 @@ def test_the_view_toggle_sits_at_the_left_of_the_strip(window: MainWindow) -> No
     assert view < min(switches), "and it is drawn there too"
 
 
-def test_the_view_toggle_says_it_is_not_built_rather_than_doing_nothing(
+def test_the_view_toggle_says_what_pressing_it_would_do(
     window: MainWindow,
 ) -> None:
-    """Nothing reads album art yet, so the button admits it."""
+    """A button that names the view on show is read as a state and pressed to
+    confirm it, so it names the view it would move to instead."""
     button = window._bottom_tray.view_button
-    assert not button.isEnabled()
-    assert "not built yet" in button.toolTip()
+    assert button.isEnabled()
     assert not button.icon().isNull(), "it is drawn, not merely reserved"
+    window.show_covers(False)
+    assert button.toolTip() == "Switch to album art"
+    window.show_covers(True)
+    assert button.toolTip() == "Switch to the list"
 
 
-def test_the_disabled_view_toggle_is_not_a_stop_but_is_named_as_one(
+def test_the_view_toggle_is_a_stop_now_that_it_works(
     application: QApplication, window: MainWindow
 ) -> None:
-    """Named now so the ring picks it up the day it works, skipped until then."""
+    """It was named in the ring while disabled so this day needed no reordering."""
     tray = window._bottom_tray
     assert tray.view_button in tray.ring_stops()
     window.show()
@@ -209,8 +213,8 @@ def test_the_disabled_view_toggle_is_not_a_stop_but_is_named_as_one(
             break
         seen.add(id(current))
         order.append(current)
-    assert tray.view_button not in order, "a disabled control is never a stop"
-    assert tray.volume_button in order, "the enabled ones still are"
+    assert tray.view_button in order, "an enabled control is a stop"
+    assert tray.repair_button not in order, "a disabled one still is not"
 
 
 def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> None:
@@ -221,7 +225,7 @@ def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> N
     widgets = [row.itemAt(position).widget() for position in range(row.count())]
     assert widgets[0] is tray.donate_button, "first in the row, before the toggle"
     assert tray.donate_button in tray.ring_stops()
-    assert tray.donate_button.isEnabled(), "unlike the view toggle, this one works"
+    assert tray.donate_button.isEnabled(), "unlike the repair control, this works"
     assert "opens your browser" in tray.donate_button.toolTip()
 
 

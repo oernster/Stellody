@@ -14,7 +14,7 @@ played properly; someone who would rather have a small player that works than a
 large one that does not.
 
 Stellody reads FLAC and nothing else today, so a library of MP3, M4A or WMA
-scans to nothing. `PLAN.md` milestone 12 is the work that widens it.
+scans to nothing. `PLAN.md` milestone 11 is the work that widens it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is
@@ -27,7 +27,10 @@ not going to.
 - Handles the common shapes a real library takes: one file per track, a single
   file per album with a sidecar cue sheet, multi-disc sets split across
   sibling folders, compilations and tracks with several credited artists.
-- Shows the library as albums, discs and tracks, ordered either way.
+- Shows the library as albums, discs and tracks, ordered either way, else as
+  a grid of covers with a toggle at the left of the bottom strip between the two.
+  Picking a sleeve opens that album underneath the grid with its tracks listed,
+  so the sleeves stay where they were. The choice of view is remembered.
 - Shows each album's cover beside it, taken from a file next to the music or
   from the picture inside the audio itself, then kept so it is read once. An
   album with neither keeps a plain square rather than a gap.

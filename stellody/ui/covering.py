@@ -18,15 +18,18 @@ from stellody.application.artwork import AlbumArt, AlbumArtSources
 from stellody.ui.art_worker import ArtRunner
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
+# One pixmap serves both views. It is kept at the size the grid draws it and
+# Qt scales it down for a row, so switching views costs no second reading.
+GRID_COVER_PX = 160
 # Big enough to tell one sleeve from another down a list, small enough that a
-# row stays a row. The cover kept on disk is larger, since a grid will want it.
-COVER_PX = 40
+# row stays a row.
+ROW_COVER_PX = 40
 
 
 def placeholder_for(mode: Mode) -> QPixmap:
     """The square drawn where a cover has not arrived yet or is not there at all."""
     palette = palette_for(mode)
-    pixmap = QPixmap(COVER_PX, COVER_PX)
+    pixmap = QPixmap(GRID_COVER_PX, GRID_COVER_PX)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -45,8 +48,8 @@ def cover_pixmap(cover: object) -> QPixmap | None:
     if not pixmap.loadFromData(cover):
         return None
     return pixmap.scaled(
-        COVER_PX,
-        COVER_PX,
+        GRID_COVER_PX,
+        GRID_COVER_PX,
         Qt.AspectRatioMode.KeepAspectRatio,
         Qt.TransformationMode.SmoothTransformation,
     )
@@ -61,7 +64,7 @@ class Covering:
         if self._art_runner is not None:
             self._art_runner.ready.connect(self._on_cover)
             self._model.cover_wanted.connect(self._art_runner.want)
-        self._tree.setIconSize(QSize(COVER_PX, COVER_PX))
+        self._tree.setIconSize(QSize(ROW_COVER_PX, ROW_COVER_PX))
 
     def show_art(self, art: tuple[AlbumArtSources, ...]) -> None:
         """Say where each album's cover might be found, after a load or a scan.

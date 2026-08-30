@@ -88,64 +88,39 @@ make, not a test's.
 
 Depends on: milestone 1.
 
-## 3. Show the cover art
+## 3. A grid of covers, with the album opened underneath
 
-All of it is built. The scan records one image path per FOLDER, chosen by the
-ripper-name ranking in the walk, which is the right unit since sibling disc
-folders merge into one album; candidates are gathered across every folder an
-album spans.
+Both views, with a toggle between them rather than one replacing the other.
+The list stays exactly as it was.
 
-What the earlier reading of this milestone missed is that the store does not
-hold enough on its own. Measured over the reference library: 395 folders of 510
-carry a file beside the music, 114 carry only a picture inside the audio and
-one carries nothing at all. For those 114 the store holds a flag saying a
-picture is in there and no bytes, so drawing from the recorded path alone would
-have left 22 percent of the library showing a placeholder with a good cover
-sitting inside the file. Extraction was always in the closing condition below;
-it was the description above it that was short.
+All of it is built. The grid is a second view over the SAME model, so neither
+view can disagree with the other about what the library holds or the order it
+is in; switching keeps that order because there is only one of it. One cover
+is kept at the size the grid draws it and Qt scales it down for a row, so
+switching costs no second reading. The toggle at the left of the bottom strip
+is enabled and names the view it would move to rather than the one on show,
+since a button that names the current state is read as a label and pressed to
+confirm it. The choice is remembered like the appearance and the sort order.
 
-A cover is read on a thread of its own, the first time a row asks for one
-rather than up front, then kept scaled against the album's identity so a folder
-rename reuses it. What it was read from is recorded beside it and checked
-against that file's size and modification time, so a cover replaced on disk is
-read again while a rescan that changed nothing reuses what is there.
+Picking a sleeve opens that album in a pane beneath the grid rather than
+replacing the grid, so the sleeves stay where they were. The pane lists the
+album's tracks from the same model rooted at that album, not a second copy, so
+the durations and both ways of starting a track are the ones already built. It
+carries the cover, the title, the album artist, a control that plays the album
+from its first track and one that shuts the pane.
 
-What tests can pin is pinned: a cover already read is served without going back
-to disk, a source that changed is read again, an album with nothing anywhere
-keeps its placeholder. Both real paths were run against the reference library
-outside the suite, a file beside the music and a picture inside one, each
-coming back as a decodable image. What is left needs eyes, since a test cannot
-say whether a wall of sleeves looks right.
+MediaMonkey, which this follows, inserts that pane inline after the row holding
+the chosen sleeve. A list view cannot do that without a view written from
+scratch, so the pane sits below the grid instead. Whether the inline version is
+worth a bespoke view is an open question rather than a decision.
 
-The grid view is wanted, confirmed rather than assumed, so it is milestone 4
-rather than an open question. This milestone is the artwork itself, which that
-view needs.
+Done when: the grid is seen showing sleeves, a picked album is seen opening
+beneath it and the toggle is seen moving between the two views. That is the
+owner's observation to make, not a test's.
 
-Done when: an album with embedded or sidecar art is seen showing it and an
-album without one is seen keeping its placeholder rather than leaving a gap.
-That is the owner's observation to make, not a test's.
+## 4. Choose a cover when the local files carry none
 
-## 4. A grid of covers, toggled with the text view
-
-Confirmed as wanted: both views, with a toggle between them rather than one
-replacing the other. The text view in use today stays exactly as it is.
-
-The toggle itself is already drawn, at the left of the bottom strip, disabled
-and saying so in its tooltip. It is named in the focus ring; the tray takes
-a handler for it with a no-op default, so this milestone enables it rather than
-placing it.
-
-Needed: a second view over the same model, that toggle enabled and wired, plus
-the choice remembered like the theme and the sort order already are.
-
-Done when: the toggle switches between the two views, each keeps the sort order
-the other was using; the choice survives a restart.
-
-Depends on: milestone 3, which is what a grid of covers has to draw.
-
-## 5. Choose a cover when the local files carry none
-
-Milestone 3 draws what the files already hold. One album in the reference
+Cover art draws what the files already hold. One album in the reference
 library holds nothing; a library ripped by a tool that writes neither a
 sidecar nor an embedded picture would hold nothing throughout. This is the way
 out of that, deliberately a person's hand rather than the application's
@@ -188,9 +163,8 @@ keeps it across a restart and a rescan; declining leaves the placeholder; no
 connection is opened until the chooser is, which a test proves the way the
 read-only guard does.
 
-Depends on: milestone 3, which is where a cover is drawn and cached.
 
-## 6. Search the library
+## 5. Search the library
 
 The schema has five plain tables and no search of any kind. The README's
 stack table used to name FTS5; it no longer does, so this is a gap rather than
@@ -200,13 +174,13 @@ Needed: an FTS table fed as sources are saved, a search box, plus a filtered vie
 that leaves the sort order alone.
 
 Filtering by rating and by play count is wanted too. Those columns arrive with
-milestone 7, so the filter is built to take a condition rather than a phrase
+milestone 6, so the filter is built to take a condition rather than a phrase
 alone; it gains the second kind when there is something to read.
 
 Done when: typing part of an album, artist or track title narrows the library as
 you type; clearing the box restores it.
 
-## 7. Ratings and play counts
+## 6. Ratings and play counts
 
 Neither exists: no schema, no column, no code. The README's opening paragraph
 used to promise both as the reason Stellody keeps its own store; it now says
@@ -216,13 +190,13 @@ They are worth naming together because they share a decision: a play count means
 nothing until playback exists and something decides what counts as a play.
 
 Both are wanted, as is filtering by them later, so each is stored as a first
-class column rather than derived: milestone 6 filters on what
+class column rather than derived: milestone 5 filters on what
 this one records.
 
 Done when: a rating can be set and survives a restart, a completed play
 increments a count; neither ever reaches the music files.
 
-## 8. Repeat one track
+## 7. Repeat one track
 
 Shuffle and repeat both shipped: shuffle takes a permutation of the album and
 keeps playing whatever is playing, repeat carries the end of the queue round to
@@ -236,7 +210,7 @@ piece of artwork, so it needs a second image before it needs any code.
 Done when: a track can be set to repeat on its own within a full queue, the
 switch shows which of the three states it is in; the choice survives a restart.
 
-## 9. Gapless transitions
+## 8. Gapless transitions
 
 Not present. This is the hardest item here: it wants the next track decoding
 before the current one ends, plus a device that is not stopped and restarted
@@ -248,7 +222,7 @@ irritating than an honestly gapped one.
 Done when: two tracks that run together on the disc run together through
 Stellody; a test measures the seam rather than a listener judging it.
 
-## 10. The equalizer
+## 9. The equalizer
 
 Entirely absent. Needs a decision before any code: either a fixed set of
 bands applied to the decoded buffer or nothing at all.
@@ -256,7 +230,7 @@ bands applied to the decoded buffer or nothing at all.
 Done when: the bands change what is heard, the setting survives a restart;
 switching it off costs nothing in the signal path.
 
-## 11. macOS and Flatpak
+## 10. macOS and Flatpak
 
 Windows first, which is where it stands. macOS and Linux come later, built to
 the house pattern rather than invented here: `build_flatpak.sh` with
@@ -271,7 +245,7 @@ the packaging, plus an output that works where WASAPI is not.
 Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the Windows build is untouched by either.
 
-## 12. Play every audio format, not only FLAC
+## 11. Play every audio format, not only FLAC
 
 Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
 reads FLAC stream info, a README calling it a FLAC player. A local library of
@@ -290,7 +264,7 @@ in two; the first half is far cheaper than it looks:
   WavPack, DSD. Each needs a decoder Stellody does not carry, which means
   either FFmpeg through a binding or Qt Multimedia.
 
-That second half asks the same question milestone 13 asks, so answer it once:
+That second half asks the same question milestone 12 asks, so answer it once:
 **one media backend, chosen for both**. Deciding it separately is how a player
 ends up with two decoders that disagree about what a track is.
 
@@ -307,7 +281,7 @@ Done when: an album in each of the formats in the first half scans, groups and
 plays; a format Stellody cannot decode is reported as unreadable rather than
 silently skipped.
 
-## 13. Play video files
+## 12. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -334,9 +308,9 @@ transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
 Depends on: milestone 1, since it is the same transport. Shares its
-backend decision with milestone 12.
+backend decision with milestone 11.
 
-## 14. Accept the repairs the health report describes
+## 13. Accept the repairs the health report describes
 
 The report says what Stellody worked around. It cannot yet be told "yes, keep
 that", so the same 142 findings are recomputed and re-read on every start.
@@ -413,7 +387,7 @@ library shows the corrected values, both survive a restart and a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
-## 15. One loudness across albums
+## 14. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -466,12 +440,12 @@ at exactly unity, with the same samples the file holds.
   than by intention.
 - **Anything over the network that nobody asked for.** No scrobbling, no
   telemetry, no update check. Stellody opens no connection of its own; the
-  cover chooser in milestone 5 is the single outward reach and it happens only
+  cover chooser in milestone 4 is the single outward reach and it happens only
   when a listener opens it. Handing the donation link to a browser is not an
   exception either: the address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 14 records a correction in
+- **Repairing the files themselves.** Milestone 13 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **A second library root.** One folder, chosen once, rescanned incrementally.

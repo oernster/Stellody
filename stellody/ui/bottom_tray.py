@@ -13,9 +13,9 @@ the settings, with the donate button outside it at the very end of the row:
 it belongs to nothing on screen, so it sits where nothing else is reached
 by accident.
 
-That toggle is drawn and placed before it does anything. Nothing reads album
-art off disk yet, so it is disabled and says so: an offered control that
-quietly does nothing is worse than one that plainly cannot be pressed.
+That toggle names what pressing it will do rather than which view is on
+show, since a button that reads as a label is read as a state and pressed to
+confirm it.
 
 Shuffle and repeat show their STATE by being lit rather than by being struck
 through. The slash means one thing across the application, that what the
@@ -72,7 +72,8 @@ SLIDER_MARGIN_PX = 10
 
 # Said plainly, because the button is on screen before the feature behind it.
 # Nothing reads album art off disk or off a music database yet.
-VIEW_TOOLTIP = "Switch to album art (not built yet)"
+COVERS_TOOLTIP = "Switch to album art"
+LIST_TOOLTIP = "Switch to the list"
 # The same honesty as the view toggle. What the health report lists can be
 # worked out, since resolution already happens on load; nothing yet lets a
 # correction be accepted and kept, so there is nothing for this to do.
@@ -219,9 +220,8 @@ class BottomTray(QWidget):
         self.shuffle_button = _switch_button(self, "Turn shuffle on", toggle_shuffle)
         self.repeat_button = _switch_button(self, "Turn repeat on", toggle_repeat)
         self.view_button = _small_button(
-            self, resources.view_icon_path(), VIEW_TOOLTIP, toggle_view
+            self, resources.view_icon_path(), COVERS_TOOLTIP, toggle_view
         )
-        self.view_button.setEnabled(False)
         self.repair_button = _small_button(
             self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
         )
@@ -251,9 +251,9 @@ class BottomTray(QWidget):
     def ring_stops(self) -> tuple[QPushButton, ...]:
         """This tray's controls, left to right as they are drawn.
 
-        The view toggle is named here while it is disabled, so the ring picks
-        it up on the day it works without the order being revisited. Qt skips
-        a disabled stop, so naming it costs nothing until then.
+        The repair control is named here while it is disabled, so the ring
+        picks it up on the day it works without the order being revisited. Qt
+        skips a disabled stop, so naming it costs nothing until then.
         """
         return (
             self.donate_button,
@@ -261,6 +261,10 @@ class BottomTray(QWidget):
             self.repair_button,
             *self.switch_stops(),
         )
+
+    def set_showing_covers(self, covers: bool) -> None:
+        """Say what pressing the view toggle would do from here."""
+        self.view_button.setToolTip(LIST_TOOLTIP if covers else COVERS_TOOLTIP)
 
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""
