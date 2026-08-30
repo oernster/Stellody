@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, album, build
 
 from stellody.application.choosing_covers import ChooseCover
-from stellody.ui.cover_chooser import NOTHING, UNREACHABLE, CoverChooser
+from stellody.ui.cover_chooser import NOTHING, REFUSED, UNREACHABLE, CoverChooser
 from stellody.ui.models import Column
 from stellody.ui.theme import Mode
 
@@ -88,6 +88,22 @@ class TestWhatTheChooserShows:
     def test_an_album_nothing_was_found_for_is_told_so(self, application) -> None:
         dialog = _opened(FakeSearch(candidates=()), application)
         assert dialog.status.text() == NOTHING
+        assert dialog.grid.count() == 0
+        dialog.reject()
+
+    def test_a_refused_search_is_never_reported_as_nothing_found(
+        self, application
+    ) -> None:
+        """The archive made no claim about this album, so neither does this.
+
+        Measured 2026-08-31, MusicBrainz refused 6 of 10 asks at the rate its
+        own terms ask for. Saying "nothing came back for this album" there
+        tells a listener their album has no art anywhere, which is both untrue
+        and the exact thing they will disbelieve.
+        """
+        dialog = _opened(FakeSearch(candidates=(), refused=True), application)
+        assert dialog.status.text() == REFUSED
+        assert dialog.status.text() != NOTHING
         assert dialog.grid.count() == 0
         dialog.reject()
 

@@ -18,6 +18,7 @@ from io import BytesIO
 from stellody.infrastructure.cover_search import (
     CONTACT,
     RELEASE_LIMIT,
+    SEARCH_ATTEMPTS,
     USER_AGENT,
     ArchiveCovers,
 )
@@ -103,11 +104,22 @@ def encoded(value: dict) -> bytes:
     return json.dumps(value).encode("utf-8")
 
 
+class Pauses:
+    """The backoff, recorded rather than waited through."""
+
+    def __init__(self) -> None:
+        self.slept: list[float] = []
+
+    def __call__(self, seconds: float) -> None:
+        """Note the pause and return at once."""
+        self.slept.append(seconds)
+
+
 def client(answers: dict) -> tuple[ArchiveCovers, Answering, NoWait]:
     """A client over a canned opener and a gate that never waits."""
     opener = Answering(answers)
     gate = NoWait()
-    return ArchiveCovers(gate=gate, opener=opener), opener, gate
+    return ArchiveCovers(gate=gate, opener=opener, waiter=Pauses()), opener, gate
 
 
 BOTH = {
@@ -151,24 +163,24 @@ class TestWhatTheSearchAsksFor:
 class TestWhatComesBack:
     def test_the_pictures_of_a_release_are_offered(self) -> None:
         found, _, _ = client(BOTH)
-        offered = found.search("Turin Brakes", "Ether Song")
+        offered = found.search("Turin Brakes", "Ether Song").candidates
         assert len(offered) == 2
         assert offered[0].is_front is True
         assert offered[1].is_front is False
 
     def test_the_largest_thumbnail_is_what_a_candidate_claims(self) -> None:
         """The listing never carries the size of the original, measured."""
-        offered = client(BOTH)[0].search("Turin Brakes", "Ether Song")
+        offered = client(BOTH)[0].search("Turin Brakes", "Ether Song").candidates
         assert offered[0].largest_px == 1200
         assert offered[1].largest_px == 250
 
     def test_the_smallest_thumbnail_is_what_the_chooser_draws(self) -> None:
-        offered = client(BOTH)[0].search("Turin Brakes", "Ether Song")
+        offered = client(BOTH)[0].search("Turin Brakes", "Ether Song").candidates
         assert offered[0].thumbnail_url.endswith("-250.jpg")
         assert offered[0].image_url.endswith("38850137623.jpg")
 
     def test_a_release_is_named_by_its_title_date_and_country(self) -> None:
-        offered = client(BOTH)[0].search("Turin Brakes", "Ether Song")
+        offered = client(BOTH)[0].search("Turin Brakes", "Ether Song").candidates
         assert offered[0].release == "Ether Song  2003-11-17  GB"
 
 
@@ -176,26 +188,26 @@ class TestWhenThereIsNothingToBeHad:
     def test_a_release_with_no_art_is_an_answer_not_a_failure(self) -> None:
         """The archive answers 404 for a release nobody has photographed."""
         found, _, _ = client({"https://musicbrainz.org": encoded(SEARCH_ANSWER)})
-        assert found.search("Turin Brakes", "Ether Song") == ()
+        assert found.search("Turin Brakes", "Ether Song").candidates == ()
 
     def test_a_search_that_cannot_be_made_offers_nothing(self) -> None:
         found, _, _ = client(
             {"https://musicbrainz.org": urllib.error.URLError("no route")}
         )
-        assert found.search("Turin Brakes", "Ether Song") == ()
+        assert found.search("Turin Brakes", "Ether Song").candidates == ()
 
     def test_an_answer_that_is_not_json_offers_nothing(self) -> None:
         found, _, _ = client({"https://musicbrainz.org": b"<html>down</html>"})
-        assert found.search("Turin Brakes", "Ether Song") == ()
+        assert found.search("Turin Brakes", "Ether Song").candidates == ()
 
     def test_an_answer_that_is_json_but_not_an_object_offers_nothing(self) -> None:
         found, _, _ = client({"https://musicbrainz.org": b"[1, 2, 3]"})
-        assert found.search("Turin Brakes", "Ether Song") == ()
+        assert found.search("Turin Brakes", "Ether Song").candidates == ()
 
     def test_a_release_with_no_identifier_is_passed_over(self) -> None:
         answer = {"releases": [{"title": "Ether Song"}]}
         found, _, _ = client({"https://musicbrainz.org": encoded(answer)})
-        assert found.search("Turin Brakes", "Ether Song") == ()
+        assert found.search("Turin Brakes", "Ether Song").candidates == ()
 
     def test_an_image_with_nowhere_to_point_is_passed_over(self) -> None:
         listing = {"images": [{"front": True, "thumbnails": {}}, {"image": ""}]}
@@ -205,7 +217,7 @@ class TestWhenThereIsNothingToBeHad:
                 "https://coverartarchive.org/release/": encoded(listing),
             }
         )
-        assert found.search("Turin Brakes", "Ether Song") == ()
+        assert found.search("Turin Brakes", "Ether Song").candidates == ()
 
 
 class TestFetchingAPicture:
@@ -223,3 +235,83 @@ class TestFetchingAPicture:
         found.fetch(f"{ART}/one.jpg")
         found.fetch(f"{ART}/two.jpg")
         assert gate.waits == 0
+
+
+class Refusing:
+    """An opener refusing a set number of times before it answers."""
+
+    def __init__(self, refusals: int, answers: dict, code: int = 503) -> None:
+        self.refusals = refusals
+        self.answers = answers
+        self.code = code
+        self.asked = 0
+
+    def __call__(self, request, timeout=None):
+        """Refuse while there are refusals left, then answer normally."""
+        self.asked += 1
+        if self.refusals > 0:
+            self.refusals -= 1
+            raise urllib.error.HTTPError(
+                request.full_url, self.code, "SERVICE UNAVAILABLE", {}, None
+            )
+        for prefix, answer in self.answers.items():
+            if request.full_url.startswith(prefix):
+                return BytesIO(answer)
+        raise urllib.error.HTTPError(request.full_url, 404, "NOT FOUND", {}, None)
+
+
+def _refused_client(refusals: int, code: int = 503):
+    """A client whose search host refuses that many times first."""
+    opener = Refusing(refusals, BOTH, code)
+    pauses = Pauses()
+    return ArchiveCovers(gate=NoWait(), opener=opener, waiter=pauses), opener, pauses
+
+
+class TestARefusalIsAskedAgainAbout:
+    """Measured 2026-08-31: MusicBrainz refused 6 of 10 asks at 1.1s spacing.
+
+    So one ask is not a search. These pin that a refusal is retried, that the
+    pause between asks grows, then that what survives every ask is reported as
+    a refusal rather than as an album with no art.
+    """
+
+    def test_a_search_refused_once_is_asked_again_and_answered(self) -> None:
+        found, opener, _ = _refused_client(1)
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert offer.candidates
+        assert not offer.refused
+        assert opener.asked > 1
+
+    def test_a_search_refused_every_time_says_it_was_refused(self) -> None:
+        found, opener, _ = _refused_client(SEARCH_ATTEMPTS)
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert offer.refused
+        assert offer.candidates == ()
+        assert opener.asked == SEARCH_ATTEMPTS
+
+    def test_too_many_requests_is_a_refusal_too(self) -> None:
+        found, opener, _ = _refused_client(1, code=429)
+        assert found.search("Turin Brakes", "Ether Song").candidates
+        assert opener.asked > 1
+
+    def test_the_pause_between_asks_grows(self) -> None:
+        found, _, pauses = _refused_client(SEARCH_ATTEMPTS)
+        found.search("Turin Brakes", "Ether Song")
+        assert pauses.slept == sorted(pauses.slept)
+        assert len(set(pauses.slept)) == len(pauses.slept)
+
+    def test_an_ordinary_failure_is_not_asked_again(self) -> None:
+        """A 404 is an answer. Asking again would only wait to hear it twice."""
+        found, opener, _ = client({})
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert offer.candidates == ()
+        assert not offer.refused
+        assert len(opener.asked) == 1
+
+    def test_a_listing_that_is_refused_leaves_the_search_answered(self) -> None:
+        """A release is one of several; only the search itself is the answer."""
+        opener = Answering({"https://musicbrainz.org": encoded(SEARCH_ANSWER)})
+        found = ArchiveCovers(gate=NoWait(), opener=opener, waiter=Pauses())
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert offer.candidates == ()
+        assert not offer.refused

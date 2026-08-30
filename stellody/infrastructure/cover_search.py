@@ -15,6 +15,15 @@ were refused exactly that way. So every request goes through one gate that
 waits its turn; the user agent names the application and a way to reach its
 author.
 
+**Honouring them is not enough on its own.** Measured on 2026-08-31, at the
+rate the terms ask for, MusicBrainz refused 6 of 10 asks for the same release;
+two asks five seconds apart were refused while a third was answered, under
+three different user agents. The Cover Art Archive answered 4 of 4 in the same
+minute, so this is the search host rather than the network or this client. A
+refusal is therefore an ordinary event to be asked again about, not a failure
+to report: one ask alone would leave a listener told their album has no art on
+roughly half the tries.
+
 **What the listing does and does not say.** Measured on the same day, an image
 in the archive's listing carries `image`, `thumbnails` at 250, 500 and 1200,
 `front`, `back` and `types`. It does NOT carry the pixel size of the original,
@@ -29,7 +38,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from stellody.domain.cover_choice import THUMBNAIL_SIZES, CoverCandidate
+from stellody.domain.cover_choice import THUMBNAIL_SIZES, CoverCandidate, CoverOffer
 from stellody.shared.version import APP_NAME, __version__
 
 SEARCH_URL = "https://musicbrainz.org/ws/2/release"
@@ -50,6 +59,14 @@ TIMEOUT_S = 20
 # wait stays a wait rather than a walk away. Each one is a second.
 RELEASE_LIMIT = 8
 IMAGE_TIMEOUT_S = 30
+# What a refusal looks like: too many requests, else the service declining to
+# answer this one. Both mean ask again rather than tell the listener anything.
+REFUSAL_CODES = frozenset({429, 503})
+# Enough asks that the measured refusal rate is unlikely to survive all of
+# them, few enough that a listener is not left waiting through a minute of
+# them. At 6 refusals in 10 asks, four more tries after the first leave about
+# one search in thirteen still refused, which the chooser then says plainly.
+SEARCH_ATTEMPTS = 5
 
 
 class _Gate:
@@ -131,27 +148,37 @@ def _release_label(release: dict) -> str:
 class ArchiveCovers:
     """Searches MusicBrainz, then reads the Cover Art Archive for pictures."""
 
-    def __init__(self, gate: _Gate | None = None, opener=None) -> None:
+    def __init__(self, gate: _Gate | None = None, opener=None, waiter=None) -> None:
         self._gate = gate if gate is not None else _Gate()
         self._opener = opener if opener is not None else urllib.request.urlopen
+        # The pause between asks, injected so a test can watch the backoff grow
+        # without waiting through it.
+        self._waiter = waiter if waiter is not None else time.sleep
 
-    def search(self, artist: str, album: str) -> tuple[CoverCandidate, ...]:
-        """The pictures on offer for this album; empty when there are none."""
-        found = self._json(f"{SEARCH_URL}?{_release_query(artist, album)}")
+    def search(self, artist: str, album: str) -> CoverOffer:
+        """The pictures on offer for this album, plus whether it was answered.
+
+        Only the release search is asked again. A listing that will not come is
+        one release of several and the next one is the thing to try, where a
+        search that will not come is the whole answer.
+        """
+        found, refused = self._asked(
+            f"{SEARCH_URL}?{_release_query(artist, album)}", SEARCH_ATTEMPTS
+        )
         if found is None:
-            return ()
+            return CoverOffer(refused=refused)
         gathered: list[CoverCandidate] = []
         for release in found.get("releases") or ():
             mbid = release.get("id")
             if not mbid:
                 continue
-            listing = self._json(f"{ART_URL}/{mbid}")
+            listing, _ = self._asked(f"{ART_URL}/{mbid}")
             if listing is None:
                 continue
             gathered.extend(
                 _candidates_from(listing.get("images") or [], _release_label(release))
             )
-        return tuple(gathered)
+        return CoverOffer(tuple(gathered))
 
     def fetch(self, url: str) -> bytes | None:
         """The bytes of one picture; None when it cannot be had.
@@ -166,20 +193,34 @@ class ArchiveCovers:
         except (urllib.error.URLError, OSError, ValueError):
             return None
 
-    def _json(self, url: str) -> dict | None:
-        """One gated request, read as JSON; None when there is nothing to read.
+    def _asked(self, url: str, attempts: int = 1) -> tuple[dict | None, bool]:
+        """What came back, plus whether the service refused to answer.
 
         A 404 from the archive means this release carries no art, which is an
-        answer rather than a failure. It looks the same from here as a service
-        that is down: in both cases there is nothing to offer, so the next
-        release is what to try.
+        answer rather than a failure: the next release is what to try. A 503 is
+        not that. It says nothing about the album at all, so it is asked again
+        rather than passed on as an empty answer; what survives every ask is
+        reported as a refusal rather than as an absence.
         """
-        self._gate.wait()
+        refused = False
+        for attempt in range(attempts):
+            if attempt:
+                self._waiter(REQUEST_GAP_S * attempt)
+            self._gate.wait()
+            payload, refused = self._once(url)
+            if payload is not None or not refused:
+                return payload, refused
+        return None, refused
+
+    def _once(self, url: str) -> tuple[dict | None, bool]:
+        """One gated request, read as JSON, saying whether it was refused."""
         try:
             with self._opener(_asking(url), timeout=TIMEOUT_S) as answer:
-                return dict(json.loads(answer.read()))
+                return dict(json.loads(answer.read())), False
+        except urllib.error.HTTPError as refusal:
+            return None, refusal.code in REFUSAL_CODES
         except (urllib.error.URLError, OSError, ValueError, TypeError):
-            return None
+            return None, False
 
 
 def _asking(url: str) -> urllib.request.Request:

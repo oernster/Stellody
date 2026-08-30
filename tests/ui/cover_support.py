@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import threading
 
-from stellody.domain.cover_choice import CoverCandidate
+from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 
 FRONT = CoverCandidate(
     release="The Planets  1997  GB",
@@ -36,19 +36,21 @@ class FakeSearch:
         candidates: tuple[CoverCandidate, ...] = (FRONT, BACK),
         pictures: dict[str, bytes] | None = None,
         gate: threading.Event | None = None,
+        refused: bool = False,
     ) -> None:
         self.candidates = candidates
+        self.refused = refused
         self.pictures = {} if pictures is None else pictures
         self.gate = gate
         self.searched: list[tuple[str, str]] = []
         self.fetched: list[str] = []
 
-    def search(self, artist: str, album: str) -> tuple[CoverCandidate, ...]:
+    def search(self, artist: str, album: str) -> CoverOffer:
         """Answer the script, holding at the gate when a test set one."""
         self.searched.append((artist, album))
         if self.gate is not None:
             self.gate.wait()
-        return self.candidates
+        return CoverOffer(self.candidates, refused=self.refused)
 
     def fetch(self, url: str) -> bytes | None:
         """The bytes a test put at this address; None when it put none."""
@@ -59,7 +61,7 @@ class FakeSearch:
 class RaisingSearch:
     """An archive that fails the way a decoder or a socket layer would."""
 
-    def search(self, artist: str, album: str) -> tuple[CoverCandidate, ...]:
+    def search(self, artist: str, album: str) -> CoverOffer:
         """Raise, as a name that will not resolve does."""
         raise RuntimeError("the archive went away mid search")
 

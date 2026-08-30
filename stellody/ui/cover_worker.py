@@ -34,7 +34,7 @@ from __future__ import annotations
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 from stellody.application.choosing_covers import ChooseCover
-from stellody.domain.cover_choice import CoverCandidate
+from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 from stellody.domain.identity import AlbumIdentity
 
 # Long enough for a request between boundaries to finish, short enough that
@@ -78,11 +78,11 @@ class SearchWorker(QObject):
         catch anything; a picture that cannot be had is not a reason to take
         the application down.
         """
-        candidates = self._searched()
+        offer = self._searched()
         if self._cancelled:
             return
-        self.offered.emit(candidates)
-        for position, candidate in enumerate(candidates):
+        self.offered.emit(offer)
+        for position, candidate in enumerate(offer.candidates):
             if self._cancelled:
                 return
             picture = self._preview(candidate)
@@ -91,12 +91,12 @@ class SearchWorker(QObject):
             self.previewed.emit(position, picture)
         self.done.emit()
 
-    def _searched(self) -> tuple[CoverCandidate, ...]:
+    def _searched(self) -> CoverOffer:
         """What is on offer; nothing when the search could not be made."""
         try:
             return self._chooser.offer(self._identity)
         except Exception:  # noqa: BLE001 - a search must not end the run
-            return ()
+            return CoverOffer()
 
     def _preview(self, candidate: CoverCandidate) -> bytes | None:
         """One thumbnail; None when it could not be had."""

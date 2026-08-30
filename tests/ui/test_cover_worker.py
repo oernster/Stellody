@@ -21,6 +21,7 @@ from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.choosing_covers import ChooseCover
+from stellody.domain.cover_choice import CoverOffer
 from stellody.domain.identity import AlbumIdentity
 from stellody.ui.cover_worker import CoverRunner, SearchWorker
 
@@ -38,11 +39,11 @@ class Heard:
     """Everything a runner passed on, in the order it arrived."""
 
     def __init__(self, runner: CoverRunner) -> None:
-        self.offered: list[tuple] = []
+        self.offered: list = []
         self.previewed: list[tuple[int, object]] = []
         self.searched = 0
         self.kept: list[tuple[str, object]] = []
-        runner.offered.connect(lambda found: self.offered.append(tuple(found)))
+        runner.offered.connect(lambda found: self.offered.append(found))
         runner.previewed.connect(
             lambda position, picture: self.previewed.append((position, picture))
         )
@@ -87,7 +88,7 @@ class TestASearch:
         runner.search(PLANETS)
         _settle(runner, application_events)
         runner.stop()
-        assert heard.offered == [(FRONT, BACK)]
+        assert heard.offered == [CoverOffer((FRONT, BACK))]
 
     def test_it_asks_the_archive_for_the_album_by_name(
         self, application_events
@@ -135,7 +136,7 @@ class TestASearch:
         runner.search(PLANETS)
         _settle(runner, application_events)
         runner.stop()
-        assert heard.offered == [()]
+        assert heard.offered == [CoverOffer()]
         assert heard.searched == 1
 
 
@@ -145,9 +146,9 @@ class TestCancellingBetweenRequests:
     def test_a_cancelled_search_says_nothing_and_fetches_nothing(self) -> None:
         search = FakeSearch(pictures=THUMBNAILS)
         worker = SearchWorker(ChooseCover(search, FakeArtwork()), PLANETS)
-        offered: list[tuple] = []
+        offered: list = []
         previewed: list[tuple] = []
-        worker.offered.connect(lambda found: offered.append(tuple(found)))
+        worker.offered.connect(offered.append)
         worker.previewed.connect(
             lambda position, picture: previewed.append((position, picture))
         )

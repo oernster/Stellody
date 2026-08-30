@@ -52,6 +52,29 @@ class CoverCandidate:
         return f"{self.release}  ({self.largest_px} px)"
 
 
+@dataclass(frozen=True, slots=True)
+class CoverOffer:
+    """What a search came back with, plus whether it was answered at all.
+
+    **An empty offer and a refused one are different things** and were once
+    the same thing here. Measured on 2026-08-31, MusicBrainz refused 6 of 10
+    asks spaced at the one a second its own terms request; two asks five
+    seconds apart were refused while a third was answered. The Cover Art
+    Archive answered 4 of 4 in the same minute, so a refusal is not a rate
+    anybody exceeded; nor is it rare. Reporting one as "nothing came back for
+    this album" tells a listener their album has no art anywhere, which is a
+    claim the search never made and which they are right to disbelieve.
+    """
+
+    candidates: tuple[CoverCandidate, ...] = ()
+    refused: bool = False
+
+    @property
+    def is_empty(self) -> bool:
+        """True when there is nothing to show, refused or simply not found."""
+        return not self.candidates
+
+
 def ordered(candidates: tuple[CoverCandidate, ...]) -> tuple[CoverCandidate, ...]:
     """Fronts before the rest, larger before smaller, otherwise as they came.
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from stellody.application.choosing_covers import ChooseCover
-from stellody.domain.cover_choice import CoverCandidate
+from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 from stellody.domain.identity import AlbumIdentity
 
 FULL = "https://coverartarchive.org/release/abc/1.jpg"
@@ -31,16 +31,17 @@ def candidate(**overrides: object) -> CoverCandidate:
 class RecordingSearch:
     """A search that answers what it was told to and remembers being asked."""
 
-    def __init__(self, offered=(), pictures=None) -> None:
+    def __init__(self, offered=(), pictures=None, refused=False) -> None:
         self.offered = tuple(offered)
+        self.refused = refused
         self.pictures = pictures if pictures is not None else {}
         self.searched: list[tuple[str, str]] = []
         self.fetched: list[str] = []
 
-    def search(self, artist: str, album: str):
+    def search(self, artist: str, album: str) -> CoverOffer:
         """Answer the canned offer, noting what was asked for."""
         self.searched.append((artist, album))
-        return self.offered
+        return CoverOffer(self.offered, refused=self.refused)
 
     def fetch(self, url: str):
         """The canned bytes for that address; None when there are none."""
@@ -84,10 +85,30 @@ class TestWhatIsOffered:
         front = candidate(release="front", largest_px=250, is_front=True)
         search = RecordingSearch(offered=(back, front))
         offered = ChooseCover(search, RecordingArtwork()).offer(IDENTITY)
-        assert [one.release for one in offered] == ["front", "back"]
+        assert [one.release for one in offered.candidates] == ["front", "back"]
 
     def test_a_lookup_that_finds_nothing_offers_nothing(self) -> None:
-        assert ChooseCover(RecordingSearch(), RecordingArtwork()).offer(IDENTITY) == ()
+        offered = ChooseCover(RecordingSearch(), RecordingArtwork()).offer(IDENTITY)
+        assert offered == CoverOffer()
+        assert not offered.refused
+
+    def test_a_refusal_is_carried_through_rather_than_flattened(self) -> None:
+        """An album nobody was asked about is not an album with no art.
+
+        The service is the last place that could tell the two apart, so a
+        refusal travelling as an empty offer would be indistinguishable from an
+        answer by the time anything drew it.
+        """
+        search = RecordingSearch(refused=True)
+        offered = ChooseCover(search, RecordingArtwork()).offer(IDENTITY)
+        assert offered.refused
+        assert offered.is_empty
+
+    def test_an_answered_search_is_never_marked_refused(self) -> None:
+        search = RecordingSearch(offered=(candidate(),))
+        offered = ChooseCover(search, RecordingArtwork()).offer(IDENTITY)
+        assert not offered.refused
+        assert not offered.is_empty
 
     def test_an_identity_always_carries_both_names(self) -> None:
         """Which is why nothing here guards against an album missing one."""

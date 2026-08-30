@@ -33,7 +33,7 @@ from PySide6.QtWidgets import (
 
 from stellody.application.choosing_covers import ChooseCover
 from stellody.domain.album import Album
-from stellody.domain.cover_choice import CoverCandidate
+from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 from stellody.ui.cover_worker import CoverRunner
 from stellody.ui.covering import cover_pixmap, placeholder_for
 from stellody.ui.dialogs import NeutralDialog
@@ -53,12 +53,23 @@ LOOKING = (
     "request a second and each release has to be asked about separately."
 )
 NOTHING = "Nothing came back for this album."
+REFUSED = (
+    "The archive would not answer just now, so nothing here says anything "
+    "about this album. It declines a share of requests even at the rate its "
+    "terms ask for. Close this and try again in a moment."
+)
 KEEPING = "Keeping the picture."
 UNREACHABLE = "That picture could not be fetched, so the album is as it was."
 
 
-def _counted(pictures: int) -> str:
-    """What the status line says once a search has finished."""
+def _counted(pictures: int, refused: bool = False) -> str:
+    """What the status line says once a search has finished.
+
+    A refusal is never reported as an absence: the service made no claim about
+    this album, so neither does the chooser.
+    """
+    if refused:
+        return REFUSED
     if not pictures:
         return NOTHING
     if pictures == 1:
@@ -81,6 +92,7 @@ class CoverChooser(NeutralDialog):
         super().__init__(parent)
         self._album = album
         self._candidates: tuple[CoverCandidate, ...] = ()
+        self._refused = False
         self._placeholder = placeholder_for(mode)
         self.setWindowTitle(f"Cover art for {album.identity.title}")
         self.resize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
@@ -136,9 +148,11 @@ class CoverChooser(NeutralDialog):
         return None
 
     @Slot(object)
-    def _on_offered(self, candidates: object) -> None:
+    def _on_offered(self, offer: object) -> None:
         """Draw a tile for each picture on offer, before any has arrived."""
-        self._candidates = tuple(candidates)
+        found = offer if isinstance(offer, CoverOffer) else CoverOffer()
+        self._refused = found.refused
+        self._candidates = found.candidates
         for candidate in self._candidates:
             item = QListWidgetItem(candidate.described, self.grid)
             item.setIcon(QIcon(self._placeholder))
@@ -155,7 +169,7 @@ class CoverChooser(NeutralDialog):
     @Slot()
     def _on_searched(self) -> None:
         """Say what the search came back with, now that it has finished."""
-        self.status.setText(_counted(len(self._candidates)))
+        self.status.setText(_counted(len(self._candidates), self._refused))
 
     @Slot(str, object)
     def _on_kept(self, key: str, kept: object) -> None:

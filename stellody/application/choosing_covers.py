@@ -21,7 +21,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from stellody.application.ports import ArtworkPort
-from stellody.domain.cover_choice import CoverCandidate, ordered
+from stellody.domain.cover_choice import CoverCandidate, CoverOffer, ordered
 from stellody.domain.identity import AlbumIdentity
 
 
@@ -34,12 +34,14 @@ class CoverSearchPort(Protocol):
     other end of the application.
     """
 
-    def search(self, artist: str, album: str) -> tuple[CoverCandidate, ...]:
-        """The pictures on offer for this album; empty when there are none.
+    def search(self, artist: str, album: str) -> CoverOffer:
+        """The pictures on offer for this album, plus whether it was answered.
 
         Slow, then able to fail. A lookup that fails comes back empty rather
-        than raising: that nothing was changed is what the caller needs to
-        know; there is nothing useful for it to do with a reason.
+        than raising, since nothing was changed either way. It does say which
+        kind of empty it is: a service that refused to answer has made no claim
+        about this album, so reporting it as an album with no art anywhere is a
+        claim the search never made.
         """
         ...
 
@@ -55,7 +57,7 @@ class ChooseCover:
         self._search = search
         self._artwork = artwork
 
-    def offer(self, identity: AlbumIdentity) -> tuple[CoverCandidate, ...]:
+    def offer(self, identity: AlbumIdentity) -> CoverOffer:
         """What is on offer for this album, fronts first, largest first.
 
         Slow: it goes to the network. It belongs off the interface thread.
@@ -64,7 +66,8 @@ class ChooseCover:
         identity refuses to be built without both. A guard against a state the
         type forbids is a branch no test can reach honestly.
         """
-        return ordered(self._search.search(identity.album_artist, identity.title))
+        found = self._search.search(identity.album_artist, identity.title)
+        return CoverOffer(ordered(found.candidates), refused=found.refused)
 
     def accept(self, key: str, candidate: CoverCandidate) -> bytes | None:
         """Fetch the chosen picture and keep it for this album.

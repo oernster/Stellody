@@ -112,6 +112,13 @@ release has to be asked about before there is a picture. So the dialog says
 what it is doing, draws each tile as its own thumbnail lands and can be closed
 at any point in that.
 
+**A refusal is not an absence.** Measured 2026-08-31, MusicBrainz refused 6 of
+10 asks at the rate its own terms ask for, while the Cover Art Archive answered
+4 of 4. So the release search is asked up to five times with a growing pause;
+a refusal that survives all five is said out loud rather than reported as an
+album with no art anywhere. With the retry in place, three live searches came
+back with 10, 31 and 10 pictures in 9 to 15 seconds each.
+
 **What closing it can and cannot do.** The cancel flag is read between
 requests, so a search stops at the next boundary rather than in the middle of
 one. A request already in flight runs to its own timeout and its answer is
