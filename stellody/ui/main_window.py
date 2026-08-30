@@ -144,6 +144,7 @@ class MainWindow(
             on_change=self.set_volume,
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
+            toggle_view=self.toggle_view,
             open_donation=self.open_donation,
             repair_library=self.repair_library,
         )
