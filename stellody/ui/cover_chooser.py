@@ -10,6 +10,14 @@ because the terms allow one request a second and there is a release to ask
 about before there is a picture. So the dialog says what it is doing, fills in
 as answers arrive and can be closed at any point in that.
 
+**The wait is drawn, not merely described.** A dialog that says it is working
+while showing nothing that moves is a dialog somebody decides has hung. The bar
+runs indeterminate while the releases are being searched for, since there is
+nothing to count yet, then becomes a real fraction of the pictures once the
+search says how many there are. It follows the house pattern the scan already
+uses. The button beside it says Cancel for exactly as long as there is
+something to cancel.
+
 **A tile says what the archive said, no more.** The listing names the thumbnail
 sizes it will serve; it never names the pixel size of the original. So a
 candidate carries the release it belongs to and the largest size on offer,
@@ -26,6 +34,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QProgressBar,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -59,6 +68,8 @@ REFUSED = (
     "terms ask for. Close this and try again in a moment."
 )
 KEEPING = "Keeping the picture."
+CANCEL = "Cancel"
+CLOSE = "Close"
 UNREACHABLE = "That picture could not be fetched, so the album is as it was."
 
 
@@ -100,6 +111,8 @@ class CoverChooser(NeutralDialog):
         self.status = QLabel(LOOKING, self)
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        self.progress = _busy_bar(self)
+        layout.addWidget(self.progress)
         self.grid = _picture_grid(self)
         self.grid.currentItemChanged.connect(self._on_pick)
         layout.addWidget(self.grid, 1)
@@ -138,6 +151,7 @@ class CoverChooser(NeutralDialog):
             return
         self.status.setText(KEEPING)
         self.keep_button.setEnabled(False)
+        self._show_busy(True)
         self._runner.keep(self._album.identity.art_key, candidate)
 
     def picked(self) -> CoverCandidate | None:
@@ -153,6 +167,11 @@ class CoverChooser(NeutralDialog):
         found = offer if isinstance(offer, CoverOffer) else CoverOffer()
         self._refused = found.refused
         self._candidates = found.candidates
+        if self._candidates:
+            # There is something to count now, so the bar stops guessing and
+            # starts saying how many pictures have arrived out of how many.
+            self.progress.setRange(0, len(self._candidates))
+            self.progress.setValue(0)
         for candidate in self._candidates:
             item = QListWidgetItem(candidate.described, self.grid)
             item.setIcon(QIcon(self._placeholder))
@@ -165,10 +184,12 @@ class CoverChooser(NeutralDialog):
         picture = cover_pixmap(thumbnail, TILE_PX)
         if item is not None and picture is not None:
             item.setIcon(QIcon(picture))
+        self.progress.setValue(position + 1)
 
     @Slot()
     def _on_searched(self) -> None:
         """Say what the search came back with, now that it has finished."""
+        self._show_busy(False)
         self.status.setText(_counted(len(self._candidates), self._refused))
 
     @Slot(str, object)
@@ -180,6 +201,7 @@ class CoverChooser(NeutralDialog):
         candidate is the obvious thing to try.
         """
         if not isinstance(kept, bytes):
+            self._show_busy(False)
             self.status.setText(UNREACHABLE)
             self.keep_button.setEnabled(self.picked() is not None)
             return
@@ -190,6 +212,29 @@ class CoverChooser(NeutralDialog):
     def _on_pick(self) -> None:
         """Offer to keep a picture only while one is picked."""
         self.keep_button.setEnabled(self.picked() is not None)
+
+    def _show_busy(self, busy: bool) -> None:
+        """Draw the wait; name the button for what pressing it now means.
+
+        Cancel while something is in flight, Close once nothing is: the same
+        press does the same thing either way, so the word is what changes.
+        """
+        self.progress.setVisible(busy)
+        if busy:
+            self.progress.setRange(0, 0)
+        self.close_button.setText(CANCEL if busy else CLOSE)
+
+
+def _busy_bar(dialog: CoverChooser) -> QProgressBar:
+    """The indicator, indeterminate until there is something to count.
+
+    The same shape the scan uses: no text on the bar, since the status line
+    above it already says what is happening in words.
+    """
+    bar = QProgressBar(dialog)
+    bar.setRange(0, 0)
+    bar.setTextVisible(False)
+    return bar
 
 
 def _picture_grid(dialog: CoverChooser) -> QListWidget:
@@ -218,7 +263,7 @@ def _buttons(
     keep.setEnabled(False)
     keep.clicked.connect(dialog.keep_picked)
     row.addWidget(keep)
-    close = QPushButton("Close", dialog)
+    close = QPushButton(CANCEL, dialog)
     close.clicked.connect(dialog.reject)
     row.addWidget(close)
     layout.addLayout(row)

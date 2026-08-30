@@ -11,6 +11,7 @@ unlikely from a test, it is absent.
 
 from __future__ import annotations
 
+import threading
 import time
 
 from conftest import RecordingPlayer
@@ -21,7 +22,14 @@ from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, album, build
 
 from stellody.application.choosing_covers import ChooseCover
-from stellody.ui.cover_chooser import NOTHING, REFUSED, UNREACHABLE, CoverChooser
+from stellody.ui.cover_chooser import (
+    CANCEL,
+    CLOSE,
+    NOTHING,
+    REFUSED,
+    UNREACHABLE,
+    CoverChooser,
+)
 from stellody.ui.models import Column
 from stellody.ui.theme import Mode
 
@@ -111,6 +119,67 @@ class TestWhatTheChooserShows:
         dialog = _opened(FakeSearch(candidates=(FRONT,)), application)
         assert dialog.status.text() == "One picture on offer. Pick it to keep it."
         dialog.reject()
+
+
+class TestDrawingTheWait:
+    """A search takes 10 to 15 seconds against the real archive.
+
+    A dialog that says it is working while showing nothing that moves is one
+    somebody decides has hung, so the wait is drawn. `isVisibleTo` is asked
+    rather than `isVisible`, since intent is the question here and a dialog
+    nobody showed answers False to everything.
+    """
+
+    def test_it_opens_already_showing_that_it_is_working(self, application) -> None:
+        gate = threading.Event()
+        dialog = CoverChooser(_chooser(FakeSearch(gate=gate)), album(), Mode.DARK)
+        try:
+            assert dialog.progress.isVisibleTo(dialog)
+            assert dialog.progress.maximum() == 0, "nothing to count yet"
+            assert dialog.close_button.text() == CANCEL
+        finally:
+            gate.set()
+            _settle(dialog, application)
+            dialog.reject()
+
+    def test_the_wait_stops_being_drawn_once_the_search_is_done(
+        self, application
+    ) -> None:
+        dialog = _opened(FakeSearch(), application)
+        assert not dialog.progress.isVisibleTo(dialog)
+        assert dialog.close_button.text() == CLOSE
+        dialog.reject()
+
+    def test_it_counts_the_pictures_once_it_knows_how_many(self, application) -> None:
+        pictures = {FRONT.thumbnail_url: _png_bytes(), BACK.thumbnail_url: _png_bytes()}
+        dialog = _opened(FakeSearch(pictures=pictures), application)
+        assert dialog.progress.maximum() == 2
+        assert dialog.progress.value() == 2
+        dialog.reject()
+
+    def test_a_refused_search_stops_drawing_a_wait_as_well(self, application) -> None:
+        dialog = _opened(FakeSearch(candidates=(), refused=True), application)
+        assert not dialog.progress.isVisibleTo(dialog)
+        assert dialog.close_button.text() == CLOSE
+        dialog.reject()
+
+    def test_keeping_a_picture_draws_a_wait_of_its_own(self, application) -> None:
+        dialog = _opened(FakeSearch(), application)
+        dialog.grid.setCurrentRow(0)
+        dialog.keep_picked()
+        assert dialog.progress.isVisibleTo(dialog)
+        assert dialog.close_button.text() == CANCEL
+        _settle(dialog, application)
+        assert not dialog.progress.isVisibleTo(dialog)
+        dialog.reject()
+
+    def test_the_wait_can_still_be_cancelled(self, application) -> None:
+        gate = threading.Event()
+        dialog = CoverChooser(_chooser(FakeSearch(gate=gate)), album(), Mode.DARK)
+        dialog.reject()
+        assert not dialog.searching
+        gate.set()
+        _settle(dialog, application)
 
 
 class TestPickingAPicture:

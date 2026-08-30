@@ -109,8 +109,10 @@ room.
 services on 2026-08-30, searching Ether Song returned 19 candidates across 8
 releases in 13.5 seconds, since the terms allow one request a second and a
 release has to be asked about before there is a picture. So the dialog says
-what it is doing, draws each tile as its own thumbnail lands and can be closed
-at any point in that.
+what it is doing, draws an indicator while it does it, fills each tile as its
+own thumbnail lands and can be closed at any point in that. The indicator runs
+indeterminate while the releases are being searched for, then counts the
+pictures once the search has said how many there are.
 
 **A refusal is not an absence.** Measured 2026-08-31, MusicBrainz refused 6 of
 10 asks at the rate its own terms ask for, while the Cover Art Archive answered
