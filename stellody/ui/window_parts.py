@@ -42,11 +42,15 @@ def application_icon() -> QIcon | None:
 
 
 def build_body(
-    window: QMainWindow, tray: QWidget, tree: QWidget, footer: QWidget
+    window: QMainWindow,
+    tray: QWidget,
+    tree: QWidget,
+    position: QWidget,
+    footer: QWidget,
 ) -> QWidget:
-    """The tray, the library, then the volume strip, as one central widget.
+    """The toolbar, the library, the position bar, then the volume strip.
 
-    A plain container: it holds the three of them and is never a stop itself.
+    A plain container: it holds them and is never a stop itself.
     """
     holder = QWidget(window)
     holder.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -55,6 +59,7 @@ def build_body(
     column.setSpacing(0)
     column.addWidget(tray)
     column.addWidget(tree, 1)
+    column.addWidget(position)
     column.addWidget(footer)
     return holder
 

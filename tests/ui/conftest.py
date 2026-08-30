@@ -21,6 +21,7 @@ from stellody.domain.playback import (
     OutputMode,
     OutputReport,
     OutputRequest,
+    PlaybackPosition,
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
@@ -39,6 +40,8 @@ class RecordingPlayer:
         self.state = PlaybackState.STOPPED
         self.finished = False
         self.volume = UNITY_VOLUME
+        self.reported: PlaybackPosition | None = None
+        self.lead = 0
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Record the load and report a plain shared stream."""
@@ -73,8 +76,13 @@ class RecordingPlayer:
         self.calls.append(f"seek {frame}")
 
     def position(self):
-        """Nothing to report in these tests."""
-        return
+        """Whatever a test has put there; nothing by default."""
+        return self.reported
+
+    @property
+    def lead_frames(self) -> int:
+        """How far this stand-in claims the decode runs ahead."""
+        return self.lead
 
     def set_volume(self, level: float) -> None:
         """Record the level asked for."""

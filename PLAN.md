@@ -56,9 +56,12 @@ So one part of the closing condition is still unwatched in the built
 application: the queue moving on by itself at the end of a track. It holds in
 the tests; it has not been seen in the binary.
 
-Seeking is still absent, deliberately. Where playback has reached is shown by
-milestone 3 rather than by a plain bar, so this milestone carries no position
-display at all.
+Seeking was deliberately absent, on the grounds that milestone 3 would show
+position rather than a plain bar. That was the wrong order: this milestone's
+own closing condition asks somebody to watch a track end, which without
+seeking means waiting out a whole track for each attempt, on a library with no
+short tracks in it. So a bar arrived early, as a stepping stone rather than a
+decision reversed; milestone 3 replaces what it draws.
 
 Done when: the queue is seen moving on by itself at the end of a track, then
 a quit taken mid-track is seen to leave no process behind. That is the owner's
@@ -68,17 +71,19 @@ Blocks: every milestone below except 6.
 
 ## 2. Report the position that is audible
 
-Measured last session: `position()` reports DECODED frames, which run about one
-buffer ahead of what is coming out of the speakers. A progress display fed from
-it drifts ahead of the music by that much.
+The correction is built. The port reports what has been DECODED, which runs a
+buffer ahead of what is leaving the speakers, so the port now states its own
+lead and the transport subtracts it. Seeking is corrected the same way in
+reverse, so a listener asking for a point lands on it rather than a buffer
+short of it.
 
-The correction belongs with the transport rather than in the engine, because the
-size of the lead is a property of the buffer the transport chose.
+A test pins the arithmetic against a known lead, which was half the closing
+condition. The other half needs ears: whether the figure on screen matches
+what is audible. It cannot be measured from here, since a test has no
+speakers.
 
-Done when: the reported position matches what is audible to within a buffer;
-a test pins the correction against a known buffer size.
-
-Depends on: milestone 1.
+Done when: the bar is watched against the music and does not run ahead of it.
+That is the owner's observation to make, not a test's.
 
 ## 3. The amplitude monitor
 
@@ -95,6 +100,11 @@ holding many tracks, so one shape serves all of them.
 Needed: an envelope of peaks per bucket, a cache that survives a restart, a
 widget drawing it in the palette's own colours, plus a playhead driven by the
 position that milestone 2 makes honest.
+
+Most of what surrounds it already exists in the bar built for milestone 1: the
+corrected position, the poll that refreshes it, the arithmetic from a point
+along the track to a frame, the seek behind it, its place in the keyboard order, plus the
+rule that a poll never takes the handle from somebody holding it. What this milestone replaces is the painting.
 
 Done when: playing a track draws its shape immediately from the cache or
 within a second or two of starting without it, the line crosses the shape in

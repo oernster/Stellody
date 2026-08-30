@@ -121,6 +121,22 @@ class OutputReport:
         return self.mode is not self.request.mode
 
 
+SECONDS_PER_MINUTE = 60
+
+
+def clock_text(frames: int, sample_rate: int) -> str:
+    """`frames` at `sample_rate` as minutes and seconds, for a display.
+
+    Seconds are truncated rather than rounded, so a figure never names a
+    second the track has not reached. Minutes are not padded, because a
+    listener reads 3:07 and not 03:07.
+    """
+    if sample_rate <= 0:
+        raise ValueError("sample rate must be positive")
+    total = max(0, frames) // sample_rate
+    return f"{total // SECONDS_PER_MINUTE}:{total % SECONDS_PER_MINUTE:02d}"
+
+
 @dataclass(frozen=True, slots=True)
 class PlaybackPosition:
     """How far into a track the transport has reached."""

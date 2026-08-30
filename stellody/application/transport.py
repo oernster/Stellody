@@ -19,6 +19,7 @@ from stellody.domain.playback import (
     SILENT_VOLUME,
     UNITY_VOLUME,
     OutputRequest,
+    PlaybackPosition,
     PlaybackState,
 )
 from stellody.domain.queue import Queue, queue_from
@@ -169,6 +170,42 @@ class Transport:
         """Give the device back, keeping the queue where it is."""
         self._waiting_at_the_start = False
         self._player.stop()
+
+    @property
+    def position(self) -> PlaybackPosition | None:
+        """How far playback has reached, as a listener would say it.
+
+        The port reports what has been DECODED, which runs ahead of what is
+        leaving the speakers by whatever the device is still holding. Shown
+        raw, a progress display sits ahead of the music by that much and a
+        track appears to finish before it has.
+
+        The correction belongs here rather than in the engine because the size
+        of the lead is a property of the device the port opened; this is the
+        layer that asks the port anything. It is honest to within one
+        buffer; it does not model the device's own latency beyond that.
+        """
+        reported = self._player.position()
+        if reported is None:
+            return None
+        audible = max(0, reported.frame - self._player.lead_frames)
+        return PlaybackPosition(
+            frame=audible,
+            frame_count=reported.frame_count,
+            sample_rate=reported.sample_rate,
+        )
+
+    def seek(self, frame: int) -> None:
+        """Move within the track in hand, in frames, clamped to it.
+
+        Asked for in the listener's terms, so it is the audible position that
+        lands where they asked; the decode is put one buffer further on, which
+        is where it has to be for that to be true a moment later.
+        """
+        if self._player.position() is None:
+            return
+        self._waiting_at_the_start = False
+        self._player.seek(max(0, frame) + self._player.lead_frames)
 
     def next(self) -> None:
         """Play the following track; what the end does depends on repeat.

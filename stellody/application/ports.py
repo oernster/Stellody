@@ -242,7 +242,21 @@ class PlaybackPort(Protocol):
         ...
 
     def position(self) -> PlaybackPosition | None:
-        """How far in the transport has reached; None when nothing is loaded."""
+        """How far the DECODE has reached; None when nothing is loaded.
+
+        This runs ahead of what is coming out of the speakers, by whatever is
+        sitting in the buffer. Use `Transport.position` for a figure fit to
+        show somebody.
+        """
+        ...
+
+    @property
+    def lead_frames(self) -> int:
+        """How far the decode runs ahead of what is audible, in frames.
+
+        A property of the device the port opened rather than of the track, so
+        the port is the only thing that can answer it.
+        """
         ...
 
     @property

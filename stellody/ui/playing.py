@@ -218,8 +218,15 @@ class Playing:
 
     @Slot()
     def _poll_transport(self) -> None:
-        """Move on at the end of a track; keep the buttons honest."""
+        """Move on at the end of a track; keep the buttons and the bar honest."""
         self._drive(self._transport.advance_if_finished)
+        self._position_bar.show_position(self._transport.position)
+
+    @Slot(int)
+    def seek_to(self, frame: int) -> None:
+        """Move within the track in hand, in the listener's own frames."""
+        self._drive(lambda: self._transport.seek(frame))
+        self._position_bar.show_position(self._transport.position)
 
     def _drive(self, action: Callable[[], object]) -> bool:
         """Run one transport command, saying so when it cannot be done.
@@ -285,3 +292,4 @@ class Playing:
             playing=self._transport.state.is_active,
             can_start=self._model.track_at(self._tree.currentIndex()) is not None,
         )
+        self._position_bar.show_position(self._transport.position)

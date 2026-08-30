@@ -144,8 +144,13 @@ class WasapiPlayback:
             session.reader.seek(frame)
         session.finished.clear()
 
+    @property
+    def lead_frames(self) -> int:
+        """One block: what has been handed to the device but not yet heard."""
+        return self._block_frames
+
     def position(self) -> PlaybackPosition | None:
-        """How far in the transport has reached; None when nothing is loaded."""
+        """How far the DECODE has reached; None when nothing is loaded."""
         session = self._session
         if session is None:
             return None

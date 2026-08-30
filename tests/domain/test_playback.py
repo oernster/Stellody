@@ -10,6 +10,7 @@ from stellody.domain.playback import (
     OutputRequest,
     PlaybackPosition,
     PlaybackState,
+    clock_text,
 )
 from stellody.domain.track import CD_BIT_DEPTH, CD_SAMPLE_RATE
 
@@ -211,3 +212,29 @@ def test_a_position_past_the_end_never_reports_negative_remaining() -> None:
 def test_invalid_positions_are_refused(kwargs: dict[str, object], message: str) -> None:
     with pytest.raises(ValueError, match=message):
         PlaybackPosition(**kwargs)  # type: ignore[arg-type]
+
+
+class TestClockText:
+    """Minutes and seconds, for a display somebody reads while listening."""
+
+    def test_the_start_of_a_track_reads_as_zero(self) -> None:
+        assert clock_text(0, CD_SAMPLE_RATE) == "0:00"
+
+    def test_seconds_are_padded_and_minutes_are_not(self) -> None:
+        """A listener reads 3:07, never 03:07."""
+        assert clock_text(CD_SAMPLE_RATE * 187, CD_SAMPLE_RATE) == "3:07"
+
+    def test_a_second_is_not_named_until_it_is_reached(self) -> None:
+        """Truncated rather than rounded: 2.9 seconds in is still the second."""
+        assert clock_text(int(CD_SAMPLE_RATE * 2.9), CD_SAMPLE_RATE) == "0:02"
+
+    def test_a_long_track_keeps_counting_in_minutes(self) -> None:
+        assert clock_text(CD_SAMPLE_RATE * 3661, CD_SAMPLE_RATE) == "61:01"
+
+    def test_before_the_beginning_reads_as_the_beginning(self) -> None:
+        """Nothing calls it with one; a clock has no negative reading."""
+        assert clock_text(-1, CD_SAMPLE_RATE) == "0:00"
+
+    def test_a_rate_of_nothing_is_refused_rather_than_dividing_by_zero(self) -> None:
+        with pytest.raises(ValueError):
+            clock_text(1, 0)

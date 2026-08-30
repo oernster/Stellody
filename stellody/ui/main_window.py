@@ -33,6 +33,7 @@ from stellody.ui.leaving import Leaving
 from stellody.ui.links import open_externally
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
+from stellody.ui.position_bar import PositionBar
 from stellody.ui.scanning import Scanning
 from stellody.ui.settings_keys import (
     FALSE,
@@ -126,6 +127,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
             stop_playback=self.stop_playback,
             next_track=self.next_track,
         )
+        self._position_bar = PositionBar(self, seek=self.seek_to)
         self._bottom_tray = BottomTray(
             self,
             on_change=self.set_volume,
@@ -135,7 +137,9 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
             repair_library=self.repair_library,
         )
         self.setCentralWidget(
-            build_body(self, self._tray, self._tree, self._bottom_tray)
+            build_body(
+                self, self._tray, self._tree, self._position_bar, self._bottom_tray
+            )
         )
         self._set_ring_order()
         self._progress = build_progress(self)
@@ -169,6 +173,7 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         stops = (
             *self._tray.ring_stops(),
             self._tree,
+            self._position_bar.slider,
             *self._bottom_tray.ring_stops(),
         )
         for earlier, later in itertools.pairwise(stops):
