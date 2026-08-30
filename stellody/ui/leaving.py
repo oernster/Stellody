@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
 from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.settings_keys import SETTING_CLOSE
@@ -86,12 +86,20 @@ class Leaving:
 
     @property
     def tray_active(self) -> bool:
-        """True when there is a tray icon to restore the window from.
+        """True when there is a notification area for the window to live in.
 
         Starting hidden is only honest while this holds; without a tray there
         would be nothing on screen at all.
+
+        Measured across two launches of the same binary: the icon reported
+        itself visible on one and not on the other, because an icon shown a
+        moment ago has not necessarily been taken up by the shell yet. A
+        launch asked to be quiet would then open a window instead, which is
+        the opposite of what was asked for. Whether the platform HAS a
+        notification area does not wobble like that, so it is asked as well;
+        an icon already visible is answer enough on its own.
         """
-        return self._notification.isVisible()
+        return self._notification.isVisible() or QSystemTrayIcon.isSystemTrayAvailable()
 
     @Slot()
     def restore_from_tray(self) -> None:

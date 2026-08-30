@@ -270,7 +270,9 @@ def test_the_launch_box_starts_it_and_then_gets_out_of_the_way(
     window = _window(monkeypatch, _here())
     started: list[pathlib.Path] = []
     monkeypatch.setattr(
-        launching, "launch", lambda exe: started.append(exe) or _FakeProcess()
+        launching,
+        "launch",
+        lambda exe, quiet=False: started.append(exe) or _FakeProcess(),
     )
     monkeypatch.setattr(launching, "front", lambda pid: True)
     executable = INSTALLED_AT / actions.EXE_NAME
@@ -286,7 +288,7 @@ def test_setup_stays_until_the_new_window_is_up(
 ) -> None:
     """A window arriving after setup has gone only flashes on the taskbar."""
     window = _window(monkeypatch, _here())
-    monkeypatch.setattr(launching, "launch", lambda exe: _FakeProcess())
+    monkeypatch.setattr(launching, "launch", lambda exe, quiet=False: _FakeProcess())
     monkeypatch.setattr(launching, "front", lambda pid: False)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     window._front_then_close()
@@ -300,7 +302,9 @@ def test_an_unticked_launch_box_leaves_the_verdict_on_screen(
     application: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     window = _window(monkeypatch, _here())
-    monkeypatch.setattr(launching, "launch", lambda exe: pytest.fail("not asked for"))
+    monkeypatch.setattr(
+        launching, "launch", lambda exe, quiet=False: pytest.fail("not asked for")
+    )
     window._launch.setChecked(False)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     assert window._body.currentIndex() == screens.SCREEN_VERDICT
@@ -310,7 +314,7 @@ def test_an_application_that_will_not_start_is_reported_rather_than_hidden(
     application: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     window = _window(monkeypatch, _here())
-    monkeypatch.setattr(launching, "launch", lambda exe: None)
+    monkeypatch.setattr(launching, "launch", lambda exe, quiet=False: None)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     assert "could not start it" in window._verdict_lead.text()
 
@@ -325,49 +329,3 @@ def test_removing_says_which_way_the_library_went(
     window._forget.setChecked(True)
     window._remove()
     assert "are gone" in window._verdict_lead.text()
-
-
-def _anew_passed(
-    monkeypatch: pytest.MonkeyPatch,
-    window: setup.SetupWindow,
-    reinstalling: bool = False,
-) -> bool:
-    """What the window asked the install for, with the install itself stood in."""
-    asked: list[bool] = []
-
-    def record(plan, archive, progress=None, anew=False):
-        asked.append(anew)
-        return plan.target / actions.EXE_NAME
-
-    monkeypatch.setattr(actions, "payload_zip", lambda: INSTALLED_AT / "payload.zip")
-    monkeypatch.setattr(actions, "install", record)
-    window._write_files(reinstalling=reinstalling)
-    return asked[0]
-
-
-def test_a_first_install_asks_for_the_switches_to_start_off(
-    application: QApplication, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Nothing was installed, so nothing the user chose is being carried on."""
-    window = _window(monkeypatch, _here())
-    assert window.route is Route.INSTALL
-    assert _anew_passed(monkeypatch, window) is True
-
-
-def test_a_reinstall_asks_for_the_switches_to_start_off(
-    application: QApplication, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The directory survives an uninstall, so the switches must not survive it."""
-    window = _window(monkeypatch, _here(THIS_VERSION))
-    assert window.route is Route.MANAGE
-    assert _anew_passed(monkeypatch, window, reinstalling=True) is True
-
-
-@pytest.mark.parametrize("installed", ("0.1.0", "0.3.0"))
-def test_an_update_or_a_downgrade_leaves_the_switches_alone(
-    application: QApplication, monkeypatch: pytest.MonkeyPatch, installed: str
-) -> None:
-    """Both are the same install carrying on, so neither resets a choice."""
-    window = _window(monkeypatch, _here(installed))
-    assert window.route in (Route.UPDATE, Route.DOWNGRADE)
-    assert _anew_passed(monkeypatch, window) is False

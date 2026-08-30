@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 from tray_support import RememberingStore, build
 
 
@@ -81,3 +81,32 @@ def test_a_window_given_no_diary_keeps_its_own_counsel(
         made._quitting = True
         made.close()
         made.deleteLater()
+
+
+def test_a_notification_area_that_exists_counts_even_before_the_icon_shows(
+    window, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Measured across two launches of the same binary, one True one False.
+
+    An icon shown a moment ago has not necessarily been taken up by the shell,
+    so asking the icon alone made a launch that had asked to stay quiet open a
+    window instead. Whether the platform HAS a notification area does not
+    wobble like that.
+    """
+    made = window
+    assert not made._notification.isVisible(), "headless: no icon is really shown"
+    monkeypatch.setattr(
+        QSystemTrayIcon, "isSystemTrayAvailable", staticmethod(lambda: True)
+    )
+    assert made.tray_active, "there is somewhere to wait, so waiting is honest"
+
+
+def test_no_notification_area_anywhere_means_there_is_nowhere_to_wait(
+    window, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Else a quiet start would leave nothing on screen at all."""
+    made = window
+    monkeypatch.setattr(
+        QSystemTrayIcon, "isSystemTrayAvailable", staticmethod(lambda: False)
+    )
+    assert not made.tray_active

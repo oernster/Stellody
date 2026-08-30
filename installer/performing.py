@@ -200,12 +200,19 @@ class Performing:
         if not wanted:
             self._verdict(TICK, title, lead)
             return
-        process = launching.launch(executable)
+        quiet = self._sign_in.isChecked()
+        process = launching.launch(executable, quiet)
         if process is None:
             self.log.write("could not start it")
             self._verdict(TICK, title, f"{lead} Setup could not start it, though.")
             return
-        self.log.write(f"started {executable} as pid {process.pid}")
+        self.log.write(f"started {executable} as pid {process.pid}, quiet: {quiet}")
+        if quiet:
+            # Nothing will appear, so there is no window to wait for and none
+            # to bring forward. Waiting anyway would hold a spent setup on
+            # screen for the whole deadline over a window that never comes.
+            self._verdict(TICK, title, f"{lead} {wording.LAUNCHING_QUIET_LEAD}")
+            return
         self._verdict(TICK, title, f"{lead} {wording.LAUNCHING_LEAD}")
         self._front_pid = process.pid
         self._front_deadline = time.monotonic() + launching.FOREGROUND_WAIT_S
