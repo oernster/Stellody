@@ -14,12 +14,16 @@ from conftest import package_modules, parsed, relative
 
 # Modules owning Stellody's own state, which may therefore write to disk.
 # A music library is never one of them.
+#
+# Every name here is a module that EXISTS. Two that did not, an artwork cache
+# and a settings store, sat in this set for modules nobody had written yet:
+# permission granted in advance to code no reviewer could read, in the one
+# guard the project exists for. A module that needs to write asks for that
+# when it is written, which is when there is something to weigh.
 WRITE_PERMITTED = frozenset(
     {
         "stellody/infrastructure/paths.py",
         "stellody/infrastructure/store.py",
-        "stellody/infrastructure/art_cache.py",
-        "stellody/infrastructure/settings.py",
         "stellody/infrastructure/diary.py",
         "stellody/infrastructure/startup_log.py",
         "stellody/infrastructure/switch_reset.py",
