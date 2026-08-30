@@ -30,8 +30,9 @@ not going to.
 - Shows the library as albums, discs and tracks, ordered either way.
 - Plays a track chosen by double click, by Return or from the right click
   menu, then works through the album on its own.
-- Offers previous, play and pause, stop and next, both on the tray and on that
-  menu, with the library highlight following whatever is playing. Back returns
+- Offers previous, play and pause, stop and next, both on the toolbar across
+  the top and on that menu, with the library highlight following whatever is
+  playing. Back returns
   to the beginning of the track in hand and waits there; pressing it again from
   there goes to the track before, waiting at its beginning too.
 - Carries volume, mute, shuffle and repeat, each remembered between sessions.
@@ -42,13 +43,13 @@ not going to.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
-- Runs in the system tray and can start there. The setup program offers to
-  start Stellody when you sign in, which brings it up in the tray rather than
-  over whatever Windows has just finished drawing. Opening Stellody again
+- Runs in the notification area and can start there. The setup program offers to
+  start Stellody when you sign in, which brings it up there rather than over
+  whatever Windows has just finished drawing. Opening Stellody again
   while it is already running brings that window back rather than starting a
   second copy.
 - Asks what the window's close button should mean the first time you press it,
-  offering the notification area or a full quit; the tray is the default and
+  offering the notification area or a full quit; staying is the default and
   the answer can be remembered so it stops asking. "Ask again when I close"
   takes that answer back, from the File menu or from the notification area's
   own menu, since the window is hidden exactly when you want the question
