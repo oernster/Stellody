@@ -33,7 +33,14 @@ class Leaving:
         self.close()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Honour the stored close behaviour, asking when none is stored."""
+        """Honour the stored close behaviour, asking when none is stored.
+
+        The size is written down first, on every path out. The cross can leave
+        Stellody running in the notification area and the tray's Quit then
+        closes a window that is already hidden, so a later reading would be of
+        a window that is no longer showing what it was left at.
+        """
+        self.remember_geometry()
         if self._quitting or not self._notification.isVisible():
             self._note(
                 f"closing for good: quitting={self._quitting} "

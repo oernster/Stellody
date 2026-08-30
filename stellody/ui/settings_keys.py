@@ -16,6 +16,12 @@ SETTING_DESCENDING = "sort_descending"
 SETTING_COVERS = "show_covers"
 # How large a sleeve is drawn in the grid, stored as the pixel size itself.
 SETTING_COVER_SIZE = "cover_size"
+# The size the window was left at, plus whether it was left maximised. Both,
+# because a maximised window reports the screen as its size while the size to
+# come back to is the other one.
+SETTING_WINDOW_WIDTH = "window_width"
+SETTING_WINDOW_HEIGHT = "window_height"
+SETTING_WINDOW_MAXIMISED = "window_maximised"
 # Written FALSE as a scan starts and TRUE when one finishes, so a scan that was
 # interrupted is known for what it is the next time the application starts.
 SETTING_SCAN_FINISHED = "scan_finished"

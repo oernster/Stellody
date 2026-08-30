@@ -7,7 +7,7 @@ import pathlib
 import traceback
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt, QTimer, Slot
+from PySide6.QtCore import QSize, Qt, QTimer, Slot
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -31,6 +31,7 @@ from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.covering import Covering
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
+from stellody.ui.geometry import Geometry
 from stellody.ui.health import HealthDialog
 from stellody.ui.leaving import Leaving
 from stellody.ui.links import open_externally
@@ -88,6 +89,7 @@ class MainWindow(
     Scanning,
     Playing,
     TransportMenu,
+    Geometry,
     Leaving,
     Covering,
     Appearance,
@@ -184,6 +186,7 @@ class MainWindow(
         self.restore_volume()
         self.restore_switches()
         self.restore_view()
+        self.restore_geometry(QSize(WINDOW_WIDTH_PX, WINDOW_HEIGHT_PX))
         self._tree.selectionModel().currentChanged.connect(self._on_selection)
         self._transport_timer = QTimer(self)
         self._transport_timer.timeout.connect(self._poll_transport)
