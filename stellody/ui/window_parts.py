@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui.covering import RowCover
 from stellody.ui.models import AlbumTreeModel, Column
 from stellody.ui.tiles import TILE_HEIGHT_PX, TILE_WIDTH_PX, AlbumTile
 
@@ -99,7 +100,16 @@ def build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
     """The album tree, configured for a large library."""
     tree = QTreeView(window)
     tree.setModel(model)
-    tree.setUniformRowHeights(True)
+    # A sleeve is drawn at the size a row can carry rather than at the size the
+    # grid keeps it, since one pixmap serves both views. setIconSize does not
+    # do this and was measured not to: the delegate is what reads the size.
+    tree.setItemDelegate(RowCover(tree))
+    # Rows are NOT uniform: only an album row carries a picture, so only an
+    # album row should be as tall as one. Uniform heights take the first row's
+    # and give it to every track under it, which is what made a track row a
+    # band of empty space. The cost is a height asked for per visible row; the
+    # library opens collapsed, so that is albums rather than tracks.
+    tree.setUniformRowHeights(False)
     tree.setAlternatingRowColors(True)
     tree.setAllColumnsShowFocus(True)
     tree.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)

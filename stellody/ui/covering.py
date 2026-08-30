@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt, Slot
 from PySide6.QtGui import QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QStyledItemDelegate
 
 from stellody.application.artwork import AlbumArt, AlbumArtSources
 from stellody.ui.art_worker import ArtRunner
@@ -24,6 +25,26 @@ GRID_COVER_PX = 160
 # Big enough to tell one sleeve from another down a list, small enough that a
 # row stays a row.
 ROW_COVER_PX = 40
+
+
+class RowCover(QStyledItemDelegate):
+    """Draws an album's cover at the size a row can carry.
+
+    One pixmap serves both views and it is kept at the size the GRID draws it,
+    which left every row in the list as tall as a sleeve. A view's icon size
+    does not fix that: Qt reads the decoration size off the pixmap itself and
+    never consults the view for one. Measured here, a 40px icon size on the
+    tree still gave a 166px album row; stating the size in the option gives 44.
+
+    Only a row carrying a picture is touched, so a track stays the height of
+    the line of text it is.
+    """
+
+    def initStyleOption(self, option, index) -> None:
+        """Say how big the decoration is, rather than let the pixmap say."""
+        super().initStyleOption(option, index)
+        if not option.icon.isNull():
+            option.decorationSize = QSize(ROW_COVER_PX, ROW_COVER_PX)
 
 
 def placeholder_for(mode: Mode) -> QPixmap:
@@ -64,7 +85,6 @@ class Covering:
         if self._art_runner is not None:
             self._art_runner.ready.connect(self._on_cover)
             self._model.cover_wanted.connect(self._art_runner.want)
-        self._tree.setIconSize(QSize(ROW_COVER_PX, ROW_COVER_PX))
 
     def show_art(self, art: tuple[AlbumArtSources, ...]) -> None:
         """Say where each album's cover might be found, after a load or a scan.
