@@ -48,17 +48,22 @@ menu; the library highlight follows whatever is playing. Volume and mute
 arrived alongside, ahead of the plan.
 
 Playing, pausing and resuming have been exercised in the built application by
-the owner, so those are confirmed. Two parts of the closing condition have
-not been watched in the built application: the queue moving on by itself at
-the end of a track, then quitting mid-track leaving no process behind. Both
-hold in the tests; neither has been seen in the binary.
+the owner, so those are confirmed. Quitting has since been watched too: the
+application's own account records a shutdown running to its end, with no
+process remaining. What that run did not settle is whether it was quitting
+MID-TRACK, which is the case that has something to stop.
+
+So one part of the closing condition is still unwatched in the built
+application: the queue moving on by itself at the end of a track. It holds in
+the tests; it has not been seen in the binary.
 
 Seeking is still absent, deliberately. Where playback has reached is shown by
 milestone 3 rather than by a plain bar, so this milestone carries no position
 display at all.
 
-Done when: the two unwatched parts above are seen in the built application.
-That is the owner's observation to make, not a test's.
+Done when: the queue is seen moving on by itself at the end of a track, then
+a quit taken mid-track is seen to leave no process behind. That is the owner's
+observation to make, not a test's.
 
 Blocks: every milestone below except 6.
 

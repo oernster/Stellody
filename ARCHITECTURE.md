@@ -151,6 +151,8 @@ directories plus macOS AppleDouble stubs; nothing else.
 | Missing files are flagged, never deleted | An unplugged drive, a failed restore or an interrupted scan must not destroy library metadata. |
 | The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
 | The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
+| Ending the application is said out loud, never left to Qt | Quitting when the last window closes is off, which is what lets the cross leave Stellody in the notification area. Nothing then ends the event loop by itself, so every path that means to leave says so. |
+| The application keeps an account of its own appearances | A window arriving unbidden cannot be traced after the fact: whatever caused it has finished. `stellody/infrastructure/diary.py` records every show with the frames that led to it, every restore with the door that opened, then each step of a shutdown. It found two faults that reading the source had not. |
 
 ### Decided but not built
 
@@ -172,3 +174,11 @@ audio device, where anything short of complete is a decision nobody made.
 Infrastructure and UI are measured but sit outside the gate rather than dragging
 it down to a number that means nothing. Infrastructure needs a real audio
 device, a real library and the Windows shell.
+
+**No test may start the application.** Four tests once stood in for the install
+but not for the launch that follows it, so every run of the suite started the
+copy of Stellody installed on the machine, on the owner's own desktop, while a
+window arriving unbidden was being hunted. `tests/conftest.py` refuses to start
+anything named like the application, whatever a test believes it has stood in
+for. It also points the diary at a temporary directory, so a run cannot write
+into the account of real ones.

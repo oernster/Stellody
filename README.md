@@ -49,7 +49,12 @@ not going to.
   second copy.
 - Asks what the window's close button should mean the first time you press it,
   offering the notification area or a full quit; the tray is the default and
-  the answer can be remembered so it stops asking.
+  the answer can be remembered so it stops asking. "Ask again when I close"
+  takes that answer back, from the File menu or from the notification area's
+  own menu, since the window is hidden exactly when you want the question
+  again. A fresh install or a reinstall forgets it too.
+- Ends when you tell it to. Quit, on that menu or on the close prompt, closes
+  the application rather than leaving it running with no window.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
@@ -71,6 +76,12 @@ is disabled and says so.
   the browser does the asking, never Stellody.
 - It does not encrypt anything at rest. The store holds library metadata, not
   secrets.
+- It keeps a plain-text account of its own comings and goings at
+  `%TEMP%\stellody-diary.log`: when a window was shown, what asked for it and
+  how a shutdown went. It exists because a window arriving unbidden is
+  otherwise impossible to trace after the fact. It records no music, no
+  library contents and no personal data, it is never sent anywhere and you
+  may delete it at any time.
 
 ## Stack
 
