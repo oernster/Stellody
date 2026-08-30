@@ -27,73 +27,17 @@ A first release has been cut and pushed, of what works today. `VERSION` holds
 the number for the release being cut; a bump is owed against the newest tag
 rather than against the last thing written.
 
-The position display is done. The corrected position and the amplitude
-monitor that draws it against the music have both been watched in the built
-application, so both are gone from this file, as the grid of covers was before
-them. The cover chooser of milestone 4 is built and gate green; what it has
-not had is the owner's own observation against the real archive, which is what
-its closing condition asks for. Version 1.0 is a separate readiness call for the owner to make;
+The position display and the cover chooser are done. The corrected position,
+the amplitude monitor that draws it against the music and the chooser that
+gives an album the art its own files never carried have each been watched in
+the built application, so each is gone from this file, as the grid of covers
+was before them. Version 1.0 is a separate readiness call for the owner to make;
 nothing below is sized against it. Search, ratings and the rest come later,
 the wider formats and video among them.
 
 Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
-
-## 4. Choose a cover when the local files carry none
-
-**All of it is built.** The domain candidate, the port, the service that offers
-and accepts, the MusicBrainz and Cover Art Archive client behind it, the
-structural test saying no other module can open a connection at all, then the
-half a listener sees: the chooser dialog, the worker holding the search off the
-interface thread, the entry on the right click menu and the redraw once a
-picture is kept.
-
-**Nothing happens without being asked.** Stellody opens no connection of its
-own. Right clicking an album offers to go looking; that gesture is the only
-thing that reaches outward, so a listener who never uses it runs an application
-that still touches nothing. A window built without the service offers no entry
-at all, which is how every test here raises that menu with no network in the
-room.
-
-**It opens on a wait rather than on a result.** Measured against the live
-services on 2026-08-30, searching Ether Song returned 19 candidates across 8
-releases in 13.5 seconds, since the terms allow one request a second and a
-release has to be asked about before there is a picture. So the dialog says
-what it is doing, draws an indicator while it does it, fills each tile as its
-own thumbnail lands and can be closed at any point in that. The indicator runs
-indeterminate while the releases are being searched for, then counts the
-pictures once the search has said how many there are.
-
-**A refusal is not an absence.** Measured 2026-08-31, MusicBrainz refused 6 of
-10 asks at the rate its own terms ask for, while the Cover Art Archive answered
-4 of 4. So the release search is asked up to five times with a growing pause;
-a refusal that survives all five is said out loud rather than reported as an
-album with no art anywhere. With the retry in place, three live searches came
-back with 10, 31 and 10 pictures in 9 to 15 seconds each.
-
-**What closing it can and cannot do.** The cancel flag is read between
-requests, so a search stops at the next boundary rather than in the middle of
-one. A request already in flight runs to its own timeout and its answer is
-dropped rather than drawn. That is asserted rather than asserted about: a test
-holds a search open, lets go of it, releases it and watches nothing arrive. It
-failed first, against a sender check that a queued cross thread signal defeats.
-
-**What the listing cannot say.** The archive names the thumbnail sizes it will
-serve, 250, 500 and 1200; it never names the pixel size of the original. So a
-candidate is labelled with the largest size on offer rather than with true
-dimensions. Reading the real size would mean fetching every original, which is
-tens of megabytes to draw a grid of squares.
-
-What tests can pin is pinned, with the archive stood in for: what a tile says,
-that a picture arrives on its own tile, that nothing can be kept until
-something is picked, that a fetch which fails keeps nothing and leaves the
-chooser open, that a chosen picture reaches the library under the album's own
-key. What is left needs the live services and the owner's eyes.
-
-Done when: an album with no local art is given one from the chooser against the
-real archive, then keeps it across a restart and a rescan; declining leaves the
-placeholder. That is the owner's observation to make, not a test's.
 
 ## 5. Search the library
 
@@ -382,8 +326,8 @@ at exactly unity, with the same samples the file holds.
   than by intention.
 - **Anything over the network that nobody asked for.** No scrobbling, no
   telemetry, no update check. Stellody opens no connection of its own; the
-  cover chooser in milestone 4 is the single outward reach and it happens only
-  when a listener opens it. Handing the donation link to a browser is not an
+  cover chooser is the single outward reach and it happens only when a
+  listener opens it. Handing the donation link to a browser is not an
   exception either: the address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
