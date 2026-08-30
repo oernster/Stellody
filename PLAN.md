@@ -413,5 +413,11 @@ at exactly unity, with the same samples the file holds.
 - **Repairing the files themselves.** Milestone 13 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
+- **The album pane inserted inline after the sleeve that opened it.** That is
+  what MediaMonkey does and it reads well; a list view cannot insert a row of
+  its own between two rows of the model. It would mean a view written from
+  scratch, losing with it the keyboard reach an item view carries for nothing. The
+  pane sits below the grid instead, which is the same information a row lower
+  down.
 - **A second library root.** One folder, chosen once, rescanned incrementally.
 - **Writing anything at all into the music folder**, cache included.
