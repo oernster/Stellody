@@ -219,6 +219,11 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         menu_action(file_menu, self, "Choose &music folder...", self.choose_folder)
         self._rescan_action = menu_action(file_menu, self, "&Rescan", self.rescan)
         file_menu.addSeparator()
+        self._forget_close_action = menu_action(
+            file_menu, self, "&Ask again when I close", self.forget_close_choice
+        )
+        file_menu.aboutToShow.connect(self._show_whether_a_choice_is_remembered)
+        file_menu.addSeparator()
         menu_action(file_menu, self, "&Quit", self.quit_application)
 
         view_menu = self.menuBar().addMenu("&View")
@@ -245,6 +250,11 @@ class MainWindow(Scanning, Playing, Leaving, QMainWindow):
         menu_action(help_menu, self, "&UI licence (LGPL-3.0)", self.show_ui_licence)
         help_menu.addSeparator()
         menu_action(help_menu, self, f"&About {APP_NAME}", self.show_about)
+
+    @Slot()
+    def _show_whether_a_choice_is_remembered(self) -> None:
+        """Offer to forget only while there is something to forget."""
+        self._forget_close_action.setEnabled(not self.asks_on_close)
 
     @Slot()
     def choose_folder(self) -> None:

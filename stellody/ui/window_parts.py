@@ -124,6 +124,9 @@ def build_progress(window: QMainWindow) -> QProgressBar:
     return progress
 
 
+ASK_ON_CLOSE_LABEL = "Ask again when I close"
+
+
 def build_tray(window: QMainWindow, icon: QIcon | None) -> QSystemTrayIcon:
     """The system tray presence and its menu."""
     tray = QSystemTrayIcon(window)
@@ -134,6 +137,11 @@ def build_tray(window: QMainWindow, icon: QIcon | None) -> QSystemTrayIcon:
     show = QAction(f"Show {APP_NAME}", menu)
     show.triggered.connect(window.restore_for_tray_menu)
     menu.addAction(show)
+    menu.addSeparator()
+    forget = QAction(ASK_ON_CLOSE_LABEL, menu)
+    forget.triggered.connect(window.forget_close_choice)
+    menu.addAction(forget)
+    menu.aboutToShow.connect(lambda: forget.setEnabled(not window.asks_on_close))
     menu.addSeparator()
     quit_action = QAction("Quit", menu)
     quit_action.triggered.connect(window.quit_application)

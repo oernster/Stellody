@@ -27,8 +27,14 @@ from stellody.infrastructure.walker import FolderWalker
 from stellody.shared import resources
 from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
+from stellody.ui.close_prompt import CloseAction
 from stellody.ui.main_window import MainWindow
-from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE
+from stellody.ui.settings_keys import (
+    FALSE,
+    SETTING_CLOSE,
+    SETTING_REPEAT,
+    SETTING_SHUFFLE,
+)
 
 # What a second launch returns once it has asked the running copy to show
 # itself: it did what was wanted, so it is not a failure.
@@ -108,6 +114,10 @@ def _start(argv: list[str] | None = None) -> int:
     if switch_reset.take(data_location()):
         for key in (SETTING_SHUFFLE, SETTING_REPEAT):
             store.set_setting(key, FALSE)
+        # The remembered close choice is the same kind of thing: an answer
+        # given once that outlives the install it was given to. A reinstall
+        # that came back still acting on it would offer no way to notice.
+        store.set_setting(SETTING_CLOSE, CloseAction.ASK.value)
     window = build_window(store, application.quit, diary.note)
     # Starting hidden is only honoured while there is a tray to restore from,
     # else the user would be left with nothing on screen at all.

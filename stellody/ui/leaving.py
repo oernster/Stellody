@@ -42,6 +42,7 @@ class Leaving:
             self._leave_for_good(event)
             return
         action = self._settings.get_setting(SETTING_CLOSE, CloseAction.ASK.value)
+        self._note(f"the stored close action reads {action!r}")
         if action == CloseAction.ASK.value:
             action = self._ask_close_action()
         self._note(f"the close button means: {action}")
@@ -94,6 +95,25 @@ class Leaving:
         if prompt.remember:
             self._settings.set_setting(SETTING_CLOSE, prompt.choice.value)
         return prompt.choice.value
+
+    @property
+    def asks_on_close(self) -> bool:
+        """Whether the close button still asks rather than acting on a memory."""
+        stored = self._settings.get_setting(SETTING_CLOSE, CloseAction.ASK.value)
+        return stored == CloseAction.ASK.value
+
+    @Slot()
+    def forget_close_choice(self) -> None:
+        """Take back the answer the remember box kept.
+
+        A choice offered with a box marked remember has to be undoable, else
+        one tick is permanent and the only way back is to go and find where
+        the application keeps its settings. It reaches the tray menu as well
+        as this one, because the window is hidden exactly when somebody most
+        wants it back.
+        """
+        self._settings.set_setting(SETTING_CLOSE, CloseAction.ASK.value)
+        self._note("the remembered close choice was taken back")
 
     @property
     def tray_active(self) -> bool:
