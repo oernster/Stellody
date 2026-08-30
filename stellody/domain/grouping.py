@@ -4,6 +4,12 @@
 folders merged into one multi-disc set. The tags then supply that album's
 title, artist, date and genre.
 
+A bonus disc is a disc even where its folder names no number. "Ether Song
+(Bonus Disc)" beside "Ether Song" is one album in two folders, so it is folded
+in like a numbered one. Which disc it is then has to come from somewhere else:
+the tags where they say, else the disc after whatever the album already holds,
+since a bonus disc is never the first one.
+
 Grouping by tags was tried first and measured against a real library: classical
 rips frequently carry the composer in the ALBUM tag and a different DATE on
 every track, which fragmented one folder into five albums. A folder boundary is
@@ -15,7 +21,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from stellody.domain.album import Album
+from stellody.domain.album import FIRST_DISC, Album
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.ordering import TrackCandidate, resolve_tracks
@@ -29,6 +35,18 @@ UNKNOWN_ALBUM = "Unknown Album"
 _DISC_SUFFIX = re.compile(
     r"^(?P<base>.*?)[\s._-]*[(\[]?\s*(?:CD|Disc|Disk)\s*[.\-_]?\s*"
     r"(?P<number>\d{1,2})\s*[)\]]?$",
+    re.IGNORECASE,
+)
+
+# "Ether Song (Bonus Disc)", "Album [Extra CD]", "Album - Bonus Disc 2". The
+# number is optional here BECAUSE the bonus word is required: that word is what
+# says the folder holds another disc of the album beside it, so nothing is
+# inferred from a name merely ending in the word Disc. Tried before the pattern
+# above, since a numbered bonus folder matches both and only this one reads it
+# without leaving half the bracket in the album name.
+_BONUS_SUFFIX = re.compile(
+    r"^(?P<base>.*?)[\s._-]*[(\[]?\s*(?:bonus|extra)\s*"
+    r"(?:CD|Disc|Disk)\s*[.\-_]?\s*(?P<number>\d{1,2})?\s*[)\]]?$",
     re.IGNORECASE,
 )
 
@@ -51,15 +69,30 @@ def folder_base_and_disc(folder_name: str) -> tuple[str, int | None]:
     """Split a trailing disc marker off a folder name.
 
     Returns the name without the marker and the disc number it carried; the
-    name unchanged and None when it carried none.
+    name unchanged and None when it carried none. A bonus disc is a marker even
+    where it names no number, so it folds into the album beside it and leaves
+    which disc it is to be worked out.
     """
-    match = _DISC_SUFFIX.match(folder_name)
-    if match is None:
-        return folder_name, None
-    base = match.group("base").strip()
-    if not base:
-        return folder_name, None
-    return base, int(match.group("number"))
+    for pattern in (_BONUS_SUFFIX, _DISC_SUFFIX):
+        match = pattern.match(folder_name)
+        if match is None:
+            continue
+        base = match.group("base").strip()
+        if not base:
+            continue
+        number = match.group("number")
+        return base, int(number) if number else None
+    return folder_name, None
+
+
+def is_unnumbered_bonus(folder_name: str) -> bool:
+    """Whether this folder calls itself a bonus disc without saying which."""
+    match = _BONUS_SUFFIX.match(folder_name)
+    return (
+        match is not None
+        and bool(match.group("base").strip())
+        and match.group("number") is None
+    )
 
 
 def _most_common(values: list[str]) -> str:
@@ -86,6 +119,24 @@ class _Group:
     genres: list[str]
     tagged_artists: int
     disc_conflicts: list[str]
+    # Where in `candidates` a folder calling itself a bonus disc landed without
+    # saying which disc it is.
+    bonus_positions: list[int]
+
+
+def _with_disc(candidate: TrackCandidate, disc: int) -> TrackCandidate:
+    """The same candidate, placed on a given disc."""
+    return TrackCandidate(
+        file_name=candidate.file_name,
+        source=candidate.source,
+        duration_ms=candidate.duration_ms,
+        sample_rate=candidate.sample_rate,
+        bit_depth=candidate.bit_depth,
+        tag_disc=disc,
+        tag_track=candidate.tag_track,
+        tag_title=candidate.tag_title,
+        artists=candidate.artists,
+    )
 
 
 def _apply_folder_disc(
@@ -99,17 +150,34 @@ def _apply_folder_disc(
     """
     if folder_disc is None or candidate.tag_disc == folder_disc:
         return candidate
-    return TrackCandidate(
-        file_name=candidate.file_name,
-        source=candidate.source,
-        duration_ms=candidate.duration_ms,
-        sample_rate=candidate.sample_rate,
-        bit_depth=candidate.bit_depth,
-        tag_disc=folder_disc,
-        tag_track=candidate.tag_track,
-        tag_title=candidate.tag_title,
-        artists=candidate.artists,
-    )
+    return _with_disc(candidate, folder_disc)
+
+
+def _place_bonus_discs(group: _Group) -> None:
+    """Give a bonus folder's tracks a disc where nothing has said which.
+
+    The tags are believed where they say, since the folder name gave no number
+    to contradict them and they are then the only statement there is. Where
+    they say nothing either, the tracks go on the disc after everything else
+    the album holds. A bonus disc is never the first one; leaving them on it
+    would collide with the album proper track for track.
+    """
+    unplaced = [
+        position
+        for position in group.bonus_positions
+        if group.candidates[position].tag_disc is None
+    ]
+    if not unplaced:
+        return
+    bonus = set(group.bonus_positions)
+    held = [
+        group.candidates[position].tag_disc or FIRST_DISC
+        for position in range(len(group.candidates))
+        if position not in bonus
+    ]
+    disc = max(held, default=FIRST_DISC) + 1
+    for position in unplaced:
+        group.candidates[position] = _with_disc(group.candidates[position], disc)
 
 
 def _identity_of(group: _Group) -> AlbumIdentity:
@@ -143,6 +211,7 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], _Group]:
                 genres=[],
                 tagged_artists=0,
                 disc_conflicts=[],
+                bonus_positions=[],
             )
             groups[key] = group
         if (
@@ -151,6 +220,8 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], _Group]:
             and entry.candidate.tag_disc != folder_disc
         ):
             group.disc_conflicts.append(entry.candidate.file_name)
+        if is_unnumbered_bonus(entry.folder_name):
+            group.bonus_positions.append(len(group.candidates))
         group.candidates.append(_apply_folder_disc(entry.candidate, folder_disc))
         group.albums.append(normalise(entry.album))
         artist = normalise(entry.album_artist)
@@ -171,6 +242,7 @@ def assemble_albums(
     issues: list[LibraryIssue] = []
 
     for group in groups.values():
+        _place_bonus_discs(group)
         identity = _identity_of(group)
         label = f"{identity.display_artist} - {identity.display_title}"
         tracks, track_issues = resolve_tracks(tuple(group.candidates), label)
