@@ -36,9 +36,11 @@ SEARCH_URL = "https://musicbrainz.org/ws/2/release"
 ART_URL = "https://coverartarchive.org/release"
 # What the terms mean by contact: a URL or an address whoever runs the service
 # can reach the author of the application at, sent with every request so a
-# misbehaving client can be told about rather than merely blocked. The
-# project's own site, since the author's email is nobody else's business.
-CONTACT = "https://stellody.com"
+# misbehaving client can be told about rather than merely blocked. An address
+# kept for this, since the project's own site is somewhere to read rather than
+# somewhere anyone can be reached. It goes out with every search; it is here
+# for that and for nothing else.
+CONTACT = "stellody@hotmail.com"
 USER_AGENT = f"{APP_NAME}/{__version__} ( {CONTACT} )"
 # One request a second is what the terms ask for. A tenth over it is not
 # generosity; it is the margin that stops a clock rounding down into a refusal.

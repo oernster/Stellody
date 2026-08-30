@@ -16,6 +16,7 @@ import urllib.error
 from io import BytesIO
 
 from stellody.infrastructure.cover_search import (
+    CONTACT,
     RELEASE_LIMIT,
     USER_AGENT,
     ArchiveCovers,
@@ -132,7 +133,7 @@ class TestWhatTheSearchAsksFor:
         agent = opener.headers[0].get("User-agent")
         assert agent == USER_AGENT
         assert "Stellody" in agent
-        assert "http" in agent, "and how to reach whoever is asking"
+        assert CONTACT in agent, "and how to reach whoever is asking"
 
     def test_a_quote_in_a_title_cannot_break_the_phrase(self) -> None:
         """A Lucene phrase ended early searches for something else entirely."""
