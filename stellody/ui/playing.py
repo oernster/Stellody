@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, QPoint, Qt, Slot
-from PySide6.QtWidgets import QMenu
+from PySide6.QtWidgets import QAbstractItemView, QMenu
 
 from stellody.ui.bottom_tray import (
     DEFAULT_PERCENT,
@@ -51,8 +51,20 @@ class Playing:
         only, which is why this says which tree it was measured on.
         """
         self._tree.activated.connect(self.activate)
-        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._tree.customContextMenuRequested.connect(self.show_transport_menu)
+        self.wire_transport_menu(self._tree)
+
+    def wire_transport_menu(self, over: QAbstractItemView) -> None:
+        """Offer the transport over this view, whichever view it is.
+
+        The list is not the only place a listener points at music: a sleeve in
+        the grid and a track in the open album are the same gesture on the same
+        library, so the same menu belongs on all three. The view is bound into
+        the connection because the signal carries a point and nothing else.
+        """
+        over.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        over.customContextMenuRequested.connect(
+            lambda where, view=over: self.show_transport_menu(where, view)
+        )
 
     @Slot(int)
     def set_volume(self, percent: int) -> None:
@@ -129,8 +141,7 @@ class Playing:
         """Selecting a track is what makes the play button pressable."""
         self._show_transport()
 
-    @Slot(QPoint)
-    def show_transport_menu(self, where: QPoint) -> None:
+    def show_transport_menu(self, where: QPoint, over=None) -> None:
         """Offer the transport over whatever was right clicked.
 
         Play means the track under the cursor when that is a DIFFERENT track,
@@ -142,18 +153,28 @@ class Playing:
         The distinction was not always this load bearing. The highlight now
         follows the transport, so the row under the cursor is usually the one
         being played, which is precisely the case that used to reload.
+
+        A sleeve carries no track of its own, so Play over one means the album
+        from its first track. Over the album already loaded it means carry on,
+        for exactly the reason a loaded track does.
         """
-        index = self._tree.indexAt(where)
+        over = self._tree if over is None else over
+        index = over.indexAt(where)
         track = self._model.track_at(index)
-        menu = QMenu(self._tree)
+        album = self._model.album_at(index)
+        menu = QMenu(over)
         playing = self._transport.playing
         loaded = self._transport.current is not None
         elsewhere = track is not None and track is not self._transport.current
+        starts = track is None and album is not None and self._album_elsewhere(album)
         play = menu.addAction("Play")
-        play.setEnabled(elsewhere or (loaded and not playing))
-        play.triggered.connect(
-            (lambda: self.activate(index)) if elsewhere else self.toggle_playback
-        )
+        play.setEnabled(elsewhere or starts or (loaded and not playing))
+        if elsewhere:
+            play.triggered.connect(lambda: self.activate(index))
+        elif starts:
+            play.triggered.connect(lambda: self.play_album(album))
+        else:
+            play.triggered.connect(self.toggle_playback)
         pause = menu.addAction("Pause")
         pause.setEnabled(playing)
         pause.triggered.connect(self.toggle_playback)
@@ -170,7 +191,25 @@ class Playing:
         following.setEnabled(self._transport.queue.has_next)
         following.triggered.connect(self.next_track)
         self._menu = menu
-        menu.popup(self._tree.viewport().mapToGlobal(where))
+        menu.popup(over.viewport().mapToGlobal(where))
+
+    def _album_elsewhere(self, album) -> bool:
+        """True while this album is not the one already loaded.
+
+        By identity rather than equality, matching the queue: two pressings can
+        compare equal while only one of them is the run that is playing.
+        """
+        current = self._transport.current
+        return current is None or not any(
+            candidate is current for candidate in album.ordered_tracks()
+        )
+
+    def play_album(self, album) -> None:
+        """Start an album from its first track."""
+        ordered = album.ordered_tracks()
+        if not ordered:
+            return
+        self._drive(lambda: self._transport.play_album(album, ordered[0]))
 
     @Slot(QModelIndex)
     def activate(self, index: QModelIndex) -> None:
@@ -195,9 +234,13 @@ class Playing:
         With an empty queue there is nothing to resume, so play means the track
         highlighted in the library. That is what somebody who selected a track
         and reached for the play button meant by it.
+
+        Highlighted in the view ON SHOW, which is the open album while the
+        sleeves are up. Reading the list either way left the button dead in
+        the grid, where the list is not the thing being looked at.
         """
         if self._transport.current is None:
-            self.activate(self._tree.currentIndex())
+            self.activate(self.highlighted())
             return
         self._drive(self._transport.toggle)
 
@@ -313,6 +356,12 @@ class Playing:
         self._tree.scrollTo(index)
         self._followed = track
 
+    def highlighted(self) -> QModelIndex:
+        """The row the play button would start, in the view now on show."""
+        if self.showing_covers:
+            return self._album_pane.current_index()
+        return self._tree.currentIndex()
+
     def _show_transport(self) -> None:
         """Point the buttons at what can be done to what is loaded."""
         playing = self._transport.playing
@@ -320,6 +369,6 @@ class Playing:
         self._tray.set_transport_enabled(
             loaded=self._transport.current is not None,
             playing=self._transport.state.is_active,
-            can_start=self._model.track_at(self._tree.currentIndex()) is not None,
+            can_start=self._model.track_at(self.highlighted()) is not None,
         )
         self._position_bar.show_position(self._transport.position)

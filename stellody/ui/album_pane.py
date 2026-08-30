@@ -8,6 +8,17 @@ it; picking a track in it plays that track exactly as the list does.
 The tracks are the SAME model rooted at the album, not a copy of it. So the
 order the library is in, the durations and the two ways of starting a track
 are the ones already built rather than a second set that could disagree.
+
+They run down two columns rather than one, the way a sleeve's back does: the
+first column takes the top half of the album and the second carries on from
+there. Both columns are that one model on that one album, each showing only
+its own run of rows, so a second column costs no second reading and no widget
+built by hand. Keyboard reach is untouched: an item view is still what holds
+the tracks, so the arrows walk a column and the ring lands on real rows.
+
+One selection is shared between the columns, so the highlight is somewhere in
+the album rather than once in each column. Opening an album puts that highlight
+on its first track, which is what the play button at the top then starts.
 """
 
 from __future__ import annotations
@@ -16,6 +27,7 @@ from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QPushButton,
     QTreeView,
@@ -33,7 +45,7 @@ PANE_BUTTON_PX = 28
 PANE_ICON_PX = 16
 PANE_GAP_PX = 10
 PANE_MARGIN_PX = 10
-TRACK_COLUMN_PX = 420
+TRACK_COLUMNS = 2
 YEAR_LENGTH = 4
 
 
@@ -50,11 +62,42 @@ def _button(parent: QWidget, path, tip: str, on_click) -> QPushButton:
     return button
 
 
+def _spans(rows: int) -> tuple[tuple[int, int], ...]:
+    """Where each column starts and stops, filling the first one first.
+
+    An odd count leaves the longer run on the left, which is where a reader
+    starts, rather than on the right where it would read as an overflow.
+    """
+    down = -(-rows // TRACK_COLUMNS)
+    return tuple(
+        (position * down, min(position * down + down, rows))
+        for position in range(TRACK_COLUMNS)
+    )
+
+
+def _track_column(parent: QWidget, model: AlbumTreeModel) -> QTreeView:
+    """One column of an album's tracks, on the library's own model."""
+    view = QTreeView(parent)
+    view.setModel(model)
+    view.setUniformRowHeights(True)
+    view.setAllColumnsShowFocus(True)
+    view.setRootIsDecorated(False)
+    view.setHeaderHidden(True)
+    view.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
+    view.setColumnHidden(Column.ARTIST, True)
+    view.setColumnHidden(Column.DETAIL, True)
+    header = view.header()
+    header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Stretch)
+    header.setSectionResizeMode(Column.LENGTH, QHeaderView.ResizeMode.ResizeToContents)
+    return view
+
+
 class AlbumPane(QWidget):
     """One album opened under the grid, with its tracks listed."""
 
     closed = Signal()
     play_wanted = Signal()
+    track_activated = Signal(QModelIndex)
 
     def __init__(self, model: AlbumTreeModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -72,16 +115,15 @@ class AlbumPane(QWidget):
         self.close_button = _button(
             self, resources.negative_icon_path(), "Close this album", self.closed.emit
         )
-        self.tracks = QTreeView(self)
-        self.tracks.setModel(model)
-        self.tracks.setUniformRowHeights(True)
-        self.tracks.setAllColumnsShowFocus(True)
-        self.tracks.setRootIsDecorated(False)
-        self.tracks.setHeaderHidden(True)
-        self.tracks.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
-        self.tracks.setColumnHidden(Column.ARTIST, True)
-        self.tracks.setColumnHidden(Column.DETAIL, True)
-        self.tracks.setColumnWidth(Column.TITLE, TRACK_COLUMN_PX)
+        self._model = model
+        self.columns = tuple(_track_column(self, model) for _ in range(TRACK_COLUMNS))
+        for column in self.columns:
+            column.activated.connect(self.track_activated)
+        # One selection across all of them, so the highlight is in the album
+        # rather than once per column. The first column's is the one kept;
+        # handing a view back its own would destroy what it was given.
+        for column in self.columns[1:]:
+            column.setSelectionModel(self.columns[0].selectionModel())
         self._lay_out()
 
     def _lay_out(self) -> None:
@@ -97,13 +139,17 @@ class AlbumPane(QWidget):
         header.addLayout(heading, 1)
         header.addWidget(self.play_button)
         header.addWidget(self.close_button)
-        column = QVBoxLayout(self)
-        column.setContentsMargins(
+        listing = QHBoxLayout()
+        listing.setSpacing(PANE_GAP_PX)
+        for column in self.columns:
+            listing.addWidget(column, 1)
+        body = QVBoxLayout(self)
+        body.setContentsMargins(
             PANE_MARGIN_PX, PANE_MARGIN_PX, PANE_MARGIN_PX, PANE_MARGIN_PX
         )
-        column.setSpacing(PANE_GAP_PX)
-        column.addLayout(header)
-        column.addWidget(self.tracks, 1)
+        body.setSpacing(PANE_GAP_PX)
+        body.addLayout(header)
+        body.addLayout(listing, 1)
 
     def show_appearance(self, mode: Mode) -> None:
         """Follow the appearance the rest of the window is wearing."""
@@ -141,5 +187,41 @@ class AlbumPane(QWidget):
                     Qt.TransformationMode.SmoothTransformation,
                 )
             )
-        self.tracks.setRootIndex(where)
-        self.tracks.expandAll()
+        self._fill_columns(where)
+
+    def _fill_columns(self, where: QModelIndex) -> None:
+        """Run the album down the first column, then on down the second.
+
+        Hiding rows rather than slicing the model keeps both columns pointed
+        at the same album in the same order, so neither can drift from it.
+        """
+        rows = self._model.rowCount(where)
+        for column, (start, stop) in zip(self.columns, _spans(rows)):
+            column.setRootIndex(where)
+            for row in range(rows):
+                column.setRowHidden(row, where, row < start or row >= stop)
+            column.expandAll()
+            column.setVisible(start < stop)
+        self.columns[0].setCurrentIndex(self._first_track(where))
+
+    def _first_track(self, where: QModelIndex) -> QModelIndex:
+        """The album's first track, reached through a disc where there is one.
+
+        A multi-disc album puts discs at the top level, so the first row under
+        it is a container rather than something that can be played.
+        """
+        index = self._model.index(0, Column.TITLE, where)
+        while index.isValid() and self._model.track_at(index) is None:
+            index = self._model.index(0, Column.TITLE, index)
+        return index
+
+    def current_index(self) -> QModelIndex:
+        """Where the highlight is, wherever in the album it has been moved."""
+        return self.columns[0].currentIndex()
+
+    def clear(self) -> None:
+        """Shut on nothing, so nothing of the last album is left showing."""
+        self.columns[0].selectionModel().clearSelection()
+        self.columns[0].setCurrentIndex(QModelIndex())
+        for column in self.columns:
+            column.setRootIndex(QModelIndex())

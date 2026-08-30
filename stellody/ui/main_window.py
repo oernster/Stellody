@@ -193,6 +193,7 @@ class MainWindow(
             *self._tray.ring_stops(),
             self._tree,
             self._grid,
+            *self._album_pane.columns,
             self._position_bar.slider,
             *self._bottom_tray.ring_stops(),
         )

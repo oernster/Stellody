@@ -268,7 +268,7 @@ def test_the_menu_offers_only_what_can_be_done_right_now(
 ) -> None:
     window._tree.expandAll()
     idle = menu_items(window, point_of(window, album_index(window)))
-    assert idle["Play"].isEnabled() is False
+    assert idle["Play"].isEnabled() is True, "an album row starts its album"
     assert idle["Pause"].isEnabled() is False
     assert idle["Stop"].isEnabled() is False
     assert idle["Next track"].isEnabled() is False
@@ -279,6 +279,19 @@ def test_the_menu_offers_only_what_can_be_done_right_now(
     assert playing["Stop"].isEnabled() is True
     assert playing["Next track"].isEnabled() is True
     assert playing["Previous track"].isEnabled() is True, "back restarts it"
+
+
+def test_play_over_an_album_row_starts_that_album(window: MainWindow) -> None:
+    """The same everywhere: a row naming an album plays it, list or grid.
+
+    It used to be dead here, on the reading that an album row carries no track
+    of its own. So does a sleeve; pressing Play on one plainly means play
+    this. Leaving the list behind the grid would be the same gesture
+    answering in two different ways.
+    """
+    window._tree.expandAll()
+    menu_items(window, point_of(window, album_index(window)))["Play"].trigger()
+    assert window._transport.current.title == "Track 1"
 
 
 def test_pausing_from_the_menu_pauses(window: MainWindow) -> None:

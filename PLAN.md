@@ -119,12 +119,16 @@ uses to say where attention is. Deliberately NOT a pointer drawn at the tile:
 that is MediaMonkey's own device, while the ring is a word Stellody already
 speaks.
 
-Two things about the pane are still open. MediaMonkey inserts it inline after
+The tracks now run down two columns; the fear that this meant building the
+list out of widgets was misplaced. Two item views on the same model at the
+same album, each hiding the rows belonging to the other, gives two columns
+without a second copy of anything and without giving up the keyboard reach an
+item view carries for nothing. One selection is shared between them, so the
+highlight is somewhere in the album rather than once in each column.
+
+One thing about the pane is still open. MediaMonkey inserts it inline after
 the row holding the chosen sleeve, which a list view cannot do without a view
-written from scratch, so it sits below the grid instead. Its tracks are also
-one column where MediaMonkey runs two; two columns means a track list built
-from widgets rather than the model, which costs the keyboard reachability the
-model view gives for nothing. Neither is settled.
+written from scratch, so it sits below the grid instead. That is not settled.
 
 Done when: the grid is seen showing sleeves, a picked album is seen opening
 beneath it and the toggle is seen moving between the two views. That is the

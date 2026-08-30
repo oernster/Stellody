@@ -84,21 +84,24 @@ class TestOpeningAnAlbum:
         where = _first_album(window)
         window._grid.setCurrentIndex(where)
         pane = window._album_pane
-        assert pane.tracks.model() is window._model
-        assert pane.tracks.rootIndex() == where
+        for column in pane.columns:
+            assert column.model() is window._model
+            assert column.rootIndex() == where
 
     def test_closing_the_pane_leaves_the_grid_alone(self, window) -> None:
         window.toggle_view()
         window._grid.setCurrentIndex(_first_album(window))
         window.close_album()
-        assert window._album_pane.tracks.rootIndex() == QModelIndex()
+        for column in window._album_pane.columns:
+            assert column.rootIndex() == QModelIndex()
         assert window.showing_covers, "the sleeves stay where they were"
 
     def test_going_back_to_the_list_shuts_the_pane(self, window) -> None:
         window.toggle_view()
         window._grid.setCurrentIndex(_first_album(window))
         window.toggle_view()
-        assert window._album_pane.tracks.rootIndex() == QModelIndex()
+        for column in window._album_pane.columns:
+            assert column.rootIndex() == QModelIndex()
 
     def test_playing_the_open_album_starts_its_first_track(self, window) -> None:
         window.toggle_view()

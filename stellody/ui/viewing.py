@@ -32,7 +32,15 @@ class Viewing:
         self._album_pane.setVisible(False)
         self._album_pane.closed.connect(self.close_album)
         self._album_pane.play_wanted.connect(self.play_shown_album)
-        self._album_pane.tracks.activated.connect(self.activate)
+        self._album_pane.track_activated.connect(self.activate)
+        self._album_pane.columns[0].selectionModel().currentChanged.connect(
+            self._on_selection
+        )
+        # The same menu the list carries: a sleeve and a track in the open
+        # album are the same gesture on the same library.
+        self.wire_transport_menu(self._grid)
+        for column in self._album_pane.columns:
+            self.wire_transport_menu(column)
         self._grid.selectionModel().currentChanged.connect(self._on_album_picked)
         self._shown_album = None
         self._library = build_library(
@@ -67,7 +75,7 @@ class Viewing:
         """Shut the pane. The grid keeps the place it was scrolled to."""
         self._shown_album = None
         self._album_pane.setVisible(False)
-        self._album_pane.tracks.setRootIndex(QModelIndex())
+        self._album_pane.clear()
         self._ring_open(NO_ROW)
 
     @Slot()
@@ -76,10 +84,7 @@ class Viewing:
         album = self._shown_album
         if album is None:
             return
-        ordered = album.ordered_tracks()
-        if not ordered:
-            return
-        self._drive(lambda: self._transport.play_album(album, ordered[0]))
+        self.play_album(album)
 
     @Slot(QModelIndex, QModelIndex)
     def _on_album_picked(self, current: QModelIndex, _previous: QModelIndex) -> None:
