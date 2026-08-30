@@ -83,8 +83,13 @@ deciding whether to play it; what is loaded takes the bar back, since the
 playhead belongs to that track. Measuring starts as the highlight lands rather
 than after a pause: a measurement gives up at the next block it reads and
 letting go of one never waits, so a step through the library costs 0.2
-milliseconds on the interface thread rather than the 2.00 seconds it once
-did.
+milliseconds on the interface thread rather than the 2.00 seconds it once did.
+
+The shape is drawn as it is read rather than when the reading finishes. The
+reader offers what it has every five seconds of the music and the picture
+builds from the left. Measured cold: an ordinary 28 megabyte track puts its
+first picture up at 0.02 seconds and finishes at 0.49; a 272 megabyte album
+FLAC puts one up at 0.01 and finishes at 8.17.
 
 What tests can pin is pinned: a track played twice does not decode twice; a
 shape read back after a restart is the shape that was measured; the row

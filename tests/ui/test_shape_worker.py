@@ -29,7 +29,9 @@ class SlowShapes:
         self.answer = answer
         self.asked: list[str] = []
 
-    def measured(self, source: TrackSource, cancelled=None) -> Envelope | None:
+    def measured(
+        self, source: TrackSource, cancelled=None, progress=None
+    ) -> Envelope | None:
         """Record the ask and answer at once, unless told to give up."""
         self.asked.append(source.path)
         if cancelled is not None and cancelled():
@@ -40,7 +42,9 @@ class SlowShapes:
 class FailingShapes:
     """Measuring, gone wrong."""
 
-    def measured(self, source: TrackSource, cancelled=None) -> Envelope | None:
+    def measured(
+        self, source: TrackSource, cancelled=None, progress=None
+    ) -> Envelope | None:
         """Raise, as a decoder meeting something it cannot read would."""
         raise RuntimeError("the file went away mid measurement")
 

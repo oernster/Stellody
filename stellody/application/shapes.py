@@ -14,7 +14,11 @@ track of such an album has its shape before it is played.
 
 from __future__ import annotations
 
-from stellody.application.ports import CancelledCheck, WaveformPort
+from stellody.application.ports import (
+    CancelledCheck,
+    ShapeSoFar,
+    WaveformPort,
+)
 from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
 
@@ -33,7 +37,10 @@ class TrackShapes:
         return self._share(source, self._waveforms.remembered(source.path))
 
     def measured(
-        self, source: TrackSource, cancelled: CancelledCheck | None = None
+        self,
+        source: TrackSource,
+        cancelled: CancelledCheck | None = None,
+        progress: ShapeSoFar | None = None,
     ) -> Envelope | None:
         """This track's shape, measuring the file if that has not been done.
 
@@ -41,12 +48,38 @@ class TrackShapes:
         when the file cannot be measured at all, which is not worth reporting
         to somebody who only wanted a picture; the track still plays.
 
+        The shape so far is handed to `progress` as it is read, so the picture
+        builds rather than arriving whole. Each part is this track's share of
+        what has been read, not the whole file's.
+
         A measurement nobody is waiting for any more can be given up on. The
         highlight moving on is exactly that: measured, a whole album FLAC takes
         22 seconds to decode, so carrying on with one that has been passed over
         costs a core for no picture anybody will see.
         """
-        return self._share(source, self._waveforms.measure(source.path, cancelled))
+        return self._share(
+            source,
+            self._waveforms.measure(
+                source.path, cancelled, self._sharing(source, progress)
+            ),
+        )
+
+    def _sharing(self, source: TrackSource, progress: ShapeSoFar | None):
+        """Cut each part measured down to this track's share of it.
+
+        A cue-sheet album is one file holding many tracks, so what is being
+        read is the whole album and what is wanted is one track of it. Without
+        this the picture building up would be the album's, on every track.
+        """
+        if progress is None:
+            return None
+
+        def share(whole: Envelope) -> None:
+            part = self._share(source, whole)
+            if part is not None:
+                progress(part)
+
+        return share
 
     def _share(self, source: TrackSource, whole: Envelope | None) -> Envelope | None:
         """The part of a file's shape belonging to one track in it."""

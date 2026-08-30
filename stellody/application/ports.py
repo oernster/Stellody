@@ -26,6 +26,9 @@ from stellody.domain.waveform import Envelope
 # the scan and the measurement; a type describing a port belongs with the
 # ports.
 CancelledCheck = Callable[[], bool]
+# Handed the shape as far as it has been read, so slow work can be watched
+# rather than waited on.
+ShapeSoFar = Callable[[Envelope], None]
 
 
 @dataclass(frozen=True, slots=True)

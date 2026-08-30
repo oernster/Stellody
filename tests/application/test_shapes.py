@@ -29,9 +29,11 @@ class FakeWaveforms:
         known: Envelope | None = None,
         measurable: Envelope | None = WHOLE,
         frames: int | None = FILE_FRAMES,
+        parts: tuple[Envelope, ...] = (),
     ) -> None:
         self.known = known
         self.measurable = measurable
+        self.parts = parts
         self.frames = frames
         self.asked: list[str] = []
 
@@ -40,11 +42,18 @@ class FakeWaveforms:
         self.asked.append(f"remembered {path}")
         return self.known
 
-    def measure(self, path: str, cancelled=None) -> Envelope | None:
-        """What measuring it would find, unless it is told to give up."""
+    def measure(self, path: str, cancelled=None, progress=None) -> Envelope | None:
+        """What measuring it would find, unless it is told to give up.
+
+        The parts are offered first when a test asked for any, so what the
+        service does with them is watched rather than assumed.
+        """
         self.asked.append(f"measure {path}")
         if cancelled is not None and cancelled():
             return None
+        for part in self.parts:
+            if progress is not None:
+                progress(part)
         return self.measurable
 
     def frames_in(self, path: str) -> int | None:
@@ -124,3 +133,34 @@ def test_a_measurement_nobody_stopped_still_answers() -> None:
     waveforms = FakeWaveforms(measurable=WHOLE)
     shapes = TrackShapes(waveforms)
     assert shapes.measured(TrackSource(path="a.flac"), cancelled=lambda: False) == WHOLE
+
+
+def test_each_part_measured_is_offered_as_it_arrives() -> None:
+    """The picture builds from the left rather than appearing at the end."""
+    parts = (Envelope(peaks=(0.1, 0.0)), Envelope(peaks=(0.1, 0.4)))
+    waveforms = FakeWaveforms(measurable=WHOLE, parts=parts)
+    offered: list[Envelope] = []
+    TrackShapes(waveforms).measured(TrackSource(path="a.flac"), progress=offered.append)
+    assert offered == list(parts)
+
+
+def test_a_part_of_a_cue_sheet_album_is_cut_to_the_track_it_belongs_to() -> None:
+    """One file holds the whole album, so the part read is the album's.
+
+    Handing that on unchanged would draw the album's shape building up on
+    every track of it.
+    """
+    parts = (WHOLE,)
+    waveforms = FakeWaveforms(measurable=WHOLE, parts=parts)
+    slice_of = TrackSource(path="a.flac", start_frame=0, end_frame=FILE_FRAMES // 2)
+    offered: list[Envelope] = []
+    TrackShapes(waveforms).measured(slice_of, progress=offered.append)
+    assert offered and offered[0] != WHOLE
+
+
+def test_a_part_that_cuts_to_nothing_is_not_offered() -> None:
+    """A track whose file reports no length has no share of anything."""
+    waveforms = FakeWaveforms(measurable=WHOLE, parts=(WHOLE,), frames=None)
+    offered: list[Envelope] = []
+    TrackShapes(waveforms).measured(TrackSource(path="a.flac"), progress=offered.append)
+    assert offered == []

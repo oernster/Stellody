@@ -11,14 +11,19 @@ directory by the test itself.
 
 from __future__ import annotations
 
+import itertools
 import pathlib
 
 import numpy as np
 import pytest
 import soundfile
 
-from stellody.domain.waveform import BUCKETS
-from stellody.infrastructure.waveform import PEAK_PLACES, FileWaveforms
+from stellody.domain.waveform import BUCKETS, Envelope
+from stellody.infrastructure.waveform import (
+    PEAK_PLACES,
+    PROGRESS_SECONDS,
+    FileWaveforms,
+)
 
 SAMPLE_RATE = 44100
 SECONDS = 2
@@ -37,6 +42,20 @@ def _two_halves(path: pathlib.Path) -> pathlib.Path:
     frames = SAMPLE_RATE * SECONDS
     samples = np.zeros((frames, 2), dtype="float32")
     samples[: frames // 2] = QUIET
+    samples[frames // 2 :] = LOUD
+    soundfile.write(str(path), samples, SAMPLE_RATE, format="FLAC")
+    return path
+
+
+def _long_enough_to_report(path: pathlib.Path) -> pathlib.Path:
+    """A file long enough for the reading to offer the shape on its way.
+
+    The offer happens every few seconds of the music, so a file shorter than
+    that is finished before there is anything to say about it. That is right
+    for a short track and useless for a test of the reporting.
+    """
+    frames = SAMPLE_RATE * PROGRESS_SECONDS * 3
+    samples = np.zeros((frames, 2), dtype="float32")
     samples[frames // 2 :] = LOUD
     soundfile.write(str(path), samples, SAMPLE_RATE, format="FLAC")
     return path
@@ -152,10 +171,12 @@ class _CountingWaveforms(FileWaveforms):
         super().__init__(cache_dir)
         self.decodes = 0
 
-    def _peaks_of(self, path: str, cancelled=None) -> tuple[float, ...] | None:
+    def _peaks_of(
+        self, path: str, cancelled=None, progress=None
+    ) -> tuple[float, ...] | None:
         """Count the decode, then do it."""
         self.decodes += 1
-        return super()._peaks_of(path, cancelled)
+        return super()._peaks_of(path, cancelled, progress)
 
 
 def test_a_measurement_told_to_give_up_keeps_nothing(cache, tmp_path) -> None:
@@ -178,3 +199,52 @@ def test_a_measurement_nobody_stopped_is_kept(cache, tmp_path) -> None:
     measured = waveforms.measure(str(audio), cancelled=lambda: False)
     assert measured is not None
     assert waveforms.remembered(str(audio)) == measured
+
+
+def test_the_shape_is_offered_as_it_is_read(cache, tmp_path) -> None:
+    """Reading a whole album FLAC through takes 11 seconds, measured cold.
+
+    So the picture builds from the left rather than appearing at the end. The
+    file here is short, so what is pinned is that the offer happens at all and
+    that the last thing offered is what the measurement came to.
+    """
+    audio = _long_enough_to_report(tmp_path / "building.flac")
+    parts: list[Envelope] = []
+    waveforms = FileWaveforms(cache)
+    finished = waveforms.measure(str(audio), progress=parts.append)
+    assert finished is not None
+    assert parts, "nothing was offered on the way"
+    # A part is the shape as far as it has been read, so it grows and never
+    # claims anything the finished measurement does not. The last part is not
+    # the finished one: what is read after the final offer is in one and not
+    # the other, which is the whole reason there is a finished one.
+    for earlier, later in itertools.pairwise(parts):
+        assert all(was <= now for was, now in zip(earlier.peaks, later.peaks))
+    for part in parts:
+        assert all(seen <= whole for seen, whole in zip(part.peaks, finished.peaks))
+    assert max(finished.peaks) > max(parts[0].peaks), "the picture grew"
+
+
+def test_only_the_finished_measurement_is_kept(cache, tmp_path) -> None:
+    """A part written down would be wrong on every redraw afterwards."""
+    audio = _long_enough_to_report(tmp_path / "parts.flac")
+    kept: list[Envelope | None] = []
+    waveforms = FileWaveforms(cache)
+    waveforms.measure(
+        str(audio), progress=lambda part: kept.append(waveforms.remembered(str(audio)))
+    )
+    assert kept, "nothing was offered on the way"
+    assert all(seen is None for seen in kept), "a part was kept mid measurement"
+    assert waveforms.remembered(str(audio)) is not None
+
+
+def test_a_measurement_given_up_on_offers_nothing_further(cache, tmp_path) -> None:
+    audio = _two_halves(tmp_path / "stopped.flac")
+    parts: list[Envelope] = []
+    assert (
+        FileWaveforms(cache).measure(
+            str(audio), cancelled=lambda: True, progress=parts.append
+        )
+        is None
+    )
+    assert parts == []

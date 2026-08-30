@@ -47,7 +47,9 @@ class RecordingShapes:
         self.asked.append(source.path)
         return self.kept.get(source.path)
 
-    def measured(self, source: TrackSource, cancelled=None) -> Envelope | None:
+    def measured(
+        self, source: TrackSource, cancelled=None, progress=None
+    ) -> Envelope | None:
         """The measurement a decode would produce, without decoding.
 
         The give-up check is taken and honoured, since a stand-in that ignores
