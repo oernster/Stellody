@@ -40,9 +40,11 @@ class FakeWaveforms:
         self.asked.append(f"remembered {path}")
         return self.known
 
-    def measure(self, path: str) -> Envelope | None:
-        """What measuring it would find."""
+    def measure(self, path: str, cancelled=None) -> Envelope | None:
+        """What measuring it would find, unless it is told to give up."""
         self.asked.append(f"measure {path}")
+        if cancelled is not None and cancelled():
+            return None
         return self.measurable
 
     def frames_in(self, path: str) -> int | None:
@@ -103,3 +105,22 @@ def test_a_file_whose_length_is_unknown_has_no_shape_to_share_out() -> None:
 def test_a_file_of_no_length_has_no_shape_either() -> None:
     shapes = TrackShapes(FakeWaveforms(known=WHOLE, frames=0))
     assert shapes.remembered(TrackSource(path="a.flac", start_frame=1)) is None
+
+
+def test_a_measurement_can_be_given_up_on() -> None:
+    """A whole album FLAC takes 22 seconds to read, measured.
+
+    Carrying on with one the highlight has moved off costs a core for a
+    picture nobody will see, so the check is handed down to the reader rather
+    than the answer being thrown away after the fact.
+    """
+    waveforms = FakeWaveforms(measurable=WHOLE)
+    shapes = TrackShapes(waveforms)
+    assert shapes.measured(TrackSource(path="a.flac"), cancelled=lambda: True) is None
+    assert waveforms.asked == ["measure a.flac"]
+
+
+def test_a_measurement_nobody_stopped_still_answers() -> None:
+    waveforms = FakeWaveforms(measurable=WHOLE)
+    shapes = TrackShapes(waveforms)
+    assert shapes.measured(TrackSource(path="a.flac"), cancelled=lambda: False) == WHOLE

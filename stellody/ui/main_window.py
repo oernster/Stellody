@@ -147,7 +147,6 @@ class MainWindow(
         self._tree = build_tree(self, self._model)
         self.start_covering(art)
         self.start_choosing(chooser)
-        self.start_shapes()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,

@@ -152,7 +152,29 @@ class _CountingWaveforms(FileWaveforms):
         super().__init__(cache_dir)
         self.decodes = 0
 
-    def _peaks_of(self, path: str) -> tuple[float, ...] | None:
+    def _peaks_of(self, path: str, cancelled=None) -> tuple[float, ...] | None:
         """Count the decode, then do it."""
         self.decodes += 1
-        return super()._peaks_of(path)
+        return super()._peaks_of(path, cancelled)
+
+
+def test_a_measurement_told_to_give_up_keeps_nothing(cache, tmp_path) -> None:
+    """Half a file read is not a shape.
+
+    A record of one would be wrong on every redraw afterwards without ever
+    looking wrong enough for anybody to notice, so nothing is written and the
+    next ask measures the file properly.
+    """
+    audio = _two_halves(tmp_path / "abandoned.flac")
+    waveforms = FileWaveforms(cache)
+    assert waveforms.measure(str(audio), cancelled=lambda: True) is None
+    assert waveforms.remembered(str(audio)) is None
+    assert waveforms.measure(str(audio)) is not None
+
+
+def test_a_measurement_nobody_stopped_is_kept(cache, tmp_path) -> None:
+    audio = _two_halves(tmp_path / "finished.flac")
+    waveforms = FileWaveforms(cache)
+    measured = waveforms.measure(str(audio), cancelled=lambda: False)
+    assert measured is not None
+    assert waveforms.remembered(str(audio)) == measured

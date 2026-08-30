@@ -14,7 +14,7 @@ track of such an album has its shape before it is played.
 
 from __future__ import annotations
 
-from stellody.application.ports import WaveformPort
+from stellody.application.ports import CancelledCheck, WaveformPort
 from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
 
@@ -32,14 +32,21 @@ class TrackShapes:
         """
         return self._share(source, self._waveforms.remembered(source.path))
 
-    def measured(self, source: TrackSource) -> Envelope | None:
+    def measured(
+        self, source: TrackSource, cancelled: CancelledCheck | None = None
+    ) -> Envelope | None:
         """This track's shape, measuring the file if that has not been done.
 
         Slow: it decodes the file. It belongs off the interface thread. None
         when the file cannot be measured at all, which is not worth reporting
         to somebody who only wanted a picture; the track still plays.
+
+        A measurement nobody is waiting for any more can be given up on. The
+        highlight moving on is exactly that: measured, a whole album FLAC takes
+        22 seconds to decode, so carrying on with one that has been passed over
+        costs a core for no picture anybody will see.
         """
-        return self._share(source, self._waveforms.measure(source.path))
+        return self._share(source, self._waveforms.measure(source.path, cancelled))
 
     def _share(self, source: TrackSource, whole: Envelope | None) -> Envelope | None:
         """The part of a file's shape belonging to one track in it."""

@@ -5,11 +5,12 @@ pressed play, which says nothing about a track they are deciding whether to
 play. So the bar follows the highlight while nothing is loaded.
 
 The measuring is what makes that delicate. A decode is expensive, so stepping
-down a list must not set one going for every row passed on the way. These pin
-both halves: what is drawn, then what is measured and when.
+down a list starts one per row and abandons all but the last. What makes that
+affordable is measured elsewhere: a measurement gives up at the next block it
+reads; letting go of one never waits. These pin what is drawn, then that a
+highlight measures at once rather than after a pause.
 
-The shapes service is stood in for. Qt is not: the timer is the real one and
-the assertions read its actual state.
+The shapes service is stood in for. Qt is not.
 """
 
 from __future__ import annotations
@@ -28,6 +29,9 @@ from stellody.ui.models import Column
 SHAPE = Envelope(peaks=(0.2, 0.9, 0.4))
 OTHER = Envelope(peaks=(0.5, 0.5, 0.5))
 SETTLE_SECONDS = 3.0
+# Comfortably under the two seconds the old blocking wait cost, comfortably
+# over anything a handful of instructions takes.
+BLOCK_ALLOWANCE_SECONDS = 0.5
 
 
 class RecordingShapes:
@@ -43,9 +47,15 @@ class RecordingShapes:
         self.asked.append(source.path)
         return self.kept.get(source.path)
 
-    def measured(self, source: TrackSource) -> Envelope | None:
-        """The measurement a decode would produce, without decoding."""
+    def measured(self, source: TrackSource, cancelled=None) -> Envelope | None:
+        """The measurement a decode would produce, without decoding.
+
+        The give-up check is taken and honoured, since a stand-in that ignores
+        it would let a measurement look unstoppable in every test here.
+        """
         self.measured_paths.append(source.path)
+        if cancelled is not None and cancelled():
+            return None
         return self.kept.get(source.path, SHAPE)
 
 
@@ -110,47 +120,19 @@ class TestWhatTheBarDraws:
 
 
 class TestWhenItIsMeasured:
-    def test_a_highlighted_track_waits_for_the_highlight_to_settle(
+    def test_a_highlighted_track_is_measured_at_once(
         self, application: QApplication
     ) -> None:
-        shapes = RecordingShapes()
-        window = _window(shapes)
-        try:
-            _highlight(window, 0)
-            window.follow_shape()
-            assert window._shape_settle.isActive()
-            assert shapes.measured_paths == [], "nothing decoded yet"
-        finally:
-            window.close()
+        """It waited 400ms first, which was felt and bought nothing.
 
-    def test_the_row_stopped_on_is_the_one_measured(
-        self, application: QApplication
-    ) -> None:
-        """Stepping past a row must not set a decode going for it."""
+        The reason for waiting was that a decode per row passed over would be
+        wasteful. Measured, the cost was not the decodes: it was letting go of
+        one, which blocked the interface thread for two seconds. That is fixed
+        where it belongs, so nothing has to be held back here.
+        """
         shapes = RecordingShapes()
         window = _window(shapes)
         try:
-            _highlight(window, 0)
-            window.follow_shape()
-            _highlight(window, 1)
-            window.follow_shape()
-            # The timer's own firing is proved by the test below; this drives
-            # the one path, so what it measures is not two things at once.
-            window._shape_settle.stop()
-            window._measure_settled()
-            _settle(window, application)
-            assert shapes.measured_paths == ["2.flac"]
-        finally:
-            window.close()
-
-    def test_the_settling_timer_really_reaches_the_measurement(
-        self, application: QApplication
-    ) -> None:
-        """The timer is left to fire on its own, so the wiring is proved."""
-        shapes = RecordingShapes()
-        window = _window(shapes)
-        try:
-            window._shape_settle.setInterval(1)
             _highlight(window, 0)
             window.follow_shape()
             _settle(window, application, wanting=lambda: shapes.measured_paths)
@@ -158,16 +140,57 @@ class TestWhenItIsMeasured:
         finally:
             window.close()
 
-    def test_a_loaded_track_is_measured_without_waiting(
+    def test_the_highlight_moving_reaches_the_bar_without_the_poll(
         self, application: QApplication
     ) -> None:
-        """Somebody pressed play and is watching the bar."""
+        """The poll runs four times a second, which was a visible beat."""
+        shapes = RecordingShapes({"1.flac": SHAPE})
+        window = _window(shapes)
+        try:
+            window._transport_timer.stop()
+            _highlight(window, 0)
+            assert window._position_bar.slider._shape == SHAPE
+        finally:
+            window.close()
+
+    def test_the_row_moved_on_from_is_given_up_on(
+        self, application: QApplication
+    ) -> None:
+        """Its answer is dropped, so what is drawn is the row stopped on."""
+        shapes = RecordingShapes({"2.flac": OTHER})
+        window = _window(shapes)
+        try:
+            _highlight(window, 0)
+            window.follow_shape()
+            _highlight(window, 1)
+            window.follow_shape()
+            _settle(window, application)
+            assert window._position_bar.slider._shape == OTHER
+        finally:
+            window.close()
+
+    def test_letting_go_of_a_measurement_does_not_block(
+        self, application: QApplication
+    ) -> None:
+        """Measured: waiting here froze the window for two seconds a step."""
+        shapes = RecordingShapes()
+        window = _window(shapes)
+        try:
+            _highlight(window, 0)
+            window.follow_shape()
+            began = time.monotonic()
+            _highlight(window, 1)
+            window.follow_shape()
+            assert time.monotonic() - began < BLOCK_ALLOWANCE_SECONDS
+        finally:
+            window.close()
+
+    def test_a_loaded_track_is_measured_too(self, application: QApplication) -> None:
         shapes = RecordingShapes()
         window = _window(shapes)
         try:
             window.play_album(album())
             window.follow_shape()
-            assert not window._shape_settle.isActive()
             _settle(window, application, wanting=lambda: shapes.measured_paths)
             assert shapes.measured_paths == ["1.flac"]
         finally:
@@ -181,8 +204,8 @@ class TestWhenItIsMeasured:
         try:
             _highlight(window, 0)
             window.follow_shape()
-            assert not window._shape_settle.isActive()
             assert shapes.measured_paths == []
+            assert window._position_bar.slider._shape == SHAPE
         finally:
             window.close()
 

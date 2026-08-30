@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from stellody.application.artwork import AlbumArtSources, sources_for
 from stellody.application.ports import (
     AudioProperties,
+    CancelledCheck,
     FolderListing,
     FolderRecord,
     LibraryStore,
@@ -56,7 +57,6 @@ ProgressCallback = Callable[[ScanProgress], None]
 # Asked between folders, so a scan can be given up without waiting for it. A
 # scan of a large library takes long enough that quitting during one is an
 # ordinary thing to do; Qt cannot interrupt a running one from outside.
-CancelledCheck = Callable[[], bool]
 
 
 @dataclass(frozen=True, slots=True)

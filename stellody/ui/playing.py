@@ -124,8 +124,13 @@ class Playing:
 
     @Slot(QModelIndex, QModelIndex)
     def _on_selection(self, current: QModelIndex, previous: QModelIndex) -> None:
-        """Selecting a track is what makes the play button pressable."""
+        """Selecting a track is what makes the play button pressable.
+
+        The bar is told at once rather than at the next poll, so a shape
+        appears as the highlight lands on a track instead of a beat later.
+        """
         self._show_transport()
+        self.follow_shape()
 
     def play_album(self, album) -> None:
         """Start an album from its first track."""

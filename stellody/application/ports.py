@@ -6,7 +6,7 @@ test suite can supply a hand-written fake without a mocking library.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -20,6 +20,12 @@ from stellody.domain.playback import (
 )
 from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
+
+# Asked between one unit of slow work and the next: True means stop. It lives
+# here rather than beside one of its callers because two ports now take one,
+# the scan and the measurement; a type describing a port belongs with the
+# ports.
+CancelledCheck = Callable[[], bool]
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,10 +224,14 @@ class WaveformPort(Protocol):
         """The shape of this file if it has been measured; None otherwise."""
         ...
 
-    def measure(self, path: str) -> Envelope | None:
+    def measure(
+        self, path: str, cancelled: CancelledCheck | None = None
+    ) -> Envelope | None:
         """The shape of this file, measuring it if need be; None if it cannot be.
 
-        Slow. Belongs off the interface thread.
+        Slow. Belongs off the interface thread. A measurement asked to stop
+        gives up at the next block it reads and answers None, keeping nothing:
+        half a file is not a shape and would be wrong on every redraw after.
         """
         ...
 
