@@ -23,8 +23,6 @@ import pathlib
 import subprocess
 from ctypes import wintypes
 
-from stellody.shared.startup import HIDDEN_FLAG
-
 # How long setup waits for the window before giving up and closing anyway. A
 # missed foreground is a smaller fault than a setup program that will not go,
 # so this is the worst case a user could see setup linger for, not a target.
@@ -63,7 +61,7 @@ class _ProcessEntry(ctypes.Structure):
     )
 
 
-def launch(executable: pathlib.Path, quiet: bool = False) -> subprocess.Popen | None:
+def launch(executable: pathlib.Path) -> subprocess.Popen | None:
     """Start the application, on its own; None when it would not start at all.
 
     Detached and broken out of any job object setup belongs to, so what is
@@ -72,19 +70,16 @@ def launch(executable: pathlib.Path, quiet: bool = False) -> subprocess.Popen | 
     A job that forbids breaking out refuses the flag rather than ignoring it,
     so the plain start is tried after it.
 
-    A quiet launch waits in the notification area instead of opening a window.
-    Setup used to start it the loud way whatever the user had asked for, so
-    somebody who had chosen to have Stellody live in the tray was handed a
-    window by every install, which is the same flag the sign-in entry passes
-    for exactly the same reason.
+    It starts VISIBLY, which is what somebody who has just installed something
+    expects to see. Starting it quietly was tried, on the belief that installs
+    were where windows arriving unasked came from; the source turned out to be
+    the test suite starting the installed copy, so the reason went away while
+    the surprise of an install that appears to do nothing remained.
     """
-    command = [str(executable)]
-    if quiet:
-        command.append(HIDDEN_FLAG)
     for flags in (DETACHED, 0):
         try:
             return subprocess.Popen(
-                command, cwd=str(executable.parent), creationflags=flags
+                [str(executable)], cwd=str(executable.parent), creationflags=flags
             )
         except OSError:
             continue

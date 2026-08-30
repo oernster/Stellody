@@ -77,9 +77,20 @@ class Leaving:
         self._note("the departure returned; the event loop should now end")
 
     def _ask_close_action(self) -> str:
-        """Ask what closing should mean, defaulting to staying in the tray."""
+        """Ask what closing should mean, defaulting to staying in the tray.
+
+        The asking is written down on both sides of the answer. Whether this
+        dialog ever reached the screen was the question in a report that it
+        had gone missing; a note only after the fact cannot tell a dialog
+        somebody answered from one that was never seen.
+        """
+        self._note("asking what the close button should mean")
         prompt = ClosePrompt(self)
         prompt.exec()
+        self._note(
+            f"the prompt was answered {prompt.choice.value}, "
+            f"remember: {prompt.remember}"
+        )
         if prompt.remember:
             self._settings.set_setting(SETTING_CLOSE, prompt.choice.value)
         return prompt.choice.value

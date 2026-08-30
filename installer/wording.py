@@ -96,10 +96,6 @@ STILL_RUNNING_LEAD = (
     "Setup could not close it. Close it yourself, then run setup again."
 )
 LAUNCHING_LEAD = "It is starting now."
-LAUNCHING_QUIET_LEAD = (
-    "It is starting now, in the notification area, since that is where you "
-    "asked it to wait."
-)
 KEPT_LIBRARY_LEAD = (
     "Your music was never touched; the library index has been left in place."
 )

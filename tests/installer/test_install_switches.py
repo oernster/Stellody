@@ -43,7 +43,7 @@ def _anew_passed(
     monkeypatch.setattr(actions, "install", record)
     # Writing the files runs on into starting them. Left alone, that started
     # the real application on the machine running the suite, on every run.
-    monkeypatch.setattr(launching, "launch", lambda exe, quiet=False: _FakeProcess())
+    monkeypatch.setattr(launching, "launch", lambda exe: _FakeProcess())
     monkeypatch.setattr(launching, "front", lambda pid: True)
     window._write_files(reinstalling=reinstalling)
     return asked[0]

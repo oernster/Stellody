@@ -272,7 +272,7 @@ def test_the_launch_box_starts_it_and_then_gets_out_of_the_way(
     monkeypatch.setattr(
         launching,
         "launch",
-        lambda exe, quiet=False: started.append(exe) or _FakeProcess(),
+        lambda exe: started.append(exe) or _FakeProcess(),
     )
     monkeypatch.setattr(launching, "front", lambda pid: True)
     executable = INSTALLED_AT / actions.EXE_NAME
@@ -288,7 +288,7 @@ def test_setup_stays_until_the_new_window_is_up(
 ) -> None:
     """A window arriving after setup has gone only flashes on the taskbar."""
     window = _window(monkeypatch, _here())
-    monkeypatch.setattr(launching, "launch", lambda exe, quiet=False: _FakeProcess())
+    monkeypatch.setattr(launching, "launch", lambda exe: _FakeProcess())
     monkeypatch.setattr(launching, "front", lambda pid: False)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     window._front_then_close()
@@ -302,9 +302,7 @@ def test_an_unticked_launch_box_leaves_the_verdict_on_screen(
     application: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     window = _window(monkeypatch, _here())
-    monkeypatch.setattr(
-        launching, "launch", lambda exe, quiet=False: pytest.fail("not asked for")
-    )
+    monkeypatch.setattr(launching, "launch", lambda exe: pytest.fail("not asked for"))
     window._launch.setChecked(False)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     assert window._body.currentIndex() == screens.SCREEN_VERDICT
@@ -314,7 +312,7 @@ def test_an_application_that_will_not_start_is_reported_rather_than_hidden(
     application: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     window = _window(monkeypatch, _here())
-    monkeypatch.setattr(launching, "launch", lambda exe, quiet=False: None)
+    monkeypatch.setattr(launching, "launch", lambda exe: None)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     assert "could not start it" in window._verdict_lead.text()
 

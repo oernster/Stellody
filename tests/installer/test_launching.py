@@ -90,41 +90,6 @@ def test_a_reused_pid_making_a_cycle_does_not_hang_the_walk() -> None:
     assert launching.family(BOOTSTRAP, parents) == {BOOTSTRAP, REAL_PROGRAM}
 
 
-def test_a_quiet_launch_asks_for_the_notification_area(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Somebody who chose to have Stellody wait in the tray gets no window.
-
-    Setup used to start it the loud way whatever had been asked for, so every
-    install handed back a window: the same complaint the sign-in entry already
-    passes this flag to avoid.
-    """
-    asked: list[list[str]] = []
-
-    def start(command, **_):
-        asked.append(list(command))
-        return _FakeProcess()
-
-    monkeypatch.setattr(launching.subprocess, "Popen", start)
-    launching.launch(pathlib.Path("Stellody.exe"), quiet=True)
-    assert asked[0][1:] == ["--hidden"], "a quiet launch says so on the command line"
-
-
-def test_an_ordinary_launch_still_opens_a_window(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Somebody who did not ask for residency is handed their application."""
-    asked: list[list[str]] = []
-
-    def start(command, **_):
-        asked.append(list(command))
-        return _FakeProcess()
-
-    monkeypatch.setattr(launching.subprocess, "Popen", start)
-    launching.launch(pathlib.Path("Stellody.exe"))
-    assert asked[0][1:] == [], "nothing was asked for, so nothing is passed"
-
-
 def test_an_empty_table_leaves_the_one_pid_that_was_started() -> None:
     """Which is the answer this gave before it could see a tree at all."""
     assert launching.family(BOOTSTRAP, {}) == {BOOTSTRAP}
@@ -137,9 +102,7 @@ def test_setup_goes_once_the_application_is_on_screen(
     window = _window(monkeypatch)
     window._sign_in.setChecked(False)
     window.show()
-    monkeypatch.setattr(
-        launching, "launch", lambda executable, quiet=False: _FakeProcess()
-    )
+    monkeypatch.setattr(launching, "launch", lambda executable: _FakeProcess())
     monkeypatch.setattr(launching, "front", lambda pid: True)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     assert window.isVisible(), "setup stays until the window it started is up"
@@ -154,9 +117,7 @@ def test_setup_goes_at_the_deadline_even_if_the_window_never_comes(
     window = _window(monkeypatch)
     window._sign_in.setChecked(False)
     window.show()
-    monkeypatch.setattr(
-        launching, "launch", lambda executable, quiet=False: _FakeProcess()
-    )
+    monkeypatch.setattr(launching, "launch", lambda executable: _FakeProcess())
     monkeypatch.setattr(launching, "front", lambda pid: False)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     window._front_then_close()
@@ -181,9 +142,7 @@ def test_setup_goes_even_when_looking_for_the_window_fails(
     window = _window(monkeypatch)
     window._sign_in.setChecked(False)
     window.show()
-    monkeypatch.setattr(
-        launching, "launch", lambda executable, quiet=False: _FakeProcess()
-    )
+    monkeypatch.setattr(launching, "launch", lambda executable: _FakeProcess())
     monkeypatch.setattr(launching, "front", explode)
     window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
     window._front_deadline = time.monotonic() - 1
@@ -244,27 +203,3 @@ def test_an_application_that_will_not_start_at_all_is_reported(
 
     monkeypatch.setattr(launching.subprocess, "Popen", refuse)
     assert launching.launch(pathlib.Path("C:/nowhere/Stellody.exe")) is None
-
-
-def test_a_quiet_install_closes_setup_without_waiting_for_a_window(
-    application: QApplication, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """There is no window coming, so waiting for one only holds setup there.
-
-    The wait is bounded at five seconds, which is five seconds of a spent
-    installer sitting on screen over a window that was never going to appear.
-    """
-    asked: list[bool] = []
-
-    def start(executable, quiet=False):
-        asked.append(quiet)
-        return _FakeProcess()
-
-    window = _window(monkeypatch)
-    window._sign_in.setChecked(True)
-    window.show()
-    monkeypatch.setattr(launching, "launch", start)
-    window._finish(INSTALLED_AT / actions.EXE_NAME, "Installed", "It is there.")
-    assert asked == [True], "residency was asked for, so the launch is a quiet one"
-    waiting = getattr(window, "_front_timer", None)
-    assert waiting is None, "no timer, because nothing is being waited for"
