@@ -1,0 +1,100 @@
+"""Taking the eye to a row, without moving anything else on the way.
+
+A search leaves the album whole, so the track it hit is one row among many.
+Selecting it says where the row is; a couple of gentle pulses says look here.
+
+**The colour is a role of its own.** The hit row is selected at the same
+moment, so a pulse in the selection colour would show nothing at all. The
+palette's `found` exists for this and differs from the selection by hue rather
+than by brightness, which is what makes a pulse gentle instead of a strobe.
+
+**The model is told what to paint, never when.** All the timing lives here, so
+the model holds no clock and the pulse can be changed without touching it.
+"""
+
+from __future__ import annotations
+
+from PySide6.QtCore import QModelIndex, QObject, QPersistentModelIndex, QTimer
+from PySide6.QtGui import QBrush, QColor
+
+# Twice, which reads as "look here" rather than as a fault. A third pulse is
+# where a gentle thing starts to nag.
+PULSES = 2
+# Slow enough to read as a fade rather than a blink.
+HALF_CYCLE_MS = 260
+# On, off, on, off: two turns to a pulse.
+TURNS_PER_PULSE = 2
+TURNS = PULSES * TURNS_PER_PULSE
+
+
+class RowFlash(QObject):
+    """Pulses one row's background a couple of times, then forgets it."""
+
+    def __init__(self, model, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._model = model
+        self._timer = QTimer(self)
+        self._timer.setInterval(HALF_CYCLE_MS)
+        self._timer.timeout.connect(self._turn)
+        self._where: QPersistentModelIndex | None = None
+        self._colour: QColor | None = None
+        self._lit = False
+        self._left = 0
+        model.set_flash(self)
+
+    @property
+    def lit(self) -> bool:
+        """True while the row is painted rather than merely chosen."""
+        return self._lit
+
+    @property
+    def running(self) -> bool:
+        """True between starting a flash and its last turn."""
+        return self._timer.isActive()
+
+    def start(self, where: QModelIndex, colour: str) -> None:
+        """Pulse this row in this colour, replacing whatever was pulsing."""
+        self.stop()
+        self._where = QPersistentModelIndex(where)
+        self._colour = QColor(colour)
+        self._lit = True
+        self._left = TURNS
+        self._redraw()
+        self._timer.start()
+
+    def stop(self) -> None:
+        """Stop pulsing and leave the row exactly as it was."""
+        self._timer.stop()
+        self._left = 0
+        self._lit = False
+        was = self._where
+        self._where = None
+        self._colour = None
+        if was is not None and was.isValid():
+            self._model.redraw_row(QModelIndex(was))
+
+    def brush(self, index: QModelIndex) -> QBrush | None:
+        """The paint for one cell; None for every cell that is not the row."""
+        where = self._where
+        if not self._lit or self._colour is None or where is None:
+            return None
+        if not where.isValid():
+            return None
+        if index.row() != where.row() or index.parent() != where.parent():
+            return None
+        return QBrush(self._colour)
+
+    def _turn(self) -> None:
+        """One half of a pulse: lit becomes dark, dark becomes lit."""
+        self._left -= 1
+        if self._left <= 0:
+            self.stop()
+            return
+        self._lit = not self._lit
+        self._redraw()
+
+    def _redraw(self) -> None:
+        """Ask the model to draw the row again."""
+        where = self._where
+        if where is not None and where.isValid():
+            self._model.redraw_row(QModelIndex(where))

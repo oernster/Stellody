@@ -1,10 +1,16 @@
 """The icon tray under the menus.
 
-Picture-only buttons in reading order: choose the music folder, rescan it and
-repair what the rescan reports on the left, the transport centred, then the
-mute switch, the appearance toggle and About on the right. The library buttons
-repeat something the menus already offer, so they add reach rather than
-capability; nothing here owns any state of its own.
+Picture-only buttons in reading order: choose the music folder, rescan it,
+repair what the rescan reports and search it on the left, the transport
+centred, then the mute switch, the appearance toggle and About on the right.
+The library buttons repeat something the menus already offer, so they add
+reach rather than capability; nothing here owns any state of its own.
+
+Search is the one place a box joins the pictures. The button carries the
+magnifier and the box appears beside it only while searching, so the tray
+reads as pictures until somebody asks it not to. Filtering happens as the box
+is typed into, which is why the button opens the box rather than running
+anything: there would be nothing for a second press to do.
 
 Repair sits beside rescan because it is the answer to what a rescan finds.
 It was down on the bottom strip with the view toggle, which put it among the
@@ -28,7 +34,13 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QWidget,
+)
 
 from stellody.shared import resources
 from stellody.ui.icons import plain_icon, struck_through
@@ -46,6 +58,10 @@ SEPARATOR_HEIGHT_PX = BUTTON_PX - SEPARATOR_INSET_PX - SEPARATOR_INSET_PX
 # One wording, one home. The dialog's own repair control reads it from here, so
 # the two cannot come to say different things about the same unbuilt feature.
 REPAIR_TOOLTIP = "Repair what library health reports (not built yet)"
+# Wide enough for an album title rather than for a word, since that is what
+# somebody types when they are looking for one.
+SEARCH_BOX_PX = 260
+SEARCH_PLACEHOLDER = "Album, artist or track"
 
 
 def _separator(parent: QWidget) -> QFrame:
@@ -87,6 +103,8 @@ class LibraryTray(QWidget):
         toggle_theme: Callable[[], None],
         show_about: Callable[[], None],
         repair_library: Callable[[], None] = lambda: None,
+        toggle_search: Callable[[], None] = lambda: None,
+        search_changed: Callable[[str], None] = lambda _phrase: None,
         toggle_mute: Callable[[], None] = lambda: None,
         previous_track: Callable[[], None] = lambda: None,
         toggle_playback: Callable[[], None] = lambda: None,
@@ -112,6 +130,16 @@ class LibraryTray(QWidget):
         # Nothing to press yet: what each issue should become is worked out on
         # every load; there is nowhere to keep a correction once accepted.
         self.repair_button.setEnabled(False)
+        self.search_button = _icon_button(
+            self, resources.search_icon_path(), "Search the library", toggle_search
+        )
+        self.search_box = QLineEdit(self)
+        self.search_box.setObjectName("SearchBox")
+        self.search_box.setPlaceholderText(SEARCH_PLACEHOLDER)
+        self.search_box.setFixedWidth(SEARCH_BOX_PX)
+        # Hidden until asked for, so the tray is pictures until it is not.
+        self.search_box.setVisible(False)
+        self.search_box.textChanged.connect(search_changed)
         self.previous_button = _icon_button(
             self, resources.previous_icon_path(), "Previous track", previous_track
         )
@@ -140,6 +168,8 @@ class LibraryTray(QWidget):
         row.addWidget(self.choose_button)
         row.addWidget(self.rescan_button)
         row.addWidget(self.repair_button)
+        row.addWidget(self.search_button)
+        row.addWidget(self.search_box)
         # A stretch either side is what centres the transport, whatever the
         # window is widened to and whatever sits at the two ends.
         row.addStretch()
@@ -160,22 +190,49 @@ class LibraryTray(QWidget):
             self.next_button,
         )
 
-    def ring_stops(self) -> tuple[QPushButton, ...]:
+    def ring_stops(self) -> tuple[QWidget, ...]:
         """This tray's controls, left to right as they are drawn.
 
         The repair control is named here while it is disabled, so the ring
         picks it up on the day it works without the order being revisited. Qt
-        skips a disabled stop, so naming it costs nothing until then.
+        skips a disabled stop, so naming it costs nothing until then. The
+        search box is named for the same reason while it is hidden, since Qt
+        skips an invisible stop too.
         """
         return (
             self.choose_button,
             self.rescan_button,
             self.repair_button,
+            self.search_button,
+            self.search_box,
             *self.transport_stops(),
             self.mute_button,
             self.theme_button,
             self.about_button,
         )
+
+    @property
+    def searching(self) -> bool:
+        """True while the box is open, whatever has been typed into it.
+
+        Asked of the box rather than of the screen. `isVisible` is false while
+        the window itself is hidden. Stellody spends time in the notification
+        area, so a toggle reading it would stop working exactly there.
+        """
+        return not self.search_box.isHidden()
+
+    def set_searching(self, searching: bool) -> None:
+        """Open the box and put the caret in it, else close it and forget it.
+
+        Closing clears the phrase rather than merely hiding it. A box that is
+        out of sight while still narrowing the library is a library that looks
+        as though it has lost albums.
+        """
+        if not searching:
+            self.search_box.clear()
+        self.search_box.setVisible(searching)
+        if searching:
+            self.search_box.setFocus(Qt.FocusReason.TabFocusReason)
 
     def set_playing(self, playing: bool) -> None:
         """Show the action the button would take, not the state it is in.

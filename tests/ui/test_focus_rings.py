@@ -39,9 +39,11 @@ ITEM_VIEWS = ("QTreeView", "QListView", "QTableView", "QListWidget", "QTreeWidge
 # The one sanctioned zero-size stop: the neutral start the main window opens on.
 NEUTRAL_START = "NeutralStart"
 # The enabled stops on the top tray, ahead of the library: choose, rescan,
-# mute, theme and about. The four transport buttons sit between rescan and
-# mute and are disabled with nothing playing, so they are not stops at all.
-TOP_TRAY_STOPS = 5
+# search, mute, theme and about. The four transport buttons sit between search
+# and mute and are disabled with nothing playing, so they are not stops at all.
+# The search box is not one either while it is closed, since Qt skips a hidden
+# stop; opening it adds a seventh.
+TOP_TRAY_STOPS = 6
 RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
 COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
@@ -128,6 +130,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     assert tips == [
         "Choose music folder",
         "Rescan the library",
+        "Search the library",
         "Mute",
         "Switch to the light appearance",
         "About Stellody",

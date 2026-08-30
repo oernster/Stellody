@@ -34,6 +34,7 @@ LARGE_GRID_ICON = "large-grid.png"
 EXTRA_LARGE_GRID_ICON = "extra-large-grid.png"
 DONATE_ICON = "donate.png"
 LIBRARY_HEALTH_ICON = "library-health.png"
+SEARCH_ICON = "search.png"
 REPEAT_ICON = "repeat.png"
 UNMUTE_ICON = "unmute.png"
 # The slash laid over one of the three switches above to say it is off. It is
@@ -85,6 +86,11 @@ def dark_mode_icon_path() -> pathlib.Path | None:
 def choose_folder_icon_path() -> pathlib.Path | None:
     """The artwork for choosing the music folder."""
     return find_asset(CHOOSE_FOLDER_ICON)
+
+
+def search_icon_path() -> pathlib.Path | None:
+    """The magnifier on the button that opens the search box."""
+    return find_asset(SEARCH_ICON)
 
 
 def rescan_icon_path() -> pathlib.Path | None:

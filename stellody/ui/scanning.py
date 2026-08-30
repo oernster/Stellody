@@ -40,8 +40,7 @@ class Scanning:
         """
         view = self._loader.run()
         self._issues = view.issues
-        self._model.set_albums(view.albums)
-        self.show_art(view.art)
+        self.show_library(view.albums, view.art)
         self.statusBar().showMessage(self._remembered_message(view))
 
     def report_library_set_aside(self, moved) -> None:
@@ -119,8 +118,7 @@ class Scanning:
             return
         self._settings.set_setting(SETTING_SCAN_FINISHED, TRUE)
         self._issues = report.issues
-        self._model.set_albums(report.albums)
-        self.show_art(report.art)
+        self.show_library(report.albums, report.art)
         self.statusBar().showMessage(_summary(report), STATUS_TIMEOUT_MS)
 
     @Slot(str)

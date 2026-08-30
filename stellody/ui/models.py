@@ -164,6 +164,7 @@ class AlbumTreeModel(QAbstractItemModel):
         self._art: dict[str, AlbumArtSources] = {}
         self._covers: dict[str, QPixmap | None] = {}
         self._placeholder: QPixmap | None = None
+        self._flash = None
         self._cover_px = GRID_COVER_PX
 
     @property
@@ -186,6 +187,21 @@ class AlbumTreeModel(QAbstractItemModel):
         self._covers.clear()
         self._rebuild()
         self.endResetModel()
+
+    def set_flash(self, flash) -> None:
+        """Take whatever is pulsing a row, so a cell can ask it for paint.
+
+        The pulsing itself lives in `flashing.py`; this model is told what to
+        paint and never when, so it holds no clock of its own.
+        """
+        self._flash = flash
+
+    def redraw_row(self, where: QModelIndex) -> None:
+        """Ask the view to draw one whole row again."""
+        if not where.isValid():
+            return
+        last = self.index(where.row(), len(HEADINGS) - 1, where.parent())
+        self.dataChanged.emit(where, last, [Qt.ItemDataRole.BackgroundRole])
 
     def set_art(self, art: tuple[AlbumArtSources, ...]) -> None:
         """Say where each album's cover might be found."""
@@ -335,6 +351,8 @@ class AlbumTreeModel(QAbstractItemModel):
             and node.album is not None
         ):
             return self._cover(node)
+        if role == Qt.ItemDataRole.BackgroundRole and self._flash is not None:
+            return self._flash.brush(index)
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (
             Column.LENGTH,
         ):

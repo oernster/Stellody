@@ -41,6 +41,7 @@ from stellody.ui.models import AlbumTreeModel
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.position_bar import PositionBar
 from stellody.ui.scanning import Scanning
+from stellody.ui.searching import Searching
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_DESCENDING,
@@ -90,6 +91,7 @@ def _trail() -> str:
 
 class MainWindow(
     Scanning,
+    Searching,
     Playing,
     TransportMenu,
     Choosing,
@@ -147,11 +149,14 @@ class MainWindow(
         self._tree = build_tree(self, self._model)
         self.start_covering(art)
         self.start_choosing(chooser)
+        self.start_searching()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
             rescan=self.rescan,
             repair_library=self.repair_library,
+            toggle_search=self.toggle_search,
+            search_changed=self.search_changed,
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
             toggle_mute=self.toggle_mute,

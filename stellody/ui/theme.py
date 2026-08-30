@@ -33,6 +33,11 @@ class Palette:
     accent: str
     accent_hover: str
     switch_on: str
+    # What a search flashes behind the track it hit. A role of its own rather
+    # than `selection`, because the hit track is selected at the same moment,
+    # so a flash in the selection colour would show nothing at all. Measured
+    # against the text of a selected row: 16.09 to 1 light, 7.98 to 1 dark.
+    found: str
     on_accent: str
     selection: str
     on_selection: str
@@ -56,6 +61,7 @@ LIGHT = Palette(
     accent="#1b5fd0",
     accent_hover="#1750b3",
     switch_on="#fff5a3",
+    found="#fff5a3",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -79,6 +85,7 @@ DARK = Palette(
     accent="#4c8dff",
     accent_hover="#69a1ff",
     switch_on="#fff5a3",
+    found="#5c4715",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",

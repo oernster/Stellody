@@ -68,10 +68,20 @@ Filtering by rating and by play count is wanted too. Those columns arrive with
 milestone 6, so `Search` is a condition rather than a phrase alone; it gains
 the second kind when there is something to read.
 
-Needed: the box in the top tray to the right of the repair button, drawn with
-`assets/search.png`, the narrowing wired to what it types, one colour for the
-flash stated in the theme beside every other colour, plus the grid keeping a
-sleeve only while its album survives.
+**All of it is built and gate green.** The box sits in the top tray to the
+right of repair, opened by a button carrying the magnifier and closed by the
+same one, which clears the phrase so a narrowed library can never be left
+behind a box nobody can see. Both routes into the library, a load and a scan,
+go through one seam now, so a search survives either. The flash is a role of
+its own in the palette, `found`, because the hit row is selected at the same
+moment and a pulse in the selection colour would show nothing at all: measured
+at 16.09 to 1 against the text it sits behind in the light appearance and 7.98
+to 1 in the dark.
+
+What a headless run can settle is settled: what narrows, that the album keeps
+every track, that the hit track is the one selected, that its row is painted
+and that the painting stops after a couple of pulses. Whether the pulse reads
+as gentle rather than as a fault needs eyes.
 
 Done when: typing part of an album, artist or track title narrows the library
 as you type, the hit track is highlighted and flashes; clearing the box

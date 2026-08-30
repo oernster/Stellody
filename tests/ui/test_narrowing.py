@@ -1,0 +1,164 @@
+"""Typing narrows the library; the track that was hit is pointed at.
+
+The album is kept whole, so what a hit gives is somewhere to look rather than
+a shorter album. Selecting the track says where it is and the flash takes the
+eye to it, which is the half a test can actually settle: whether a pulse reads
+as gentle is not something a headless run can judge.
+"""
+
+from __future__ import annotations
+
+import pytest
+from conftest import RecordingPlayer
+from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtWidgets import QApplication
+from tray_support import RememberingStore, build
+
+from stellody.application.artwork import AlbumArtSources
+from stellody.domain.album import Album
+from stellody.domain.identity import AlbumIdentity
+from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
+from stellody.ui.flashing import TURNS
+from stellody.ui.models import Column
+from stellody.ui.theme import palette_for
+
+
+def _track(title: str, number: int) -> Track:
+    """One track carrying a real title, since a title is what is searched."""
+    return Track(
+        source=TrackSource(path=f"{number:02d} {title}.flac"),
+        disc_number=1,
+        track_number=number,
+        title=title,
+        artists=("Holst",),
+        duration_ms=1000,
+        sample_rate=CD_SAMPLE_RATE,
+        bit_depth=16,
+    )
+
+
+PLANETS = Album(
+    identity=AlbumIdentity(album_artist="Holst", title="The Planets"),
+    tracks=(_track("Venus", 1), _track("Mars", 2)),
+)
+SIMPLE = Album(
+    identity=AlbumIdentity(album_artist="Zero 7", title="Simple Things"),
+    tracks=(_track("Destiny", 1),),
+)
+ART = (
+    AlbumArtSources(key=PLANETS.identity.art_key, sidecars=("planets.jpg",)),
+    AlbumArtSources(key=SIMPLE.identity.art_key, sidecars=("simple.jpg",)),
+)
+
+
+@pytest.fixture
+def window(application: QApplication):
+    """A real window holding two albums, reached the way a load reaches them."""
+    made = build(RememberingStore(), RecordingPlayer())
+    made.show_library((PLANETS, SIMPLE), ART)
+    application.processEvents()
+    yield made
+    made.close()
+
+
+def _titles(window) -> list[str]:
+    """The album titles the tree is showing, top to bottom."""
+    model = window._model
+    return [
+        model.data(model.index(row, Column.TITLE, QModelIndex()))
+        for row in range(model.rowCount(QModelIndex()))
+    ]
+
+
+class TestNarrowing:
+    def test_the_whole_library_shows_with_nothing_asked(self, window) -> None:
+        assert _titles(window) == ["The Planets", "Simple Things"]
+
+    def test_an_album_title_narrows_to_that_album(self, window) -> None:
+        window.search_changed("simple")
+        assert _titles(window) == ["Simple Things"]
+
+    def test_an_album_artist_narrows_to_that_album(self, window) -> None:
+        window.search_changed("zero 7")
+        assert _titles(window) == ["Simple Things"]
+
+    def test_a_track_narrows_to_its_album(self, window) -> None:
+        window.search_changed("venus")
+        assert _titles(window) == ["The Planets"]
+
+    def test_the_album_is_kept_whole(self, window) -> None:
+        """B: every track stays, so the album reads as it always does."""
+        window.search_changed("venus")
+        model = window._model
+        album = model.index(0, Column.TITLE, QModelIndex())
+        assert model.rowCount(album) == PLANETS.track_count
+
+    def test_a_phrase_matching_nothing_empties_the_library(self, window) -> None:
+        window.search_changed("saturn")
+        assert _titles(window) == []
+
+    def test_clearing_brings_everything_back(self, window) -> None:
+        window.search_changed("venus")
+        window.search_changed("")
+        assert _titles(window) == ["The Planets", "Simple Things"]
+
+    def test_the_art_is_narrowed_with_the_albums(self, window) -> None:
+        window.search_changed("venus")
+        assert set(window._model._art) == {PLANETS.identity.art_key}
+
+
+class TestPointingAtTheHit:
+    def test_the_hit_track_is_selected(self, window) -> None:
+        window.search_changed("venus")
+        showing = window._model.track_at(window._tree.currentIndex())
+        assert showing is not None
+        assert showing.title == "Venus"
+
+    def test_the_hit_row_is_painted(self, window) -> None:
+        window.search_changed("venus")
+        where = window._model.index_for(
+            window._model.track_at(window._tree.currentIndex())
+        )
+        brush = window._model.data(where, Qt.ItemDataRole.BackgroundRole)
+        assert brush is not None
+        assert brush.color().name() == palette_for(window.theme_mode).found
+
+    def test_another_row_is_not_painted(self, window) -> None:
+        window.search_changed("venus")
+        album = window._model.index(0, Column.TITLE, QModelIndex())
+        assert window._model.data(album, Qt.ItemDataRole.BackgroundRole) is None
+
+    def test_the_flash_gives_up_after_its_turns(self, window) -> None:
+        """It is a couple of pulses, not a light left on."""
+        window.search_changed("venus")
+        flash = window._flash
+        assert flash.running
+        for _ in range(TURNS):
+            flash._turn()
+        assert not flash.running
+        assert not flash.lit
+
+    def test_an_album_matched_by_name_flashes_nothing(self, window) -> None:
+        """Nothing inside it was hit, so there is nothing to point at."""
+        window.search_changed("simple")
+        assert not window._flash.running
+
+    def test_clearing_stops_the_flash(self, window) -> None:
+        window.search_changed("venus")
+        window.search_changed("")
+        assert not window._flash.running
+
+
+class TestTheButton:
+    def test_it_opens_and_closes_the_box(self, window) -> None:
+        window.toggle_search()
+        assert window._tray.searching
+        window.toggle_search()
+        assert not window._tray.searching
+
+    def test_closing_restores_the_library(self, window) -> None:
+        window.toggle_search()
+        window._tray.search_box.setText("venus")
+        assert _titles(window) == ["The Planets"]
+        window.toggle_search()
+        assert _titles(window) == ["The Planets", "Simple Things"]
