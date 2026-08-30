@@ -27,85 +27,18 @@ A first release has been cut and pushed, of what works today. `VERSION` holds
 the number for the release being cut; a bump is owed against the newest tag
 rather than against the last thing written.
 
-What this plan counts as the release that finishes the job is the position
-display: the corrected position of milestone 1, then the amplitude monitor of
-milestone 2 that draws it against the music. Both are now built and gate
-green; the cover chooser of milestone 4 is built and gate green beside them.
-What none of the three has had is the owner's own observation in the built
-application, which is what each closing condition asks for. The grid of covers
-has had that observation and is gone from this file. Version 1.0 is a separate
-readiness call for the owner to make; nothing below is sized against it.
-Search, ratings and the rest come later, the wider formats and video among
-them.
+The position display is done. The corrected position and the amplitude
+monitor that draws it against the music have both been watched in the built
+application, so both are gone from this file, as the grid of covers was before
+them. The cover chooser of milestone 4 is built and gate green but not
+finished: a chosen picture does not survive a restart, which its own section
+records. Version 1.0 is a separate readiness call for the owner to make;
+nothing below is sized against it. Search, ratings and the rest come later,
+the wider formats and video among them.
 
 Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
-
-## 1. Report the position that is audible
-
-The correction is built. The port reports what has been DECODED, which runs a
-buffer ahead of what is leaving the speakers, so the port now states its own
-lead and the transport subtracts it. Seeking is corrected the same way in
-reverse, so a listener asking for a point lands on it rather than a buffer
-short of it.
-
-A test pins the arithmetic against a known lead, which was half the closing
-condition. The other half needs ears: whether the figure on screen matches
-what is audible. It cannot be measured from here, since a test has no
-speakers.
-
-Done when: the bar is watched against the music and does not run ahead of it.
-That is the owner's observation to make, not a test's.
-
-## 2. The amplitude monitor
-
-Where a track has reached is shown as a line crossing the track's own waveform,
-rather than as a bar filling up. The amplitude is the point: it says what is
-coming as well as how far in the track is.
-
-The shape has to be computed rather than watched, since it covers the whole
-track including the part not yet played. That is a decode of the file ahead of
-playback, so it is done off the interface thread and cached beside the artwork,
-keyed on the source rather than on the track: a cue sheet album is one file
-holding many tracks, so one shape serves all of them.
-
-All of it is built: an envelope of peaks per bucket, a cache keyed on the file
-that survives a restart, a widget drawing the shape in the palette's own
-colours, plus a playhead driven by the position that milestone 1 makes honest.
-It sits inside the bar that arrived before it, which already held the corrected
-position, the poll that refreshes it, the arithmetic from a point along the
-track to a frame, the seek behind it, its place in the keyboard order and the
-rule that a poll never takes the handle from somebody holding it. What this
-milestone replaced is the painting.
-
-The bar no longer waits for a press to have something to draw. With nothing
-loaded it follows the highlight, so a track shows its shape while somebody is
-deciding whether to play it; what is loaded takes the bar back, since the
-playhead belongs to that track. Measuring starts as the highlight lands rather
-than after a pause: a measurement gives up at the next block it reads and
-letting go of one never waits, so a step through the library costs 0.2
-milliseconds on the interface thread rather than the 2.00 seconds it once did.
-
-The shape is drawn as it is read rather than when the reading finishes. The
-reader offers what it has every five seconds of the music and the picture
-builds from the left. Measured cold: an ordinary 28 megabyte track puts its
-first picture up at 0.02 seconds and finishes at 0.49; a 272 megabyte album
-FLAC puts one up at 0.01 and finishes at 8.17.
-
-What tests can pin is pinned: a track played twice does not decode twice; a
-shape read back after a restart is the shape that was measured; the row
-stopped on is the one measured; a loaded track is measured without waiting.
-What is left needs eyes, since a test cannot watch a line move against music it
-cannot hear, nor judge whether a first shape arrives quickly enough to feel
-immediate.
-
-Done when: playing a track draws its shape at once from the cache, else starts
-drawing it immediately and fills it in from the left as the file is read, then
-the line is watched crossing the shape in time with the music. That is the
-owner's observation to make, not a test's.
-
-Depends on: milestone 1.
 
 ## 4. Choose a cover when the local files carry none
 
@@ -157,6 +90,16 @@ that a picture arrives on its own tile, that nothing can be kept until
 something is picked, that a fetch which fails keeps nothing and leaves the
 chooser open, that a chosen picture reaches the library under the album's own
 key. What is left needs the live services and the owner's eyes.
+
+**A chosen cover does not survive a restart.** Observed on Future Funk 2: the
+picture is kept and drawn at once, then the album shows a placeholder again on
+the next start. Two chosen records sit in the artwork cache with their images
+beside them, so the write is sound. The read is not. `AlbumArt.reading`
+answers nothing for an album with nowhere local to look, before it asks the
+store anything; an album with nowhere local to look is the only kind this
+chooser is ever offered for. `AlbumArt.remembered` would answer correctly and
+has no caller anywhere. That is read from the source rather than reproduced,
+so a test that fails on it comes before any fix.
 
 Done when: an album with no local art is given one from the chooser against the
 real archive, then keeps it across a restart and a rescan; declining leaves the
@@ -316,7 +259,7 @@ Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
-Depends on: milestone 1, since it is the same transport. Shares its
+Depends on the transport the position display already built. Shares its
 backend decision with milestone 11.
 
 ## 13. Accept the repairs the health report describes
