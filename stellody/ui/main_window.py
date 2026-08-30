@@ -47,6 +47,7 @@ from stellody.ui.settings_keys import (
 )
 from stellody.ui.shape_worker import ShapeRunner
 from stellody.ui.toolbar import LibraryTray
+from stellody.ui.transport_menu import TransportMenu
 from stellody.ui.viewing import Viewing
 from stellody.ui.window_parts import (
     application_icon,
@@ -80,7 +81,14 @@ def _trail() -> str:
 
 
 class MainWindow(
-    Scanning, Playing, Leaving, Covering, Appearance, Viewing, QMainWindow
+    Scanning,
+    Playing,
+    TransportMenu,
+    Leaving,
+    Covering,
+    Appearance,
+    Viewing,
+    QMainWindow,
 ):
     """Stellody's window: a library, a menu bar and a status line."""
 
@@ -145,6 +153,7 @@ class MainWindow(
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
             toggle_view=self.toggle_view,
+            toggle_cover_size=self.toggle_cover_size,
             open_donation=self.open_donation,
             repair_library=self.repair_library,
         )

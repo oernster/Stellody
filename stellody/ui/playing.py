@@ -13,8 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QModelIndex, QPoint, Qt, Slot
-from PySide6.QtWidgets import QAbstractItemView, QMenu
+from PySide6.QtCore import QModelIndex, Slot
 
 from stellody.ui.bottom_tray import (
     DEFAULT_PERCENT,
@@ -52,19 +51,6 @@ class Playing:
         """
         self._tree.activated.connect(self.activate)
         self.wire_transport_menu(self._tree)
-
-    def wire_transport_menu(self, over: QAbstractItemView) -> None:
-        """Offer the transport over this view, whichever view it is.
-
-        The list is not the only place a listener points at music: a sleeve in
-        the grid and a track in the open album are the same gesture on the same
-        library, so the same menu belongs on all three. The view is bound into
-        the connection because the signal carries a point and nothing else.
-        """
-        over.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        over.customContextMenuRequested.connect(
-            lambda where, view=over: self.show_transport_menu(where, view)
-        )
 
     @Slot(int)
     def set_volume(self, percent: int) -> None:
@@ -141,69 +127,6 @@ class Playing:
         """Selecting a track is what makes the play button pressable."""
         self._show_transport()
 
-    def show_transport_menu(self, where: QPoint, over=None) -> None:
-        """Offer the transport over whatever was right clicked.
-
-        Play means the track under the cursor when that is a DIFFERENT track,
-        since that is what right clicking another row is asking about. On the
-        track already loaded it means carry on, exactly as it does over empty
-        space: starting a track over is what next and previous are for;
-        losing your place in a long piece is not a small annoyance.
-
-        The distinction was not always this load bearing. The highlight now
-        follows the transport, so the row under the cursor is usually the one
-        being played, which is precisely the case that used to reload.
-
-        A sleeve carries no track of its own, so Play over one means the album
-        from its first track. Over the album already loaded it means carry on,
-        for exactly the reason a loaded track does.
-        """
-        over = self._tree if over is None else over
-        index = over.indexAt(where)
-        track = self._model.track_at(index)
-        album = self._model.album_at(index)
-        menu = QMenu(over)
-        playing = self._transport.playing
-        loaded = self._transport.current is not None
-        elsewhere = track is not None and track is not self._transport.current
-        starts = track is None and album is not None and self._album_elsewhere(album)
-        play = menu.addAction("Play")
-        play.setEnabled(elsewhere or starts or (loaded and not playing))
-        if elsewhere:
-            play.triggered.connect(lambda: self.activate(index))
-        elif starts:
-            play.triggered.connect(lambda: self.play_album(album))
-        else:
-            play.triggered.connect(self.toggle_playback)
-        pause = menu.addAction("Pause")
-        pause.setEnabled(playing)
-        pause.triggered.connect(self.toggle_playback)
-        stop = menu.addAction("Stop")
-        stop.setEnabled(self._transport.state.is_active)
-        stop.triggered.connect(self.stop_playback)
-        menu.addSeparator()
-        previous = menu.addAction("Previous track")
-        # Offered wherever the button is, because back on the first track
-        # starts it again rather than doing nothing.
-        previous.setEnabled(self._transport.current is not None)
-        previous.triggered.connect(self.previous_track)
-        following = menu.addAction("Next track")
-        following.setEnabled(self._transport.queue.has_next)
-        following.triggered.connect(self.next_track)
-        self._menu = menu
-        menu.popup(over.viewport().mapToGlobal(where))
-
-    def _album_elsewhere(self, album) -> bool:
-        """True while this album is not the one already loaded.
-
-        By identity rather than equality, matching the queue: two pressings can
-        compare equal while only one of them is the run that is playing.
-        """
-        current = self._transport.current
-        return current is None or not any(
-            candidate is current for candidate in album.ordered_tracks()
-        )
-
     def play_album(self, album) -> None:
         """Start an album from its first track."""
         ordered = album.ordered_tracks()
@@ -238,8 +161,23 @@ class Playing:
         Highlighted in the view ON SHOW, which is the open album while the
         sleeves are up. Reading the list either way left the button dead in
         the grid, where the list is not the thing being looked at.
+
+        A loaded track used to make this a resume WHATEVER had been chosen
+        since, so picking a second album and pressing play started the first
+        one again. Play now means the highlighted track wherever that is not
+        the track already loaded, which is the rule the right click menu has
+        always followed.
+
+        While something is PLAYING the button is a pause button, so it pauses
+        even with another album picked: a press on a pause button is asking to
+        stop rather than to go somewhere else. The press after it starts what
+        was picked.
         """
-        if self._transport.current is None:
+        chosen = self._model.track_at(self.highlighted())
+        elsewhere = chosen is not None and chosen is not self._transport.current
+        if self._transport.current is None or (
+            elsewhere and not self._transport.playing
+        ):
             self.activate(self.highlighted())
             return
         self._drive(self._transport.toggle)

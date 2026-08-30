@@ -108,6 +108,39 @@ class TestThePickedAlbumsFirstTrack:
         window.toggle_view()
         assert window.highlighted() == window._tree.currentIndex()
 
+    def test_a_second_album_is_what_the_button_then_starts(self, window) -> None:
+        """The defect: a loaded track made the button a resume for ever after.
+
+        Picking a second album and pressing play started the first one again,
+        because anything loaded turned the press into a resume whatever had
+        been chosen since. Only one album is in this library, so the second
+        pick is a second TRACK of it, which is the same wrong turn.
+        """
+        grid = _sleeves(window)
+        grid.setCurrentIndex(_first_album(window))
+        window.toggle_playback()
+        window.toggle_playback()
+        assert not window._transport.playing, "paused, so the next press starts"
+        pane = window._album_pane
+        album = window._model.album_at(_first_album(window))
+        second = window._model.index_for(album.ordered_tracks()[1])
+        pane.columns[1].setCurrentIndex(second)
+        window.toggle_playback()
+        assert window._transport.current.track_number == 2
+
+    def test_a_press_while_playing_still_pauses(self, window) -> None:
+        """A button showing pause pauses, even with something else picked."""
+        grid = _sleeves(window)
+        grid.setCurrentIndex(_first_album(window))
+        window.toggle_playback()
+        assert window._transport.playing
+        album = window._model.album_at(_first_album(window))
+        second = window._model.index_for(album.ordered_tracks()[1])
+        window._album_pane.columns[1].setCurrentIndex(second)
+        window.toggle_playback()
+        assert not window._transport.playing
+        assert window._transport.current.track_number == 1, "it did not jump"
+
     def test_shutting_the_pane_takes_the_highlight_with_it(self, window) -> None:
         grid = _sleeves(window)
         grid.setCurrentIndex(_first_album(window))
