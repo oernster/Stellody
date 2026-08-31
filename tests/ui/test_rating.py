@@ -55,14 +55,36 @@ class TestWhichTrackTheRowIsAbout:
         window.follow_rating()
         assert window._position_bar.stars.isEnabled()
 
-    def test_what_is_playing_wins_over_what_is_highlighted(self, window) -> None:
-        """The same rule the shape below it follows, so the two agree."""
+    def test_what_is_highlighted_wins_over_what_is_playing(self, window) -> None:
+        """A track picked out while something else plays is still ratable.
+
+        Deliberately not the rule the shape beside it follows: that is a
+        reading of what is audible, while this is a control; a control has
+        to be about the thing under the hand.
+        """
         window.play_album(PLANETS)
         _highlight(window, 1, 0)
         window.follow_rating()
         window.rate_shown(3)
-        played = track_handle(PLANETS.identity, 1, 1)
-        assert window._listening.of(played).stars == 3
+        assert window._listening.of(track_handle(SIMPLE.identity, 1, 1)).stars == 3
+        assert window._listening.of(track_handle(PLANETS.identity, 1, 1)).is_empty
+
+    def test_it_falls_back_to_what_is_playing(self, window) -> None:
+        """Nothing pointed at, so the stars answer for the music instead."""
+        window.play_album(PLANETS)
+        window._tree.setCurrentIndex(QModelIndex())
+        window.follow_rating()
+        window.rate_shown(2)
+        assert window._listening.of(track_handle(PLANETS.identity, 1, 1)).stars == 2
+
+    def test_a_track_never_played_can_be_rated(self, window) -> None:
+        """The whole point of it: nothing has to be heard to be judged."""
+        _highlight(window, 1, 0)
+        window.follow_rating()
+        window.rate_shown(5)
+        record = window._listening.of(track_handle(SIMPLE.identity, 1, 1))
+        assert record.stars == 5
+        assert record.plays == 0
 
 
 class TestRating:

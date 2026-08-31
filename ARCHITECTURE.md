@@ -223,10 +223,14 @@ costs one empty query; a row that had to ask the disk for its rating would ask
 once per drawn row. Every change is written as it is made, so there is no save
 step to forget.
 
-**The stars ride on the position row** because that row already follows what
-the rating follows: the track that is loaded, else the one that is
-highlighted. The shape under the line and the stars beside it are two readings
-of one track.
+**The stars ride on the position row**, which is the only row that is about
+one track rather than about the library. They do not share its rule, though:
+the shape belongs to what is audible, so playback owns it, while the stars are
+a control somebody acts on, so they belong to whatever is being pointed at.
+Otherwise a track picked out while something else played could not be rated at
+all, which is the whole of what a rating is for: nothing has to be heard to be
+judged. The two agree throughout ordinary listening anyway, since the
+highlight follows playback from track to track.
 
 ## Design decisions
 

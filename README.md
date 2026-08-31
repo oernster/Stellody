@@ -81,9 +81,10 @@ not going to.
   what has been decoded. A file's shape is measured once, kept and shared by
   every track a cue sheet album cuts from it.
 - Takes a rating out of five stars for any track, from a rectangle at the right
-  of the position bar. It counts a track each time it plays out. Both are
-  about the same track the waveform is: what is playing, else what is
-  highlighted. Pressing the star a track already sits on takes the rating back,
+  of the position bar. It counts a track each time it plays out. The stars are
+  about whichever track you have picked out, so a track you have never played
+  can be rated; so can one you point at while something else is playing.
+  Pressing the star a track already sits on takes the rating back,
   since nought is the absence of a rating rather than a sixth one. Reaching the
   end is what counts as a play, so skipping through an album counts nothing.
   Neither ever reaches your files: both are kept in Stellody's own store

@@ -1,8 +1,9 @@
 """Showing the rating of the track the position row is about, then setting it.
 
-It follows exactly what the shape below it follows: the track that is loaded,
-else the one that is highlighted. One rule for the whole row, so the stars and
-the shape are never about two different tracks.
+It is about the track being pointed at, falling back to the one playing where
+nothing is. That is deliberately not the rule the shape beside it follows: a
+shape is a reading of what is audible, while the stars are a control somebody
+acts on; a control has to be about the thing under the hand.
 
 A record is kept against the album's identity with the disc and track number
 under it, so the album has to be in hand before the rating can be. Both routes
@@ -51,17 +52,29 @@ class Rating:
         self.follow_rating()
 
     def _rated(self) -> tuple[Album, Track] | None:
-        """The album and track the row is about; None when it is about none."""
-        playing = self._transport.current
-        queued = self._transport.album
-        if playing is not None and queued is not None:
-            return queued, playing
+        """The album and track the stars are about; None when about none.
+
+        What is HIGHLIGHTED wins, which is where this parts from the shape
+        drawn under the line beside it. The shape belongs to what is audible,
+        so playback owns it; the stars are a control somebody acts on, so they
+        belong to whatever is being pointed at. Otherwise a track picked out
+        while something else played could not be rated at all: the stars would
+        answer for the music instead.
+
+        The two agree throughout ordinary listening anyway, since the
+        highlight follows playback from track to track. They part only where
+        somebody has deliberately moved off it.
+        """
         where = self.highlighted()
         track = self._model.track_at(where)
         album = self._model.album_at(where)
-        if track is None or album is None:
+        if track is not None and album is not None:
+            return album, track
+        playing = self._transport.current
+        queued = self._transport.album
+        if playing is None or queued is None:
             return None
-        return album, track
+        return queued, playing
 
 
 def _handle(album: Album, track: Track) -> str:
