@@ -1,0 +1,60 @@
+# Carry a change to the published site across to the repository that serves
+# stellody.com, so the two hosts cannot drift apart.
+#
+# docs/ is served by GitHub Pages at stellody.co.uk, the canonical host. The
+# same pages are served at stellody.com from oernster/stellody-website, which
+# has no way of noticing when this repository changes. This workflow tells it,
+# and the push it makes there starts Render's own deploy.
+#
+# Needs a secret named MIRROR_TOKEN: a fine-grained personal access token
+# scoped to oernster/stellody-website alone, with Contents set to read and
+# write. Nothing else.
+name: Mirror the site to stellody.com
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "sync_site.py"
+      - ".github/workflows/mirror-site.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-site
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+        with:
+          path: Stellody
+
+      - name: Check out the mirror
+        uses: actions/checkout@v4
+        with:
+          repository: oernster/stellody-website
+          token: ${{ secrets.MIRROR_TOKEN }}
+          path: stellody-website
+
+      - name: Carry the change across
+        run: python Stellody/sync_site.py --target stellody-website/public
+
+      - name: Push the mirror, only when something moved
+        working-directory: stellody-website
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public
+          if git diff --cached --quiet; then
+            echo "Nothing moved; the mirror already matched."
+            exit 0
+          fi
+          git commit -m "Mirror the site from Stellody@${GITHUB_SHA:0:7}"
+          git push
+
+      - name: Prove the two now agree
+        run: python Stellody/sync_site.py --target stellody-website/public --check

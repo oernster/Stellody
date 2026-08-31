@@ -32,6 +32,7 @@ BUILD_SCRIPTS = frozenset(
         "generate_icons.py",
         "generate_scripts.py",
         "stamp_version.py",
+        "sync_site.py",
     }
 )
 

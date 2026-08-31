@@ -225,17 +225,30 @@ Windows is the only platform built today.
 tokens in it are stamped from `VERSION` by `stamp_version.py`, which both build
 scripts call, so the site is never hand-versioned.
 
-**Editing `docs/` is only half the job.** The same pages are mirrored to the
-[stellody-website](https://github.com/oernster/stellody-website) repository,
-under `public/`, which Render serves at `stellody.com`. That copy has no way of
-noticing when this one changes, so any change here has to be carried across by
-hand in the same sitting, else the two hosts start telling different stories.
+The same pages are also served at `stellody.com`, out of the
+[stellody-website](https://github.com/oernster/stellody-website) repository
+under `public/`. **That mirror keeps itself up to date and needs nothing from
+you.** Pushing a change to `docs/` runs `.github/workflows/mirror-site.yml`,
+which carries it across and pushes it; that push in turn starts Render's
+deploy. Commit here and both hosts follow.
+
+`sync_site.py` is what the workflow runs. It works locally too:
+
+```
+python sync_site.py           # carry docs/ across to ../stellody-website/public
+python sync_site.py --check   # report drift, write nothing, exit 1 if any
+```
 
 Two files are deliberately NOT mirrored. `docs/CNAME` names the Pages custom
 domain and means nothing on Render; `docs/sitemap.xml` stays because this host
-owns the sitemap. The mirrored pages keep their `canonical`, `og:url` and
-`og:image` pointing here, which is what stops the two hosts competing for the
-same pages.
+owns the sitemap. `robots.txt` differs on the mirror on purpose, so it is
+neither copied over nor deleted there. The mirrored pages keep their
+`canonical`, `og:url` and `og:image` pointing here, which is what stops the two
+hosts competing for the same pages.
+
+The workflow needs one secret, `MIRROR_TOKEN`: a fine-grained personal access
+token scoped to `oernster/stellody-website` alone, with Contents set to read
+and write.
 
 ## Licence
 
