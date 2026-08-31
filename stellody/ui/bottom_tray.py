@@ -24,7 +24,7 @@ confirm it.
 Shuffle and repeat show their STATE by being lit rather than by being struck
 through, which is where this strip parts from the tray above: that one acts,
 so its pictures say what a press would do; this one holds settings, so its
-switches say how things stand. A slash here would be read as the mark the tray
+switches say how things stand. A cross here would be read as the mark the tray
 uses and taken for an action, on a control that is not offering one. Their
 tooltips name the action, so the pair still says both things at once.
 """

@@ -82,7 +82,7 @@ def _rendered(icon) -> QImage:
 
 
 def _struck() -> QImage:
-    """The speaker with the slash over it, composed as the tray composes it."""
+    """The speaker with the cross over it, composed as the tray composes it."""
     return _rendered(
         struck_through(
             resources.unmute_icon_path(), resources.negative_icon_path(), ICON_PX

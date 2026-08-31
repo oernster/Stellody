@@ -1,12 +1,12 @@
-"""Making one icon out of two: a switch, plus the slash that says it is off.
+"""Making one icon out of two: a switch, plus the cross that says it is off.
 
 The struck-through variants are composed here rather than drawn as their own
-files, so the artwork has one source per switch. Redrawing the slash changes
+files, so the artwork has one source per switch. Redrawing the cross changes
 every switch that uses it; a switch redrawn needs no second file kept in
 step with it.
 
 Composing at the size the button will draw at, rather than scaling a composite
-afterwards, keeps the slash the same weight on every button whatever its
+afterwards, keeps the cross the same weight on every button whatever its
 artwork measures.
 """
 
@@ -17,7 +17,7 @@ import pathlib
 from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QIcon, QImage, QPainter, QPixmap
 
-# The slash is drawn over the whole square rather than inset, because it reads
+# The cross is drawn over the whole square rather than inset, because it reads
 # as a strike across the icon rather than as a badge in a corner.
 TRANSPARENT = Qt.GlobalColor.transparent
 SMOOTH = Qt.TransformationMode.SmoothTransformation
@@ -52,7 +52,7 @@ def plain_icon(path: pathlib.Path | None) -> QIcon:
 def struck_through(
     path: pathlib.Path | None, negative: pathlib.Path | None, size_px: int
 ) -> QIcon:
-    """The picture with the slash laid over it, saying this switch is off.
+    """The picture with the cross laid over it, saying this switch is off.
 
     Either file missing leaves the other to speak for itself, because a switch
     that cannot be seen is worse than one whose state has to be read from its
@@ -68,8 +68,8 @@ def struck_through(
     canvas.fill(TRANSPARENT)
     painter = QPainter(canvas)
     painter.drawPixmap(_centred(base, size), base)
-    slash = None if negative is None else _scaled(negative, size)
-    if slash is not None:
-        painter.drawPixmap(_centred(slash, size), slash)
+    cross = None if negative is None else _scaled(negative, size)
+    if cross is not None:
+        painter.drawPixmap(_centred(cross, size), cross)
     painter.end()
     return QIcon(canvas)

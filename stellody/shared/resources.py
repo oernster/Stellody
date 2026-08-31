@@ -37,9 +37,9 @@ LIBRARY_HEALTH_ICON = "library-health.png"
 SEARCH_ICON = "search.png"
 REPEAT_ICON = "repeat.png"
 UNMUTE_ICON = "unmute.png"
-# The slash laid over one of the three switches above to say it is off. It is
+# The cross laid over one of the three switches above to say it is off. It is
 # artwork in its own right rather than a variant of each icon, so a change to
-# the slash reaches all three without three files being redrawn.
+# the cross reaches all three without three files being redrawn.
 NEGATIVE_ICON = "negative.png"
 
 
@@ -179,7 +179,7 @@ def unmute_icon_path() -> pathlib.Path | None:
 
 
 def negative_icon_path() -> pathlib.Path | None:
-    """The slash that says a switch is off."""
+    """The cross that says a switch is off."""
     return find_asset(NEGATIVE_ICON)
 
 
