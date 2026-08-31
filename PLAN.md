@@ -206,7 +206,7 @@ is missing is not the correction. It is anywhere to record that a correction
 was accepted, plus any way to prefer yours over the rule's.
 
 **Measured on the reference library**, so the size of this is known rather than
-guessed: 142 issues across 36 of the 485 albums. 132 are two files claiming one
+guessed: 142 issues across 36 of the 482 albums. 132 are two files claiming one
 track number, 6 are a disc number disagreeing with its folder, 4 are a missing
 album artist. Every one of those three kinds already has a resolution rule, so
 every one of the 142 has a value waiting to be accepted. The two kinds with

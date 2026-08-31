@@ -100,7 +100,7 @@ TrackSource(path, start_frame, end_frame)
 A normal track is `TrackSource("07 Venus.flac")`. A cue-sheet track is
 `TrackSource("album.flac", 18_432_000, 32_532_000)`.
 
-163 of the 485 albums in the reference library are built from a cue sheet
+163 of the 482 albums in the reference library are built from a cue sheet
 rather than one file per track, 157 of them a single FLAC holding the whole
 album, so this is a main path rather than an edge case. Because the
 distinction is captured in one value object, the queue, the transport and
@@ -156,7 +156,7 @@ caches a whole folder's result. A rescan compares each file's size and
 modification time against the store; a folder whose files are all unchanged is
 reused without opening a single file. On the reference library a cold scan of
 510 folders and 4,870 files takes about two and a half seconds and a rescan
-about a third of a second, grouping into 485 albums of 6,877 tracks.
+about a third of a second, grouping into 482 albums of 6,877 tracks.
 
 **The store holds raw tag values, not resolved ones.** Resolution happens on
 load, so improving any rule above takes effect on the next start without
@@ -170,7 +170,7 @@ directories plus macOS AppleDouble stubs; nothing else.
 ## Searching
 
 **No index, measured rather than assumed.** A full-text table was the first
-plan and the measurement refused it. A pass over the whole library, 485 albums
+plan and the measurement refused it. A pass over the whole library, 482 albums
 of 6,877 tracks, costs under half a millisecond once the text is normalised,
 against the hundred and twenty milliseconds a typed character allows. An index
 would also hold the WRONG text, since the store keeps raw tags while the
