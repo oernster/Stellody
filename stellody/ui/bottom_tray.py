@@ -22,12 +22,11 @@ show, since a button that reads as a label is read as a state and pressed to
 confirm it.
 
 Shuffle and repeat show their STATE by being lit rather than by being struck
-through. The slash means one thing across the application, that what the
-picture depicts is not happening, which is true of a silenced speaker and is
-the wrong reading for a switch that is merely off: a row where the same mark
-meant "engaged" on one button and "not engaged" on the next was read exactly
-as the contradiction it was. Their tooltips name the action, so the pair still
-says both things at once.
+through, which is where this strip parts from the tray above: that one acts,
+so its pictures say what a press would do; this one holds settings, so its
+switches say how things stand. A slash here would be read as the mark the tray
+uses and taken for an action, on a control that is not offering one. Their
+tooltips name the action, so the pair still says both things at once.
 """
 
 from __future__ import annotations

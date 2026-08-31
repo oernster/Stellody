@@ -4,11 +4,14 @@ Three switches that outlast the track in hand. Each has to reach the transport,
 show its own state and be there again next time the application opens; a switch
 that does two of those and not the third is the one that gets reported as a bug.
 
-Mute is the one switch whose picture changes: a struck speaker says there is no
-sound. What is asserted about it is that the two states DIFFER, not what the
-artwork is, since the strike is a composite made at run time. Shuffle and
-repeat keep one picture and light the button instead, so what is asserted
-there is the button's own state and that the artwork did NOT change.
+Mute is the one switch whose picture changes: a struck speaker says a press
+would silence it. WHICH picture goes with which state is asserted here rather
+than only that the two differ, since a test that asks only for a difference
+passes just as happily with the two the wrong way round, which is how they
+shipped that way. The strike is composed at run time, so the comparison is
+against the same composition rather than against a file. Shuffle and repeat
+keep one picture and light the button instead, so what is asserted there is
+the button's own state and that the artwork did NOT change.
 
 The donate button is the one thing here that leaves the application, so what is
 asserted is the address handed outward, through a seam of our own rather than
@@ -19,12 +22,16 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
+from tray_support import ICON_PX as READ_PX
 from tray_support import RememberingStore, build, picture
 
 from stellody.domain.playback import SILENT_VOLUME
+from stellody.shared import resources
 from stellody.shared.version import DONATE_URL
 from stellody.ui import main_window as window_module
+from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
     FALSE,
@@ -33,6 +40,7 @@ from stellody.ui.settings_keys import (
     SETTING_SHUFFLE,
     TRUE,
 )
+from stellody.ui.toolbar import ICON_PX
 from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT
 
 # Long enough for the walk to come back round to where it started.
@@ -63,19 +71,57 @@ def window(
     return build(store, player)
 
 
-def test_muting_silences_the_device_and_strikes_the_speaker_through(
+def _rendered(icon) -> QImage:
+    """One icon read at the size `picture` reads a button's at.
+
+    Composed at the tray's own ICON_PX, as the tray composes it, then read at
+    the smaller size the helper uses, so the two sides of the comparison are
+    the same picture asked for the same way.
+    """
+    return icon.pixmap(READ_PX, READ_PX).toImage()
+
+
+def _struck() -> QImage:
+    """The speaker with the slash over it, composed as the tray composes it."""
+    return _rendered(
+        struck_through(
+            resources.unmute_icon_path(), resources.negative_icon_path(), ICON_PX
+        )
+    )
+
+
+def _plain() -> QImage:
+    """The speaker on its own."""
+    return _rendered(plain_icon(resources.unmute_icon_path()))
+
+
+def test_the_two_renderings_are_actually_different(
+    application: QApplication,
+) -> None:
+    """The premise of the test below, so it cannot pass by both being alike."""
+    assert _struck() != _plain()
+
+
+def test_muting_silences_the_device_and_the_speaker_shows_what_a_press_does(
     window: MainWindow, player: RecordingPlayer
 ) -> None:
+    """Struck while the sound is on, since that press is the one that stops it.
+
+    The other way round showed the state, which read as inverted beside the
+    view and appearance toggles: both of those name where a press would take
+    you, so a picture of where you already are is read the wrong way round.
+    """
     button = window._tray.mute_button
-    unmuted = picture(button)
+    assert picture(button) == _struck(), "sound on, so a press would silence it"
+    assert button.toolTip() == "Mute"
     window.toggle_mute()
     assert player.volume == SILENT_VOLUME
     assert button.toolTip() == "Unmute"
-    assert picture(button) != unmuted, "the muted speaker is drawn struck through"
+    assert picture(button) == _plain(), "silent, so a press would bring it back"
     window.toggle_mute()
     assert player.volume == DEFAULT_PERCENT / MAXIMUM_PERCENT, "back to the level set"
     assert button.toolTip() == "Mute"
-    assert picture(button) == unmuted
+    assert picture(button) == _struck()
 
 
 def test_the_shuffle_switch_reaches_the_transport_and_lights_while_it_is_on(

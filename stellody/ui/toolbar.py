@@ -20,6 +20,11 @@ Mute is ruled off from the two buttons after it. It acts on what is playing
 while they act on the application, so a line says they are different kinds of
 thing; the alternative is a run of eight buttons that all read as one group.
 
+Every picture here says what a press would DO rather than what is the case:
+the appearance toggle shows the appearance it would move to; the view toggle
+names the view it would move to; the mute switch is struck through while the
+sound is on, because that press is the one that silences it.
+
 The transport is centred because it is the one group that is about the track
 rather than about the library; also because a play button in the corner of a
 window is a play button nobody finds.
@@ -297,17 +302,22 @@ class LibraryTray(QWidget):
         self._popup.open_at(self._percent, self.volume_button)
 
     def set_muted(self, muted: bool) -> None:
-        """Strike the speaker through while it is silent.
+        """Show what a press would do, as every button in this tray does.
 
-        This one shows the STATE rather than the action, which the play button
-        does not: silence has nothing of its own to show, so the picture has to
-        carry it. The tooltip names the action, so the pair still says both.
+        A struck speaker while the sound is on says a press silences it; a
+        plain one while it is off says a press brings it back. It showed the
+        state instead, which read as inverted beside the view toggle and the
+        appearance toggle: both of those name where a press would take you,
+        so a picture of where you already are is read the wrong way round.
+
+        The tooltip says the same thing in words, so the two agree rather
+        than each carrying half of it.
         """
         speaker = resources.unmute_icon_path()
         self.mute_button.setIcon(
-            struck_through(speaker, resources.negative_icon_path(), ICON_PX)
+            plain_icon(speaker)
             if muted
-            else plain_icon(speaker)
+            else struck_through(speaker, resources.negative_icon_path(), ICON_PX)
         )
         self.mute_button.setToolTip("Unmute" if muted else "Mute")
 
