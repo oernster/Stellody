@@ -27,39 +27,19 @@ A first release has been cut and pushed, of what works today. `VERSION` holds
 the number for the release being cut; a bump is owed against the newest tag
 rather than against the last thing written.
 
-The position display, the cover chooser and search are done. The corrected
-position, the amplitude monitor that draws it against the music, the chooser
-that gives an album the art its own files never carried and the search that
-narrows the library as it is typed into have each been watched in the built
-application, so each is gone from this file, as the grid of covers was before
-them. Version 1.0 is a separate readiness call for the owner to make; nothing
-below is sized against it. Ratings and the rest come later, the wider formats
-and video among them.
+The position display, the cover chooser, search and the ratings with their play
+counts are done. The corrected position, the amplitude monitor that draws it
+against the music, the chooser that gives an album the art its own files never
+carried, the search that narrows the library as it is typed into and the count
+that appears on a track row once a track has played out have each been watched
+in the built application, so each is gone from this file, as the grid of covers
+was before them. Version 1.0 is a separate readiness call for the owner to make; nothing
+below is sized against it. The rest comes later, the wider formats and video
+among them.
 
 Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
-
-## 6. Ratings and play counts
-
-**Built and gate-green; open only until it has been watched in the built
-application.** A track takes five stars from the position row, an album takes
-its own from the pane header, reaching the end of a track counts a play and the
-count is read down the track rows. All of it is kept against the album's
-identity rather than a path, so a folder rename loses nothing; none of it
-reaches the music files.
-
-The stars and the album rating have both been watched running. The count on the
-rows has not, which is the whole of what is left: this milestone is deleted the
-moment somebody has seen a count appear on a row after a track played out.
-
-Filtering by either is wanted later and is NOT part of this milestone. Each is
-stored as a first class column rather than derived, so the search can filter on
-it when that is built; `Search` is already a condition rather than a phrase
-alone, so it takes the second kind when there is something to read.
-
-Done when: somebody has watched a play count appear on a track row in the
-built application. Everything else this milestone asked for is done.
 
 ## 7. Repeat one track
 
@@ -315,6 +295,43 @@ Done when: two albums that differ by a known amount in measured loudness play
 within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
+
+## 15. Make the sites findable
+
+The markup is already there: a title and a description on every page, a
+canonical, the full Open Graph and Twitter set, `SoftwareApplication`
+structured data on the front page, a sitemap and a robots file. None of that is
+discovery. Nothing has been submitted to a search engine, no structured data
+has been validated against a real checker and neither host has been observed in
+an index.
+
+What is left is the part that moves it:
+
+- **Register both hosts.** Google Search Console plus Bing Webmaster Tools for
+  `stellody.co.uk`, then submit `sitemap.xml`. Register `stellody.com` as well,
+  where the point is the opposite one: confirm the cross-domain canonical is
+  read, so the mirror is treated as the copy rather than as a rival.
+- **Validate the structured data** in the Rich Results Test rather than by
+  reading it, then extend it past the front page. The other three pages carry
+  no JSON-LD at all.
+- **Give the link previews their pictures.** The cards ask for `summary` with
+  the 512px icon; the site holds two screenshots that would carry a
+  `summary_large_image` card instead.
+- **Weigh the screenshots.** They are roughly 850KB each as PNG and page speed
+  is a ranking input. WebP at a stated width and height would cut that without
+  changing how they look.
+- **Put `lastmod` in the sitemap.** Visible dates are forbidden on these sites;
+  machine metadata is exempt, so this is the only signal a sitemap carries
+  beyond the list of URLs.
+- **Link to it from the hub.** `ernster.dev` has never listed Stellody, so the
+  site has no inbound link from the one place certain to give it one.
+
+Every page change lands in `docs/` and reaches `stellody.com` on its own
+through the mirror workflow, so this is one repository's work.
+
+Done when: both hosts are verified in Search Console with the sitemap submitted
+and no coverage errors, the structured data passes the Rich Results Test and a
+search for the application by name returns the site.
 
 ## Not planned, so that this is not revisited
 
