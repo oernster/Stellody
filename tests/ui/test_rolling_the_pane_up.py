@@ -23,6 +23,7 @@ from tray_support import RememberingStore, build, track
 
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
+from stellody.ui.album_pane import PANE_MARGIN_PX
 from stellody.ui.row_text import Column
 
 LEFT = Qt.MouseButton.LeftButton
@@ -127,3 +128,44 @@ class TestTheHighlightIsNotDisturbed:
         pane.columns[1].setCurrentIndex(second)
         window.open_album_at(window._model.index(0, Column.TITLE, QModelIndex()))
         assert window._model.track_at(pane.current_index()).track_number == 2
+
+
+class TestWhereTheTwoButtonsSit:
+    """The play and close buttons were beside the album's name, which made the
+    name stop short of the edge to leave room for them. They sit under it now,
+    at the end of the rating row, twice the size they were."""
+
+    def _opened(self, window):
+        """The pane open on the first album, laid out at a real size."""
+        window.resize(1100, 800)
+        press(window, 0)
+        QApplication.processEvents()
+        return window._album_pane
+
+    def test_the_name_runs_to_the_end_of_the_pane(self, window) -> None:
+        """Nothing sits beside it any more, so nothing shortens it."""
+        pane = self._opened(window)
+        assert pane.title.geometry().right() == pane.width() - PANE_MARGIN_PX - 1
+
+    def test_the_buttons_sit_under_the_name(self, window) -> None:
+        pane = self._opened(window)
+        for button in (pane.play_button, pane.close_button):
+            assert button.geometry().top() >= pane.artist.geometry().bottom()
+
+    def test_the_last_button_is_flush_with_the_edge(self, window) -> None:
+        """Right justified, so the pair reads as belonging to the row's end."""
+        pane = self._opened(window)
+        assert pane.close_button.geometry().right() == pane.width() - PANE_MARGIN_PX - 1
+        assert pane.play_button.geometry().right() < pane.close_button.geometry().left()
+
+    # The size asked for, written out here rather than read from the module it
+    # is guarding. Taking both sides from the one constant proved only that the
+    # constant equals itself: planting sixteen back left the test passing.
+    WANTED_ICON_PX = 32
+
+    def test_the_pictures_are_drawn_at_twice_the_old_size(self, window) -> None:
+        """Sixteen was too small to read at the end of the row."""
+        pane = self._opened(window)
+        for button in (pane.play_button, pane.close_button):
+            assert button.iconSize().width() == self.WANTED_ICON_PX
+            assert button.width() > self.WANTED_ICON_PX

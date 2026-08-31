@@ -48,8 +48,11 @@ from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 ALBUM_RATING_CAPTION = "Album rating"
 ALBUM_RATING_TOOLTIP = "Rate this album as a whole, not the track highlighted in it"
 PANE_COVER_PX = 72
-PANE_BUTTON_PX = 28
-PANE_ICON_PX = 16
+PANE_ICON_PX = 32
+# The button follows the icon rather than being sized a second time, so the
+# picture keeps the same breathing room around it whatever it is drawn at.
+PANE_BUTTON_PADDING_PX = 12
+PANE_BUTTON_PX = PANE_ICON_PX + PANE_BUTTON_PADDING_PX
 PANE_GAP_PX = 10
 PANE_MARGIN_PX = 10
 TRACK_COLUMNS = 2
@@ -147,7 +150,13 @@ class AlbumPane(QWidget):
         self._lay_out()
 
     def _lay_out(self) -> None:
-        """The cover and its names above, the tracks below."""
+        """The cover and its names above, the tracks below.
+
+        The two buttons sit on the rating row rather than beside the names, so
+        the album's title runs the whole width instead of stopping short to
+        leave room for them. Pushed to the right by the same stretch that holds
+        the stars to the left, they land at the end of the row under the title.
+        """
         heading = QVBoxLayout()
         heading.setSpacing(0)
         heading.addWidget(self.title)
@@ -158,14 +167,14 @@ class AlbumPane(QWidget):
         rating.addWidget(self.rating_caption)
         rating.addWidget(self.album_stars)
         rating.addStretch()
+        rating.addWidget(self.play_button)
+        rating.addWidget(self.close_button)
         heading.addLayout(rating)
         heading.addStretch()
         header = QHBoxLayout()
         header.setSpacing(PANE_GAP_PX)
         header.addWidget(self.cover)
         header.addLayout(heading, 1)
-        header.addWidget(self.play_button)
-        header.addWidget(self.close_button)
         listing = QHBoxLayout()
         listing.setSpacing(PANE_GAP_PX)
         for column in self.columns:
