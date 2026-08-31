@@ -47,6 +47,7 @@ from stellody.ui.settings_keys import (
     SETTING_REPEAT,
     SETTING_SHUFFLE,
 )
+from stellody.ui.tips import show_tips_quickly
 
 # What a second launch returns once it has asked the running copy to show
 # itself: it did what was wanted, so it is not a failure.
@@ -100,7 +101,8 @@ def build_window(
 
 
 def configure(application: QApplication) -> None:
-    """Give the application its identity and icon."""
+    """Give the application its identity, its icon and its quick tooltips."""
+    show_tips_quickly(application)
     application.setApplicationName(APP_NAME)
     application.setApplicationDisplayName(APP_NAME)
     application.setApplicationVersion(__version__)
