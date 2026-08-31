@@ -20,7 +20,7 @@ from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
-from stellody.ui.close_prompt import CloseAction
+from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.settings_keys import SETTING_CLOSE
 
 
@@ -74,3 +74,77 @@ def test_with_no_notification_area_the_cross_ends_the_application(
     store.set_setting(SETTING_CLOSE, CloseAction.TRAY.value)
     made.close()
     assert departures == ["left"], "else the process outlives its own window"
+
+
+class TestDismissingThePromptDecidesNothing:
+    """Reported from the built application: pressing the cross on the close
+    prompt minimised the window to the tray. The prompt reported the offered
+    default whether or not anybody had chosen it, so being waved away read to
+    the caller exactly like choosing Minimise to tray.
+
+    The sharper half of the same fault was never seen, because it is silent:
+    dismissing the prompt with the remember box ticked wrote that non-answer
+    down as the standing behaviour, so the question never came back.
+    """
+
+    def _dismissed(self, tick_remember: bool = False):
+        """Stand in for the person pressing the cross on the prompt.
+
+        Through the dialog's own reject, which is where Qt sends the title bar
+        cross and Escape alike, rather than through a stub that merely returns
+        a code. What is being guarded is what the dialog then reports.
+        """
+
+        def press_the_cross(prompt) -> int:
+            if tick_remember:
+                prompt._remember.setChecked(True)
+            prompt.reject()
+            return 0
+
+        return press_the_cross
+
+    def test_the_prompt_reports_no_answer_when_it_is_waved_away(self) -> None:
+        prompt = ClosePrompt()
+        assert not prompt.answered, "nothing is chosen at the moment it opens"
+        prompt.reject()
+        assert not prompt.answered
+        assert prompt.choice is CloseAction.ASK
+        prompt.deleteLater()
+
+    def test_either_button_is_an_answer(self) -> None:
+        for press, expected in (
+            ("_choose_tray", CloseAction.TRAY),
+            ("_choose_quit", CloseAction.QUIT),
+        ):
+            prompt = ClosePrompt()
+            getattr(prompt, press)()
+            assert prompt.answered
+            assert prompt.choice is expected
+            prompt.deleteLater()
+
+    def test_the_window_neither_leaves_nor_hides(
+        self, window, departures, monkeypatch
+    ) -> None:
+        """The reported bug: the cross took the window into the tray."""
+        made, _ = window
+        monkeypatch.setattr(made._notification, "isVisible", lambda: True)
+        monkeypatch.setattr(ClosePrompt, "exec", self._dismissed())
+        made.show()
+        QApplication.processEvents()
+        made.close()
+        QApplication.processEvents()
+        assert made.isVisible(), "the press that opened the prompt is taken back"
+        assert departures == [], "nor does it leave"
+
+    def test_a_ticked_remember_box_writes_nothing(self, window, monkeypatch) -> None:
+        """The silent half: a non-answer became the standing behaviour."""
+        made, store = window
+        monkeypatch.setattr(made._notification, "isVisible", lambda: True)
+        monkeypatch.setattr(ClosePrompt, "exec", self._dismissed(tick_remember=True))
+        made.show()
+        made.close()
+        assert made.asks_on_close, "the question has to come back"
+        # Nothing at all is written, rather than the word for no answer being
+        # written down. Storing "ask" would behave the same and would still be
+        # a settings key nobody asked for: a dialog waved away leaves no trace.
+        assert SETTING_CLOSE not in store.settings

@@ -53,6 +53,12 @@ class Leaving:
         if action == CloseAction.ASK.value:
             action = self._ask_close_action()
         self._note(f"the close button means: {action}")
+        if action == CloseAction.ASK.value:
+            # The prompt was dismissed rather than answered, so the press that
+            # opened it is taken back whole: the window neither leaves nor
+            # hides. Anything else would act on a decision nobody made.
+            event.ignore()
+            return
         if action == CloseAction.QUIT.value:
             self._quitting = True
             self._leave_for_good(event)
@@ -103,9 +109,12 @@ class Leaving:
         prompt.exec()
         self._note(
             f"the prompt was answered {prompt.choice.value}, "
-            f"remember: {prompt.remember}"
+            f"answered: {prompt.answered}, remember: {prompt.remember}"
         )
-        if prompt.remember:
+        # Only an answer is written down. The remember box is a question about
+        # the choice, so a dialog waved away has nothing for it to remember;
+        # keeping the tick would have made a non-answer the standing behaviour.
+        if prompt.answered and prompt.remember:
             self._settings.set_setting(SETTING_CLOSE, prompt.choice.value)
         return prompt.choice.value
 
