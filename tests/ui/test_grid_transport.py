@@ -13,8 +13,9 @@ import pytest
 from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
-from tray_support import RememberingStore, build
+from tray_support import RememberingStore, build, picture
 
+from stellody.ui.album_pane import PAUSE_TOOLTIP, PLAY_TOOLTIP
 from stellody.ui.row_text import Column
 
 
@@ -146,3 +147,46 @@ class TestThePickedAlbumsFirstTrack:
         grid.setCurrentIndex(_first_album(window))
         window.close_album()
         assert not window._album_pane.current_index().isValid()
+
+
+class TestThePaneButtonDoublesTheTraysPlay:
+    """Two play buttons on one screen would disagree unless one follows the
+    other. This one wears the pause face while something plays; a press on it
+    then pauses rather than starting the album over."""
+
+    def _playing(self, window):
+        """The sleeves up, an album open and its first track going."""
+        grid = _sleeves(window)
+        grid.setCurrentIndex(_first_album(window))
+        window._album_pane.play_button.click()
+        assert window._transport.playing
+        return window._album_pane
+
+    def test_it_starts_the_album_while_nothing_plays(self, window) -> None:
+        pane = self._playing(window)
+        assert window._transport.current.track_number == 1
+        assert pane.play_button.toolTip() == PAUSE_TOOLTIP
+
+    def test_it_wears_the_pause_face_while_playing(self, window) -> None:
+        """The picture is the action a press would take, as the tray's is."""
+        pane = self._playing(window)
+        playing_face = picture(pane.play_button)
+        pane.play_button.click()
+        assert not window._transport.playing
+        assert picture(pane.play_button) != playing_face
+        assert pane.play_button.toolTip() == PLAY_TOOLTIP
+
+    def test_a_press_while_playing_pauses_rather_than_restarting(self, window) -> None:
+        """It is a pause button at that point, so it is asking to stop."""
+        pane = self._playing(window)
+        pane.play_button.click()
+        assert not window._transport.playing
+        assert window._transport.current is not None
+
+    def test_the_tray_and_the_pane_show_the_same_face(self, window) -> None:
+        """Whichever is pressed, both must say the same thing afterwards."""
+        pane = self._playing(window)
+        assert window._tray.play_button.toolTip() == "Pause"
+        window._tray.play_button.click()
+        assert not window._transport.playing
+        assert pane.play_button.toolTip() == PLAY_TOOLTIP

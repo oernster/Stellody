@@ -168,7 +168,15 @@ class Viewing:
 
     @Slot()
     def play_shown_album(self) -> None:
-        """Play the open album from its first track."""
+        """Play the open album from its first track; pause while one plays.
+
+        The button wears the pause face at that point; a press on a pause
+        button is asking to stop rather than to go somewhere else. That is the
+        rule the tray's play button already follows, which this one doubles.
+        """
+        if self._transport.playing:
+            self._drive(self._transport.toggle)
+            return
         album = self._shown_album
         if album is None:
             return

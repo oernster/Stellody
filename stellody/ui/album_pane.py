@@ -47,6 +47,10 @@ from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 # down on the position row rate one track; the two are inches apart.
 ALBUM_RATING_CAPTION = "Album rating"
 ALBUM_RATING_TOOLTIP = "Rate this album as a whole, not the track highlighted in it"
+# This button doubles the tray's, so it says what the tray's says: the picture
+# is the action a press would take rather than the state playback is in.
+PLAY_TOOLTIP = "Play this album"
+PAUSE_TOOLTIP = "Pause"
 PANE_COVER_PX = 72
 PANE_ICON_PX = 32
 # The button follows the icon rather than being sized a second time, so the
@@ -133,7 +137,7 @@ class AlbumPane(QWidget):
         self.album_stars.setToolTip(ALBUM_RATING_TOOLTIP)
         self.album_stars.chosen.connect(self.rated)
         self.play_button = _button(
-            self, resources.play_icon_path(), "Play this album", self.play_wanted.emit
+            self, resources.play_icon_path(), PLAY_TOOLTIP, self.play_wanted.emit
         )
         self.close_button = _button(
             self, resources.negative_icon_path(), "Close this album", self.closed.emit
@@ -186,6 +190,18 @@ class AlbumPane(QWidget):
         body.setSpacing(PANE_GAP_PX)
         body.addLayout(header)
         body.addLayout(listing, 1)
+
+    def set_playing(self, playing: bool) -> None:
+        """Wear the pause face while something plays, as the tray's does.
+
+        Two play buttons on one screen that disagree about what a press does
+        would be worse than one: this doubles the tray's, so it toggles with
+        it rather than sitting there offering to start what is already going.
+        """
+        path = resources.pause_icon_path() if playing else resources.play_icon_path()
+        if path is not None:
+            self.play_button.setIcon(QIcon(str(path)))
+        self.play_button.setToolTip(PAUSE_TOOLTIP if playing else PLAY_TOOLTIP)
 
     def show_album_stars(self, stars: int) -> None:
         """Show the rating this album carries, without reporting one."""

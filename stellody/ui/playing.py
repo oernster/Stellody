@@ -278,6 +278,7 @@ class Playing:
         """Point the buttons at what can be done to what is loaded."""
         playing = self._transport.playing
         self._tray.set_playing(playing)
+        self._album_pane.set_playing(playing)
         self._tray.set_transport_enabled(
             loaded=self._transport.current is not None,
             playing=self._transport.state.is_active,
