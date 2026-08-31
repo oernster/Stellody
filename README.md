@@ -37,6 +37,14 @@ not going to.
   picking the same sleeve again rolls that pane back up. The sleeves are drawn
   at three sizes, cycled from the bottom strip. The view and the size are both
   remembered.
+- Narrows the library to what you type, from a box that opens in the top tray
+  and closes again, which restores everything. An album that matches keeps all
+  of its tracks, so it reads the way it always does; the track the phrase hit
+  is highlighted and its row flashes a couple of times to take the eye to it.
+  Pressing Return asks the same phrase again, which is how to get back to what
+  it found after moving off it. The whole library is read on every keystroke
+  rather than through an index, which is measured at under half a millisecond
+  and so is faster than an index that could hold the wrong text.
 - Shows each album's cover beside it, taken from a file next to the music or
   from the picture inside the audio itself, then kept so it is read once. An
   album with neither keeps a plain square rather than a gap.
@@ -94,9 +102,9 @@ not going to.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
-Stellody is early. Search, ratings, play counts, an equalizer, gapless
-transitions and accepting the repairs the health report describes are not
-built; `PLAN.md` lists what is still to come and what is deliberately excluded.
+Stellody is early. Ratings, play counts, an equalizer, gapless transitions and
+accepting the repairs the health report describes are not built; `PLAN.md`
+lists what is still to come and what is deliberately excluded.
 Where a control for one of those is already on screen it is disabled and says
 so.
 

@@ -27,69 +27,18 @@ A first release has been cut and pushed, of what works today. `VERSION` holds
 the number for the release being cut; a bump is owed against the newest tag
 rather than against the last thing written.
 
-The position display and the cover chooser are done. The corrected position,
-the amplitude monitor that draws it against the music and the chooser that
-gives an album the art its own files never carried have each been watched in
-the built application, so each is gone from this file, as the grid of covers
-was before them. Version 1.0 is a separate readiness call for the owner to make;
-nothing below is sized against it. Search, ratings and the rest come later,
-the wider formats and video among them.
+The position display, the cover chooser and search are done. The corrected
+position, the amplitude monitor that draws it against the music, the chooser
+that gives an album the art its own files never carried and the search that
+narrows the library as it is typed into have each been watched in the built
+application, so each is gone from this file, as the grid of covers was before
+them. Version 1.0 is a separate readiness call for the owner to make; nothing
+below is sized against it. Ratings and the rest come later, the wider formats
+and video among them.
 
 Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
-
-## 5. Search the library
-
-**The filter is built and gate green.** `stellody/domain/searching.py` narrows
-albums against a phrase, keeps each survivor whole and names the tracks the
-phrase hit. What is left is the half a listener sees.
-
-**No index, measured rather than assumed.** An FTS table was the first plan and
-the measurements refused it. A pass over the whole library, 485 albums of 6,877
-tracks, costs under half a millisecond once the text is normalised, against the
-hundred and twenty a typed character allows. An index would also hold the wrong
-text, since the store keeps raw tags while the library shows resolved ones, so
-a title the resolver corrected would be unfindable. It would be empty besides:
-rows are written only where a folder is probed and a rescan reuses every folder
-that has not changed, so an existing library would search nothing at all until
-it was scanned cold.
-
-Normalising is the part that costs. `comparison_key` over 6,877 titles takes
-9.2 milliseconds against 0.24 for a plain fold; the answer cannot change
-between keystrokes, so it is done once as the library is assembled.
-
-**An album is kept whole.** A phrase that hits one track leaves every track in
-place, so the album reads the way it always does. The hit track is highlighted
-as though it were about to play, then its background flashes gently a couple of
-times, so the eye is taken to it without the album being taken apart.
-
-Filtering by rating and by play count is wanted too. Those columns arrive with
-milestone 6, so `Search` is a condition rather than a phrase alone; it gains
-the second kind when there is something to read.
-
-**All of it is built and gate green.** The box sits in the top tray to the
-right of repair, opened by a button carrying the magnifier and closed by the
-same one, which clears the phrase so a narrowed library can never be left
-behind a box nobody can see. Both routes into the library, a load and a scan,
-go through one seam now, so a search survives either. The flash is a role of
-its own in the palette, `found`, because the hit row is selected at the same
-moment and a pulse in the selection colour would show nothing at all. The
-writing is never repainted, so each appearance carries the colour its own text
-can be read on: banana yellow in the light one at 13.33 to 1, a deep amber in
-the dark one at 5.10 to 1. Qt draws a selected row's background from the
-selection and never asks the model for one, so the delegate fills the flash in
-itself; a test paints a row and reads the pixel back, since a role returned is
-not a row painted.
-
-What a headless run can settle is settled: what narrows, that the album keeps
-every track, that the hit track is the one selected, that its row is painted
-and that the painting stops after a couple of pulses. Whether the pulse reads
-as gentle rather than as a fault needs eyes.
-
-Done when: typing part of an album, artist or track title narrows the library
-as you type, the hit track is highlighted and flashes; clearing the box
-restores everything.
 
 ## 6. Ratings and play counts
 
@@ -101,8 +50,9 @@ They are worth naming together because they share a decision: a play count means
 nothing until playback exists and something decides what counts as a play.
 
 Both are wanted, as is filtering by them later, so each is stored as a first
-class column rather than derived: milestone 5 filters on what
-this one records.
+class column rather than derived: the search filters on what this one records.
+`Search` is already a condition rather than a phrase alone, so it takes the
+second kind when there is something to read.
 
 Done when: a rating can be set and survives a restart, a completed play
 increments a count; neither ever reaches the music files.

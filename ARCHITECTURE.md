@@ -157,6 +157,50 @@ leading dot as "hidden" and silently swallowed two real albums, `...And Justice
 for All` and `...Nothing Like The Sun`. It now skips a fixed list of system
 directories plus macOS AppleDouble stubs; nothing else.
 
+## Searching
+
+**No index, measured rather than assumed.** A full-text table was the first
+plan and the measurement refused it. A pass over the whole library, 485 albums
+of 6,877 tracks, costs under half a millisecond once the text is normalised,
+against the hundred and twenty milliseconds a typed character allows. An index
+would also hold the WRONG text, since the store keeps raw tags while the
+library shows resolved ones, so a title the resolver corrected would be
+unfindable. It would be empty besides: rows are written only where a folder is
+probed and a rescan reuses every folder that has not changed, so an existing
+library would search nothing until it was scanned cold. SQLite's FTS5 is
+available here and is deliberately unused.
+
+Normalising is the part that costs. `comparison_key` over 6,877 titles takes
+9.2 milliseconds against 0.24 for a plain fold; the answer cannot change
+between keystrokes, so it is done once as the library is assembled.
+`stellody/domain/searching.py` is the filter and is pure;
+`stellody/ui/searching.py` holds what a load or a scan produced and puts the
+answer in front of somebody.
+
+**An album is kept whole.** A phrase that hits one track leaves every track in
+place, so the album reads as it always does. The hit is selected as though it
+were about to play and its row is then flashed, which gives somewhere to look
+rather than a shorter album. Pressing Return asks the same phrase again, since
+somebody who has moved off what it found has nothing they could type to get
+back.
+
+**A keystroke replaces every row**, which is a model reset. So do inverting
+the album order and rescanning. Three consequences, each measured here rather
+than reasoned about:
+
+- The pane under the sleeves is left rooted at an index that no longer means
+  that album. Untouched it re-roots on the invisible root and lists the whole
+  library down both columns, so what was open is put back by opening it again
+  rather than by leaving it alone.
+- A selected row ignores `BackgroundRole` while honouring `ForegroundRole`, so
+  the flash on a row the search has just selected is painted by the delegate
+  rather than returned by the model. The writing is never repainted, which is
+  why each appearance carries its own colour: banana yellow at 13.33 to 1 in
+  the light one, a deep amber at 5.10 to 1 in the dark one.
+- `scrollTo` is what opens every level above a row, which a multi-disc album
+  needs since its tracks sit under a disc. Expanding the parent alone leaves
+  the album shut.
+
 ## Design decisions
 
 | Decision | Reason |
@@ -182,6 +226,9 @@ directories plus macOS AppleDouble stubs; nothing else.
 | The store is asked for a cover whatever an album's own files offer | An album with nowhere local to look is the only kind the chooser is ever offered for; a chosen picture has no file beside the music to be found by. A saving that answered such an album without asking the store therefore cost every chosen picture its next restart: it sat in the cache the whole time while nothing asked for it. `AlbumArt.reading` asks the store regardless of what the candidates say. The property that saving read was deleted with it, so it cannot come back by accident. |
 | The chooser is injected, so a window without it offers nothing | The lookup is the one outward reach, so it arrives as an adapter behind a port like every other. A window assembled without one has no entry on its menu at all, which is what lets the whole test suite raise that menu with no network in the room. |
 | A refused ask is asked again; a refusal is never reported as an absence | Measured 2026-08-31, MusicBrainz refused 6 of 10 asks for one release at the one a second its own terms request; two asks five seconds apart were refused while a third was answered under three different user agents; the Cover Art Archive answered 4 of 4 in the same minute. So a refusal is neither a rate anybody exceeded nor rare; one ask is not a search: the release search is asked up to five times with a growing pause. What survives all five is carried as a refusal rather than as an empty result, because a service that would not answer has made no claim about the album; "nothing came back for this album" is a claim it never made. Only the search retries; a listing that will not come is one release of several, so the next one is the thing to try. |
+| A narrowing keeps every cover already read | Replacing the rows used to drop the whole cover cache, so each keystroke sent every visible sleeve back to the disk. The pane a search opens is filled in that same call, before any read can answer, so it took the placeholder; the placeholder is painted in the pane's own colour, so the album read as having no sleeve at all. A cover belongs to an album rather than to a run of rows, so the cache is now dropped where the SOURCES are replaced, which only a load or a scan does. The pane also takes a sleeve that arrives after it opened, since reading happens on a thread of its own. |
+| A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. |
+| The top tray says what a press would do; the bottom strip says how things stand | Two strips, two conventions, each consistent within itself. The tray acts: the appearance toggle shows the appearance it would move to, the view toggle names the view it would move to and the mute switch is struck through while the sound is on, because that press is the one that silences it. The strip holds settings, so shuffle and repeat light up to show their own state instead. Mute showed the state at first and read as inverted between two pictures of where a press would take you. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
 
 ### Decided but not built
