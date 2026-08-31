@@ -231,6 +231,18 @@ costs one empty query; a row that had to ask the disk for its rating would ask
 once per drawn row. Every change is written as it is made, so there is no save
 step to forget.
 
+**The count is read down the rows, never beside the stars.** A figure beside
+the stars is about one track and is gone the moment that track ends, which is
+the moment a play count becomes worth reading. It sits instead in the detail
+cell of each track row, so a record can be read down for what somebody keeps
+returning to. The model is handed the log rather than each row asking for it,
+so a drawn row costs no query; when a count changes the model redraws that one
+row, found by walking the tracks rather than by asking where the track is,
+since that search is retried when it misses and spending it here would take
+the attempt the highlight needs. The cell text itself lives in
+`stellody/ui/row_text.py`, split out of the model when the model reached the
+four hundred line cap.
+
 **The stars ride on the position row**, which is the only row that is about
 one track rather than about the library. They do not share its rule, though:
 the shape belongs to what is audible, so playback owns it, while the stars are

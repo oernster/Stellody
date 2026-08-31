@@ -38,7 +38,8 @@ from PySide6.QtWidgets import (
 from stellody.domain.album import Album
 from stellody.shared import resources
 from stellody.ui.covering import RowCover
-from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.models import AlbumTreeModel
+from stellody.ui.row_text import Column
 from stellody.ui.stars import StarRating
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
@@ -92,9 +93,12 @@ def _track_column(parent: QWidget, model: AlbumTreeModel) -> QTreeView:
     view.setHeaderHidden(True)
     view.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
     view.setColumnHidden(Column.ARTIST, True)
-    view.setColumnHidden(Column.DETAIL, True)
+    # The detail cell is shown here, unlike the artist's, because it is where
+    # a track says what it has been played. It is empty until one has, so it
+    # costs an album nobody has listened to nothing at all.
     header = view.header()
     header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Stretch)
+    header.setSectionResizeMode(Column.DETAIL, QHeaderView.ResizeMode.ResizeToContents)
     header.setSectionResizeMode(Column.LENGTH, QHeaderView.ResizeMode.ResizeToContents)
     return view
 

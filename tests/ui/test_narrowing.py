@@ -20,7 +20,7 @@ from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.ui.covering import RowCover
 from stellody.ui.flashing import TURNS
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 from stellody.ui.theme import palette_for
 from stellody.ui.toolbar import SEARCH_BOX_HEIGHT_PX
 

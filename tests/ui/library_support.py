@@ -17,7 +17,7 @@ from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 
 
 def track(title: str, number: int, disc: int = 1) -> Track:

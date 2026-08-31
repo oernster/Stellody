@@ -15,7 +15,7 @@ from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
 from stellody.domain.album import Album
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 
 
 @pytest.fixture

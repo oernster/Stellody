@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QApplication, QStyledItemDelegate
 from tray_support import RememberingStore, build
 
 from stellody.ui.covering import GRID_COVER_PX, ROW_COVER_PX
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 
 
 @pytest.fixture

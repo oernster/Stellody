@@ -17,7 +17,8 @@ from tray_support import RememberingStore, build, track
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.ui.album_pane import TRACK_COLUMNS, AlbumPane, _spans
-from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.models import AlbumTreeModel
+from stellody.ui.row_text import Column
 
 
 @pytest.fixture

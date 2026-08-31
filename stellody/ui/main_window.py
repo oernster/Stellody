@@ -156,7 +156,7 @@ class MainWindow(
         self._shapes = shapes
         self._shape_shown = None
         self._shape_runner = ShapeRunner(shapes, self) if shapes is not None else None
-        self._model = AlbumTreeModel(self)
+        self._model = AlbumTreeModel(self, listening=self._listening)
         self._neutral = neutral_holder(self)
 
         self.setWindowTitle(APP_NAME)

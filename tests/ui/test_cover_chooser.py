@@ -29,7 +29,7 @@ from stellody.ui.cover_chooser import (
     REFUSED,
     CoverChooser,
 )
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 from stellody.ui.theme import Mode
 
 SETTLE_SECONDS = 8.0

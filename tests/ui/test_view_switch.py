@@ -13,7 +13,7 @@ from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 from stellody.ui.settings_keys import FALSE, SETTING_COVERS, TRUE
 
 

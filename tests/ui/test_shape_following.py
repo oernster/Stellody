@@ -24,7 +24,7 @@ from tray_support import RememberingStore, album, build
 
 from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 
 SHAPE = Envelope(peaks=(0.2, 0.9, 0.4))
 OTHER = Envelope(peaks=(0.5, 0.5, 0.5))

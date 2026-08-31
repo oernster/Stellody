@@ -48,7 +48,9 @@ class Rating:
         from a track somebody skipped. It is told the album with it, so nothing
         has to go looking for a track a rescan may since have replaced.
         """
-        self._listening.count_play(_handle(album, track), track.source.path)
+        handle = _handle(album, track)
+        self._listening.count_play(handle, track.source.path)
+        self._model.redraw_plays(handle)
         self.follow_rating()
 
     def show_album_rating(self) -> None:

@@ -28,7 +28,8 @@ from PySide6.QtWidgets import (
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.covering import RowCover
-from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.models import AlbumTreeModel
+from stellody.ui.row_text import Column
 from stellody.ui.tiles import AlbumTile, tile_size
 
 # The gap between tiles. A tile's own size is the delegate's, so the two

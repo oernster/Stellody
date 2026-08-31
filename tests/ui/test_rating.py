@@ -20,7 +20,7 @@ from stellody.domain.listening import (
     album_handle,
     track_handle,
 )
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 from stellody.ui.stars import PANEL_MARGIN_PX, STAR_GAP_PX, STAR_PX, StarRating
 
 
@@ -262,3 +262,48 @@ class TestRatingTheWholeAlbum:
     def test_rating_with_no_album_open_is_harmless(self, window) -> None:
         window.rate_album(3)
         assert window._listening.of(album_handle(PLANETS.identity)).is_empty
+
+
+class TestTheCountOnTheRows:
+    """Where a play count is actually looked for: on the tracks themselves,
+    while the library is being read down. The one beside the stars is about a
+    single track and is gone the moment that track ends."""
+
+    def _detail(self, window, album_row: int, track_row: int) -> str:
+        model = window._model
+        album = model.index(album_row, Column.TITLE, QModelIndex())
+        return model.data(model.index(track_row, Column.DETAIL, album))
+
+    def test_a_track_nobody_has_played_says_nothing(self, window) -> None:
+        """A column of noughts says only that the library is new."""
+        assert self._detail(window, 0, 0) == ""
+
+    def test_a_track_that_has_played_says_so(self, window, player) -> None:
+        window.play_album(PLANETS)
+        player.finished = True
+        window._poll_transport()
+        assert self._detail(window, 0, 0) == "1 play"
+
+    def test_it_counts_up_on_the_row(self, window) -> None:
+        window._listening.rate(track_handle(PLANETS.identity, 1, 1), "a.flac", 0)
+        for _ in range(3):
+            window._listening.count_play(track_handle(PLANETS.identity, 1, 1), "a.flac")
+        assert self._detail(window, 0, 0) == "3 plays"
+
+    def test_the_row_is_redrawn_when_the_count_changes(self, window, player) -> None:
+        """Otherwise the number is right and the screen is not."""
+        seen: list = []
+        window._model.dataChanged.connect(lambda first, last, roles: seen.append(first))
+        window.play_album(PLANETS)
+        player.finished = True
+        window._poll_transport()
+        columns = {index.column() for index in seen}
+        assert Column.DETAIL in columns
+
+    def test_the_pane_under_the_sleeves_shows_it_too(self, window) -> None:
+        """The grid is where this library is mostly read, so it has to be
+        there as well as in the list."""
+        window.toggle_view()
+        window.open_album_at(window._model.index(0, Column.TITLE, QModelIndex()))
+        column = window._album_pane.columns[0]
+        assert not column.isColumnHidden(Column.DETAIL)

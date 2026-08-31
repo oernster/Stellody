@@ -91,6 +91,10 @@ not going to.
   Pressing the star a track already sits on takes the rating back,
   since nought is the absence of a rating rather than a sixth one. Reaching the
   end is what counts as a play, so skipping through an album counts nothing.
+  A track's count sits on the track's own row in the album's list, beside the
+  rest of its detail, so a record can be read down for the tracks you keep
+  coming back to. A track that has never played out says nothing there rather
+  than nought, since a column of noughts says only that the library is new.
   Neither ever reaches your files: both are kept in Stellody's own store
   against the album's identity rather than against a path, so renaming a folder
   does not lose them.

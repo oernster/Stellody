@@ -7,89 +7,43 @@ themselves are shaped in `nodes.py`; this is Qt's view of them.
 
 from __future__ import annotations
 
-from enum import IntEnum
-
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Signal
 from PySide6.QtGui import QPixmap
 
 from stellody.application.artwork import AlbumArtSources
-from stellody.domain.album import Album, Disc
+from stellody.application.listening import ListeningLog
+from stellody.domain.album import Album
+from stellody.domain.listening import track_handle
 from stellody.domain.track import Track
 from stellody.ui.covering import GRID_COVER_PX
 from stellody.ui.nodes import Node, build, find_track
-
-MILLISECONDS_PER_SECOND = 1000
-SECONDS_PER_MINUTE = 60
-MINUTES_PER_HOUR = 60
-
-HEADINGS = ("Title", "Artist", "Detail", "Length")
-
-
-class Column(IntEnum):
-    """The columns the tree shows."""
-
-    TITLE = 0
-    ARTIST = 1
-    DETAIL = 2
-    LENGTH = 3
+from stellody.ui.row_text import (
+    HEADINGS,
+    Column,
+    detail_text,
+    text_for,
+)
 
 
-def format_duration(milliseconds: int) -> str:
-    """A duration as h:mm:ss; m:ss when it is under an hour."""
-    seconds = milliseconds // MILLISECONDS_PER_SECOND
-    minutes, seconds = divmod(seconds, SECONDS_PER_MINUTE)
-    hours, minutes = divmod(minutes, MINUTES_PER_HOUR)
-    if hours:
-        return f"{hours}:{minutes:02d}:{seconds:02d}"
-    return f"{minutes}:{seconds:02d}"
+class _NothingKept:
+    """Stands in where no log was given: a model that remembers nothing."""
+
+    def all_listening(self) -> dict:
+        """Nothing has ever been kept here."""
+        return {}
+
+    def set_listening(self, handle: str, path: str, record) -> None:
+        """Take it and forget it."""
 
 
-def _album_text(album: Album, column: Column) -> str:
-    """One cell of an album row."""
-    if column is Column.TITLE:
-        return album.identity.display_title
-    if column is Column.ARTIST:
-        return album.identity.display_artist
-    if column is Column.LENGTH:
-        return format_duration(album.duration_ms)
-    parts = [part for part in (album.identity.date, album.genre) if part]
-    parts.append(f"{album.track_count} tracks")
-    if album.disc_count > 1:
-        parts.append(f"{album.disc_count} discs")
-    return "  ".join(parts)
-
-
-def _disc_text(disc: Disc, column: Column) -> str:
-    """One cell of a disc row."""
-    if column is Column.TITLE:
-        return f"Disc {disc.number}"
-    if column is Column.DETAIL:
-        return f"{len(disc.tracks)} tracks"
-    if column is Column.LENGTH:
-        return format_duration(disc.duration_ms)
-    return ""
-
-
-def _track_text(track: Track, column: Column) -> str:
-    """One cell of a track row."""
-    if column is Column.TITLE:
-        return f"{track.track_number:>2}.  {track.title}"
-    if column is Column.ARTIST:
-        return track.artist_text
-    if column is Column.LENGTH:
-        return format_duration(track.duration_ms)
-    if track.is_high_resolution:
-        return f"{track.sample_rate // MILLISECONDS_PER_SECOND} kHz / {track.bit_depth}"
-    return ""
-
-
-def _text(node: Node, column: Column) -> str:
-    """The display text for any node."""
-    if node.album is not None:
-        return _album_text(node.album, column)
-    if node.disc is not None:
-        return _disc_text(node.disc, column)
-    return _track_text(node.track, column)  # type: ignore[arg-type]
+def _track_rows(album: Node):
+    """Every track under an album, whether or not discs sit between."""
+    for child in album.children:
+        if child.track is not None:
+            yield child
+        for deeper in child.children:
+            if deeper.track is not None:
+                yield deeper
 
 
 class AlbumTreeModel(QAbstractItemModel):
@@ -97,8 +51,17 @@ class AlbumTreeModel(QAbstractItemModel):
 
     cover_wanted = Signal(object)
 
-    def __init__(self, parent: object | None = None) -> None:
+    def __init__(
+        self,
+        parent: object | None = None,
+        listening: ListeningLog | None = None,
+    ) -> None:
         super().__init__(parent)
+        # What each track has been played. Held here so a row can say it while
+        # the library is being read down, which is where somebody looks for
+        # it: the one beside the stars is about a single track and is gone the
+        # moment that track ends and the next one starts.
+        self._listening = listening or ListeningLog(_NothingKept())
         self._albums: tuple[Album, ...] = ()
         self._roots: list[Node] = []
         self._descending = False
@@ -134,6 +97,47 @@ class AlbumTreeModel(QAbstractItemModel):
         self._albums = albums
         self._rebuild()
         self.endResetModel()
+
+    def plays_of(self, node: Node) -> int:
+        """How many times a track row's own track has played out."""
+        album = node.parent
+        while album is not None and album.album is None:
+            album = album.parent
+        if album is None or album.album is None or node.track is None:
+            return 0
+        return self._listening.of(
+            track_handle(
+                album.album.identity,
+                node.track.disc_number,
+                node.track.track_number,
+            )
+        ).plays
+
+    def redraw_plays(self, handle: str) -> None:
+        """Draw again the one row whose count has just changed.
+
+        Found by walking rather than by asking where a track is: that search
+        is retried when it misses, so spending it here would take the attempt
+        the highlight needs.
+        """
+        for album in self._roots:
+            for row, node in enumerate(_track_rows(album)):
+                if self._handle_of(album, node) == handle:
+                    self._redraw_detail(node, row)
+                    return
+
+    def _handle_of(self, album: Node, node: Node) -> str:
+        """The handle a track row's record is kept against."""
+        return track_handle(
+            album.album.identity,
+            node.track.disc_number,
+            node.track.track_number,
+        )
+
+    def _redraw_detail(self, node: Node, row: int) -> None:
+        """Ask the view to draw one track's detail cell again."""
+        where = self.createIndex(node.row, Column.DETAIL, node)
+        self.dataChanged.emit(where, where, [Qt.ItemDataRole.DisplayRole])
 
     def set_flash(self, flash) -> None:
         """Take whatever is pulsing a row, so a cell can ask it for paint.
@@ -306,7 +310,10 @@ class AlbumTreeModel(QAbstractItemModel):
         if node is None:
             return None
         if role == Qt.ItemDataRole.DisplayRole:
-            return _text(node, Column(index.column()))
+            column = Column(index.column())
+            if column is Column.DETAIL and node.track is not None:
+                return detail_text(text_for(node, column), self.plays_of(node))
+            return text_for(node, column)
         if (
             role == Qt.ItemDataRole.DecorationRole
             and index.column() == Column.TITLE

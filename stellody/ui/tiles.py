@@ -18,7 +18,7 @@ from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
 TILE_PAD_PX = 10

@@ -21,7 +21,8 @@ from stellody.ui.covering import (
     cover_pixmap,
     placeholder_for,
 )
-from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.models import AlbumTreeModel
+from stellody.ui.row_text import Column
 from stellody.ui.theme import Mode
 
 DECORATION = Qt.ItemDataRole.DecorationRole

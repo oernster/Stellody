@@ -23,7 +23,7 @@ from tray_support import RememberingStore, build, track
 
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
-from stellody.ui.models import Column
+from stellody.ui.row_text import Column
 
 LEFT = Qt.MouseButton.LeftButton
 
