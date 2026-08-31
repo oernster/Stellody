@@ -17,7 +17,7 @@ attempt the first one needed.
 from __future__ import annotations
 
 from stellody.domain.album import Album
-from stellody.domain.listening import track_handle
+from stellody.domain.listening import NO_STARS, album_handle, track_handle
 from stellody.domain.track import Track
 
 
@@ -50,6 +50,30 @@ class Rating:
         """
         self._listening.count_play(_handle(album, track), track.source.path)
         self.follow_rating()
+
+    def show_album_rating(self) -> None:
+        """Show the rating the open album carries, without reporting one."""
+        album = self._shown_album
+        stars = NO_STARS
+        if album is not None:
+            stars = self._listening.of(album_handle(album.identity)).stars
+        self._album_pane.show_album_stars(stars)
+
+    def rate_album(self, stars: int) -> None:
+        """Give the open album a rating of its own.
+
+        Its own rather than one worked out from its tracks: a record with one
+        poor track on it is not a poor record, so an album is judged whole or
+        it is not judged at all.
+        """
+        album = self._shown_album
+        if album is None:
+            return
+        self._listening.rate(
+            album_handle(album.identity),
+            album.ordered_tracks()[0].source.path,
+            stars,
+        )
 
     def _rated(self) -> tuple[Album, Track] | None:
         """The album and track the stars are about; None when about none.

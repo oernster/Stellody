@@ -14,6 +14,7 @@ from stellody.domain.listening import (
     MAXIMUM_STARS,
     NO_STARS,
     Listening,
+    album_handle,
     track_handle,
 )
 
@@ -88,3 +89,30 @@ class TestTheHandle:
 
     def test_it_is_short_enough_to_be_one_column(self) -> None:
         assert len(track_handle(PLANETS, 1, 1)) == 16
+
+
+class TestTheAlbumsOwnHandle:
+    """An album is judged whole as well as track by track, so it needs a
+    handle of its own that no track can land on."""
+
+    def test_the_same_album_gives_the_same_handle(self) -> None:
+        assert album_handle(PLANETS) == album_handle(PLANETS)
+
+    def test_a_different_album_gives_a_different_one(self) -> None:
+        other = AlbumIdentity(album_artist="Zero 7", title="Simple Things")
+        assert album_handle(PLANETS) != album_handle(other)
+
+    def test_no_track_of_it_can_collide_with_it(self) -> None:
+        """There is no track numbered nothing, which is why they cannot."""
+        tracks = {
+            track_handle(PLANETS, disc, number)
+            for disc in range(1, 4)
+            for number in range(1, 30)
+        }
+        assert album_handle(PLANETS) not in tracks
+
+    def test_tidying_a_tag_does_not_orphan_it(self) -> None:
+        tidied = AlbumIdentity(
+            album_artist="  gustav   holst ", title="the planets", date="1974"
+        )
+        assert album_handle(tidied) == album_handle(PLANETS)

@@ -82,6 +82,7 @@ class Viewing:
         self._album_pane.closed.connect(self.close_album)
         self._album_pane.play_wanted.connect(self.play_shown_album)
         self._album_pane.track_activated.connect(self.activate)
+        self._album_pane.rated.connect(self.rate_album)
         self._album_pane.columns[0].selectionModel().currentChanged.connect(
             self._on_selection
         )
@@ -195,6 +196,7 @@ class Viewing:
         self._shown_album = album
         self._shown_index = where
         self._album_pane.show_album(album, where, self._model.data(where, DECORATION))
+        self.show_album_rating()
         self._album_pane.setVisible(True)
         self._ring_open(where.row())
 

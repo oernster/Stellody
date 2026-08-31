@@ -211,6 +211,14 @@ digested to sixteen characters, which is what artwork already does and for the
 same reason. `stellody/domain/listening.py` holds both the record and the
 handle.
 
+**An album is rated apart from its tracks.** The two are different answers, so
+neither is derived from the other: a record with one poor track on it is not a
+poor record. The album's handle is the same digest over its key alone, which
+no track can collide with because no track is numbered nothing. It is set from
+the album pane's own header, where a caption says which rating it is: the two
+controls look alike and sit inches apart, so leaving that to be inferred would
+be leaving it to be got wrong.
+
 **Reaching the end is what counts as a play.** Only the transport can tell an
 ending from a track somebody skipped, so it is the transport that says one
 happened; it hands over the album with the track, since a record is kept

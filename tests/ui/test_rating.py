@@ -14,7 +14,12 @@ from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
-from stellody.domain.listening import MAXIMUM_STARS, NO_STARS, track_handle
+from stellody.domain.listening import (
+    MAXIMUM_STARS,
+    NO_STARS,
+    album_handle,
+    track_handle,
+)
 from stellody.ui.models import Column
 from stellody.ui.stars import PANEL_MARGIN_PX, STAR_GAP_PX, STAR_PX, StarRating
 
@@ -207,3 +212,53 @@ class TestTheStarsThemselves:
         stars.show_stars(4)
         assert stars.stars == 4
         assert heard == []
+
+
+class TestRatingTheWholeAlbum:
+    """An album is judged whole as well as track by track. The two are
+    different answers: a record with one poor track on it is not a poor
+    record, so neither is worked out from the other."""
+
+    def _open(self, window, row: int = 0):
+        """Open an album under the sleeves, as pressing its cover would."""
+        window.toggle_view()
+        window.open_album_at(window._model.index(row, Column.TITLE, QModelIndex()))
+        return window._album_pane
+
+    def test_the_pane_says_which_rating_it_is(self, window) -> None:
+        """It sits inches from the track stars and looks exactly like them."""
+        pane = self._open(window)
+        assert pane.rating_caption.text() == "Album rating"
+        assert "not the track" in pane.album_stars.toolTip()
+
+    def test_rating_it_reaches_the_log(self, window) -> None:
+        pane = self._open(window)
+        pane.album_stars.chosen.emit(4)
+        assert window._listening.of(album_handle(PLANETS.identity)).stars == 4
+
+    def test_it_is_not_the_rating_of_any_track_on_it(self, window) -> None:
+        pane = self._open(window)
+        pane.album_stars.chosen.emit(4)
+        assert window._listening.of(track_handle(PLANETS.identity, 1, 1)).is_empty
+        assert window._listening.of(track_handle(PLANETS.identity, 1, 2)).is_empty
+
+    def test_a_track_rating_is_not_the_album_s(self, window) -> None:
+        self._open(window)
+        window.rate_shown(2)
+        assert window._listening.of(album_handle(PLANETS.identity)).is_empty
+
+    def test_it_comes_back_when_the_album_is_opened_again(self, window) -> None:
+        pane = self._open(window)
+        pane.album_stars.chosen.emit(5)
+        window.close_album()
+        assert self._open(window).album_stars.stars == 5
+
+    def test_a_different_album_shows_its_own(self, window) -> None:
+        pane = self._open(window)
+        pane.album_stars.chosen.emit(5)
+        window.close_album()
+        assert self._open(window, 1).album_stars.stars == NO_STARS
+
+    def test_rating_with_no_album_open_is_harmless(self, window) -> None:
+        window.rate_album(3)
+        assert window._listening.of(album_handle(PLANETS.identity)).is_empty

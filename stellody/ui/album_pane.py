@@ -39,8 +39,13 @@ from stellody.domain.album import Album
 from stellody.shared import resources
 from stellody.ui.covering import RowCover
 from stellody.ui.models import AlbumTreeModel, Column
+from stellody.ui.stars import StarRating
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
+# Said rather than left to be inferred: this rates the ALBUM, while the stars
+# down on the position row rate one track; the two are inches apart.
+ALBUM_RATING_CAPTION = "Album rating"
+ALBUM_RATING_TOOLTIP = "Rate this album as a whole, not the track highlighted in it"
 PANE_COVER_PX = 72
 PANE_BUTTON_PX = 28
 PANE_ICON_PX = 16
@@ -100,6 +105,7 @@ class AlbumPane(QWidget):
     closed = Signal()
     play_wanted = Signal()
     track_activated = Signal(QModelIndex)
+    rated = Signal(int)
 
     def __init__(self, model: AlbumTreeModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -111,6 +117,14 @@ class AlbumPane(QWidget):
         self.cover.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title = QLabel(self)
         self.artist = QLabel(self)
+        # Said in words beside the stars, because a rating in an album's
+        # header would otherwise be read as a rating of whatever track is
+        # highlighted in it: the two sit inches apart and look alike.
+        self.rating_caption = QLabel(ALBUM_RATING_CAPTION, self)
+        self.rating_caption.setObjectName("AlbumRatingCaption")
+        self.album_stars = StarRating(self)
+        self.album_stars.setToolTip(ALBUM_RATING_TOOLTIP)
+        self.album_stars.chosen.connect(self.rated)
         self.play_button = _button(
             self, resources.play_icon_path(), "Play this album", self.play_wanted.emit
         )
@@ -134,6 +148,13 @@ class AlbumPane(QWidget):
         heading.setSpacing(0)
         heading.addWidget(self.title)
         heading.addWidget(self.artist)
+        rating = QHBoxLayout()
+        rating.setContentsMargins(0, PANE_GAP_PX, 0, 0)
+        rating.setSpacing(PANE_GAP_PX)
+        rating.addWidget(self.rating_caption)
+        rating.addWidget(self.album_stars)
+        rating.addStretch()
+        heading.addLayout(rating)
         heading.addStretch()
         header = QHBoxLayout()
         header.setSpacing(PANE_GAP_PX)
@@ -153,9 +174,15 @@ class AlbumPane(QWidget):
         body.addLayout(header)
         body.addLayout(listing, 1)
 
+    def show_album_stars(self, stars: int) -> None:
+        """Show the rating this album carries, without reporting one."""
+        self.album_stars.show_stars(stars)
+        self.album_stars.setToolTip(ALBUM_RATING_TOOLTIP)
+
     def show_appearance(self, mode: Mode) -> None:
         """Follow the appearance the rest of the window is wearing."""
         self._mode = mode
+        self.album_stars.show_appearance(mode)
         self.update()
 
     def paintEvent(self, event) -> None:

@@ -61,14 +61,33 @@ class Listening:
         return replace(self, plays=self.plays + 1)
 
 
+def _digest(parts: tuple[str, ...]) -> str:
+    """One short handle for a run of text, so the store holds one column."""
+    material = " ".join(parts)
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:HANDLE_LENGTH]
+
+
 def track_handle(album: AlbumIdentity, disc_number: int, track_number: int) -> str:
     """A stable handle for one track's own record.
 
     Built from the album's comparison key rather than from its display text,
     so a tag tidied up in a tagger does not orphan a rating; built from the
     numbers rather than from the title, so a title corrected in the same way
-    does not either. The digest is here so the store holds one short column
-    rather than four, exactly as the artwork cache does.
+    does not either.
     """
-    material = " ".join(album.key + (str(disc_number), str(track_number)))
-    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:HANDLE_LENGTH]
+    return _digest(album.key + (str(disc_number), str(track_number)))
+
+
+def album_handle(album: AlbumIdentity) -> str:
+    """A stable handle for an album's own record, kept apart from its tracks.
+
+    An album is judged as a whole as well as track by track; the two
+    answers are different things: a record with one poor track on it is not a
+    poor record. So an album carries a rating of its own rather than one
+    derived from what is under it, which would put words in a listener's mouth.
+
+    The same digest over the album's key alone. A track's adds its disc and
+    track number, so the two can never land on the same handle: there is no
+    track numbered nothing.
+    """
+    return _digest(album.key)

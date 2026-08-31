@@ -84,6 +84,10 @@ not going to.
   of the position bar. It counts a track each time it plays out. The stars are
   about whichever track you have picked out, so a track you have never played
   can be rated; so can one you point at while something else is playing.
+  An album carries a rating of its own, set from the stars in its own header
+  under the artist's name and labelled there so it cannot be mistaken for the
+  track's: a record with one poor track on it is not a poor record, so neither
+  rating is worked out from the other.
   Pressing the star a track already sits on takes the rating back,
   since nought is the absence of a rating rather than a sixth one. Reaching the
   end is what counts as a play, so skipping through an album counts nothing.
