@@ -15,6 +15,8 @@ from __future__ import annotations
 from PySide6.QtCore import QEvent, QModelIndex, QObject, Qt, Slot
 from PySide6.QtWidgets import QListView, QWidget
 
+from stellody.domain.album import Album
+from stellody.domain.track import Track
 from stellody.ui.album_pane import AlbumPane
 from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize, next_cover_size
 from stellody.ui.settings_keys import (
@@ -196,6 +198,55 @@ class Viewing:
         self._album_pane.setVisible(True)
         self._ring_open(where.row())
 
+    def pane_state(self) -> tuple[Album, Track | None] | None:
+        """The album the pane is showing and the track chosen in it."""
+        album = self._shown_album
+        if album is None:
+            return None
+        return album, self._model.track_at(self._album_pane.current_index())
+
+    def restore_pane(self, was_open: tuple[Album, Track | None] | None) -> None:
+        """Put the pane back on the album it held, with the track it held.
+
+        It shuts only where that album is no longer among the sleeves, since
+        there is then no row anywhere to root it at.
+        """
+        if was_open is None:
+            return
+        album, track = was_open
+        where = self._album_index(album)
+        if not where.isValid():
+            self.close_album()
+            return
+        # Shut first, because opening the album it believes is already open
+        # does nothing; what it believes is a row that has been replaced.
+        self.close_album()
+        self.open_album_at(where)
+        if track is None:
+            return
+        # A rescan builds every track afresh as well, so the one that was
+        # chosen may not be findable even though its album is. Opening the
+        # album has already left the highlight on its first track, which is
+        # better than clearing it to nothing.
+        at = self._model.index_for(track)
+        if at.isValid():
+            self._album_pane.columns[0].setCurrentIndex(at)
+
+    def _album_index(self, album: Album) -> QModelIndex:
+        """Where this album sits now; an invalid index when it is not shown.
+
+        By the album's identity rather than by the object, because a rescan
+        builds every album afresh: the same album comes back as a different
+        object and the pane would shut for no reason a listener could see.
+        """
+        wanted = album.identity.key
+        for row in range(self._model.rowCount(QModelIndex())):
+            where = self._model.index(row, 0, QModelIndex())
+            found = self._model.album_at(where)
+            if found is not None and found.identity.key == wanted:
+                return where
+        return QModelIndex()
+
     def show_tile_appearance(self, mode) -> None:
         """Draw the sleeves in the appearance the window is wearing."""
         self._tiles.show_appearance(mode)
@@ -211,6 +262,8 @@ class Viewing:
     def toggle_order(self) -> None:
         """Invert the album order and remember it."""
         descending = not self._model.descending
+        was_open = self.pane_state()
         self._model.set_descending(descending)
+        self.restore_pane(was_open)
         self._descending_action.setChecked(descending)
         self._settings.set_setting(SETTING_DESCENDING, TRUE if descending else FALSE)

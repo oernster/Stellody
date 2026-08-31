@@ -340,3 +340,38 @@ class TestThePaneUnderTheSleeves:
         showing = window._model.track_at(window._album_pane.current_index())
         assert showing is not None
         assert showing.title == "Venus"
+
+
+class TestOtherThingsThatReplaceEveryRow:
+    """A search is not the only one. Inverting the order and rescanning both
+    replace every row, so both left the pane rooted at rows that had gone."""
+
+    def _open_planets(self, window):
+        window.toggle_view()
+        window.open_album_at(window._model.index(0, Column.TITLE, QModelIndex()))
+        mars = PLANETS.tracks[1]
+        window._album_pane.columns[0].setCurrentIndex(window._model.index_for(mars))
+        return mars
+
+    def test_inverting_the_order_keeps_the_album_and_the_track(self, window) -> None:
+        mars = self._open_planets(window)
+        window.toggle_order()
+        assert window._shown_album is PLANETS
+        assert window._model.album_at(window._album_pane.columns[0].rootIndex()) is (
+            PLANETS
+        )
+        assert window._model.track_at(window._album_pane.current_index()) is mars
+
+    def test_a_rescan_keeps_the_album_though_it_is_built_afresh(self, window) -> None:
+        """The albums come back as different objects, so sameness is identity."""
+        self._open_planets(window)
+        again = Album(identity=PLANETS.identity, tracks=PLANETS.tracks)
+        assert again is not PLANETS
+        window.show_library((again, SIMPLE), ART)
+        assert window._shown_album is again
+        assert window._album_pane.columns[0].rootIndex().isValid()
+
+    def test_an_album_a_rescan_dropped_shuts_the_pane(self, window) -> None:
+        self._open_planets(window)
+        window.show_library((SIMPLE,), ART[1:])
+        assert window._shown_album is None
