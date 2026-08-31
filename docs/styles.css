@@ -185,7 +185,10 @@ h1 .accent { color: var(--accent); }
 }
 .shot img { width: 100%; height: auto; display: block; }
 
-.hero-shot { max-width: 620px; margin: 0 auto; }
+/* Wider than the house default, because Stellody's window is: the shot is
+   almost two and a half times as wide as it is tall, so the narrower frame
+   left it a strip nobody could read the track list in. */
+.hero-shot { max-width: 1100px; margin: 0 auto; }
 
 /* Stats bar */
 .stats-bar { background: var(--mantle); border-top: 1px solid var(--surface0); border-bottom: 1px solid var(--surface0); }

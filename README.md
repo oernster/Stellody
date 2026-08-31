@@ -113,11 +113,14 @@ not going to.
   while it is already running brings that window back rather than starting a
   second copy.
 - Asks what the window's close button should mean the first time you press it,
-  offering the notification area or a full quit; staying is the default and
-  the answer can be remembered so it stops asking. "Ask again when I close"
-  takes that answer back, from the File menu or from the notification area's
-  own menu, since the window is hidden exactly when you want the question
-  again. A fresh install or a reinstall forgets it too.
+  offering the notification area or a full quit; staying is the one it leads
+  with and the answer can be remembered so it stops asking. Waving that
+  question away decides nothing: the cross on it, else Escape, takes the whole
+  press back, so the window neither leaves nor hides and nothing is
+  remembered. "Ask again when I close" takes a remembered answer back, from
+  the File menu or from the notification area's own menu, since the window is
+  hidden exactly when you want the question again. A fresh install or a
+  reinstall forgets it too.
 - Ends when you tell it to. Quit, on that menu or on the close prompt, closes
   the application rather than leaving it running with no window.
 - Offers to buy the author a drink, which opens a donation page in your
@@ -126,8 +129,9 @@ not going to.
   tray, which drops a menu carrying About and Check for updates. The menu bar's
   Help menu carries both as well, along with the library health report and the
   two licences.
-- Says when a newer Stellody has been published, from either of those. It offers the file for your own
-  machine, a way to skip that version for good, else Later. Asked from the menu
+- Says when a newer Stellody has been published, from either of those. It
+  offers the file for your own machine, a way to skip that version for good,
+  else Later. Asked from the menu
   it answers whichever way it turns out, including that it could not reach
   GitHub; left to itself it speaks only when there is something to offer.
 
