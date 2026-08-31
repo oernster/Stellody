@@ -46,6 +46,11 @@ from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 # Said rather than left to be inferred: this rates the ALBUM, while the stars
 # down on the position row rate one track; the two are inches apart.
 ALBUM_RATING_CAPTION = "Album rating"
+# Named so the appearance can reach them: each carries its own fill from the
+# blanket rule, so each is a rectangle whether or not it was meant to be one.
+TITLE_NAME = "AlbumTitle"
+ARTIST_NAME = "AlbumArtist"
+CAPTION_NAME = "AlbumRatingCaption"
 ALBUM_RATING_TOOLTIP = "Rate this album as a whole, not the track highlighted in it"
 # This button doubles the tray's, so it says what the tray's says: the picture
 # is the action a press would take rather than the state playback is in.
@@ -127,12 +132,14 @@ class AlbumPane(QWidget):
         self.cover.setFixedSize(PANE_COVER_PX, PANE_COVER_PX)
         self.cover.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title = QLabel(self)
+        self.title.setObjectName(TITLE_NAME)
         self.artist = QLabel(self)
+        self.artist.setObjectName(ARTIST_NAME)
         # Said in words beside the stars, because a rating in an album's
         # header would otherwise be read as a rating of whatever track is
         # highlighted in it: the two sit inches apart and look alike.
         self.rating_caption = QLabel(ALBUM_RATING_CAPTION, self)
-        self.rating_caption.setObjectName("AlbumRatingCaption")
+        self.rating_caption.setObjectName(CAPTION_NAME)
         self.album_stars = StarRating(self)
         self.album_stars.setToolTip(ALBUM_RATING_TOOLTIP)
         self.album_stars.chosen.connect(self.rated)
