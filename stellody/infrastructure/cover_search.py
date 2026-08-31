@@ -1,7 +1,8 @@
 """Looking an album up in MusicBrainz and its art up in the Cover Art Archive.
 
-The one module in Stellody that opens a connection. It is reached only when a
-listener asks for a cover, never on a scan and never on a draw.
+One of the two modules in Stellody that open a connection, the other being the
+update check. This one is reached only when a listener asks for a cover, never
+on a scan and never on a draw.
 
 **Two services, because they are two questions.** MusicBrainz knows which
 releases an album has; the Cover Art Archive knows which pictures a release

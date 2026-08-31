@@ -19,6 +19,7 @@ from stellody.application.listening import ListeningLog
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
+from stellody.application.updates import UpdateService, platform_key_for
 from stellody.infrastructure import diary, instance, switch_reset
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
@@ -35,6 +36,7 @@ from stellody.infrastructure.probe import FlacProbe
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
+from stellody.infrastructure.update_source import GitHubReleases
 from stellody.infrastructure.walker import FolderWalker
 from stellody.infrastructure.waveform import FileWaveforms
 from stellody.shared import resources
@@ -83,9 +85,9 @@ def build_window(
     archive is found by the reader afterwards instead of sitting in a second
     cache nothing consults.
 
-    This is the only module that may name the search client, since it is the
-    only thing in Stellody that can open a connection; a structural test says
-    so rather than a comment.
+    This is the only module that may name the search client or the update
+    source, which are the only two things in Stellody that can open a
+    connection; a structural test says so rather than a comment.
     """
     artwork = FileArtwork(art_cache_dir(), FlacPictures())
     listening = ListeningLog(store)
@@ -99,6 +101,9 @@ def build_window(
         listening=listening,
         art=AlbumArt(artwork),
         chooser=ChooseCover(ArchiveCovers(), artwork),
+        updates=UpdateService(
+            GitHubReleases(), __version__, platform_key_for(sys.platform)
+        ),
         leave=leave,
         note=note,
     )

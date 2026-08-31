@@ -1,9 +1,17 @@
-"""The second safety invariant: Stellody opens no connection of its own.
+"""The second safety invariant: Stellody opens no connection behind your back.
 
 A local-first player that quietly talks to the internet is not local-first,
-whatever its README says. Exactly one module may reach the network; it is
-reached only when a listener asks for cover art. Nothing on the scan path, the
-draw path or the playback path may hold the machinery to open a socket.
+whatever its README says. Exactly two modules may reach the network and each is
+named here with what it is for: cover art when a listener asks for a picture,
+then the update check asking GitHub whether a newer Stellody has been
+published.
+Nothing on the scan path, the draw path or the playback path may hold the
+machinery to open a socket.
+
+Two rather than one is a change worth reading as such. The update check was
+added deliberately, with the count in this file being what had to be edited to
+allow it; a permitted module is granted its permission in front of somebody
+rather than by a test quietly continuing to pass.
 
 Stated as a structural test rather than as a promise, for the same reason the
 read-only invariant is: a promise cannot fail a build. This one was proved to
@@ -17,11 +25,17 @@ import ast
 
 from conftest import package_modules, parsed, relative
 
-# The one module permitted to open a connection, plus the composition root that
-# has to name it in order to build it. The root holds the wiring, never a call.
+# The modules permitted to open a connection, each with what it is for. The
+# composition root names them in order to build them; it holds the wiring and
+# never a call. Adding to this set is the deliberate act, so it is short and
+# every entry earns its line.
 NETWORK_PERMITTED = frozenset(
     {
+        # Looking an album up when a listener asks for its cover art.
         "stellody/infrastructure/cover_search.py",
+        # Asking GitHub whether a newer Stellody has been published. It sends
+        # nothing about the listener or their library; see the module itself.
+        "stellody/infrastructure/update_source.py",
     }
 )
 

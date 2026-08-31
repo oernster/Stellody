@@ -119,6 +119,11 @@ not going to.
   the application rather than leaving it running with no window.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
+- Says when a newer Stellody has been published, from the Help button at the
+  right of the top tray or from the Help menu. It offers the file for your own
+  machine, a way to skip that version for good, else Later. Asked from the menu
+  it answers whichever way it turns out, including that it could not reach
+  GitHub; left to itself it speaks only when there is something to offer.
 
 Stellody is early. An equalizer, gapless transitions and accepting the repairs
 the health report describes are not built; `PLAN.md` lists what is still to
@@ -130,16 +135,26 @@ so.
 
 - **It never writes to your music files.** This is enforced by a structural
   test, not by good intentions.
-- It sends nothing to the internet on its own. No scrobbling, no telemetry and
-  no update check. Two things reach outward and both wait to be asked: the
-  donation button hands a link to your browser, which then does the asking;
-  "Find cover art online..." on an album's right click menu opens the chooser
-  described above. Starting Stellody, scanning a library and playing it open no
-  connection at all. A structural test holds that in place rather than a
-  promise: exactly one module may hold the machinery for a connection and only
-  the composition root may name it.
+- **It sends nothing about you or your library anywhere.** No scrobbling, no
+  telemetry, no account and no identifier of any kind. Three things reach
+  outward and each is named here rather than left to be discovered. Two of them
+  wait to be asked: the donation button hands a link to your browser, which then
+  does the asking; "Find cover art online..." on an album's right click menu
+  opens the chooser described above. The third speaks first: about three seconds
+  after the window opens, then once a day after that, Stellody asks GitHub
+  whether a newer Stellody has been published. That request carries nothing at
+  all, not even which version you are running; it reads one small public
+  document and the comparison happens on your machine. It says nothing unless
+  there is a newer version; Skip This Version silences it for that release.
+  Help then Check for updates asks the same question outright. Scanning a
+  library and playing it still open no connection whatever. A structural test
+  holds the rest in place rather than a promise: exactly two modules may hold
+  the machinery for a connection, each named in that test with what it is for;
+  only the composition root may name them.
 - It does not encrypt anything at rest. The store holds library metadata, not
-  secrets.
+  secrets. Alongside your appearance, sort order, view, volume and window size,
+  the store also keeps the one release tag you asked not to be told about
+  again, if you have skipped one.
 - It keeps a plain-text account of its own comings and goings at
   `%TEMP%\stellody-diary.log`: when a window was shown, what asked for it and
   how a shutdown went. It exists because a window arriving unbidden is

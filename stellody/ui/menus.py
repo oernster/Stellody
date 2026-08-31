@@ -63,6 +63,7 @@ class Menus:
         menu_action(help_menu, self, "&UI licence (LGPL-3.0)", self.show_ui_licence)
         help_menu.addSeparator()
         menu_action(help_menu, self, f"&About {APP_NAME}", self.show_about)
+        menu_action(help_menu, self, "Check for &updates", self.check_for_updates)
 
     @Slot()
     def _show_whether_a_choice_is_remembered(self) -> None:
@@ -112,6 +113,20 @@ class Menus:
     def show_about(self) -> None:
         """Open the About dialog."""
         AboutDialog(self).exec()
+
+    @Slot()
+    def check_for_updates(self) -> None:
+        """Ask GitHub whether a newer Stellody has been published.
+
+        Asked from here, every outcome is reported: the offer, that this is
+        the newest one, that nobody could be reached. A check the clock
+        starts speaks only to offer something; this one was asked for.
+
+        Nothing happens at all when the window was built without a check,
+        which is how the tests that care about other things build it.
+        """
+        if self._updates is not None:
+            self._updates.check_now()
 
     @Slot()
     def open_donation(self) -> None:

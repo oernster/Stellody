@@ -22,6 +22,7 @@ from stellody.application.scan import (
 )
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
+from stellody.application.updates import UpdateService
 from stellody.domain.health import LibraryIssue
 from stellody.domain.track import Track
 from stellody.shared.version import APP_NAME
@@ -48,6 +49,7 @@ from stellody.ui.shape_worker import ShapeRunner
 from stellody.ui.showing_shapes import ShowingShapes
 from stellody.ui.toolbar import LibraryTray
 from stellody.ui.transport_menu import TransportMenu
+from stellody.ui.update_check import UpdateCheckController
 from stellody.ui.viewing import Viewing
 from stellody.ui.window_parts import (
     application_icon,
@@ -127,6 +129,7 @@ class MainWindow(
         listening: ListeningLog | None = None,
         art: AlbumArt | None = None,
         chooser: ChooseCover | None = None,
+        updates: UpdateService | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -141,6 +144,11 @@ class MainWindow(
         # application's own quit when nobody supplies one.
         self._leave = leave
         self._scan_session = scan_session
+        # Built at the end of __init__, once there is a window to sit over.
+        # A window given no service never checks and never offers, which is
+        # what every test that is about something else wants.
+        self._update_service = updates
+        self._updates = None
         # A window without one still runs; it just has nothing to remember.
         self._listening = listening or ListeningLog(_ForgetfulStore())
         self._loader = loader
@@ -178,6 +186,7 @@ class MainWindow(
             search_again=self.search_again,
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
+            check_for_updates=self.check_for_updates,
             toggle_mute=self.toggle_mute,
             set_volume=self.set_volume,
             previous_track=self.previous_track,
@@ -229,6 +238,24 @@ class MainWindow(
         self._runner.progressed.connect(self._on_progress)
         self._runner.completed.connect(self._on_completed)
         self._runner.failed.connect(self._on_failed)
+        self._start_update_checks()
+
+    def _start_update_checks(self) -> None:
+        """Attach the update check, once there is a window for it to sit over.
+
+        Last of all, because the controller starts a timer as it is built and
+        the answer it eventually brings back wants a window to open a dialog
+        over. A window given no service is left without one entirely rather
+        than with a controller that would check nothing.
+        """
+        if self._update_service is None:
+            return
+        self._updates = UpdateCheckController(
+            self._update_service,
+            self._settings.get_setting,
+            self._settings.set_setting,
+            self,
+        )
 
     def _set_ring_order(self) -> None:
         """Tab reaches the tray before the library, which is how they are drawn.

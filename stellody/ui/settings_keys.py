@@ -33,6 +33,10 @@ SETTING_MUTED = "muted"
 SETTING_SHUFFLE = "shuffle"
 SETTING_REPEAT = "repeat"
 
+# The release tag a listener asked not to be told about again. The exact tag
+# string, since both sides of the comparison come from the same endpoint.
+SETTING_SKIPPED_UPDATE = "skipped_update_version"
+
 TRUE = "1"
 FALSE = "0"
 

@@ -13,6 +13,7 @@ from stellody.application.values import (
     AudioProperties,
     FolderListing,
     FolderRecord,
+    ReleaseInfo,
 )
 from stellody.domain.listening import Listening
 from stellody.domain.playback import (
@@ -277,5 +278,19 @@ class ArtworkPort(Protocol):
         beside the music to be checked against. It therefore outlives a rescan
         and is preferred to whatever the folder holds, which is the whole
         point of having chosen it.
+        """
+        ...
+
+
+class ReleaseSource(Protocol):
+    """Where the newest published release is read from."""
+
+    def latest_release(self) -> ReleaseInfo | None:
+        """The newest published release; None when it could not be read.
+
+        None covers every way the question can go unanswered: no network, a
+        refusal, a body that does not parse. The caller cannot tell them apart
+        and has no use for the difference, since all of them mean ask again
+        later rather than tell the listener anything.
         """
         ...

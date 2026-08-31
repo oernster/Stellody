@@ -19,7 +19,7 @@ has never been seen to fail is not yet a guard.
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
 | 10 | A ring belongs to a control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain. | `tests/ui/test_focus_rings.py` |
 | 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
-| 12 | Exactly one module may open a connection; only the composition root may name it. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
+| 12 | Exactly two modules may open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
@@ -28,10 +28,20 @@ describes a damaged tag; it never repairs one.
 
 Invariant 12 is the second of that kind. A local-first player that quietly
 talks to the internet is not local-first whatever its README says, so the
-guarantee is held by a test rather than by a promise. The module it permits is
-`stellody/infrastructure/cover_search.py` and the composition root is the only
-thing that may name it, so the reach outward is one gesture on one menu rather
-than a capability spread through the application.
+guarantee is held by a test rather than by a promise. It permits two modules
+and no others. `stellody/infrastructure/cover_search.py` is reached when
+somebody asks for a cover; `stellody/infrastructure/update_source.py` asks
+GitHub whether a newer Stellody has been published. The composition root is the
+only thing that may name either, so the reach outward stays two named things
+rather than a capability spread through the application.
+
+The count in that test is the point of it. Going from one permitted module to
+two was an edit somebody had to make and defend; a guard written as "the
+network is used sparingly" would have allowed the same change silently. The
+update check is also the only one of the two that speaks without being asked,
+which is why what it sends is worth stating exactly: nothing. Not the library,
+not an identifier, not the running version. It reads a public document about
+Stellody and compares it locally.
 
 ## Layers
 
@@ -275,7 +285,7 @@ highlight follows playback from track to track.
 | Artwork is local first, with a remote chooser somebody opens | Exactly one album in the reference library lacks local art, so an automatic lookup would buy one cover at the price of the local-first guarantee. A chooser keeps that guarantee for anyone who never opens it. It has to be a chooser rather than a fetch because no file in the library carries a MusicBrainz identifier, so a search has nothing exact to match on and could attach the wrong cover without knowing it had. |
 | A chosen cover is kept apart from a read one | A picture somebody chose has no file beside the music to be checked against, so its record carries a chosen marker instead of a size and a modification time. It is therefore never invalidated by a rescan and is preferred to whatever the folder holds, which is the whole point of having gone looking. |
 | The store is asked for a cover whatever an album's own files offer | An album with nowhere local to look is the only kind the chooser is ever offered for; a chosen picture has no file beside the music to be found by. A saving that answered such an album without asking the store therefore cost every chosen picture its next restart: it sat in the cache the whole time while nothing asked for it. `AlbumArt.reading` asks the store regardless of what the candidates say. The property that saving read was deleted with it, so it cannot come back by accident. |
-| The chooser is injected, so a window without it offers nothing | The lookup is the one outward reach, so it arrives as an adapter behind a port like every other. A window assembled without one has no entry on its menu at all, which is what lets the whole test suite raise that menu with no network in the room. |
+| The chooser is injected, so a window without it offers nothing | The lookup reaches outward, so it arrives as an adapter behind a port like every other. A window assembled without one has no entry on its menu at all, which is what lets the whole test suite raise that menu with no network in the room. |
 | A refused ask is asked again; a refusal is never reported as an absence | Measured 2026-08-31, MusicBrainz refused 6 of 10 asks for one release at the one a second its own terms request; two asks five seconds apart were refused while a third was answered under three different user agents; the Cover Art Archive answered 4 of 4 in the same minute. So a refusal is neither a rate anybody exceeded nor rare; one ask is not a search: the release search is asked up to five times with a growing pause. What survives all five is carried as a refusal rather than as an empty result, because a service that would not answer has made no claim about the album; "nothing came back for this album" is a claim it never made. Only the search retries; a listing that will not come is one release of several, so the next one is the thing to try. |
 | The rating is one control rather than five buttons | Five buttons would each be a stop in the keyboard ring, so reaching past the rating would take five presses; each would carry a focus ring, which would say there are five controls here rather than one. It is one control holding one value, so it is one stop painting one ring. The stars are drawn rather than assembled. |
 | Pressing the star a track already sits on takes the rating back | Nought is not a sixth rating; it is the absence of one. The gesture that undoes a thing should be the gesture that did it, rather than a separate clear nobody would find. Stepping down with the arrow keys reaches nought directly instead, since a step that jumped back to where it started would be a trap. |

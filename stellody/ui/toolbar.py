@@ -49,6 +49,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLineEdit,
+    QMenu,
     QPushButton,
     QWidget,
 )
@@ -57,6 +58,13 @@ from stellody.shared import resources
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.theme import Mode
 from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
+
+# The button is a way in to several things rather than one thing, so it is
+# named for the menu it opens rather than for the entry that used to be all
+# of it. What each entry does is said by the entry.
+HELP_TOOLTIP = "Help"
+ABOUT_ENTRY = "About"
+UPDATES_ENTRY = "Check for updates"
 
 ICON_PX = 60
 BUTTON_PX = 91
@@ -117,6 +125,7 @@ class LibraryTray(QWidget):
         rescan: Callable[[], None],
         toggle_theme: Callable[[], None],
         show_about: Callable[[], None],
+        check_for_updates: Callable[[], None] = lambda: None,
         repair_library: Callable[[], None] = lambda: None,
         toggle_search: Callable[[], None] = lambda: None,
         search_changed: Callable[[str], None] = lambda _phrase: None,
@@ -182,9 +191,12 @@ class LibraryTray(QWidget):
         )
         self.separator = _separator(self)
         self.theme_button = _icon_button(self, None, "", toggle_theme)
-        self.about_button = _icon_button(
-            self, resources.info_icon_path(), "About Stellody", show_about
+        self.help_button = _icon_button(
+            self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
         )
+        self.help_menu = QMenu(self)
+        self.help_menu.addAction(ABOUT_ENTRY, show_about)
+        self.help_menu.addAction(UPDATES_ENTRY, check_for_updates)
         row = QHBoxLayout(self)
         row.setContentsMargins(
             TRAY_MARGIN_PX, TRAY_MARGIN_PX, TRAY_MARGIN_PX, TRAY_MARGIN_PX
@@ -205,7 +217,7 @@ class LibraryTray(QWidget):
         row.addWidget(self.mute_button)
         row.addWidget(self.separator)
         row.addWidget(self.theme_button)
-        row.addWidget(self.about_button)
+        row.addWidget(self.help_button)
 
     def transport_stops(self) -> tuple[QPushButton, ...]:
         """The transport, left to right: previous, play, stop, next."""
@@ -235,7 +247,7 @@ class LibraryTray(QWidget):
             self.volume_button,
             self.mute_button,
             self.theme_button,
-            self.about_button,
+            self.help_button,
         )
 
     @property
@@ -300,6 +312,19 @@ class LibraryTray(QWidget):
         if self._popup.dismissed_by(self.volume_button):
             return
         self._popup.open_at(self._percent, self.volume_button)
+
+    def _open_help(self) -> None:
+        """Drop the help menu under its button; take it down when it is up.
+
+        Under rather than over; aligned to the button's left edge, so it
+        opens where the button is rather than wherever the pointer happens to
+        be. A second press closes it, which is how the volume popup behaves.
+        """
+        if self.help_menu.isVisible():
+            self.help_menu.hide()
+            return
+        corner = self.help_button.rect().bottomLeft()
+        self.help_menu.popup(self.help_button.mapToGlobal(corner))
 
     def set_muted(self, muted: bool) -> None:
         """Show what a press would do, as every button in this tray does.

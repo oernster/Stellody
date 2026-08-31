@@ -103,8 +103,15 @@ a Windows interface and speaks to one; the playback port it sits behind is
 already the seam a second output goes in at. So this milestone is two pieces:
 the packaging, plus an output that works where WASAPI is not.
 
+The Flatpak needs `--share=network` in its finish-args, named in a comment as
+being for the update check. The house recipe grants no network by default,
+which is right for an application with no outbound call and would leave every
+update check here reporting that GitHub could not be reached. It fails quietly,
+so it would be found by a listener rather than by a build.
+
 Done when: a Flatpak and a DMG are built by their own scripts, each plays
-audio; the Windows build is untouched by either.
+audio; the update check reaches GitHub from inside the sandbox; the Windows
+build is untouched by either.
 
 ## 11. Play every audio format, not only FLAC
 
@@ -310,11 +317,12 @@ at exactly unity, with the same samples the file holds.
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as
   deliberate non-goals. The last of them is enforced by a structural test rather
   than by intention.
-- **Anything over the network that nobody asked for.** No scrobbling, no
-  telemetry, no update check. Stellody opens no connection of its own; the
-  cover chooser is the single outward reach and it happens only when a
-  listener opens it. Handing the donation link to a browser is not an
-  exception either: the address goes outward and the browser does the asking.
+- **Anything over the network that carries your library or names you.** No
+  scrobbling, no telemetry, no account, no identifier. Two modules reach
+  outward. The cover chooser reaches only when a listener opens it; the update
+  check asks GitHub about Stellody, sending nothing whatever about the machine
+  asking. Handing the donation link to a browser is not a third: the
+  address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
 - **Repairing the files themselves.** Milestone 13 records a correction in

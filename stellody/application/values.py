@@ -121,3 +121,40 @@ class FolderRecord:
     def signatures(self) -> dict[str, tuple[int, int]]:
         """Every audio file recorded here against its size and mtime."""
         return {item.path: item.signature for item in self.stats}
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseAsset:
+    """One downloadable file offered by a published release."""
+
+    name: str
+    download_url: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseInfo:
+    """A published release, as much of it as an update check needs."""
+
+    version: str
+    page_url: str
+    assets: tuple[ReleaseAsset, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateStatus:
+    """The answer to one update check, whatever that answer turns out to be.
+
+    `latest` is empty when the question could not be asked at all, which is a
+    different thing from being up to date and is reported differently.
+    """
+
+    current: str
+    latest: str = ""
+    update_available: bool = False
+    download_url: str = ""
+    page_url: str = ""
+
+    @property
+    def reached(self) -> bool:
+        """Whether the release was read at all; False when nothing answered."""
+        return bool(self.latest)
