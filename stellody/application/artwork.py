@@ -19,7 +19,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-from stellody.application.ports import ArtworkPort, FolderRecord
+from stellody.application.ports import ArtworkPort
+from stellody.application.values import FolderRecord
 from stellody.domain.album import Album
 
 

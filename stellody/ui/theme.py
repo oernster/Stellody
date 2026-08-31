@@ -41,6 +41,12 @@ class Palette:
     # to 1, while the dark appearance needs a deep amber to carry its light
     # writing, measured at 5.10 to 1.
     found: str
+    # A star that has been given, against the panel the rating sits in. Its own
+    # role rather than `switch_on`, which is a pale wash meant to fill a whole
+    # button: a shape this small needs a colour that carries at twenty pixels.
+    # Measured against `surface_alt`: 4.44 to 1 in the light appearance, 9.28
+    # to 1 in the dark one, where a graphic of this kind asks for 3.
+    star: str
     on_accent: str
     selection: str
     on_selection: str
@@ -65,6 +71,7 @@ LIGHT = Palette(
     accent_hover="#1750b3",
     switch_on="#fff5a3",
     found="#ffe135",
+    star="#b45309",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -89,6 +96,7 @@ DARK = Palette(
     accent_hover="#69a1ff",
     switch_on="#fff5a3",
     found="#7a5f14",
+    star="#fbbf24",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",

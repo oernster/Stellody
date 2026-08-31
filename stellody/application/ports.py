@@ -7,11 +7,14 @@ test suite can supply a hand-written fake without a mocking library.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
 from typing import Protocol
 
-from stellody.domain.health import LibraryIssue
-from stellody.domain.ordering import TrackCandidate
+from stellody.application.values import (
+    AudioProperties,
+    FolderListing,
+    FolderRecord,
+)
+from stellody.domain.listening import Listening
 from stellody.domain.playback import (
     OutputReport,
     OutputRequest,
@@ -29,113 +32,6 @@ CancelledCheck = Callable[[], bool]
 # Handed the shape as far as it has been read, so slow work can be watched
 # rather than waited on.
 ShapeSoFar = Callable[[Envelope], None]
-
-
-@dataclass(frozen=True, slots=True)
-class FileStat:
-    """What the filesystem says about one audio file, without opening it."""
-
-    path: str
-    file_name: str
-    size: int
-    mtime: int
-
-    @property
-    def signature(self) -> tuple[int, int]:
-        """The pair compared to decide whether a file needs reprobing."""
-        return (self.size, self.mtime)
-
-
-@dataclass(frozen=True, slots=True)
-class FolderListing:
-    """One folder of a music library, as the walker found it."""
-
-    folder: str
-    audio: tuple[FileStat, ...]
-    cue_paths: tuple[str, ...] = ()
-    image_paths: tuple[str, ...] = ()
-
-    @property
-    def signatures(self) -> dict[str, tuple[int, int]]:
-        """Every audio file in this folder against its size and mtime."""
-        return {item.path: item.signature for item in self.audio}
-
-
-@dataclass(frozen=True, slots=True)
-class AudioProperties:
-    """What a probe reads out of one audio file. Read only, always."""
-
-    sample_rate: int
-    bit_depth: int
-    frame_count: int
-    has_embedded_art: bool = False
-    tags: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
-
-
-@dataclass(frozen=True, slots=True)
-class SourceRecord:
-    """One playable source as persisted: raw tag values, not resolved ones.
-
-    Resolution rules live in the domain and are applied on load, so improving
-    them takes effect without rescanning a library.
-    """
-
-    path: str
-    file_name: str
-    start_frame: int = 0
-    end_frame: int | None = None
-    duration_ms: int = 0
-    sample_rate: int = 0
-    bit_depth: int = 0
-    album: str = ""
-    album_artist: str = ""
-    artists: tuple[str, ...] = ()
-    title: str = ""
-    date: str = ""
-    genre: str = ""
-    disc: int | None = None
-    track: int | None = None
-
-    @property
-    def track_source(self) -> TrackSource:
-        """The domain source this record addresses."""
-        return TrackSource(
-            path=self.path,
-            start_frame=self.start_frame,
-            end_frame=self.end_frame,
-        )
-
-    @property
-    def candidate(self) -> TrackCandidate:
-        """This record as the domain's adjudication input."""
-        return TrackCandidate(
-            file_name=self.file_name,
-            source=self.track_source,
-            duration_ms=self.duration_ms,
-            sample_rate=self.sample_rate,
-            bit_depth=self.bit_depth,
-            tag_disc=self.disc,
-            tag_track=self.track,
-            tag_title=self.title,
-            artists=self.artists,
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class FolderRecord:
-    """A whole folder's scan result, the unit the store caches."""
-
-    folder: str
-    stats: tuple[FileStat, ...] = ()
-    sources: tuple[SourceRecord, ...] = ()
-    art_path: str = ""
-    has_embedded_art: bool = False
-    issues: tuple[LibraryIssue, ...] = ()
-
-    @property
-    def signatures(self) -> dict[str, tuple[int, int]]:
-        """Every audio file recorded here against its size and mtime."""
-        return {item.path: item.signature for item in self.stats}
 
 
 class LibraryWalker(Protocol):
@@ -212,6 +108,22 @@ class ClosableStore(LibraryStore, Protocol):
     def close(self) -> None:
         """Release the handle."""
         ...
+
+
+class ListeningStore(Protocol):
+    """Where a rating and a play count are kept, which is never the music."""
+
+    def all_listening(self) -> Mapping[str, Listening]:
+        """Every track anybody has rated or played, by its handle."""
+
+    def set_listening(self, handle: str, path: str, record: Listening) -> None:
+        """Write one track's record, replacing whatever was there.
+
+        The path is recorded beside the handle so a row can be traced back to
+        a file by hand. Nothing reads it: the handle is what a record is found
+        by, since a path is the one thing about a track that does not survive
+        the folder being renamed.
+        """
 
 
 class WaveformPort(Protocol):

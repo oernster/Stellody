@@ -12,7 +12,7 @@ import os
 import pytest
 
 from stellody.application.artwork import AlbumArt, AlbumArtSources, sources_for
-from stellody.application.ports import FolderRecord
+from stellody.application.values import FolderRecord
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource

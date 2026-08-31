@@ -17,8 +17,8 @@ import time
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
-from stellody.application.ports import FolderListing
 from stellody.application.scan import ScanLibrary
+from stellody.application.values import FolderListing
 from stellody.infrastructure.probe import FlacProbe
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader

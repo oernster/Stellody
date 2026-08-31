@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.listening import ListeningLog
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
@@ -87,12 +88,15 @@ def build_window(
     so rather than a comment.
     """
     artwork = FileArtwork(art_cache_dir(), FlacPictures())
+    listening = ListeningLog(store)
+    listening.load()
     return MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
         transport=Transport(WasapiPlayback()),
         settings=store,
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
+        listening=listening,
         art=AlbumArt(artwork),
         chooser=ChooseCover(ArchiveCovers(), artwork),
         leave=leave,

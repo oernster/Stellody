@@ -80,6 +80,15 @@ not going to.
   buffer the engine runs ahead by, so it follows what is audible rather than
   what has been decoded. A file's shape is measured once, kept and shared by
   every track a cue sheet album cuts from it.
+- Takes a rating out of five stars for any track, from a rectangle at the right
+  of the position bar. It counts a track each time it plays out. Both are
+  about the same track the waveform is: what is playing, else what is
+  highlighted. Pressing the star a track already sits on takes the rating back,
+  since nought is the absence of a rating rather than a sixth one. Reaching the
+  end is what counts as a play, so skipping through an album counts nothing.
+  Neither ever reaches your files: both are kept in Stellody's own store
+  against the album's identity rather than against a path, so renaming a folder
+  does not lose them.
 - Reports damaged metadata instead of silently working around it, so you can
   repair it in a tagger of your choosing.
 - Reaches everything from the keyboard, in the order the window is drawn.
@@ -102,9 +111,9 @@ not going to.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
 
-Stellody is early. Ratings, play counts, an equalizer, gapless transitions and
-accepting the repairs the health report describes are not built; `PLAN.md`
-lists what is still to come and what is deliberately excluded.
+Stellody is early. An equalizer, gapless transitions and accepting the repairs
+the health report describes are not built; `PLAN.md` lists what is still to
+come and what is deliberately excluded.
 Where a control for one of those is already on screen it is disabled and says
 so.
 

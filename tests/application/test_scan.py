@@ -12,8 +12,8 @@ from fakes import (
     stat,
 )
 
-from stellody.application.ports import FolderListing
 from stellody.application.scan import ScanLibrary, ScanProgress
+from stellody.application.values import FolderListing
 
 FOLDER = "H:/Music/Sasha/Involver"
 ONE = f"{FOLDER}/01. Wavy Gravy.flac"

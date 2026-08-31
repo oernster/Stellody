@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from stellody.application import tags
-from stellody.application.ports import AudioProperties, FolderRecord, SourceRecord
+from stellody.application.values import AudioProperties, FolderRecord, SourceRecord
 from stellody.domain.cue import CueSheet
 from stellody.domain.grouping import SourceEntry
 from stellody.domain.track import MILLISECONDS_PER_SECOND

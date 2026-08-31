@@ -7,20 +7,22 @@ from dataclasses import dataclass, field
 
 from stellody.application.artwork import AlbumArtSources, sources_for
 from stellody.application.ports import (
-    AudioProperties,
     CancelledCheck,
-    FolderListing,
-    FolderRecord,
     LibraryStore,
     LibraryWalker,
     MediaProbe,
-    SourceRecord,
     TextReader,
 )
 from stellody.application.records import (
     _grouping_entries,
     _record_from_file,
     _records_from_cue,
+)
+from stellody.application.values import (
+    AudioProperties,
+    FolderListing,
+    FolderRecord,
+    SourceRecord,
 )
 from stellody.domain.album import Album
 from stellody.domain.cue import CueParseError, CueSheet, parse_cue

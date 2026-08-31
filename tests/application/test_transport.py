@@ -102,6 +102,55 @@ def test_a_finished_track_moves_the_queue_on() -> None:
     assert transport.current is two
 
 
+def test_a_track_that_plays_out_is_reported_once() -> None:
+    """Reaching the end is what counts as a play, so it is the transport that
+    says so: nothing else can tell an ending from a track somebody skipped."""
+    one, two = track(1), track(2)
+    player = FakePlayer()
+    played: list = []
+    transport = Transport(player, played=lambda _album, track: played.append(track))
+    transport.play_album(album_of(one, two), one)
+    transport.advance_if_finished()
+    assert played == [], "nothing has ended yet"
+    player.finished = True
+    transport.advance_if_finished()
+    assert played == [one], "the one that ended, not the one now playing"
+
+
+def test_skipping_a_track_is_not_a_play() -> None:
+    one, two = track(1), track(2)
+    player = FakePlayer()
+    played: list = []
+    transport = Transport(player, played=lambda _album, track: played.append(track))
+    transport.play_album(album_of(one, two), one)
+    transport.next()
+    assert transport.current is two
+    assert played == []
+
+
+def test_the_last_track_playing_out_still_counts() -> None:
+    """It stops rather than advancing, which is not a reason to lose it."""
+    one = track(1)
+    player = FakePlayer()
+    played: list = []
+    transport = Transport(player, played=lambda _album, track: played.append(track))
+    transport.play_album(album_of(one), one)
+    player.finished = True
+    transport.advance_if_finished()
+    assert played == [one]
+
+
+def test_a_device_reporting_finished_with_nothing_loaded_counts_nothing() -> None:
+    """There is no track to have played out, so there is nothing to record."""
+    player = FakePlayer()
+    played: list = []
+    transport = Transport(player, played=lambda _album, track: played.append(track))
+    player.finished = True
+    assert transport.advance_if_finished() is True
+    assert played == []
+    assert player.calls[-1] == "stop"
+
+
 def test_the_last_track_finishing_stops_rather_than_looping() -> None:
     one = track(1)
     player = FakePlayer()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 
-from stellody.application.ports import (
+from stellody.application.values import (
     AudioProperties,
     FileStat,
     FolderListing,

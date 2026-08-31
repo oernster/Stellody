@@ -30,7 +30,7 @@ from tray_support import RememberingStore, build, picture
 from stellody.domain.playback import SILENT_VOLUME
 from stellody.shared import resources
 from stellody.shared.version import DONATE_URL
-from stellody.ui import main_window as window_module
+from stellody.ui import menus as window_module
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (

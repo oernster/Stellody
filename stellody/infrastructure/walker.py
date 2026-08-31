@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 
-from stellody.application.ports import FileStat, FolderListing
+from stellody.application.values import FileStat, FolderListing
 
 AUDIO_SUFFIXES = frozenset({".flac"})
 CUE_SUFFIXES = frozenset({".cue"})

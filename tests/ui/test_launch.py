@@ -16,9 +16,9 @@ from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
 
 from stellody import composition
-from stellody.application.ports import FolderListing, FolderRecord, SourceRecord
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
+from stellody.application.values import FolderListing, FolderRecord, SourceRecord
 from stellody.infrastructure.instance import SingleInstance
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import FALSE, SETTING_ROOT, SETTING_SCAN_FINISHED, TRUE

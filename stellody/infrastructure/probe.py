@@ -10,7 +10,7 @@ from __future__ import annotations
 import mutagen
 from mutagen.flac import FLAC
 
-from stellody.application.ports import AudioProperties
+from stellody.application.values import AudioProperties
 
 APPLEDOUBLE_PREFIX = "._"
 

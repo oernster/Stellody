@@ -32,6 +32,14 @@ Ordering = Callable[[tuple[Track, ...]], tuple[Track, ...]]
 SHUFFLE_NEEDS = 2
 
 
+# Told the album and the track that has just played out, so a count of complete
+# plays can be kept by somebody who is not the transport. The album comes with
+# it because a record is kept against an album's identity and because a track
+# that has just ended may already be gone from the library that a rescan
+# rebuilt underneath it.
+PlayedOut = Callable[[Album, Track], None]
+
+
 def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
     """These tracks in an arbitrary order. The default way shuffle shuffles."""
     return tuple(random.sample(tracks, len(tracks)))
@@ -40,8 +48,17 @@ def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
 class Transport:
     """The transport the window drives: a queue, plus a device to play it on."""
 
-    def __init__(self, player: PlaybackPort, ordering: Ordering = scattered) -> None:
+    def __init__(
+        self,
+        player: PlaybackPort,
+        ordering: Ordering = scattered,
+        played: PlayedOut = lambda _album, _track: None,
+    ) -> None:
         self._player = player
+        # Told when a track has played out, which is the one thing this class
+        # is in a position to know: nothing else can see the difference
+        # between a track that ended and one somebody skipped.
+        self._played = played
         # Whether back has already been pressed and is waiting at the start of
         # the track. It is what tells a second press to leave the track; it is
         # a state rather than a stopwatch, because two presses timed against
@@ -49,6 +66,7 @@ class Transport:
         # window.
         self._waiting_at_the_start = False
         self._queue = Queue()
+        self._album: Album | None = None
         self._album_order: tuple[Track, ...] = ()
         self._ordering = ordering
         self._volume = UNITY_VOLUME
@@ -56,10 +74,26 @@ class Transport:
         self._shuffled = False
         self._repeating = False
 
+    def report_plays_to(self, played: PlayedOut) -> None:
+        """Say who is told when a track plays out.
+
+        Set rather than injected, which is the one place this application does
+        that. Whoever is told has to turn a track into the album it belongs
+        to; the only thing that can is the window, which does not exist
+        when the transport is built. The alternative was a transport that
+        knew about the library it is playing out of.
+        """
+        self._played = played
+
     @property
     def queue(self) -> Queue:
         """What is lined up, plus where in it playback has reached."""
         return self._queue
+
+    @property
+    def album(self) -> Album | None:
+        """The album the queue was made from; None while nothing is queued."""
+        return self._album
 
     @property
     def current(self) -> Track | None:
@@ -143,6 +177,7 @@ class Transport:
         The album's own order is kept beside the queue, because it is the only
         thing shuffle can be switched back to.
         """
+        self._album = album
         self._album_order = album.ordered_tracks()
         self._queue = queue_from(self._album_order, first)
         if self._shuffled:
@@ -304,6 +339,10 @@ class Transport:
         """
         if not self._player.finished:
             return False
+        finished = self._queue.current
+        album = self._album
+        if finished is not None and album is not None:
+            self._played(album, finished)
         if not self._queue.has_next and not self._repeating:
             self._player.stop()
             return True

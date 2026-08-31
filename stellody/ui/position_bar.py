@@ -28,8 +28,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from stellody.domain.listening import NO_STARS, Listening
 from stellody.domain.playback import PlaybackPosition, clock_text
 from stellody.domain.waveform import Envelope
+from stellody.ui.stars import StarRating
 from stellody.ui.theme import Mode, palette_for
 
 # The groove is addressed in thousandths rather than in frames. A frame count
@@ -37,6 +39,18 @@ from stellody.ui.theme import Mode, palette_for
 # and a listener cannot aim at a frame anyway.
 GROOVE_STEPS = 1000
 NO_POSITION_TEXT = "0:00 / 0:00"
+
+
+def _plays_text(record: Listening | None) -> str:
+    """How many times this track has played out, said in words.
+
+    Nothing at all until it has played once: a row of tracks each labelled
+    with a nought says only that the library is new.
+    """
+    if record is None or record.plays == 0:
+        return ""
+    return f"{record.plays} play" + ("" if record.plays == 1 else "s")
+
 
 # The shape is drawn as one column per pixel, mirrored about the middle.
 MINIMUM_COLUMN_HEIGHT = 1.0
@@ -164,9 +178,18 @@ class PositionBar(QWidget):
         self.slider = _SeekSlider(self)
         self.slider.setEnabled(False)
         self.clock = QLabel(NO_POSITION_TEXT, self)
+        # The rating rides on this row because this row already follows the
+        # same thing it does: what is playing, else what is highlighted. The
+        # shape below the line and the stars beside it are two readings of one
+        # track, so they belong together rather than at opposite ends.
+        self.stars = StarRating(self)
+        self.plays = QLabel("", self)
+        self.plays.setObjectName("PlayCount")
         row = QHBoxLayout(self)
         row.addWidget(self.slider, 1)
         row.addWidget(self.clock)
+        row.addWidget(self.plays)
+        row.addWidget(self.stars)
         self.slider.sliderMoved.connect(self._moved)
         self.slider.sliderReleased.connect(self._released)
 
@@ -177,6 +200,18 @@ class PositionBar(QWidget):
     def show_appearance(self, mode: Mode) -> None:
         """Follow the appearance the rest of the window is wearing."""
         self.slider.show_appearance(mode)
+        self.stars.show_appearance(mode)
+
+    def show_listening(self, record: Listening | None) -> None:
+        """Show one track's rating and count; nothing while there is no track.
+
+        A control that cannot mean anything is disabled rather than left to
+        look ready, which is how this application says not now: the ring skips
+        it and it paints no border.
+        """
+        self.stars.setEnabled(record is not None)
+        self.stars.show_stars(NO_STARS if record is None else record.stars)
+        self.plays.setText(_plays_text(record))
 
     def show_position(self, position: PlaybackPosition | None) -> None:
         """Draw where playback has reached; empty when there is nothing to draw.

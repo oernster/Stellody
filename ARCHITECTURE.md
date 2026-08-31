@@ -201,6 +201,33 @@ than reasoned about:
   needs since its tracks sit under a disc. Expanding the parent alone leaves
   the album shut.
 
+## Ratings and play counts
+
+**Neither is attached to an object or to a path.** A scan rebuilds every album
+and every track afresh, so an object cannot be the thing a rating belongs to;
+a path is the one thing about a track that a folder rename destroys. The
+handle is the album's identity with the disc and track number under it,
+digested to sixteen characters, which is what artwork already does and for the
+same reason. `stellody/domain/listening.py` holds both the record and the
+handle.
+
+**Reaching the end is what counts as a play.** Only the transport can tell an
+ending from a track somebody skipped, so it is the transport that says one
+happened; it hands over the album with the track, since a record is kept
+against an album and since a rescan may already have replaced the track that
+just finished. Nothing goes looking for it afterwards.
+
+**The whole log is held in memory and written through.** It holds only the
+tracks somebody has actually rated or played, so a library nobody has touched
+costs one empty query; a row that had to ask the disk for its rating would ask
+once per drawn row. Every change is written as it is made, so there is no save
+step to forget.
+
+**The stars ride on the position row** because that row already follows what
+the rating follows: the track that is loaded, else the one that is
+highlighted. The shape under the line and the stars beside it are two readings
+of one track.
+
 ## Design decisions
 
 | Decision | Reason |
@@ -226,6 +253,9 @@ than reasoned about:
 | The store is asked for a cover whatever an album's own files offer | An album with nowhere local to look is the only kind the chooser is ever offered for; a chosen picture has no file beside the music to be found by. A saving that answered such an album without asking the store therefore cost every chosen picture its next restart: it sat in the cache the whole time while nothing asked for it. `AlbumArt.reading` asks the store regardless of what the candidates say. The property that saving read was deleted with it, so it cannot come back by accident. |
 | The chooser is injected, so a window without it offers nothing | The lookup is the one outward reach, so it arrives as an adapter behind a port like every other. A window assembled without one has no entry on its menu at all, which is what lets the whole test suite raise that menu with no network in the room. |
 | A refused ask is asked again; a refusal is never reported as an absence | Measured 2026-08-31, MusicBrainz refused 6 of 10 asks for one release at the one a second its own terms request; two asks five seconds apart were refused while a third was answered under three different user agents; the Cover Art Archive answered 4 of 4 in the same minute. So a refusal is neither a rate anybody exceeded nor rare; one ask is not a search: the release search is asked up to five times with a growing pause. What survives all five is carried as a refusal rather than as an empty result, because a service that would not answer has made no claim about the album; "nothing came back for this album" is a claim it never made. Only the search retries; a listing that will not come is one release of several, so the next one is the thing to try. |
+| The rating is one control rather than five buttons | Five buttons would each be a stop in the keyboard ring, so reaching past the rating would take five presses; each would carry a focus ring, which would say there are five controls here rather than one. It is one control holding one value, so it is one stop painting one ring. The stars are drawn rather than assembled. |
+| Pressing the star a track already sits on takes the rating back | Nought is not a sixth rating; it is the absence of one. The gesture that undoes a thing should be the gesture that did it, rather than a separate clear nobody would find. Stepping down with the arrow keys reaches nought directly instead, since a step that jumped back to where it started would be a trap. |
+| The transport is told who to report a play to, rather than being given it | The only place in this application that sets a collaborator rather than injecting one. Whoever is told has to turn a track into the album it belongs to; the only thing that can is the window, which does not exist when the transport is built. The alternative was a transport that knew about the library it plays out of. |
 | A narrowing keeps every cover already read | Replacing the rows used to drop the whole cover cache, so each keystroke sent every visible sleeve back to the disk. The pane a search opens is filled in that same call, before any read can answer, so it took the placeholder; the placeholder is painted in the pane's own colour, so the album read as having no sleeve at all. A cover belongs to an album rather than to a run of rows, so the cache is now dropped where the SOURCES are replaced, which only a load or a scan does. The pane also takes a sleeve that arrives after it opened, since reading happens on a thread of its own. |
 | A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. |
 | The top tray says what a press would do; the bottom strip says how things stand | Two strips, two conventions, each consistent within itself. The tray acts: the appearance toggle shows the appearance it would move to, the view toggle names the view it would move to and the mute switch is struck through while the sound is on, because that press is the one that silences it. The strip holds settings, so shuffle and repeat light up to show their own state instead. Mute showed the state at first and read as inverted between two pictures of where a press would take you. |

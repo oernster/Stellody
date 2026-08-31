@@ -10,8 +10,9 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Mapping
 
-from stellody.application.ports import FileStat, FolderRecord, SourceRecord
+from stellody.application.values import FileStat, FolderRecord, SourceRecord
 from stellody.domain.health import IssueKind, LibraryIssue
+from stellody.domain.listening import Listening
 
 UNIT_SEPARATOR = "\x1f"
 
@@ -59,6 +60,12 @@ CREATE TABLE IF NOT EXISTS issues (
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS listening (
+    handle TEXT PRIMARY KEY,
+    path   TEXT NOT NULL DEFAULT '',
+    stars  INTEGER NOT NULL DEFAULT 0,
+    plays  INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS files_by_folder ON files (folder);
 CREATE INDEX IF NOT EXISTS sources_by_folder ON sources (folder);
@@ -128,6 +135,31 @@ class SqliteLibraryStore:
                 "INSERT INTO settings (key, value) VALUES (?, ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 (key, value),
+            )
+
+    def all_listening(self) -> Mapping[str, Listening]:
+        """Every track anybody has rated or played, by its handle.
+
+        The whole table at once, since it holds only the tracks somebody has
+        actually touched: asking per track would ask once per drawn row.
+        """
+        rows = self._connection.execute(
+            "SELECT handle, stars, plays FROM listening"
+        ).fetchall()
+        return {
+            row["handle"]: Listening(stars=row["stars"], plays=row["plays"])
+            for row in rows
+        }
+
+    def set_listening(self, handle: str, path: str, record: Listening) -> None:
+        """Write one track's rating and play count."""
+        with self._connection:
+            self._connection.execute(
+                "INSERT INTO listening (handle, path, stars, plays) "
+                "VALUES (?, ?, ?, ?) ON CONFLICT(handle) DO UPDATE SET "
+                "path = excluded.path, stars = excluded.stars, "
+                "plays = excluded.plays",
+                (handle, path, record.stars, record.plays),
             )
 
     def file_signatures(self) -> Mapping[str, tuple[int, int]]:

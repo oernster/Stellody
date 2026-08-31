@@ -14,11 +14,7 @@ track of such an album has its shape before it is played.
 
 from __future__ import annotations
 
-from stellody.application.ports import (
-    CancelledCheck,
-    ShapeSoFar,
-    WaveformPort,
-)
+from stellody.application.ports import CancelledCheck, ShapeSoFar, WaveformPort
 from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
 
