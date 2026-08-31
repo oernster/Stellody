@@ -108,6 +108,7 @@ class LibraryTray(QWidget):
         repair_library: Callable[[], None] = lambda: None,
         toggle_search: Callable[[], None] = lambda: None,
         search_changed: Callable[[str], None] = lambda _phrase: None,
+        search_again: Callable[[], None] = lambda: None,
         toggle_mute: Callable[[], None] = lambda: None,
         previous_track: Callable[[], None] = lambda: None,
         toggle_playback: Callable[[], None] = lambda: None,
@@ -143,6 +144,14 @@ class LibraryTray(QWidget):
         # Hidden until asked for, so the tray is pictures until it is not.
         self.search_box.setVisible(False)
         self.search_box.textChanged.connect(search_changed)
+        # Return asks the same phrase again, which is the only way back to
+        # what it found for somebody who has since moved off it. Held rather
+        # than handed straight to connect, so the connection has an owner for
+        # as long as the box does. Precaution, not a cure: this connection was
+        # seen to go quiet several runs running while the two beside it kept
+        # working; it has not been reproduced since.
+        self._search_again = search_again
+        self.search_box.returnPressed.connect(self._search_again)
         self.previous_button = _icon_button(
             self, resources.previous_icon_path(), "Previous track", previous_track
         )

@@ -157,6 +157,7 @@ class MainWindow(
             repair_library=self.repair_library,
             toggle_search=self.toggle_search,
             search_changed=self.search_changed,
+            search_again=self.search_again,
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
             toggle_mute=self.toggle_mute,

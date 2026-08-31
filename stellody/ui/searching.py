@@ -67,6 +67,19 @@ class Searching:
         self._search = Search(phrase=phrase)
         self._narrow()
 
+    def search_again(self) -> None:
+        """Ask the phrase once more, for one that has already answered.
+
+        Somebody who has moved on since it answered, to another track or
+        another album, has nothing they can type to get back: the phrase in
+        the box is already the one they want, so asking again would mean
+        clearing it first. Pressing Return in the box asks it as it stands.
+
+        Only the pointing is redone. The phrase has not changed, so neither
+        can the rows; replacing them would be a reset with nothing behind it.
+        """
+        self._point_at(narrowed(self._prepared, self._search))
+
     def _narrow(self) -> None:
         """Show the albums that survive the phrase and nothing else.
 

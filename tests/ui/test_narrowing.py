@@ -121,6 +121,51 @@ class TestPointingAtTheHit:
         assert not window._flash.running
 
 
+class TestAskingAgain:
+    """Return asks the phrase as it stands, for somebody who has moved off
+    what it found. There is nothing else they could type: the box already
+    holds the phrase they want, so asking again would mean clearing it.
+    """
+
+    def test_return_puts_the_highlight_back_on_the_hit(self, window) -> None:
+        window.search_changed("venus")
+        window._tree.setCurrentIndex(window._model.index_for(PLANETS.tracks[1]))
+        assert window._model.track_at(window._tree.currentIndex()).title == "Mars"
+        window.search_again()
+        assert window._model.track_at(window._tree.currentIndex()).title == "Venus"
+
+    def test_return_flashes_the_row_again(self, window) -> None:
+        """The flash is two pulses and then done, so a second ask relights it."""
+        window.search_changed("venus")
+        for _ in range(TURNS):
+            window._flash._turn()
+        assert not window._flash.running
+        window.search_again()
+        assert window._flash.running
+
+    def test_the_box_asks_it_on_return(self, window) -> None:
+        """The wiring itself, since the box is what somebody presses it in."""
+        window.toggle_search()
+        window._tray.search_box.setText("venus")
+        window._tree.setCurrentIndex(window._model.index_for(PLANETS.tracks[1]))
+        window._tray.search_box.returnPressed.emit()
+        assert window._model.track_at(window._tree.currentIndex()).title == "Venus"
+
+    def test_a_phrase_that_hit_nothing_moves_nothing(self, window) -> None:
+        window.search_changed("simple")
+        where = window._model.index_for(SIMPLE.tracks[0])
+        window._tree.setCurrentIndex(where)
+        window.search_again()
+        assert window._tree.currentIndex() == where
+        assert not window._flash.running
+
+    def test_an_empty_box_points_at_nothing(self, window) -> None:
+        """Everything survives, so there is no hit anywhere to be taken to."""
+        window.search_again()
+        assert not window._flash.running
+        assert titles(window) == ["The Planets", "Simple Things"]
+
+
 class TestTheButton:
     def test_it_opens_and_closes_the_box(self, window) -> None:
         window.toggle_search()
