@@ -285,3 +285,58 @@ class TestItReallyPaints:
     def test_the_pane_draws_rows_the_same_way(self, window) -> None:
         """One delegate for both views, so a flash cannot differ between them."""
         assert isinstance(window._album_pane.columns[0].itemDelegate(), RowCover)
+
+
+class TestThePaneUnderTheSleeves:
+    """What is open stays open; only an album that has gone takes it away.
+
+    Replacing every row leaves the pane rooted at an index that no longer
+    means that album. Left alone it re-roots on the whole library and lists it
+    down both columns, which is the duplication these guard against.
+    """
+
+    def _open_planets(self, window):
+        """Open The Planets under the sleeves, with Mars chosen in it."""
+        window.toggle_view()
+        window.open_album_at(window._model.index(0, Column.TITLE, QModelIndex()))
+        mars = PLANETS.tracks[1]
+        window._album_pane.columns[0].setCurrentIndex(window._model.index_for(mars))
+        return mars
+
+    def test_clearing_the_field_leaves_the_album_open_as_it_was(self, window) -> None:
+        mars = self._open_planets(window)
+        window.search_changed("mars")
+        window.search_changed("")
+        assert window._shown_album is PLANETS
+        assert window._model.track_at(window._album_pane.current_index()) is mars
+
+    def test_the_pane_is_rooted_at_the_album_not_the_library(self, window) -> None:
+        """The duplication itself: both columns rooted at the invisible root."""
+        self._open_planets(window)
+        window.search_changed("mars")
+        window.search_changed("")
+        for column in window._album_pane.columns:
+            assert column.rootIndex().isValid()
+            assert window._model.album_at(column.rootIndex()) is PLANETS
+
+    def test_an_album_still_shown_keeps_its_place(self, window) -> None:
+        """The Planets still matches, so nothing about the pane changes."""
+        mars = self._open_planets(window)
+        window.search_changed("planets")
+        assert window._shown_album is PLANETS
+        assert window._model.track_at(window._album_pane.current_index()) is mars
+
+    def test_an_album_that_has_gone_shuts_the_pane(self, window) -> None:
+        """No row anywhere for it, so there is nothing to be rooted at."""
+        self._open_planets(window)
+        window.search_changed("zero")
+        assert window._shown_album is None
+
+    def test_a_hit_still_wins_over_what_was_open(self, window) -> None:
+        """Typing a track's name points at that track rather than keeping the
+        one that happened to be chosen before."""
+        self._open_planets(window)
+        window.search_changed("venus")
+        showing = window._model.track_at(window._album_pane.current_index())
+        assert showing is not None
+        assert showing.title == "Venus"

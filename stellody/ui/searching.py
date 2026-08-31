@@ -64,25 +64,75 @@ class Searching:
         self._narrow()
 
     def _narrow(self) -> None:
-        """Show the albums that survive, with the art that belongs to them."""
+        """Show the albums that survive, with the art that belongs to them.
+
+        Whatever was open under the sleeves is put back afterwards, which
+        cannot be done by leaving it alone: replacing every row leaves the
+        pane rooted at an index that no longer means that album, so it
+        re-roots on the whole library and lists it down BOTH columns. Keeping
+        it open is done by opening it again.
+        """
         found = narrowed(self._prepared, self._search)
         albums = tuple(one.album for one in found)
         keys = {album.identity.art_key for album in albums}
+        was_open = self._open_now()
         self._model.set_albums(albums)
         self.show_art(tuple(one for one in self._all_art if one.key in keys))
-        self._point_at(found)
+        if not self._point_at(found):
+            self._keep_open(was_open)
 
-    def _point_at(self, found: tuple[Found, ...]) -> None:
-        """Select and flash the first track the phrase hit.
+    def _point_at(self, found: tuple[Found, ...]) -> bool:
+        """Select and flash the first track the phrase hit; True when it did.
 
         The first rather than all of them: a flash is a place to look;
-        several at once is a page of flashing rather than a pointer.
+        several at once is a page of flashing rather than a pointer. A phrase
+        that hit nothing leaves whatever was open where it was.
         """
         self._flash.stop()
         for one in found:
             if one.tracks:
                 self._show_track(one.tracks[0])
-                return
+                return True
+        return False
+
+    def _open_now(self) -> tuple[Album, Track | None] | None:
+        """The album the pane is showing and the track chosen in it."""
+        album = self._shown_album
+        if album is None:
+            return None
+        return album, self._model.track_at(self._album_pane.current_index())
+
+    def _keep_open(self, was_open: tuple[Album, Track | None] | None) -> None:
+        """Put the pane back on the album it held, with the track it held.
+
+        It shuts only where that album is no longer among the sleeves, since
+        there is then no row anywhere to root it at.
+        """
+        if was_open is None:
+            return
+        album, track = was_open
+        where = self._album_index(album)
+        if not where.isValid():
+            self.close_album()
+            return
+        # Shut first, because opening the album it believes is already open
+        # does nothing; what it believes is a row that has been replaced.
+        self.close_album()
+        self.open_album_at(where)
+        if track is not None:
+            self._album_pane.columns[0].setCurrentIndex(self._model.index_for(track))
+
+    def _album_index(self, album: Album) -> QModelIndex:
+        """Where this album sits now; an invalid index when it is not shown.
+
+        By identity rather than equality, matching the queue and the artwork:
+        a library may hold two albums that compare equal.
+        """
+        for row in range(self._model.rowCount(QModelIndex())):
+            where = self._model.index(row, 0, QModelIndex())
+            if self._model.album_at(where) is album:
+                return where
+        return QModelIndex()
 
     def _show_track(self, track: Track) -> None:
         """Open whichever view is showing, put the highlight on the track,
