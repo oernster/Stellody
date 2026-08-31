@@ -28,6 +28,19 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
+      # actions/checkout answers a missing token with "Input required and not
+      # supplied", which says nothing about which token or where it belongs.
+      # A fine-grained token expires within the year, so this is a failure
+      # worth teaching to explain itself.
+      - name: Refuse early when the mirror token is missing
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        run: |
+          if [ -z "$MIRROR_TOKEN" ]; then
+            echo "::error::MIRROR_TOKEN is either unset or expired. Create a fine-grained personal access token scoped to oernster/stellody-website alone, with Contents set to read and write, then add it to this repository under Settings, Secrets and variables, Actions, named MIRROR_TOKEN."
+            exit 1
+          fi
+
       - name: Check out this repository
         uses: actions/checkout@v4
         with:
