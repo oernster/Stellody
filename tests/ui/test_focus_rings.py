@@ -16,8 +16,8 @@ from PySide6.QtWidgets import QApplication, QPushButton, QTreeView
 
 from stellody.composition import build_window
 from stellody.infrastructure.store import SqliteLibraryStore
-from stellody.ui.bottom_tray import DEFAULT_PERCENT
 from stellody.ui.theme import Mode, stylesheet
+from stellody.ui.volume import DEFAULT_PERCENT
 
 # A Qt class selector matches every SUBCLASS, so naming one of these reaches
 # every scroll area, list, table and label in the application.
@@ -39,11 +39,11 @@ ITEM_VIEWS = ("QTreeView", "QListView", "QTableView", "QListWidget", "QTreeWidge
 # The one sanctioned zero-size stop: the neutral start the main window opens on.
 NEUTRAL_START = "NeutralStart"
 # The enabled stops on the top tray, ahead of the library: choose, rescan,
-# search, mute, theme and about. The four transport buttons sit between search
-# and mute and are disabled with nothing playing, so they are not stops at all.
-# The search box is not one either while it is closed, since Qt skips a hidden
-# stop; opening it adds a seventh.
-TOP_TRAY_STOPS = 6
+# search, volume, mute, theme and about. The four transport buttons sit between
+# search and volume and are disabled with nothing playing, so they are not
+# stops at all. The search box is not one either while it is closed, since Qt
+# skips a hidden stop; opening it adds an eighth.
+TOP_TRAY_STOPS = 7
 RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
 COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
@@ -131,12 +131,12 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Choose music folder",
         "Rescan the library",
         "Search the library",
+        f"Volume {DEFAULT_PERCENT}%",
         "Mute",
         "Switch to the light appearance",
         "About Stellody",
         "Buy the author a drink (opens your browser)",
         "Switch to album art",
-        f"Volume {DEFAULT_PERCENT}%",
         "Turn shuffle on",
         "Turn repeat on",
     ]

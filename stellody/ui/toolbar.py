@@ -2,9 +2,9 @@
 
 Picture-only buttons in reading order: choose the music folder, rescan it,
 repair what the rescan reports and search it on the left, the transport
-centred, then the mute switch, the appearance toggle and About on the right.
-The library buttons repeat something the menus already offer, so they add
-reach rather than capability; nothing here owns any state of its own.
+centred, then the volume, the mute switch, the appearance toggle and About on
+the right. The library buttons repeat something the menus already offer, so
+they add reach rather than capability; nothing here owns any state of its own.
 
 Search is the one place a box joins the pictures. The button carries the
 magnifier and the box appears beside it only while searching, so the tray
@@ -23,6 +23,12 @@ thing; the alternative is a run of eight buttons that all read as one group.
 The transport is centred because it is the one group that is about the track
 rather than about the library; also because a play button in the corner of a
 window is a play button nobody finds.
+
+Volume sits immediately left of mute because the two are one thought: how
+loud, then whether at all. It opens a slider rather than spending a strip of
+window on a bar touched twice a session; that slider lives in `volume.py`, so
+the button can sit wherever it reads best without the slider following it
+around.
 
 The tray itself is a container, so it never takes focus and never paints a ring.
 Its buttons are controls and wear the app's three ring states.
@@ -45,6 +51,7 @@ from PySide6.QtWidgets import (
 from stellody.shared import resources
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.theme import Mode
+from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
 
 ICON_PX = 60
 BUTTON_PX = 91
@@ -110,6 +117,7 @@ class LibraryTray(QWidget):
         search_changed: Callable[[str], None] = lambda _phrase: None,
         search_again: Callable[[], None] = lambda: None,
         toggle_mute: Callable[[], None] = lambda: None,
+        set_volume: Callable[[int], None] = lambda _percent: None,
         previous_track: Callable[[], None] = lambda: None,
         toggle_playback: Callable[[], None] = lambda: None,
         stop_playback: Callable[[], None] = lambda: None,
@@ -145,13 +153,8 @@ class LibraryTray(QWidget):
         self.search_box.setVisible(False)
         self.search_box.textChanged.connect(search_changed)
         # Return asks the same phrase again, which is the only way back to
-        # what it found for somebody who has since moved off it. Held rather
-        # than handed straight to connect, so the connection has an owner for
-        # as long as the box does. Precaution, not a cure: this connection was
-        # seen to go quiet several runs running while the two beside it kept
-        # working; it has not been reproduced since.
-        self._search_again = search_again
-        self.search_box.returnPressed.connect(self._search_again)
+        # what it found for somebody who has since moved off it.
+        self.search_box.returnPressed.connect(search_again)
         self.previous_button = _icon_button(
             self, resources.previous_icon_path(), "Previous track", previous_track
         )
@@ -164,6 +167,11 @@ class LibraryTray(QWidget):
         self.next_button = _icon_button(
             self, resources.next_icon_path(), "Next track", next_track
         )
+        self.volume_button = _icon_button(
+            self, resources.volume_icon_path(), "Volume", self._open
+        )
+        self._popup = VolumeSlider(self, set_volume)
+        self._percent = DEFAULT_PERCENT
         self.mute_button = _icon_button(
             self, resources.unmute_icon_path(), "Mute", toggle_mute
         )
@@ -188,6 +196,7 @@ class LibraryTray(QWidget):
         for button in self.transport_stops():
             row.addWidget(button)
         row.addStretch()
+        row.addWidget(self.volume_button)
         row.addWidget(self.mute_button)
         row.addWidget(self.separator)
         row.addWidget(self.theme_button)
@@ -218,6 +227,7 @@ class LibraryTray(QWidget):
             self.search_button,
             self.search_box,
             *self.transport_stops(),
+            self.volume_button,
             self.mute_button,
             self.theme_button,
             self.about_button,
@@ -271,6 +281,20 @@ class LibraryTray(QWidget):
             button.setEnabled(loaded)
         self.play_button.setEnabled(loaded or can_start)
         self.stop_button.setEnabled(playing)
+
+    def set_percent(self, percent: int) -> None:
+        """Remember where the volume is, so the slider opens showing it."""
+        self._percent = percent
+        self.volume_button.setToolTip(f"Volume {percent}%")
+
+    def _open(self) -> None:
+        """Put the slider up; take it down when it is already up."""
+        if self._popup.isVisible():
+            self._popup.hide()
+            return
+        if self._popup.dismissed_by(self.volume_button):
+            return
+        self._popup.open_at(self._percent, self.volume_button)
 
     def set_muted(self, muted: bool) -> None:
         """Strike the speaker through while it is silent.

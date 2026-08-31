@@ -25,7 +25,6 @@ from tray_support import RememberingStore, build, picture
 from stellody.domain.playback import SILENT_VOLUME
 from stellody.shared.version import DONATE_URL
 from stellody.ui import main_window as window_module
-from stellody.ui.bottom_tray import DEFAULT_PERCENT, MAXIMUM_PERCENT
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
     FALSE,
@@ -34,6 +33,7 @@ from stellody.ui.settings_keys import (
     SETTING_SHUFFLE,
     TRUE,
 )
+from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT
 
 # Long enough for the walk to come back round to where it started.
 RING_WALK = 40

@@ -1,10 +1,14 @@
-"""The strip along the bottom: volume, shuffle and repeat, plus the slider.
+"""The strip along the bottom: shuffle and repeat, the view and the sleeves.
 
 Its own strip rather than a place in the tray above, because none of these is
 a transport command. They are settings that outlast the track in hand; they
 belong where a setting sits. Three quarters of the size of the tray above it,
 derived from that tray's own sizes so the two cannot drift apart: subordinate
 to the tray without the artwork becoming too small to read.
+
+The volume is the exception; it sits in the tray above beside the mute
+switch. The two are one thought: how loud, then whether at all. Splitting them
+across two strips meant crossing the window to do half of it.
 
 The switches sit at the right end, under About and the appearance toggle,
 which is where the application's own controls already are. The view toggle
@@ -24,27 +28,15 @@ the wrong reading for a switch that is merely off: a row where the same mark
 meant "engaged" on one button and "not engaged" on the next was read exactly
 as the contradiction it was. Their tooltips name the action, so the pair still
 says both things at once.
-
-The slider is a popup rather than a permanent bar, so an application that is
-mostly a library does not spend a strip of window on something touched twice a
-session.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QPoint, QSize, Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSlider,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
@@ -60,16 +52,6 @@ BOTTOM_BUTTON_PX = BUTTON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_ICON_PX = ICON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_MARGIN_PX = TRAY_MARGIN_PX // HALF
 
-# The slider runs in whole percent, which is what the label says and what is
-# stored. The engine takes a fraction, so one conversion lives at that seam.
-MINIMUM_PERCENT = 0
-MAXIMUM_PERCENT = 100
-# Where the volume starts when nothing has been chosen yet. Full is loud
-# enough to be startling on a first run; three quarters leaves room to go up.
-DEFAULT_PERCENT = 75
-PERCENT_STEP = 5
-SLIDER_HEIGHT_PX = 220
-SLIDER_MARGIN_PX = 10
 
 # Said plainly, because the button is on screen before the feature behind it.
 # Nothing reads album art off disk or off a music database yet.
@@ -93,92 +75,6 @@ SIZE_NAMES = {
 # Said in the tooltip because pressing it leaves the application, which a
 # picture of a beer and a coffee does not on its own tell anybody.
 DONATE_TOOLTIP = "Buy the author a drink (opens your browser)"
-
-
-class VolumeSlider(QFrame):
-    """A vertical bar with a handle, floating above the button that opened it.
-
-    A popup closes itself when the window is clicked elsewhere, which is what
-    makes this a control rather than a second window to manage. That same rule
-    is what makes the button hard to close it with, so where the closing press
-    landed is kept: see mousePressEvent below.
-    """
-
-    def __init__(self, parent: QWidget, on_change: Callable[[int], None]) -> None:
-        super().__init__(parent, Qt.WindowType.Popup)
-        self.setObjectName("VolumePopup")
-        # Where the press that closed this last landed, in screen coordinates.
-        self._dismissed_over: QPoint | None = None
-        self.slider = QSlider(Qt.Orientation.Vertical, self)
-        self.slider.setObjectName("Volume")
-        self.slider.setRange(MINIMUM_PERCENT, MAXIMUM_PERCENT)
-        self.slider.setValue(DEFAULT_PERCENT)
-        self.slider.setSingleStep(PERCENT_STEP)
-        self.slider.setPageStep(PERCENT_STEP * HALF)
-        self.slider.setFixedHeight(SLIDER_HEIGHT_PX)
-        self.slider.valueChanged.connect(on_change)
-        column = QVBoxLayout(self)
-        column.setContentsMargins(
-            SLIDER_MARGIN_PX, SLIDER_MARGIN_PX, SLIDER_MARGIN_PX, SLIDER_MARGIN_PX
-        )
-        # Above the slider, where the eye lands first on a column that is read
-        # top down; also where the handle never covers it at full volume.
-        self.reading = QLabel(self)
-        self.reading.setObjectName("VolumeReading")
-        self.reading.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        column.addWidget(self.reading, alignment=Qt.AlignmentFlag.AlignHCenter)
-        column.addWidget(self.slider, alignment=Qt.AlignmentFlag.AlignHCenter)
-        self.slider.valueChanged.connect(self._show_percent)
-        self._show_percent(self.slider.value())
-
-    def _show_percent(self, percent: int) -> None:
-        """Say the level in the whole percent the tooltip and the store use.
-
-        A slider on its own says roughly; a number says which. They are the
-        same value read two ways, so the number is driven by the slider rather
-        than set beside it; the two cannot disagree.
-        """
-        self.reading.setText(f"{percent}%")
-
-    def open_at(self, percent: int, button: QWidget) -> None:
-        """Show the slider above its button, set to where the volume is."""
-        self._dismissed_over = None
-        self.slider.setValue(percent)
-        corner = button.mapToGlobal(button.rect().topLeft())
-        self.move(
-            corner.x() + (button.width() - self.sizeHint().width()) // HALF,
-            corner.y() - self.sizeHint().height(),
-        )
-        self.show()
-        self.slider.setFocus(Qt.FocusReason.PopupFocusReason)
-
-    def mousePressEvent(self, event) -> None:
-        """Close on a press outside, remembering where that press landed.
-
-        Windows replays the press that dismisses a popup to whatever sits
-        under the cursor, so a press on the button that opened this closed it
-        and then immediately reopened it: measured as a slider that would not
-        go away, intermittently, since the replay is what decides it.
-
-        Keeping the position lets the button tell that replayed click apart
-        from a fresh one. Windows is the only platform built today; on one
-        that does not replay, the record is read by the next press instead,
-        which then puts the slider up on the press after it.
-        """
-        inside = self.rect().contains(event.position().toPoint())
-        self._dismissed_over = None if inside else event.globalPosition().toPoint()
-        super().mousePressEvent(event)
-
-    def dismissed_by(self, button: QWidget) -> bool:
-        """Whether the press that closed this landed on that button.
-
-        Reading forgets, so one press is answered once and never twice.
-        """
-        where = self._dismissed_over
-        self._dismissed_over = None
-        if where is None:
-            return False
-        return button.rect().contains(button.mapFromGlobal(where))
 
 
 def _small_button(
@@ -215,7 +111,6 @@ class BottomTray(QWidget):
     def __init__(
         self,
         parent: QWidget,
-        on_change: Callable[[int], None],
         toggle_shuffle: Callable[[], None] = lambda: None,
         toggle_repeat: Callable[[], None] = lambda: None,
         toggle_view: Callable[[], None] = lambda: None,
@@ -226,9 +121,6 @@ class BottomTray(QWidget):
         self.setObjectName("BottomTray")
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.volume_button = _small_button(
-            self, resources.volume_icon_path(), "Volume", self._open
-        )
         self.shuffle_button = _switch_button(self, "Turn shuffle on", toggle_shuffle)
         self.repeat_button = _switch_button(self, "Turn repeat on", toggle_repeat)
         self.view_button = _small_button(
@@ -240,7 +132,6 @@ class BottomTray(QWidget):
         self.donate_button = _small_button(
             self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
         )
-        self._popup = VolumeSlider(self, on_change)
         row = QHBoxLayout(self)
         row.setContentsMargins(
             BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
@@ -255,7 +146,6 @@ class BottomTray(QWidget):
         row.addStretch()
         for button in self.switch_stops():
             row.addWidget(button)
-        self._percent = DEFAULT_PERCENT
         self.set_shuffled(False)
         self.set_repeating(False)
 
@@ -290,12 +180,7 @@ class BottomTray(QWidget):
 
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""
-        return (self.volume_button, self.shuffle_button, self.repeat_button)
-
-    def set_percent(self, percent: int) -> None:
-        """Remember where the volume is, so the slider opens showing it."""
-        self._percent = percent
-        self.volume_button.setToolTip(f"Volume {percent}%")
+        return (self.shuffle_button, self.repeat_button)
 
     def set_shuffled(self, shuffled: bool) -> None:
         """Strike the shuffle switch through while the album plays in order."""
@@ -319,12 +204,3 @@ class BottomTray(QWidget):
         button.setIcon(plain_icon(path))
         button.setChecked(on)
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
-
-    def _open(self) -> None:
-        """Put the slider up; take it down when it is already up."""
-        if self._popup.isVisible():
-            self._popup.hide()
-            return
-        if self._popup.dismissed_by(self.volume_button):
-            return
-        self._popup.open_at(self._percent, self.volume_button)

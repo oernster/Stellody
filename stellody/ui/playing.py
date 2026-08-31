@@ -15,11 +15,6 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Slot
 
-from stellody.ui.bottom_tray import (
-    DEFAULT_PERCENT,
-    MAXIMUM_PERCENT,
-    MINIMUM_PERCENT,
-)
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_MUTED,
@@ -29,6 +24,7 @@ from stellody.ui.settings_keys import (
     STATUS_TIMEOUT_MS,
     TRUE,
 )
+from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT, MINIMUM_PERCENT
 
 # Often enough that the button never lies for long, rarely enough that an idle
 # window is not doing arithmetic sixty times a second.
@@ -61,7 +57,7 @@ class Playing:
         happens once, here.
         """
         self._transport.set_volume(percent / MAXIMUM_PERCENT)
-        self._bottom_tray.set_percent(percent)
+        self._tray.set_percent(percent)
         self._settings.set_setting(SETTING_VOLUME, str(percent))
 
     def restore_volume(self) -> None:

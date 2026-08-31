@@ -161,6 +161,7 @@ class MainWindow(
             toggle_theme=self.toggle_theme,
             show_about=self.show_about,
             toggle_mute=self.toggle_mute,
+            set_volume=self.set_volume,
             previous_track=self.previous_track,
             toggle_playback=self.toggle_playback,
             stop_playback=self.stop_playback,
@@ -169,7 +170,6 @@ class MainWindow(
         self._position_bar = PositionBar(self, seek=self.seek_to)
         self._bottom_tray = BottomTray(
             self,
-            on_change=self.set_volume,
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
             toggle_view=self.toggle_view,
