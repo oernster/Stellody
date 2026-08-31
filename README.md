@@ -218,6 +218,25 @@ bundle instead, which is quicker to inspect when a build misbehaves.
 
 Windows is the only platform built today.
 
+## The website
+
+`docs/` is the site, served by GitHub Pages at
+[stellody.co.uk](https://stellody.co.uk/), which is the canonical host. Version
+tokens in it are stamped from `VERSION` by `stamp_version.py`, which both build
+scripts call, so the site is never hand-versioned.
+
+**Editing `docs/` is only half the job.** The same pages are mirrored to the
+[stellody-website](https://github.com/oernster/stellody-website) repository,
+under `public/`, which Render serves at `stellody.com`. That copy has no way of
+noticing when this one changes, so any change here has to be carried across by
+hand in the same sitting, else the two hosts start telling different stories.
+
+Two files are deliberately NOT mirrored. `docs/CNAME` names the Pages custom
+domain and means nothing on Render; `docs/sitemap.xml` stays because this host
+owns the sitemap. The mirrored pages keep their `canonical`, `og:url` and
+`og:image` pointing here, which is what stops the two hosts competing for the
+same pages.
+
 ## Licence
 
 Dual licensed. The model, meaning the domain, application, infrastructure and
