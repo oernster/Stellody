@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stellody: a calm, local-first FLAC player</title>
+  <meta name="description" content="A calm, local-first FLAC player for a library you already own. Reads your music folder and never writes to it, handles cue sheets and multi-disc sets, draws each track's waveform, rates tracks and albums. No account, no cloud, no scrobbling.">
+  <link rel="canonical" href="https://ernster.dev/Stellody/">
+  <meta name="theme-color" content="#0d1220">
+  <!-- Social link previews. og:image must be an absolute URL and a raster
+       format; Discord and X will not resolve a relative path or render SVG. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Stellody">
+  <meta property="og:url" content="https://ernster.dev/Stellody/">
+  <meta property="og:title" content="Stellody: a calm, local-first FLAC player">
+  <meta property="og:description" content="Reads your music folder and never writes to it. Cue sheets, multi-disc sets, waveforms, ratings and play counts. No account, no cloud, no scrobbling.">
+  <meta property="og:image" content="https://ernster.dev/Stellody/stellody-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Stellody app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Stellody: a calm, local-first FLAC player">
+  <meta name="twitter:description" content="Reads your music folder and never writes to it. Cue sheets, multi-disc sets, waveforms, ratings and play counts.">
+  <meta name="twitter:image" content="https://ernster.dev/Stellody/stellody-512.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Stellody",
+    "operatingSystem": "Windows",
+    "applicationCategory": "MultimediaApplication",
+    "applicationSubCategory": "Music player",
+    "description": "A calm, local-first FLAC player for a library you already own. Reads your music folder and never writes to it, handles cue sheets and multi-disc sets, draws each track's waveform, rates tracks and albums. No account, no cloud, no scrobbling.",
+    "url": "https://ernster.dev/Stellody/",
+    "downloadUrl": "https://github.com/oernster/stellody/releases",
+    "softwareHelp": "https://github.com/oernster/stellody",
+    "license": ["https://www.gnu.org/licenses/gpl-3.0.html", "https://www.gnu.org/licenses/lgpl-3.0.html"],
+    "image": "https://ernster.dev/Stellody/stellody-512.png",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+    "author": {"@type": "Person", "name": "Oliver Ernster", "url": "https://github.com/oernster"}
+  }
+  </script>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-brand" href="./">
+    <img src="stellody-512.png" alt="Stellody icon">
+    <span>Stellody</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="download.html">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <img class="hero-icon fade" src="stellody-512.png" width="168" height="168" alt="Stellody app icon" fetchpriority="high" decoding="async">
+
+  <div class="badge fade">
+    <span class="badge-dot"></span>
+    Windows
+  </div>
+
+  <h1 class="fade d1">Your own music,<br><span class="accent">left exactly as it is.</span></h1>
+
+  <p class="hero-desc fade d2">
+    Stellody reads your music folder and <strong>never writes to it</strong>. What it learns about your
+    library, the problems it finds in your tags and your own settings live in Stellody's own store, so a
+    bug in this player cannot damage a file you spent years ripping and tagging.
+  </p>
+
+  <div class="hero-cta fade d3">
+    <a class="btn-primary" href="download.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+    <a class="btn-secondary" href="https://github.com/oernster/stellody">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+
+  <!-- SCREENSHOT SLOT: docs/screenshots/stellody1.png -->
+</section>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat"><div class="stat-value">0 writes</div><div class="stat-label">To your music files</div></div>
+    <div class="stat"><div class="stat-value">Cue sheets</div><div class="stat-label">A main path, not an edge case</div></div>
+    <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Branch coverage where it counts</div></div>
+    <div class="stat"><div class="stat-value">0</div><div class="stat-label">Accounts, cloud or scrobbling</div></div>
+    <div class="stat"><div class="stat-value">GPL + LGPL</div><div class="stat-label">Open source</div></div>
+  </div>
+</div>
+
+<!-- Never writes -->
+<div class="split-band">
+  <section class="section">
+    <div class="split-grid">
+      <div class="split-text">
+        <div class="section-label">The reason it exists</div>
+        <h2 class="section-title" style="margin-bottom:1.25rem;">A player broke a library.<br>This one cannot.</h2>
+        <p>
+          Stellody was written after a player wrote tags back into a real collection, duplicating and
+          overwriting metadata across 21 albums. So it describes a damaged tag; it never repairs one.
+        </p>
+        <ul>
+          <li>The tag-writing surface is unreachable from any module that can read tags, held by a structural test rather than by good intentions.</li>
+          <li>Nothing on the scanning or probing path writes to disk at all.</li>
+          <li>Damaged metadata is reported to you, precisely, so you can repair it in a tagger of your own choosing.</li>
+          <li>Nothing is ever written into your music folder, cache included.</li>
+        </ul>
+        <a class="btn-secondary" href="why.html">Why it is built this way</a>
+      </div>
+      <div class="split-text">
+        <div class="section-label">What it plays</div>
+        <h2 class="section-title" style="margin-bottom:1.25rem;">The shapes a real<br>library actually takes.</h2>
+        <p>
+          A track is a slice of a file rather than a file, so an album ripped as one FLAC with a cue sheet
+          is not a special case: the queue, the transport and shuffle are written once and work for both.
+        </p>
+        <ul>
+          <li>One file per track, else a single file per album with a sidecar cue sheet.</li>
+          <li>Multi-disc sets split across sibling folders, merged back into one album.</li>
+          <li>A bonus disc whose folder names no number among them.</li>
+          <li>Compilations and tracks with several credited artists.</li>
+        </ul>
+        <a class="btn-secondary" href="features.html">Everything it does</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Feature grid -->
+<section class="section">
+  <div class="section-label">In the window</div>
+  <h2 class="section-title">Built for a large library<br>you already own.</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Two views of the same library</h3>
+      <p>Albums, discs and tracks in a list, else a grid of covers at three sizes. Picking a sleeve opens
+      that album underneath the grid with its tracks in two columns, so the sleeves stay where they were.
+      The view and the size are both remembered.</p>
+    </div>
+    <div class="feat">
+      <h3>Search that keeps an album whole</h3>
+      <p>Type and the library narrows as you go. An album that matches keeps all of its tracks, so it reads
+      the way it always does; the track your phrase hit is highlighted and its row flashes to take your eye
+      to it. The whole library is read on every keystroke, measured at under half a millisecond.</p>
+    </div>
+    <div class="feat">
+      <h3>The track's own waveform</h3>
+      <p>Drawn along the bottom with a line marking where playback has reached. The shape builds from the
+      left as the file is read, so a picture is there at once. A track merely highlighted draws its shape
+      too, so you can see what it looks like before deciding to play it.</p>
+    </div>
+    <div class="feat">
+      <h3>Ratings and play counts</h3>
+      <p>Five stars for a track, plus its own rating for an album, since a record with one poor track on it
+      is not a poor record. Reaching the end is what counts as a play; the count sits on the track's own
+      row so a record can be read down for what you keep coming back to.</p>
+    </div>
+    <div class="feat">
+      <h3>Covers, local first</h3>
+      <p>Taken from a file beside the music or from the picture inside the audio itself, then kept so it is
+      read once. For an album whose own files carry none, a chooser you open yourself shows every picture
+      MusicBrainz and the Cover Art Archive have for it.</p>
+    </div>
+    <div class="feat">
+      <h3>Reachable from the keyboard</h3>
+      <p>Everything, in the order the window is drawn. A focus ring belongs to a control, never to the pane
+      holding it, which is held by a test. Stellody opens with nothing highlighted rather than a menu
+      dropped open.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Local first band -->
+<div class="split-band">
+  <section class="section">
+    <div class="section-label">Local first, stated exactly</div>
+    <h2 class="section-title">What reaches outward,<br>and what it carries.</h2>
+    <p style="max-width:60ch;">
+      Stellody sends nothing about you or your library anywhere. No scrobbling, no telemetry, no account
+      and no identifier of any kind. Three things reach outward and each is named here rather than left to
+      be discovered. A structural test permits exactly two modules to hold the machinery for a connection,
+      each named in that test with what it is for.
+    </p>
+    <div class="features-grid" style="margin-top:2rem;">
+      <div class="feat">
+        <h3>The cover chooser</h3>
+        <p>Only when you open it, from an album's right click menu. It asks MusicBrainz and the Cover Art
+        Archive about that album and shows you what they have.</p>
+      </div>
+      <div class="feat">
+        <h3>The update check</h3>
+        <p>Asks GitHub whether a newer Stellody has been published. The request carries nothing at all, not
+        even which version you are running: it reads one small public document and the comparison happens
+        on your machine. It says nothing unless there is something to offer.</p>
+      </div>
+      <div class="feat">
+        <h3>The donation link</h3>
+        <p>Not really a third. The address goes outward to your browser and the browser does the asking;
+        Stellody opens no connection of its own for it.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Honest about -->
+<section class="section">
+  <div class="section-label">Honest about</div>
+  <h2 class="section-title">What it does not do.</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>FLAC, nothing else yet</h3>
+      <p>A folder of MP3, M4A or WMA scans to nothing today. Widening that is planned work and its size is
+      measured rather than guessed at.</p>
+    </div>
+    <div class="feat">
+      <h3>Windows only</h3>
+      <p>The one platform built today. The audio layer speaks to WASAPI; the port it sits behind is already
+      the seam a second output goes in at.</p>
+    </div>
+    <div class="feat">
+      <h3>Not a library manager</h3>
+      <p>No streaming, no ripping, no syncing to devices and no managing a library by rewriting its tags.
+      Stellody does none of those and is not going to.</p>
+    </div>
+    <div class="feat">
+      <h3>Still early</h3>
+      <p>An equalizer, gapless transitions and accepting the repairs the health report describes are not
+      built. Where a control for one of those is on screen it is disabled and says so.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="stellody-512.png" alt="Stellody">
+        <span>Stellody</span>
+      </a>
+      <nav class="footer-links">
+        <a href="./">Home</a>
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/oernster/stellody">GitHub</a>
+        <a href="https://github.com/oernster/stellody/releases">Releases</a>
+        <a href="https://github.com/oernster/stellody/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/stellody/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
+      Version <!--VERSION-->0.6.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      &copy; Oliver Ernster</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">mutagen</span>
+        <span class="chip">soundfile</span>
+        <span class="chip">SQLite</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stellody features: what the player actually does</title>
+  <meta name="description" content="Everything Stellody does: incremental scanning, cue sheets and multi-disc sets, two library views, search that keeps an album whole, waveforms, ratings and play counts, cover art, the notification area and the update check.">
+  <link rel="canonical" href="https://ernster.dev/Stellody/features.html">
+  <meta name="theme-color" content="#0d1220">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Stellody">
+  <meta property="og:url" content="https://ernster.dev/Stellody/features.html">
+  <meta property="og:title" content="Stellody features: what the player actually does">
+  <meta property="og:description" content="Incremental scanning, cue sheets, two library views, search, waveforms, ratings and play counts, cover art and the update check.">
+  <meta property="og:image" content="https://ernster.dev/Stellody/stellody-512.png">
+  <meta property="og:image:alt" content="Stellody app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="./">
+    <img src="stellody-512.png" alt="Stellody icon">
+    <span>Stellody</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="download.html">Download</a>
+  </div>
+</nav>
+
+<section class="section">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything Stellody does.</h2>
+  <p style="max-width:60ch;">
+    Stated as what it does rather than as what it is like. Where a thing is measured, the measurement is
+    given; where something is not built, it says so on this page rather than being left out of it.
+  </p>
+</section>
+
+<section class="section">
+  <div class="section-label">Reading your library</div>
+  <h2 class="section-title">Scanning</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Incremental rescans</h3>
+      <p>Choose a music folder once. A rescan compares each file's size and modification time against what
+      Stellody already knows, so a folder whose files are all unchanged is reused without opening a single
+      one of them.</p>
+    </div>
+    <div class="feat">
+      <h3>A folder is one album</h3>
+      <p>Grouping by tags was tried first and measured: classical rips frequently carry the composer in the
+      album tag and a different date on every track, which fragmented one Mozart folder into five albums. A
+      folder boundary is what a ripper actually records, so that is what is trusted.</p>
+    </div>
+    <div class="feat">
+      <h3>Multi-disc sets merged</h3>
+      <p>Sibling folders whose names differ only by a disc marker, CD1 and CD2 or (Disc 1) and (Disc 2),
+      merge into one album. The tags then supply the title, artist, date and genre, each taken as the most
+      common value the tracks carry.</p>
+    </div>
+    <div class="feat">
+      <h3>What it skips is named</h3>
+      <p>An earlier version treated a leading dot as hidden and silently swallowed two real albums. It now
+      skips a fixed list of system directories plus macOS AppleDouble stubs; nothing else.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Damaged tags</div>
+  <h2 class="section-title">Reported, never repaired</h2>
+  <p style="max-width:65ch;">
+    Tags name things. They do not decide structure: where they contradict something physical, the physical
+    thing wins. Each rule was measured against real damage in a real library.
+  </p>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Two tracks claiming one number</h3>
+      <p>The leading number in the file name wins. In every observed case of tag damage the file names
+      stayed correct and distinct.</p>
+    </div>
+    <div class="feat">
+      <h3>A disc number against its folder</h3>
+      <p>The folder wins. One such folder holds tags claiming discs 1, 2 and 3; the folder name was written
+      by a person, the tag by software.</p>
+    </div>
+    <div class="feat">
+      <h3>A duplicated title</h3>
+      <p>The file name wins. A bulk tag overwrite copies the title along with the number.</p>
+    </div>
+    <div class="feat">
+      <h3>Every fallback is listed</h3>
+      <p>Each one is recorded and surfaced in a health report, so you get a precise list of what to repair
+      in a tagger of your own choosing. Accepting those repairs inside Stellody is planned and not built;
+      the two buttons that would do it are drawn and disabled.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Looking through it</div>
+  <h2 class="section-title">Two views and a search</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>List or sleeves</h3>
+      <p>Albums, discs and tracks ordered either way, else a grid of covers at three sizes cycled from the
+      bottom strip. Picking a sleeve opens that album underneath the grid with its tracks running down two
+      columns, so the sleeves stay where they were; picking it again rolls the pane back up.</p>
+    </div>
+    <div class="feat">
+      <h3>Search that narrows as you type</h3>
+      <p>From a box that opens in the top tray and closes again, which restores everything. Pressing Return
+      asks the same phrase again, which is how to get back to what it found after moving off it.</p>
+    </div>
+    <div class="feat">
+      <h3>No index, measured rather than assumed</h3>
+      <p>A pass over the whole library, 485 albums of 6,877 tracks, costs under half a millisecond against
+      the hundred and twenty milliseconds a typed character allows. An index would also hold the wrong text,
+      since the store keeps raw tags while the library shows resolved ones.</p>
+    </div>
+    <div class="feat">
+      <h3>An album is kept whole</h3>
+      <p>A phrase that hits one track leaves every track in place, so the album reads as it always does. The
+      hit is selected as though it were about to play and its row flashes, which gives you somewhere to look
+      rather than a shorter album.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Playing</div>
+  <h2 class="section-title">The transport</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Start it any way you like</h3>
+      <p>Double click, Return, the right click menu, the toolbar across the top, else the play button in an
+      open album's own header. Stellody then works through the album on its own.</p>
+    </div>
+    <div class="feat">
+      <h3>Back means the beginning first</h3>
+      <p>Back returns to the beginning of the track in hand and waits there; pressing it again from there
+      goes to the track before, waiting at its beginning too.</p>
+    </div>
+    <div class="feat">
+      <h3>Volume, mute, shuffle and repeat</h3>
+      <p>Each remembered between sessions. Shuffle leads its scattered run with the track already playing,
+      so next reaches the whole of the rest of the album. Repeat plays the album again rather than the
+      track, scattering it afresh each time round when shuffle is on.</p>
+    </div>
+    <div class="feat">
+      <h3>The waveform, built as it is read</h3>
+      <p>A line marks where playback has reached, with the time either side of it; clicking anywhere
+      along it moves there. Measured cold, an ordinary 28 megabyte track put its first picture up at 0.02
+      seconds. The figure is corrected for the buffer the engine runs ahead by, so it follows what is
+      audible rather than what has been decoded.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Keeping your own opinion</div>
+  <h2 class="section-title">Ratings and play counts</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Five stars for a track</h3>
+      <p>From a rectangle at the right of the position bar. The stars are about whichever track you have
+      picked out rather than whichever is playing, so a track you have never heard can be rated. Pressing
+      the star a track already sits on takes the rating back.</p>
+    </div>
+    <div class="feat">
+      <h3>An album rated on its own</h3>
+      <p>Set from the stars in the album's own header, with a caption saying which rating it is. Neither is
+      worked out from the other: a record with one poor track on it is not a poor record.</p>
+    </div>
+    <div class="feat">
+      <h3>Reaching the end is a play</h3>
+      <p>Skipping through an album counts nothing. The count sits on the track's own row beside the rest of
+      its detail, so a record can be read down for the tracks you keep coming back to. A track that has
+      never played out says nothing there rather than nought.</p>
+    </div>
+    <div class="feat">
+      <h3>Kept against the album, not a path</h3>
+      <p>Both live in Stellody's own store against the album's identity, so renaming a folder loses
+      neither; neither ever reaches your music files.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Cover art</div>
+  <h2 class="section-title">Local first, with a chooser you open</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Read from what you already have</h3>
+      <p>From a file next to the music or from the picture inside the audio itself, then kept so it is read
+      once. An album with neither keeps a plain square rather than a gap.</p>
+    </div>
+    <div class="feat">
+      <h3>A chooser, never a fetch</h3>
+      <p>No file in a typical library carries a MusicBrainz identifier, so a search has nothing exact to
+      match on and could attach the wrong cover without knowing it had. You pick, from every picture on
+      offer, each labelled with the release it belongs to.</p>
+    </div>
+    <div class="feat">
+      <h3>A chosen picture outlives a rescan</h3>
+      <p>It has no file beside the music to be checked against, so it is kept apart from a read one and
+      preferred to whatever the folder holds, which is the whole point of having gone looking.</p>
+    </div>
+    <div class="feat">
+      <h3>A refusal is not an absence</h3>
+      <p>Measured, MusicBrainz refused 6 of 10 asks for one release at the rate its own terms request. So a
+      search is asked up to five times with a growing pause; what survives all five is carried as a
+      refusal rather than as an empty result: a service that would not answer has made no claim about your
+      album.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Living on your desktop</div>
+  <h2 class="section-title">The window and the tray</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Opens where you left it</h3>
+      <p>At the size it was left at, maximised again if that is how it was left. A size is clamped to the
+      screen actually attached, so a window sized for a monitor that has since gone opens somewhere you can
+      reach it.</p>
+    </div>
+    <div class="feat">
+      <h3>The notification area</h3>
+      <p>Stellody can run there and start there. The setup program offers to start it when you sign in,
+      which brings it up in the notification area rather than over whatever Windows has just finished
+      drawing. Opening it again while it is running brings that window back rather than starting a second
+      copy.</p>
+    </div>
+    <div class="feat">
+      <h3>The close button asks once</h3>
+      <p>The first time you press it, offering the notification area or a full quit. Staying is the default
+      and the answer can be remembered so it stops asking; Ask again when I close takes that answer back.</p>
+    </div>
+    <div class="feat">
+      <h3>Help, About and updates</h3>
+      <p>One Help button at the right of the top tray drops a menu carrying About and Check for updates.
+      The menu bar's Help menu carries both as well, along with the library health report and the two
+      licences.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="stellody-512.png" alt="Stellody">
+        <span>Stellody</span>
+      </a>
+      <nav class="footer-links">
+        <a href="./">Home</a>
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/oernster/stellody">GitHub</a>
+        <a href="https://github.com/oernster/stellody/releases">Releases</a>
+        <a href="https://github.com/oernster/stellody/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/stellody/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
+      Version <!--VERSION-->0.6.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      &copy; Oliver Ernster</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">mutagen</span>
+        <span class="chip">soundfile</span>
+        <span class="chip">SQLite</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

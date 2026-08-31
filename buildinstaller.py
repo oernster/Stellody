@@ -17,6 +17,8 @@ import subprocess
 import sys
 import time
 
+import stamp_version
+
 # The copyright notice comes from the package rather than being written
 # here as well: the exe's file properties and the About box have to say
 # the same thing, so they read the same constant.
@@ -169,6 +171,7 @@ def move_into_place(built: pathlib.Path, final: pathlib.Path) -> bool:
 def main() -> int:
     """Stage the payload, build the setup program and place it."""
     require("nuitka", "Nuitka")
+    stamp_version.main()
     version = read_version()
     print(f"{SETUP_NAME} {version} ({jobs()} jobs)")
     if not stage_payload():

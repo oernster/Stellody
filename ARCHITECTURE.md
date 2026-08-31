@@ -262,6 +262,46 @@ all, which is the whole of what a rating is for: nothing has to be heard to be
 judged. The two agree throughout ordinary listening anyway, since the
 highlight follows playback from track to track.
 
+## The update check
+
+**Three answers, kept apart.** There is a newer version, this is the newest
+one, nobody could be reached. The third is not a failure to report on its own:
+a check the clock started says nothing at all unless there is something to
+offer, while a check somebody asked for is owed every one of the three, because
+they are waiting for an answer.
+
+**The endpoint is the guard.** `releases/latest` answers only with a published
+release, never a draft and never a prerelease, so a tag pushed mid-development
+is invisible by that contract rather than by this code remembering to filter
+it. Nothing re-checks those flags afterwards; a check written twice is a check
+that can disagree with itself.
+
+**A version that cannot be read is not newer.** Comparison is between dotted
+runs of digits and anything else loses rather than raises. The asymmetry is the
+reason: missing an update costs somebody a day, while inventing one tells
+somebody their working copy is stale when it is not.
+
+**The question is asked off the interface thread; the answer arrives on it.**
+A plain thread asks, then hands the result back through a signal. Measured on
+this PySide6, a functor connection takes the SENDER as its context and the
+sender is the controller, which lives on the interface thread, so delivery
+queues there either way. What the guard actually catches is a worker that shows
+the answer itself instead of handing it back, which was verified by planting
+exactly that.
+
+**Skip silences a prompt, not the question.** The tag is written into
+Stellody's own settings and that release never prompts again, while the next
+one prompts normally. A check somebody asks for ignores the skip entirely and
+reports the newest version anyway.
+
+The pieces sit where every other feature's do:
+`stellody/application/updates.py` holds the comparison, the platform choice and
+the service; the `ReleaseSource` port sits in `stellody/application/ports.py`
+with its siblings; `stellody/infrastructure/update_source.py` is the adapter,
+on stdlib `urllib` rather than a new dependency; `stellody/ui/update_check.py`
+is the controller and the dialogs. Invariant 12 is what keeps the adapter the
+only new way out.
+
 ## Design decisions
 
 | Decision | Reason |
@@ -293,6 +333,8 @@ highlight follows playback from track to track.
 | A narrowing keeps every cover already read | Replacing the rows used to drop the whole cover cache, so each keystroke sent every visible sleeve back to the disk. The pane a search opens is filled in that same call, before any read can answer, so it took the placeholder; the placeholder is painted in the pane's own colour, so the album read as having no sleeve at all. A cover belongs to an album rather than to a run of rows, so the cache is now dropped where the SOURCES are replaced, which only a load or a scan does. The pane also takes a sleeve that arrives after it opened, since reading happens on a thread of its own. |
 | A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. |
 | The top tray says what a press would do; the bottom strip says how things stand | Two strips, two conventions, each consistent within itself. The tray acts: the appearance toggle shows the appearance it would move to, the view toggle names the view it would move to and the mute switch is struck through while the sound is on, because that press is the one that silences it. The strip holds settings, so shuffle and repeat light up to show their own state instead. Mute showed the state at first and read as inverted between two pictures of where a press would take you. |
+| The album pane's play button doubles the tray's, so it toggles with it | Two play buttons on one screen that disagree about what a press does are worse than one. It offered to start the open album whatever was already playing; it wears the pause face while something plays now and pauses on a press, which is the rule the tray's button has always followed. It is told what is playing from the one place that already tells the tray, so the two faces cannot drift apart. |
+| The About button became a Help button with a menu under it | A picture button is named by its tooltip alone, so a button that opens several things cannot be named after one of them. Its tooltip is Help and the menu says what each entry does. The two entries are also on the menu bar's Help menu, since a menu bar is where somebody looks for About before they look at a strip of pictures. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
 
 ### Decided but not built

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Stellody</title>
+  <meta name="description" content="Download Stellody for Windows. A per-user setup program, no administrator rights needed. Free and open source: the model under GPL-3.0, the user interface under LGPL-3.0.">
+  <link rel="canonical" href="https://ernster.dev/Stellody/download.html">
+  <meta name="theme-color" content="#0d1220">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Stellody">
+  <meta property="og:url" content="https://ernster.dev/Stellody/download.html">
+  <meta property="og:title" content="Download Stellody">
+  <meta property="og:description" content="A per-user setup program for Windows, no administrator rights needed. Free and open source.">
+  <meta property="og:image" content="https://ernster.dev/Stellody/stellody-512.png">
+  <meta property="og:image:alt" content="Stellody app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="./">
+    <img src="stellody-512.png" alt="Stellody icon">
+    <span>Stellody</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="#download">Download</a>
+  </div>
+</nav>
+
+<div class="install-band">
+  <section class="section" id="download">
+    <div class="section-label">Get Stellody</div>
+    <h2 class="section-title">Download Stellody</h2>
+    <p class="section-sub">
+      Free and open source: the model under GPL-3.0, the user interface under LGPL-3.0. No account and no
+      cloud. Your music folder is read and never written to; everything Stellody learns lives in its own
+      store on your machine.
+    </p>
+    <span class="dl-version" id="dl-version">Latest release</span>
+    <div class="downloads">
+      <div class="dl-card">
+        <div class="ico">🪟</div>
+        <h3>Windows</h3>
+        <p class="req">Windows 10 or 11, 64-bit</p>
+        <a class="btn-primary" href="https://github.com/oernster/stellody/releases/latest/download/StellodySetup.exe">
+          Download for Windows</a>
+        <p class="meta" data-asset="StellodySetup.exe">Setup program (.exe)</p>
+        <p class="meta">Windows may show a SmartScreen warning when you run this: <a href="/windows-smartscreen.html">here's why</a>.</p>
+        <p class="how">Run the setup: it installs per user, so no administrator rights are needed. It reads
+        what is already installed and shows one screen for what that means, whether that is an install, an
+        update, a downgrade, a repair or an uninstall. It offers a desktop and a Start menu shortcut, then
+        offers to start Stellody when you sign in, which brings it up in the notification area rather than
+        over whatever Windows has just finished drawing.</p>
+      </div>
+    </div>
+    <p class="dl-links">
+      <a id="dl-whats-new" href="https://github.com/oernster/stellody/releases/latest">What's new in this release</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://github.com/oernster/stellody/releases">All releases</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://github.com/oernster/stellody">Source on GitHub</a>
+    </p>
+  </section>
+</div>
+
+<section class="section">
+  <div class="section-label">Once it is installed</div>
+  <h2 class="section-title">Point it at your music.</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Choose a folder</h3>
+      <p>One music folder, chosen once, from the button at the left of the top tray or from the File menu.
+      Stellody scans it and remembers where it is.</p>
+    </div>
+    <div class="feat">
+      <h3>It reads FLAC today</h3>
+      <p>A folder holding MP3, M4A or WMA scans to nothing for now. Widening that is planned work; the project is
+      honest about the size of it rather than quiet.</p>
+    </div>
+    <div class="feat">
+      <h3>Rescans are cheap</h3>
+      <p>Add an album later and rescan: a folder whose files are all unchanged is reused without opening
+      one of them, so a rescan costs a fraction of the first scan.</p>
+    </div>
+    <div class="feat">
+      <h3>It tells you when there is more</h3>
+      <p>Stellody asks GitHub whether a newer version has been published, saying nothing unless there
+      is one. Help then Check for updates asks outright. The request carries nothing about you or your
+      library, not even which version you are running.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Building it yourself</div>
+  <h2 class="section-title">From source</h2>
+  <p style="max-width:65ch;">
+    Stellody is Python 3.13 with PySide6. Install the development requirements, then run it:
+  </p>
+  <pre><code>python -m pip install -r requirements-dev.txt
+python main.py</code></pre>
+  <p style="max-width:65ch;">
+    The test suite gates at 100% branch coverage over the layers reachable with no filesystem, no clock and
+    no audio device. It also runs black, flake8 and ruff as assertions, so a formatting or linting
+    regression is a test failure:
+  </p>
+  <pre><code>python -m pytest</code></pre>
+  <p style="max-width:65ch;">
+    The Windows build is two scripts. The first compiles the application with Nuitka using every core the
+    machine has; the second zips that as a payload and compiles the setup program around it:
+  </p>
+  <pre><code>python buildexe.py
+python buildinstaller.py</code></pre>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="stellody-512.png" alt="Stellody">
+        <span>Stellody</span>
+      </a>
+      <nav class="footer-links">
+        <a href="./">Home</a>
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/oernster/stellody">GitHub</a>
+        <a href="https://github.com/oernster/stellody/releases">Releases</a>
+        <a href="https://github.com/oernster/stellody/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/stellody/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
+      Version <!--VERSION-->0.6.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      &copy; Oliver Ernster</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">mutagen</span>
+        <span class="chip">soundfile</span>
+        <span class="chip">SQLite</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

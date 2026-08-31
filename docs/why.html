@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why Stellody exists</title>
+  <meta name="description" content="Stellody was written after a music player wrote tags back into a real collection and damaged it. Why it never writes to your files, why a track is a slice of a file, then why the local-first promise is held by a test rather than a sentence.">
+  <link rel="canonical" href="https://ernster.dev/Stellody/why.html">
+  <meta name="theme-color" content="#0d1220">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Stellody">
+  <meta property="og:url" content="https://ernster.dev/Stellody/why.html">
+  <meta property="og:title" content="Why Stellody exists">
+  <meta property="og:description" content="Written after a player wrote tags back into a real collection and damaged it. Why it never writes to your files and why the promise is held by a test.">
+  <meta property="og:image" content="https://ernster.dev/Stellody/stellody-512.png">
+  <meta property="og:image:alt" content="Stellody app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="./">
+    <img src="stellody-512.png" alt="Stellody icon">
+    <span>Stellody</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="download.html">Download</a>
+  </div>
+</nav>
+
+<section class="section">
+  <div class="section-label">Why</div>
+  <h2 class="section-title">A player broke a library.</h2>
+  <p style="max-width:65ch;">
+    Stellody exists because another player wrote tags back into a real collection, duplicating and
+    overwriting metadata across 21 albums. Years of ripping and tagging, damaged by software that thought
+    it was helping.
+  </p>
+  <p style="max-width:65ch;">
+    So the first thing Stellody is, is a player that cannot do that. It describes a damaged tag; it never
+    repairs one. That is not a promise in a readme: the tag-writing surface is unreachable from any module
+    that can read tags; a test fails the build if that ever stops being true.
+  </p>
+</section>
+
+<div class="split-band">
+  <section class="section">
+    <div class="section-label">The guarantee</div>
+    <h2 class="section-title">Held by a test,<br>not by a sentence.</h2>
+    <p style="max-width:65ch;">
+      A promise cannot fail a build. Every invariant below is enforced by a structural test; each of
+      those tests has been verified by planting a violation and watching it fail: a guard that has never
+      been seen to fail is not yet a guard.
+    </p>
+    <div class="features-grid" style="margin-top:2rem;">
+      <div class="feat">
+        <h3>Your files are never written to</h3>
+        <p>Only the modules that own Stellody's own state may write to disk at all; nothing in the
+        scanning or probing path writes anything.</p>
+      </div>
+      <div class="feat">
+        <h3>Nothing reaches the network unnoticed</h3>
+        <p>Exactly two modules may hold the machinery for a connection, each named in the test with what it
+        is for. Going from one to two was an edit somebody had to make and defend, which is the point of
+        counting them.</p>
+      </div>
+      <div class="feat">
+        <h3>The rules stay pure</h3>
+        <p>The layer holding the library rules touches no filesystem, no network and no clock; time enters
+        as an argument rather than by being looked up. It is gated at 100% branch coverage.</p>
+      </div>
+      <div class="feat">
+        <h3>Nothing grows unbounded</h3>
+        <p>No module exceeds 400 lines; one that creeps close is reduced properly rather than shaved.
+        Formatting and linting are assertions in the test suite rather than a remembered step.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="section">
+  <div class="section-label">The central idea</div>
+  <h2 class="section-title">A track is a slice of a file,<br>not a file.</h2>
+  <p style="max-width:65ch;">
+    In the library Stellody was built for, 163 of 485 albums are built from a cue sheet rather than one
+    file per track, 157 of them a single FLAC holding the whole album. That is a main path, not an edge
+    case, so it is captured in one value rather than special-cased everywhere.
+  </p>
+  <p style="max-width:65ch;">
+    Because the distinction lives in that one place, the queue, the transport and shuffle are written once
+    and work for both shapes without knowing which they hold. The waveform inherits the same property: a
+    shape is measured for the file, then each track takes its own share of it. So does the grid of sleeves
+    and the album pane under it.
+  </p>
+</section>
+
+<div class="split-band">
+  <section class="section">
+    <div class="section-label">Measured, not assumed</div>
+    <h2 class="section-title">Decisions with numbers<br>behind them.</h2>
+    <div class="features-grid">
+      <div class="feat">
+        <h3>Search has no index</h3>
+        <p>A full-text table was the first plan and the measurement refused it: a pass over the whole
+        library costs under half a millisecond, against the hundred and twenty a typed character allows. An
+        index would also hold the wrong text and be empty besides.</p>
+      </div>
+      <div class="feat">
+        <h3>Grouping by folder, not by tags</h3>
+        <p>Tag grouping was tried and measured against a real library. It fragmented one Mozart folder into
+        five albums, two of them holding a single track.</p>
+      </div>
+      <div class="feat">
+        <h3>The waveform folds with numpy</h3>
+        <p>Walking frames in Python folded a 60 megabyte track in 3.2 seconds; vectorised over blocks it
+        takes 0.84, bit for bit the same answer. A 390 megabyte album FLAC went from 21.8 seconds to 5.3.</p>
+      </div>
+      <div class="feat">
+        <h3>A measurement is given up on</h3>
+        <p>Letting go of a decode used to block the interface for a full two second wait, measured at 2.00
+        seconds a step through the library. The check is handed down to the reader instead, which gives up
+        at the next block: 0.2 milliseconds a step after.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="section">
+  <div class="section-label">Honesty</div>
+  <h2 class="section-title">What it is not.</h2>
+  <p style="max-width:65ch;">
+    Stellody reads FLAC and nothing else today, so a folder of MP3, M4A or WMA scans to nothing. Measured
+    over the library it is developed against, that hides 146 of the 656 folders holding audio and part of
+    23 more, most of them M4A. Widening it is planned work and both halves of it are sized.
+  </p>
+  <p style="max-width:65ch;">
+    It is not for streaming, not for ripping CDs, not for syncing to devices and not for managing a library
+    by rewriting its tags. It does not encrypt anything at rest: the store holds library metadata, not
+    secrets. An equalizer, gapless transitions and accepting the repairs the health report describes are
+    not built; where a control for one of those is on screen it is disabled and says so.
+  </p>
+  <p style="max-width:65ch;">
+    Windows is the only platform built today.
+  </p>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="stellody-512.png" alt="Stellody">
+        <span>Stellody</span>
+      </a>
+      <nav class="footer-links">
+        <a href="./">Home</a>
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/oernster/stellody">GitHub</a>
+        <a href="https://github.com/oernster/stellody/releases">Releases</a>
+        <a href="https://github.com/oernster/stellody/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/stellody/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
+      Version <!--VERSION-->0.6.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      &copy; Oliver Ernster</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">mutagen</span>
+        <span class="chip">soundfile</span>
+        <span class="chip">SQLite</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

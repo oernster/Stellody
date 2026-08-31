@@ -42,20 +42,24 @@ owner's to make.
 
 ## 6. Ratings and play counts
 
-Neither exists: no schema, no column, no code. The README's opening paragraph
-used to promise both as the reason Stellody keeps its own store; it now says
-only what the store actually holds.
+**Built and gate-green; open only until it has been watched in the built
+application.** A track takes five stars from the position row, an album takes
+its own from the pane header, reaching the end of a track counts a play and the
+count is read down the track rows. All of it is kept against the album's
+identity rather than a path, so a folder rename loses nothing; none of it
+reaches the music files.
 
-They are worth naming together because they share a decision: a play count means
-nothing until playback exists and something decides what counts as a play.
+The stars and the album rating have both been watched running. The count on the
+rows has not, which is the whole of what is left: this milestone is deleted the
+moment somebody has seen a count appear on a row after a track played out.
 
-Both are wanted, as is filtering by them later, so each is stored as a first
-class column rather than derived: the search filters on what this one records.
-`Search` is already a condition rather than a phrase alone, so it takes the
-second kind when there is something to read.
+Filtering by either is wanted later and is NOT part of this milestone. Each is
+stored as a first class column rather than derived, so the search can filter on
+it when that is built; `Search` is already a condition rather than a phrase
+alone, so it takes the second kind when there is something to read.
 
-Done when: a rating can be set and survives a restart, a completed play
-increments a count; neither ever reaches the music files.
+Done when: somebody has watched a play count appear on a track row in the
+built application. Everything else this milestone asked for is done.
 
 ## 7. Repeat one track
 

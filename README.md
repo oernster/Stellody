@@ -55,11 +55,14 @@ not going to.
   The chooser shows every picture MusicBrainz and the Cover Art Archive have
   for that album, each labelled with the release it belongs to; it keeps
   whichever is picked. That picture then outlives a restart and a rescan, since
-  it has no file beside the music to be checked against. It is one of the two
-  things Stellody does that reach outside the machine and it happens only when
-  asked.
+  it has no file beside the music to be checked against. It is one of the ways
+  Stellody reaches outside the machine, listed in full below; it is also the
+  one that waits longest to be asked, since nothing here goes looking.
 - Plays a track chosen by double click, by Return or from the right click
-  menu, then works through the album on its own.
+  menu, then works through the album on its own. An open album carries its own
+  play button in its header, which starts that album from its first track and
+  wears the pause face while something is playing, so it says the same thing
+  the toolbar's does rather than offering to start what is already going.
 - Offers previous, play and pause, stop and next, both on the toolbar across
   the top and on that menu, with the library highlight following whatever is
   playing. Back returns
@@ -119,8 +122,11 @@ not going to.
   the application rather than leaving it running with no window.
 - Offers to buy the author a drink, which opens a donation page in your
   browser.
-- Says when a newer Stellody has been published, from the Help button at the
-  right of the top tray or from the Help menu. It offers the file for your own
+- Gathers what is worth reading behind one Help button at the right of the top
+  tray, which drops a menu carrying About and Check for updates. The menu bar's
+  Help menu carries both as well, along with the library health report and the
+  two licences.
+- Says when a newer Stellody has been published, from either of those. It offers the file for your own
   machine, a way to skip that version for good, else Later. Asked from the menu
   it answers whichever way it turns out, including that it could not reach
   GitHub; left to itself it speaks only when there is something to offer.
