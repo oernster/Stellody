@@ -10,15 +10,14 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
+from library_support import PLANETS, SIMPLE, library_window, titles, track
 from PySide6.QtCore import QModelIndex, QRect, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QStyle, QStyleOptionViewItem
 from tray_support import RememberingStore, build
 
-from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
-from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 from stellody.ui.covering import RowCover
 from stellody.ui.flashing import TURNS
 from stellody.ui.models import Column
@@ -29,68 +28,26 @@ from stellody.ui.toolbar import SEARCH_BOX_HEIGHT_PX
 PAINT_PX = 40
 
 
-def _track(title: str, number: int, disc: int = 1) -> Track:
-    """One track carrying a real title, since a title is what is searched."""
-    return Track(
-        source=TrackSource(path=f"{number:02d} {title}.flac"),
-        disc_number=disc,
-        track_number=number,
-        title=title,
-        artists=("Holst",),
-        duration_ms=1000,
-        sample_rate=CD_SAMPLE_RATE,
-        bit_depth=16,
-    )
-
-
-PLANETS = Album(
-    identity=AlbumIdentity(album_artist="Holst", title="The Planets"),
-    tracks=(_track("Venus", 1), _track("Mars", 2)),
-)
-SIMPLE = Album(
-    identity=AlbumIdentity(album_artist="Zero 7", title="Simple Things"),
-    tracks=(_track("Destiny", 1),),
-)
-ART = (
-    AlbumArtSources(key=PLANETS.identity.art_key, sidecars=("planets.jpg",)),
-    AlbumArtSources(key=SIMPLE.identity.art_key, sidecars=("simple.jpg",)),
-)
-
-
 @pytest.fixture
 def window(application: QApplication):
-    """A real window holding two albums, reached the way a load reaches them."""
-    made = build(RememberingStore(), RecordingPlayer())
-    made.show_library((PLANETS, SIMPLE), ART)
-    application.processEvents()
-    yield made
-    made.close()
-
-
-def _titles(window) -> list[str]:
-    """The album titles the tree is showing, top to bottom."""
-    model = window._model
-    return [
-        model.data(model.index(row, Column.TITLE, QModelIndex()))
-        for row in range(model.rowCount(QModelIndex()))
-    ]
+    yield from library_window(application)
 
 
 class TestNarrowing:
     def test_the_whole_library_shows_with_nothing_asked(self, window) -> None:
-        assert _titles(window) == ["The Planets", "Simple Things"]
+        assert titles(window) == ["The Planets", "Simple Things"]
 
     def test_an_album_title_narrows_to_that_album(self, window) -> None:
         window.search_changed("simple")
-        assert _titles(window) == ["Simple Things"]
+        assert titles(window) == ["Simple Things"]
 
     def test_an_album_artist_narrows_to_that_album(self, window) -> None:
         window.search_changed("zero 7")
-        assert _titles(window) == ["Simple Things"]
+        assert titles(window) == ["Simple Things"]
 
     def test_a_track_narrows_to_its_album(self, window) -> None:
         window.search_changed("venus")
-        assert _titles(window) == ["The Planets"]
+        assert titles(window) == ["The Planets"]
 
     def test_the_album_is_kept_whole(self, window) -> None:
         """B: every track stays, so the album reads as it always does."""
@@ -101,16 +58,25 @@ class TestNarrowing:
 
     def test_a_phrase_matching_nothing_empties_the_library(self, window) -> None:
         window.search_changed("saturn")
-        assert _titles(window) == []
+        assert titles(window) == []
 
     def test_clearing_brings_everything_back(self, window) -> None:
         window.search_changed("venus")
         window.search_changed("")
-        assert _titles(window) == ["The Planets", "Simple Things"]
+        assert titles(window) == ["The Planets", "Simple Things"]
 
-    def test_the_art_is_narrowed_with_the_albums(self, window) -> None:
+    def test_a_keystroke_leaves_the_sleeves_alone(self, window) -> None:
+        """Typing cannot change where a cover is read from.
+
+        Narrowing the art with the albums meant forgetting every cover that
+        had been read, so a keystroke sent every visible sleeve back to the
+        disk and the pane the search then opened took a placeholder.
+        """
         window.search_changed("venus")
-        assert set(window._model._art) == {PLANETS.identity.art_key}
+        assert set(window._model._art) == {
+            PLANETS.identity.art_key,
+            SIMPLE.identity.art_key,
+        }
 
 
 class TestPointingAtTheHit:
@@ -165,15 +131,15 @@ class TestTheButton:
     def test_closing_restores_the_library(self, window) -> None:
         window.toggle_search()
         window._tray.search_box.setText("venus")
-        assert _titles(window) == ["The Planets"]
+        assert titles(window) == ["The Planets"]
         window.toggle_search()
-        assert _titles(window) == ["The Planets", "Simple Things"]
+        assert titles(window) == ["The Planets", "Simple Things"]
 
 
-NEPTUNE = _track("Neptune", 1, disc=2)
+NEPTUNE = track("Neptune", 1, disc=2)
 DOUBLE = Album(
     identity=AlbumIdentity(album_artist="Holst", title="Both Suites"),
-    tracks=(_track("Venus", 1), NEPTUNE),
+    tracks=(track("Venus", 1), NEPTUNE),
 )
 
 
@@ -208,19 +174,6 @@ class TestAMultiDiscAlbum:
     def test_the_track_is_the_one_selected(self, window) -> None:
         window.search_changed("neptune")
         assert window._model.track_at(window._tree.currentIndex()) is NEPTUNE
-
-
-class TestTheCoverView:
-    """The sleeves have no rows to expand, so the pane under them is opened."""
-
-    def test_the_sleeve_opens_on_the_track_that_was_hit(self, window) -> None:
-        window.toggle_view()
-        assert window.showing_covers
-        window.search_changed("venus")
-        assert window._shown_album is PLANETS
-        showing = window._model.track_at(window._album_pane.current_index())
-        assert showing is not None
-        assert showing.title == "Venus"
 
 
 class TestHowItLooks:
@@ -285,93 +238,3 @@ class TestItReallyPaints:
     def test_the_pane_draws_rows_the_same_way(self, window) -> None:
         """One delegate for both views, so a flash cannot differ between them."""
         assert isinstance(window._album_pane.columns[0].itemDelegate(), RowCover)
-
-
-class TestThePaneUnderTheSleeves:
-    """What is open stays open; only an album that has gone takes it away.
-
-    Replacing every row leaves the pane rooted at an index that no longer
-    means that album. Left alone it re-roots on the whole library and lists it
-    down both columns, which is the duplication these guard against.
-    """
-
-    def _open_planets(self, window):
-        """Open The Planets under the sleeves, with Mars chosen in it."""
-        window.toggle_view()
-        window.open_album_at(window._model.index(0, Column.TITLE, QModelIndex()))
-        mars = PLANETS.tracks[1]
-        window._album_pane.columns[0].setCurrentIndex(window._model.index_for(mars))
-        return mars
-
-    def test_clearing_the_field_leaves_the_album_open_as_it_was(self, window) -> None:
-        mars = self._open_planets(window)
-        window.search_changed("mars")
-        window.search_changed("")
-        assert window._shown_album is PLANETS
-        assert window._model.track_at(window._album_pane.current_index()) is mars
-
-    def test_the_pane_is_rooted_at_the_album_not_the_library(self, window) -> None:
-        """The duplication itself: both columns rooted at the invisible root."""
-        self._open_planets(window)
-        window.search_changed("mars")
-        window.search_changed("")
-        for column in window._album_pane.columns:
-            assert column.rootIndex().isValid()
-            assert window._model.album_at(column.rootIndex()) is PLANETS
-
-    def test_an_album_still_shown_keeps_its_place(self, window) -> None:
-        """The Planets still matches, so nothing about the pane changes."""
-        mars = self._open_planets(window)
-        window.search_changed("planets")
-        assert window._shown_album is PLANETS
-        assert window._model.track_at(window._album_pane.current_index()) is mars
-
-    def test_an_album_that_has_gone_shuts_the_pane(self, window) -> None:
-        """No row anywhere for it, so there is nothing to be rooted at."""
-        self._open_planets(window)
-        window.search_changed("zero")
-        assert window._shown_album is None
-
-    def test_a_hit_still_wins_over_what_was_open(self, window) -> None:
-        """Typing a track's name points at that track rather than keeping the
-        one that happened to be chosen before."""
-        self._open_planets(window)
-        window.search_changed("venus")
-        showing = window._model.track_at(window._album_pane.current_index())
-        assert showing is not None
-        assert showing.title == "Venus"
-
-
-class TestOtherThingsThatReplaceEveryRow:
-    """A search is not the only one. Inverting the order and rescanning both
-    replace every row, so both left the pane rooted at rows that had gone."""
-
-    def _open_planets(self, window):
-        window.toggle_view()
-        window.open_album_at(window._model.index(0, Column.TITLE, QModelIndex()))
-        mars = PLANETS.tracks[1]
-        window._album_pane.columns[0].setCurrentIndex(window._model.index_for(mars))
-        return mars
-
-    def test_inverting_the_order_keeps_the_album_and_the_track(self, window) -> None:
-        mars = self._open_planets(window)
-        window.toggle_order()
-        assert window._shown_album is PLANETS
-        assert window._model.album_at(window._album_pane.columns[0].rootIndex()) is (
-            PLANETS
-        )
-        assert window._model.track_at(window._album_pane.current_index()) is mars
-
-    def test_a_rescan_keeps_the_album_though_it_is_built_afresh(self, window) -> None:
-        """The albums come back as different objects, so sameness is identity."""
-        self._open_planets(window)
-        again = Album(identity=PLANETS.identity, tracks=PLANETS.tracks)
-        assert again is not PLANETS
-        window.show_library((again, SIMPLE), ART)
-        assert window._shown_album is again
-        assert window._album_pane.columns[0].rootIndex().isValid()
-
-    def test_an_album_a_rescan_dropped_shuts_the_pane(self, window) -> None:
-        self._open_planets(window)
-        window.show_library((SIMPLE,), ART[1:])
-        assert window._shown_album is None

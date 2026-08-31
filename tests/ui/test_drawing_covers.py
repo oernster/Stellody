@@ -157,18 +157,62 @@ class TestAskingFromTheRow:
         _decoration(model)
         assert asked == []
 
-    def test_a_replaced_library_forgets_what_it_had_drawn(
+    def test_new_sources_forget_what_had_been_drawn(
         self, application: QApplication
     ) -> None:
         """A rescan can change what an album's cover is read from."""
         album = _album()
         model = _model(album, application)
         model.set_cover(album.identity.art_key, cover_pixmap(_png(), GRID_COVER_PX))
-        model.set_albums((album,))
+        model.set_art(
+            (AlbumArtSources(key=album.identity.art_key, sidecars=("a.jpg",)),)
+        )
         asked: list[str] = []
         model.cover_wanted.connect(lambda sources: asked.append(sources.key))
         _decoration(model)
         assert asked == [album.identity.art_key]
+
+    def test_replacing_the_rows_keeps_what_had_been_drawn(
+        self, application: QApplication
+    ) -> None:
+        """Narrowing to a phrase replaces every row and changes no sleeve.
+
+        Dropping them here is what put the placeholder under a pane a search
+        had just opened: the read that would answer it had not returned; the
+        placeholder is the pane's own colour, so it read as no sleeve.
+        """
+        album = _album()
+        model = _model(album, application)
+        cover = cover_pixmap(_png(), GRID_COVER_PX)
+        model.set_cover(album.identity.art_key, cover)
+        model.set_albums((album,))
+        asked: list[str] = []
+        model.cover_wanted.connect(lambda sources: asked.append(sources.key))
+        assert _decoration(model) is cover
+        assert asked == []
+
+    def test_the_sleeve_an_album_draws_can_be_asked_for_by_key(
+        self, application: QApplication
+    ) -> None:
+        """What the pane under the grid shows is what the row shows."""
+        album = _album()
+        model = _model(album, application)
+        cover = cover_pixmap(_png(), GRID_COVER_PX)
+        model.set_cover(album.identity.art_key, cover)
+        assert model.cover_for(album.identity.art_key) is cover
+
+    def test_asking_by_key_stands_in_until_a_cover_arrives(
+        self, application: QApplication
+    ) -> None:
+        """And asking does not queue a read, so it changes nothing."""
+        album = _album()
+        model = _model(album, application)
+        placeholder = placeholder_for(Mode.DARK)
+        model.set_placeholder(placeholder)
+        asked: list[str] = []
+        model.cover_wanted.connect(lambda sources: asked.append(sources.key))
+        assert model.cover_for(album.identity.art_key) is placeholder
+        assert asked == []
 
     def test_only_an_album_row_carries_a_cover(self, application: QApplication) -> None:
         album = _album()

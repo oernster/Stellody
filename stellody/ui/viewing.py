@@ -198,6 +198,18 @@ class Viewing:
         self._album_pane.setVisible(True)
         self._ring_open(where.row())
 
+    def show_pane_cover(self, key: str) -> None:
+        """Put a sleeve on the open album once it has actually been read.
+
+        The pane takes its sleeve as it opens, which a search does before any
+        cover can have arrived. Ignored for every album but the open one, so a
+        library reading its way down the grid does not repaint the pane.
+        """
+        album = self._shown_album
+        if album is None or album.identity.art_key != key:
+            return
+        self._album_pane.show_cover(self._model.cover_for(key))
+
     def pane_state(self) -> tuple[Album, Track | None] | None:
         """The album the pane is showing and the track chosen in it."""
         album = self._shown_album

@@ -178,18 +178,29 @@ class AlbumPane(QWidget):
             named = f"{named}  ({year})"
         self.title.setText(named)
         self.artist.setText(album.identity.album_artist)
+        self.show_cover(cover)
+        self._fill_columns(where)
+
+    def show_cover(self, cover: QPixmap | None) -> None:
+        """Put the album's sleeve on, at the size this pane draws it.
+
+        Apart from opening, because a cover is read on another thread and so
+        is usually not there yet at the moment somebody opens an album. Taking
+        it once left the placeholder under the pane until the album was opened
+        again; the placeholder is the pane's own colour, so it read as no sleeve
+        at all rather than as one still on its way.
+        """
         if cover is None:
             self.cover.clear()
-        else:
-            self.cover.setPixmap(
-                cover.scaled(
-                    PANE_COVER_PX,
-                    PANE_COVER_PX,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
+            return
+        self.cover.setPixmap(
+            cover.scaled(
+                PANE_COVER_PX,
+                PANE_COVER_PX,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
             )
-        self._fill_columns(where)
+        )
 
     def _fill_columns(self, where: QModelIndex) -> None:
         """Run the album down the first column, then on down the second.

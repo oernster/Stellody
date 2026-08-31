@@ -1,8 +1,8 @@
 """The album tree: albums, their discs and their tracks.
 
 Built as a real item model rather than a widget per row, so a library of
-several hundred albums and several thousand tracks stays responsive. A disc
-level appears only when an album actually spans more than one disc.
+several hundred albums and several thousand tracks stays responsive. The rows
+themselves are shaped in `nodes.py`; this is Qt's view of them.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from stellody.application.artwork import AlbumArtSources
 from stellody.domain.album import Album, Disc
 from stellody.domain.track import Track
 from stellody.ui.covering import GRID_COVER_PX
+from stellody.ui.nodes import Node, build, find_track
 
 MILLISECONDS_PER_SECOND = 1000
 SECONDS_PER_MINUTE = 60
@@ -41,66 +42,6 @@ def format_duration(milliseconds: int) -> str:
     if hours:
         return f"{hours}:{minutes:02d}:{seconds:02d}"
     return f"{minutes}:{seconds:02d}"
-
-
-class _Node:
-    """One row in the tree, holding whichever value it represents."""
-
-    __slots__ = ("album", "children", "disc", "parent", "row", "track")
-
-    def __init__(
-        self,
-        row: int,
-        parent: _Node | None,
-        album: Album | None = None,
-        disc: Disc | None = None,
-        track: Track | None = None,
-    ) -> None:
-        self.row = row
-        self.parent = parent
-        self.album = album
-        self.disc = disc
-        self.track = track
-        self.children: list[_Node] = []
-
-
-def _track_nodes(tracks: tuple[Track, ...], parent: _Node) -> list[_Node]:
-    """Child nodes for a run of tracks."""
-    return [
-        _Node(row=position, parent=parent, track=track)
-        for position, track in enumerate(tracks)
-    ]
-
-
-def _build(albums: tuple[Album, ...]) -> list[_Node]:
-    """The whole node tree for a library."""
-    roots: list[_Node] = []
-    for position, album in enumerate(albums):
-        node = _Node(row=position, parent=None, album=album)
-        if album.disc_count > 1:
-            for disc_position, disc in enumerate(album.discs):
-                disc_node = _Node(row=disc_position, parent=node, disc=disc)
-                disc_node.children = _track_nodes(disc.tracks, disc_node)
-                node.children.append(disc_node)
-        else:
-            node.children = _track_nodes(album.ordered_tracks(), node)
-        roots.append(node)
-    return roots
-
-
-def _find_track(nodes: list[_Node], track: Track) -> _Node | None:
-    """The node holding this exact track, searched depth first.
-
-    Depth first rather than over the albums alone, because a multi-disc album
-    keeps its tracks a level further down.
-    """
-    for node in nodes:
-        if node.track is track:
-            return node
-        deeper = _find_track(node.children, track)
-        if deeper is not None:
-            return deeper
-    return None
 
 
 def _album_text(album: Album, column: Column) -> str:
@@ -142,7 +83,7 @@ def _track_text(track: Track, column: Column) -> str:
     return ""
 
 
-def _text(node: _Node, column: Column) -> str:
+def _text(node: Node, column: Column) -> str:
     """The display text for any node."""
     if node.album is not None:
         return _album_text(node.album, column)
@@ -159,7 +100,7 @@ class AlbumTreeModel(QAbstractItemModel):
     def __init__(self, parent: object | None = None) -> None:
         super().__init__(parent)
         self._albums: tuple[Album, ...] = ()
-        self._roots: list[_Node] = []
+        self._roots: list[Node] = []
         self._descending = False
         self._art: dict[str, AlbumArtSources] = {}
         self._covers: dict[str, QPixmap | None] = {}
@@ -181,10 +122,16 @@ class AlbumTreeModel(QAbstractItemModel):
         self._redraw_covers()
 
     def set_albums(self, albums: tuple[Album, ...]) -> None:
-        """Replace the whole library."""
+        """Replace the whole library.
+
+        What has been read is kept: a cover belongs to an album rather than to
+        a run of rows, so narrowing the library to a phrase does not send a
+        single sleeve back to the disk. Dropping them here sent every visible
+        one back on every keystroke, which put the placeholder under the pane
+        the search had just opened.
+        """
         self.beginResetModel()
         self._albums = albums
-        self._covers.clear()
         self._rebuild()
         self.endResetModel()
 
@@ -204,8 +151,14 @@ class AlbumTreeModel(QAbstractItemModel):
         self.dataChanged.emit(where, last, [Qt.ItemDataRole.BackgroundRole])
 
     def set_art(self, art: tuple[AlbumArtSources, ...]) -> None:
-        """Say where each album's cover might be found."""
+        """Say where each album's cover might be found.
+
+        Whatever was read came from the sources being replaced, so it goes
+        with them. This is the one thing that can make a cover stale, which is
+        why it is the one place they are dropped.
+        """
         self._art = {sources.key: sources for sources in art}
+        self._covers.clear()
 
     def set_placeholder(self, placeholder: QPixmap | None) -> None:
         """The square drawn for an album whose cover is not there yet."""
@@ -219,17 +172,26 @@ class AlbumTreeModel(QAbstractItemModel):
             if node.album is not None and node.album.identity.art_key == key:
                 self._redraw(node)
 
+    def cover_for(self, key: str) -> QPixmap | None:
+        """The sleeve an album is drawing now, without asking for it.
+
+        The placeholder while a read is still out, exactly as a row shows.
+        Asking does not queue a read, so somewhere that is not a row can show
+        what a row shows without changing what gets read.
+        """
+        return self._covers.get(key) or self._placeholder
+
     def _redraw_covers(self) -> None:
         """Ask the view to draw every album's first column again."""
         for node in self._roots:
             self._redraw(node)
 
-    def _redraw(self, node: _Node) -> None:
+    def _redraw(self, node: Node) -> None:
         """Ask the view to draw one album's first column again."""
         where = self.index(node.row, Column.TITLE, QModelIndex())
         self.dataChanged.emit(where, where, [Qt.ItemDataRole.DecorationRole])
 
-    def _cover(self, node: _Node) -> QPixmap | None:
+    def _cover(self, node: Node) -> QPixmap | None:
         """An album's cover, asking for it the first time it is wanted.
 
         Asked for from here rather than up front, so a library of a few
@@ -284,7 +246,7 @@ class AlbumTreeModel(QAbstractItemModel):
         library may legitimately hold two identical tracks; the one being
         played is a particular one of them.
         """
-        found = _find_track(self._roots, track)
+        found = find_track(self._roots, track)
         if found is None:
             return QModelIndex()
         return self.createIndex(found.row, 0, found)
@@ -294,15 +256,15 @@ class AlbumTreeModel(QAbstractItemModel):
         ordered = sorted(self._albums, key=lambda album: album.identity.sort_key)
         if self._descending:
             ordered.reverse()
-        self._roots = _build(tuple(ordered))
+        self._roots = build(tuple(ordered))
 
-    def _node(self, index: QModelIndex) -> _Node | None:
+    def _node(self, index: QModelIndex) -> Node | None:
         """The node behind an index; None for the invisible root."""
         if not index.isValid():
             return None
         return index.internalPointer()
 
-    def _children(self, index: QModelIndex) -> list[_Node]:
+    def _children(self, index: QModelIndex) -> list[Node]:
         """The child nodes of an index; the roots for the invisible root."""
         node = self._node(index)
         return self._roots if node is None else node.children

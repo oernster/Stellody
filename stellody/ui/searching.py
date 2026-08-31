@@ -31,7 +31,6 @@ class Searching:
     def start_searching(self) -> None:
         """Begin holding the whole library, with nothing asked of it."""
         self._all_albums: tuple[Album, ...] = ()
-        self._all_art: tuple[AlbumArtSources, ...] = ()
         self._prepared: tuple[AlbumText, ...] = ()
         self._search = Search()
         self._flash = RowFlash(self._model, self)
@@ -44,10 +43,15 @@ class Searching:
         Normalising the text is done here, once, rather than on every
         keystroke: measured, it is 9.2 milliseconds against 0.24 for the pass
         that uses it; the answer cannot change between keystrokes.
+
+        Where the covers are read from is said here too, for the same reason
+        and once for the same whole library. A load or a scan is the only
+        thing that can change it; narrowing to a phrase changes which albums
+        are on screen and nothing whatever about their sleeves.
         """
         self._all_albums = albums
-        self._all_art = art
         self._prepared = prepared(albums)
+        self.show_art(art)
         self._narrow()
 
     def toggle_search(self) -> None:
@@ -64,7 +68,7 @@ class Searching:
         self._narrow()
 
     def _narrow(self) -> None:
-        """Show the albums that survive, with the art that belongs to them.
+        """Show the albums that survive the phrase and nothing else.
 
         Whatever was open under the sleeves is put back afterwards, which
         cannot be done by leaving it alone: replacing every row leaves the
@@ -74,10 +78,8 @@ class Searching:
         """
         found = narrowed(self._prepared, self._search)
         albums = tuple(one.album for one in found)
-        keys = {album.identity.art_key for album in albums}
         was_open = self.pane_state()
         self._model.set_albums(albums)
-        self.show_art(tuple(one for one in self._all_art if one.key in keys))
         if not self._point_at(found):
             self.restore_pane(was_open)
 

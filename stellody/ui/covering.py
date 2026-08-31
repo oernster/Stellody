@@ -173,3 +173,4 @@ class Covering:
     def _on_cover(self, key: str, cover: object) -> None:
         """Take one album's cover, else the news that it has none."""
         self._model.set_cover(key, cover_pixmap(cover, self._model.cover_px))
+        self.show_pane_cover(key)
