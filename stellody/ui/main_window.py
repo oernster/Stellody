@@ -236,6 +236,10 @@ class MainWindow(
         self.restore_volume()
         self.restore_switches()
         self.restore_view()
+        # Said here rather than left to the first scan: a window that has never
+        # been pointed at any music has nothing to rescan, so both places the
+        # errand is offered from start out saying so.
+        self._set_rescan_enabled(True)
         self.start_watching()
         self.restore_geometry(QSize(WINDOW_WIDTH_PX, WINDOW_HEIGHT_PX))
         self._tree.selectionModel().currentChanged.connect(self._on_selection)

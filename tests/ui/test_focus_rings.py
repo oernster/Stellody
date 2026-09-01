@@ -28,6 +28,7 @@ from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.equaliser import EqualiserDialog
 from stellody.ui.ringed_check import RingedCheckBox
+from stellody.ui.settings_keys import SETTING_ROOT
 from stellody.ui.stars import StarRating
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.volume import DEFAULT_PERCENT
@@ -63,8 +64,18 @@ COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
 @pytest.fixture
 def window(application: QApplication):
-    """The real main window over a throwaway store."""
-    store = SqliteLibraryStore(str(pathlib.Path(tempfile.mkdtemp()) / "t.sqlite3"))
+    """The real main window over a throwaway store, pointed at a folder.
+
+    The folder is named rather than left empty because Rescan is offered only
+    where there is somewhere to rescan, so a window that has never been pointed
+    anywhere drops that control out of the ring entirely. The order below is
+    what a settled installation shows, which is the one worth pinning. Nothing
+    reads the folder: launch shows what the store already holds and never
+    scans, so an empty temporary directory is enough to say one was chosen.
+    """
+    folder = pathlib.Path(tempfile.mkdtemp())
+    store = SqliteLibraryStore(str(folder / "t.sqlite3"))
+    store.set_setting(SETTING_ROOT, str(folder))
     made = build_window(store)
     made.show()
     application.processEvents()

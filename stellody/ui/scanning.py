@@ -129,9 +129,18 @@ class Scanning:
         self.statusBar().showMessage(f"Scan failed: {message}")
 
     def _set_rescan_enabled(self, enabled: bool) -> None:
-        """Rescan is offered in two places, so both follow the same state."""
-        self._rescan_action.setEnabled(enabled)
-        self._bottom_tray.rescan_button.setEnabled(enabled)
+        """Rescan is offered in two places, so both follow the same state.
+
+        There is nothing to rescan while no music folder has been chosen, so
+        that is part of the state rather than a refusal inside the errand.
+        Without it a first run offers Rescan, which answers "Choose a music
+        folder to begin" once it has been pressed. A control that cannot do its
+        job says so before it is pressed here; that is what the ring on a
+        disabled control is for.
+        """
+        offered = enabled and bool(self.library_root)
+        self._rescan_action.setEnabled(offered)
+        self._bottom_tray.rescan_button.setEnabled(offered)
 
 
 def _summary(report: ScanReport) -> str:
