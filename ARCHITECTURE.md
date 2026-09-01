@@ -138,9 +138,9 @@ real damage in the reference library:
 Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
 own choosing. That view is read-only today. Two repair controls are drawn and
-both are disabled: one in the top tray beside the rescan whose findings it
-would answer, one pinned at the top of the health dialog. Their tooltip is
-stated once in `stellody/ui/toolbar.py` and read from there by the dialog, so
+both are disabled: one on the bottom strip beside the rescan whose findings
+it would answer, one pinned at the top of the health dialog. Their tooltip is
+stated once in `stellody/ui/bottom_tray.py` and read from there by the dialog, so
 the two cannot come to say different things about the same unbuilt feature.
 They are disabled because the corrections are computed on every load while
 there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 6
@@ -405,7 +405,8 @@ only new way out.
 | The equalizer switch is kept apart from its sliders | Somebody comparing on against off is asking one question; losing the curve they set up to compare with would answer a different one. The two are stored as two settings for the same reason. |
 | A boost is clipped at the format's ceiling | A lift can ask for more than a sample holds. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
 | What the library is shown as sits beside the search that also changes it | The view toggle, the sleeve size and the equalizer moved up out of the settings strip to join the search box. All four change what is on show rather than what is playing, where the strip below holds what outlasts a track. The three are one child group rather than three loose buttons, so their order is stated once and the tray delegates to it. |
-| The top tray decides how narrow the window may be | Every control in it is a fixed size, so the tray's own minimum is the window's. Three more controls took that minimum from 1246 to 1468 pixels; the default width moved with it rather than the window opening narrower than the strip it has to draw. |
+| The top tray decides how narrow the window may be | Every control in it is a fixed size, so the tray's own minimum is the window's: 1274 pixels as measured. The default width is chosen for the library rather than for the strips, so the minimum is a floor the default is checked against rather than a value it tracks. `tests/ui/test_window_size.py` holds that floor, since nothing else keeps the two in step. |
+| Rescan and repair sit on the bottom strip, not in the tray above | The two strips are split by one question: what is playing against what the library holds. A rescan is asked for when something has been added to the music folder, so it is an errand rather than a control a listener reaches for while listening; repair follows it because it is the answer to what a rescan finds. Repair had been moved up beside rescan on the reasoning that it should follow the control it answers, which was right about the pairing and wrong about the strip; the pair moved down together. A hairline keeps the donate button ruled off from them, so the one control that leaves the application is still not reached by accident. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
 
 ## Coverage

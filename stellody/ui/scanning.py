@@ -131,7 +131,7 @@ class Scanning:
     def _set_rescan_enabled(self, enabled: bool) -> None:
         """Rescan is offered in two places, so both follow the same state."""
         self._rescan_action.setEnabled(enabled)
-        self._tray.rescan_button.setEnabled(enabled)
+        self._bottom_tray.rescan_button.setEnabled(enabled)
 
 
 def _summary(report: ScanReport) -> str:

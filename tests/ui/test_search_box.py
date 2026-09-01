@@ -23,7 +23,6 @@ def tray(application: QApplication):
     made = LibraryTray(
         parent,
         choose_folder=lambda: None,
-        rescan=lambda: None,
         toggle_theme=lambda: None,
         show_about=lambda: None,
         toggle_search=lambda: presses.append(1),
@@ -81,6 +80,6 @@ class TestRing:
         stops = tray.ring_stops()
         assert stops.index(tray.search_box) == stops.index(tray.search_button) + 1
 
-    def test_search_follows_repair(self, tray) -> None:
+    def test_search_follows_the_folder_it_searches(self, tray) -> None:
         stops = tray.ring_stops()
-        assert stops.index(tray.search_button) == stops.index(tray.repair_button) + 1
+        assert stops.index(tray.search_button) == stops.index(tray.choose_button) + 1

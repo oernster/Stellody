@@ -16,10 +16,9 @@ from PySide6.QtWidgets import (
 
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
 from stellody.shared import resources
-from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX
+from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, REPAIR_TOOLTIP
 from stellody.ui.dialogs import NeutralDialog, close_row
 from stellody.ui.display import native_path
-from stellody.ui.toolbar import REPAIR_TOOLTIP
 from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 760

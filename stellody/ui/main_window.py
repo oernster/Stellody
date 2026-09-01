@@ -64,10 +64,10 @@ from stellody.ui.worker import ScanRunner, ScanSession
 # Enough frames to name the door without printing the whole interpreter.
 TRAIL_FRAMES = 6
 # The size the window opens at when nothing has been remembered, which is a
-# first run and a stored value that is not a number. Grown from the 1080 by 720
-# it used to open at, a tenth wider and a fifth taller, which is a row of
-# sleeves more library to look at before anything has been scrolled.
-WINDOW_WIDTH_PX = 1480
+# first run and a stored value that is not a number. Widened by a tenth again,
+# so the library gets the extra room rather than the strips: what the strips
+# need is a floor the window is checked against, never the size it opens at.
+WINDOW_WIDTH_PX = 1628
 WINDOW_HEIGHT_PX = 864
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
@@ -179,8 +179,6 @@ class MainWindow(
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
-            rescan=self.rescan,
-            repair_library=self.repair_library,
             toggle_search=self.toggle_search,
             search_changed=self.search_changed,
             search_again=self.search_again,
@@ -204,6 +202,8 @@ class MainWindow(
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
             open_donation=self.open_donation,
+            rescan=self.rescan,
+            repair_library=self.repair_library,
         )
         self.setCentralWidget(
             build_body(

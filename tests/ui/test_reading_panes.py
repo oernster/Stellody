@@ -18,10 +18,10 @@ from PySide6.QtWidgets import QApplication, QTextBrowser
 
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.shared import resources
+from stellody.ui.bottom_tray import REPAIR_TOOLTIP
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.theme import Mode, stylesheet
-from stellody.ui.toolbar import REPAIR_TOOLTIP
 
 ISSUE_COUNT = 40
 CLICK_AT = QPoint(20, 20)

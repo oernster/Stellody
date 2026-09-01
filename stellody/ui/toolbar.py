@@ -1,10 +1,10 @@
 """The icon tray under the menus.
 
-Picture-only buttons in reading order: choose the music folder, rescan it,
-repair what the rescan reports and search it on the left, the transport
-centred, then the volume, the mute switch, the appearance toggle and About on
-the right. The library buttons repeat something the menus already offer, so
-they add reach rather than capability; nothing here owns any state of its own.
+Picture-only buttons in reading order: choose the music folder, search it and
+say how it is shown on the left, the transport centred, then the volume, the
+mute switch, the appearance toggle and About on the right. The library buttons
+repeat something the menus already offer, so they add reach rather than
+capability; nothing here owns any state of its own.
 
 Search is the one place a box joins the pictures. The button carries the
 magnifier and the box appears beside it only while searching, so the tray
@@ -12,9 +12,9 @@ reads as pictures until somebody asks it not to. Filtering happens as the box
 is typed into, which is why the button opens the box rather than running
 anything: there would be nothing for a second press to do.
 
-Repair sits beside rescan because it is the answer to what a rescan finds.
-It was down on the bottom strip, which put it among the
-settings that outlast a track rather than beside the control it follows from.
+Rescan and repair are not here. They are errands about what the library holds
+rather than about what is playing, so they sit on the bottom strip among the
+things that outlast a track. This tray is what a listener uses while listening.
 
 Mute is ruled off from the two buttons after it. It acts on what is playing
 while they act on the application, so a line says they are different kinds of
@@ -77,9 +77,6 @@ SEPARATOR_WIDTH_PX = 1
 # between buttons rather than as a border on the tray.
 SEPARATOR_INSET_PX = 12
 SEPARATOR_HEIGHT_PX = BUTTON_PX - SEPARATOR_INSET_PX - SEPARATOR_INSET_PX
-# One wording, one home. The dialog's own repair control reads it from here, so
-# the two cannot come to say different things about the same unbuilt feature.
-REPAIR_TOOLTIP = "Repair what library health reports (not built yet)"
 # Wide enough for an album title rather than for a word, since that is what
 # somebody types when they are looking for one.
 SEARCH_BOX_PX = 260
@@ -101,11 +98,9 @@ class LibraryTray(QWidget):
         self,
         parent: QWidget,
         choose_folder: Callable[[], None],
-        rescan: Callable[[], None],
         toggle_theme: Callable[[], None],
         show_about: Callable[[], None],
         check_for_updates: Callable[[], None] = lambda: None,
-        repair_library: Callable[[], None] = lambda: None,
         toggle_search: Callable[[], None] = lambda: None,
         search_changed: Callable[[str], None] = lambda _phrase: None,
         search_again: Callable[[], None] = lambda: None,
@@ -129,15 +124,6 @@ class LibraryTray(QWidget):
             "Choose music folder",
             choose_folder,
         )
-        self.rescan_button = _icon_button(
-            self, resources.rescan_icon_path(), "Rescan the library", rescan
-        )
-        self.repair_button = _icon_button(
-            self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
-        )
-        # Nothing to press yet: what each issue should become is worked out on
-        # every load; there is nowhere to keep a correction once accepted.
-        self.repair_button.setEnabled(False)
         self.search_button = _icon_button(
             self, resources.search_icon_path(), "Search the library", toggle_search
         )
@@ -194,8 +180,6 @@ class LibraryTray(QWidget):
         )
         row.setSpacing(TRAY_GAP_PX)
         row.addWidget(self.choose_button)
-        row.addWidget(self.rescan_button)
-        row.addWidget(self.repair_button)
         row.addWidget(self.search_button)
         row.addWidget(self.search_box)
         row.addWidget(self.showing)
@@ -223,16 +207,12 @@ class LibraryTray(QWidget):
     def ring_stops(self) -> tuple[QWidget, ...]:
         """This tray's controls, left to right as they are drawn.
 
-        The repair control is named here while it is disabled, so the ring
-        picks it up on the day it works without the order being revisited. Qt
-        skips a disabled stop, so naming it costs nothing until then. The
-        search box is named for the same reason while it is hidden, since Qt
-        skips an invisible stop too.
+        The search box is named here while it is hidden, so the ring picks it
+        up the moment it opens without the order being revisited. Qt skips an
+        invisible stop, so naming it costs nothing while it is one.
         """
         return (
             self.choose_button,
-            self.rescan_button,
-            self.repair_button,
             self.search_button,
             self.search_box,
             *self.showing.stops(),

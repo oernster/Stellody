@@ -82,6 +82,20 @@ class TestWhatIsWrittenDown:
         assert made.size().height() == 910
         made.close()
 
+    def test_the_default_is_never_narrower_than_the_window_needs(
+        self, application, roomy
+    ) -> None:
+        """Every control in the trays is a fixed size, so they set the floor.
+
+        The default is chosen for the library rather than for the strips, so
+        nothing keeps the two in step by itself. A default below the floor
+        opens the window with a control cut off its own strip.
+        """
+        made = window(RememberingStore())
+        assert WINDOW_WIDTH_PX >= made.minimumSizeHint().width()
+        assert WINDOW_HEIGHT_PX >= made.minimumSizeHint().height()
+        made.close()
+
 
 class TestLeftMaximised:
     def test_the_size_to_come_back_to_is_what_is_kept(self, application, roomy) -> None:

@@ -313,7 +313,8 @@ def test_the_view_toggle_is_a_stop_now_that_it_works(
         seen.add(id(current))
         order.append(current)
     assert tray.showing.view_button in order, "an enabled control is a stop"
-    assert window._tray.repair_button not in order, "a disabled one still is not"
+    disabled = window._bottom_tray.repair_button
+    assert disabled not in order, "a disabled one still is not"
 
 
 def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> None:
@@ -322,7 +323,8 @@ def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> N
     tray = window._bottom_tray
     row = tray.layout()
     widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    assert widgets[0] is tray.donate_button, "first in the row, before the toggle"
+    assert widgets[0] is tray.donate_button, "first in the row, outside the rest"
+    assert widgets[1] is tray.separator, "ruled off from what follows it"
     assert tray.donate_button in tray.ring_stops()
     assert tray.donate_button.isEnabled(), "unlike the repair control, this works"
     assert "opens your browser" in tray.donate_button.toolTip()
@@ -351,29 +353,28 @@ def test_a_desktop_that_will_not_open_a_browser_says_so(
     assert "Could not open a browser" in window.statusBar().currentMessage()
 
 
-def test_the_repair_button_sits_beside_rescan_under_the_menus(
-    window: MainWindow,
-) -> None:
+def test_repair_follows_rescan_on_the_bottom_strip(window: MainWindow) -> None:
     """Repair is the answer to what a rescan finds, so it follows rescan.
 
-    It used to sit on the bottom strip beside the view toggle, which put it
-    among the settings that outlast a track rather than beside the control it
-    follows from.
+    Both sit on the bottom strip rather than in the tray above. They are
+    errands about what the library holds rather than about what is playing,
+    so they belong among the things that outlast a track.
     """
     window.show()
-    tray = window._tray
+    tray = window._bottom_tray
     row = tray.layout()
     widgets = [row.itemAt(position).widget() for position in range(row.count())]
     gap = widgets.index(None)
     assert widgets.index(tray.rescan_button) < widgets.index(tray.repair_button)
-    assert widgets.index(tray.repair_button) < gap, "still on the left of the tray"
+    assert widgets.index(tray.repair_button) < gap, "on the left of the strip"
     assert tray.repair_button in tray.ring_stops()
-    assert not hasattr(window._bottom_tray, "repair_button"), "one home, not two"
+    assert not hasattr(window._tray, "rescan_button"), "one home, not two"
+    assert not hasattr(window._tray, "repair_button"), "one home, not two"
 
 
 def test_the_repair_button_admits_it_is_not_built(window: MainWindow) -> None:
     """Offered but honest, exactly as the one in the health report is."""
-    button = window._tray.repair_button
+    button = window._bottom_tray.repair_button
     assert not button.isEnabled()
     assert "not built yet" in button.toolTip()
     assert not button.icon().isNull(), "drawn, not merely reserved"

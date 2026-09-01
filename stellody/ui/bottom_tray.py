@@ -1,25 +1,30 @@
-"""The strip along the bottom: shuffle and repeat, the view and the sleeves.
+"""The strip along the bottom: rescan and repair, shuffle and repeat.
 
 Its own strip rather than a place in the tray above, because none of these is
-a transport command. They are settings that outlast the track in hand; they
-belong where a setting sits. Three quarters of the size of the tray above it,
-derived from that tray's own sizes so the two cannot drift apart: subordinate
-to the tray without the artwork becoming too small to read.
+a transport command. They are settings and errands that outlast the track in
+hand; they belong where a setting sits. Three quarters of the size of the tray
+above it, derived from that tray's own sizes so the two cannot drift apart:
+subordinate to the tray without the artwork becoming too small to read.
 
 The volume is the exception; it sits in the tray above beside the mute
 switch. The two are one thought: how loud, then whether at all. Splitting them
 across two strips meant crossing the window to do half of it.
 
 The switches sit at the right end, under About and the appearance toggle,
-which is where the application's own controls already are. The view toggle
-sits at the left instead, under the library it would change rather than among
-the settings, with the donate button outside it at the very end of the row:
-it belongs to nothing on screen, so it sits where nothing else is reached
-by accident.
+which is where the application's own controls already are. Rescan and repair
+sit at the left instead, under the library they act on. Repair follows rescan
+because it is the answer to what a rescan finds.
 
-That toggle names what pressing it will do rather than which view is on
-show, since a button that reads as a label is read as a state and pressed to
-confirm it.
+Neither is reached often. A rescan is asked for when something has been added
+to the folder, so it is an errand rather than a control of what is playing;
+the tray above is what a listener uses while listening. Keeping the two
+strips apart by that question, what is playing against what the library holds,
+is what decides which strip anything goes on.
+
+The donate button sits outside them at the very end of the row: it belongs to
+nothing on screen, so it sits where nothing else is reached by accident. A
+hairline rules it off from the two beside it, which is how the tray above
+separates the mute switch from the controls that act on the application.
 
 Every picture here names what a press would DO rather than what the switch is
 currently holding, which is the rule its tooltips already followed and the
@@ -41,8 +46,15 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.ui.icons import plain_icon, struck_through
-from stellody.ui.toolbar import BUTTON_PX, ICON_PX, TRAY_GAP_PX, TRAY_MARGIN_PX
-from stellody.ui.tray_parts import icon_button
+from stellody.ui.toolbar import (
+    BUTTON_PX,
+    ICON_PX,
+    SEPARATOR_INSET_PX,
+    SEPARATOR_WIDTH_PX,
+    TRAY_GAP_PX,
+    TRAY_MARGIN_PX,
+)
+from stellody.ui.tray_parts import icon_button, separator
 
 HALF = 2
 # Three quarters of the tray above. Expressed against that tray's own sizes so
@@ -52,6 +64,12 @@ SWITCH_DENOMINATOR = 4
 BOTTOM_BUTTON_PX = BUTTON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_ICON_PX = ICON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_MARGIN_PX = TRAY_MARGIN_PX // HALF
+# The hairline is inset from this strip's own button in the same proportion as
+# the one in the tray above, so the two read as the same rule at two scales.
+BOTTOM_SEPARATOR_INSET_PX = SEPARATOR_INSET_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
+BOTTOM_SEPARATOR_HEIGHT_PX = (
+    BOTTOM_BUTTON_PX - BOTTOM_SEPARATOR_INSET_PX - BOTTOM_SEPARATOR_INSET_PX
+)
 
 
 # Keyed by the state a press LANDS on, not the one it leaves. Repeating the
@@ -68,9 +86,12 @@ REPEAT_TIPS = {
     RepeatMode.ALBUM: "Repeat one track",
     RepeatMode.ONE: "Turn repeat off",
 }
-# The same honesty as the view toggle. What the health report lists can be
-# worked out, since resolution already happens on load; nothing yet lets a
+# One wording, one home, kept where the button itself is. The health report's
+# own repair control reads it from here, so the two cannot come to say
+# different things about the same unbuilt feature. What that report lists can
+# be worked out, since resolution already happens on load; nothing yet lets a
 # correction be accepted and kept, so there is nothing for this to do.
+REPAIR_TOOLTIP = "Repair what library health reports (not built yet)"
 # Said in the tooltip because pressing it leaves the application, which a
 # picture of a beer and a coffee does not on its own tell anybody.
 DONATE_TOOLTIP = "Buy the author a drink (opens your browser)"
@@ -129,6 +150,8 @@ class BottomTray(QWidget):
         toggle_shuffle: Callable[[], None] = lambda: None,
         toggle_repeat: Callable[[], None] = lambda: None,
         open_donation: Callable[[], None] = lambda: None,
+        rescan: Callable[[], None] = lambda: None,
+        repair_library: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -139,12 +162,25 @@ class BottomTray(QWidget):
         self.donate_button = _small_button(
             self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
         )
+        self.separator = separator(self, SEPARATOR_WIDTH_PX, BOTTOM_SEPARATOR_HEIGHT_PX)
+        self.rescan_button = _small_button(
+            self, resources.rescan_icon_path(), "Rescan the library", rescan
+        )
+        self.repair_button = _small_button(
+            self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
+        )
+        # Nothing to press yet: what each issue should become is worked out on
+        # every load; there is nowhere to keep a correction once accepted.
+        self.repair_button.setEnabled(False)
         row = QHBoxLayout(self)
         row.setContentsMargins(
             BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
         )
         row.setSpacing(TRAY_GAP_PX)
         row.addWidget(self.donate_button)
+        row.addWidget(self.separator)
+        for button in self.library_stops():
+            row.addWidget(button)
         # The stretch splits the strip. What changes the library sits under
         # the library; the settings finish at the right edge under the
         # application's other controls.
@@ -157,11 +193,15 @@ class BottomTray(QWidget):
     def ring_stops(self) -> tuple[QPushButton, ...]:
         """This tray's controls, left to right as they are drawn.
 
-        The size button is named here while it is dead over the list, so the
-        ring picks it up in the grid without the order being revisited. Qt
-        skips a disabled stop, so naming it costs nothing while it is one.
+        The repair control is named here while it is disabled, so the ring
+        picks it up on the day it works without the order being revisited. Qt
+        skips a disabled stop, so naming it costs nothing until then.
         """
-        return (self.donate_button, *self.switch_stops())
+        return (self.donate_button, *self.library_stops(), *self.switch_stops())
+
+    def library_stops(self) -> tuple[QPushButton, ...]:
+        """The library errands at the left end, left to right as they are drawn."""
+        return (self.rescan_button, self.repair_button)
 
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""
