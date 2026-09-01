@@ -77,6 +77,7 @@ class Transport:
         self._ordering = ordering
         self._loudness = Loudness()
         self._equalisation = Equalisation()
+        self._visualising = False
         self._shuffled = False
         self._repeat = RepeatMode.OFF
 
@@ -142,6 +143,21 @@ class Transport:
         """Choose the curve. Nothing already playing is disturbed."""
         self._equalisation = equalisation
         self._player.set_equalisation(equalisation)
+
+    @property
+    def levels(self) -> tuple[float, ...]:
+        """The bands as the device last saw them, for whatever is drawing."""
+        return self._player.levels
+
+    def set_visualising(self, on: bool) -> None:
+        """Say whether anything is watching, so nothing is measured for nobody."""
+        self._visualising = on
+        self._player.set_visualising(on)
+
+    @property
+    def visualising(self) -> bool:
+        """Whether what goes out is being measured."""
+        return self._visualising
 
     @property
     def shuffled(self) -> bool:

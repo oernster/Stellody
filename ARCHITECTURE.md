@@ -324,6 +324,61 @@ sample rate, so they cannot be worked out until a stream is open; the curve
 is held by the engine so one chosen before anything is loaded still applies
 to whatever is loaded next; it is redesigned at every load.
 
+## The visualiser
+
+**It shows what the equalizer shapes.** Ten bars on the same ten ISO octave
+centres `equalising.py` already defines, so the bar that moves is the band the
+slider lifts. Somebody with the equalizer open while a record plays can then
+see which control owns the sound in front of them. A second set of band edges
+would have been a second vocabulary for one idea.
+
+**Measuring is split from meaning, as designing is split from applying.** What
+a band's edges are and what a magnitude means once measured is arithmetic over
+frequencies, so `domain/spectrum.py` holds it and can be checked with nothing
+installed. The transform reads the arrays the device is being handed, so
+`infrastructure/analysing.py` holds that and calls inward for the meaning.
+
+**It runs AFTER the write, not before it.** The surest way not to delay a
+device is to be reached only once the block has gone. A measurement arriving
+late is a frame nobody misses; a block arriving late is a gap everybody hears.
+That ordering is also what makes it structurally impossible for the display to
+alter a sample. `tests/infrastructure/test_watching_the_output.py` compares
+every frame written with the display on against every frame written with it
+off; moving the measurement ahead of the write and touching the block makes it
+fail, which is how that was checked rather than argued.
+
+**What is measured is after the equalizer and before the volume.** The bands
+are named for the equalizer, so they should show what it did. Volume scales
+every band by the same amount and so says nothing about the music: a display
+that shrank as the volume came down would be reporting the knob.
+
+**A short block is refused rather than read as silence.** Every track ends on
+one, since the last read is whatever was left over. Reporting silence for it
+blanked the display at the end of every piece, which is what the end to end
+test found; padding it instead would report a band quieter than the music held,
+which is a measurement that is wrong rather than absent. Refusing leaves the
+last real reading standing to fall away on its own.
+
+**The measurement is handed sideways, not pushed.** The feeder leaves its
+answer where the interface thread can come and take it, as one whole tuple
+swapped in; a reader sees the last measurement or this one, never half of each.
+A lock there would be the feeder waiting on a painter, which is the one thing
+it must never do. A strip that cannot keep up misses measurements rather than
+delaying the sound.
+
+**Two clocks, because the rates differ.** A block carries about 93 milliseconds
+of audio, so measurements land some eleven times a second, which is slow enough
+to read as steps. The strip repaints thirty times a second and lets the domain
+decide where a bar has fallen to in between, so the motion is continuous while
+every peak in it was really measured. Bars rise instantly and fall at a fixed
+rate: the transient is the thing worth seeing; a bar that eased up to it
+would arrive after it had gone.
+
+**Off costs nothing rather than little**, the same bargain the equalizer makes.
+No analyser exists while nobody is watching; that absence IS the switch, so
+there is no flag to disagree with it. Whether the strip is SHOWN is the
+listener's question and is remembered; whether it is RUNNING is the music's.
+
 ## The update check
 
 **Three answers, kept apart.** There is a newer version, this is the newest

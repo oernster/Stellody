@@ -338,3 +338,4 @@ class Playing:
             can_start=self._model.track_at(self.highlighted()) is not None,
         )
         self._position_bar.show_position(self._transport.position)
+        self.follow_spectrum()

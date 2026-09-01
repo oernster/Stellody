@@ -57,6 +57,9 @@ class Menus:
 
         sound_menu = self.menuBar().addMenu("&Sound")
         menu_action(sound_menu, self, "&Equalizer...", self.show_equaliser)
+        self._visualiser_action = menu_action(
+            sound_menu, self, "&Visualiser", self.toggle_visualiser, checkable=True
+        )
 
         help_menu = self.menuBar().addMenu("&Help")
         menu_action(help_menu, self, "Library &health...", self.show_health)

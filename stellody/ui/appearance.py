@@ -49,5 +49,6 @@ class Appearance:
         self._dark_action.setChecked(mode is Mode.DARK)
         self._tray.set_mode(mode)
         self._position_bar.show_appearance(mode)
+        self._visualiser.show_appearance(mode)
         self.show_cover_appearance(mode)
         self.show_tile_appearance(mode)

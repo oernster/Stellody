@@ -258,6 +258,25 @@ class PlaybackPort(Protocol):
         """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
         ...
 
+    @property
+    def levels(self) -> tuple[float, ...]:
+        """How loud each of the equalizer's bands was in the last block out.
+
+        One height per band, from 0.0 to 1.0. Read by whatever is drawing
+        rather than pushed to it, so an implementation is never waiting on a
+        painter and a reader that falls behind misses measurements instead of
+        holding up the sound.
+        """
+        ...
+
+    def set_visualising(self, on: bool) -> None:
+        """Start or stop measuring what goes out.
+
+        Off must cost nothing rather than little, the same bargain the
+        equalizer makes: nobody watching means no measurement taken.
+        """
+        ...
+
     def close(self) -> None:
         """Release every resource. The port is unusable afterwards."""
         ...

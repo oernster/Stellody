@@ -25,6 +25,7 @@ from stellody.domain.playback import (
     PlaybackPosition,
     PlaybackState,
 )
+from stellody.domain.spectrum import SILENT_BANDS
 from stellody.domain.track import TrackSource
 
 
@@ -44,6 +45,10 @@ class RecordingPlayer:
         self.reported: PlaybackPosition | None = None
         self.lead = 0
         self.equalisation = Equalisation()
+        # What the visualiser would read. Silent unless a test says
+        # otherwise, which is what a device playing nothing reports.
+        self.measured = SILENT_BANDS
+        self.visualising = False
         # What has been lined up to follow, plus the seams this stand-in
         # has been told it crossed. `cross` is what the feeder thread does.
         self.lined_up: list[TrackSource | None] = []
@@ -75,6 +80,15 @@ class RecordingPlayer:
     def set_equalisation(self, equalisation) -> None:
         """Record the curve this stand-in was asked to apply."""
         self.equalisation = equalisation
+
+    @property
+    def levels(self) -> tuple[float, ...]:
+        """Whatever this stand-in has been told the last block measured."""
+        return self.measured
+
+    def set_visualising(self, on: bool) -> None:
+        """Record whether anything is watching, so nothing measures for nobody."""
+        self.visualising = on
 
     def play(self) -> None:
         """Record the play."""

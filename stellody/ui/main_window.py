@@ -47,10 +47,12 @@ from stellody.ui.settings_keys import (
 )
 from stellody.ui.shape_worker import ShapeRunner
 from stellody.ui.showing_shapes import ShowingShapes
+from stellody.ui.showing_spectrum import ShowingSpectrum
 from stellody.ui.toolbar import LibraryTray
 from stellody.ui.transport_menu import TransportMenu
 from stellody.ui.update_check import UpdateCheckController
 from stellody.ui.viewing import Viewing
+from stellody.ui.visualiser import Visualiser
 from stellody.ui.window_parts import (
     application_icon,
     build_body,
@@ -110,6 +112,7 @@ class MainWindow(
     TransportMenu,
     Choosing,
     ShowingShapes,
+    ShowingSpectrum,
     Menus,
     Rating,
     Geometry,
@@ -197,6 +200,8 @@ class MainWindow(
             toggle_cover_size=self.toggle_cover_size,
             open_equaliser=self.show_equaliser,
         )
+        self._visualiser = Visualiser(self)
+        self._visualiser.read_levels_from(lambda: self._transport.levels)
         self._position_bar = PositionBar(self, seek=self.seek_to)
         self._position_bar.stars.chosen.connect(self.rate_shown)
         self._bottom_tray = BottomTray(
@@ -212,6 +217,7 @@ class MainWindow(
                 self,
                 self._tray,
                 self.start_viewing(),
+                self._visualiser,
                 self._position_bar,
                 self._bottom_tray,
             )
@@ -230,6 +236,7 @@ class MainWindow(
         self.restore_volume()
         self.restore_switches()
         self.restore_view()
+        self.restore_visualiser()
         self.restore_geometry(QSize(WINDOW_WIDTH_PX, WINDOW_HEIGHT_PX))
         self._tree.selectionModel().currentChanged.connect(self._on_selection)
         self._transport_timer = QTimer(self)
