@@ -54,15 +54,10 @@ def build_body(
     window: QMainWindow,
     tray: QWidget,
     tree: QWidget,
-    spectrum: QWidget,
     position: QWidget,
     footer: QWidget,
 ) -> QWidget:
-    """The toolbar, the library, the spectrum, the position bar, then the strip.
-
-    The spectrum sits between the library and the position bar because it is
-    about the sound rather than about the library, while the position bar under
-    it is about the same track: the two that move with the music are together.
+    """The toolbar, the library, the position bar, then the bottom strip.
 
     A plain container: it holds them and is never a stop itself.
     """
@@ -73,7 +68,6 @@ def build_body(
     column.setSpacing(0)
     column.addWidget(tray)
     column.addWidget(tree, 1)
-    column.addWidget(spectrum)
     column.addWidget(position)
     column.addWidget(footer)
     return holder

@@ -13,15 +13,20 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMenu
 from tray_support import RememberingStore, build
 
 from stellody.domain.equalising import BAND_COUNT
 from stellody.domain.playback import PlaybackState
 from stellody.domain.spectrum import EMPTY, FULL, SILENT_BANDS
-from stellody.ui.settings_keys import FALSE, SETTING_VISUALISER, TRUE
+from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX
 from stellody.ui.theme import Mode, stylesheet
-from stellody.ui.visualiser import Visualiser
+from stellody.ui.visualiser import (
+    MILLIMETRES_PER_CM,
+    MILLIMETRES_PER_INCH,
+    STRIP_WIDTH_CM,
+    Visualiser,
+)
 
 LOUD = (FULL,) * BAND_COUNT
 # Wide enough that every band gets its own column of pixels to be counted in.
@@ -113,88 +118,74 @@ class TestTheStripOnItsOwn:
         assert strip.shown == SILENT_BANDS
 
 
-class TestTheStripInTheWindow:
+class TestTheDisplayInTheWindow:
     def window(self, store: RememberingStore, player: RecordingPlayer):
         """A real window over a store that remembers."""
         return build(store, player, leave=lambda: None)
 
-    def test_it_is_hidden_until_it_is_asked_for(self, application) -> None:
-        """A thing to turn on, so a first run opens on the library."""
+    def test_it_is_simply_there(self, application) -> None:
+        """No switch, so nothing to find and nothing to remember."""
         made = self.window(RememberingStore(), RecordingPlayer())
-        made.show()
-        assert not made._visualiser.isVisible()
-        assert not made._transport.visualising
-        made.close()
-
-    def test_turning_it_on_shows_it_and_starts_measuring(self, application) -> None:
-        """Nothing is measured for nobody, which is what off costing nothing means."""
-        made = self.window(RememberingStore(), RecordingPlayer())
-        made.show()
-        made.toggle_visualiser()
-        assert made._visualiser.isVisible()
-        assert made._transport.visualising
-        made.close()
-
-    def test_turning_it_off_stops_measuring_again(self, application) -> None:
-        made = self.window(RememberingStore(), RecordingPlayer())
-        made.show()
-        made.toggle_visualiser()
-        made.toggle_visualiser()
-        assert not made._visualiser.isVisible()
-        assert not made._transport.visualising
-        made.close()
-
-    def test_the_choice_is_written_down(self, application) -> None:
-        store = RememberingStore()
-        made = self.window(store, RecordingPlayer())
-        made.show()
-        made.toggle_visualiser()
-        assert store.get_setting(SETTING_VISUALISER) == TRUE
-        made.toggle_visualiser()
-        assert store.get_setting(SETTING_VISUALISER) == FALSE
-        made.close()
-
-    def test_it_comes_back_as_it_was_left(self, application) -> None:
-        """A display that forgets itself is one you turn on every session."""
-        made = self.window(
-            RememberingStore({SETTING_VISUALISER: TRUE}), RecordingPlayer()
-        )
         made.show()
         assert made._visualiser.isVisible()
-        assert made._transport.visualising
+        assert made._transport.visualising, "measuring from the moment it opens"
         made.close()
 
-    def test_the_menu_entry_agrees_with_the_strip(self, application) -> None:
-        """Two ways of reading one state that could otherwise disagree."""
+    def test_it_lives_in_the_bottom_strip_between_the_two_groups(
+        self, application
+    ) -> None:
+        """A few centimetres of the strip, not a band of the window."""
         made = self.window(RememberingStore(), RecordingPlayer())
         made.show()
-        assert not made._visualiser_action.isChecked()
-        made.toggle_visualiser()
-        assert made._visualiser_action.isChecked()
+        tray = made._bottom_tray
+        assert made._visualiser.parent() is tray
+        row = tray.layout()
+        widgets = [row.itemAt(position).widget() for position in range(row.count())]
+        gaps = [position for position, one in enumerate(widgets) if one is None]
+        here = widgets.index(made._visualiser)
+        assert gaps[0] < here < gaps[1], "a stretch either side is what centres it"
+        made.close()
+
+    def test_it_is_no_taller_than_the_strip_it_sits_in(self, application) -> None:
+        """Handed the tray's own size, so the two cannot drift apart."""
+        made = self.window(RememberingStore(), RecordingPlayer())
+        made.show()
+        assert made._visualiser.height() == BOTTOM_BUTTON_PX
+        made.close()
+
+    def test_it_is_the_width_it_was_asked_for_in_centimetres(self, application) -> None:
+        """Stated on the desk rather than in pixels, so it travels between screens."""
+        made = self.window(RememberingStore(), RecordingPlayer())
+        made.show()
+        strip = made._visualiser
+        per_millimetre = strip.logicalDpiX() / MILLIMETRES_PER_INCH
+        wanted = round(STRIP_WIDTH_CM * MILLIMETRES_PER_CM * per_millimetre)
+        assert strip.width() == wanted
+        made.close()
+
+    def test_the_sound_menu_offers_no_switch_for_it(self, application) -> None:
+        """It was a question nobody wanted asked, so it is not asked."""
+        made = self.window(RememberingStore(), RecordingPlayer())
+        made.show()
+        entries = [
+            action.text()
+            for menu in made.menuBar().findChildren(QMenu)
+            if menu.title().replace("&", "") == "Sound"
+            for action in menu.actions()
+        ]
+        assert entries == ["&Equalizer..."]
         made.close()
 
     def test_it_runs_only_while_something_is_playing(self, application) -> None:
-        """On show with nothing playing, there is nothing for it to draw."""
+        """Always there is not always working: an idle window draws nothing."""
         player = RecordingPlayer()
         made = self.window(RememberingStore(), player)
         made.show()
-        made.toggle_visualiser()
         assert not made._visualiser.running, "nothing is playing yet"
         player.state = PlaybackState.PLAYING
         made.follow_spectrum()
         assert made._visualiser.running
         player.state = PlaybackState.STOPPED
-        made.follow_spectrum()
-        assert not made._visualiser.running
-        made.close()
-
-    def test_a_hidden_strip_never_runs_however_the_music_goes(
-        self, application
-    ) -> None:
-        player = RecordingPlayer()
-        made = self.window(RememberingStore(), player)
-        made.show()
-        player.state = PlaybackState.PLAYING
         made.follow_spectrum()
         assert not made._visualiser.running
         made.close()

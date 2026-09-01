@@ -1,4 +1,4 @@
-"""The strip that moves with the music: ten bars, one to each equalizer band.
+"""The display that moves with the music: ten bars, one to each equalizer band.
 
 Drawn rather than assembled out of widgets, for the reason the stars are: ten
 progress bars would be ten things for the toolkit to lay out and repaint
@@ -12,11 +12,21 @@ often than that and lets `domain/spectrum.py` decide where a bar has fallen to
 in between, so what is on screen moves continuously while every peak in it was
 really measured.
 
-**Nothing runs when nothing is watching.** The timer is stopped whenever the
-strip is hidden or the music is not playing, with the measurement upstream
-switched off too, so a listener who never opens this pays nothing for it.
-Stopping also clears the bars: a strip frozen mid-height after the music stops
-looks like a display that has crashed rather than one that is idle.
+**Nothing runs while nothing is playing.** The timer is stopped whenever the
+music is, with the measurement upstream stopped too, so a window sitting idle
+does no arithmetic at all. Stopping also clears the bars: a display frozen mid
+height after the music stops looks like one that has crashed rather than one
+that is waiting.
+
+It sits in the middle of the bottom strip rather than in a band of its own.
+It is a small thing that moves, not a feature that wants a sixth of the window:
+the room it was given as its own strip was room taken from the library, which
+is what a listener actually looks at.
+
+Its width is stated in centimetres and worked out from the screen it is on,
+so it stays the size it was asked to be wherever it is opened rather than
+shrinking on one display and sprawling on another. Its height is the tray's
+own, handed in, so the two cannot drift apart.
 
 The bars are drawn from the same accent the rest of the application uses, at a
 height that is a fraction of the strip, so nothing here knows a pixel count
@@ -45,9 +55,18 @@ from stellody.ui.palette import Mode, palette_for
 # as a slideshow, slow enough that the strip is not the reason a laptop's fan
 # comes on: each frame is ten rectangles.
 FRAME_MS = 33
+# How wide it should be on the desk, rather than on a particular screen. Turned
+# into pixels against the display it opens on, so the same request means the
+# same thing on a laptop panel and on a large monitor.
+STRIP_WIDTH_CM = 5.0
+MILLIMETRES_PER_INCH = 25.4
+MILLIMETRES_PER_CM = 10.0
 STRIP_HEIGHT_PX = 64
-BAR_GAP_PX = 4
-STRIP_MARGIN_PX = 6
+# Tight, because the whole thing is only a few centimetres across: at the wider
+# spacing the strip once had, ten bars in that room would be ten slivers with
+# more gap than bar between them.
+BAR_GAP_PX = 2
+STRIP_MARGIN_PX = 4
 BAR_RADIUS_PX = 2
 # What a band with nothing in it still shows: enough to say the band is there
 # and too little to be mistaken for something being heard.
@@ -59,12 +78,14 @@ _MILLISECONDS = 1000.0
 class Visualiser(QWidget):
     """Ten bars showing how loud each band of what is playing is."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, parent: QWidget | None = None, height_px: int = STRIP_HEIGHT_PX
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("Visualiser")
         # A display, never a stop: it holds no value and answers no key.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.setFixedHeight(STRIP_HEIGHT_PX)
+        self.setFixedSize(self._asked_width(), height_px)
         self._mode = Mode.DARK
         self._shown = SILENT_BANDS
         self._reading = SILENT_BANDS
@@ -74,6 +95,16 @@ class Visualiser(QWidget):
         self._timer = QTimer(self)
         self._timer.setInterval(FRAME_MS)
         self._timer.timeout.connect(self._tick)
+
+    def _asked_width(self) -> int:
+        """The stated width in centimetres, in this screen's own pixels.
+
+        Asked of the widget rather than written down, so a display that reports
+        a different resolution gets a strip of the same real size rather than
+        the same number of pixels.
+        """
+        per_millimetre = self.logicalDpiX() / MILLIMETRES_PER_INCH
+        return round(STRIP_WIDTH_CM * MILLIMETRES_PER_CM * per_millimetre)
 
     @property
     def running(self) -> bool:

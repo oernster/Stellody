@@ -21,6 +21,13 @@ the tray above is what a listener uses while listening. Keeping the two
 strips apart by that question, what is playing against what the library holds,
 is what decides which strip anything goes on.
 
+The visualiser sits in the middle, between the two groups. It is the one thing
+on this strip that is neither a control nor a setting, so it belongs where
+nothing is pressed; a stretch either side is what centres it, which is how the
+tray above centres its transport. It had a whole band of the window to itself
+at first, which was room taken from the library for something that is a small
+moving thing rather than a feature anybody looks AT.
+
 The donate button sits outside them at the very end of the row: it belongs to
 nothing on screen, so it sits where nothing else is reached by accident. A
 hairline rules it off from the two beside it, which is how the tray above
@@ -59,6 +66,7 @@ from stellody.ui.toolbar import (
     TRAY_MARGIN_PX,
 )
 from stellody.ui.tray_parts import icon_button, separator
+from stellody.ui.visualiser import Visualiser
 
 HALF = 2
 # Three quarters of the tray above. Expressed against that tray's own sizes so
@@ -160,6 +168,7 @@ class BottomTray(QWidget):
         open_donation: Callable[[], None] = lambda: None,
         rescan: Callable[[], None] = lambda: None,
         repair_library: Callable[[], None] = lambda: None,
+        read_levels=None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -180,6 +189,9 @@ class BottomTray(QWidget):
         # Nothing to press yet: what each issue should become is worked out on
         # every load; there is nowhere to keep a correction once accepted.
         self.repair_button.setEnabled(False)
+        self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX)
+        if read_levels is not None:
+            self.visualiser.read_levels_from(read_levels)
         row = QHBoxLayout(self)
         row.setContentsMargins(
             BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
@@ -189,9 +201,12 @@ class BottomTray(QWidget):
         row.addWidget(self.separator)
         for button in self.library_stops():
             row.addWidget(button)
-        # The stretch splits the strip. What changes the library sits under
-        # the library; the settings finish at the right edge under the
+        # A stretch either side of the visualiser is what centres it, whatever
+        # the window is widened to. What changes the library sits under the
+        # library; the settings finish at the right edge under the
         # application's other controls.
+        row.addStretch()
+        row.addWidget(self.visualiser)
         row.addStretch()
         for button in self.switch_stops():
             row.addWidget(button)

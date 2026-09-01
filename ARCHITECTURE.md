@@ -374,10 +374,26 @@ every peak in it was really measured. Bars rise instantly and fall at a fixed
 rate: the transient is the thing worth seeing; a bar that eased up to it
 would arrive after it had gone.
 
-**Off costs nothing rather than little**, the same bargain the equalizer makes.
-No analyser exists while nobody is watching; that absence IS the switch, so
-there is no flag to disagree with it. Whether the strip is SHOWN is the
-listener's question and is remembered; whether it is RUNNING is the music's.
+**It has no switch; it is a few centimetres wide.** It was given a band of
+the window and an entry in the Sound menu at first. Both were wrong the same
+way: the band was room taken from the library for something that is a small
+moving thing rather than a feature anybody looks AT, while the entry asked a
+listener to decide about it. It now sits in the middle of the bottom strip,
+centred by a stretch either side as the transport above it is. It is simply on. Its width is stated in centimetres and worked out against the screen it
+opens on, so the same request means the same size on any display.
+
+**Nothing runs while nothing plays.** The one question left with an answer worth
+having is whether there is anything to draw. The timer runs while the music
+does and stops when it stops, taking the measurement upstream with it, so an
+idle window does no arithmetic for a display of nothing. No analyser exists
+while nothing is being measured; that absence IS the switch, so there is no
+flag to disagree with it.
+
+**It shows that it is there before it has anything to show.** It had no ground
+of its own at first, which measured as one flat colour, the window's: turned on
+with nothing playing it was indistinguishable from empty space. It wears the
+surface both trays wear and each band keeps a low mark on the floor, so silence
+reads as ten empty bands rather than as an absence.
 
 ## The update check
 

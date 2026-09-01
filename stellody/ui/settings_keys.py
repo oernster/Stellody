@@ -38,10 +38,6 @@ SETTING_REPEAT = "repeat"
 SETTING_EQ_GAINS = "equaliser_gains_db"
 SETTING_EQ_ENABLED = "equaliser_enabled"
 
-# Whether the strip that moves with the music is on show. Off by default: it
-# is a thing to turn on rather than a thing to turn off; off costs nothing.
-SETTING_VISUALISER = "visualiser"
-
 # The release tag a listener asked not to be told about again. The exact tag
 # string, since both sides of the comparison come from the same endpoint.
 SETTING_SKIPPED_UPDATE = "skipped_update_version"
