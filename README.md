@@ -75,9 +75,10 @@ not going to.
   than two, stepped through by pressing it: off, the album again, then the one
   track held on its own. Every switch on the bottom strip shows the state a
   press would move it to rather than the one it is holding, which is the rule
-  the tooltips and the mute switch already followed: repeat shows the plain
-  wheel while it is off, the numbered wheel while the album repeats and the
-  wheel crossed out while one track is held. The album scatters itself afresh
+  the mute switch already followed: repeat shows the plain wheel while it is
+  off, the numbered wheel while the album repeats and the wheel crossed out
+  while one track is held. Its tooltip reads Repeat mode in every state, since
+  three states cannot be named by one next press. The album scatters itself afresh
   each time round when shuffle is on. A held track replays when it ends;
   pressing next still moves on, since asking to move on is not a state the
   switch is in.

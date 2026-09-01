@@ -1,10 +1,14 @@
 """The window and the album the tray tests are driven against.
 
-Shared by the tests for the switches and by the tests for the volume, because
-both need a real window over a store that remembers and a device that records.
-Kept out of conftest so it stays visible at the point of use. Several other
-window tests here define their own fixtures under the same names; one of those
-quietly shadowing a shared one is harder to read than an import.
+Shared by the tests for the switches, for the bottom strip and for the volume,
+because each needs a real window over a store that remembers and a device that
+records. Kept out of conftest so it stays visible at the point of use. Several
+other window tests here define their own fixtures under the same names; one of
+those quietly shadowing a shared one is harder to read than an import.
+
+The picture helpers live here for the same reason. Both strips compose a
+crossed icon at their own size and read it back at one common size, so the two
+sides of any comparison are the same picture asked for the same way.
 """
 
 from __future__ import annotations
@@ -17,6 +21,9 @@ from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
+from stellody.shared import resources
+from stellody.ui.bottom_tray import BOTTOM_ICON_PX
+from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 
 ICON_PX = 30
@@ -115,3 +122,25 @@ def picture(button) -> QImage:
     measured here as a comparison that passed alone and failed in sequence.
     """
     return button.icon().pixmap(ICON_PX, ICON_PX).toImage()
+
+
+def rendered(icon) -> QImage:
+    """One icon read at the size `picture` reads a button's at.
+
+    Composed at the tray's own icon size, as that tray composes it, then read
+    at the smaller size the helper uses, so the two sides of the comparison
+    are the same picture asked for the same way.
+    """
+    return icon.pixmap(ICON_PX, ICON_PX).toImage()
+
+
+def strip_plain(path) -> QImage:
+    """A bottom-strip picture on its own."""
+    return rendered(plain_icon(path))
+
+
+def strip_struck(path) -> QImage:
+    """The same picture crossed, composed as the bottom strip composes it."""
+    return rendered(
+        struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
+    )

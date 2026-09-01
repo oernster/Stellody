@@ -1,21 +1,18 @@
-"""The tray switches as the window drives them, plus the two buttons beside them.
+"""The tray under the menus as the window drives it: mute, the view, the sizes.
 
-Three switches that outlast the track in hand. Each has to reach the transport,
-show its own state and be there again next time the application opens; a switch
-that does two of those and not the third is the one that gets reported as a bug.
+The bottom strip has its own module beside this one. What is left here is the
+tray above, where a control is about what is playing or about what the library
+is shown as rather than about what the library holds.
 
 Mute is the one switch whose picture changes: a struck speaker says a press
 would silence it. WHICH picture goes with which state is asserted here rather
 than only that the two differ, since a test that asks only for a difference
 passes just as happily with the two the wrong way round, which is how they
 shipped that way. The strike is composed at run time, so the comparison is
-against the same composition rather than against a file. Shuffle and repeat
-keep one picture and light the button instead, so what is asserted there is
-the button's own state and that the artwork did NOT change.
+against the same composition rather than against a file.
 
-The donate button is the one thing here that leaves the application, so what is
-asserted is the address handed outward, through a seam of our own rather than
-by mocking Qt or by opening a browser in the middle of a test run.
+What is written down as a switch is pressed is asserted here too, for mute and
+for shuffle together, because it is one rule reaching across both strips.
 """
 
 from __future__ import annotations
@@ -24,14 +21,10 @@ import pytest
 from conftest import RecordingPlayer
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
-from tray_support import ICON_PX as READ_PX
-from tray_support import RememberingStore, build, picture
+from tray_support import RememberingStore, build, picture, rendered
 
 from stellody.domain.playback import SILENT_VOLUME, RepeatMode
 from stellody.shared import resources
-from stellody.shared.version import DONATE_URL
-from stellody.ui import menus as window_module
-from stellody.ui.bottom_tray import BOTTOM_ICON_PX
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
@@ -72,19 +65,9 @@ def window(
     return build(store, player)
 
 
-def _rendered(icon) -> QImage:
-    """One icon read at the size `picture` reads a button's at.
-
-    Composed at the tray's own ICON_PX, as the tray composes it, then read at
-    the smaller size the helper uses, so the two sides of the comparison are
-    the same picture asked for the same way.
-    """
-    return icon.pixmap(READ_PX, READ_PX).toImage()
-
-
 def _struck() -> QImage:
     """The speaker with the cross over it, composed as the tray composes it."""
-    return _rendered(
+    return rendered(
         struck_through(
             resources.unmute_icon_path(), resources.negative_icon_path(), ICON_PX
         )
@@ -93,19 +76,7 @@ def _struck() -> QImage:
 
 def _plain() -> QImage:
     """The speaker on its own."""
-    return _rendered(plain_icon(resources.unmute_icon_path()))
-
-
-def _strip_plain(path) -> QImage:
-    """A bottom-strip picture on its own."""
-    return _rendered(plain_icon(path))
-
-
-def _strip_struck(path) -> QImage:
-    """The same picture crossed, composed as the bottom strip composes it."""
-    return _rendered(
-        struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
-    )
+    return rendered(plain_icon(resources.unmute_icon_path()))
 
 
 def test_the_two_renderings_are_actually_different(
@@ -137,52 +108,6 @@ def test_muting_silences_the_device_and_the_speaker_shows_what_a_press_does(
     assert picture(button) == _struck()
 
 
-def test_the_shuffle_switch_reaches_the_transport_and_shows_the_next_press(
-    window: MainWindow,
-) -> None:
-    """The picture offers the state a press would reach, as the tooltip does."""
-    button = window._bottom_tray.shuffle_button
-    art = resources.shuffle_icon_path()
-    assert button.isChecked() is False
-    assert picture(button) == _strip_plain(art), "off, so a press would scatter"
-    window.toggle_shuffle()
-    assert window._transport.shuffled is True
-    assert button.isChecked() is True
-    assert button.toolTip() == "Turn shuffle off"
-    assert picture(button) == _strip_struck(art), "on, so a press would stop it"
-    window.toggle_shuffle()
-    assert window._transport.shuffled is False
-    assert button.isChecked() is False
-    assert picture(button) == _strip_plain(art)
-
-
-def test_the_repeat_switch_reaches_the_transport_and_lights_while_it_is_on(
-    window: MainWindow,
-) -> None:
-    button = window._bottom_tray.repeat_button
-    wheel = resources.repeat_icon_path()
-    one_track = resources.repeat_one_icon_path()
-    assert button.isChecked() is False
-    assert picture(button) == _strip_plain(wheel), "a press would repeat the album"
-
-    window.toggle_repeat()
-    assert window._transport.repeat is RepeatMode.ALBUM
-    assert button.isChecked() is True
-    assert button.toolTip() == "Repeat one track"
-    assert picture(button) == _strip_plain(one_track), "the numbered wheel next"
-
-    window.toggle_repeat()
-    assert window._transport.repeat is RepeatMode.ONE
-    assert button.isChecked() is True, "holding one track is still repeating"
-    assert button.toolTip() == "Turn repeat off"
-    assert picture(button) == _strip_struck(wheel), "the cross offers to stop"
-
-    window.toggle_repeat()
-    assert window._transport.repeat is RepeatMode.OFF
-    assert button.isChecked() is False
-    assert picture(button) == _strip_plain(wheel), "back where it started"
-
-
 def test_every_switch_is_written_down_as_it_is_pressed(
     window: MainWindow, store: RememberingStore
 ) -> None:
@@ -194,15 +119,6 @@ def test_every_switch_is_written_down_as_it_is_pressed(
         assert store.get_setting(key) == TRUE
         toggle()
         assert store.get_setting(key) == FALSE
-
-
-def test_the_repeat_switch_writes_down_which_state_it_is_in(
-    window: MainWindow, store: RememberingStore
-) -> None:
-    """Repeat holds three states, so a boolean could not say where it is."""
-    for expected in (RepeatMode.ALBUM, RepeatMode.ONE, RepeatMode.OFF):
-        window.toggle_repeat()
-        assert store.get_setting(SETTING_REPEAT) == expected.value
 
 
 def test_the_switches_come_back_as_they_were_left(
@@ -219,26 +135,6 @@ def test_the_switches_come_back_as_they_were_left(
     assert reopened._tray.mute_button.toolTip() == "Unmute"
     assert reopened._bottom_tray.shuffle_button.toolTip() == "Turn shuffle off"
     assert player.volume == SILENT_VOLUME
-
-
-def test_a_reopened_window_finds_the_repeat_mode_it_was_left_in(
-    application: QApplication, player: RecordingPlayer
-) -> None:
-    """Every mode round-trips, not only the boolean an older store held."""
-    for mode in RepeatMode:
-        reopened = build(RememberingStore({SETTING_REPEAT: mode.value}), player)
-        assert reopened._transport.repeat is mode
-        assert reopened._bottom_tray.repeat_button.isChecked() is mode.repeats
-
-
-def test_a_reopened_window_finds_shuffle_as_it_was_left(
-    application: QApplication, player: RecordingPlayer
-) -> None:
-    """Both ways round, so a switch stuck on would pass half of this."""
-    for shuffled, stored in ((True, TRUE), (False, FALSE)):
-        reopened = build(RememberingStore({SETTING_SHUFFLE: stored}), player)
-        assert reopened._transport.shuffled is shuffled
-        assert reopened._bottom_tray.shuffle_button.isChecked() is shuffled
 
 
 def test_the_mute_switch_is_ruled_off_from_the_buttons_after_it(
@@ -315,66 +211,3 @@ def test_the_view_toggle_is_a_stop_now_that_it_works(
     assert tray.showing.view_button in order, "an enabled control is a stop"
     disabled = window._bottom_tray.repair_button
     assert disabled not in order, "a disabled one still is not"
-
-
-def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> None:
-    """It belongs to nothing on screen, so it sits where nothing else is."""
-    window.show()
-    tray = window._bottom_tray
-    row = tray.layout()
-    widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    assert widgets[0] is tray.donate_button, "first in the row, outside the rest"
-    assert widgets[1] is tray.separator, "ruled off from what follows it"
-    assert tray.donate_button in tray.ring_stops()
-    assert tray.donate_button.isEnabled(), "unlike the repair control, this works"
-    assert "opens your browser" in tray.donate_button.toolTip()
-
-
-def test_pressing_donate_asks_the_desktop_for_that_one_address(
-    window: MainWindow, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The seam is stood in front of, so no browser opens in a test run."""
-    asked: list[str] = []
-    monkeypatch.setattr(
-        window_module, "open_externally", lambda address: asked.append(address) or True
-    )
-    window._bottom_tray.donate_button.click()
-    assert asked == [EXPECTED_DONATE_URL]
-    assert DONATE_URL == EXPECTED_DONATE_URL, "the address changed"
-    assert DONATE_URL.startswith("https://"), "never handed out over plain http"
-
-
-def test_a_desktop_that_will_not_open_a_browser_says_so(
-    window: MainWindow, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Silence would leave a button that appears to do nothing at all."""
-    monkeypatch.setattr(window_module, "open_externally", lambda address: False)
-    window._bottom_tray.donate_button.click()
-    assert "Could not open a browser" in window.statusBar().currentMessage()
-
-
-def test_repair_follows_rescan_on_the_bottom_strip(window: MainWindow) -> None:
-    """Repair is the answer to what a rescan finds, so it follows rescan.
-
-    Both sit on the bottom strip rather than in the tray above. They are
-    errands about what the library holds rather than about what is playing,
-    so they belong among the things that outlast a track.
-    """
-    window.show()
-    tray = window._bottom_tray
-    row = tray.layout()
-    widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    gap = widgets.index(None)
-    assert widgets.index(tray.rescan_button) < widgets.index(tray.repair_button)
-    assert widgets.index(tray.repair_button) < gap, "on the left of the strip"
-    assert tray.repair_button in tray.ring_stops()
-    assert not hasattr(window._tray, "rescan_button"), "one home, not two"
-    assert not hasattr(window._tray, "repair_button"), "one home, not two"
-
-
-def test_the_repair_button_admits_it_is_not_built(window: MainWindow) -> None:
-    """Offered but honest, exactly as the one in the health report is."""
-    button = window._bottom_tray.repair_button
-    assert not button.isEnabled()
-    assert "not built yet" in button.toolTip()
-    assert not button.icon().isNull(), "drawn, not merely reserved"

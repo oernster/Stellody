@@ -27,11 +27,15 @@ hairline rules it off from the two beside it, which is how the tray above
 separates the mute switch from the controls that act on the application.
 
 Every picture here names what a press would DO rather than what the switch is
-currently holding, which is the rule its tooltips already followed and the
-rule the mute switch in the tray above has always followed. A cross is a
-promise to turn something off, never a report that it is off. One rule across
-the whole application beats a rule per strip: a listener who has read one
-switch has read the rest.
+currently holding, which is the rule the mute switch in the tray above has
+always followed. A cross is a promise to turn something off, never a report
+that it is off. One rule across the whole application beats a rule per strip:
+a listener who has read one switch has read the rest.
+
+The tooltips follow the pictures, with repeat the one exception. It is the
+only control on either strip holding three states rather than two; words
+naming just the next press read there as a switch stuck the wrong way round,
+so its words name the control instead. The picture still names the press.
 """
 
 from __future__ import annotations
@@ -79,13 +83,17 @@ REPEAT_ICONS = {
     RepeatMode.ALBUM: resources.repeat_icon_path,
     RepeatMode.ONE: resources.repeat_one_icon_path,
 }
-# Named for what the next press does, which is the rule the other tooltips on
-# this strip follow.
-REPEAT_TIPS = {
-    RepeatMode.OFF: "Repeat the album",
-    RepeatMode.ALBUM: "Repeat one track",
-    RepeatMode.ONE: "Turn repeat off",
-}
+# The one control on either strip whose words name the control rather than the
+# next press. Every other switch here holds two states, where naming the press
+# tells the whole story. This one holds three, where naming only the next
+# press reads as a switch that has got itself the wrong way round: offered "Repeat
+# one track" while the album is already repeating looks like a refusal to turn
+# off rather than the second step of a cycle. So the words say which control
+# this is and the picture keeps saying what a press would do, which is the half
+# of the rule that actually needs a glance rather than a hover. One wording for
+# all three states also means a tooltip that does not rewrite itself under the
+# pointer while somebody is reading it.
+REPEAT_TOOLTIP = "Repeat mode"
 # One wording, one home, kept where the button itself is. The health report's
 # own repair control reads it from here, so the two cannot come to say
 # different things about the same unbuilt feature. What that report lists can
@@ -116,7 +124,7 @@ def _state_icon(path: pathlib.Path | None, becomes_on: bool) -> QIcon:
 
 
 def _repeat_icon(repeat: RepeatMode) -> QIcon:
-    """The state a press would move to, which the tooltip names in words.
+    """The state a press would move to, which nothing else has to be told.
 
     The cycle is read off the mode itself rather than from a second table,
     so the picture and the press cannot come to disagree.
@@ -158,7 +166,7 @@ class BottomTray(QWidget):
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.shuffle_button = _switch_button(self, "Turn shuffle on", toggle_shuffle)
-        self.repeat_button = _switch_button(self, "Turn repeat on", toggle_repeat)
+        self.repeat_button = _switch_button(self, REPEAT_TOOLTIP, toggle_repeat)
         self.donate_button = _small_button(
             self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
         )
@@ -214,10 +222,13 @@ class BottomTray(QWidget):
         )
 
     def set_repeat(self, repeat: RepeatMode) -> None:
-        """Show which of the three repeat states the switch is holding."""
+        """Show which of the three repeat states the switch is holding.
+
+        The tooltip is not touched: it names the control rather than the state,
+        so there is nothing here for a change of state to rewrite.
+        """
         self.repeat_button.setIcon(_repeat_icon(repeat))
         self.repeat_button.setChecked(repeat.repeats)
-        self.repeat_button.setToolTip(REPEAT_TIPS[repeat])
 
     def _show_switch(self, button: QPushButton, path, on: bool, name: str) -> None:
         """Light one switch while it is on; say what a press would do.
