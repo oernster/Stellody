@@ -67,7 +67,9 @@ TRAIL_FRAMES = 6
 # first run and a stored value that is not a number. Widened by a tenth again,
 # so the library gets the extra room rather than the strips: what the strips
 # need is a floor the window is checked against, never the size it opens at.
-WINDOW_WIDTH_PX = 1628
+# A window this wide is clamped to whatever screen it opens on, so a narrower
+# monitor gets the screen rather than a window running off the edge of it.
+WINDOW_WIDTH_PX = 1791
 WINDOW_HEIGHT_PX = 864
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
