@@ -72,8 +72,11 @@ not going to.
   Shuffle leads its scattered run with the track already playing, so next
   reaches the whole of the rest of the album. Repeat has three states rather
   than two, stepped through by pressing it: off, the album again, then the one
-  track held on its own. Each state carries its own picture, since three
-  cannot be told apart by a switch being lit. The album scatters itself afresh
+  track held on its own. Every switch on the bottom strip shows the state a
+  press would move it to rather than the one it is holding, which is the rule
+  the tooltips and the mute switch already followed: repeat shows the plain
+  wheel while it is off, the numbered wheel while the album repeats and the
+  wheel crossed out while one track is held. The album scatters itself afresh
   each time round when shuffle is on. A held track replays when it ends;
   pressing next still moves on, since asking to move on is not a state the
   switch is in.

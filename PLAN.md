@@ -41,25 +41,6 @@ Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
 
-## 7. Repeat one track
-
-**Built and gate-green; open only until it has been watched in the built
-application.** The switch steps through three states rather than two: off, the
-album again, then one track held on its own. Each carries its own artwork,
-since a button that says how things stand by lighting up can say two things
-and no more. A held track replays at its end while Next still advances, so
-asking to move on is never swallowed. The state is written down as a mode
-rather than a boolean; the boolean this setting used to hold is read back as
-the album, so an upgrade keeps the switch where it was left.
-
-The artwork exists and the behaviour is covered by tests, including the ending
-that replays, the Next that overrules it and the wrap at the end of the queue.
-What has not happened is somebody cycling the switch in the built application
-and seeing the three pictures in turn.
-
-Done when: somebody has stepped the switch through its three states in the
-built application and heard a track hold on its own inside a full queue.
-
 ## 8. Gapless transitions
 
 Not present. This is the hardest item here: it wants the next track decoding
