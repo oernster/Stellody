@@ -16,7 +16,7 @@ large one that does not.
 Stellody reads FLAC and nothing else today, so a folder of MP3, M4A or WMA
 scans to nothing. Measured over the library it is developed against, that hides
 146 of the 656 folders holding audio and part of 23 more, most of them M4A.
-`PLAN.md` milestone 11 is the work that widens it and sizes both halves of it.
+`PLAN.md` milestone 3 is the work that widens it and sizes both halves of it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is

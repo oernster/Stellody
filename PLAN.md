@@ -41,7 +41,7 @@ Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
 
-## 9. The equalizer
+## 1. The equalizer
 
 Entirely absent. Needs a decision before any code: either a fixed set of
 bands applied to the decoded buffer or nothing at all.
@@ -49,7 +49,7 @@ bands applied to the decoded buffer or nothing at all.
 Done when: the bands change what is heard, the setting survives a restart;
 switching it off costs nothing in the signal path.
 
-## 10. macOS and Flatpak
+## 2. macOS and Flatpak
 
 Windows first, which is where it stands. macOS and Linux come later, built to
 the house pattern rather than invented here: `build_flatpak.sh` with
@@ -71,7 +71,7 @@ Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the update check reaches GitHub from inside the sandbox; the Windows
 build is untouched by either.
 
-## 11. Play every audio format, not only FLAC
+## 3. Play every audio format, not only FLAC
 
 Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
 reads FLAC stream info, a README calling it a FLAC player. A local library of
@@ -101,7 +101,7 @@ it is also the smaller half of the gain:
   WavPack, DSD. Each needs a decoder Stellody does not carry, which means
   either FFmpeg through a binding or Qt Multimedia.
 
-That second half asks the same question milestone 12 asks, so answer it once:
+That second half asks the same question milestone 4 asks, so answer it once:
 **one media backend, chosen for both**. Deciding it separately is how a player
 ends up with two decoders that disagree about what a track is.
 
@@ -118,7 +118,7 @@ Done when: an album in each of the formats in the first half scans, groups and
 plays; a format Stellody cannot decode is reported as unreadable rather than
 silently skipped.
 
-## 12. Play video files
+## 4. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -145,9 +145,9 @@ transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
 Depends on the transport the position display already built. Shares its
-backend decision with milestone 11.
+backend decision with milestone 3.
 
-## 13. Accept the repairs the health report describes
+## 5. Accept the repairs the health report describes
 
 The report says what Stellody worked around. It cannot yet be told "yes, keep
 that", so the same 142 findings are recomputed and re-read on every start.
@@ -224,7 +224,7 @@ library shows the corrected values, both survive a restart and a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
-## 14. One loudness across albums
+## 6. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -270,7 +270,7 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-## 15. Make the sites findable
+## 7. Make the sites findable
 
 The markup is already there: a title and a description on every page, a
 canonical, the full Open Graph and Twitter set, `SoftwareApplication`

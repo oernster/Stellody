@@ -1,6 +1,6 @@
 """Offering an album a cover from the archive, when somebody asks for one.
 
-The window's half of milestone 4. It holds the service, opens the chooser over
+The window's half of the cover chooser. It holds the service, opens it over
 the album that was right clicked and takes the picture that comes back.
 
 **A window built without the service simply does not offer it.** The chooser is
