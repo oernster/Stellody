@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.covering import RowCover
+from stellody.ui.gliding import GlidingGrid
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.row_text import Column
 from stellody.ui.tiles import AlbumTile, tile_size
@@ -131,8 +132,11 @@ def build_grid(window: QMainWindow, model: AlbumTreeModel) -> QListView:
     A list view over a tree model shows the root's children, which is exactly
     the albums, so the two views cannot disagree about what the library holds
     or about the order it is in.
+
+    The grid travels to a selection rather than snapping to it. `gliding.py`
+    says why; it is the only thing that view subclasses Qt's own for.
     """
-    grid = QListView(window)
+    grid = GlidingGrid(window)
     grid.setModel(model)
     grid.setModelColumn(Column.TITLE)
     grid.setViewMode(QListView.ViewMode.IconMode)
