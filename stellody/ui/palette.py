@@ -36,7 +36,6 @@ class Palette:
     text_dim: str
     accent: str
     accent_hover: str
-    switch_on: str
     # What a search flashes behind the track it hit. A role of its own rather
     # than `selection`, because the hit track is selected at the same moment,
     # so a flash in the selection colour would show nothing at all. The text
@@ -46,8 +45,8 @@ class Palette:
     # writing, measured at 5.10 to 1.
     found: str
     # A star that has been given, against the panel the rating sits in. Its own
-    # role rather than `switch_on`, which is a pale wash meant to fill a whole
-    # button: a shape this small needs a colour that carries at twenty pixels.
+    # role, because a shape this small needs a colour that carries at twenty
+    # pixels rather than a wash meant to fill a whole button.
     # Measured against `surface_alt`: 4.44 to 1 in the light appearance, 9.28
     # to 1 in the dark one, where a graphic of this kind asks for 3.
     star: str
@@ -73,7 +72,6 @@ LIGHT = Palette(
     text_dim="#8a94a6",
     accent="#1b5fd0",
     accent_hover="#1750b3",
-    switch_on="#fff5a3",
     found="#ffe135",
     star="#b45309",
     on_accent="#ffffff",
@@ -98,7 +96,6 @@ DARK = Palette(
     text_dim="#6b7891",
     accent="#4c8dff",
     accent_hover="#69a1ff",
-    switch_on="#fff5a3",
     found="#7a5f14",
     star="#fbbf24",
     on_accent="#08101f",

@@ -54,16 +54,3 @@ def test_the_popup_is_bounded_so_it_reads_as_a_panel(mode: Mode) -> None:
     declarations = block(POPUP, stylesheet(mode))
     assert f"background-color: {colour.surface}" in declarations
     assert f"solid {colour.border}" in declarations
-
-
-SWITCH_ON = re.compile(r"QPushButton#TrayButton:checked\s*\{([^{}]*)\}")
-
-
-@pytest.mark.parametrize("mode", tuple(Mode))
-def test_a_switch_that_is_on_is_filled_rather_than_struck_through(mode: Mode) -> None:
-    """Shuffle and repeat say they are on by being lit, so the fill must read."""
-    colour = palette_for(mode)
-    declarations = block(SWITCH_ON, stylesheet(mode))
-    assert f"background-color: {colour.switch_on}" in declarations
-    assert colour.switch_on != colour.window, "against the strip it sits on"
-    assert colour.switch_on != colour.ring, "and against its own focus border"

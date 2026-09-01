@@ -21,12 +21,11 @@ That toggle names what pressing it will do rather than which view is on
 show, since a button that reads as a label is read as a state and pressed to
 confirm it.
 
-Shuffle and repeat show their STATE by being lit rather than by being struck
-through, which is where this strip parts from the tray above: that one acts,
-so its pictures say what a press would do; this one holds settings, so its
-switches say how things stand. A cross here would be read as the mark the tray
-uses and taken for an action, on a control that is not offering one. Their
-tooltips name the action, so the pair still says both things at once.
+Shuffle and repeat show their STATE by being struck through while they are
+off, which is how the mute switch has always said it. One rule across every
+switch beats a rule per strip: a listener who has read one of them has read
+the rest. Their tooltips name the action instead, so the pair still says both
+things at once.
 """
 
 from __future__ import annotations
@@ -70,11 +69,10 @@ SIZE_NAMES = {
     CoverSize.LARGE: "large",
     CoverSize.EXTRA_LARGE: "extra large",
 }
-# Shuffle says its state with the fill alone, which is all two states need.
-# Three cannot be told apart that way. Off is therefore the wheel crossed
-# out, the way mute says off, which leaves the two lit states to differ by
-# their own picture: the plain wheel for the album, the numbered wheel for
-# a single track.
+# Off is the wheel crossed out, the way mute says off. That leaves the two
+# running states to differ by their own picture: the plain wheel for the
+# album, the numbered wheel for a single track. Three states cannot be told
+# apart by a fill, so nothing here relies on one.
 REPEAT_ICONS = {
     RepeatMode.ALBUM: resources.repeat_icon_path,
     RepeatMode.ONE: resources.repeat_one_icon_path,
@@ -136,8 +134,9 @@ def _switch_button(
 ) -> QPushButton:
     """One picture button that stays down while whatever it names is on.
 
-    Checkable rather than repainted, so the lit state is the button's own and
-    a reader of the widget is told which of them are engaged.
+    Checkable carries no paint of its own here, since the artwork says the
+    state. It is kept so anything reading the widget rather than looking at
+    it is still told which switches are engaged.
     """
     button = _small_button(parent, None, tip, on_click)
     button.setCheckable(True)
@@ -237,9 +236,8 @@ class BottomTray(QWidget):
         """Light one switch while it is on; say what a press would do.
 
         Off wears the same cross the repeat switch wears, so the state is
-        legible from the artwork alone. The stylesheet still fills the button
-        while it is checked, which reinforces the cross rather than carrying
-        the meaning by itself.
+        legible from the artwork alone and nothing behind the picture has to
+        change for it to be read.
         """
         button.setIcon(_state_icon(path, on))
         button.setChecked(on)
