@@ -20,9 +20,12 @@ from stellody.domain.equalising import BAND_COUNT
 from stellody.domain.playback import PlaybackState
 from stellody.domain.spectrum import EMPTY, FULL, SILENT_BANDS
 from stellody.ui.settings_keys import FALSE, SETTING_VISUALISER, TRUE
+from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.visualiser import Visualiser
 
 LOUD = (FULL,) * BAND_COUNT
+# Wide enough that every band gets its own column of pixels to be counted in.
+STRIP_WIDTH_PX = 600
 
 
 @pytest.fixture
@@ -72,6 +75,33 @@ class TestTheStripOnItsOwn:
         strip.start()
         strip.start()
         assert strip.running
+
+    def test_an_idle_strip_still_looks_like_a_strip(
+        self, application: QApplication
+    ) -> None:
+        """Turned on with nothing playing, it must not look like empty space.
+
+        It had no ground of its own at first, which measured as a strip of
+        exactly ONE colour: the window's. Switching it on then changed nothing
+        anybody could see, which reads as the feature not being there at all.
+        Rendering the widget runs its own paintEvent, so what is counted is
+        what would be drawn rather than what is on a screen.
+        """
+        for mode in Mode:
+            application.setStyleSheet(stylesheet(mode))
+            made = Visualiser()
+            made.show_appearance(mode)
+            made.resize(STRIP_WIDTH_PX, made.height())
+            made.show()
+            application.processEvents()
+            drawn = made.grab().toImage()
+            painted = {
+                drawn.pixel(x, y)
+                for y in range(0, drawn.height(), 2)
+                for x in range(0, drawn.width(), 4)
+            }
+            assert len(painted) > 1, f"{mode.value}: an idle strip is one flat colour"
+            made.close()
 
     def test_stopping_empties_the_bars(self, strip) -> None:
         """A strip frozen mid-height reads as crashed rather than as idle."""

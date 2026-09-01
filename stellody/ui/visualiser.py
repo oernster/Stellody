@@ -21,6 +21,14 @@ looks like a display that has crashed rather than one that is idle.
 The bars are drawn from the same accent the rest of the application uses, at a
 height that is a fraction of the strip, so nothing here knows a pixel count
 that the palette or the layout does not already own.
+
+**It has a ground of its own, plus a baseline it draws even in silence.** It had
+neither at first, which measured as a strip of exactly one colour, the window's:
+turned on with nothing playing it was indistinguishable from empty space, so a
+listener switching it on saw nothing happen and concluded it was not there. It
+now wears the surface both trays wear, ruled off by a hairline as they are;
+each band also keeps a low mark on the floor. Silence then reads as ten bands with
+nothing in them rather than as an absence.
 """
 
 from __future__ import annotations
@@ -30,7 +38,7 @@ from PySide6.QtGui import QColor, QPainter, QPaintEvent
 from PySide6.QtWidgets import QWidget
 
 from stellody.domain.equalising import BAND_COUNT
-from stellody.domain.spectrum import EMPTY, SILENT_BANDS, fallen
+from stellody.domain.spectrum import SILENT_BANDS, fallen
 from stellody.ui.palette import Mode, palette_for
 
 # Thirty a second. Fast enough that a falling bar reads as movement rather than
@@ -41,9 +49,10 @@ STRIP_HEIGHT_PX = 64
 BAR_GAP_PX = 4
 STRIP_MARGIN_PX = 6
 BAR_RADIUS_PX = 2
-# A bar that has fallen to nothing is drawn as nothing rather than as a sliver,
-# so silence looks like silence.
-MINIMUM_BAR_PX = 1
+# What a band with nothing in it still shows: enough to say the band is there
+# and too little to be mistaken for something being heard.
+BASELINE_PX = 2
+HAIRLINE_PX = 1
 _MILLISECONDS = 1000.0
 
 
@@ -115,16 +124,27 @@ class Visualiser(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(Qt.PenStyle.NoPen)
+        # The ground the trays wear, so the strip is visibly a strip whether or
+        # not there is anything in it, then the hairline that rules it off from
+        # the library above exactly as the tray rules itself off.
+        painter.fillRect(self.rect(), QColor(palette.surface))
+        painter.fillRect(
+            self.rect().left(),
+            self.rect().top(),
+            self.rect().width(),
+            HAIRLINE_PX,
+            QColor(palette.border),
+        )
         painter.setBrush(QColor(palette.accent))
         inner = self.rect().adjusted(
             STRIP_MARGIN_PX, STRIP_MARGIN_PX, -STRIP_MARGIN_PX, -STRIP_MARGIN_PX
         )
         span = (inner.width() + BAR_GAP_PX) / BAND_COUNT
-        width = max(MINIMUM_BAR_PX, int(span) - BAR_GAP_PX)
+        width = max(BASELINE_PX, int(span) - BAR_GAP_PX)
         for band, height in enumerate(self._shown):
-            if height <= EMPTY:
-                continue
-            tall = max(MINIMUM_BAR_PX, int(inner.height() * height))
+            # Never less than the baseline: a band with nothing in it still says
+            # it is a band, which is what stops silence reading as an absence.
+            tall = max(BASELINE_PX, int(inner.height() * height))
             painter.drawRoundedRect(
                 inner.left() + int(band * span),
                 inner.bottom() - tall,
