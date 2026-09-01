@@ -32,6 +32,11 @@ SETTING_VOLUME = "volume_percent"
 SETTING_MUTED = "muted"
 SETTING_SHUFFLE = "shuffle"
 SETTING_REPEAT = "repeat"
+# The equalizer, kept as two settings rather than one: the curve
+# outlives being switched off, so somebody comparing on against off
+# does not lose what they set up to compare.
+SETTING_EQ_GAINS = "equaliser_gains_db"
+SETTING_EQ_ENABLED = "equaliser_enabled"
 
 # The release tag a listener asked not to be told about again. The exact tag
 # string, since both sides of the comparison come from the same endpoint.

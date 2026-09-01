@@ -15,9 +15,12 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Slot
 
+from stellody.domain.equalising import Equalisation, as_text, from_text
 from stellody.domain.playback import RepeatMode
 from stellody.ui.settings_keys import (
     FALSE,
+    SETTING_EQ_ENABLED,
+    SETTING_EQ_GAINS,
     SETTING_MUTED,
     SETTING_REPEAT,
     SETTING_SHUFFLE,
@@ -84,6 +87,20 @@ class Playing:
         self._apply_muted(self._flag(SETTING_MUTED))
         self._apply_shuffled(self._flag(SETTING_SHUFFLE))
         self._apply_repeat(self._stored_repeat())
+        self._transport.set_equalisation(self._stored_equalisation())
+
+    def _stored_equalisation(self) -> Equalisation:
+        """The curve last left, flat where nothing readable is stored."""
+        return from_text(
+            self._settings.get_setting(SETTING_EQ_GAINS, ""),
+            self._flag(SETTING_EQ_ENABLED),
+        )
+
+    def set_equalisation(self, equalisation: Equalisation) -> None:
+        """Apply the curve and remember it, which go together."""
+        self._transport.set_equalisation(equalisation)
+        self._settings.set_setting(SETTING_EQ_GAINS, as_text(equalisation))
+        self._remember(SETTING_EQ_ENABLED, equalisation.enabled)
 
     def toggle_mute(self) -> None:
         """Silence the output, else give it back at the level already chosen."""

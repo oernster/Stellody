@@ -87,6 +87,14 @@ not going to.
   two. A track held on repeat rejoins itself the same way. Where the next
   track needs a different sample rate the device has to be reopened, so
   that one join is honestly gapped rather than joined badly.
+- Shapes what is heard with a ten band equalizer, from the Sound menu.
+  Each band sits an octave from the next and lifts or cuts up to twelve
+  decibels around its own frequency; the sound follows a slider as it is
+  dragged. The switch is separate from the sliders, so turning it off to
+  compare does not lose the curve. Switched off, it does nothing whatever to
+  the samples rather than something cheap; the same holds with every band left
+  at nought: a band at nought is exactly the identity, so it is dropped
+  instead of applied.
 - Draws the track's own waveform along the bottom, with a line marking where
   playback has reached and the time either side of it. The shape builds from
   the left as the file is read, so a picture is there at once rather than after
@@ -149,9 +157,9 @@ not going to.
   it answers whichever way it turns out, including that it could not reach
   GitHub; left to itself it speaks only when there is something to offer.
 
-Stellody is early. An equalizer and accepting the repairs the health report
-describes are not built; `PLAN.md` lists what is still to come and what is
-deliberately excluded.
+Stellody is early. Accepting the repairs the health report describes is not
+built; `PLAN.md` lists what is still to come and what is deliberately
+excluded.
 Where a control for one of those is already on screen it is disabled and says
 so.
 

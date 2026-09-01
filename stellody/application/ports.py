@@ -15,6 +15,7 @@ from stellody.application.values import (
     FolderRecord,
     ReleaseInfo,
 )
+from stellody.domain.equalising import Equalisation
 from stellody.domain.listening import Listening
 from stellody.domain.playback import (
     OutputReport,
@@ -242,6 +243,14 @@ class PlaybackPort(Protocol):
         A track reaching its end is not a state the transport is in, it is an
         event nothing was told about: the device is still open and the position
         has simply stopped moving. Something has to ask.
+        """
+        ...
+
+    def set_equalisation(self, equalisation: Equalisation) -> None:
+        """Shape what is heard, else leave it exactly as the file holds it.
+
+        A flat setting must cost nothing in the signal path rather than
+        little, so an implementation applies no arithmetic at all there.
         """
         ...
 

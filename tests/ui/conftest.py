@@ -16,6 +16,7 @@ import pytest
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 
+from stellody.domain.equalising import Equalisation
 from stellody.domain.playback import (
     UNITY_VOLUME,
     OutputMode,
@@ -42,6 +43,7 @@ class RecordingPlayer:
         self.volume = UNITY_VOLUME
         self.reported: PlaybackPosition | None = None
         self.lead = 0
+        self.equalisation = Equalisation()
         # What has been lined up to follow, plus the seams this stand-in
         # has been told it crossed. `cross` is what the feeder thread does.
         self.lined_up: list[TrackSource | None] = []
@@ -69,6 +71,10 @@ class RecordingPlayer:
     def cross(self) -> None:
         """Run into the lined-up source, as the feeder thread would."""
         self.crossings += 1
+
+    def set_equalisation(self, equalisation) -> None:
+        """Record the curve this stand-in was asked to apply."""
+        self.equalisation = equalisation
 
     def play(self) -> None:
         """Record the play."""

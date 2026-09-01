@@ -292,6 +292,38 @@ for one sample rate and one channel count. A source that does not fit needs a
 new device, which is a gap however it is arranged, so it is refused rather
 than written into a stream that would play it at the wrong speed.
 
+## The equalizer
+
+**Designing the filter and applying it are different jobs.** What a band does
+is arithmetic over a frequency and a sample rate, so `domain/equalising.py`
+works out the coefficients and can be tested without an audio device;
+`infrastructure/filtering.py` multiplies samples and knows nothing about
+frequencies. The split is forced as well as wanted: numpy is a framework, so
+it cannot appear below infrastructure at all.
+
+**Hand rolled rather than scipy.** A dozen lines of the Audio EQ Cookbook,
+against tens of megabytes added to the packaged build for one function.
+
+**A band at nought is dropped, not applied.** A peaking filter at nought
+decibels is exactly the identity, so skipping it is the same answer for none
+of the cost. That is what lets a flat equalizer cost nothing whatever rather
+than little; it also keeps an exclusive stream bit perfect while it is off:
+the block is handed back untouched rather than copied. A band at or above
+half the sample rate is dropped for the same kind of reason, having nothing
+up there to act on.
+
+**One pass over the samples, not one per band.** Measured on a block of 4096
+frames, which is 92.9 milliseconds of audio: ten bands cost 25.4 milliseconds
+walking the array once per section and 6.9 walking it once with every section
+applied to each sample in turn. The cost is the indexing rather than the
+arithmetic, which is also why the samples are taken out to a Python list
+first. A flat equalizer costs nothing measurable at all.
+
+**The curve is kept where the volume is kept.** Coefficients depend on the
+sample rate, so they cannot be worked out until a stream is open; the curve
+is held by the engine so one chosen before anything is loaded still applies
+to whatever is loaded next; it is redesigned at every load.
+
 ## The update check
 
 **Three answers, kept apart.** There is a newer version, this is the newest
@@ -370,16 +402,9 @@ only new way out.
 | Holding one track is decided where an ending is noticed, not in `next` | An ending is the question repeat answers; pressing Next is a listener overruling it. Deciding both in one place would make Next dead under repeat-one, leaving no way off the track but the switch. So `advance_if_finished` replays the track while `next` advances under every mode. |
 | The colours are kept apart from the stylesheet that applies them | What a colour IS and where it is APPLIED are two questions that change for different reasons. `stellody/ui/palette.py` holds every colour value and nothing else; `stellody/ui/theme.py` builds the stylesheet and re-exports both names, so no caller had to learn about the split. The file holding both had reached the line cap, which is what said so out loud. |
 | Where a queue move lands is decided apart from the device | `domain/moving.py` holds what Next, Back and an ending mean under repeat and shuffle, as pure functions of a queue and the two switches. The transport applies the answers rather than working them out, which is what lets the same rule decide both a button press and a seam the engine will cross unattended. Randomness enters as an argument, exactly as time does. |
+| The equalizer switch is kept apart from its sliders | Somebody comparing on against off is asking one question; losing the curve they set up to compare with would answer a different one. The two are stored as two settings for the same reason. |
+| A boost is clipped at the format's ceiling | A lift can ask for more than a sample holds. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
-
-### Decided but not built
-
-**None of the following runs today.** They are recorded so the decision is not
-taken twice; `PLAN.md` holds the work itself.
-
-| Decision | Reason |
-|---|---|
-| A hand-rolled biquad cascade rather than scipy | The equalizer will be pure arithmetic, so it belongs in the domain and tests without an audio device. scipy would add tens of megabytes to the packaged build for one function. |
 
 ## Coverage
 

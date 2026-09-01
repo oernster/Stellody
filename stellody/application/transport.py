@@ -16,6 +16,7 @@ from collections.abc import Callable
 from stellody.application.following import Following
 from stellody.application.ports import PlaybackPort
 from stellody.domain.album import Album
+from stellody.domain.equalising import Equalisation
 from stellody.domain.moving import (
     Ordering,
     after_next,
@@ -75,6 +76,7 @@ class Transport:
         self._album_order: tuple[Track, ...] = ()
         self._ordering = ordering
         self._loudness = Loudness()
+        self._equalisation = Equalisation()
         self._shuffled = False
         self._repeat = RepeatMode.OFF
 
@@ -130,6 +132,16 @@ class Transport:
         """Silence the output, else return it to the level already chosen."""
         self._loudness = self._loudness.silenced(muted)
         self._player.set_volume(self._loudness.audible)
+
+    @property
+    def equalisation(self) -> Equalisation:
+        """The curve chosen, whether or not it is switched on."""
+        return self._equalisation
+
+    def set_equalisation(self, equalisation: Equalisation) -> None:
+        """Choose the curve. Nothing already playing is disturbed."""
+        self._equalisation = equalisation
+        self._player.set_equalisation(equalisation)
 
     @property
     def shuffled(self) -> bool:

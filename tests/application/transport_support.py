@@ -8,6 +8,7 @@ of commands the transport issued to a device that recorded them.
 from __future__ import annotations
 
 from stellody.domain.album import Album
+from stellody.domain.equalising import Equalisation
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.playback import (
     UNITY_VOLUME,
@@ -65,6 +66,7 @@ class FakePlayer:
         self.volume = UNITY_VOLUME
         self.reported: PlaybackPosition | None = None
         self.lead = 0
+        self.equalisation = Equalisation()
         # What the transport has lined up to follow, plus how many seams
         # this stand-in has been told it crossed. A test moves the count
         # itself, which is what the engine does on its feeder thread.
@@ -95,6 +97,10 @@ class FakePlayer:
     def cross(self) -> None:
         """Run into the lined-up source, as the feeder thread would."""
         self.crossings += 1
+
+    def set_equalisation(self, equalisation) -> None:
+        """Record the curve this stand-in was asked to apply."""
+        self.equalisation = equalisation
 
     def play(self) -> None:
         """Record the play."""

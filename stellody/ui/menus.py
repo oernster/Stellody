@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QFileDialog, QMainWindow, QMenu
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
+from stellody.ui.equaliser import EqualiserDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.links import open_externally
 from stellody.ui.settings_keys import SETTING_ROOT, STATUS_TIMEOUT_MS
@@ -54,6 +55,9 @@ class Menus:
         menu_action(view_menu, self, "&Expand all", self._tree.expandAll)
         menu_action(view_menu, self, "&Collapse all", self._tree.collapseAll)
 
+        sound_menu = self.menuBar().addMenu("&Sound")
+        menu_action(sound_menu, self, "&Equalizer...", self.show_equaliser)
+
         help_menu = self.menuBar().addMenu("&Help")
         menu_action(help_menu, self, "Library &health...", self.show_health)
         help_menu.addSeparator()
@@ -82,6 +86,19 @@ class Menus:
         self.start_scan()
 
     @Slot()
+    def show_equaliser(self) -> None:
+        """Open the equalizer, which changes what is heard as it is moved.
+
+        It is given the curve the transport is holding rather than reading a
+        setting of its own, so what it opens on is what is actually being
+        applied. Every move goes straight back out through the window, which
+        applies it and writes it down.
+        """
+        dialog = EqualiserDialog(
+            self, self._transport.equalisation, self.set_equalisation
+        )
+        dialog.exec()
+
     def show_health(self) -> None:
         """Open the library health report."""
         HealthDialog(self._issues, self, repair_library=self.repair_library).exec()

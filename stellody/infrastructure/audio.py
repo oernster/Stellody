@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import sounddevice
 
+from stellody.domain.equalising import Equalisation, cascade
 from stellody.domain.playback import (
     SILENT_VOLUME,
     UNITY_VOLUME,
@@ -36,6 +37,7 @@ from stellody.domain.playback import (
 )
 from stellody.domain.track import TrackSource
 from stellody.infrastructure.decode import DecodeError, SourceReader
+from stellody.infrastructure.filtering import BiquadCascade
 from stellody.infrastructure.wasapi import open_output
 
 BLOCK_FRAMES = 4096
@@ -65,6 +67,9 @@ class _Session:
     # Opened ahead of the seam so the feeder never has to wait at one.
     follower: SourceReader | None = None
     crossings: int = 0
+    # The equalizer, designed for this stream's own sample rate. Empty
+    # while it is flat, which is how it costs nothing.
+    filtering: BiquadCascade = field(default_factory=BiquadCascade)
 
 
 class WasapiPlayback:
@@ -85,6 +90,7 @@ class WasapiPlayback:
         self._block_frames = block_frames
         self._opener = opener
         self._volume = UNITY_VOLUME
+        self._equalisation = Equalisation()
         self._session: _Session | None = None
         self._closed = False
 
@@ -119,7 +125,13 @@ class WasapiPlayback:
         except Exception:
             stream.close()
             raise
-        session = _Session(reader=reader, stream=stream, report=report, dtype=dtype)
+        session = _Session(
+            reader=reader,
+            stream=stream,
+            report=report,
+            dtype=dtype,
+            filtering=self._designed_for(reader.sample_rate),
+        )
         session.thread = threading.Thread(
             target=self._feed, args=(session,), name="stellody-feeder", daemon=True
         )
@@ -166,6 +178,7 @@ class WasapiPlayback:
             return
         with session.lock:
             session.reader.seek(frame)
+            session.filtering.reset()
         session.finished.clear()
 
     @property
@@ -232,6 +245,25 @@ class WasapiPlayback:
             frame=frame, frame_count=frame_count, sample_rate=sample_rate
         )
 
+    def _designed_for(self, sample_rate: int) -> BiquadCascade:
+        """The equalizer as this sample rate needs it to be designed."""
+        return BiquadCascade(cascade(self._equalisation, sample_rate))
+
+    def set_equalisation(self, equalisation: Equalisation) -> None:
+        """Set the curve, redesigning it for whatever is open right now.
+
+        The coefficients depend on the sample rate, so they cannot be
+        worked out until a stream is open; the curve is kept here so that
+        one chosen before anything is loaded still applies to whatever is
+        loaded next, exactly as the volume does.
+        """
+        self._equalisation = equalisation
+        session = self._session
+        if session is None:
+            return
+        with session.lock:
+            session.filtering = self._designed_for(session.reader.sample_rate)
+
     def set_volume(self, level: float) -> None:
         """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
         self._volume = min(max(SILENT_VOLUME, level), UNITY_VOLUME)
@@ -263,12 +295,14 @@ class WasapiPlayback:
                     session.follower = None
                     session.crossings += 1
                     block = session.reader.read(self._block_frames)
+                filtering = session.filtering
             if len(block) == 0:
                 session.finished.set()
                 session.resume.clear()
                 continue
             try:
-                session.stream.write(self._scaled(block, session.dtype))
+                shaped = filtering.process(block)
+                session.stream.write(self._scaled(shaped, session.dtype))
             except sounddevice.PortAudioError:
                 session.finished.set()
                 session.resume.clear()

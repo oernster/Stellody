@@ -43,11 +43,32 @@ owner's to make.
 
 ## 1. The equalizer
 
-Entirely absent. Needs a decision before any code: either a fixed set of
-bands applied to the decoded buffer or nothing at all.
+**Built and gate-green; open only until it has been heard.** Ten bands at
+the octave centres, plus or minus twelve decibels, from the Sound menu. The
+sound follows a slider as it is dragged. The switch is separate from the
+sliders, so turning it off to compare keeps the curve.
 
-Done when: the bands change what is heard, the setting survives a restart;
-switching it off costs nothing in the signal path.
+The decision this milestone opened with is settled and measured. The bands
+are a fixed set applied to the decoded buffer, designed in the domain as
+biquad coefficients and applied over numpy in infrastructure, which is the
+only split the layer rules allow. Ten bands cost 6.9 milliseconds a block
+against the block's own 92.9 milliseconds of audio, having been 25.4 before
+the passes over the array were fused into one.
+
+Switching it off costs nothing in the signal path rather than little: a
+band at nought is exactly the identity, so it is dropped instead of applied
+and a flat equalizer hands the block back untouched. A test asserts that it
+is the same object, which is also what keeps an exclusive stream bit
+perfect.
+
+That the bands change what is heard is measured rather than judged: a tone
+at a band's own frequency is put through and what comes out is measured
+against what went in, in decibels, along with a tone three octaves away
+that must come through unchanged. Planting the wrong decibel exponent fails
+those.
+
+Done when: somebody has heard a band change what is playing in the built
+application and found the curve still there after a restart.
 
 ## 2. macOS and Flatpak
 
