@@ -13,25 +13,25 @@ from __future__ import annotations
 import random
 from collections.abc import Callable
 
+from stellody.application.following import Following
 from stellody.application.ports import PlaybackPort
 from stellody.domain.album import Album
+from stellody.domain.moving import (
+    Ordering,
+    after_next,
+    after_previous,
+    reordered_for,
+)
 from stellody.domain.playback import (
-    SILENT_VOLUME,
-    UNITY_VOLUME,
+    Loudness,
     OutputRequest,
     PlaybackPosition,
     PlaybackState,
     RepeatMode,
+    audible_position,
 )
 from stellody.domain.queue import Queue, queue_from
 from stellody.domain.track import Track
-
-Ordering = Callable[[tuple[Track, ...]], tuple[Track, ...]]
-
-# Below this there is nothing to scatter and no join to avoid: one track
-# repeating is that track again, which is what repeat means there.
-SHUFFLE_NEEDS = 2
-
 
 # Told the album and the track that has just played out, so a count of complete
 # plays can be kept by somebody who is not the transport. The album comes with
@@ -56,6 +56,10 @@ class Transport:
         played: PlayedOut = lambda _album, _track: None,
     ) -> None:
         self._player = player
+        # What the device has been told to run into next. Gapless
+        # transitions happen inside the engine, so this is how the queue
+        # finds out where the music already went.
+        self._following = Following(player)
         # Told when a track has played out, which is the one thing this class
         # is in a position to know: nothing else can see the difference
         # between a track that ended and one somebody skipped.
@@ -70,19 +74,15 @@ class Transport:
         self._album: Album | None = None
         self._album_order: tuple[Track, ...] = ()
         self._ordering = ordering
-        self._volume = UNITY_VOLUME
-        self._muted = False
+        self._loudness = Loudness()
         self._shuffled = False
         self._repeat = RepeatMode.OFF
 
     def report_plays_to(self, played: PlayedOut) -> None:
         """Say who is told when a track plays out.
 
-        Set rather than injected, which is the one place this application does
-        that. Whoever is told has to turn a track into the album it belongs
-        to; the only thing that can is the window, which does not exist
-        when the transport is built. The alternative was a transport that
-        knew about the library it is playing out of.
+        Set rather than injected, which is the one place this application
+        does that; ARCHITECTURE.md records why.
         """
         self._played = played
 
@@ -112,35 +112,24 @@ class Transport:
         return self._player.state is PlaybackState.PLAYING
 
     def set_volume(self, level: float) -> None:
-        """Set output gain, where 0.0 is silence and 1.0 is unattenuated.
-
-        Held here as well as passed on, so a volume chosen before anything is
-        loaded still applies to whatever is loaded next. A level chosen while
-        muted is stored without breaking the silence: mute is a switch of its
-        own, so nothing but that switch turns it off.
-        """
-        self._volume = level
-        self._player.set_volume(self._audible_level)
+        """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
+        self._loudness = self._loudness.at(level)
+        self._player.set_volume(self._loudness.audible)
 
     @property
     def volume(self) -> float:
         """The gain chosen, whether or not it is currently being heard."""
-        return self._volume
+        return self._loudness.level
 
     @property
     def muted(self) -> bool:
         """Whether output is held silent regardless of the level chosen."""
-        return self._muted
+        return self._loudness.muted
 
     def set_muted(self, muted: bool) -> None:
         """Silence the output, else return it to the level already chosen."""
-        self._muted = muted
-        self._player.set_volume(self._audible_level)
-
-    @property
-    def _audible_level(self) -> float:
-        """What the device is asked for: nothing at all while muted."""
-        return SILENT_VOLUME if self._muted else self._volume
+        self._loudness = self._loudness.silenced(muted)
+        self._player.set_volume(self._loudness.audible)
 
     @property
     def shuffled(self) -> bool:
@@ -150,18 +139,15 @@ class Transport:
     def set_shuffled(self, shuffled: bool) -> None:
         """Scatter the queue, else put it back into the album's own order.
 
-        What is playing keeps playing either way: changing the order of what
-        comes next is no reason to interrupt the track in hand. Scattering
-        leads with that track, so next reaches the whole of the rest of the
-        album rather than whatever the new order left after it.
+        What is playing keeps playing; `domain.moving.reordered_for` holds
+        the rule and says why.
         """
         self._shuffled = shuffled
-        if not self._album_order:
-            return
-        if not shuffled:
-            self._queue = self._queue.reordered(self._album_order)
-            return
-        self._queue = self._queue.reordered_leading(self._ordering(self._album_order))
+        if self._album_order:
+            self._queue = reordered_for(
+                self._queue, self._album_order, shuffled, self._ordering
+            )
+        self._line_up()
 
     @property
     def repeat(self) -> RepeatMode:
@@ -171,6 +157,7 @@ class Transport:
     def set_repeat(self, repeat: RepeatMode) -> None:
         """Choose what an ending does. Nothing already playing is disturbed."""
         self._repeat = repeat
+        self._line_up()
 
     def play_album(self, album: Album, first: Track) -> None:
         """Queue an album and start at the track that was activated.
@@ -211,25 +198,15 @@ class Transport:
     def position(self) -> PlaybackPosition | None:
         """How far playback has reached, as a listener would say it.
 
-        The port reports what has been DECODED, which runs ahead of what is
-        leaving the speakers by whatever the device is still holding. Shown
-        raw, a progress display sits ahead of the music by that much and a
-        track appears to finish before it has.
-
-        The correction belongs here rather than in the engine because the size
-        of the lead is a property of the device the port opened; this is the
-        layer that asks the port anything. It is honest to within one
-        buffer; it does not model the device's own latency beyond that.
+        The correction belongs here rather than in the engine because the
+        size of the lead is a property of the device the port opened;
+        this is the layer that asks the port anything. It is honest to within
+        one buffer; it does not model the device's own latency beyond that.
         """
         reported = self._player.position()
         if reported is None:
             return None
-        audible = max(0, reported.frame - self._player.lead_frames)
-        return PlaybackPosition(
-            frame=audible,
-            frame_count=reported.frame_count,
-            sample_rate=reported.sample_rate,
-        )
+        return audible_position(reported, self._player.lead_frames)
 
     def seek(self, frame: int) -> None:
         """Move within the track in hand, in frames, clamped to it.
@@ -246,44 +223,26 @@ class Transport:
     def next(self) -> None:
         """Play the following track; what the end does depends on repeat.
 
-        A repeating queue of one track wraps round to that same track, which
-        means playing it again rather than doing nothing.
-
         This is the deliberate skip, so it advances under every mode, holding
         one track included. A listener who has asked to move on has asked to
         move on; a repeat that swallowed the request would leave them pressing
         a button that does nothing and no way off the track but the switch.
+
+        Where the move lands is `domain.moving.after_next`; this decides
+        only whether landing there means playing.
         """
-        if self._repeat.repeats and not self._queue.has_next:
-            self._begin_again()
+        moved = after_next(
+            self._queue,
+            self._repeat,
+            self._shuffled,
+            self._album_order,
+            self._ordering,
+        )
+        # Off the end with repeat off there is nowhere to go, so the track
+        # in hand is left alone rather than started again.
+        if not self._repeat.repeats and moved == self._queue:
             return
-        if self._repeat.repeats:
-            self._restart_at(self._queue.wrapped_next())
-            return
-        self._move(self._queue.next())
-
-    def _begin_again(self) -> None:
-        """Start the album over, which is what repeat repeats.
-
-        Shuffled, the album is scattered afresh rather than replayed in the
-        order it happened to take last time: a shuffle that hands back the
-        same running order every time round is a fixed order with extra
-        steps. The track just heard is kept off the front of the new run,
-        since hearing it twice over the join is the one repeat nobody means.
-        """
-        if not self._shuffled or len(self._album_order) < SHUFFLE_NEEDS:
-            self._restart_at(self._queue.wrapped_next())
-            return
-        self._queue = Queue(self._without_a_join(self._ordering(self._album_order)), 0)
-        self._load_current()
-
-    def _without_a_join(self, order: tuple[Track, ...]) -> tuple[Track, ...]:
-        """The same order, not starting on the track that has just played."""
-        playing = self._queue.current
-        if playing is None or order[0] is not playing:
-            return order
-        first, second, *rest = order
-        return (second, first, *rest)
+        self._restart_at(moved)
 
     def previous(self) -> None:
         """Return to the start of this track; leave it if already there.
@@ -291,36 +250,23 @@ class Transport:
         While a track is playing, back means the beginning of that track: it
         is what somebody who has heard enough of it to reach for the button
         meant by it. It lands there and waits rather than playing on, so the
-        moment to carry on belongs to the listener.
+        moment to carry on belongs to the listener. Pressing back again while
+        it waits there means the track before, waiting at ITS beginning.
 
-        Pressing back again while it is already waiting at that beginning
-        means the track before, waiting at ITS beginning, so repeated presses
-        walk back through the album at whatever pace suits. What decides
-        between the two is where the transport already is, not how quickly the
-        button was pressed twice: a window timed between presses made a
-        deliberate second press restart the track instead, so going back a
-        track meant hammering the button until two landed inside it.
-
-        Under shuffle it always means the start of the track in hand. The
-        queue then runs in a scattered order rather than the order the listener
-        heard, so the track lying behind the playhead is not the one they would
-        be asking for. Anything played before the shuffle was switched on is
-        not in the run at all. Offering a step back there would be answering a
-        different question from the one asked.
+        What decides between the two is where the transport already is, not
+        how quickly the button was pressed twice: a window timed between
+        presses made a deliberate second press restart the track instead, so
+        going back a track meant hammering the button until two landed inside
+        it. `domain.moving.after_previous` holds the rule itself.
         """
-        if self._shuffled or not self._waiting_at_the_start:
-            self._open_paused(self._queue)
-            return
-        if self._repeat.repeats:
-            self._open_paused(self._queue.wrapped_previous())
-            return
-        self._open_paused(self._queue.previous())
-
-    def _move(self, moved: Queue) -> None:
-        """Take up a new position, unless it is the position already held."""
-        if moved == self._queue:
-            return
-        self._restart_at(moved)
+        self._open_paused(
+            after_previous(
+                self._queue,
+                self._repeat,
+                self._shuffled,
+                self._waiting_at_the_start,
+            )
+        )
 
     def _restart_at(self, moved: Queue) -> None:
         """Take up a position and play it, whether or not it is a new one."""
@@ -339,21 +285,28 @@ class Transport:
     def advance_if_finished(self) -> bool:
         """Move on when the track has played out; True when something changed.
 
-        A track ending is not reported by the device, so it is asked about.
-        The last track in a queue ends by stopping, rather than by looping or
-        by leaving the device open on silence.
+        Two different endings arrive through this one door. The device may
+        have run into the next track by itself, having had it open and
+        decoding before the seam: nothing needs loading there and the only
+        work is to move the queue to where the music already is. Otherwise a
+        track has simply stopped, which is not reported by the device and so
+        is asked about.
 
         Holding one track is decided HERE rather than in `next`, because the
         two are different questions asked through the same door: an ending is
         what repeat is about, while pressing Next is a listener overruling it.
         Only the first of them replays the track.
         """
+        crossed = self._following.crossed()
+        if crossed is not None:
+            self._report_played()
+            self._queue = crossed
+            self._waiting_at_the_start = False
+            self._line_up()
+            return True
         if not self._player.finished:
             return False
-        finished = self._queue.current
-        album = self._album
-        if finished is not None and album is not None:
-            self._played(album, finished)
+        self._report_played()
         if self._repeat is RepeatMode.ONE:
             self._restart_at(self._queue)
             return True
@@ -363,6 +316,17 @@ class Transport:
         self.next()
         return True
 
+    def _report_played(self) -> None:
+        """Say that the track in hand reached its end, to whoever counts."""
+        finished = self._queue.current
+        album = self._album
+        if finished is not None and album is not None:
+            self._played(album, finished)
+
+    def _line_up(self) -> None:
+        """Tell the device what to run into when the track in hand ends."""
+        self._following.line_up(self._queue, self._repeat, self._shuffled)
+
     def _load_current(self, playing: bool = True) -> None:
         """Open the current track and start it. Nothing to open is not a fault."""
         track = self._queue.current
@@ -371,10 +335,12 @@ class Transport:
         # Anything that opens a track and plays it on has left the start
         # behind; anything that opens one and waits is sitting on it.
         self._waiting_at_the_start = not playing
-        self._player.set_volume(self._audible_level)
+        self._player.set_volume(self._loudness.audible)
         self._player.load(
             track.source,
             OutputRequest(sample_rate=track.sample_rate, bit_depth=track.bit_depth),
         )
+        self._following.restart()
+        self._line_up()
         if playing:
             self._player.play()

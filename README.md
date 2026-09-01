@@ -80,6 +80,13 @@ not going to.
   each time round when shuffle is on. A held track replays when it ends;
   pressing next still moves on, since asking to move on is not a state the
   switch is in.
+- Runs one track into the next without a gap, which is what an album
+  mixed to play through needs. The following track is opened and decoding
+  while the current one is still playing, then the device is handed one
+  unbroken run of audio rather than being stopped and started between the
+  two. A track held on repeat rejoins itself the same way. Where the next
+  track needs a different sample rate the device has to be reopened, so
+  that one join is honestly gapped rather than joined badly.
 - Draws the track's own waveform along the bottom, with a line marking where
   playback has reached and the time either side of it. The shape builds from
   the left as the file is read, so a picture is there at once rather than after
@@ -142,9 +149,9 @@ not going to.
   it answers whichever way it turns out, including that it could not reach
   GitHub; left to itself it speaks only when there is something to offer.
 
-Stellody is early. An equalizer, gapless transitions and accepting the repairs
-the health report describes are not built; `PLAN.md` lists what is still to
-come and what is deliberately excluded.
+Stellody is early. An equalizer and accepting the repairs the health report
+describes are not built; `PLAN.md` lists what is still to come and what is
+deliberately excluded.
 Where a control for one of those is already on screen it is disabled and says
 so.
 

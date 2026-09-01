@@ -42,10 +42,15 @@ class RecordingPlayer:
         self.volume = UNITY_VOLUME
         self.reported: PlaybackPosition | None = None
         self.lead = 0
+        # What has been lined up to follow, plus the seams this stand-in
+        # has been told it crossed. `cross` is what the feeder thread does.
+        self.lined_up: list[TrackSource | None] = []
+        self.crossings = 0
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Record the load and report a plain shared stream."""
         self.calls.append("load")
+        self.crossings = 0
         self.loaded.append(source)
         self.finished = False
         self.state = PlaybackState.PAUSED
@@ -55,6 +60,15 @@ class RecordingPlayer:
             sample_rate=request.sample_rate,
             bit_depth=request.bit_depth,
         )
+
+    def queue_next(self, source: TrackSource | None) -> bool:
+        """Record what was lined up to follow the loaded track."""
+        self.lined_up.append(source)
+        return source is not None
+
+    def cross(self) -> None:
+        """Run into the lined-up source, as the feeder thread would."""
+        self.crossings += 1
 
     def play(self) -> None:
         """Record the play."""

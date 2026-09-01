@@ -263,6 +263,35 @@ all, which is the whole of what a rating is for: nothing has to be heard to be
 judged. The two agree throughout ordinary listening anyway, since the
 highlight follows playback from track to track.
 
+## Gapless transitions
+
+**The seam is crossed inside the engine, by the feeder thread.** At the
+moment one track ends, the only thing awake is that thread, halfway through
+a run of blocking writes. Nothing can be asked there and nothing can be
+loaded there. So the following source is opened while the current track is
+still playing and the feeder reads straight on into it. The stream is never
+stopped, so the device is handed one unbroken run of blocks.
+
+**The transport finds out afterwards, from a count.** A crossing is counted
+rather than signalled, so a poll that was not looking at the moment it
+happened still learns about it; the count belongs to the loaded session, so
+it starts again from nothing at every load and a stopped device cannot read
+as having moved. `stellody/application/following.py` holds both facts.
+
+**What was lined up is kept, not worked out again.** The switches may move
+between lining a track up and the device reaching it, so the queue lands
+where the music actually went rather than where the rules would send it now.
+
+**A follower is lined up only where it cannot change.** A scattered album
+beginning again picks its order at the moment it begins, so there is nothing
+to name in advance and that one seam is deliberately left gapped. Lining up
+the wrong track would be worse than the gap it saved.
+
+**A follower the open stream cannot carry is refused.** The stream was opened
+for one sample rate and one channel count. A source that does not fit needs a
+new device, which is a gap however it is arranged, so it is refused rather
+than written into a stream that would play it at the wrong speed.
+
 ## The update check
 
 **Three answers, kept apart.** There is a newer version, this is the newest
@@ -340,6 +369,7 @@ only new way out.
 | A three-state switch is told apart by its artwork, never by a fill | A fill behind one unchanging picture says exactly two things, so it could never carry repeat's three. Each state has its own picture instead, made from two files plus a cross composed over one of them at run time rather than a third drawing. The fill was then removed altogether rather than left repeating what the picture already said, in a wash that fought the artwork above it; shuffle lost it at the same time, so one rule reads the whole strip. |
 | Holding one track is decided where an ending is noticed, not in `next` | An ending is the question repeat answers; pressing Next is a listener overruling it. Deciding both in one place would make Next dead under repeat-one, leaving no way off the track but the switch. So `advance_if_finished` replays the track while `next` advances under every mode. |
 | The colours are kept apart from the stylesheet that applies them | What a colour IS and where it is APPLIED are two questions that change for different reasons. `stellody/ui/palette.py` holds every colour value and nothing else; `stellody/ui/theme.py` builds the stylesheet and re-exports both names, so no caller had to learn about the split. The file holding both had reached the line cap, which is what said so out loud. |
+| Where a queue move lands is decided apart from the device | `domain/moving.py` holds what Next, Back and an ending mean under repeat and shuffle, as pure functions of a queue and the two switches. The transport applies the answers rather than working them out, which is what lets the same rule decide both a button press and a seam the engine will cross unattended. Randomness enters as an argument, exactly as time does. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
 
 ### Decided but not built

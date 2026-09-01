@@ -181,6 +181,26 @@ class PlaybackPort(Protocol):
         """
         ...
 
+    def queue_next(self, source: TrackSource | None) -> bool:
+        """Line up what follows, opened before the current track needs it.
+
+        Answers whether it can actually follow without a seam. A source the
+        open device cannot carry has to wait for a new one, which is a gap
+        however it is arranged, so the answer is honest rather than hopeful.
+        None clears whatever was lined up.
+        """
+        ...
+
+    @property
+    def crossings(self) -> int:
+        """How many lined-up sources the device has run into by itself.
+
+        A count rather than a signal, so a caller that was not looking at the
+        moment it happened still learns about it. It belongs to the loaded
+        session, so it starts again from nothing at every load.
+        """
+        ...
+
     def play(self) -> None:
         """Start or resume. Does nothing when no source is loaded."""
         ...

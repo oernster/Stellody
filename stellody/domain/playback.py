@@ -202,3 +202,45 @@ class PlaybackPosition:
     def is_complete(self) -> bool:
         """True once the transport has reached the end of the track."""
         return self.frame >= self.frame_count
+
+
+@dataclass(frozen=True, slots=True)
+class Loudness:
+    """A chosen level and a mute switch, which are two separate answers.
+
+    A level chosen while muted is kept without breaking the silence: mute is
+    a switch of its own, so nothing but that switch turns it off. Held as a
+    value so a level chosen before anything is loaded still applies to
+    whatever is loaded next.
+    """
+
+    level: float = UNITY_VOLUME
+    muted: bool = False
+
+    @property
+    def audible(self) -> float:
+        """What a device is actually asked for: nothing at all while muted."""
+        return SILENT_VOLUME if self.muted else self.level
+
+    def at(self, level: float) -> Loudness:
+        """The same switch at a different level."""
+        return Loudness(level=level, muted=self.muted)
+
+    def silenced(self, muted: bool) -> Loudness:
+        """The same level, silenced or given back."""
+        return Loudness(level=self.level, muted=muted)
+
+
+def audible_position(reported: PlaybackPosition, lead_frames: int) -> PlaybackPosition:
+    """The position a listener would say, from the one the decode reports.
+
+    A device is handed frames before they are heard, so the decode runs ahead
+    of the speakers by whatever is still sitting in the buffer. Shown raw, a
+    progress display sits ahead of the music by that much and a track appears
+    to finish before it has.
+    """
+    return PlaybackPosition(
+        frame=max(0, reported.frame - lead_frames),
+        frame_count=reported.frame_count,
+        sample_rate=reported.sample_rate,
+    )

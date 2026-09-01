@@ -8,11 +8,19 @@ pacing wanted. Nothing here schedules anything.
 Each load builds a whole new session (reader, stream, thread) and stopping tears
 that session down, so no state is shared between one track and the next and a
 transport command can never reach a half replaced engine.
+
+A gapless transition is the one thing that crosses a track boundary without a
+new session, because it has to: the only thing awake at the seam is the feeder
+thread, halfway through a run of blocking writes. Nothing can be asked and
+nothing can be loaded there, so the follower is opened while the current track
+is still playing and the feeder reads straight on into it. The stream is never
+stopped, so the device is handed one unbroken run of blocks.
 """
 
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -27,11 +35,18 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
-from stellody.infrastructure.decode import SourceReader
+from stellody.infrastructure.decode import DecodeError, SourceReader
 from stellody.infrastructure.wasapi import open_output
 
 BLOCK_FRAMES = 4096
 JOIN_TIMEOUT_SECONDS = 2.0
+
+# What open_output does, named so a test can hand in a stream of its own and
+# read the samples the engine writes. Nothing else here opens a device.
+Opener = Callable[
+    [OutputRequest, int | None],
+    tuple[sounddevice.OutputStream, OutputReport, str],
+]
 
 
 @dataclass(slots=True)
@@ -47,6 +62,9 @@ class _Session:
     cancel: threading.Event = field(default_factory=threading.Event)
     finished: threading.Event = field(default_factory=threading.Event)
     thread: threading.Thread | None = None
+    # Opened ahead of the seam so the feeder never has to wait at one.
+    follower: SourceReader | None = None
+    crossings: int = 0
 
 
 class WasapiPlayback:
@@ -58,10 +76,14 @@ class WasapiPlayback:
     """
 
     def __init__(
-        self, device: int | None = None, block_frames: int = BLOCK_FRAMES
+        self,
+        device: int | None = None,
+        block_frames: int = BLOCK_FRAMES,
+        opener: Opener = open_output,
     ) -> None:
         self._device = device
         self._block_frames = block_frames
+        self._opener = opener
         self._volume = UNITY_VOLUME
         self._session: _Session | None = None
         self._closed = False
@@ -91,7 +113,7 @@ class WasapiPlayback:
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened."""
         self.stop()
-        stream, report, dtype = open_output(request, self._device)
+        stream, report, dtype = self._opener(request, self._device)
         try:
             reader = SourceReader(source, dtype=dtype)
         except Exception:
@@ -134,6 +156,8 @@ class WasapiPlayback:
         session.stream.abort(ignore_errors=True)
         session.stream.close(ignore_errors=True)
         session.reader.close()
+        if session.follower is not None:
+            session.follower.close()
 
     def seek(self, frame: int) -> None:
         """Move to a frame offset within the loaded source, clamped to it."""
@@ -143,6 +167,52 @@ class WasapiPlayback:
         with session.lock:
             session.reader.seek(frame)
         session.finished.clear()
+
+    @property
+    def crossings(self) -> int:
+        """How many lined-up sources the feeder has run into by itself."""
+        session = self._session
+        if session is None:
+            return 0
+        with session.lock:
+            return session.crossings
+
+    def queue_next(self, source: TrackSource | None) -> bool:
+        """Open what follows now, so the feeder never waits at the seam.
+
+        A source whose shape the open stream cannot carry is refused rather
+        than joined badly: the stream was opened for one rate and one channel
+        count; writing anything else into it would be worse than the gap
+        it was meant to avoid.
+        """
+        session = self._session
+        if session is None:
+            return False
+        self._drop_follower(session)
+        if source is None:
+            return False
+        try:
+            candidate = SourceReader(source, dtype=session.dtype)
+        except DecodeError:
+            return False
+        with session.lock:
+            joins = (
+                candidate.sample_rate == session.reader.sample_rate
+                and candidate.channels == session.reader.channels
+            )
+            if joins:
+                session.follower = candidate
+        if not joins:
+            candidate.close()
+        return joins
+
+    def _drop_follower(self, session: _Session) -> None:
+        """Let go of whatever was lined up, closing its file."""
+        with session.lock:
+            previous = session.follower
+            session.follower = None
+        if previous is not None:
+            previous.close()
 
     @property
     def lead_frames(self) -> int:
@@ -185,6 +255,14 @@ class WasapiPlayback:
                 return
             with session.lock:
                 block = session.reader.read(self._block_frames)
+                if len(block) == 0 and session.follower is not None:
+                    # The seam. No stop, no reopen and no silence written:
+                    # the very next write carries the following track.
+                    session.reader.close()
+                    session.reader = session.follower
+                    session.follower = None
+                    session.crossings += 1
+                    block = session.reader.read(self._block_frames)
             if len(block) == 0:
                 session.finished.set()
                 session.resume.clear()

@@ -65,10 +65,17 @@ class FakePlayer:
         self.volume = UNITY_VOLUME
         self.reported: PlaybackPosition | None = None
         self.lead = 0
+        # What the transport has lined up to follow, plus how many seams
+        # this stand-in has been told it crossed. A test moves the count
+        # itself, which is what the engine does on its feeder thread.
+        self.lined_up: list[TrackSource | None] = []
+        self.joins = True
+        self.crossings = 0
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Record the load and report a plain shared stream."""
         self.calls.append("load")
+        self.crossings = 0
         self.loaded.append(source)
         self.requests.append(request)
         self.finished = False
@@ -79,6 +86,15 @@ class FakePlayer:
             sample_rate=request.sample_rate,
             bit_depth=request.bit_depth,
         )
+
+    def queue_next(self, source: TrackSource | None) -> bool:
+        """Record what was lined up to follow the loaded track."""
+        self.lined_up.append(source)
+        return self.joins and source is not None
+
+    def cross(self) -> None:
+        """Run into the lined-up source, as the feeder thread would."""
+        self.crossings += 1
 
     def play(self) -> None:
         """Record the play."""

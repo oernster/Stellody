@@ -43,15 +43,25 @@ owner's to make.
 
 ## 8. Gapless transitions
 
-Not present. This is the hardest item here: it wants the next track decoding
-before the current one ends, plus a device that is not stopped and restarted
-between them.
+**Built and gate-green; open only until two tracks that run together have
+been heard running together.** The following source is opened while the
+current track is still playing and the feeder thread reads straight on into
+it, so the stream is never stopped between them. A track held on repeat
+rejoins itself the same way.
 
-Worth doing properly or not at all, since a nearly gapless player is more
-irritating than an honestly gapped one.
+The seam is measured rather than judged: `tests/infrastructure/`
+`test_gapless_seam.py` plays two files of known samples through the engine
+into a recording stream, then compares what the device was handed against the
+two files laid end to end. Anything inserted, dropped or reordered shows up as
+an inequality. It also asserts the stream was started once and never stopped.
+Removing the crossing fails both, which was checked by planting it.
 
-Done when: two tracks that run together on the disc run together through
-Stellody; a test measures the seam rather than a listener judging it.
+Two joins stay gapped on purpose, both because the alternative is worse: a
+follower needing a different sample rate needs a different device; a
+scattered album beginning again has not chosen its order yet.
+
+Done when: two tracks that run together on the disc run together through the
+built application, judged by ear on top of the measurement above.
 
 ## 9. The equalizer
 
