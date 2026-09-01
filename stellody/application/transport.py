@@ -21,6 +21,7 @@ from stellody.domain.playback import (
     OutputRequest,
     PlaybackPosition,
     PlaybackState,
+    RepeatMode,
 )
 from stellody.domain.queue import Queue, queue_from
 from stellody.domain.track import Track
@@ -72,7 +73,7 @@ class Transport:
         self._volume = UNITY_VOLUME
         self._muted = False
         self._shuffled = False
-        self._repeating = False
+        self._repeat = RepeatMode.OFF
 
     def report_plays_to(self, played: PlayedOut) -> None:
         """Say who is told when a track plays out.
@@ -163,13 +164,13 @@ class Transport:
         self._queue = self._queue.reordered_leading(self._ordering(self._album_order))
 
     @property
-    def repeating(self) -> bool:
-        """Whether the queue starts again rather than ending."""
-        return self._repeating
+    def repeat(self) -> RepeatMode:
+        """What an ending means: stop, start the album again or hold one track."""
+        return self._repeat
 
-    def set_repeating(self, repeating: bool) -> None:
-        """Choose between the queue ending at its last track and looping."""
-        self._repeating = repeating
+    def set_repeat(self, repeat: RepeatMode) -> None:
+        """Choose what an ending does. Nothing already playing is disturbed."""
+        self._repeat = repeat
 
     def play_album(self, album: Album, first: Track) -> None:
         """Queue an album and start at the track that was activated.
@@ -247,11 +248,16 @@ class Transport:
 
         A repeating queue of one track wraps round to that same track, which
         means playing it again rather than doing nothing.
+
+        This is the deliberate skip, so it advances under every mode, holding
+        one track included. A listener who has asked to move on has asked to
+        move on; a repeat that swallowed the request would leave them pressing
+        a button that does nothing and no way off the track but the switch.
         """
-        if self._repeating and not self._queue.has_next:
+        if self._repeat.repeats and not self._queue.has_next:
             self._begin_again()
             return
-        if self._repeating:
+        if self._repeat.repeats:
             self._restart_at(self._queue.wrapped_next())
             return
         self._move(self._queue.next())
@@ -305,7 +311,7 @@ class Transport:
         if self._shuffled or not self._waiting_at_the_start:
             self._open_paused(self._queue)
             return
-        if self._repeating:
+        if self._repeat.repeats:
             self._open_paused(self._queue.wrapped_previous())
             return
         self._open_paused(self._queue.previous())
@@ -336,6 +342,11 @@ class Transport:
         A track ending is not reported by the device, so it is asked about.
         The last track in a queue ends by stopping, rather than by looping or
         by leaving the device open on silence.
+
+        Holding one track is decided HERE rather than in `next`, because the
+        two are different questions asked through the same door: an ending is
+        what repeat is about, while pressing Next is a listener overruling it.
+        Only the first of them replays the track.
         """
         if not self._player.finished:
             return False
@@ -343,7 +354,10 @@ class Transport:
         album = self._album
         if finished is not None and album is not None:
             self._played(album, finished)
-        if not self._queue.has_next and not self._repeating:
+        if self._repeat is RepeatMode.ONE:
+            self._restart_at(self._queue)
+            return True
+        if not self._queue.has_next and not self._repeat.repeats:
             self._player.stop()
             return True
         self.next()

@@ -9,7 +9,12 @@ from __future__ import annotations
 from transport_support import FakePlayer, album_of, track
 
 from stellody.application.transport import Transport
-from stellody.domain.playback import SILENT_VOLUME, UNITY_VOLUME, PlaybackState
+from stellody.domain.playback import (
+    SILENT_VOLUME,
+    UNITY_VOLUME,
+    PlaybackState,
+    RepeatMode,
+)
 
 # Any level that is neither silence nor unity, so the two cannot be confused.
 HALF_VOLUME = 0.5
@@ -237,8 +242,8 @@ def test_repeat_carries_the_end_of_the_queue_round_to_its_start() -> None:
     transport.play_album(album_of(one, two), two)
     transport.next()
     assert transport.current is two, "without repeat the end is the end"
-    transport.set_repeating(True)
-    assert transport.repeating is True
+    transport.set_repeat(RepeatMode.ALBUM)
+    assert transport.repeat is RepeatMode.ALBUM
     transport.next()
     assert transport.current is one
 
@@ -247,7 +252,7 @@ def test_repeat_carries_the_start_of_the_queue_round_to_its_end() -> None:
     one, two = track(1), track(2)
     transport = Transport(FakePlayer())
     transport.play_album(album_of(one, two), one)
-    transport.set_repeating(True)
+    transport.set_repeat(RepeatMode.ALBUM)
     transport.previous()
     transport.previous()
     assert transport.current is two, "the second press is the one that steps"
@@ -259,7 +264,7 @@ def test_a_repeating_queue_of_one_track_plays_that_track_again() -> None:
     player = FakePlayer()
     transport = Transport(player)
     transport.play_album(album_of(one), one)
-    transport.set_repeating(True)
+    transport.set_repeat(RepeatMode.ALBUM)
     player.calls.clear()
     transport.next()
     assert player.calls == ["load", "play"]
@@ -272,7 +277,7 @@ def test_a_finished_last_track_loops_instead_of_stopping_while_repeating() -> No
     player = FakePlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two), two)
-    transport.set_repeating(True)
+    transport.set_repeat(RepeatMode.ALBUM)
     player.finished = True
     assert transport.advance_if_finished() is True
     assert transport.current is one

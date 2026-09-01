@@ -70,9 +70,13 @@ not going to.
   there goes to the track before, waiting at its beginning too.
 - Carries volume, mute, shuffle and repeat, each remembered between sessions.
   Shuffle leads its scattered run with the track already playing, so next
-  reaches the whole of the rest of the album. Repeat plays the album again
-  rather than the track, scattering it afresh each time round when shuffle is
-  on.
+  reaches the whole of the rest of the album. Repeat has three states rather
+  than two, stepped through by pressing it: off, the album again, then the one
+  track held on its own. Each state carries its own picture, since three
+  cannot be told apart by a switch being lit. The album scatters itself afresh
+  each time round when shuffle is on. A held track replays when it ends;
+  pressing next still moves on, since asking to move on is not a state the
+  switch is in.
 - Draws the track's own waveform along the bottom, with a line marking where
   playback has reached and the time either side of it. The shape builds from
   the left as the file is read, so a picture is there at once rather than after

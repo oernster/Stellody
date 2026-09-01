@@ -15,6 +15,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Slot
 
+from stellody.domain.playback import RepeatMode
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_MUTED,
@@ -82,7 +83,7 @@ class Playing:
         """
         self._apply_muted(self._flag(SETTING_MUTED))
         self._apply_shuffled(self._flag(SETTING_SHUFFLE))
-        self._apply_repeating(self._flag(SETTING_REPEAT))
+        self._apply_repeat(self._stored_repeat())
 
     def toggle_mute(self) -> None:
         """Silence the output, else give it back at the level already chosen."""
@@ -93,8 +94,8 @@ class Playing:
         self._apply_shuffled(not self._transport.shuffled)
 
     def toggle_repeat(self) -> None:
-        """Choose between the queue ending at its last track and looping."""
-        self._apply_repeating(not self._transport.repeating)
+        """Step the switch on: off, then the album, then one track, then off."""
+        self._apply_repeat(self._transport.repeat.after)
 
     def _apply_muted(self, muted: bool) -> None:
         """Set the switch, show it and remember it: the three go together."""
@@ -108,11 +109,27 @@ class Playing:
         self._bottom_tray.set_shuffled(shuffled)
         self._remember(SETTING_SHUFFLE, shuffled)
 
-    def _apply_repeating(self, repeating: bool) -> None:
-        """Set the switch, show it and remember it."""
-        self._transport.set_repeating(repeating)
-        self._bottom_tray.set_repeating(repeating)
-        self._remember(SETTING_REPEAT, repeating)
+    def _apply_repeat(self, repeat: RepeatMode) -> None:
+        """Set the switch, show it and remember it: the three go together."""
+        self._transport.set_repeat(repeat)
+        self._bottom_tray.set_repeat(repeat)
+        self._settings.set_setting(SETTING_REPEAT, repeat.value)
+
+    def _stored_repeat(self) -> RepeatMode:
+        """The mode last left, reading the boolean this setting used to hold.
+
+        Before there were three states it held Stellody's own true or false.
+        An upgrade therefore finds a boolean here; the switch belongs where
+        the listener left it rather than quietly back at off. Anything
+        else unreadable is off, which is the state that surprises nobody.
+        """
+        stored = self._settings.get_setting(SETTING_REPEAT, RepeatMode.OFF.value)
+        if stored == TRUE:
+            return RepeatMode.ALBUM
+        try:
+            return RepeatMode(stored)
+        except ValueError:
+            return RepeatMode.OFF
 
     def _remember(self, key: str, on: bool) -> None:
         """Store one switch under the name it is read back by."""

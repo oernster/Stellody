@@ -43,17 +43,22 @@ owner's to make.
 
 ## 7. Repeat one track
 
-Shuffle and repeat both shipped: shuffle takes a permutation of the album and
-keeps playing whatever is playing, repeat carries the end of the queue round to
-its start; each is remembered between sessions. A queue holding one track
-already repeats that track, because wrapping lands back on it.
+**Built and gate-green; open only until it has been watched in the built
+application.** The switch steps through three states rather than two: off, the
+album again, then one track held on its own. Each carries its own artwork,
+since a button that says how things stand by lighting up can say two things
+and no more. A held track replays at its end while Next still advances, so
+asking to move on is never swallowed. The state is written down as a mode
+rather than a boolean; the boolean this setting used to hold is read back as
+the album, so an upgrade keeps the switch where it was left.
 
-What is missing is repeat-one as a MODE, so a single track can be held on
-repeat inside a queue of many. That is a third state on a switch drawn with one
-piece of artwork, so it needs a second image before it needs any code.
+The artwork exists and the behaviour is covered by tests, including the ending
+that replays, the Next that overrules it and the wrap at the end of the queue.
+What has not happened is somebody cycling the switch in the built application
+and seeing the three pictures in turn.
 
-Done when: a track can be set to repeat on its own within a full queue, the
-switch shows which of the three states it is in; the choice survives a restart.
+Done when: somebody has stepped the switch through its three states in the
+built application and heard a track hold on its own inside a full queue.
 
 ## 8. Gapless transitions
 

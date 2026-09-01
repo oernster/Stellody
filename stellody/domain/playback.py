@@ -37,6 +37,36 @@ class PlaybackState(Enum):
         return self is not PlaybackState.STOPPED
 
 
+class RepeatMode(Enum):
+    """What the end of a track means, when there is a choice about it.
+
+    OFF stops at the last track of the queue. ALBUM carries the end round to
+    the start, so the record plays again. ONE holds the track that is playing
+    and plays it once more, which is a different question from what the queue
+    does: it never advances at all.
+    """
+
+    OFF = "off"
+    ALBUM = "album"
+    ONE = "one"
+
+    @property
+    def repeats(self) -> bool:
+        """True while an ending is a beginning rather than a stop."""
+        return self is not RepeatMode.OFF
+
+    @property
+    def after(self) -> RepeatMode:
+        """The mode one press of the switch moves to, coming back to OFF.
+
+        Taken from the order these are declared in rather than from a table
+        beside them, so the cycle cannot come to disagree with the members it
+        is cycling through.
+        """
+        order = tuple(RepeatMode)
+        return order[(order.index(self) + 1) % len(order)]
+
+
 class OutputMode(Enum):
     """How the stream reaches the device.
 

@@ -22,6 +22,7 @@ from __future__ import annotations
 from transport_support import FakePlayer, album_of, reversed_order, track
 
 from stellody.application.transport import Transport
+from stellody.domain.playback import RepeatMode
 
 
 def playing_the_middle_track():
@@ -114,6 +115,6 @@ def test_back_at_the_start_of_a_repeating_queue_wraps_to_its_end() -> None:
     transport.previous()
     transport.previous()
     assert transport.current is tracks[0]
-    transport.set_repeating(True)
+    transport.set_repeat(RepeatMode.ALBUM)
     transport.previous()
     assert transport.current is tracks[2]

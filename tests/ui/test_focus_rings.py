@@ -138,7 +138,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Buy the author a drink (opens your browser)",
         "Switch to album art",
         "Turn shuffle on",
-        "Turn repeat on",
+        "Repeat the album",
     ]
     top = buttons[:TOP_TRAY_STOPS]
     bottom = buttons[TOP_TRAY_STOPS:]

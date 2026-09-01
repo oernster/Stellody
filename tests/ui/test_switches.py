@@ -27,7 +27,7 @@ from PySide6.QtWidgets import QApplication
 from tray_support import ICON_PX as READ_PX
 from tray_support import RememberingStore, build, picture
 
-from stellody.domain.playback import SILENT_VOLUME
+from stellody.domain.playback import SILENT_VOLUME, RepeatMode
 from stellody.shared import resources
 from stellody.shared.version import DONATE_URL
 from stellody.ui import menus as window_module
@@ -148,15 +148,26 @@ def test_the_repeat_switch_reaches_the_transport_and_lights_while_it_is_on(
     button = window._bottom_tray.repeat_button
     off = picture(button)
     assert button.isCheckable()
+
     window.toggle_repeat()
-    assert window._transport.repeating is True
+    assert window._transport.repeat is RepeatMode.ALBUM
     assert button.isChecked() is True
-    assert button.toolTip() == "Turn repeat off"
-    assert picture(button) == off, "the artwork is never struck through"
+    assert button.toolTip() == "Repeat one track"
+    album = picture(button)
+    assert album != off, "the album state carries its own artwork"
+
     window.toggle_repeat()
-    assert window._transport.repeating is False
+    assert window._transport.repeat is RepeatMode.ONE
+    assert button.isChecked() is True, "holding one track is still repeating"
+    assert button.toolTip() == "Turn repeat off"
+    one = picture(button)
+    assert one != album, "one track is told from the album by its picture"
+    assert one != off
+
+    window.toggle_repeat()
+    assert window._transport.repeat is RepeatMode.OFF
     assert button.isChecked() is False
-    assert picture(button) == off
+    assert picture(button) == off, "the cycle comes back to where it started"
 
 
 def test_every_switch_is_written_down_as_it_is_pressed(
@@ -165,12 +176,20 @@ def test_every_switch_is_written_down_as_it_is_pressed(
     for toggle, key in (
         (window.toggle_mute, SETTING_MUTED),
         (window.toggle_shuffle, SETTING_SHUFFLE),
-        (window.toggle_repeat, SETTING_REPEAT),
     ):
         toggle()
         assert store.get_setting(key) == TRUE
         toggle()
         assert store.get_setting(key) == FALSE
+
+
+def test_the_repeat_switch_writes_down_which_state_it_is_in(
+    window: MainWindow, store: RememberingStore
+) -> None:
+    """Repeat holds three states, so a boolean could not say where it is."""
+    for expected in (RepeatMode.ALBUM, RepeatMode.ONE, RepeatMode.OFF):
+        window.toggle_repeat()
+        assert store.get_setting(SETTING_REPEAT) == expected.value
 
 
 def test_the_switches_come_back_as_they_were_left(
@@ -183,7 +202,7 @@ def test_the_switches_come_back_as_they_were_left(
     reopened = build(remembered, player)
     assert reopened._transport.muted is True
     assert reopened._transport.shuffled is True
-    assert reopened._transport.repeating is True
+    assert reopened._transport.repeat is RepeatMode.ALBUM
     assert reopened._tray.mute_button.toolTip() == "Unmute"
     assert reopened._bottom_tray.shuffle_button.toolTip() == "Turn shuffle off"
     assert player.volume == SILENT_VOLUME

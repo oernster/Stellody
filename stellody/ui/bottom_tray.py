@@ -37,6 +37,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
+from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon
@@ -67,6 +68,21 @@ SIZE_NAMES = {
     CoverSize.MEDIUM: "medium",
     CoverSize.LARGE: "large",
     CoverSize.EXTRA_LARGE: "extra large",
+}
+# Shuffle says its state with the fill alone, which is all two states need.
+# Three cannot be told apart that way, so each repeat state carries its own
+# picture and the fill is left saying only that something is on.
+REPEAT_ICONS = {
+    RepeatMode.OFF: resources.repeat_icon_path,
+    RepeatMode.ALBUM: resources.repeat_album_icon_path,
+    RepeatMode.ONE: resources.repeat_one_icon_path,
+}
+# Named for what the next press does, which is the rule the other tooltips on
+# this strip follow.
+REPEAT_TIPS = {
+    RepeatMode.OFF: "Repeat the album",
+    RepeatMode.ALBUM: "Repeat one track",
+    RepeatMode.ONE: "Turn repeat off",
 }
 # The same honesty as the view toggle. What the health report lists can be
 # worked out, since resolution already happens on load; nothing yet lets a
@@ -146,7 +162,7 @@ class BottomTray(QWidget):
         for button in self.switch_stops():
             row.addWidget(button)
         self.set_shuffled(False)
-        self.set_repeating(False)
+        self.set_repeat(RepeatMode.OFF)
 
     def ring_stops(self) -> tuple[QPushButton, ...]:
         """This tray's controls, left to right as they are drawn.
@@ -187,11 +203,11 @@ class BottomTray(QWidget):
             self.shuffle_button, resources.shuffle_icon_path(), shuffled, "shuffle"
         )
 
-    def set_repeating(self, repeating: bool) -> None:
-        """Strike the repeat switch through while the queue ends at its end."""
-        self._show_switch(
-            self.repeat_button, resources.repeat_icon_path(), repeating, "repeat"
-        )
+    def set_repeat(self, repeat: RepeatMode) -> None:
+        """Show which of the three repeat states the switch is holding."""
+        self.repeat_button.setIcon(plain_icon(REPEAT_ICONS[repeat]()))
+        self.repeat_button.setChecked(repeat.repeats)
+        self.repeat_button.setToolTip(REPEAT_TIPS[repeat])
 
     def _show_switch(self, button: QPushButton, path, on: bool, name: str) -> None:
         """Light one switch while it is on; say what a press would do.
