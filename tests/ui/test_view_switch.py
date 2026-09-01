@@ -133,3 +133,40 @@ class TestTheButtonItself:
         listed = window._library.currentWidget()
         window._tray.showing.view_button.click()
         assert window._library.currentWidget() is not listed
+
+
+class TestWhatEachViewCanBeAskedFor:
+    """Expanding and collapsing belong to the list, which is the nested one."""
+
+    def test_the_list_offers_expanding_and_collapsing(self, window) -> None:
+        window.show_covers(False)
+        assert window._expand_action.isEnabled()
+        assert window._collapse_action.isEnabled()
+
+    def test_the_sleeves_do_not(self, window) -> None:
+        """A flat grid of albums has nothing inside an album to open.
+
+        They stayed live in that view and did nothing when pressed, which is
+        the one thing this application's own rule forbids: a control that
+        cannot act says so rather than staying quiet about it.
+        """
+        window.show_covers(True)
+        assert not window._expand_action.isEnabled()
+        assert not window._collapse_action.isEnabled()
+
+    def test_switching_back_offers_them_again(self, window) -> None:
+        """Disabled for the view, not for the session."""
+        window.show_covers(True)
+        window.show_covers(False)
+        assert window._expand_action.isEnabled()
+        assert window._collapse_action.isEnabled()
+
+    def test_a_window_opening_on_the_sleeves_starts_without_them(
+        self, application: QApplication
+    ) -> None:
+        """The restored view has to say so too, not only a switch made by hand."""
+        opened = build(RememberingStore({SETTING_COVERS: TRUE}), RecordingPlayer())
+        opened.show()
+        assert opened.showing_covers
+        assert not opened._expand_action.isEnabled()
+        opened.close()

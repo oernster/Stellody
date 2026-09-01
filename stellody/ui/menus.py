@@ -27,6 +27,18 @@ from stellody.ui.settings_keys import SETTING_ROOT, STATUS_TIMEOUT_MS
 class Menus:
     """The window's half of offering everything it can be asked for."""
 
+    def show_nesting_actions(self, usable: bool) -> None:
+        """Offer expanding and collapsing only where there is nesting to open.
+
+        The sleeves are a flat grid of albums with nothing inside them, so in
+        that view both entries sat there looking live and did nothing at all.
+        That is the one thing this application's own rule forbids: a control
+        that cannot act says so rather than staying quiet about it, which is
+        why every button that cannot be pressed wears a ring saying so.
+        """
+        self._expand_action.setEnabled(usable)
+        self._collapse_action.setEnabled(usable)
+
     def _build_menus(self) -> None:
         """The whole menu bar."""
         file_menu = self.menuBar().addMenu("&File")
@@ -52,8 +64,12 @@ class Menus:
             view_menu, self, "Sort &Z to A", self.toggle_order, checkable=True
         )
         view_menu.addSeparator()
-        menu_action(view_menu, self, "&Expand all", self._tree.expandAll)
-        menu_action(view_menu, self, "&Collapse all", self._tree.collapseAll)
+        self._expand_action = menu_action(
+            view_menu, self, "&Expand all", self._tree.expandAll
+        )
+        self._collapse_action = menu_action(
+            view_menu, self, "&Collapse all", self._tree.collapseAll
+        )
 
         sound_menu = self.menuBar().addMenu("&Sound")
         menu_action(sound_menu, self, "&Equalizer...", self.show_equaliser)

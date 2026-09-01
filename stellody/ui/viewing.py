@@ -112,10 +112,16 @@ class Viewing:
         self.show_covers(not self.showing_covers)
 
     def show_covers(self, covers: bool) -> None:
-        """Show one view or the other, then remember which."""
+        """Show one view or the other, then remember which.
+
+        The one place the view changes, so it is the one place that has to say
+        what the change means for anything else. Expanding and collapsing are
+        offered only where there is nesting to do them to.
+        """
         self._library.setCurrentIndex(1 if covers else 0)
         self._tray.set_showing_covers(covers)
         self._settings.set_setting(SETTING_COVERS, TRUE if covers else FALSE)
+        self.show_nesting_actions(not covers)
         if not covers:
             self.close_album()
 
