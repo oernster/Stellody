@@ -43,7 +43,7 @@ NEUTRAL_START = "NeutralStart"
 # search and volume and are disabled with nothing playing, so they are not
 # stops at all. The search box is not one either while it is closed, since Qt
 # skips a hidden stop; opening it adds an eighth.
-TOP_TRAY_STOPS = 7
+TOP_TRAY_STOPS = 9
 RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
 COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
@@ -127,16 +127,19 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     # nothing playing, plus the repair control that is not built yet. The ring
     # must not stall on a dead one.
     tips = [button.toolTip() for button in buttons]
+    # The size button is disabled over the list; Qt skips a disabled stop,
+    # so it is deliberately absent from this order.
     assert tips == [
         "Choose music folder",
         "Rescan the library",
         "Search the library",
+        "Switch to album art",
+        "Shape what is heard",
         f"Volume {DEFAULT_PERCENT}%",
         "Mute",
         "Switch to the light appearance",
         "Help",
         "Buy the author a drink (opens your browser)",
-        "Switch to album art",
         "Turn shuffle on",
         "Repeat the album",
     ]

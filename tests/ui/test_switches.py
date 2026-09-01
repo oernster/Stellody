@@ -256,28 +256,29 @@ def test_the_mute_switch_is_ruled_off_from_the_buttons_after_it(
     assert separator.focusPolicy() == 0, "a rule is not a control"
 
 
-def test_the_view_toggle_sits_at_the_left_of_the_strip(window: MainWindow) -> None:
-    """Under the library it would change, away from the settings.
+def test_the_showing_controls_sit_beside_the_search_that_joins_them(
+    window: MainWindow,
+) -> None:
+    """The view toggle, then the sleeve size, then the equalizer.
 
-    Read off the layout as well as off the geometry. A button never added to
-    the layout also sits at the left, at nothing, which a comparison of
-    positions alone reports as a pass.
+    All four change what is on show rather than what is playing, so they sit
+    together. Read off the layout as well as off the geometry: a group never
+    added to the layout also sits right of search, at nothing, which a
+    comparison of positions alone reports as a pass.
     """
     window.show()
-    tray = window._bottom_tray
+    tray = window._tray
     row = tray.layout()
     widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    assert tray.view_button in widgets, "the toggle is actually laid out"
-    # The one item holding no widget is the stretch that splits the strip.
-    gap = widgets.index(None)
-    assert widgets.index(tray.view_button) < gap, "the toggle is before the gap"
-    for button in tray.switch_stops():
-        assert widgets.index(button) > gap, "every setting is after it"
-    view = tray.view_button.mapTo(tray, tray.view_button.rect().center()).x()
-    switches = [
-        button.mapTo(tray, button.rect().center()).x() for button in tray.switch_stops()
+    assert tray.showing in widgets, "the group is actually laid out"
+    assert widgets.index(tray.showing) == widgets.index(tray.search_box) + 1
+    centres = [
+        button.mapTo(tray, button.rect().center()).x()
+        for button in tray.showing.stops()
     ]
-    assert view < min(switches), "and it is drawn there too"
+    assert centres == sorted(centres), "view, then size, then the equalizer"
+    search = tray.search_button.mapTo(tray, tray.search_button.rect().center()).x()
+    assert search < min(centres), "and all three are drawn right of search"
 
 
 def test_the_view_toggle_says_what_pressing_it_would_do(
@@ -285,7 +286,7 @@ def test_the_view_toggle_says_what_pressing_it_would_do(
 ) -> None:
     """A button that names the view on show is read as a state and pressed to
     confirm it, so it names the view it would move to instead."""
-    button = window._bottom_tray.view_button
+    button = window._tray.showing.view_button
     assert button.isEnabled()
     assert not button.icon().isNull(), "it is drawn, not merely reserved"
     window.show_covers(False)
@@ -298,8 +299,8 @@ def test_the_view_toggle_is_a_stop_now_that_it_works(
     application: QApplication, window: MainWindow
 ) -> None:
     """It was named in the ring while disabled so this day needed no reordering."""
-    tray = window._bottom_tray
-    assert tray.view_button in tray.ring_stops()
+    tray = window._tray
+    assert tray.showing.view_button in tray.ring_stops()
     window.show()
     application.processEvents()
     order = []
@@ -311,7 +312,7 @@ def test_the_view_toggle_is_a_stop_now_that_it_works(
             break
         seen.add(id(current))
         order.append(current)
-    assert tray.view_button in order, "an enabled control is a stop"
+    assert tray.showing.view_button in order, "an enabled control is a stop"
     assert window._tray.repair_button not in order, "a disabled one still is not"
 
 

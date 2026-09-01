@@ -80,7 +80,7 @@ class TestSteppingThroughThem:
         """The control pressed, not the handler called: it is dead over the
         list, so a press there would have proved nothing at all."""
         window.toggle_view()
-        window._bottom_tray.size_button.click()
+        window._tray.showing.size_button.click()
         assert window._cover_size is next_cover_size(DEFAULT_COVER_SIZE)
 
     def test_the_tiles_and_the_grid_grow_together(self, window) -> None:
@@ -93,7 +93,7 @@ class TestSteppingThroughThem:
 
     def test_the_button_names_the_size_it_would_move_to(self, window) -> None:
         window.show_cover_size_choice(CoverSize.LARGE)
-        assert "extra large" in window._bottom_tray.size_button.toolTip()
+        assert "extra large" in window._tray.showing.size_button.toolTip()
 
     def test_the_choice_is_written_down(self, window) -> None:
         window.show_cover_size_choice(CoverSize.EXTRA_LARGE)
@@ -117,12 +117,12 @@ class TestSteppingThroughThem:
     def test_the_button_is_dead_over_the_list(self, window) -> None:
         """The size means nothing there, so the ring skips it and it shows no border."""
         assert not window.showing_covers
-        assert not window._bottom_tray.size_button.isEnabled()
+        assert not window._tray.showing.size_button.isEnabled()
         window.toggle_view()
-        assert window._bottom_tray.size_button.isEnabled()
+        assert window._tray.showing.size_button.isEnabled()
 
     def test_the_button_is_in_the_ring(self, window) -> None:
-        assert window._bottom_tray.size_button in window._bottom_tray.ring_stops()
+        assert window._tray.showing.size_button in window._tray.ring_stops()
 
 
 class TestReadingAgainAtTheNewSize:

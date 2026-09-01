@@ -16,7 +16,7 @@ large one that does not.
 Stellody reads FLAC and nothing else today, so a folder of MP3, M4A or WMA
 scans to nothing. Measured over the library it is developed against, that hides
 146 of the 656 folders holding audio and part of 23 more, most of them M4A.
-`PLAN.md` milestone 3 is the work that widens it and sizes both halves of it.
+`PLAN.md` milestone 4 is the work that widens it and sizes both halves of it.
 
 Not for streaming, not for ripping CDs, not for syncing to devices and not for
 managing a library by rewriting its tags. Stellody does none of those and is
@@ -31,11 +31,12 @@ not going to.
   sibling folders, a bonus disc whose folder names no number among them,
   compilations and tracks with several credited artists.
 - Shows the library as albums, discs and tracks, ordered either way, else as
-  a grid of covers with a toggle at the left of the bottom strip between the two.
+  a grid of covers with a toggle beside the search box between the two.
   Picking a sleeve opens that album underneath the grid, its tracks running down
   two columns with the first ready to play, so the sleeves stay where they were;
   picking the same sleeve again rolls that pane back up. The sleeves are drawn
-  at three sizes, cycled from the bottom strip. The view and the size are both
+  at three sizes, cycled from the button beside that toggle. The view and the
+  size are both
   remembered.
 - Narrows the library to what you type, from a box that opens in the top tray
   and closes again, which restores everything. An album that matches keeps all
@@ -87,7 +88,8 @@ not going to.
   two. A track held on repeat rejoins itself the same way. Where the next
   track needs a different sample rate the device has to be reopened, so
   that one join is honestly gapped rather than joined badly.
-- Shapes what is heard with a ten band equalizer, from the Sound menu.
+- Shapes what is heard with a ten band equalizer, from the button beside the
+  sleeve size or from the Sound menu.
   Each band sits an octave from the next and lifts or cuts up to twelve
   decibels around its own frequency; the sound follows a slider as it is
   dragged. The switch is separate from the sliders, so turning it off to

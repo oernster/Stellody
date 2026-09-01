@@ -67,18 +67,18 @@ class TestWhatIsWrittenDown:
         store = RememberingStore()
         made = window(store)
         made.show()
-        made.resize(1440, 910)
+        made.resize(1600, 910)
         made.close()
-        assert store.settings[SETTING_WINDOW_WIDTH] == "1440"
+        assert store.settings[SETTING_WINDOW_WIDTH] == "1600"
         assert store.settings[SETTING_WINDOW_HEIGHT] == "910"
         assert store.settings[SETTING_WINDOW_MAXIMISED] == FALSE
 
     def test_the_next_run_opens_at_that_size(self, application, roomy) -> None:
         store = RememberingStore(
-            {SETTING_WINDOW_WIDTH: "1440", SETTING_WINDOW_HEIGHT: "910"}
+            {SETTING_WINDOW_WIDTH: "1600", SETTING_WINDOW_HEIGHT: "910"}
         )
         made = window(store)
-        assert made.size().width() == 1440
+        assert made.size().width() == 1600
         assert made.size().height() == 910
         made.close()
 
@@ -89,18 +89,18 @@ class TestLeftMaximised:
         store = RememberingStore()
         made = window(store)
         made.show()
-        made.resize(1300, 800)
+        made.resize(1520, 800)
         made.showMaximized()
         made.close()
         assert store.settings[SETTING_WINDOW_MAXIMISED] == TRUE
-        assert store.settings[SETTING_WINDOW_WIDTH] == "1300"
+        assert store.settings[SETTING_WINDOW_WIDTH] == "1520"
         assert store.settings[SETTING_WINDOW_HEIGHT] == "800"
 
     def test_it_comes_back_maximised(self, application, roomy) -> None:
         store = RememberingStore(
             {
                 SETTING_WINDOW_MAXIMISED: TRUE,
-                SETTING_WINDOW_WIDTH: "1300",
+                SETTING_WINDOW_WIDTH: "1520",
                 SETTING_WINDOW_HEIGHT: "800",
             }
         )
@@ -156,9 +156,9 @@ class TestASizeThatCannotBeUsed:
         """Nothing to clamp against is not a reason to refuse a size."""
         monkeypatch.setattr(Geometry, "_usable_screen", lambda self: None)
         store = RememberingStore(
-            {SETTING_WINDOW_WIDTH: "1440", SETTING_WINDOW_HEIGHT: "910"}
+            {SETTING_WINDOW_WIDTH: "1600", SETTING_WINDOW_HEIGHT: "910"}
         )
         made = window(store)
-        assert made.size().width() == 1440
+        assert made.size().width() == 1600
         assert made.size().height() == 910
         made.close()

@@ -13,7 +13,7 @@ is typed into, which is why the button opens the box rather than running
 anything: there would be nothing for a second press to do.
 
 Repair sits beside rescan because it is the answer to what a rescan finds.
-It was down on the bottom strip with the view toggle, which put it among the
+It was down on the bottom strip, which put it among the
 settings that outlast a track rather than beside the control it follows from.
 
 Mute is ruled off from the two buttons after it. It acts on what is playing
@@ -43,10 +43,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QFrame,
     QHBoxLayout,
     QLineEdit,
     QMenu,
@@ -55,8 +54,11 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.shared import resources
+from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon, struck_through
+from stellody.ui.showing_controls import ShowingControls
 from stellody.ui.theme import Mode
+from stellody.ui.tray_parts import icon_button, separator
 from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
 
 # The button is a way in to several things rather than one thing, so it is
@@ -87,32 +89,9 @@ SEARCH_BOX_HEIGHT_PX = 48
 SEARCH_PLACEHOLDER = "Album, artist or track"
 
 
-def _separator(parent: QWidget) -> QFrame:
-    """The hairline ruling one group of buttons off from the next.
-
-    Drawn as a plain frame carrying a background rather than as a Qt VLine,
-    because a VLine takes its colour from the palette and this one has to take
-    it from the appearance the application is wearing.
-    """
-    line = QFrame(parent)
-    line.setObjectName("TraySeparator")
-    line.setFrameShape(QFrame.Shape.NoFrame)
-    line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    line.setFixedSize(SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
-    return line
-
-
 def _icon_button(parent: QWidget, path, tip: str, on_click: Callable) -> QPushButton:
-    """One picture-only button, sized to its artwork."""
-    button = QPushButton(parent)
-    button.setObjectName("TrayButton")
-    button.setToolTip(tip)
-    button.setFixedSize(BUTTON_PX, BUTTON_PX)
-    button.setIconSize(QSize(ICON_PX, ICON_PX))
-    if path is not None:
-        button.setIcon(QIcon(str(path)))
-    button.clicked.connect(on_click)
-    return button
+    """One picture-only button at this tray's own size."""
+    return icon_button(parent, path, tip, on_click, BUTTON_PX, ICON_PX)
 
 
 class LibraryTray(QWidget):
@@ -136,6 +115,9 @@ class LibraryTray(QWidget):
         toggle_playback: Callable[[], None] = lambda: None,
         stop_playback: Callable[[], None] = lambda: None,
         next_track: Callable[[], None] = lambda: None,
+        toggle_view: Callable[[], None] = lambda: None,
+        toggle_cover_size: Callable[[], None] = lambda: None,
+        open_equaliser: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("Tray")
@@ -169,6 +151,15 @@ class LibraryTray(QWidget):
         # Return asks the same phrase again, which is the only way back to
         # what it found for somebody who has since moved off it.
         self.search_box.returnPressed.connect(search_again)
+        self.showing = ShowingControls(
+            self,
+            BUTTON_PX,
+            ICON_PX,
+            TRAY_GAP_PX,
+            toggle_view=toggle_view,
+            toggle_cover_size=toggle_cover_size,
+            open_equaliser=open_equaliser,
+        )
         self.previous_button = _icon_button(
             self, resources.previous_icon_path(), "Previous track", previous_track
         )
@@ -189,7 +180,7 @@ class LibraryTray(QWidget):
         self.mute_button = _icon_button(
             self, resources.unmute_icon_path(), "Mute", toggle_mute
         )
-        self.separator = _separator(self)
+        self.separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
         self.theme_button = _icon_button(self, None, "", toggle_theme)
         self.help_button = _icon_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
@@ -207,6 +198,7 @@ class LibraryTray(QWidget):
         row.addWidget(self.repair_button)
         row.addWidget(self.search_button)
         row.addWidget(self.search_box)
+        row.addWidget(self.showing)
         # A stretch either side is what centres the transport, whatever the
         # window is widened to and whatever sits at the two ends.
         row.addStretch()
@@ -243,12 +235,21 @@ class LibraryTray(QWidget):
             self.repair_button,
             self.search_button,
             self.search_box,
+            *self.showing.stops(),
             *self.transport_stops(),
             self.volume_button,
             self.mute_button,
             self.theme_button,
             self.help_button,
         )
+
+    def set_showing_covers(self, covers: bool) -> None:
+        """Say what pressing the view toggle would do from here."""
+        self.showing.set_showing_covers(covers)
+
+    def set_next_cover_size(self, size: CoverSize) -> None:
+        """Show the size a press would move to, tooltip included."""
+        self.showing.set_next_cover_size(size)
 
     @property
     def searching(self) -> bool:

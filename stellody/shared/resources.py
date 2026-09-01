@@ -42,6 +42,7 @@ UNMUTE_ICON = "unmute.png"
 # artwork in its own right rather than a variant of each icon, so a change to
 # the cross reaches all three without three files being redrawn.
 NEGATIVE_ICON = "negative.png"
+EQUALISER_ICON = "equalizer.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -182,6 +183,11 @@ def repeat_one_icon_path() -> pathlib.Path | None:
 def unmute_icon_path() -> pathlib.Path | None:
     """The artwork for the mute switch, struck through while silent."""
     return find_asset(UNMUTE_ICON)
+
+
+def equaliser_icon_path() -> pathlib.Path | None:
+    """The artwork for the button that opens the equalizer."""
+    return find_asset(EQUALISER_ICON)
 
 
 def negative_icon_path() -> pathlib.Path | None:

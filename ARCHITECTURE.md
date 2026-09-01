@@ -143,7 +143,7 @@ would answer, one pinned at the top of the health dialog. Their tooltip is
 stated once in `stellody/ui/toolbar.py` and read from there by the dialog, so
 the two cannot come to say different things about the same unbuilt feature.
 They are disabled because the corrections are computed on every load while
-there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 5
+there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 6
 is that work.
 
 `stellody/domain/ordering.py` holds the track rules, `stellody/domain/grouping.py`
@@ -404,6 +404,8 @@ only new way out.
 | Where a queue move lands is decided apart from the device | `domain/moving.py` holds what Next, Back and an ending mean under repeat and shuffle, as pure functions of a queue and the two switches. The transport applies the answers rather than working them out, which is what lets the same rule decide both a button press and a seam the engine will cross unattended. Randomness enters as an argument, exactly as time does. |
 | The equalizer switch is kept apart from its sliders | Somebody comparing on against off is asking one question; losing the curve they set up to compare with would answer a different one. The two are stored as two settings for the same reason. |
 | A boost is clipped at the format's ceiling | A lift can ask for more than a sample holds. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
+| What the library is shown as sits beside the search that also changes it | The view toggle, the sleeve size and the equalizer moved up out of the settings strip to join the search box. All four change what is on show rather than what is playing, where the strip below holds what outlasts a track. The three are one child group rather than three loose buttons, so their order is stated once and the tray delegates to it. |
+| The top tray decides how narrow the window may be | Every control in it is a fixed size, so the tray's own minimum is the window's. Three more controls took that minimum from 1246 to 1468 pixels; the default width moved with it rather than the window opening narrower than the strip it has to draw. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
 
 ## Coverage

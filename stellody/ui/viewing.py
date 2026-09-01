@@ -114,7 +114,7 @@ class Viewing:
     def show_covers(self, covers: bool) -> None:
         """Show one view or the other, then remember which."""
         self._library.setCurrentIndex(1 if covers else 0)
-        self._bottom_tray.set_showing_covers(covers)
+        self._tray.set_showing_covers(covers)
         self._settings.set_setting(SETTING_COVERS, TRUE if covers else FALSE)
         if not covers:
             self.close_album()
@@ -149,7 +149,7 @@ class Viewing:
         self._tiles.show_cover_size(size)
         fit_grid(self._grid)
         self.show_cover_size(size)
-        self._bottom_tray.set_next_cover_size(next_cover_size(size))
+        self._tray.set_next_cover_size(next_cover_size(size))
         self._settings.set_setting(SETTING_COVER_SIZE, str(int(size)))
 
     @property

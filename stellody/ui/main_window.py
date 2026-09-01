@@ -67,7 +67,7 @@ TRAIL_FRAMES = 6
 # first run and a stored value that is not a number. Grown from the 1080 by 720
 # it used to open at, a tenth wider and a fifth taller, which is a row of
 # sleeves more library to look at before anything has been scrolled.
-WINDOW_WIDTH_PX = 1188
+WINDOW_WIDTH_PX = 1480
 WINDOW_HEIGHT_PX = 864
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
@@ -193,6 +193,9 @@ class MainWindow(
             toggle_playback=self.toggle_playback,
             stop_playback=self.stop_playback,
             next_track=self.next_track,
+            toggle_view=self.toggle_view,
+            toggle_cover_size=self.toggle_cover_size,
+            open_equaliser=self.show_equaliser,
         )
         self._position_bar = PositionBar(self, seek=self.seek_to)
         self._position_bar.stars.chosen.connect(self.rate_shown)
@@ -200,8 +203,6 @@ class MainWindow(
             self,
             toggle_shuffle=self.toggle_shuffle,
             toggle_repeat=self.toggle_repeat,
-            toggle_view=self.toggle_view,
-            toggle_cover_size=self.toggle_cover_size,
             open_donation=self.open_donation,
         )
         self.setCentralWidget(
