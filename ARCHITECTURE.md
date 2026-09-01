@@ -23,7 +23,7 @@ has never been seen to fail is not yet a guard.
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
-files, duplicating and overwriting metadata across 21 albums. Stellody
+files, duplicating and overwriting metadata across 33 albums. Stellody
 describes a damaged tag; it never repairs one.
 
 Invariant 12 is the second of that kind. A local-first player that quietly
@@ -156,7 +156,8 @@ caches a whole folder's result. A rescan compares each file's size and
 modification time against the store; a folder whose files are all unchanged is
 reused without opening a single file. On the reference library a cold scan of
 510 folders and 4,870 files takes about two and a half seconds and a rescan
-about a third of a second, grouping into 482 albums of 6,877 tracks.
+a little over four tenths of a second, grouping into 482 albums of 6,877
+tracks.
 
 **The store holds raw tag values, not resolved ones.** Resolution happens on
 load, so improving any rule above takes effect on the next start without
