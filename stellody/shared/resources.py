@@ -36,7 +36,6 @@ DONATE_ICON = "donate.png"
 LIBRARY_HEALTH_ICON = "library-health.png"
 SEARCH_ICON = "search.png"
 REPEAT_ICON = "repeat.png"
-REPEAT_ALBUM_ICON = "repeat-album.png"
 REPEAT_ONE_ICON = "repeat-1-track.png"
 UNMUTE_ICON = "unmute.png"
 # The cross laid over one of the three switches above to say it is off. It is
@@ -173,11 +172,6 @@ def library_health_icon_path() -> pathlib.Path | None:
 def repeat_icon_path() -> pathlib.Path | None:
     """The artwork for the repeat switch while it is off."""
     return find_asset(REPEAT_ICON)
-
-
-def repeat_album_icon_path() -> pathlib.Path | None:
-    """The artwork for starting the album again at its end."""
-    return find_asset(REPEAT_ALBUM_ICON)
 
 
 def repeat_one_icon_path() -> pathlib.Path | None:

@@ -135,11 +135,12 @@ def test_the_shuffle_switch_reaches_the_transport_and_lights_while_it_is_on(
     assert window._transport.shuffled is True
     assert button.isChecked() is True
     assert button.toolTip() == "Turn shuffle off"
-    assert picture(button) == off, "the artwork is never struck through"
+    on = picture(button)
+    assert on != off, "off wears the cross, so the two states differ"
     window.toggle_shuffle()
     assert window._transport.shuffled is False
     assert button.isChecked() is False
-    assert picture(button) == off
+    assert picture(button) == off, "off comes back to the crossed wheel"
 
 
 def test_the_repeat_switch_reaches_the_transport_and_lights_while_it_is_on(

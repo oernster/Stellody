@@ -31,6 +31,7 @@ tooltips name the action, so the pair still says both things at once.
 
 from __future__ import annotations
 
+import pathlib
 from collections.abc import Callable
 
 from PySide6.QtCore import QSize, Qt
@@ -40,7 +41,7 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
-from stellody.ui.icons import plain_icon
+from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.toolbar import BUTTON_PX, ICON_PX, TRAY_GAP_PX, TRAY_MARGIN_PX
 
 HALF = 2
@@ -70,11 +71,12 @@ SIZE_NAMES = {
     CoverSize.EXTRA_LARGE: "extra large",
 }
 # Shuffle says its state with the fill alone, which is all two states need.
-# Three cannot be told apart that way, so each repeat state carries its own
-# picture and the fill is left saying only that something is on.
+# Three cannot be told apart that way. Off is therefore the wheel crossed
+# out, the way mute says off, which leaves the two lit states to differ by
+# their own picture: the plain wheel for the album, the numbered wheel for
+# a single track.
 REPEAT_ICONS = {
-    RepeatMode.OFF: resources.repeat_icon_path,
-    RepeatMode.ALBUM: resources.repeat_album_icon_path,
+    RepeatMode.ALBUM: resources.repeat_icon_path,
     RepeatMode.ONE: resources.repeat_one_icon_path,
 }
 # Named for what the next press does, which is the rule the other tooltips on
@@ -105,6 +107,28 @@ def _small_button(
         button.setIcon(QIcon(str(path)))
     button.clicked.connect(on_click)
     return button
+
+
+def _state_icon(path: pathlib.Path | None, on: bool) -> QIcon:
+    """One picture, crossed out while the switch it names is off.
+
+    Every switch on this strip says off the same way, so a listener who has
+    read one of them has already read the rest.
+    """
+    if on:
+        return plain_icon(path)
+    return struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
+
+
+def _repeat_icon(repeat: RepeatMode) -> QIcon:
+    """The wheel: crossed out while off, numbered while holding one track.
+
+    Off borrows the cross the mute switch wears, so a listener who has read
+    one switch on this strip has already read this one.
+    """
+    if repeat is RepeatMode.OFF:
+        return _state_icon(resources.repeat_icon_path(), False)
+    return plain_icon(REPEAT_ICONS[repeat]())
 
 
 def _switch_button(
@@ -198,24 +222,25 @@ class BottomTray(QWidget):
         return (self.shuffle_button, self.repeat_button)
 
     def set_shuffled(self, shuffled: bool) -> None:
-        """Strike the shuffle switch through while the album plays in order."""
+        """Light the shuffle switch while the queue is scattered."""
         self._show_switch(
             self.shuffle_button, resources.shuffle_icon_path(), shuffled, "shuffle"
         )
 
     def set_repeat(self, repeat: RepeatMode) -> None:
         """Show which of the three repeat states the switch is holding."""
-        self.repeat_button.setIcon(plain_icon(REPEAT_ICONS[repeat]()))
+        self.repeat_button.setIcon(_repeat_icon(repeat))
         self.repeat_button.setChecked(repeat.repeats)
         self.repeat_button.setToolTip(REPEAT_TIPS[repeat])
 
     def _show_switch(self, button: QPushButton, path, on: bool, name: str) -> None:
         """Light one switch while it is on; say what a press would do.
 
-        The picture is the same either way. What changes is the button behind
-        it, which the stylesheet fills while it is checked, so the state is
-        carried by the control rather than by an alteration to the artwork.
+        Off wears the same cross the repeat switch wears, so the state is
+        legible from the artwork alone. The stylesheet still fills the button
+        while it is checked, which reinforces the cross rather than carrying
+        the meaning by itself.
         """
-        button.setIcon(plain_icon(path))
+        button.setIcon(_state_icon(path, on))
         button.setChecked(on)
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
