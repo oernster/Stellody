@@ -13,6 +13,12 @@ each be a stop in the keyboard ring, so reaching the control past it would
 take five presses; they would also each carry a focus ring, which would say
 there are five controls here rather than one. This is one control holding one
 value, so it is one stop that paints one ring.
+
+It paints that ring in the same colour every other control rings in. The panel
+is drawn rather than styled, so nothing hands it the stylesheet's answer and it
+had been reading a token of its own that no other control used: the stars
+ringed blue while the whole application ringed green. Two names for one idea is
+how the two came to disagree, so there is now one name.
 """
 
 from __future__ import annotations
@@ -170,7 +176,7 @@ class StarRating(QWidget):
                 painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawPath(path)
         if self.hasFocus():
-            painter.setPen(QPen(QColor(palette.focus_ring), RING_PX))
+            painter.setPen(QPen(QColor(palette.ring), RING_PX))
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRoundedRect(
                 self.rect().adjusted(1, 1, -1, -1), RADIUS_PX, RADIUS_PX

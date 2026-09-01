@@ -24,8 +24,10 @@ from PySide6.QtWidgets import QAbstractItemView, QListView, QWidget
 
 # Long enough to be followed by eye, short enough that nobody is kept waiting
 # for a selection they have already made. The curve starts and ends slowly, so
-# the run reads as one movement rather than as a start and a stop.
-GLIDE_MS = 180
+# the run reads as one movement rather than as a start and a stop. Judged in
+# the built application rather than here: a fifth of a second was smooth but
+# still read as quick, so the run was lengthened until it could be watched.
+GLIDE_MS = 300
 
 
 class GlidingGrid(QListView):

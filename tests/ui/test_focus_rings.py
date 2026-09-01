@@ -12,10 +12,22 @@ import re
 import tempfile
 
 import pytest
-from PySide6.QtWidgets import QApplication, QPushButton, QTreeView
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QHBoxLayout,
+    QPushButton,
+    QTreeView,
+    QWidget,
+)
 
 from stellody.composition import build_window
+from stellody.domain.equalising import Equalisation
 from stellody.infrastructure.store import SqliteLibraryStore
+from stellody.ui.close_prompt import ClosePrompt
+from stellody.ui.equaliser import EqualiserDialog
+from stellody.ui.stars import StarRating
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.volume import DEFAULT_PERCENT
 
@@ -94,7 +106,7 @@ def test_no_pane_appears_in_the_windows_focus_chain(
 ) -> None:
     """Walk the toolkit's own chain, so the answer is what a real Tab reaches."""
     seen: set[int] = set()
-    for _ in range(40):
+    for _ in range(RING_WALK):
         window.focusNextChild()
         current = application.focusWidget()
         if current is None or id(current) in seen:
@@ -113,7 +125,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     """The tray is drawn above the library, so Tab must reach it first."""
     order = []
     seen: set[int] = set()
-    for _ in range(40):
+    for _ in range(RING_WALK):
         window.focusNextChild()
         current = application.focusWidget()
         if current is None or id(current) in seen:
@@ -154,3 +166,113 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     for row, name in ((top, "top tray"), (bottom, "bottom strip")):
         centres = [w.mapTo(window, w.rect().center()).x() for w in row]
         assert centres == sorted(centres), f"the {name}'s stops run left to right"
+
+
+# A control that takes focus and paints nothing is the one defect the two
+# checks above cannot see: they say which classes must NOT ring, while this
+# says every class that CAN be landed on must. A checkbox shipped with no rule
+# at all, so Tab stopped on it and nothing on screen reported that it had.
+# Item views are the sanctioned exception and are listed as such rather than
+# quietly passing: their current row is the indicator.
+# Two stops the stylesheet is right not to name. A zero-size holder has nothing
+# to paint a ring on; the stars paint their own in `stars.py`, because five
+# glyphs standing for one value must ring once rather than five times. Both are
+# listed here rather than passing quietly; the second is proved below.
+# Long enough for the walk to come back round to where it started.
+RING_WALK = 40
+NOTHING_TO_PAINT = "_NeutralStart"
+PAINTS_ITS_OWN_RING = "StarRating"
+
+
+def _qt_class(widget: QWidget) -> str:
+    """The class a stylesheet selector would have to name to reach `widget`.
+
+    A Qt class selector matches every subclass, so a view of our own is styled
+    by the Qt class it derives from. Reporting the leaf name instead would ask
+    for a rule per subclass, which is how this check first failed against the
+    grid rather than against anything actually missing a ring.
+    """
+    for klass in type(widget).__mro__:
+        if klass.__module__.startswith("PySide6"):
+            return klass.__name__
+    return type(widget).__name__
+
+
+def _focusable(root: QWidget) -> set[str]:
+    """The Qt class of every tab stop inside `root`, itself included.
+
+    Item views are dropped here rather than filtered later, because they are
+    ringless by design and asserted so by the check above. The other two
+    exceptions are dropped by their own class, each for a stated reason.
+    """
+    found = set()
+    for widget in [root, *root.findChildren(QWidget)]:
+        tabbable = int(widget.focusPolicy()) & int(Qt.FocusPolicy.TabFocus)
+        leaf = type(widget).__name__
+        if not tabbable or leaf in (NOTHING_TO_PAINT, PAINTS_ITS_OWN_RING):
+            continue
+        if isinstance(widget, QAbstractItemView):
+            continue
+        found.add(_qt_class(widget))
+    return found
+
+
+@pytest.mark.parametrize("mode", tuple(Mode))
+def test_every_control_that_can_be_landed_on_names_a_ring(
+    application: QApplication, window, mode: Mode
+) -> None:
+    """Walked off the real widgets rather than off a list somebody maintains.
+
+    A list would not have caught the checkbox, since whoever forgot the rule
+    would have forgotten the list entry with it. The dialogs are built here
+    too: both of the application's checkboxes live in one, so a window alone
+    would still have passed while the defect stood.
+    """
+    dialogs = (
+        ClosePrompt(window),
+        EqualiserDialog(window, Equalisation(), lambda _curve: None),
+    )
+    controls = _focusable(window)
+    for dialog in dialogs:
+        controls |= _focusable(dialog)
+    assert "QCheckBox" in controls, "the dialogs really do hold one"
+    ringed = {selector for selector, _block in ring_rules(stylesheet(mode))}
+    for control in sorted(controls):
+        assert any(
+            re.search(rf"(^|[\s,]){control}[:#\s,]", selector) for selector in ringed
+        ), f"{control} can be landed on but names no ring"
+
+
+def test_the_stars_paint_the_ring_the_stylesheet_does_not_give_them(
+    application: QApplication,
+) -> None:
+    """The one control exempted above, held to what the exemption claims.
+
+    Five glyphs standing for one value cannot each take a ring, so the stars
+    draw one themselves rather than reading one off the stylesheet. That makes
+    them the only stop the check above cannot speak for, which is a hole unless
+    something asserts they really do paint it. Rendering runs the widget's own
+    paintEvent, so what is compared is the drawing rather than the screen.
+
+    A second control shares the host so that focus has somewhere else to be.
+    A lone focusable widget takes focus the moment it is shown, which makes
+    both renders the focused one and the comparison pass while proving nothing.
+    """
+    host = QWidget()
+    row = QHBoxLayout(host)
+    elsewhere = QPushButton("elsewhere", host)
+    stars = StarRating(host)
+    row.addWidget(elsewhere)
+    row.addWidget(stars)
+    host.show()
+    host.activateWindow()
+    application.processEvents()
+    elsewhere.setFocus()
+    application.processEvents()
+    assert not stars.hasFocus(), "focus is somewhere else to start with"
+    unfocused = stars.grab().toImage()
+    stars.setFocus()
+    application.processEvents()
+    assert stars.hasFocus()
+    assert stars.grab().toImage() != unfocused, "focus changed nothing drawn"
+    host.close()

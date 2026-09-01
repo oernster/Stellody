@@ -53,7 +53,6 @@ class Palette:
     on_accent: str
     selection: str
     on_selection: str
-    focus_ring: str
     disabled_surface: str
     disabled_text: str
     warning: str
@@ -77,7 +76,6 @@ LIGHT = Palette(
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
-    focus_ring="#1b5fd0",
     disabled_surface="#e7eaf1",
     disabled_text="#a3abb9",
     warning="#a8560a",
@@ -101,7 +99,6 @@ DARK = Palette(
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",
-    focus_ring="#4c8dff",
     disabled_surface="#171e2e",
     disabled_text="#4d586e",
     warning="#e0a458",

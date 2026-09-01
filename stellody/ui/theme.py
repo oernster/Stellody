@@ -168,6 +168,24 @@ def stylesheet(mode: Mode) -> str:
     QPushButton:enabled:pressed {{
         background-color: {colour.selection};
     }}
+    /* A checkbox is a control and wears the same three states as one. It had
+       no rule at all, so Tab stopped on it and nothing on screen said so: the
+       one stop in the application a reader could land on and not find. The
+       ring goes round the whole control rather than round the indicator alone,
+       because the label toggles it too, so the label is part of what is being
+       focused. The padding is what stops the ring sitting on the text. */
+    QCheckBox {{
+        border: {FOCUS_WIDTH_PX}px solid transparent;
+        border-radius: {RADIUS_PX}px;
+        padding: 3px 6px;
+    }}
+    QCheckBox:enabled:hover, QCheckBox:enabled:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
+    QCheckBox:disabled {{
+        color: {colour.disabled_text};
+        border: {FOCUS_WIDTH_PX}px solid {colour.danger};
+    }}
     /* Disabled is a permanent red ring, not a hover reaction: the border IS
        the state, readable at a glance as present but inert. */
     QPushButton:disabled {{
