@@ -254,7 +254,7 @@ class Playing:
     def _follow_playback(self) -> None:
         """Point the library at the track playing, whenever that changes.
 
-        What is remembered as followed is what the tree is actually showing,
+        What is remembered as followed is what the view is actually showing,
         set once the highlight has moved rather than before. Setting it first
         meant a placement that did not happen was remembered as one that had:
         the highlight then stayed on the track that had just ended and every
@@ -265,13 +265,17 @@ class Playing:
         put it: the transport is polled four times a second and dragging it
         back would make browsing during playback impossible.
 
-        The parent is expanded first: a highlight on a row inside a collapsed
-        album is a highlight nobody can see.
+        Which highlight moves depends on the view now on show, which is
+        why both halves of this go through `highlighted` and
+        `_show_highlight` rather than through the tree. The grid keeps its
+        own highlight in the album open under it, so pointing the tree at a
+        track left the visible one where it was: reported against an album
+        playing through, where nothing on screen said what was playing.
         """
         track = self._transport.current
         if track is None:
             return
-        showing = self._model.track_at(self._tree.currentIndex())
+        showing = self._model.track_at(self.highlighted())
         if showing is track:
             self._followed = track
             return
@@ -280,10 +284,25 @@ class Playing:
         index = self._model.index_for(track)
         if not index.isValid():
             return
+        if not self._show_highlight(index):
+            return
+        self._followed = track
+
+    def _show_highlight(self, index: QModelIndex) -> bool:
+        """Move the highlight in the view on show; False if it could not.
+
+        In the tree, `scrollTo` opens every level above the row, which a
+        multi-disc album needs since its tracks sit under a disc: a
+        highlight inside a collapsed album is one nobody can see. The pane
+        refuses a track of an album it is not showing, which is what keeps
+        the answer honest rather than merely quiet.
+        """
+        if self.showing_covers:
+            return self._album_pane.show_track(index)
         self._tree.expand(index.parent())
         self._tree.setCurrentIndex(index)
         self._tree.scrollTo(index)
-        self._followed = track
+        return True
 
     def highlighted(self) -> QModelIndex:
         """The row the play button would start, in the view now on show."""

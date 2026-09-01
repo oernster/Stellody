@@ -291,6 +291,27 @@ class AlbumPane(QWidget):
             index = self._model.index(0, Column.TITLE, index)
         return index
 
+    def show_track(self, index: QModelIndex) -> bool:
+        """Put the highlight on a track of the album open here.
+
+        Answers whether it could. A track of some other album is not in
+        this pane at all, so pointing the pane at it would highlight
+        nothing while reporting that something had been highlighted.
+
+        The columns share one selection, so setting it on the first puts
+        the highlight wherever in the album that track is drawn.
+        """
+        root = self.columns[0].rootIndex()
+        if not root.isValid():
+            return False
+        parent = index.parent()
+        while parent.isValid() and parent != root:
+            parent = parent.parent()
+        if parent != root:
+            return False
+        self.columns[0].setCurrentIndex(index)
+        return True
+
     def current_index(self) -> QModelIndex:
         """Where the highlight is, wherever in the album it has been moved."""
         return self.columns[0].currentIndex()
