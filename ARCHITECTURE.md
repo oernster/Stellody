@@ -326,11 +326,18 @@ to whatever is loaded next; it is redesigned at every load.
 
 ## The visualiser
 
-**It shows what the equalizer shapes.** Ten bars on the same ten ISO octave
-centres `equalising.py` already defines, so the bar that moves is the band the
+**It shows what the equalizer shapes.** Twenty bars over the ten ISO octave
+centres `equalising.py` already defines, so the bars that move are the band the
 slider lifts. Somebody with the equalizer open while a record plays can then
 see which control owns the sound in front of them. A second set of band edges
 would have been a second vocabulary for one idea.
+
+**Two bars to each filter, split at the filter's own centre.** Ten bars across
+a few centimetres read as a level meter with gaps rather than as a spectrum. The
+pair covers exactly the octave its filter acts on, the split point is the
+frequency the slider is named for, no edge exists that the equalizer does not
+already have, so the relationship survives the doubling instead of being
+traded for it. Dividing again would need only a different count in one place.
 
 **Measuring is split from meaning, as designing is split from applying.** What
 a band's edges are and what a magnitude means once measured is arithmetic over

@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from stellody.domain.equalising import BAND_COUNT, BAND_FREQUENCIES
-from stellody.domain.spectrum import EMPTY, SILENT_BANDS
+from stellody.domain.equalising import BAND_FREQUENCIES
+from stellody.domain.spectrum import BAR_COUNT, BARS_PER_FILTER, EMPTY, SILENT_BANDS
 from stellody.infrastructure.analysing import BlockAnalyser, full_scale_of
 
 CD_RATE = 44100
@@ -40,16 +40,22 @@ def loudest(heights: tuple[float, ...]) -> int:
 
 
 class TestWhichBandLightsUp:
-    def test_a_tone_lights_the_band_it_belongs_to(self) -> None:
-        """The claim the whole feature rests on: the bar IS the slider's band."""
+    def test_a_tone_lights_a_bar_belonging_to_its_own_filter(self) -> None:
+        """The claim the whole feature rests on: a slider owns its pair of bars.
+
+        A tone at the filter's own centre lands on the split between its two
+        bars, so which of the pair it lights is the transform's business; that
+        it is one of THAT filter's pair is the thing that must hold.
+        """
         analyser = BlockAnalyser(CD_RATE, BLOCK)
         for band, centre in enumerate(BAND_FREQUENCIES):
             if centre * 2 > CD_RATE:
                 continue
-            assert loudest(analyser.measure(tone(centre))) == band, centre
+            lit = loudest(analyser.measure(tone(centre)))
+            assert lit // BARS_PER_FILTER == band, centre
 
-    def test_there_is_one_height_for_each_band(self) -> None:
-        assert len(BlockAnalyser(CD_RATE, BLOCK).measure(tone(1000))) == BAND_COUNT
+    def test_there_is_one_height_for_each_bar(self) -> None:
+        assert len(BlockAnalyser(CD_RATE, BLOCK).measure(tone(1000))) == BAR_COUNT
 
 
 class TestHowTallItIs:
@@ -122,5 +128,5 @@ class TestWhatItMustNotDo:
         """
         analyser = BlockAnalyser(8000, BLOCK)
         heights = analyser.measure(np.zeros((BLOCK, 2), np.int16))
-        assert len(heights) == BAND_COUNT
+        assert len(heights) == BAR_COUNT
         assert set(heights) == {EMPTY}

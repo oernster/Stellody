@@ -1,4 +1,4 @@
-"""The display that moves with the music: ten bars, one to each equalizer band.
+"""The display that moves with the music: two bars to each equalizer band.
 
 Drawn rather than assembled out of widgets, for the reason the stars are: ten
 progress bars would be ten things for the toolkit to lay out and repaint
@@ -47,8 +47,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPaintEvent
 from PySide6.QtWidgets import QWidget
 
-from stellody.domain.equalising import BAND_COUNT
-from stellody.domain.spectrum import SILENT_BANDS, fallen
+from stellody.domain.spectrum import BAR_COUNT, SILENT_BANDS, fallen
 from stellody.ui.palette import Mode, palette_for
 
 # Thirty a second. Fast enough that a falling bar reads as movement rather than
@@ -62,11 +61,12 @@ STRIP_WIDTH_CM = 5.0
 MILLIMETRES_PER_INCH = 25.4
 MILLIMETRES_PER_CM = 10.0
 STRIP_HEIGHT_PX = 64
-# Tight, because the whole thing is only a few centimetres across: at the wider
-# spacing the strip once had, ten bars in that room would be ten slivers with
-# more gap than bar between them.
-BAR_GAP_PX = 2
-STRIP_MARGIN_PX = 4
+# As tight as bars can be drawn and still be told apart. The whole thing is a
+# few centimetres across and holds twenty bars, so every pixel spent on a gap
+# is a pixel taken off a bar: at the spacing this had as a full band of the
+# window, twenty bars in this room would be more gap than bar.
+BAR_GAP_PX = 1
+STRIP_MARGIN_PX = 3
 BAR_RADIUS_PX = 2
 # What a band with nothing in it still shows: enough to say the band is there
 # and too little to be mistaken for something being heard.
@@ -167,10 +167,13 @@ class Visualiser(QWidget):
             QColor(palette.border),
         )
         painter.setBrush(QColor(palette.accent))
+        # The bars are laid out across the room that is left rather than at a
+        # width of their own, so widening the display or dividing the bands
+        # again changes nothing here.
         inner = self.rect().adjusted(
             STRIP_MARGIN_PX, STRIP_MARGIN_PX, -STRIP_MARGIN_PX, -STRIP_MARGIN_PX
         )
-        span = (inner.width() + BAR_GAP_PX) / BAND_COUNT
+        span = (inner.width() + BAR_GAP_PX) / BAR_COUNT
         width = max(BASELINE_PX, int(span) - BAR_GAP_PX)
         for band, height in enumerate(self._shown):
             # Never less than the baseline: a band with nothing in it still says

@@ -1,11 +1,20 @@
 """What the visualiser shows: how loud each band is, right now.
 
-The equalizer SHAPES what is heard; this measures it. They share their bands
-deliberately, the same ten ISO octave centres from `equalising.py`, so the bar
-that moves is the band the slider lifts. A listener who opens the equalizer
-while a record plays can then see which control owns the sound in front of
-them, rather than working it out by moving sliders until something changes.
-A second set of band edges would be a second vocabulary for one idea.
+The equalizer SHAPES what is heard; this measures it. The two share their bands
+deliberately, so the bars that move are the band the slider lifts. A listener
+who opens the equalizer while a record plays can then see which control owns
+the sound in front of them, rather than working it out by moving sliders until
+something changes. A second set of band edges would be a second vocabulary for
+one idea.
+
+**Two bars to each filter, not one.** Ten bars across a few centimetres read as
+a level meter with gaps rather than as a spectrum, so each of the equalizer's
+octave bands is split in half AT ITS OWN CENTRE. The pair then covers exactly
+the octave that filter acts on, the split point is the frequency the slider is
+named for, no band edge exists that the equalizer does not already have.
+The relationship survives the doubling because it is derived from the filters
+rather than chosen beside them: a slider owns a neighbouring pair, where
+dividing again would need only a different count here.
 
 Measuring is split from drawing the way designing a filter is split from
 applying one. What a band's edges ARE, then what a magnitude MEANS once it has
@@ -30,6 +39,7 @@ missed rather than smoothed.
 
 from __future__ import annotations
 
+import itertools
 import math
 
 from stellody.domain.equalising import BAND_COUNT, BAND_FREQUENCIES
@@ -50,8 +60,14 @@ FULL = 1.0
 # chorus during the silence after it.
 FALL_PER_SECOND = 2.2
 
-# A band is one octave wide, matching the filters that act on it, so its edges
-# are its centre divided and multiplied by the same root.
+# How many bars each of the equalizer's filters is drawn as. Two: enough that a
+# few centimetres reads as a spectrum, few enough that every edge is still one
+# the filters already have.
+BARS_PER_FILTER = 2
+BAR_COUNT = BAND_COUNT * BARS_PER_FILTER
+
+# A filter is one octave wide, so its edges are its centre divided and
+# multiplied by the same root.
 _OCTAVE_EDGE = math.sqrt(2.0)
 
 # math.log10 of nothing is undefined; a block of digital silence really is
@@ -59,24 +75,27 @@ _OCTAVE_EDGE = math.sqrt(2.0)
 _SILENT = 0.0
 _DECIBELS_PER_DECADE = 20.0
 
-SILENT_BANDS: tuple[float, ...] = (EMPTY,) * BAND_COUNT
+SILENT_BANDS: tuple[float, ...] = (EMPTY,) * BAR_COUNT
 
 
 def band_edges(sample_rate: int) -> tuple[tuple[float, float], ...]:
-    """The low and high edge of every band, in hertz.
+    """The low and high edge of every bar, in hertz, low to high.
 
-    One octave wide about each centre, which is the width of the filter that
-    acts on that band, so what is measured is what the equalizer would move.
+    Each of the equalizer's filters becomes two bars, split at that filter's
+    own centre, so the pair together covers exactly the octave it acts on and
+    every edge is one the equalizer already has.
+
     The top edge is held below the Nyquist frequency: there is no content above
-    it to measure; a band reaching past it would report the noise at the
-    very top of the transform as music.
+    it to measure; a bar reaching past it would report the noise at the very
+    top of the transform as music.
     """
     limit = sample_rate / 2
     edges = []
     for centre in BAND_FREQUENCIES:
-        low = centre / _OCTAVE_EDGE
-        high = min(centre * _OCTAVE_EDGE, limit)
-        edges.append((low, max(low, high)))
+        octave = (centre / _OCTAVE_EDGE, centre, centre * _OCTAVE_EDGE)
+        for low, high in itertools.pairwise(octave):
+            bounded = min(low, limit)
+            edges.append((bounded, max(bounded, min(high, limit))))
     return tuple(edges)
 
 

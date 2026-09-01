@@ -12,6 +12,8 @@ import math
 
 from stellody.domain.equalising import BAND_COUNT, BAND_FREQUENCIES
 from stellody.domain.spectrum import (
+    BAR_COUNT,
+    BARS_PER_FILTER,
     CEILING_DB,
     EMPTY,
     FALL_PER_SECOND,
@@ -35,16 +37,29 @@ HALF_STEP_DB = -6.0206
 
 
 class TestWhatABandCovers:
-    def test_there_is_one_band_for_each_the_equalizer_has(self) -> None:
-        """The point of the whole thing: the bar IS the slider's band."""
-        assert len(band_edges(CD_RATE)) == BAND_COUNT
-        assert len(SILENT_BANDS) == BAND_COUNT
+    def test_there_are_two_bars_for_each_band_the_equalizer_has(self) -> None:
+        """The point of the whole thing: a slider owns a pair of bars."""
+        assert BAR_COUNT == BAND_COUNT * BARS_PER_FILTER
+        assert len(band_edges(CD_RATE)) == BAR_COUNT
+        assert len(SILENT_BANDS) == BAR_COUNT
 
-    def test_each_band_is_an_octave_about_its_own_centre(self) -> None:
-        """An octave, matching the filter that acts on it."""
-        for centre, (low, high) in zip(BAND_FREQUENCIES[:-1], band_edges(CD_RATE)):
-            assert low < centre < high
-            assert math.isclose(high / low, 2.0, rel_tol=1e-9)
+    def test_each_pair_covers_exactly_the_octave_its_filter_acts_on(self) -> None:
+        """Split in half at the filter's own centre, so nothing is invented."""
+        edges = band_edges(CD_RATE)
+        for band, centre in enumerate(BAND_FREQUENCIES[:-1]):
+            low, split = edges[band * BARS_PER_FILTER]
+            again, high = edges[band * BARS_PER_FILTER + 1]
+            assert math.isclose(split, centre, rel_tol=1e-9), "split at the centre"
+            assert math.isclose(again, centre, rel_tol=1e-9), "and taken up there"
+            assert math.isclose(high / low, 2.0, rel_tol=1e-9), "an octave in all"
+
+    def test_no_edge_exists_that_the_equalizer_does_not_have(self) -> None:
+        """Every split point is a frequency a slider is already named for."""
+        centres = set(BAND_FREQUENCIES)
+        splits = {
+            round(high) for _low, high in band_edges(CD_RATE)[:-BARS_PER_FILTER:2]
+        }
+        assert splits <= centres
 
     def test_neighbours_meet_rather_than_leaving_a_gap(self) -> None:
         """Bands an octave wide about centres an octave apart share their edges.
@@ -57,6 +72,11 @@ class TestWhatABandCovers:
         edges = band_edges(CD_RATE)
         for (_, high), (low, _) in itertools.pairwise(edges):
             assert math.isclose(high, low, rel_tol=0.01)
+
+    def test_the_bars_run_low_to_high(self) -> None:
+        """Drawn left to right in that order, so they must arrive in it."""
+        edges = band_edges(CD_RATE)
+        assert [low for low, _high in edges] == sorted(low for low, _high in edges)
 
     def test_the_top_band_stops_at_the_nyquist_frequency(self) -> None:
         """There is no content above it, so a band reaching past it reads noise."""

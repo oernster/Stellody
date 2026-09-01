@@ -189,7 +189,10 @@ class BottomTray(QWidget):
         # Nothing to press yet: what each issue should become is worked out on
         # every load; there is nowhere to keep a correction once accepted.
         self.repair_button.setEnabled(False)
-        self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX)
+        # Half the height of a button beside it, centred against them: it
+        # is something to notice out of the corner of an eye rather than a
+        # sixth control, so it should not stand as tall as the things that are.
+        self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX // HALF)
         if read_levels is not None:
             self.visualiser.read_levels_from(read_levels)
         row = QHBoxLayout(self)
@@ -206,7 +209,7 @@ class BottomTray(QWidget):
         # library; the settings finish at the right edge under the
         # application's other controls.
         row.addStretch()
-        row.addWidget(self.visualiser)
+        row.addWidget(self.visualiser, 0, Qt.AlignmentFlag.AlignVCenter)
         row.addStretch()
         for button in self.switch_stops():
             row.addWidget(button)
