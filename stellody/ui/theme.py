@@ -170,21 +170,22 @@ def stylesheet(mode: Mode) -> str:
     }}
     /* A checkbox is a control and wears the same three states as one. It had
        no rule at all, so Tab stopped on it and nothing on screen said so: the
-       one stop in the application a reader could land on and not find. The
-       ring goes round the whole control rather than round the indicator alone,
-       because the label toggles it too, so the label is part of what is being
-       focused. The padding is what stops the ring sitting on the text. */
+       one stop in the application a reader could land on and not find.
+       The ring goes on the SQUARE rather than round the control, since the
+       square is what a checkbox is read as. It cannot be drawn from here:
+       naming ::indicator makes Qt take the whole subcontrol over and the tick
+       goes with it, measured, while a rule scoped to :focus alone changes
+       nothing. So `ringed_check.py` paints it and reads its two colours from
+       the two properties below; the padding is what leaves room for it. */
     QCheckBox {{
         border: {FOCUS_WIDTH_PX}px solid transparent;
         border-radius: {RADIUS_PX}px;
         padding: 3px 6px;
-    }}
-    QCheckBox:enabled:hover, QCheckBox:enabled:focus {{
-        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+        qproperty-ringColour: {colour.ring};
+        qproperty-dangerColour: {colour.danger};
     }}
     QCheckBox:disabled {{
         color: {colour.disabled_text};
-        border: {FOCUS_WIDTH_PX}px solid {colour.danger};
     }}
     /* Disabled is a permanent red ring, not a hover reaction: the border IS
        the state, readable at a glance as present but inert. */

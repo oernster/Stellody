@@ -27,6 +27,7 @@ from stellody.domain.equalising import Equalisation
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.equaliser import EqualiserDialog
+from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.stars import StarRating
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.volume import DEFAULT_PERCENT
@@ -174,14 +175,16 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
 # at all, so Tab stopped on it and nothing on screen reported that it had.
 # Item views are the sanctioned exception and are listed as such rather than
 # quietly passing: their current row is the indicator.
-# Two stops the stylesheet is right not to name. A zero-size holder has nothing
-# to paint a ring on; the stars paint their own in `stars.py`, because five
-# glyphs standing for one value must ring once rather than five times. Both are
-# listed here rather than passing quietly; the second is proved below.
 # Long enough for the walk to come back round to where it started.
 RING_WALK = 40
+# Stops the stylesheet is right not to name. A zero-size holder has nothing to
+# paint a ring on. The other two paint their own and say in their modules why
+# the sheet cannot do it for them: five glyphs standing for one value must ring
+# once rather than five times; a checkbox's square belongs to Qt, which takes
+# the whole subcontrol over the moment a sheet names it. Each is listed here
+# rather than passing quietly, then each is proved below.
 NOTHING_TO_PAINT = "_NeutralStart"
-PAINTS_ITS_OWN_RING = "StarRating"
+PAINTS_ITS_OWN_RING = ("StarRating", "RingedCheckBox")
 
 
 def _qt_class(widget: QWidget) -> str:
@@ -198,6 +201,19 @@ def _qt_class(widget: QWidget) -> str:
     return type(widget).__name__
 
 
+def _own_ring_painters(root: QWidget) -> set[str]:
+    """The exempted stops actually found inside `root`.
+
+    An exemption nobody uses is dead weight that still hides a class, so the
+    list is checked against the application rather than only trusted.
+    """
+    return {
+        type(widget).__name__
+        for widget in [root, *root.findChildren(QWidget)]
+        if type(widget).__name__ in PAINTS_ITS_OWN_RING
+    }
+
+
 def _focusable(root: QWidget) -> set[str]:
     """The Qt class of every tab stop inside `root`, itself included.
 
@@ -209,7 +225,9 @@ def _focusable(root: QWidget) -> set[str]:
     for widget in [root, *root.findChildren(QWidget)]:
         tabbable = int(widget.focusPolicy()) & int(Qt.FocusPolicy.TabFocus)
         leaf = type(widget).__name__
-        if not tabbable or leaf in (NOTHING_TO_PAINT, PAINTS_ITS_OWN_RING):
+        if not tabbable or leaf == NOTHING_TO_PAINT:
+            continue
+        if leaf in PAINTS_ITS_OWN_RING:
             continue
         if isinstance(widget, QAbstractItemView):
             continue
@@ -233,9 +251,11 @@ def test_every_control_that_can_be_landed_on_names_a_ring(
         EqualiserDialog(window, Equalisation(), lambda _curve: None),
     )
     controls = _focusable(window)
+    painters = _own_ring_painters(window)
     for dialog in dialogs:
         controls |= _focusable(dialog)
-    assert "QCheckBox" in controls, "the dialogs really do hold one"
+        painters |= _own_ring_painters(dialog)
+    assert painters == set(PAINTS_ITS_OWN_RING), "every exemption is really used"
     ringed = {selector for selector, _block in ring_rules(stylesheet(mode))}
     for control in sorted(controls):
         assert any(
@@ -243,36 +263,64 @@ def test_every_control_that_can_be_landed_on_names_a_ring(
         ), f"{control} can be landed on but names no ring"
 
 
-def test_the_stars_paint_the_ring_the_stylesheet_does_not_give_them(
-    application: QApplication,
+@pytest.mark.parametrize("mode", tuple(Mode))
+@pytest.mark.parametrize(
+    "build_control",
+    (lambda parent: StarRating(parent), lambda parent: RingedCheckBox("Keep", parent)),
+    ids=PAINTS_ITS_OWN_RING,
+)
+def test_a_control_exempted_above_really_does_paint_its_own_ring(
+    application: QApplication, build_control, mode: Mode
 ) -> None:
-    """The one control exempted above, held to what the exemption claims.
+    """Each exemption held to what it claims, in both appearances.
 
-    Five glyphs standing for one value cannot each take a ring, so the stars
-    draw one themselves rather than reading one off the stylesheet. That makes
-    them the only stop the check above cannot speak for, which is a hole unless
-    something asserts they really do paint it. Rendering runs the widget's own
-    paintEvent, so what is compared is the drawing rather than the screen.
+    Rendering runs the widget's own paintEvent, so what is compared is the
+    drawing rather than the screen. The stylesheet is applied because one of
+    these reads its colours from it and would otherwise have none to paint.
 
     A second control shares the host so that focus has somewhere else to be.
     A lone focusable widget takes focus the moment it is shown, which makes
     both renders the focused one and the comparison pass while proving nothing.
     """
+    application.setStyleSheet(stylesheet(mode))
     host = QWidget()
     row = QHBoxLayout(host)
     elsewhere = QPushButton("elsewhere", host)
-    stars = StarRating(host)
+    control = build_control(host)
     row.addWidget(elsewhere)
-    row.addWidget(stars)
+    row.addWidget(control)
     host.show()
     host.activateWindow()
     application.processEvents()
     elsewhere.setFocus()
     application.processEvents()
-    assert not stars.hasFocus(), "focus is somewhere else to start with"
-    unfocused = stars.grab().toImage()
-    stars.setFocus()
+    assert not control.hasFocus(), "focus is somewhere else to start with"
+    unfocused = control.grab().toImage()
+    control.setFocus()
     application.processEvents()
-    assert stars.hasFocus()
-    assert stars.grab().toImage() != unfocused, "focus changed nothing drawn"
+    assert control.hasFocus()
+    assert control.grab().toImage() != unfocused, "focus changed nothing drawn"
+    host.close()
+
+
+def test_the_ringed_checkbox_still_shows_whether_it_is_ticked(
+    application: QApplication,
+) -> None:
+    """The reason the ring is painted rather than styled, held as a test.
+
+    Naming `::indicator` in the stylesheet hands Qt the whole subcontrol and
+    the tick goes with it. Nothing about that is visible in a rule that looks
+    perfectly reasonable, so what would catch it is this: a box that cannot be
+    told ticked from unticked.
+    """
+    application.setStyleSheet(stylesheet(Mode.DARK))
+    host = QWidget()
+    box = RingedCheckBox("Keep", host)
+    QHBoxLayout(host).addWidget(box)
+    host.show()
+    application.processEvents()
+    unticked = box.grab().toImage()
+    box.setChecked(True)
+    application.processEvents()
+    assert box.grab().toImage() != unticked, "a tick that cannot be seen is no tick"
     host.close()

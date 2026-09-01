@@ -17,7 +17,6 @@ from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -34,6 +33,7 @@ from stellody.domain.equalising import (
     Equalisation,
 )
 from stellody.ui.dialogs import NeutralDialog, close_row
+from stellody.ui.ringed_check import RingedCheckBox
 
 SLIDER_HEIGHT_PX = 160
 COLUMN_SPACING_PX = 6
@@ -116,7 +116,7 @@ class EqualiserDialog(NeutralDialog):
         self.setWindowTitle(TITLE)
         self._on_change = on_change
         self._equalisation = equalisation
-        self.switch = QCheckBox(SWITCH_LABEL, self)
+        self.switch = RingedCheckBox(SWITCH_LABEL, self)
         self.switch.setToolTip(SWITCH_TOOLTIP)
         self.switch.toggled.connect(self._switched)
         self.flatten = QPushButton(FLAT_LABEL, self)

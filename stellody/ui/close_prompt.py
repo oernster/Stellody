@@ -17,9 +17,10 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from PySide6.QtWidgets import QCheckBox, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from stellody.ui.dialogs import NeutralDialog
+from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.widgets import choice_row
 
 PROMPT_WIDTH_PX = 420
@@ -46,7 +47,7 @@ class ClosePrompt(NeutralDialog):
         # Nothing has been chosen yet. Only the two buttons below may change
         # this, so every other way out of the dialog leaves it saying so.
         self.choice = CloseAction.ASK
-        self._remember = QCheckBox("Remember my choice", self)
+        self._remember = RingedCheckBox("Remember my choice", self)
         layout = QVBoxLayout(self)
         layout.addWidget(
             QLabel(
