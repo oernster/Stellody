@@ -21,11 +21,12 @@ That toggle names what pressing it will do rather than which view is on
 show, since a button that reads as a label is read as a state and pressed to
 confirm it.
 
-Shuffle and repeat show their STATE by being struck through while they are
-off, which is how the mute switch has always said it. One rule across every
-switch beats a rule per strip: a listener who has read one of them has read
-the rest. Their tooltips name the action instead, so the pair still says both
-things at once.
+Every picture here names what a press would DO rather than what the switch is
+currently holding, which is the rule its tooltips already followed and the
+rule the mute switch in the tray above has always followed. A cross is a
+promise to turn something off, never a report that it is off. One rule across
+the whole application beats a rule per strip: a listener who has read one
+switch has read the rest.
 """
 
 from __future__ import annotations
@@ -69,10 +70,9 @@ SIZE_NAMES = {
     CoverSize.LARGE: "large",
     CoverSize.EXTRA_LARGE: "extra large",
 }
-# Off is the wheel crossed out, the way mute says off. That leaves the two
-# running states to differ by their own picture: the plain wheel for the
-# album, the numbered wheel for a single track. Three states cannot be told
-# apart by a fill, so nothing here relies on one.
+# Keyed by the state a press LANDS on, not the one it leaves. Repeating the
+# album is the plain wheel and holding one track is the numbered wheel;
+# arriving back at off is the wheel crossed out, composed rather than drawn.
 REPEAT_ICONS = {
     RepeatMode.ALBUM: resources.repeat_icon_path,
     RepeatMode.ONE: resources.repeat_one_icon_path,
@@ -107,26 +107,27 @@ def _small_button(
     return button
 
 
-def _state_icon(path: pathlib.Path | None, on: bool) -> QIcon:
-    """One picture, crossed out while the switch it names is off.
+def _state_icon(path: pathlib.Path | None, becomes_on: bool) -> QIcon:
+    """The picture a press would land on: the artwork, else it crossed out.
 
-    Every switch on this strip says off the same way, so a listener who has
-    read one of them has already read the rest.
+    Named for the destination rather than the current state, so the cross
+    reads as an offer to switch off rather than as a report of being off.
     """
-    if on:
+    if becomes_on:
         return plain_icon(path)
     return struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
 
 
 def _repeat_icon(repeat: RepeatMode) -> QIcon:
-    """The wheel: crossed out while off, numbered while holding one track.
+    """The state a press would move to, which the tooltip names in words.
 
-    Off borrows the cross the mute switch wears, so a listener who has read
-    one switch on this strip has already read this one.
+    The cycle is read off the mode itself rather than from a second table,
+    so the picture and the press cannot come to disagree.
     """
-    if repeat is RepeatMode.OFF:
+    following = repeat.after
+    if following is RepeatMode.OFF:
         return _state_icon(resources.repeat_icon_path(), False)
-    return plain_icon(REPEAT_ICONS[repeat]())
+    return plain_icon(REPEAT_ICONS[following]())
 
 
 def _switch_button(
@@ -235,10 +236,10 @@ class BottomTray(QWidget):
     def _show_switch(self, button: QPushButton, path, on: bool, name: str) -> None:
         """Light one switch while it is on; say what a press would do.
 
-        Off wears the same cross the repeat switch wears, so the state is
-        legible from the artwork alone and nothing behind the picture has to
-        change for it to be read.
+        The picture shows where a press would leave it, so a lit switch wears
+        the cross that offers to put it out and nothing behind the artwork
+        has to change for the state to be read.
         """
-        button.setIcon(_state_icon(path, on))
+        button.setIcon(_state_icon(path, not on))
         button.setChecked(on)
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")

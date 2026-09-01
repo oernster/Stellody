@@ -31,6 +31,7 @@ from stellody.domain.playback import SILENT_VOLUME, RepeatMode
 from stellody.shared import resources
 from stellody.shared.version import DONATE_URL
 from stellody.ui import menus as window_module
+from stellody.ui.bottom_tray import BOTTOM_ICON_PX
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
@@ -95,6 +96,18 @@ def _plain() -> QImage:
     return _rendered(plain_icon(resources.unmute_icon_path()))
 
 
+def _strip_plain(path) -> QImage:
+    """A bottom-strip picture on its own."""
+    return _rendered(plain_icon(path))
+
+
+def _strip_struck(path) -> QImage:
+    """The same picture crossed, composed as the bottom strip composes it."""
+    return _rendered(
+        struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
+    )
+
+
 def test_the_two_renderings_are_actually_different(
     application: QApplication,
 ) -> None:
@@ -124,51 +137,50 @@ def test_muting_silences_the_device_and_the_speaker_shows_what_a_press_does(
     assert picture(button) == _struck()
 
 
-def test_the_shuffle_switch_reaches_the_transport_and_lights_while_it_is_on(
+def test_the_shuffle_switch_reaches_the_transport_and_shows_the_next_press(
     window: MainWindow,
 ) -> None:
+    """The picture offers the state a press would reach, as the tooltip does."""
     button = window._bottom_tray.shuffle_button
-    off = picture(button)
-    assert button.isCheckable(), "the lit state is the button's own"
+    art = resources.shuffle_icon_path()
     assert button.isChecked() is False
+    assert picture(button) == _strip_plain(art), "off, so a press would scatter"
     window.toggle_shuffle()
     assert window._transport.shuffled is True
     assert button.isChecked() is True
     assert button.toolTip() == "Turn shuffle off"
-    on = picture(button)
-    assert on != off, "off wears the cross, so the two states differ"
+    assert picture(button) == _strip_struck(art), "on, so a press would stop it"
     window.toggle_shuffle()
     assert window._transport.shuffled is False
     assert button.isChecked() is False
-    assert picture(button) == off, "off comes back to the crossed wheel"
+    assert picture(button) == _strip_plain(art)
 
 
 def test_the_repeat_switch_reaches_the_transport_and_lights_while_it_is_on(
     window: MainWindow,
 ) -> None:
     button = window._bottom_tray.repeat_button
-    off = picture(button)
-    assert button.isCheckable()
+    wheel = resources.repeat_icon_path()
+    one_track = resources.repeat_one_icon_path()
+    assert button.isChecked() is False
+    assert picture(button) == _strip_plain(wheel), "a press would repeat the album"
 
     window.toggle_repeat()
     assert window._transport.repeat is RepeatMode.ALBUM
     assert button.isChecked() is True
     assert button.toolTip() == "Repeat one track"
-    album = picture(button)
-    assert album != off, "the album state carries its own artwork"
+    assert picture(button) == _strip_plain(one_track), "the numbered wheel next"
 
     window.toggle_repeat()
     assert window._transport.repeat is RepeatMode.ONE
     assert button.isChecked() is True, "holding one track is still repeating"
     assert button.toolTip() == "Turn repeat off"
-    one = picture(button)
-    assert one != album, "one track is told from the album by its picture"
-    assert one != off
+    assert picture(button) == _strip_struck(wheel), "the cross offers to stop"
 
     window.toggle_repeat()
     assert window._transport.repeat is RepeatMode.OFF
     assert button.isChecked() is False
-    assert picture(button) == off, "the cycle comes back to where it started"
+    assert picture(button) == _strip_plain(wheel), "back where it started"
 
 
 def test_every_switch_is_written_down_as_it_is_pressed(
@@ -207,6 +219,26 @@ def test_the_switches_come_back_as_they_were_left(
     assert reopened._tray.mute_button.toolTip() == "Unmute"
     assert reopened._bottom_tray.shuffle_button.toolTip() == "Turn shuffle off"
     assert player.volume == SILENT_VOLUME
+
+
+def test_a_reopened_window_finds_the_repeat_mode_it_was_left_in(
+    application: QApplication, player: RecordingPlayer
+) -> None:
+    """Every mode round-trips, not only the boolean an older store held."""
+    for mode in RepeatMode:
+        reopened = build(RememberingStore({SETTING_REPEAT: mode.value}), player)
+        assert reopened._transport.repeat is mode
+        assert reopened._bottom_tray.repeat_button.isChecked() is mode.repeats
+
+
+def test_a_reopened_window_finds_shuffle_as_it_was_left(
+    application: QApplication, player: RecordingPlayer
+) -> None:
+    """Both ways round, so a switch stuck on would pass half of this."""
+    for shuffled, stored in ((True, TRUE), (False, FALSE)):
+        reopened = build(RememberingStore({SETTING_SHUFFLE: stored}), player)
+        assert reopened._transport.shuffled is shuffled
+        assert reopened._bottom_tray.shuffle_button.isChecked() is shuffled
 
 
 def test_the_mute_switch_is_ruled_off_from_the_buttons_after_it(
