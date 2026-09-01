@@ -116,6 +116,9 @@ class LibraryTray(QWidget):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("Tray")
+        # Without this the stylesheet's border-bottom is dropped in
+        # silence. See BottomTray for the measurement.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.choose_button = _icon_button(

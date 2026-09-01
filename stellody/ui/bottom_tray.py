@@ -172,6 +172,13 @@ class BottomTray(QWidget):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
+        # Qt draws a stylesheet BORDER on a plain QWidget only where this
+        # attribute is set. Without it the background fills and the border
+        # is dropped in silence, which is why the rule in theme.py drew
+        # nothing at all. Measured on both trays: unset, every edge pixel
+        # comes back surface; set, the first and last rows come back
+        # border.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.shuffle_button = _switch_button(self, "Turn shuffle on", toggle_shuffle)

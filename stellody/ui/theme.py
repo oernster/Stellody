@@ -198,6 +198,16 @@ def stylesheet(mode: Mode) -> str:
         background-color: {colour.surface};
         border-bottom: 1px solid {colour.border};
     }}
+    /* The strip along the bottom is ruled off at BOTH edges, where the tray
+       above needs only one: the tray has the window's own edge above it, while
+       this has the library over it and the window's edge under it. Two lines
+       rather than one is what makes it read as a strip rather than as the
+       bottom of the library. */
+    QWidget#BottomTray {{
+        background-color: {colour.surface};
+        border-top: 1px solid {colour.border};
+        border-bottom: 1px solid {colour.border};
+    }}
     QPushButton#TrayButton {{
         background-color: transparent;
         border: {FOCUS_WIDTH_PX}px solid transparent;

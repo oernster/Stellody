@@ -36,8 +36,8 @@ that the palette or the layout does not already own.
 neither at first, which measured as a strip of exactly one colour, the window's:
 turned on with nothing playing it was indistinguishable from empty space, so a
 listener switching it on saw nothing happen and concluded it was not there. It
-now wears the surface both trays wear, ruled off by a hairline as they are;
-each band also keeps a low mark on the floor. Silence then reads as ten bands with
+now wears the surface both trays wear and each band keeps a low mark on
+the floor. Silence then reads as ten bands with
 nothing in them rather than as an absence.
 """
 
@@ -71,7 +71,6 @@ BAR_RADIUS_PX = 2
 # What a band with nothing in it still shows: enough to say the band is there
 # and too little to be mistaken for something being heard.
 BASELINE_PX = 2
-HAIRLINE_PX = 1
 _MILLISECONDS = 1000.0
 
 
@@ -156,16 +155,10 @@ class Visualiser(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(Qt.PenStyle.NoPen)
         # The ground the trays wear, so the strip is visibly a strip whether or
-        # not there is anything in it, then the hairline that rules it off from
-        # the library above exactly as the tray rules itself off.
+        # not there is anything in it. It draws no rule of its own: it sits
+        # inside the bottom tray now, so the tray's own edges are what rule it
+        # off and a second line here floated across the middle of the row.
         painter.fillRect(self.rect(), QColor(palette.surface))
-        painter.fillRect(
-            self.rect().left(),
-            self.rect().top(),
-            self.rect().width(),
-            HAIRLINE_PX,
-            QColor(palette.border),
-        )
         painter.setBrush(QColor(palette.accent))
         # The bars are laid out across the room that is left rather than at a
         # width of their own, so widening the display or dividing the bands
