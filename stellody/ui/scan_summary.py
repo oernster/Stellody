@@ -12,7 +12,10 @@ says can be checked without a screen.
 
 from __future__ import annotations
 
+from math import ceil
+
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextDocument
 from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 
 from stellody.application.scan import ScanReport
@@ -24,10 +27,22 @@ from stellody.ui.widgets import ReadingPane
 TEXT_SCALE = 1.5
 # The width is chosen for the line rather than scaled with the type. Scaling it
 # gave a dialog wide enough to hold a sentence of a hundred characters on one
-# line, which is further than an eye tracks back comfortably; the height is
-# scaled, since that is the direction more text actually needs.
+# line, which is further than an eye tracks back comfortably.
 DIALOG_WIDTH_PX = 700
-DIALOG_HEIGHT_PX = round(520 * TEXT_SCALE)
+# The height is NOT chosen. A scan that changed nothing says so in six lines
+# and a scan that found twenty albums needs twenty more, so a fixed height is
+# either a cramped page or (as it was) a great deal of empty dialog under a
+# short report. The dialog is measured against what it actually holds and
+# stops growing here, beyond which the page scrolls instead.
+MAX_BODY_HEIGHT_PX = round(520 * TEXT_SCALE)
+# What the document loses to the frame and the scrollbar when it lays itself
+# out, so the measured height is of the text as it will really be shown.
+BODY_CHROME_PX = 26
+# The gap between a label and its figure. At full width the table threw every
+# number against the right edge, which left Albums an inch and a half from 502.
+VALUE_GAP_PX = 28
+
+
 # The mark leads the dialog, so it is set well above the About dialog's, where
 # it sits beside a body of text rather than above one.
 MARK_PX = 128
@@ -81,12 +96,21 @@ def _headline(change: LibraryChange) -> str:
 
 
 def _table(rows: list[tuple[str, str]]) -> str:
-    """One block of counts, each named for what it actually counts."""
+    """One block of counts, each named for what it actually counts.
+
+    Sized to its own content rather than to the dialog. At full width every
+    number was thrown against the right edge, so a short label like Albums sat
+    an inch and a half from its own figure and the eye had to travel the gap to
+    pair them up. The middle cell is that gap, made a deliberate small one; the
+    numbers stay right aligned so their digits line up down the column.
+    """
     cells = "".join(
-        f"<tr><td>{name}</td><td align='right'><b>{value}</b></td></tr>"
+        f"<tr><td>{name}</td>"
+        f"<td width='{VALUE_GAP_PX}'></td>"
+        f"<td align='right'><b>{value}</b></td></tr>"
         for name, value in rows
     )
-    return f"<table width='100%'>{cells}</table>"
+    return f"<table cellspacing='0' cellpadding='0'>{cells}</table>"
 
 
 def _totals(change: LibraryChange, report: ScanReport) -> str:
@@ -156,7 +180,6 @@ class ScanSummaryDialog(NeutralDialog):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Scan finished")
-        self.resize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
         layout = QVBoxLayout(self)
         self.badge = icon_label(self, MARK_PX)
         if self.badge is not None:
@@ -176,3 +199,32 @@ class ScanSummaryDialog(NeutralDialog):
         layout.addWidget(body)
         layout.addLayout(close_row(self))
         self.pane = ReadingPane(body)
+        self._fit_to_report(body)
+
+    def _fit_to_report(self, body: QTextBrowser) -> None:
+        """Size the dialog to the report rather than to a remembered number.
+
+        The measurement is taken on a document of its own rather than on the
+        one inside the view. Setting a text width on the view's document does
+        not hold: the widget puts its own viewport width back. A widget
+        that has not been shown yet is a few dozen pixels wide, so it reported
+        a page 1853 pixels tall against the 278 it really is and every report
+        came out clamped to the ceiling. A detached document laid out at the
+        width the text will be read at cannot be overruled that way.
+
+        The clamp then STAYS: releasing it after measuring was tried and the
+        page simply grew back to fill the dialog on show, which is the empty
+        space this exists to remove. A report taller than the cap keeps the cap
+        and scrolls, so the pane is a tab stop exactly when there is something
+        below the fold, which is the rule it already followed.
+        """
+        measured = QTextDocument()
+        measured.setDefaultFont(body.font())
+        measured.setTextWidth(DIALOG_WIDTH_PX - BODY_CHROME_PX)
+        measured.setHtml(body.toHtml())
+        wanted = ceil(measured.size().height()) + BODY_CHROME_PX
+        fitted = min(wanted, MAX_BODY_HEIGHT_PX)
+        body.setFixedHeight(fitted)
+        self.layout().activate()
+        self.setFixedWidth(DIALOG_WIDTH_PX)
+        self.adjustSize()
