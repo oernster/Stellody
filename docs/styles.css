@@ -241,8 +241,11 @@ h1 .accent { color: var(--accent); }
   justify-content: center;
   align-items: center;
 }
+/* No dividers. A rule between siblings cannot know where a wrapped row begins,
+   so the first stat on the second row carried a line with nothing to its left;
+   the bar already wrapped at the ordinary desktop width, so it was there to be
+   seen rather than waiting for a narrow one. The gap does the separating. */
 .stat { text-align: center; padding: 0 1rem; }
-.stat + .stat { border-left: 1px solid var(--surface1); }
 .stat-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; color: var(--accent); line-height: 1; margin-bottom: 0.4rem; }
 .stat-label { font-size: 0.8rem; color: var(--subtext0); font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
 
@@ -458,7 +461,6 @@ footer { border-top: 1px solid var(--surface0); padding: 3rem 2rem; }
   .hero { padding: 3rem 1.25rem 2rem; }
   .section { padding: 3.5rem 1.25rem; }
   .features-grid { grid-template-columns: 1fr; }
-  .stat + .stat { border-left: none; border-top: 1px solid var(--surface1); }
   .stats-inner { flex-direction: column; gap: 1.25rem; }
 }
 
