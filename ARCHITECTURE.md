@@ -20,11 +20,19 @@ has never been seen to fail is not yet a guard.
 | 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/structural/test_rings.py` |
 | 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
 | 12 | Exactly two modules may open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
+| 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
 files, duplicating and overwriting metadata across 33 albums. Stellody
 describes a damaged tag; it never repairs one.
+
+Invariant 13 was written after it had already been broken. The repair control
+shipped enabled while its tooltip still said "not built yet": enabling a feature
+and rewording the thing attached to it are two edits and only one was made. It
+is swept rather than checked in the one place it was noticed, for the reason the
+menu bar is swept; it is held by a planted claim plus the original wording put
+back and watched to fail.
 
 Invariant 12 is the second of that kind. A local-first player that quietly
 talks to the internet is not local-first whatever its README says, so the

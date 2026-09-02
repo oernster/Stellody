@@ -160,10 +160,22 @@ def test_the_repair_button_does_not_move_when_the_report_is_scrolled(
     assert dialog.repair_button.mapTo(dialog, QPoint(0, 0)) == before
 
 
-def test_the_repair_button_admits_it_is_not_built(application: QApplication) -> None:
-    """Offered but honest, exactly as the view toggle is."""
+def test_the_repair_button_reads_its_wording_from_one_home(
+    application: QApplication,
+) -> None:
+    """The dialog's control and the strip's cannot say different things.
+
+    A dialog told there is nothing to act on keeps it disabled, exactly as the
+    strip does, since the screen it opens would say nothing.
+    """
     dialog, _view = shown(application, HealthDialog(issues()))
     assert not dialog.repair_button.isEnabled()
-    assert "not built yet" in dialog.repair_button.toolTip()
     assert dialog.repair_button.toolTip() == REPAIR_TOOLTIP, "one wording, one home"
     assert not dialog.repair_button.icon().isNull(), "drawn, not merely reserved"
+
+
+def test_the_repair_button_is_offered_once_there_is_something_to_do(
+    application: QApplication,
+) -> None:
+    dialog, _view = shown(application, HealthDialog(issues(), can_repair=True))
+    assert dialog.repair_button.isEnabled()

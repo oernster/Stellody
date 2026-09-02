@@ -200,9 +200,16 @@ def test_repair_follows_rescan_on_the_bottom_strip(window: MainWindow) -> None:
     assert not hasattr(window._tray, "repair_button"), "one home, not two"
 
 
-def test_the_repair_button_admits_it_is_not_built(window: MainWindow) -> None:
-    """Offered but honest, exactly as the one in the health report is."""
+def test_the_repair_button_names_the_press_and_waits_to_be_told(
+    window: MainWindow,
+) -> None:
+    """Drawn, disabled until a window is told there is something to act on.
+
+    A window built without the repair service offers nothing, which is what this
+    one is; the tooltip names what a press would do rather than reporting the
+    state, which is the rule both strips follow.
+    """
     button = window._bottom_tray.repair_button
     assert not button.isEnabled()
-    assert "not built yet" in button.toolTip()
+    assert button.toolTip().startswith("Accept the corrections")
     assert not button.icon().isNull(), "drawn, not merely reserved"
