@@ -21,11 +21,12 @@ from stellody.domain.identity import AlbumIdentity
 from stellody.ui.dialogs import NeutralDialog, close_row, icon_label
 from stellody.ui.widgets import ReadingPane
 
-# The dialog is sized against its own type rather than to a remembered pair of
-# numbers, so doubling the text does not leave the report reading through a
-# letterbox.
-TEXT_SCALE = 2.0
-DIALOG_WIDTH_PX = round(620 * TEXT_SCALE)
+TEXT_SCALE = 1.5
+# The width is chosen for the line rather than scaled with the type. Scaling it
+# gave a dialog wide enough to hold a sentence of a hundred characters on one
+# line, which is further than an eye tracks back comfortably; the height is
+# scaled, since that is the direction more text actually needs.
+DIALOG_WIDTH_PX = 700
 DIALOG_HEIGHT_PX = round(520 * TEXT_SCALE)
 # The mark leads the dialog, so it is set well above the About dialog's, where
 # it sits beside a body of text rather than above one.
@@ -138,8 +139,8 @@ def summary_html(change: LibraryChange, report: ScanReport) -> str:
     if report.issues:
         body.append(
             f"<p>{_plural(len(report.issues), 'labelling issue', 'labelling issues')} "
-            "found. Help then Library health lists them; your files are "
-            "untouched either way.</p>"
+            "found. Help then Library health lists them.<br>"
+            "Your files are untouched either way.</p>"
         )
     return "".join(body)
 

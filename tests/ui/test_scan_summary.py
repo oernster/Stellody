@@ -142,7 +142,10 @@ def test_labelling_issues_point_at_where_they_are_listed() -> None:
     html = summary_html(LibraryChange(previous_albums=1), report)
     assert "1 labelling issue" in html
     assert "Library health" in html
-    assert "your files are untouched" in html
+    # The reassurance is its own sentence on its own line rather than trailing
+    # after a semicolon, which put the whole thing on one very long line.
+    assert "lists them.<br>Your files are untouched either way." in html
+    assert "them;" not in html
 
 
 def test_the_report_carries_no_dash_and_no_styling_qt_would_drop() -> None:
