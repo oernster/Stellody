@@ -141,8 +141,14 @@ python main.py
 ## Tests
 
 ```
-python -m pytest
+.\gate.ps1
 ```
+
+That runs the formatter, both linters and the suite against the project's own
+virtual environment, reading each exit code rather than its output. Running
+`python -m pytest` directly works too, provided it is the venv's Python: a
+test refuses the run otherwise: the checks passing in one environment while
+the application runs in another is a fault this project has actually had.
 
 The suite gates at 100% branch coverage over the domain and application
 layers; it fails the build below that. It also runs black, flake8 and ruff as
