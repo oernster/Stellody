@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QPushButton
 from repair_support import COLLIDING, MemoryStore, buttons, exactly, labelled, opened
 
 from stellody.application.repairs import AcceptedGroup, Repairs
@@ -296,3 +296,43 @@ class TestWhenTheControlsAreOffered:
         assert not withheld.repair_button.isEnabled()
         offered.deleteLater()
         withheld.deleteLater()
+
+
+class TestWhereTheReaderIsLeft:
+    """Reported from the built application: the top button left you at the bottom.
+
+    Rebuilding destroys the button that was just pressed, so focus goes wherever
+    Qt finds it next and the scroll area travels to meet it. Decided here
+    instead.
+    """
+
+    def test_accepting_everything_returns_to_the_top(
+        self, application, repairs
+    ) -> None:
+        dialog = opened(repairs, None)
+        dialog._area.verticalScrollBar().setValue(
+            dialog._area.verticalScrollBar().maximum()
+        )
+        labelled(dialog, "Accept everything").click()
+        assert dialog._area.verticalScrollBar().value() == 0
+        dialog.deleteLater()
+
+    def test_focus_lands_on_a_control_rather_than_wherever_qt_finds_one(
+        self, application, repairs
+    ) -> None:
+        """A control taking focus scrolls itself into view, so it is chosen."""
+        dialog = opened(repairs, None)
+        labelled(dialog, "Accept everything").click()
+        focused = dialog._area.widget().focusWidget()
+        assert isinstance(focused, QPushButton)
+        assert focused is dialog._area.widget().findChild(QPushButton)
+        dialog.deleteLater()
+
+    def test_answering_one_row_keeps_the_reader_where_they_were(
+        self, application, repairs
+    ) -> None:
+        """Only a press that replaces the whole screen returns to the top."""
+        dialog = opened(repairs, None)
+        exactly(dialog, "Accept").click()
+        assert dialog._area.verticalScrollBar().value() == 0
+        dialog.deleteLater()

@@ -171,12 +171,36 @@ class RepairDialog(NeutralDialog):
             if widget is not None:
                 widget.setParent(None)
 
-    def _after(self, changed: int) -> None:
-        """Reload the library and redraw, so the screen says what is now true."""
+    def _after(self, changed: int, to_top: bool = False) -> None:
+        """Reload the library and redraw, so the screen says what is now true.
+
+        Where the reader is left is decided here rather than by Qt. Rebuilding
+        destroys the button that was just pressed, so focus goes wherever the
+        toolkit finds it next and the scroll area travels to meet it, which is
+        how pressing the control at the very top left somebody at the bottom of
+        a long list. A press that replaces the whole screen returns to the top;
+        one that answers a single row keeps the reader where they were reading.
+        """
         if changed:
             self._view = self._reload()
+        keeping = self._area.verticalScrollBar().value()
         self._clear()
         self._fill()
+        # Laid out before the bar is set, since a scrollbar with no range yet
+        # clamps whatever it is given back to nought.
+        self._area.widget().adjustSize()
+        self._settle(0 if to_top else keeping)
+
+    def _settle(self, position: int) -> None:
+        """Put the reader back, with focus on a control that will not move it.
+
+        Focus is placed before the bar is set: a control taking focus scrolls
+        itself into view, so doing it the other way round would undo this.
+        """
+        first = self._area.widget().findChild(QPushButton)
+        if first is not None:
+            first.setFocus(Qt.FocusReason.OtherFocusReason)
+        self._area.verticalScrollBar().setValue(position)
 
     def _fill(self) -> None:
         """Build both lists from the library and the accepted set."""
@@ -262,7 +286,8 @@ class RepairDialog(NeutralDialog):
         self._after(
             self._repairs.accept(
                 self._view, self._repairs.acceptable(self._view.issues)
-            )
+            ),
+            to_top=True,
         )
 
     def _reset_everything(self) -> None:
@@ -283,4 +308,4 @@ class RepairDialog(NeutralDialog):
             QMessageBox.StandardButton.No,
         )
         if confirmed is QMessageBox.StandardButton.Yes:
-            self._after(self._repairs.reset_everything())
+            self._after(self._repairs.reset_everything(), to_top=True)
