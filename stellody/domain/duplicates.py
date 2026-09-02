@@ -24,6 +24,12 @@ track rating under it were orphaned by the arrival of a worse copy.
 file extensions. The probe reports no depth for a file whose format states
 none, which is exactly the lossy ones, so the distinction this module needs is
 one the library already draws and already tests.
+
+**A matching track number is not evidence that two files are one recording.**
+An album can hold a studio take and a live one at the same number, while
+dropping a file is the one irreversible thing this module does. It is therefore done
+only where the lengths agree as well, which is what separates a copy from a
+variant; a pair that disagrees is two recordings and both are kept.
 """
 
 from __future__ import annotations
@@ -32,6 +38,12 @@ from collections.abc import Sequence
 
 from stellody.domain.album import FIRST_DISC
 from stellody.domain.ordering import TrackCandidate
+
+# How far two lengths may sit apart and still be one recording. Measured on the
+# reference library: the widest of the seventeen pairs in The Dance was 0.7
+# seconds apart, which is a lossy encoder's padding rather than a difference in
+# what was played. Two takes of one song differ by far more than this.
+SAME_RECORDING_MS = 2000
 
 
 def is_lossless(candidates: Sequence[TrackCandidate]) -> bool:
@@ -48,27 +60,39 @@ def kept_against_lossless(candidates: Sequence[TrackCandidate]) -> tuple[int, ..
     """Which of these to keep, dropping a lossy copy of a track already here.
 
     A file is dropped only where a lossless file in the same folder claims the
-    same disc and track number. Everything else stays, which is what keeps this
-    from quietly removing music:
+    same disc and track number AND runs for the same length. Everything else
+    stays, which is what keeps this from quietly removing music:
 
     - a lossy file whose number nothing lossless claims is a track the lossless
       rip does not have, so it is kept;
     - a file with no track number is paired with nothing, so it is kept. The two
       untagged WAVs sitting beside one M4A in the reference library's copy of
       The Bends are that case; dropping either would have lost a recording
-      to a rule about duplicates.
+      to a rule about duplicates;
+    - a file whose length disagrees with the lossless track at its number is a
+      different recording, so it is kept. An album may hold a studio take and a
+      live one at one number; a number alone cannot tell them apart.
     """
-    claimed = {
-        _place(item)
-        for item in candidates
-        if item.bit_depth > 0 and item.tag_track is not None
-    }
+    claimed: dict[tuple[int, int], list[int]] = {}
+    for item in candidates:
+        if item.bit_depth > 0 and item.tag_track is not None:
+            claimed.setdefault(_place(item), []).append(item.duration_ms)
     if not claimed:
         return tuple(range(len(candidates)))
     return tuple(
         position
         for position, item in enumerate(candidates)
-        if item.bit_depth > 0 or item.tag_track is None or _place(item) not in claimed
+        if not _is_copy(item, claimed)
+    )
+
+
+def _is_copy(item: TrackCandidate, claimed: dict[tuple[int, int], list[int]]) -> bool:
+    """Whether a lossy file is the same recording as a lossless one beside it."""
+    if item.bit_depth > 0 or item.tag_track is None:
+        return False
+    return any(
+        abs(item.duration_ms - length) <= SAME_RECORDING_MS
+        for length in claimed.get(_place(item), ())
     )
 
 

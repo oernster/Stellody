@@ -238,8 +238,18 @@ of it was a report saying they were no longer found.
 
 `stellody/domain/duplicates.py` answers it in two places; the exception is
 narrow on purpose. Inside one folder a lossy file is dropped only where a
-lossless file claims the same disc and track number: The Dance held 17 FLAC and
-17 M4A of one performance and listed all 34. Across folders the lossless copy
+lossless file claims the same disc and track number AND runs the same length:
+The Dance held 17 FLAC and 17 M4A of one performance and listed all 34.
+
+The length is not belt and braces; it is the evidence. The first version of
+this rule paired on the number alone, which cannot tell a copy from a variant:
+an album may hold a studio take and a live one at one number, while the lossy
+rip here titled every track "(Live)" where the lossless one did not, which is
+exactly the shape that should stop anybody. Measured, all seventeen pairs
+agreed to within 0.7 seconds and most to within 0.1, which is a lossy encoder's
+padding rather than a different performance. A pair whose lengths disagree is
+two recordings and both are kept, because dropping a file is the one
+irreversible thing the rule does. Across folders the lossless copy
 keeps the plain handle and only the copies are told apart, ONLY where
 exactly one of the colliding albums is lossless. None lossless or several
 leaves every one of them told apart exactly as before, which is what keeps the

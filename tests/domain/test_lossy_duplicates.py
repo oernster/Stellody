@@ -28,6 +28,9 @@ ARTIST = "Fleetwood Mac"
 ALBUM = "The Dance"
 YEAR = "1997"
 
+# Long enough that a two second tolerance is a small part of it.
+DEFAULT_MS = 300_000
+
 LOSSLESS_DEPTH = 16
 # What the probe reports for a file whose format states no depth. It is the
 # library's existing signal for a lossy source, not a new one invented here.
@@ -41,6 +44,7 @@ def entry(
     depth: int,
     track: int | None,
     disc: int | None = None,
+    length: int = DEFAULT_MS,
     title: str = "",
     date: str = YEAR,
     album: str = ALBUM,
@@ -53,7 +57,7 @@ def entry(
         candidate=TrackCandidate(
             file_name=name,
             source=TrackSource(path=f"{parent}/{album}/{name}"),
-            duration_ms=1000,
+            duration_ms=length,
             sample_rate=RATE,
             bit_depth=depth,
             tag_disc=disc,
@@ -141,6 +145,46 @@ class TestWhatIsNeverDropped:
             entry(HERE, "01 Other.m4a", depth=LOSSY_DEPTH, track=1, disc=2),
         )
         assert _only(entries).track_count == 2
+
+
+class TestAVariantIsNotACopy:
+    """A number alone cannot say two files hold the same performance.
+
+    Raised against the first version of this rule, which dropped a file purely
+    because a lossless file shared its track number. An album may hold a studio
+    take and a live one at one number; the lossy rip of The Dance titling every
+    track "(Live)" is exactly the shape that should make anyone check. Lengths
+    are what settled it there; lengths are what the rule now requires.
+    """
+
+    def test_a_track_of_a_different_length_is_kept(self) -> None:
+        """Two takes of one song, not one take twice."""
+        entries = (
+            entry(HERE, "05 Studio.flac", depth=LOSSLESS_DEPTH, track=5),
+            entry(HERE, "05 Live.m4a", depth=LOSSY_DEPTH, track=5, length=402_000),
+        )
+        assert _only(entries).track_count == 2
+
+    def test_a_track_of_the_same_length_is_dropped(self) -> None:
+        """The Dance: every pair agreed to within 0.7 of a second."""
+        entries = (
+            entry(HERE, "01 The Chain.flac", depth=LOSSLESS_DEPTH, track=1),
+            entry(
+                HERE,
+                "01 The Chain (Live).m4a",
+                depth=LOSSY_DEPTH,
+                track=1,
+                length=DEFAULT_MS - 700,
+            ),
+        )
+        assert _only(entries).track_count == 1
+
+    def test_the_survivor_is_the_lossless_one(self) -> None:
+        entries = (
+            entry(HERE, "01 One.flac", depth=LOSSLESS_DEPTH, track=1),
+            entry(HERE, "01 One.m4a", depth=LOSSY_DEPTH, track=1, length=DEFAULT_MS),
+        )
+        assert _only(entries).tracks[0].source.path.endswith(".flac")
 
 
 class TestPairingWhenOnlyOneRipStatesADisc:
