@@ -159,6 +159,14 @@ reused without opening a single file. On the reference library a cold scan of
 a little over four tenths of a second, grouping into 482 albums of 6,877
 tracks.
 
+**Every library figure in this document was measured while the walk took FLAC
+alone**, which is what those 510 folders are: the 487 that are FLAC throughout
+plus the 23 holding FLAC beside something else. Widening the walk brings back
+19 folders that were invisible, so the counts and the timings here are all due a
+re-measure against a cold scan of the widened library. They are left as measured
+rather than adjusted, since a figure nobody took is worth less than a figure
+with a date on its reading.
+
 **The store holds raw tag values, not resolved ones.** Resolution happens on
 load, so improving any rule above takes effect on the next start without
 rescanning a library.

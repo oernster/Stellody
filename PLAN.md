@@ -104,8 +104,8 @@ a concert film sitting beside the albums it came from is part of the same
 collection.
 
 This is the one milestone that changes what Stellody IS, so it changes several
-things that currently assume audio: the walk takes audio suffixes only, a track is
-a slice of an audio file, the output port speaks to a sound device. A video
+things that currently assume audio: the walk takes audio suffixes only, a track
+is a slice of an audio file, the output port speaks to a sound device. A video
 needs a surface to draw on, a second stream kept in step with the sound, plus a
 window that can give it room without the library view losing its place.
 
@@ -139,7 +139,8 @@ is missing is not the correction. It is anywhere to record that a correction
 was accepted, plus any way to prefer yours over the rule's.
 
 **Measured on the reference library**, so the size of this is known rather than
-guessed: 142 issues across 36 of the 482 albums. 132 are two files claiming one
+guessed, though measured while the walk still took FLAC alone: 142 issues across
+36 of the 482 albums. 132 are two files claiming one
 track number, 6 are a disc number disagreeing with its folder, 4 are a missing
 album artist. Every one of those three kinds already has a resolution rule, so
 every one of the 142 has a value waiting to be accepted. The two kinds with

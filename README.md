@@ -38,7 +38,7 @@ if it ever stopped being true the build would fail.
 - **An equalizer, plus little bars that dance.** Ten sliders from deep bass to
   high treble, with twenty bars along the bottom showing what the music is
   doing. Switched off, the sound reaching your speakers is bit for bit what is
-  in the file.
+  in the file, for the formats that store it exactly: FLAC, WAV and AIFF.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
 - **Stars and play counts.** Rate a song, rate the album separately, then read
