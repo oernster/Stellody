@@ -14,7 +14,7 @@ import soundfile
 from mutagen.flac import FLAC, Picture
 from mutagen.id3 import PictureType
 
-from stellody.infrastructure.covers import FlacPictures
+from stellody.infrastructure.covers import EmbeddedPictures
 
 SAMPLE_RATE = 44100
 FRAMES = SAMPLE_RATE // 10
@@ -41,7 +41,7 @@ def _add(path: pathlib.Path, kind: PictureType, data: bytes) -> None:
 def test_the_picture_a_file_carries_is_the_picture_returned(tmp_path) -> None:
     audio = _flac(tmp_path / "one.flac")
     _add(audio, PictureType.COVER_FRONT, b"front-cover-bytes")
-    assert FlacPictures().picture(str(audio)) == b"front-cover-bytes"
+    assert EmbeddedPictures().picture(str(audio)) == b"front-cover-bytes"
 
 
 def test_the_front_cover_wins_over_a_larger_back(tmp_path) -> None:
@@ -49,27 +49,27 @@ def test_the_front_cover_wins_over_a_larger_back(tmp_path) -> None:
     audio = _flac(tmp_path / "two.flac")
     _add(audio, PictureType.COVER_BACK, b"x" * 5000)
     _add(audio, PictureType.COVER_FRONT, b"front")
-    assert FlacPictures().picture(str(audio)) == b"front"
+    assert EmbeddedPictures().picture(str(audio)) == b"front"
 
 
 def test_the_largest_wins_when_no_picture_claims_to_be_the_front(tmp_path) -> None:
     audio = _flac(tmp_path / "three.flac")
     _add(audio, PictureType.COVER_BACK, b"small")
     _add(audio, PictureType.LEAFLET_PAGE, b"y" * 400)
-    assert FlacPictures().picture(str(audio)) == b"y" * 400
+    assert EmbeddedPictures().picture(str(audio)) == b"y" * 400
 
 
 def test_a_file_carrying_no_picture_has_none(tmp_path) -> None:
     audio = _flac(tmp_path / "bare.flac")
-    assert FlacPictures().picture(str(audio)) is None
+    assert EmbeddedPictures().picture(str(audio)) is None
 
 
 def test_a_file_that_is_not_there_has_none(tmp_path) -> None:
-    assert FlacPictures().picture(str(tmp_path / "missing.flac")) is None
+    assert EmbeddedPictures().picture(str(tmp_path / "missing.flac")) is None
 
 
 def test_a_file_that_is_not_audio_has_none(tmp_path) -> None:
     """A cover file handed here by mistake must not raise."""
     plain = tmp_path / "cover.jpg"
     plain.write_bytes(b"not audio at all")
-    assert FlacPictures().picture(str(plain)) is None
+    assert EmbeddedPictures().picture(str(plain)) is None

@@ -27,6 +27,7 @@ SHARED_DTYPE = "float32"
 DTYPE_BIT_DEPTHS = {"int16": 16, "int32": 32, "float32": 32}
 MIXER_BIT_DEPTH = DTYPE_BIT_DEPTHS[SHARED_DTYPE]
 NO_EXCLUSIVE_FORMAT = "the device offers no exclusive format at this rate"
+NO_STATED_DEPTH = "the file states no bit depth, so nothing can be bit perfect"
 
 
 WASAPI_API_NAME = "WASAPI"
@@ -143,6 +144,12 @@ def open_output(
     device = default_device() if device is None else device
     if request.mode is not OutputMode.EXCLUSIVE:
         return _shared_result(device, request, "")
+    # Refused here rather than left to fail at the format search, so the
+    # reason names the file instead of blaming the device. A lossy source has
+    # no depth to hand an exclusive stream; an exclusive stream carrying a
+    # decoder's output is not bit perfect however well it opens.
+    if not request.states_depth:
+        return _shared_result(device, request, NO_STATED_DEPTH)
     dtype = native_dtype(device, request)
     if dtype is None:
         return _shared_result(device, request, NO_EXCLUSIVE_FORMAT)

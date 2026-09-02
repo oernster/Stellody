@@ -7,7 +7,28 @@ from collections.abc import Iterator
 
 from stellody.application.values import FileStat, FolderListing
 
-AUDIO_SUFFIXES = frozenset({".flac"})
+# What the decoder can actually open, measured against the libsndfile behind
+# soundfile rather than taken from its documentation: 26 formats, of which
+# these are the ones a music library holds. Every one was checked to be
+# readable by mutagen as well, since a file whose tags cannot be read is not
+# a file Stellody can group into an album. CAF is deliberately absent for
+# exactly that reason: libsndfile decodes it, mutagen returns nothing at all
+# for it, so it would scan into an album with no title.
+#
+# M4A, WMA, Musepack, Monkey's Audio, WavPack and DSD are absent because
+# nothing here decodes them; see PLAN.md for the decoder that would.
+AUDIO_SUFFIXES = frozenset(
+    {
+        ".flac",
+        ".mp3",
+        ".ogg",
+        ".oga",
+        ".opus",
+        ".wav",
+        ".aiff",
+        ".aif",
+    }
+)
 CUE_SUFFIXES = frozenset({".cue"})
 IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".webp", ".bmp"})
 

@@ -49,7 +49,7 @@ def test_a_request_can_be_restated_as_shared() -> None:
     ("kwargs", "message"),
     [
         ({"sample_rate": 0, "bit_depth": CD_BIT_DEPTH}, "sample rate"),
-        ({"sample_rate": CD_SAMPLE_RATE, "bit_depth": 0}, "bit depth"),
+        ({"sample_rate": CD_SAMPLE_RATE, "bit_depth": -1}, "bit depth"),
         (
             {
                 "sample_rate": CD_SAMPLE_RATE,
@@ -63,6 +63,44 @@ def test_a_request_can_be_restated_as_shared() -> None:
 def test_invalid_requests_are_refused(kwargs: dict[str, object], message: str) -> None:
     with pytest.raises(ValueError, match=message):
         OutputRequest(**kwargs)  # type: ignore[arg-type]
+
+
+def test_a_source_stating_no_bit_depth_is_accepted() -> None:
+    """A lossy file has none to state, so nought is an answer rather than a gap.
+
+    Demanding a positive number here would mean inventing a depth on the
+    file's behalf, which is the one thing that would make the claim below
+    impossible to check.
+    """
+    request = OutputRequest(sample_rate=CD_SAMPLE_RATE, bit_depth=0)
+    assert request.bit_depth == 0
+    assert request.states_depth is False
+
+
+def test_a_source_that_states_a_depth_says_so() -> None:
+    assert cd_request(OutputMode.EXCLUSIVE).states_depth is True
+
+
+def test_a_source_with_no_stated_depth_is_never_bit_perfect() -> None:
+    """However well the device opens, a lossy file cannot be delivered intact.
+
+    What comes out of the decoder is already not what went into the encoder,
+    so an exclusive stream at the file's own rate still is not bit perfect.
+    Without this the comparison would read `device >= 0`, which passes for
+    every lossy file ever opened and would put a false claim on screen.
+    """
+    request = OutputRequest(
+        sample_rate=CD_SAMPLE_RATE, bit_depth=0, mode=OutputMode.EXCLUSIVE
+    )
+    report = OutputReport(
+        request=request,
+        mode=OutputMode.EXCLUSIVE,
+        sample_rate=CD_SAMPLE_RATE,
+        bit_depth=32,
+    )
+    assert report.rate_is_native is True
+    assert report.depth_is_native is False
+    assert report.is_bit_perfect is False
 
 
 def test_an_exclusive_stream_at_the_native_rate_and_depth_is_bit_perfect() -> None:

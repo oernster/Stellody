@@ -13,8 +13,10 @@ permission to anything holding a tag library.
 from __future__ import annotations
 
 import mutagen
-from mutagen.flac import FLAC, Picture
-from mutagen.id3 import PictureType
+from mutagen.flac import Picture
+from mutagen.id3 import ID3, PictureType
+
+ART_FRAME = "APIC"
 
 
 def _preference(picture: Picture) -> tuple[int, int]:
@@ -28,17 +30,36 @@ def _preference(picture: Picture) -> tuple[int, int]:
     return (0 if picture.type == PictureType.COVER_FRONT else 1, -len(picture.data))
 
 
-class FlacPictures:
-    """The cover embedded in a FLAC, as the bytes the file already holds."""
+class EmbeddedPictures:
+    """The cover embedded in a music file, as the bytes the file holds.
+
+    Two shapes again, as with the tags: FLAC keeps pictures as a list of its
+    own, while MP3, WAV and AIFF keep them as ID3 picture frames. Both carry
+    the same fields, so both sort by the same preference and neither is
+    treated as the special case.
+    """
 
     def picture(self, path: str) -> bytes | None:
         """The best embedded picture in this file; None when it holds none."""
         try:
-            audio = FLAC(path)
+            audio = mutagen.File(path)
         except (mutagen.MutagenError, OSError, ValueError):
             return None
-        pictures = list(audio.pictures)
+        if audio is None:
+            return None
+        pictures = _pictures(audio)
         if not pictures:
             return None
         pictures.sort(key=_preference)
         return bytes(pictures[0].data)
+
+
+def _pictures(audio: object) -> list:
+    """Every embedded picture, however this format chooses to hold them."""
+    held = getattr(audio, "pictures", None)
+    if held:
+        return list(held)
+    tags = getattr(audio, "tags", None)
+    if isinstance(tags, ID3):
+        return list(tags.getall(ART_FRAME))
+    return []

@@ -57,9 +57,9 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 
 ## Before you download
 
-- **It plays FLAC files only.** FLAC is the format used for copies kept at full
-  CD quality. If your music is MP3, M4A or WMA, Stellody will not find it yet.
-  This is the one thing worth checking first. More formats are being worked on.
+- **It plays FLAC, MP3, Ogg, WAV and AIFF.** Not M4A or WMA yet, so if your
+  collection is in one of those, Stellody will not find it. This is the one
+  thing worth checking first. The remaining formats are being worked on.
 - **Windows only.** Mac and Linux are planned.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting

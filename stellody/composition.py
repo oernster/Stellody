@@ -24,7 +24,7 @@ from stellody.infrastructure import diary, instance, switch_reset
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.cover_search import ArchiveCovers
-from stellody.infrastructure.covers import FlacPictures
+from stellody.infrastructure.covers import EmbeddedPictures
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.paths import (
     art_cache_dir,
@@ -32,7 +32,7 @@ from stellody.infrastructure.paths import (
     database_path,
     shape_cache_dir,
 )
-from stellody.infrastructure.probe import FlacProbe
+from stellody.infrastructure.probe import AudioProbe
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
@@ -67,7 +67,7 @@ def scan_session(database: str):
 
     def open_session() -> tuple[ScanLibrary, SqliteLibraryStore]:
         store = SqliteLibraryStore(database)
-        scanner = ScanLibrary(FolderWalker(), FlacProbe(), SidecarTextReader(), store)
+        scanner = ScanLibrary(FolderWalker(), AudioProbe(), SidecarTextReader(), store)
         return scanner, store
 
     return open_session
@@ -89,7 +89,7 @@ def build_window(
     source, which are the only two things in Stellody that can open a
     connection; a structural test says so rather than a comment.
     """
-    artwork = FileArtwork(art_cache_dir(), FlacPictures())
+    artwork = FileArtwork(art_cache_dir(), EmbeddedPictures())
     listening = ListeningLog(store)
     listening.load()
     return MainWindow(

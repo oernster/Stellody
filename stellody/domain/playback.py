@@ -91,10 +91,25 @@ class OutputRequest:
     def __post_init__(self) -> None:
         if self.sample_rate <= 0:
             raise ValueError("sample rate must be positive")
-        if self.bit_depth <= 0:
-            raise ValueError("bit depth must be positive")
+        # Nought is a real answer here, not a missing one: a lossy file has no
+        # bit depth to state, so demanding a positive number would mean
+        # inventing one on its behalf. `SourceRecord.bit_depth` already
+        # defaults to nought for the same reason. A negative depth is still
+        # nonsense and still refused.
+        if self.bit_depth < 0:
+            raise ValueError("bit depth cannot be negative")
         if self.channels <= 0:
             raise ValueError("channel count must be positive")
+
+    @property
+    def states_depth(self) -> bool:
+        """Whether the source says what bit depth it holds.
+
+        A lossless file does; a lossy one has none to say. The difference
+        decides what an exclusive stream could honestly claim, so it is asked
+        here rather than inferred from a nought somewhere downstream.
+        """
+        return self.bit_depth > 0
 
     def as_shared(self) -> OutputRequest:
         """The same stream asked for through the mixer instead."""
@@ -129,8 +144,13 @@ class OutputReport:
 
     @property
     def depth_is_native(self) -> bool:
-        """True when the device took the track's own bit depth or better."""
-        return self.bit_depth >= self.request.bit_depth
+        """True when the device took the track's own bit depth or better.
+
+        A source stating no depth has no native depth to have been taken, so
+        this is False rather than trivially true. Left as a comparison against
+        nought it would pass for every lossy file ever opened.
+        """
+        return self.request.states_depth and self.bit_depth >= self.request.bit_depth
 
     @property
     def is_bit_perfect(self) -> bool:
@@ -138,6 +158,11 @@ class OutputReport:
 
         Shared mode is never bit perfect: the mixer resamples by definition,
         which is the whole reason the exclusive toggle exists.
+
+        Neither is a lossy file, whatever the device does. What comes out of
+        an MP3 decoder is already not what went into the encoder, so no way of
+        opening the device can make the claim true. `depth_is_native` is what
+        refuses it, since such a file states no depth to be native to.
         """
         return (
             self.mode is OutputMode.EXCLUSIVE

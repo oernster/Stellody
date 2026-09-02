@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import ScanLibrary
 from stellody.application.values import FolderListing
-from stellody.infrastructure.probe import FlacProbe
+from stellody.infrastructure.probe import AudioProbe
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
 from stellody.infrastructure.walker import FolderWalker
@@ -156,7 +156,7 @@ def test_a_real_store_survives_being_scanned_from_another_thread(
     def session():
         store = SqliteLibraryStore(database)
         return (
-            ScanLibrary(FolderWalker(), FlacProbe(), SidecarTextReader(), store),
+            ScanLibrary(FolderWalker(), AudioProbe(), SidecarTextReader(), store),
             store,
         )
 

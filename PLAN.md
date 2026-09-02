@@ -63,52 +63,39 @@ Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the update check reaches GitHub from inside the sandbox; the Windows
 build is untouched by either.
 
-## 2. Play every audio format, not only FLAC
+## 2. Play the formats that need a decoder Stellody does not carry
 
-Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
-reads FLAC stream info, a README calling it a FLAC player. A local library of
-any age holds more than that.
+The first half of this milestone is built: the walk takes `.flac .mp3 .ogg .oga
+.opus .wav .aiff .aif`, a general probe reads what each format actually states
+and the existing decode path serves the lot. It is proved on generated files in
+every one of those formats and NOT yet on a real album in the library, which is
+what the bar below still asks for. What remains is everything libsndfile cannot
+decode.
 
 **What that costs, measured over the reference library on 2026-08-30.** Of 656
-folders holding audio, 487 are FLAC throughout and Stellody shows all of them;
-23 hold FLAC beside something else, so part of the folder is shown and the rest
-is not; 146 hold no FLAC at all and are invisible, which is more than a fifth
-of the library. Those 146 hold 1,356 M4A, 147 OGG, 24 MP3 and 13 WAV tracks.
-The split between the two halves below is therefore lopsided: extending the
-walk brings back 19 of those folders, while 127 of them are M4A and wait on a
-decoder. An album asked after by name, BT's Emotional Technology, is one of the
-127.
+folders holding audio, 146 held no FLAC at all and were invisible. Extending the
+walk brought back 19 of them, holding 147 OGG, 24 MP3 and 13 WAV tracks. The
+other 127 are M4A and wait on a decoder: 1,356 tracks, more than a fifth of the
+library still unreachable. An album asked after by name, BT's Emotional
+Technology, is one of the 127.
 
-**Measured, so the size of this is known rather than guessed.** The decoder
-already behind the application is libsndfile 1.2.2, which reports 26 formats
-including FLAC, MP3, OGG, WAV, AIFF, W64, CAF and AU. So the work divides in
-two; the first half is far cheaper than it looks, though the numbers above say
-it is also the smaller half of the gain:
+**What is left needs a decoder rather than a suffix.** M4A with AAC or ALAC,
+WMA, Musepack, Monkey's Audio, WavPack, DSD. Each means either FFmpeg through a
+binding or Qt Multimedia, so each carries a new dependency and a licence
+question the first half did not.
 
-- **What libsndfile already decodes.** Extend the walk beyond one suffix,
-  replace the FLAC-only probe with a general one (mutagen reads tags for
-  everything in this list), then let the existing decode path serve it. No new
-  dependency, no new licence, no change to the audio path.
-- **What it does not.** M4A with AAC or ALAC, WMA, Musepack, Monkey's Audio,
-  WavPack, DSD. Each needs a decoder Stellody does not carry, which means
-  either FFmpeg through a binding or Qt Multimedia.
+That asks the same question milestone 3 asks, so answer it once: **one media
+backend, chosen for both**. Deciding it separately is how a player ends up with
+two decoders that disagree about what a track is.
 
-That second half asks the same question milestone 3 asks, so answer it once:
-**one media backend, chosen for both**. Deciding it separately is how a player
-ends up with two decoders that disagree about what a track is.
+Honesty applies as usual; the rule the first half established carries forward.
+A lossy format cannot be bit perfect however the device is opened, so
+whatever the new backend decodes has to state what it states and no more.
 
-Honesty applies as usual. A lossy format cannot be bit perfect however the
-device is opened, so anything the interface says about exclusive output has to
-say that too.
-
-Needed: suffixes from one table rather than a literal, a probe that reports what
-each format actually states (a missing bit depth is honest for a lossy file,
-not an error), the decode extended, plus the README's opening line rewritten:
-this stops being a FLAC player the day the first half ships.
-
-Done when: an album in each of the formats in the first half scans, groups and
-plays; a format Stellody cannot decode is reported as unreadable rather than
-silently skipped.
+Done when: a real album in each of MP3, Ogg and WAV scans, groups and plays in
+the built application, which closes the first half; an M4A album does the same,
+which closes the second; a format Stellody cannot decode is reported as
+unreadable rather than silently skipped.
 
 ## 3. Play video files
 
@@ -117,7 +104,7 @@ a concert film sitting beside the albums it came from is part of the same
 collection.
 
 This is the one milestone that changes what Stellody IS, so it changes several
-things that currently assume audio: the walk takes only FLAC today, a track is
+things that currently assume audio: the walk takes audio suffixes only, a track is
 a slice of an audio file, the output port speaks to a sound device. A video
 needs a surface to draw on, a second stream kept in step with the sound, plus a
 window that can give it room without the library view losing its place.
