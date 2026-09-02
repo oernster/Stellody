@@ -82,7 +82,9 @@ def _chosen_title(
 
 
 def resolve_tracks(
-    candidates: tuple[TrackCandidate, ...], album_label: str
+    candidates: tuple[TrackCandidate, ...],
+    album_label: str,
+    album_key: str = "",
 ) -> tuple[tuple[Track, ...], tuple[LibraryIssue, ...]]:
     """Turn candidates into ordered tracks, reporting what had to be worked out.
 
@@ -105,6 +107,7 @@ def resolve_tracks(
             LibraryIssue(
                 kind=IssueKind.DUPLICATE_TRACK_NUMBER,
                 album=album_label,
+                album_key=album_key,
                 detail=f"disc {key[0]}, track {key[1]}",
                 paths=affected,
             )
@@ -142,6 +145,7 @@ def resolve_tracks(
             LibraryIssue(
                 kind=IssueKind.MISSING_TRACK_NUMBER,
                 album=album_label,
+                album_key=album_key,
                 detail=f"{len(untagged)} file(s)",
                 paths=tuple(untagged),
             )
@@ -175,6 +179,7 @@ def resolve_tracks(
             LibraryIssue(
                 kind=IssueKind.MISSING_TITLE,
                 album=album_label,
+                album_key=album_key,
                 detail=f"{len(missing_titles)} file(s)",
                 paths=tuple(missing_titles),
             )

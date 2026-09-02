@@ -287,7 +287,9 @@ def assemble_albums(
         _place_bonus_discs(group)
         identity = _identity_of(group)
         label = f"{identity.display_artist} - {identity.display_title}"
-        tracks, track_issues = resolve_tracks(tuple(group.candidates), label)
+        tracks, track_issues = resolve_tracks(
+            tuple(group.candidates), label, identity.handle
+        )
         found = list(track_issues)
         if group.disc_conflicts:
             found.append(
@@ -296,6 +298,7 @@ def assemble_albums(
                     album=label,
                     detail=f"{len(group.disc_conflicts)} file(s)",
                     paths=tuple(group.disc_conflicts),
+                    album_key=identity.handle,
                 )
             )
         if not group.tagged_artists:
@@ -304,6 +307,7 @@ def assemble_albums(
                     kind=IssueKind.MISSING_ALBUM_ARTIST,
                     album=label,
                     detail=f"{len(group.candidates)} file(s)",
+                    album_key=identity.handle,
                 )
             )
         by_name = _paths_by_name(group)

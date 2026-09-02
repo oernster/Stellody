@@ -61,6 +61,13 @@ class LibraryIssue:
     album: str
     detail: str = ""
     paths: tuple[str, ...] = ()
+    # The album's identity handle, beside the label shown to a reader. The
+    # label is display text: two albums with one title and one artist share it,
+    # a reissue beside its original being the ordinary case. So attributing a
+    # finding to an album by its label cannot be relied on and the handle is
+    # carried instead. Empty where the finding belongs to a folder rather than
+    # to an assembled album, which is a finding nothing can accept anyway.
+    album_key: str = ""
 
     @property
     def summary(self) -> str:
