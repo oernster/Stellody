@@ -84,9 +84,9 @@
     </div>
     <div class="feat">
       <h3>Check your music is a format it reads</h3>
-      <p>FLAC, MP3, Ogg, Opus, WAV and AIFF are all read. M4A and WMA are not, so if your music is in one of
-      those Stellody will not find it yet. Worth checking before you download. The remaining formats are
-      being worked on.</p>
+      <p>FLAC, MP3, Ogg, Opus, WAV, AIFF and M4A are all read. WMA, Monkey's Audio, WavPack, Musepack and
+      DSD are not. Anything Stellody cannot decode is named in its health report rather than passed over, so
+      an album it cannot play says so instead of simply not appearing.</p>
     </div>
     <div class="feat">
       <h3>Adding music later is quick</h3>
@@ -151,6 +151,7 @@ python buildinstaller.py</code></pre>
         <span class="chip">PySide6</span>
         <span class="chip">mutagen</span>
         <span class="chip">soundfile</span>
+        <span class="chip">PyAV</span>
         <span class="chip">SQLite</span>
       </div>
     </div>

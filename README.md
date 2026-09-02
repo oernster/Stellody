@@ -68,9 +68,11 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 
 ## Before you download
 
-- **It plays FLAC, MP3, Ogg, Opus, WAV and AIFF.** Not M4A or WMA yet, so if your
-  collection is in one of those, Stellody will not find it. This is the one
-  thing worth checking first. The remaining formats are being worked on.
+- **It plays FLAC, MP3, Ogg, Opus, WAV, AIFF and M4A.** Not WMA, Monkey's Audio,
+  WavPack, Musepack or DSD. Anything it cannot decode is now named in the health
+  report rather than passed over, so a missing album says so instead of simply
+  not appearing. An M4A carries AAC or ALAC, so it is played but never claimed
+  to be bit perfect.
 - **Windows only.** Mac and Linux are planned.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting
@@ -121,7 +123,7 @@ Everything above is the product. What follows is the code.
 | Language | Python 3.13 |
 | Interface | PySide6 |
 | Tags | mutagen |
-| Decode | soundfile |
+| Decode | soundfile, plus PyAV for M4A |
 | Output | sounddevice, on WASAPI |
 | Buffers | numpy |
 | Store | SQLite |
@@ -211,3 +213,10 @@ Dual licensed. The model, meaning the domain, application, infrastructure and
 shared layers together with `main.py`, the build scripts and the tests, is
 under GPL-3.0. The user interface layer is under LGPL-3.0, to align with Qt.
 See `LICENSE` for the mapping.
+
+A packaged build bundles FFmpeg through PyAV, to decode M4A. The FFmpeg
+libraries themselves are built LGPL-3.0-or-later, verified from the licence
+string the build reports rather than from its documentation. That build also
+links libx264 and libx265, which are GPL-2.0-or-later, so the packaged
+application as a whole is distributed as a GPL-3.0 work. Nothing here encodes
+video; those two arrive as dependencies of the shared FFmpeg build.

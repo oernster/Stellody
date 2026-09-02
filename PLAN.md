@@ -59,37 +59,41 @@ build is untouched by either.
 
 ## 2. Play the formats that need a decoder Stellody does not carry
 
-The formats libsndfile can decode are done and watched: the walk takes `.flac
-.mp3 .ogg .oga .opus .wav .aiff .aif`, a general probe reads what each format
-actually states, the existing decode path serves the lot and real albums in each
-of MP3, Ogg and WAV have been played through in the built application. What
-remains is everything libsndfile cannot decode.
+M4A is built and the backend question is answered: PyAV, so FFmpeg, chosen over
+Qt Multimedia and serving milestone 3 as well. `PacketReader` sits behind the
+same `AudioSource` the existing reader answers to, so the cue slice, the
+equalizer, the visualiser and gapless were not touched. Against the reference
+library the whole of BT's Emotional Technology now scans and groups: 21 tracks,
+titles, artist, genre and track numbers all read, no album invented and no
+unplayable finding raised for it.
 
-**What that costs, measured over the reference library on 2026-08-30.** Of 656
-folders holding audio, 146 held no FLAC at all and were invisible. Extending the
-walk brought back 19 of them. The other 127 are M4A and wait on a decoder: 1,356
-tracks, more than a fifth of the library still unreachable. An album asked after
-by name, BT's Emotional Technology, is one of the 127.
+**What that leaves, re-measured over the reference library on 2026-09-02.** 126
+folders held nothing this build could decode; every one of them was M4A,
+1375 files. There is no WMA, Monkey's Audio, WavPack, Musepack or DSD file
+anywhere in the library, so the remaining formats are a decision about other
+people's libraries rather than about this one. They stay named in
+`UNPLAYABLE_SUFFIXES` and reported, which is the honest state until somebody
+has a library that needs them.
 
-**What is left needs a decoder rather than a suffix.** M4A with AAC or ALAC,
-WMA, Musepack, Monkey's Audio, WavPack, DSD. Each means either FFmpeg through a
-binding or Qt Multimedia, so each carries a new dependency and a licence
-question the first half did not.
+**What is still open here is verification, not code.** It has not been played
+through in the built application; the offscreen suite cannot settle that:
+what it can settle is that the reader hands back the same samples the codec
+does, that a seek lands where it was asked and that a lossy file claims no bit
+depth, all of which it does. Everything that has to be heard rather than
+measured remains unheard.
 
-That asks the same question milestone 3 asks, so answer it once: **one media
-backend, chosen for both**. Deciding it separately is how a player ends up with
-two decoders that disagree about what a track is.
+**The packaged build has not been shown to carry the decoder.** PyAV keeps its
+FFmpeg in a sibling `av.libs` directory, 63 megabytes of DLLs that delvewheel
+put there; `buildexe.py` names no packages explicitly: it relies on Nuitka
+following the imports. A vendored DLL directory is exactly the thing that
+following imports does not find; the import is inside a function besides.
+Nothing here has been built and run, so that is a risk rather than a finding.
+The measurement that settles it is one build: run `buildexe.py`, look for an
+`avcodec` DLL in the bundle, then open an M4A album in what it produced. Adding
+build flags before that measurement would be guessing at which ones.
 
-Honesty applies as usual; the rule the first half established carries forward.
-A lossy format cannot be bit perfect however the device is opened, so
-whatever the new backend decodes has to state what it states and no more.
-
-A format Stellody cannot decode is now reported rather than silently skipped,
-which was the other half of the bar below and is done: the walk names what it
-cannot play and a scan raises one finding a folder for it. What is left is
-playing them.
-
-Done when: an M4A album scans, groups and plays in the built application.
+Done when: an M4A album plays through in the built application, including a
+seek into the middle of a track and a gapless move to the next one.
 
 ## 3. Play video files
 

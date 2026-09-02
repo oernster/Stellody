@@ -61,7 +61,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, sounddevice, Qt's image codecs, the filesystem. | `domain` and `application`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice, Qt's image codecs, the filesystem. | `domain` and `application`. |
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain` and `application`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
@@ -117,6 +117,32 @@ hold. The amplitude monitor inherits the same property: a shape is measured
 for the file, then each track takes its own share of it. The grid of sleeves
 and the album pane under it inherit it too: both are views over the same
 albums, so neither knows which shape a track holds.
+
+**Two readers satisfy it; nothing above them can tell which it holds.**
+`AudioSource` in `stellody/infrastructure/decode.py` is the shape both answer
+to; `open_source` chooses by suffix and is the only place that knows there are
+two. `SourceReader` covers everything libsndfile can address by frame.
+`PacketReader`, in `packet_decode.py`, covers M4A, which arrives as packets
+carrying timestamps rather than as addressable PCM; it counts those back
+into frame positions so that a cue slice, the equalizer, the visualiser and
+gapless all keep working without a line changed.
+
+Three things there were measured rather than assumed; each is a comment in
+the file next to the code it explains. The timestamps do not start at nought:
+an iTunes AAC file begins at 2112, the encoder priming, so a reader ignoring it
+starts every track 48 milliseconds in. A seek needs pre-roll: landing on the
+packet holding the wanted frame and decoding from there differs from the same
+frame played forward by half of full scale, because the codec is being asked to
+start cold. And the container is genuinely reopened on every seek rather than
+merely seeked, because a decoder that has already decoded does not come back
+clean and an explicit flush of its buffers does not clear it; at the start of a
+track there is no pre-roll to hide that, so it would have reached the speakers.
+Reopening costs under a millisecond against a read block worth ninety.
+
+**PyAV is imported inside `open_source`, not at module scope.** Importing it
+loads a shared FFmpeg build of some sixty megabytes. A library holding no M4A
+never pays for it and one holding a few pays only when a track from them is
+opened. That is the single reason for a function-level import in this codebase.
 
 ## Grouping: folders group, tags name
 
@@ -267,7 +293,7 @@ directories plus macOS AppleDouble stubs; nothing else.
 
 ## Formats and probing
 
-**Two tag shapes cover every format, measured rather than assumed.** FLAC and
+**Three tag shapes cover every format, measured rather than assumed.** FLAC and
 the Ogg family hand back `(name, value)` pairs already spelled the way the
 resolution rules read them, so those pass through whole and nothing a ripper
 wrote is discarded. MP3, WAV and AIFF hand back ID3 frames keyed by a four
@@ -275,6 +301,23 @@ letter code; iterating one of those yields the codes rather than pairs, so
 `ID3_NAMES` in `stellody/infrastructure/probe.py` translates the frames the
 domain vocabulary actually reads. A frame nobody reads is left alone rather
 than guessed at.
+
+MP4 is the third and it is the one that forced the count up, because the pair
+path does not mislabel its atoms, it raises on them. `MP4_NAMES` renames the
+atoms and `MP4_PAIR_NAMES` handles the two that arrive as a parsed pair of
+integers rather than as the "3/12" text every other format writes; putting them
+back into that form is what keeps one set of resolution rules for every format.
+Its cover lives in an atom carrying no picture type, so `covers.py` presents
+each as a front cover and the existing ordering reduces to size alone.
+
+**A lossy MP4 states a bit depth it does not have; that one had teeth.**
+Measured on a real AAC file: mutagen reports sixteen bits per sample, because
+the MP4 sample entry carries that number whatever the codec does with it. A
+stated depth is exactly what `is_bit_perfect` tests, so passing it through would
+have badged an AAC track as delivered untouched. `_bit_depth` therefore honours
+the number only for a codec that genuinely stores its samples, which in MP4
+means ALAC. The trap itself is pinned by a test, so the suppression cannot be
+deleted as unnecessary without someone noticing that mutagen still sets it.
 
 **What a format does not state is reported as absent, never invented.** Measured
 per format: FLAC states both a bit depth and a total sample count; WAV and AIFF
@@ -318,9 +361,18 @@ fail.
 
 **The suffix table is decided by what can be read, not by what can be decoded.**
 `AUDIO_SUFFIXES` in the walker holds `.flac .mp3 .ogg .oga .opus .wav .aiff
-.aif`. CAF is excluded despite libsndfile decoding it, because mutagen returns
-None for a CAF entirely, so such a file would scan into an album with no title.
-M4A and WMA need a decoder nothing here carries.
+.aif .m4a`. CAF is excluded despite libsndfile decoding it, because mutagen
+returns None for a CAF entirely, so such a file would scan into an album with
+no title. WMA, Musepack, Monkey's Audio, WavPack and DSD need a decoder nothing
+here carries.
+
+M4A is the one entry libsndfile cannot open; it is there because a second
+decoder was added for it rather than because the rule bent. What the rule asks
+of it is unchanged: mutagen has to be able to read its tags. It can, as a
+third tag shape the probe was taught. The scope was set by measurement, not by
+appetite: of the 126 folders in the reference library holding nothing this
+build could decode, all 126 were M4A, 1375 files of it; no WMA, APE, WV,
+MPC or DSD file existed anywhere in it to justify writing more.
 
 **There is a second table; nothing is silently absent.** `UNPLAYABLE_SUFFIXES`
 names the audio this build knows by sight and cannot decode. A folder holding
@@ -711,6 +763,8 @@ only new way out.
 |---|---|
 | PySide6 rather than Rust or Go | The requirement is a player that is not buggy. That comes from working where the coverage gate, the structural guards and the delivery lineage already exist. |
 | `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also has no equalizer for the one planned below. |
+| PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | The same question milestone 3 asks, so it is answered once for both. PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice: `PacketReader` counts packet timestamps back into frame positions and answers the same `AudioSource` as the existing reader, so the equalizer, the visualiser and gapless were not touched. Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. |
+| The bundled FFmpeg is LGPL, verified rather than assumed | The libraries report "LGPL version 3 or later" from the licence string the build itself computes, read out of the shipped binary. The same build links libx264 and libx265, which are GPL-2.0-or-later and which `avcodec` imports outright, so they cannot be dropped from a package. The decoder lives in `infrastructure`, which is the GPL-3.0 half, so the combination is compatible and the packaged application is distributed as a GPL-3.0 work. Nothing here encodes video; those two arrive as dependencies of a shared build. |
 | Missing files are flagged, never deleted | An unplugged drive, a failed restore or an interrupted scan must not destroy library metadata. |
 | The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
 | The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
