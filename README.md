@@ -2,6 +2,9 @@
 
 **A free music player for the collection already on your computer.**
 
+*Stellar* and *melody*, run together. The icon says the same thing: a note over
+a galaxy, wearing a planet's ring.
+
 No account, no subscription, no adverts and nothing sent anywhere. Point it at
 your music folder and it does the rest.
 
@@ -50,6 +53,9 @@ if it ever stopped being true the build would fail.
 - **Your messy collection, sorted out.** An album saved as one long file, a box
   set spread over several folders, a bonus disc with no number in its name: all
   of it comes out as one album where there should be one album.
+- **A scan that says what it found.** Add music, press Rescan and you get the
+  new albums by name, the new tracks counted and your library's totals, rather
+  than a line that disappears while you are looking elsewhere.
 - **Everything reachable from the keyboard.** It can also wait quietly by the
   clock rather than filling your screen.
 

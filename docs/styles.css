@@ -64,8 +64,12 @@ nav {
 }
 
 .nav-brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; }
-.nav-brand img { width: 30px; height: 30px; }
-.nav-brand span { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
+/* The mark and the name carry the brand on every page but the front one, where
+   the hero says it outright. At nav-link size the name read as another item in
+   the bar rather than as whose site this is, so both are set deliberately
+   above it. */
+.nav-brand img { width: 34px; height: 34px; }
+.nav-brand span { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
 
 .nav-right { display: flex; align-items: center; gap: 1.75rem; }
 .nav-right a.nav-link {
@@ -134,6 +138,41 @@ nav {
   margin: 0 auto 2rem;
   filter: drop-shadow(0 22px 50px rgba(0, 0, 0, 0.5));
 }
+
+/* The product's own name, as the largest thing on the page. The headline below
+   says what it does; nothing said what it was called, so the name appeared only
+   in the corner at nav size. Set above the headline's own ceiling on purpose,
+   so the first thing read is the thing being named. */
+.wordmark {
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  margin: 0 0 0.6rem;
+  color: var(--text);
+}
+
+/* The gradient is composed from palette tokens rather than from hex, so the
+   one home for a colour stays the one home. It is applied only where the
+   clip is supported: without the guard an unsupported browser keeps the
+   transparent fill and the name disappears entirely, which is the one
+   failure this element must not have. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .wordmark {
+    background: linear-gradient(100deg, var(--accent), var(--mauve));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.wordmark-gloss {
+  font-size: 0.95rem;
+  color: var(--subtext0);
+  letter-spacing: 0.02em;
+  margin: 0 0 2rem;
+}
+.wordmark-gloss strong { color: var(--subtext1); font-weight: 600; }
 
 .badge {
   display: inline-flex;
