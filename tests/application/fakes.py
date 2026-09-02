@@ -10,6 +10,7 @@ from stellody.application.values import (
     FolderListing,
     FolderRecord,
 )
+from stellody.domain.overrides import Override
 
 CD_RATE = 44100
 CD_DEPTH = 16
@@ -84,6 +85,7 @@ class FakeStore:
 
     def __init__(self, records: tuple[FolderRecord, ...] = ()) -> None:
         self.records = {record.folder: record for record in records}
+        self.accepted: tuple[Override, ...] = ()
         self.saved: list[str] = []
         self.absent_calls: list[frozenset[str]] = []
         self.absent_result = 0
@@ -95,6 +97,23 @@ class FakeStore:
             for record in self.records.values()
             for item in record.stats
         }
+
+    def all_overrides(self) -> tuple[Override, ...]:
+        """Nothing accepted, which is what a library nobody has touched holds."""
+        return self.accepted
+
+    def accept_overrides(self, accepted: tuple[Override, ...]) -> None:
+        """Keep what was accepted, so a test can read it back."""
+        self.accepted = self.accepted + accepted
+
+    def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
+        """Drop pins by what they apply to, the value not being part of it."""
+        dropped = {(item.album, item.path, item.field) for item in unwanted}
+        self.accepted = tuple(
+            item
+            for item in self.accepted
+            if (item.album, item.path, item.field) not in dropped
+        )
 
     def load_folders(self) -> tuple[FolderRecord, ...]:
         """Every folder record held."""

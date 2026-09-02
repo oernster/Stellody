@@ -20,6 +20,7 @@ from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
+from stellody.domain.overrides import Override
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 from stellody.shared import resources
 from stellody.ui.bottom_tray import BOTTOM_ICON_PX
@@ -56,6 +57,24 @@ class RememberingStore:
 
     def __init__(self, settings: dict[str, str] | None = None) -> None:
         self.settings = dict(settings or {})
+        self.accepted: tuple[Override, ...] = ()
+
+    def all_overrides(self) -> tuple[Override, ...]:
+        """Nothing accepted, which is what a library nobody has touched holds."""
+        return self.accepted
+
+    def accept_overrides(self, accepted: tuple[Override, ...]) -> None:
+        """Keep what was accepted, so a test can read it back."""
+        self.accepted = self.accepted + accepted
+
+    def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
+        """Drop pins by what they apply to, the value not being part of it."""
+        dropped = {(item.album, item.path, item.field) for item in unwanted}
+        self.accepted = tuple(
+            item
+            for item in self.accepted
+            if (item.album, item.path, item.field) not in dropped
+        )
 
     def load_folders(self) -> tuple:
         """Nothing remembered."""

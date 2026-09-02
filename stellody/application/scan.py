@@ -132,7 +132,9 @@ class LoadLibrary:
     def run(self) -> LibraryView:
         """The remembered library, assembled from stored records."""
         records = tuple(self._store.load_folders())
-        albums, issues = assemble_albums(_grouping_entries(records))
+        albums, issues = assemble_albums(
+            _grouping_entries(records), self._store.all_overrides()
+        )
         return LibraryView(
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)
@@ -213,7 +215,11 @@ class ScanLibrary:
             probed_folders += 1
 
         absent = self._store.mark_absent(frozenset(seen))
-        albums, issues = assemble_albums(_grouping_entries(records))
+        # Read after the walk rather than before it, so a correction accepted
+        # while a scan was running is honoured by the library it produces.
+        albums, issues = assemble_albums(
+            _grouping_entries(records), self._store.all_overrides()
+        )
         return ScanReport(
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)

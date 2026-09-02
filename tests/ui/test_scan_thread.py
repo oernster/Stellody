@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import ScanLibrary
 from stellody.application.values import FolderListing
+from stellody.domain.overrides import Override
 from stellody.infrastructure.probe import AudioProbe
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
@@ -51,6 +52,10 @@ class QuietStore:
     def file_signatures(self) -> dict:
         """Nothing on record."""
         return {}
+
+    def all_overrides(self) -> tuple[Override, ...]:
+        """Nothing accepted; these stores stand in for an untouched library."""
+        return ()
 
     def load_folders(self) -> tuple:
         """Nothing on record."""

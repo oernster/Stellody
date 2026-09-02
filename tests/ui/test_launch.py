@@ -19,6 +19,7 @@ from stellody import composition
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
 from stellody.application.values import FolderListing, FolderRecord, SourceRecord
+from stellody.domain.overrides import Override
 from stellody.infrastructure.instance import SingleInstance
 from stellody.ui.main_window import MainWindow
 from stellody.ui.scan_summary import ScanSummaryDialog
@@ -61,6 +62,10 @@ class FakeStore:
     def __init__(self, records: tuple[FolderRecord, ...], settings: dict) -> None:
         self.records = records
         self.settings = dict(settings)
+
+    def all_overrides(self) -> tuple[Override, ...]:
+        """Nothing accepted; these stores stand in for an untouched library."""
+        return ()
 
     def load_folders(self) -> tuple[FolderRecord, ...]:
         """What the last scan wrote down."""

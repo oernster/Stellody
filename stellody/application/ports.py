@@ -17,6 +17,7 @@ from stellody.application.values import (
 )
 from stellody.domain.equalising import Equalisation
 from stellody.domain.listening import Listening
+from stellody.domain.overrides import Override
 from stellody.domain.playback import (
     OutputReport,
     OutputRequest,
@@ -82,6 +83,22 @@ class SettingsStore(Protocol):
 
 class LibraryStore(Protocol):
     """Stellody's own persistent state. The only thing it ever writes."""
+
+    def all_overrides(self) -> tuple[Override, ...]:
+        """Every correction a listener has accepted.
+
+        The whole set at once, since resolution needs all of it to assemble
+        anything and it holds only what somebody has actually accepted.
+        """
+        ...
+
+    def accept_overrides(self, accepted: tuple[Override, ...]) -> None:
+        """Record corrections as accepted, replacing any already standing."""
+        ...
+
+    def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
+        """Take corrections back, so the automatic rules show through again."""
+        ...
 
     def file_signatures(self) -> Mapping[str, tuple[int, int]]:
         """Every known audio file against its recorded size and mtime."""

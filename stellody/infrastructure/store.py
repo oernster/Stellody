@@ -13,6 +13,8 @@ from collections.abc import Mapping
 from stellody.application.values import FileStat, FolderRecord, SourceRecord
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.listening import Listening
+from stellody.domain.overrides import Override
+from stellody.infrastructure import override_rows
 
 UNIT_SEPARATOR = "\x1f"
 
@@ -111,7 +113,7 @@ class SqliteLibraryStore:
         try:
             self._connection.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
             self._connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
-            self._connection.executescript(SCHEMA)
+            self._connection.executescript(SCHEMA + override_rows.SCHEMA)
             self._connection.commit()
         except Exception:
             self._connection.close()
@@ -161,6 +163,18 @@ class SqliteLibraryStore:
                 "plays = excluded.plays",
                 (handle, path, record.stars, record.plays),
             )
+
+    def all_overrides(self) -> tuple[Override, ...]:
+        """Every correction a listener has accepted."""
+        return override_rows.all_overrides(self._connection)
+
+    def accept_overrides(self, accepted: tuple[Override, ...]) -> None:
+        """Record corrections as accepted, replacing any already standing."""
+        override_rows.accept(self._connection, accepted)
+
+    def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
+        """Take corrections back, so the automatic rules show through again."""
+        override_rows.discard(self._connection, unwanted)
 
     def file_signatures(self) -> Mapping[str, tuple[int, int]]:
         """Every present file against its recorded size and mtime."""
