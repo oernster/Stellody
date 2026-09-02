@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -269,6 +270,7 @@ class ScanLibrary:
             properties[item.path] = read
             state.embedded_art = state.embedded_art or read.has_embedded_art
 
+        self._name_the_unplayable(listing, state)
         self._collect_sources(listing, properties, state)
         return FolderRecord(
             folder=listing.folder,
@@ -277,6 +279,30 @@ class ScanLibrary:
             art_path=listing.image_paths[0] if listing.image_paths else "",
             has_embedded_art=state.embedded_art,
             issues=tuple(state.issues),
+        )
+
+    @staticmethod
+    def _name_the_unplayable(listing: FolderListing, state: _Probed) -> None:
+        """Say what this folder holds that this build cannot decode.
+
+        ONE finding for the folder rather than one a file. A library can hold a
+        thousand such tracks; a thousand entries is not a report anybody reads.
+        What a listener needs is which albums are missing and why. Nothing is
+        opened to say it, since the suffix is the whole of what is known here
+        and opening them is precisely what cannot be done.
+        """
+        if not listing.unplayable:
+            return
+        kinds = sorted(
+            {os.path.splitext(path)[1].casefold() for path in listing.unplayable}
+        )
+        state.issues.append(
+            LibraryIssue(
+                kind=IssueKind.UNPLAYABLE_FORMAT,
+                album=listing.folder,
+                detail=f"{len(listing.unplayable)} file(s), {' '.join(kinds)}",
+                paths=tuple(listing.unplayable),
+            )
         )
 
     def _collect_sources(

@@ -14,6 +14,7 @@ from enum import StrEnum
 class IssueKind(StrEnum):
     """The kinds of defect a scan can notice in a library."""
 
+    UNPLAYABLE_FORMAT = "unplayable-format"
     DUPLICATE_TRACK_NUMBER = "duplicate-track-number"
     DISC_NUMBER_CONFLICT = "disc-number-conflict"
     MISSING_TRACK_NUMBER = "missing-track-number"
@@ -23,17 +24,24 @@ class IssueKind(StrEnum):
     UNREADABLE_FILE = "unreadable-file"
 
 
+# An album that is not there at all leads, since it outranks anything about a
+# track number: everything else in this list is a library a listener can see.
 SEVERITY_ORDER: dict[IssueKind, int] = {
-    IssueKind.DUPLICATE_TRACK_NUMBER: 0,
-    IssueKind.DISC_NUMBER_CONFLICT: 1,
-    IssueKind.MISSING_TRACK_NUMBER: 2,
-    IssueKind.MISSING_TITLE: 3,
-    IssueKind.MISSING_ALBUM_ARTIST: 4,
-    IssueKind.UNREADABLE_FILE: 5,
-    IssueKind.NO_ARTWORK: 6,
+    IssueKind.UNPLAYABLE_FORMAT: 0,
+    IssueKind.DUPLICATE_TRACK_NUMBER: 1,
+    IssueKind.DISC_NUMBER_CONFLICT: 2,
+    IssueKind.MISSING_TRACK_NUMBER: 3,
+    IssueKind.MISSING_TITLE: 4,
+    IssueKind.MISSING_ALBUM_ARTIST: 5,
+    IssueKind.UNREADABLE_FILE: 6,
+    IssueKind.NO_ARTWORK: 7,
 }
 
 _SUMMARIES: dict[IssueKind, str] = {
+    IssueKind.UNPLAYABLE_FORMAT: (
+        "Stellody cannot play this format yet, so these files are not in your "
+        "library. Nothing has been skipped quietly: they are listed here."
+    ),
     IssueKind.DUPLICATE_TRACK_NUMBER: (
         "Several files claim the same disc and track number. "
         "Ordering fell back to the file names."

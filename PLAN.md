@@ -84,9 +84,12 @@ Honesty applies as usual; the rule the first half established carries forward.
 A lossy format cannot be bit perfect however the device is opened, so
 whatever the new backend decodes has to state what it states and no more.
 
-Done when: an M4A album scans, groups and plays in the built application; a
-format Stellody cannot decode is reported as unreadable rather than silently
-skipped.
+A format Stellody cannot decode is now reported rather than silently skipped,
+which was the other half of the bar below and is done: the walk names what it
+cannot play and a scan raises one finding a folder for it. What is left is
+playing them.
+
+Done when: an M4A album scans, groups and plays in the built application.
 
 ## 3. Play video files
 

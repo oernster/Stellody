@@ -29,6 +29,26 @@ AUDIO_SUFFIXES = frozenset(
         ".aif",
     }
 )
+# Audio this build knows by sight and cannot decode. Named rather than
+# inferred from "not in AUDIO_SUFFIXES", because a stray .txt is not a missing
+# album and reporting one as though it were would be noise. M4A carries AAC or
+# ALAC. CAF is here for a different reason: libsndfile decodes it while
+# mutagen reads nothing out of it, so it would scan into an album with no title.
+UNPLAYABLE_SUFFIXES = frozenset(
+    {
+        ".m4a",
+        ".m4b",
+        ".aac",
+        ".wma",
+        ".ape",
+        ".wv",
+        ".mpc",
+        ".dsf",
+        ".dff",
+        ".caf",
+    }
+)
+
 CUE_SUFFIXES = frozenset({".cue"})
 IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".webp", ".bmp"})
 
@@ -71,6 +91,12 @@ def _names_audio(name: str) -> bool:
     return os.path.splitext(name)[1].casefold() in AUDIO_SUFFIXES
 
 
+def _holds_audio(name: str) -> bool:
+    """True for any audio file, whether or not this build can decode it."""
+    suffix = os.path.splitext(name)[1].casefold()
+    return suffix in AUDIO_SUFFIXES or suffix in UNPLAYABLE_SUFFIXES
+
+
 def _is_skippable_directory(name: str) -> bool:
     """True for a named system directory. Never for an ordinary album."""
     return name.casefold() in SKIPPED_DIRECTORIES
@@ -110,13 +136,21 @@ class FolderWalker:
             directories[:] = [
                 name for name in directories if not _is_skippable_directory(name)
             ]
-            if any(_names_audio(name) for name in files):
+            if any(_holds_audio(name) for name in files):
                 found += 1
         return found
 
     def _listing(self, folder: str, files: list[str]) -> FolderListing | None:
-        """Classify one folder's files; None when it holds no audio."""
+        """Classify one folder's files; None when it holds no audio at all.
+
+        A folder holding only audio this build cannot decode still yields a
+        listing, carrying those files so the scan can say so. It used to yield
+        nothing, so such an album was not skipped, reported or counted: it was
+        simply not there, so a listener looking for one they own had no way to
+        tell that from a library that had failed to scan.
+        """
         audio: list[FileStat] = []
+        unplayable: list[str] = []
         cues: list[str] = []
         images: list[str] = []
         for name in sorted(files):
@@ -128,16 +162,19 @@ class FolderWalker:
                 stat = self._stat(path, name)
                 if stat is not None:
                     audio.append(stat)
+            elif suffix in UNPLAYABLE_SUFFIXES:
+                unplayable.append(path)
             elif suffix in CUE_SUFFIXES:
                 cues.append(path)
             elif suffix in IMAGE_SUFFIXES:
                 images.append(path)
-        if not audio:
+        if not audio and not unplayable:
             return None
         images.sort(key=lambda path: _art_rank(os.path.basename(path)))
         return FolderListing(
             folder=folder,
             audio=tuple(audio),
+            unplayable=tuple(unplayable),
             cue_paths=tuple(cues),
             image_paths=tuple(images),
         )

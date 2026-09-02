@@ -39,10 +39,21 @@ class FolderListing:
     audio: tuple[FileStat, ...]
     cue_paths: tuple[str, ...] = ()
     image_paths: tuple[str, ...] = ()
+    # Audio this build recognises and cannot decode. Carried rather than
+    # dropped, so a folder holding nothing else is still reported instead of
+    # vanishing: a listener who cannot find an album they own has no way to
+    # tell a format Stellody skipped from a library that failed to scan.
+    unplayable: tuple[str, ...] = ()
 
     @property
     def signatures(self) -> dict[str, tuple[int, int]]:
-        """Every audio file in this folder against its size and mtime."""
+        """Every audio file in this folder against its size and mtime.
+
+        The unplayable ones are left out: nothing reads them, so they are not
+        part of what a rescan compares. A folder holding only those has no
+        signatures at all, which is what lets it be reused rather than
+        re-listed at every scan.
+        """
         return {item.path: item.signature for item in self.audio}
 
 

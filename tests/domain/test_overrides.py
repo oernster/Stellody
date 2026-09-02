@@ -35,7 +35,14 @@ class TestWhatMayBeAccepted:
     def test_a_kind_with_a_rule_proposes_a_value(self, kind: IssueKind) -> None:
         assert can_be_accepted(kind)
 
-    @pytest.mark.parametrize("kind", [IssueKind.NO_ARTWORK, IssueKind.UNREADABLE_FILE])
+    @pytest.mark.parametrize(
+        "kind",
+        [
+            IssueKind.NO_ARTWORK,
+            IssueKind.UNREADABLE_FILE,
+            IssueKind.UNPLAYABLE_FORMAT,
+        ],
+    )
     def test_a_kind_with_nothing_to_propose_cannot_be_accepted(
         self, kind: IssueKind
     ) -> None:

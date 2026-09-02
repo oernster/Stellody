@@ -322,6 +322,25 @@ fail.
 None for a CAF entirely, so such a file would scan into an album with no title.
 M4A and WMA need a decoder nothing here carries.
 
+**There is a second table; nothing is silently absent.** `UNPLAYABLE_SUFFIXES`
+names the audio this build knows by sight and cannot decode. A folder holding
+only those used to yield no listing at all, so its album was not skipped,
+reported or counted: it simply was not there, so a listener looking for one
+they own had no way to tell that from a library that had failed to scan. That
+was found by somebody going to look for an album they owned.
+
+The walk now yields such a folder and a scan raises ONE finding for it, naming
+how many files and which formats. One a folder rather than one a file, because a
+library can hold a thousand such tracks and a thousand entries is not a report
+anybody reads; what a listener needs is which albums are missing and why.
+Nothing is opened to say it, the suffix being the whole of what is known. The
+list is NAMED rather than inferred from "not in `AUDIO_SUFFIXES`", since a stray
+text file is not a missing album. The finding proposes no value, so it can never
+be accepted, which the absence of a field for it in `FIELD_FOR_KIND` already
+decides. The unplayable files are left out of a folder's signatures, so a folder
+holding nothing else has none and is reused rather than re-listed at every
+scan.
+
 ## What a scan reports
 
 **A scan answers the question it was pressed to answer.** The status bar already

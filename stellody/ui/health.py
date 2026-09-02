@@ -92,6 +92,7 @@ def report_html(issues: tuple[LibraryIssue, ...]) -> str:
 def has_serious_issues(issues: tuple[LibraryIssue, ...]) -> bool:
     """True when something worth surfacing on the status bar was found."""
     serious = {
+        IssueKind.UNPLAYABLE_FORMAT,
         IssueKind.DUPLICATE_TRACK_NUMBER,
         IssueKind.DISC_NUMBER_CONFLICT,
         IssueKind.UNREADABLE_FILE,
