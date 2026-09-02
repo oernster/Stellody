@@ -20,7 +20,12 @@ from __future__ import annotations
 
 import sounddevice
 
-from stellody.domain.playback import OutputMode, OutputReport, OutputRequest
+from stellody.domain.playback import (
+    OutputMode,
+    OutputReport,
+    OutputRequest,
+    PlaybackError,
+)
 
 CANDIDATE_DTYPES = ("int32", "int16")
 SHARED_DTYPE = "float32"
@@ -34,7 +39,7 @@ WASAPI_API_NAME = "WASAPI"
 NO_DEVICE = -1
 
 
-class OutputUnavailableError(RuntimeError):
+class OutputUnavailableError(PlaybackError):
     """Raised when no stream at all could be opened for a request."""
 
 

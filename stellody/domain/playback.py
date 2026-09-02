@@ -79,6 +79,17 @@ class OutputMode(Enum):
     EXCLUSIVE = "exclusive"
 
 
+class PlaybackError(RuntimeError):
+    """A track could not be opened or played.
+
+    Named in the domain rather than in whichever infrastructure raises it, so
+    the application can catch a failure without importing the layer it came
+    from. A file that has gone, a format nothing here decodes and a device that
+    will not open are one thing to a listener: this track is not playing,
+    so they are owed the reason rather than silence.
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class OutputRequest:
     """The stream Stellody asks for, before any device has been consulted."""

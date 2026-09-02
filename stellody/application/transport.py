@@ -10,22 +10,23 @@ No Qt, no device, no filesystem. The port is the only way out.
 
 from __future__ import annotations
 
-import random
 from collections.abc import Callable
 
 from stellody.application.following import Following
 from stellody.application.ports import PlaybackPort
+from stellody.application.queue_order import QueueOrder, scattered
+from stellody.application.sound_settings import SoundSettings
 from stellody.domain.album import Album
 from stellody.domain.equalising import Equalisation
 from stellody.domain.moving import (
     Ordering,
     after_next,
     after_previous,
-    reordered_for,
 )
 from stellody.domain.playback import (
     Loudness,
     OutputRequest,
+    PlaybackError,
     PlaybackPosition,
     PlaybackState,
     RepeatMode,
@@ -40,14 +41,13 @@ from stellody.domain.track import Track
 # that has just ended may already be gone from the library that a rescan
 # rebuilt underneath it.
 PlayedOut = Callable[[Album, Track], None]
+# Told when a track would not open, with the reason in words a listener
+# can act on. Reported rather than raised: one unplayable track is not a
+# reason to take the whole transport down.
+Unplayable = Callable[[Track, str], None]
 
 
-def scattered(tracks: tuple[Track, ...]) -> tuple[Track, ...]:
-    """These tracks in an arbitrary order. The default way shuffle shuffles."""
-    return tuple(random.sample(tracks, len(tracks)))
-
-
-class Transport:
+class Transport(SoundSettings, QueueOrder):
     """The transport the window drives: a queue, plus a device to play it on."""
 
     def __init__(
@@ -55,6 +55,7 @@ class Transport:
         player: PlaybackPort,
         ordering: Ordering = scattered,
         played: PlayedOut = lambda _album, _track: None,
+        unplayable: Unplayable = lambda _track, _reason: None,
     ) -> None:
         self._player = player
         # What the device has been told to run into next. Gapless
@@ -65,6 +66,7 @@ class Transport:
         # is in a position to know: nothing else can see the difference
         # between a track that ended and one somebody skipped.
         self._played = played
+        self._unplayable = unplayable
         # Whether back has already been pressed and is waiting at the start of
         # the track. It is what tells a second press to leave the track; it is
         # a state rather than a stopwatch, because two presses timed against
@@ -80,6 +82,15 @@ class Transport:
         self._visualising = False
         self._shuffled = False
         self._repeat = RepeatMode.OFF
+
+    def report_failures_to(self, unplayable: Unplayable) -> None:
+        """Say who to tell when a track will not open.
+
+        Set after construction for the same reason plays are: whoever hears
+        this has to put it in front of somebody; that is the window, which
+        does not exist when the transport is built.
+        """
+        self._unplayable = unplayable
 
     def report_plays_to(self, played: PlayedOut) -> None:
         """Say who is told when a track plays out.
@@ -113,79 +124,6 @@ class Transport:
     def playing(self) -> bool:
         """Whether sound is being produced right now."""
         return self._player.state is PlaybackState.PLAYING
-
-    def set_volume(self, level: float) -> None:
-        """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
-        self._loudness = self._loudness.at(level)
-        self._player.set_volume(self._loudness.audible)
-
-    @property
-    def volume(self) -> float:
-        """The gain chosen, whether or not it is currently being heard."""
-        return self._loudness.level
-
-    @property
-    def muted(self) -> bool:
-        """Whether output is held silent regardless of the level chosen."""
-        return self._loudness.muted
-
-    def set_muted(self, muted: bool) -> None:
-        """Silence the output, else return it to the level already chosen."""
-        self._loudness = self._loudness.silenced(muted)
-        self._player.set_volume(self._loudness.audible)
-
-    @property
-    def equalisation(self) -> Equalisation:
-        """The curve chosen, whether or not it is switched on."""
-        return self._equalisation
-
-    def set_equalisation(self, equalisation: Equalisation) -> None:
-        """Choose the curve. Nothing already playing is disturbed."""
-        self._equalisation = equalisation
-        self._player.set_equalisation(equalisation)
-
-    @property
-    def levels(self) -> tuple[float, ...]:
-        """The bands as the device last saw them, for whatever is drawing."""
-        return self._player.levels
-
-    def set_visualising(self, on: bool) -> None:
-        """Say whether anything is watching, so nothing is measured for nobody."""
-        self._visualising = on
-        self._player.set_visualising(on)
-
-    @property
-    def visualising(self) -> bool:
-        """Whether what goes out is being measured."""
-        return self._visualising
-
-    @property
-    def shuffled(self) -> bool:
-        """Whether the queue is running in an arbitrary order."""
-        return self._shuffled
-
-    def set_shuffled(self, shuffled: bool) -> None:
-        """Scatter the queue, else put it back into the album's own order.
-
-        What is playing keeps playing; `domain.moving.reordered_for` holds
-        the rule and says why.
-        """
-        self._shuffled = shuffled
-        if self._album_order:
-            self._queue = reordered_for(
-                self._queue, self._album_order, shuffled, self._ordering
-            )
-        self._line_up()
-
-    @property
-    def repeat(self) -> RepeatMode:
-        """What an ending means: stop, start the album again or hold one track."""
-        return self._repeat
-
-    def set_repeat(self, repeat: RepeatMode) -> None:
-        """Choose what an ending does. Nothing already playing is disturbed."""
-        self._repeat = repeat
-        self._line_up()
 
     def play_album(self, album: Album, first: Track) -> None:
         """Queue an album and start at the track that was activated.
@@ -364,10 +302,19 @@ class Transport:
         # behind; anything that opens one and waits is sitting on it.
         self._waiting_at_the_start = not playing
         self._player.set_volume(self._loudness.audible)
-        self._player.load(
-            track.source,
-            OutputRequest(sample_rate=track.sample_rate, bit_depth=track.bit_depth),
-        )
+        try:
+            self._player.load(
+                track.source,
+                OutputRequest(sample_rate=track.sample_rate, bit_depth=track.bit_depth),
+            )
+        except PlaybackError as error:
+            # A track that will not open used to take the exception all the way
+            # out of the slot that asked for it, so the window did nothing at
+            # all and said nothing either. A file on a drive that is not there,
+            # a format this build cannot decode and a device that will not open
+            # all arrived that way. The listener is told instead.
+            self._unplayable(track, str(error))
+            return
         self._following.restart()
         self._line_up()
         if playing:

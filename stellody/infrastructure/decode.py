@@ -20,6 +20,7 @@ from typing import Protocol, Self
 import numpy as np
 import soundfile
 
+from stellody.domain.playback import PlaybackError
 from stellody.domain.track import TrackSource
 
 SUBTYPE_BIT_DEPTHS = {
@@ -40,7 +41,7 @@ WORKING_DTYPE = "float32"
 PACKET_SUFFIXES = frozenset({".m4a"})
 
 
-class DecodeError(RuntimeError):
+class DecodeError(PlaybackError):
     """Raised when a source cannot be opened or read at all."""
 
 
@@ -194,8 +195,18 @@ def open_source(source: TrackSource, dtype: str = WORKING_DTYPE) -> AudioSource:
     only when a track from them is actually opened.
     """
     if _suffix_of(source.path) in PACKET_SUFFIXES:
-        from stellody.infrastructure.packet_decode import PacketReader
-
+        try:
+            from stellody.infrastructure.packet_decode import PacketReader
+        except ImportError as error:
+            # The decoder is a dependency like any other and it can be absent:
+            # a checkout whose requirements have not been installed is the
+            # ordinary case. Left to escape, it reached the window as nothing
+            # happening at all, which is the one answer a listener cannot act
+            # on. Said plainly here instead, it names what is missing.
+            raise DecodeError(
+                f"cannot decode {source.path}: the decoder for this format "
+                f"is not installed ({error})"
+            ) from error
         return PacketReader(source, dtype=dtype)
     return SourceReader(source, dtype=dtype)
 
