@@ -196,6 +196,24 @@ class Transport(SoundSettings, QueueOrder):
 
         Where the move lands is `domain.moving.after_next`; this decides
         only whether landing there means playing.
+
+        Skipping while paused stays paused. Somebody hunting for the track
+        they want has said one thing, that they want silence; pressing
+        Next is not taking it back, it started playing anyway, which is what
+        this passes the state along to prevent.
+        """
+        self._move_on(playing=self.playing)
+
+    def _move_on(self, playing: bool) -> None:
+        """Step to the following track, playing it or waiting on it.
+
+        The one place that decides where Next lands. Whether it plays is
+        handed IN rather than read here, because the two callers disagree and
+        must: a listener pressing Next keeps whatever state they were in,
+        while a track that has played out carries on into the next one. Read
+        from the device instead, the second would break, since a device that
+        has run out of track reports itself paused exactly as a paused one
+        does; the album would then stop dead at every boundary.
         """
         moved = after_next(
             self._queue,
@@ -208,7 +226,7 @@ class Transport(SoundSettings, QueueOrder):
         # in hand is left alone rather than started again.
         if not self._repeat.repeats and moved == self._queue:
             return
-        self._restart_at(moved)
+        self._restart_at(moved, playing)
 
     def previous(self) -> None:
         """Return to the start of this track; leave it if already there.
@@ -234,10 +252,18 @@ class Transport(SoundSettings, QueueOrder):
             )
         )
 
-    def _restart_at(self, moved: Queue) -> None:
-        """Take up a position and play it, whether or not it is a new one."""
+    def _restart_at(self, moved: Queue, playing: bool = True) -> None:
+        """Take up a position, playing it unless told to wait on it.
+
+        Never counted as waiting at a beginning, whether it plays or not.
+        Waiting there is what pressing Back does and it is what a second Back
+        reads to mean the track before; arriving somewhere by SKIPPING is not
+        that, even when it arrives quietly. Conflating the two made Back after
+        a skip jump a track instead of returning to the start of the one in
+        hand.
+        """
         self._queue = moved
-        self._load_current()
+        self._load_current(playing=playing, waiting=False)
 
     def _open_paused(self, moved: Queue) -> None:
         """Take up a position at its beginning, waiting rather than playing.
@@ -279,7 +305,9 @@ class Transport(SoundSettings, QueueOrder):
         if not self._queue.has_next and not self._repeat.repeats:
             self._player.stop()
             return True
-        self.next()
+        # An ending, not a listener: this carries on whatever the device
+        # reports about itself.
+        self._move_on(playing=True)
         return True
 
     def _report_played(self) -> None:
@@ -293,14 +321,16 @@ class Transport(SoundSettings, QueueOrder):
         """Tell the device what to run into when the track in hand ends."""
         self._following.line_up(self._queue, self._repeat, self._shuffled)
 
-    def _load_current(self, playing: bool = True) -> None:
+    def _load_current(self, playing: bool = True, waiting: bool | None = None) -> None:
         """Open the current track and start it. Nothing to open is not a fault."""
         track = self._queue.current
         if track is None:
             return
         # Anything that opens a track and plays it on has left the start
-        # behind; anything that opens one and waits is sitting on it.
-        self._waiting_at_the_start = not playing
+        # behind; anything that opens one and waits is sitting on it. A caller
+        # that knows better says so: skipping while paused opens a track
+        # without playing it and without sitting at its beginning.
+        self._waiting_at_the_start = (not playing) if waiting is None else waiting
         self._player.set_volume(self._loudness.audible)
         try:
             self._player.load(
