@@ -13,7 +13,9 @@ from stellody.domain.text import (
     year_of,
 )
 
-ART_KEY_LENGTH = 16
+HANDLE_LENGTH = 16
+# The name this length went by while artwork was the only thing keyed on it.
+ART_KEY_LENGTH = HANDLE_LENGTH
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,14 +55,23 @@ class AlbumIdentity:
         )
 
     @property
-    def art_key(self) -> str:
-        """A stable handle for cached artwork.
+    def handle(self) -> str:
+        """A stable short name for this album, for anything keyed on it.
 
         Derived from identity rather than from a path, so a rescan after a
-        folder rename reuses the cached image instead of refetching it.
+        folder rename or a re-rip finds the same album again. Three things are
+        keyed on it: cached artwork, the album's own rating and the corrections
+        a listener has accepted. It is stated ONCE here rather than digested
+        again wherever it is wanted, since three spellings of one value is three
+        chances for two of them to drift apart.
         """
         material = " ".join(self.key).encode("utf-8")
-        return hashlib.sha256(material).hexdigest()[:ART_KEY_LENGTH]
+        return hashlib.sha256(material).hexdigest()[:HANDLE_LENGTH]
+
+    @property
+    def art_key(self) -> str:
+        """The handle, under the name the artwork cache reaches it by."""
+        return self.handle
 
     @property
     def is_compilation(self) -> bool:

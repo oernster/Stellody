@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from stellody.domain import overrides
 from stellody.domain.album import FIRST_DISC, Album
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
@@ -233,22 +234,63 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], _Group]:
     return groups
 
 
+def _paths_by_name(group: _Group) -> dict[str, tuple[str, ...]]:
+    """Which files a group's file names stand for.
+
+    A finding names the FILE NAMES it is about while an override pins a full
+    path, so the two have to be introduced. One name can stand for more than one
+    file: a multi-disc album merged from CD1 and CD2 may hold "01 Intro.flac" in
+    both, so this maps to every file that wears the name rather than to one.
+    """
+    found: dict[str, list[str]] = {}
+    for candidate in group.candidates:
+        found.setdefault(candidate.file_name, []).append(candidate.source.path)
+    return {name: tuple(paths) for name, paths in found.items()}
+
+
+def _is_answered(
+    issue: LibraryIssue,
+    album: str,
+    accepted: overrides.AcceptedIndex,
+    by_name: dict[str, tuple[str, ...]],
+) -> bool:
+    """Whether this finding has been accepted and so has stopped being one.
+
+    A kind that proposes no value can never be answered, so it is reported at
+    every start however long it has been read: there is nothing to accept.
+    """
+    field = overrides.FIELD_FOR_KIND.get(issue.kind)
+    if field is None:
+        return False
+    paths = tuple(path for name in issue.paths for path in by_name.get(name, ()))
+    return overrides.covers(accepted, album, field, paths)
+
+
 def assemble_albums(
     entries: tuple[SourceEntry, ...],
+    accepted: tuple[overrides.Override, ...] = (),
 ) -> tuple[tuple[Album, ...], tuple[LibraryIssue, ...]]:
-    """Group scanned sources into ordered albums, reporting what was inferred."""
+    """Group scanned sources into ordered albums, reporting what was inferred.
+
+    The accepted corrections are the third layer, laid over the rules rather
+    than replacing them: the tracks are resolved exactly as they always were,
+    then whatever has been accepted is applied on top and the findings that have
+    been answered stop being reported. Passing none is the old behaviour
+    exactly, which is what a library nobody has accepted anything in gets.
+    """
     groups = _collect(entries)
     built: list[tuple[AlbumIdentity, Album]] = []
     issues: list[LibraryIssue] = []
+    pinned = overrides.index(accepted)
 
     for group in groups.values():
         _place_bonus_discs(group)
         identity = _identity_of(group)
         label = f"{identity.display_artist} - {identity.display_title}"
         tracks, track_issues = resolve_tracks(tuple(group.candidates), label)
-        issues.extend(track_issues)
+        found = list(track_issues)
         if group.disc_conflicts:
-            issues.append(
+            found.append(
                 LibraryIssue(
                     kind=IssueKind.DISC_NUMBER_CONFLICT,
                     album=label,
@@ -257,19 +299,32 @@ def assemble_albums(
                 )
             )
         if not group.tagged_artists:
-            issues.append(
+            found.append(
                 LibraryIssue(
                     kind=IssueKind.MISSING_ALBUM_ARTIST,
                     album=label,
                     detail=f"{len(group.candidates)} file(s)",
                 )
             )
+        by_name = _paths_by_name(group)
+        issues.extend(
+            issue
+            for issue in found
+            if not _is_answered(issue, identity.handle, pinned, by_name)
+        )
+        # Sorted again after the pins, since one may have moved a track to
+        # another number or another disc, which is exactly where it belongs in
+        # the album rather than where the rule first put it.
+        laid = sorted(
+            overrides.applied(tracks, identity.handle, pinned),
+            key=lambda item: item.ordering_key,
+        )
         built.append(
             (
                 identity,
                 Album(
                     identity=identity,
-                    tracks=tracks,
+                    tracks=tuple(laid),
                     genre=_most_common(group.genres),
                 ),
             )

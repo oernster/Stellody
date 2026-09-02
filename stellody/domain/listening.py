@@ -86,8 +86,8 @@ def album_handle(album: AlbumIdentity) -> str:
     poor record. So an album carries a rating of its own rather than one
     derived from what is under it, which would put words in a listener's mouth.
 
-    The same digest over the album's key alone. A track's adds its disc and
-    track number, so the two can never land on the same handle: there is no
-    track numbered nothing.
+    The identity's own handle, which is where that digest now lives. A track's
+    adds its disc and track number, so the two can never land on the same
+    handle: there is no track numbered nothing.
     """
-    return _digest(album.key)
+    return album.handle

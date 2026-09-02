@@ -59,19 +59,17 @@ build is untouched by either.
 
 ## 2. Play the formats that need a decoder Stellody does not carry
 
-The first half of this milestone is built: the walk takes `.flac .mp3 .ogg .oga
-.opus .wav .aiff .aif`, a general probe reads what each format actually states
-and the existing decode path serves the lot. It is proved on generated files in
-every one of those formats and NOT yet on a real album in the library, which is
-what the bar below still asks for. What remains is everything libsndfile cannot
-decode.
+The formats libsndfile can decode are done and watched: the walk takes `.flac
+.mp3 .ogg .oga .opus .wav .aiff .aif`, a general probe reads what each format
+actually states, the existing decode path serves the lot and real albums in each
+of MP3, Ogg and WAV have been played through in the built application. What
+remains is everything libsndfile cannot decode.
 
 **What that costs, measured over the reference library on 2026-08-30.** Of 656
 folders holding audio, 146 held no FLAC at all and were invisible. Extending the
-walk brought back 19 of them, holding 147 OGG, 24 MP3 and 13 WAV tracks. The
-other 127 are M4A and wait on a decoder: 1,356 tracks, more than a fifth of the
-library still unreachable. An album asked after by name, BT's Emotional
-Technology, is one of the 127.
+walk brought back 19 of them. The other 127 are M4A and wait on a decoder: 1,356
+tracks, more than a fifth of the library still unreachable. An album asked after
+by name, BT's Emotional Technology, is one of the 127.
 
 **What is left needs a decoder rather than a suffix.** M4A with AAC or ALAC,
 WMA, Musepack, Monkey's Audio, WavPack, DSD. Each means either FFmpeg through a
@@ -86,10 +84,9 @@ Honesty applies as usual; the rule the first half established carries forward.
 A lossy format cannot be bit perfect however the device is opened, so
 whatever the new backend decodes has to state what it states and no more.
 
-Done when: a real album in each of MP3, Ogg and WAV scans, groups and plays in
-the built application, which closes the first half; an M4A album does the same,
-which closes the second; a format Stellody cannot decode is reported as
-unreadable rather than silently skipped.
+Done when: an M4A album scans, groups and plays in the built application; a
+format Stellody cannot decode is reported as unreadable rather than silently
+skipped.
 
 ## 3. Play video files
 
