@@ -21,25 +21,19 @@ module. Where the code and the shorthand disagree, the code wins.
 - **The order is a recommendation, not a contract.** The dependencies named in
   each milestone are real; everything else can be taken in any order.
 
-## The first release
+## Cutting a release
 
-A first release has been cut and pushed, of what works today. `VERSION` holds
-the number for the release being cut; a bump is owed against the newest tag
-rather than against the last thing written.
+Releases are being cut as work lands. `VERSION` holds the number for the release
+being cut; a bump is owed against the newest TAG rather than against the last
+thing written, so a VERSION already ahead of the tag has had its bump.
 
-The position display, the cover chooser, search and the ratings with their play
-counts are done. The corrected position, the amplitude monitor that draws it
-against the music, the chooser that gives an album the art its own files never
-carried, the search that narrows the library as it is typed into and the count
-that appears on a track row once a track has played out have each been watched
-in the built application, so each is gone from this file, as the grid of covers
-was before them. Version 1.0 is a separate readiness call for the owner to
-make; nothing below is sized against it. The rest comes later, the wider
-formats and video among them.
-
-Cutting a release means: the gate is green, the release notes are written in
+Cutting one means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
-owner's to make.
+owner's to make. A tagged version's notes leave `NOTES.md` on the next pass,
+since the file carries the pending release alone.
+
+Version 1.0 is a separate readiness call for the owner to make; nothing below is
+sized against it.
 
 ## 1. macOS and Flatpak
 
