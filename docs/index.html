@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stellody: a calm, local-first FLAC player</title>
-  <meta name="description" content="A calm, local-first FLAC player for a library you already own. Reads your music folder and never writes to it, handles cue sheets and multi-disc sets, draws each track's waveform, rates tracks and albums. No account, no cloud, no scrobbling.">
+  <meta name="description" content="A calm, local-first FLAC player for a library you already own. Reads your music folder and never writes to it, handles cue sheets and multi-disc sets, plays one track into the next without a gap, draws each track's waveform, shapes the sound with a ten band equalizer. No account, no cloud, no scrobbling.">
   <link rel="canonical" href="https://stellody.co.uk/">
   <meta name="theme-color" content="#0d1220">
   <!-- Social link previews. og:image must be an absolute URL and a raster
@@ -98,7 +98,7 @@
 
   <div class="hero-shot fade d4">
     <div class="shot">
-      <img src="screenshots/stellody1.png" width="1720" height="698" alt="Stellody showing a grid of album sleeves, with the album Pump by Aerosmith opened in a pane beneath it: its title, artist and album rating above its ten tracks running down two columns; the waveform bar runs along the bottom.">
+      <img src="screenshots/stellody1.png" width="1720" height="696" alt="Stellody showing a grid of album sleeves, with the self-titled 30 Seconds to Mars album opened in a pane beneath it: its title, artist and album rating above its eleven tracks running down two columns. The equalizer button sits with the view controls at the left of the top tray; the waveform bar runs along the bottom and the spectrum display moves in the middle of the strip below it.">
     </div>
     <p class="shot-caption">Picking a sleeve opens that album underneath the grid, its tracks running down two columns, so the sleeves stay where they were.</p>
   </div>
@@ -177,6 +177,19 @@
       too, so you can see what it looks like before deciding to play it.</p>
     </div>
     <div class="feat">
+      <h3>An equalizer and a display that moves</h3>
+      <p>Ten bands an octave apart, each lifting or cutting up to twelve decibels, with the sound
+      following a slider as it is dragged. Twenty bars in the bottom strip show what it shapes, two to a
+      band, so the bars that move are the ones a slider would lift. Switched off the equalizer costs
+      nothing whatever, which is what keeps an exclusive stream bit perfect.</p>
+    </div>
+    <div class="feat">
+      <h3>One track into the next</h3>
+      <p>An album mixed to play through plays through. The following track is decoding while the current
+      one is still playing, so the device is handed one unbroken run of audio rather than being stopped
+      and started between the two.</p>
+    </div>
+    <div class="feat">
       <h3>Ratings and play counts</h3>
       <p>Five stars for a track, plus its own rating for an album, since a record with one poor track on it
       is not a poor record. Reaching the end is what counts as a play; the count sits on the track's own
@@ -208,9 +221,9 @@
       Expanding an album shows its tracks; the same right click menu is on every row.
     </p>
     <div class="shot" style="margin-top:2rem;">
-      <img src="screenshots/stellody2.png" width="1720" height="697" alt="Stellody's list view: one row per album with its cover, its artist, then a detail column giving the year, genre, track count and disc count, with the length at the right.">
+      <img src="screenshots/stellody2.png" width="1720" height="696" alt="Stellody's list view: one row per album with its cover, its artist, then a detail column giving the year, genre, track count and disc count, with the length at the right. The spectrum display moves in the middle of the bottom strip while a track plays.">
     </div>
-    <p class="shot-caption">The list view, with the transport across the top and the switches along the bottom strip.</p>
+    <p class="shot-caption">The list view, with the transport across the top and the switches along the bottom strip, the display moving between them while a track plays.</p>
   </section>
 </div>
 
@@ -295,7 +308,7 @@
     </div>
     <div class="footer-bottom">
       <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
-      Version <!--VERSION-->0.7.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->0.8.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       &copy; Oliver Ernster</p>
       <div class="chips">
         <span class="chip">Python</span>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stellody features: what the player actually does</title>
-  <meta name="description" content="Everything Stellody does: incremental scanning, cue sheets and multi-disc sets, two library views, search that keeps an album whole, waveforms, ratings and play counts, cover art, the notification area and the update check.">
+  <meta name="description" content="Everything Stellody does: incremental scanning, cue sheets and multi-disc sets, two library views, search that keeps an album whole, gapless playback, a ten band equalizer with a display that moves, waveforms, ratings and play counts, cover art, the notification area and the update check.">
   <link rel="canonical" href="https://stellody.co.uk/features.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
@@ -164,11 +164,53 @@
       replays when it ends, while pressing next still moves on.</p>
     </div>
     <div class="feat">
+      <h3>One track into the next, without a gap</h3>
+      <p>What an album mixed to play through needs. The following track is opened and decoding while the
+      current one is still playing, then the device is handed one unbroken run of audio rather than being
+      stopped and started between the two. A track held on repeat rejoins itself the same way. Where the
+      next track needs a different sample rate the device has to be reopened, so that one join is honestly
+      gapped rather than joined badly.</p>
+    </div>
+    <div class="feat">
       <h3>The waveform, built as it is read</h3>
       <p>A line marks where playback has reached, with the time either side of it; clicking anywhere
       along it moves there. Measured cold, an ordinary 28 megabyte track put its first picture up at 0.02
       seconds. The figure is corrected for the buffer the engine runs ahead by, so it follows what is
       audible rather than what has been decoded.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Shaping it and seeing it</div>
+  <h2 class="section-title">The equalizer and the display</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Ten bands, an octave apart</h3>
+      <p>From the button beside the sleeve size, else the Sound menu. Each band lifts or cuts up to twelve
+      decibels around its own frequency and the sound follows a slider as it is dragged. The switch is
+      separate from the sliders, so turning it off to compare does not lose the curve you set up.</p>
+    </div>
+    <div class="feat">
+      <h3>Off costs nothing, not merely little</h3>
+      <p>A band at nought is exactly the identity, so it is dropped instead of applied: a flat equalizer
+      hands the block back untouched rather than copied, which is also what keeps an exclusive stream bit
+      perfect while it is off. Measured on a block carrying 92.9 milliseconds of audio, ten bands cost 6.9
+      milliseconds, having been 25.4 before the passes over the array were fused into one.</p>
+    </div>
+    <div class="feat">
+      <h3>A display that moves with the music</h3>
+      <p>Twenty bars in the middle of the bottom strip, two to each of those ten bands and split at the
+      band's own centre, so the bars that move are the ones a slider would lift. It reads the sound on its
+      way to the device rather than decoding anything a second time, after the equalizer and before the
+      volume, so it shows the music rather than the volume knob.</p>
+    </div>
+    <div class="feat">
+      <h3>It cannot touch what you hear</h3>
+      <p>The measurement is taken after the block has gone to the device, which makes altering a sample
+      structurally impossible rather than merely unintended; a test compares every frame written with the
+      display on against every frame written with it off. It is a few centimetres wide and simply on: no
+      switch, no setting and nothing running at all while nothing is playing.</p>
     </div>
   </div>
 </section>
@@ -283,7 +325,7 @@
     </div>
     <div class="footer-bottom">
       <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
-      Version <!--VERSION-->0.7.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->0.8.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       &copy; Oliver Ernster</p>
       <div class="chips">
         <span class="chip">Python</span>

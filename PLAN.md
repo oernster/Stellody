@@ -43,36 +43,39 @@ owner's to make.
 
 ## 1. A visualiser
 
-Not present. A display that moves with the music as it plays, which is a
-different thing from the equalizer: that one SHAPES what is heard, this one
-SHOWS it. Nothing on screen currently moves with the sound except the
-position line; a waveform drawn ahead of time is not the same as a
-picture of what is coming out now.
+**Built and gate-green; open only until it has been watched.** Twenty bars in
+the middle of the bottom strip, two to each of the equalizer's ten octave
+bands, split at the band's own centre. It is simply on: no switch and no
+setting.
 
-Decide before any code: what it shows. A spectrum across a set of bands is
-the obvious one and shares its arithmetic with nothing already here, since
-the equalizer designs filters rather than measuring content. A level meter
-is cheaper and says less. Whichever is chosen, it reads the blocks on their
-way to the device rather than decoding anything a second time.
+The decision this milestone opened with is settled. It shows a spectrum rather
+than a level, over the band edges `equalising.py` already defines, so the bars
+that move are the ones a slider lifts; a second set of edges would have been a
+second vocabulary for one idea. The band of the window and the menu entry it
+was first given were both wrong the same way, so it lost them: a small moving
+thing is not a feature a listener should be asked to decide about.
 
-**What it must not do.** It cannot alter a sample: the bit perfect claim is
-held by a test and a display that touched the buffer would break it. It
-cannot hold up the feeder thread either, which has a block of audio to
-deliver and no time to spare; whatever it measures is handed sideways and
-drawn on the interface thread.
+What it must not do is held by tests rather than by care. The measurement is
+taken AFTER the block has gone to the device, which makes altering a sample
+structurally impossible; `tests/infrastructure/test_watching_the_output.py`
+compares every frame written with the display on against every frame written
+with it off; moving the measurement ahead of the write fails it. It never
+waits on the feeder either: the answer is left where the interface thread comes
+and takes it, as one whole tuple swapped in.
 
-Needed: a measurement taken as blocks pass, a seam that carries it out
-without blocking the feeder, plus somewhere to draw it that a listener can
-turn off.
+The cost is measured rather than argued. On a block carrying 92.9 milliseconds
+of audio the transform takes 0.069 milliseconds at twenty bars, against the
+equalizer's own 6.9 milliseconds for the same block.
 
-Done when: the display moves with what is playing and stops when playback
-does, the samples reaching the device are unchanged with it on; the
-measurement costs the feeder nothing it cannot afford.
+Done when: somebody has watched it move with a record playing in the built
+application, seen it stop when the music stops and found the strip still
+readable at the size it opens on.
 
 ## 2. The equalizer
 
 **Built and gate-green; open only until it has been heard.** Ten bands at
-the octave centres, plus or minus twelve decibels, from the Sound menu. The
+the octave centres, plus or minus twelve decibels, reached from the button
+beside the sleeve size or from the Sound menu. The
 sound follows a slider as it is dragged. The switch is separate from the
 sliders, so turning it off to compare keeps the curve.
 
@@ -370,7 +373,7 @@ search for the application by name returns the site.
   address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 13 records a correction in
+- **Repairing the files themselves.** Milestone 6 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **The album pane inserted inline after the sleeve that opened it.** That is

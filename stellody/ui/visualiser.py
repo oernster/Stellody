@@ -1,8 +1,9 @@
 """The display that moves with the music: two bars to each equalizer band.
 
-Drawn rather than assembled out of widgets, for the reason the stars are: ten
-progress bars would be ten things for the toolkit to lay out and repaint
-thirty times a second, where this is one paint of ten rectangles. It is a
+Drawn rather than assembled out of widgets, for the reason the stars are:
+twenty progress bars would be twenty things for the toolkit to lay out and
+repaint thirty times a second, where this is one paint of twenty rectangles.
+It is a
 display and never a control, so it takes no focus and wears no ring.
 
 **It runs on its own clock, faster than the music reports.** A block carries
@@ -37,8 +38,8 @@ neither at first, which measured as a strip of exactly one colour, the window's:
 turned on with nothing playing it was indistinguishable from empty space, so a
 listener switching it on saw nothing happen and concluded it was not there. It
 now wears the surface both trays wear and each band keeps a low mark on
-the floor. Silence then reads as ten bands with
-nothing in them rather than as an absence.
+the floor. Silence then reads as twenty bars
+with nothing in them rather than as an absence.
 """
 
 from __future__ import annotations
@@ -52,7 +53,7 @@ from stellody.ui.palette import Mode, palette_for
 
 # Thirty a second. Fast enough that a falling bar reads as movement rather than
 # as a slideshow, slow enough that the strip is not the reason a laptop's fan
-# comes on: each frame is ten rectangles.
+# comes on: each frame is twenty rectangles.
 FRAME_MS = 33
 # How wide it should be on the desk, rather than on a particular screen. Turned
 # into pixels against the display it opens on, so the same request means the
@@ -75,7 +76,7 @@ _MILLISECONDS = 1000.0
 
 
 class Visualiser(QWidget):
-    """Ten bars showing how loud each band of what is playing is."""
+    """Twenty bars showing how loud each half of each band is."""
 
     def __init__(
         self, parent: QWidget | None = None, height_px: int = STRIP_HEIGHT_PX
@@ -149,7 +150,7 @@ class Visualiser(QWidget):
         self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Ten bars across the strip, each as tall as its band is loud."""
+        """Twenty bars across the strip, each as tall as its half band is."""
         palette = palette_for(self._mode)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)

@@ -98,6 +98,13 @@ not going to.
   the samples rather than something cheap; the same holds with every band left
   at nought: a band at nought is exactly the identity, so it is dropped
   instead of applied.
+- Moves with the music, from the middle of the bottom strip: twenty bars over
+  the equalizer's own ten bands, two to a band split at the band's own centre,
+  so the bars that move are the ones a slider would lift. It reads the sound on
+  its way to the device rather than decoding anything a second time, after the
+  equalizer and before the volume, so it shows the music rather than the knob.
+  It is a few centimetres wide and simply on: no switch, no setting and nothing
+  running at all while nothing is playing.
 - Draws the track's own waveform along the bottom, with a line marking where
   playback has reached and the time either side of it. The shape builds from
   the left as the file is read, so a picture is there at once rather than after
