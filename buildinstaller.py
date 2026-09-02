@@ -27,7 +27,6 @@ from stellody.shared.version import COPYRIGHT_NOTICE
 ROOT = pathlib.Path(__file__).resolve().parent
 
 APP_DISPLAY_NAME = "Stellody"
-APP_DESCRIPTION = "A calm, local-first FLAC music player."
 APP_AUTHOR = "Oliver Ernster"
 SETUP_NAME = f"{APP_DISPLAY_NAME}Setup"
 INSTALLER_ENTRY = ROOT / "installer" / "app.py"
@@ -124,7 +123,12 @@ def command(version: str) -> list[str]:
         f"--product-name={APP_DISPLAY_NAME} Setup",
         f"--file-version={numeric}",
         f"--product-version={numeric}",
-        f"--file-description={APP_DESCRIPTION} Installer",
+        # Windows reads this as the program's NAME: it is what Task Manager
+        # lists a running process under and what the file's own properties
+        # show as its description. The tagline used to sit here, so the
+        # application announced itself as a sentence everywhere Windows asked
+        # what it was. The name goes here; the tagline belongs on the site.
+        f"--file-description={APP_DISPLAY_NAME} Setup",
         f"--copyright={COPYRIGHT_NOTICE}",
         f"--include-data-dir={STAGE_DIR}=payload",
     ]
