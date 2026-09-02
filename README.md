@@ -56,6 +56,11 @@ if it ever stopped being true the build would fail.
 - **A scan that says what it found.** Add music, press Rescan and you get the
   new albums by name, the new tracks counted and your library's totals, rather
   than a line that disappears while you are looking elsewhere.
+- **Corrections you can keep.** Where an album's labelling is muddled, Stellody
+  works out what it should be and shows you the tidy version. Now you can tell
+  it to keep that answer, all of it at once or one album at a time, so the same
+  list of problems stops greeting you at every start. Changed your mind? One
+  press puts it back. Your files are untouched either way.
 - **Everything reachable from the keyboard.** It can also wait quietly by the
   clock rather than filling your screen.
 
@@ -70,9 +75,10 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting
   them.
-- **It is still young.** It can tell you what looks muddled in an album's
-  labelling, though it cannot yet tidy that up for you. Any button that is not
-  ready is greyed out rather than left to disappoint you.
+- **It is still young.** It tidies muddled labelling in its own view and lets
+  you keep that, though it will never rewrite the files themselves: that is the
+  whole point rather than a limitation. A control that cannot do anything just
+  now is greyed out rather than left to disappoint you.
 
 ## Your privacy
 
