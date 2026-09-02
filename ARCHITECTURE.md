@@ -156,16 +156,18 @@ caches a whole folder's result. A rescan compares each file's size and
 modification time against the store; a folder whose files are all unchanged is
 reused without opening a single file. On the reference library a cold scan of
 510 folders and 4,870 files takes about two and a half seconds and a rescan
-a little over four tenths of a second, grouping into 482 albums of 6,877
-tracks.
+a little over four tenths of a second.
 
-**Every library figure in this document was measured while the walk took FLAC
-alone**, which is what those 510 folders are: the 487 that are FLAC throughout
-plus the 23 holding FLAC beside something else. Widening the walk brings back
-19 folders that were invisible, so the counts and the timings here are all due a
-re-measure against a cold scan of the widened library. They are left as measured
-rather than adjusted, since a figure nobody took is worth less than a figure
-with a date on its reading.
+**The counts and the timings here were read at different widths of the walk, so
+they are stated apart rather than blended.** The widened walk reports 530
+folders holding 5,101 music files, grouping into 502 albums of 7,108 tracks;
+that is the library as it now stands. The timings above and every other library
+figure in this document were measured while the walk took FLAC alone, which is
+what those 510 folders are: the 487 that are FLAC throughout plus the 23 holding
+FLAC beside something else. So the timings are due a re-measure against a cold
+scan of the widened library and are left as measured rather than scaled up to
+fit the newer counts, since a figure nobody took is worth less than a figure
+with a reading behind it.
 
 **The store holds raw tag values, not resolved ones.** Resolution happens on
 load, so improving any rule above takes effect on the next start without
@@ -279,6 +281,48 @@ It holds the previous reading already, so the comparison costs nothing and means
 what the reader means by new: new since what was on screen. The runner tears its
 thread down before it emits its report, so a modal dialog opened from that
 handler has nothing waiting behind it.
+
+**The report is measured rather than given a size.** A scan that changed nothing
+says so in six lines while a scan that found twenty albums needs twenty more, so
+any fixed height is either a cramped page or a great deal of empty dialog under a
+short report, which is what it was. Both dimensions are now taken from the
+content: the page is laid out at the widest it may be, asked what width it
+actually used, then laid out again at that width to be asked its height. The
+tables are sized to their content for the same reason, since at full width every
+number was thrown against the right edge, an inch and a half from the label
+naming it.
+
+**The measurement is taken on a detached `QTextDocument`; it must be.**
+Setting a text width on the view's own document does not hold: the widget puts
+its viewport width back. A widget that has not been shown yet is a few dozen
+pixels wide, so it reported a page 1853 pixels tall against the 278 it really
+is, which clamped every report to the ceiling while looking entirely deliberate.
+Two follow-on traps were found the same way and are recorded here so neither is
+re-attempted. `idealWidth()` returns the text width back once one has been set,
+so a second narrowing pass is a full layout that can never narrow anything.
+Releasing the height clamp after measuring lets the page grow back to fill the
+dialog on show, which is the empty space the measuring exists to remove, so the
+clamp stays.
+
+**The view is made wider than the text by its own frame.** What wraps the text is
+the VIEWPORT rather than the widget, so giving the widget the measured width left
+the viewport narrower than the width the height was measured at, 618 against 620
+as measured, which lets a line wrap that had not wrapped in the measurement and
+puts the report past the height it was given. The frame is asked for rather than
+assumed, since the style decides it. That exactness is what lets the padding
+under the last line be 8 pixels of deliberate breathing room rather than the 26
+pixel allowance that was really covering the mismatch.
+
+**Qt rich text is not a browser and the report is written for what it has.** It
+supports no `opacity`, so a colour is stated outright rather than faded; an
+entity dash renders as a real dash while being invisible to a text sweep for
+one, so neither may appear. Both are held by
+`tests/ui/test_scan_summary.py::test_the_report_carries_no_dash_and_no_styling_qt_would_drop`,
+proved by planting each in turn.
+
+**A modal report hangs a test suite that completes a scan.** `tests/ui/test_launch.py`
+patches `ScanSummaryDialog.exec` for exactly that reason, so any later test that
+runs a scan to its end has to do the same.
 
 ## Searching
 
