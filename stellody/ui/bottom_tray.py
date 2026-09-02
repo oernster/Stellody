@@ -104,9 +104,14 @@ REPEAT_ICONS = {
 REPEAT_TOOLTIP = "Repeat mode"
 # One wording, one home, kept where the button itself is. The health report's
 # own repair control reads it from here, so the two cannot come to say
-# different things about one feature. It names the press rather than the state,
-# which is the rule every other control on both strips follows.
-REPAIR_TOOLTIP = "Accept the corrections library health reports"
+# different things about one feature.
+#
+# It names what THIS press does, which is open the screen, rather than what a
+# control inside that screen does. It briefly read "Accept the corrections
+# library health reports", which is the wording of a button on the screen this
+# one opens: a press of this accepts nothing. Shaped like the control beside
+# it, which says "Rescan the library", since the two are a pair.
+REPAIR_TOOLTIP = "Repair the library"
 # Said in the tooltip because pressing it leaves the application, which a
 # picture of a beer and a coffee does not on its own tell anybody.
 DONATE_TOOLTIP = "Buy the author a drink (opens your browser)"

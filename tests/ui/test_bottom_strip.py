@@ -206,10 +206,11 @@ def test_the_repair_button_names_the_press_and_waits_to_be_told(
     """Drawn, disabled until a window is told there is something to act on.
 
     A window built without the repair service offers nothing, which is what this
-    one is; the tooltip names what a press would do rather than reporting the
-    state, which is the rule both strips follow.
+    one is. The tooltip names what THIS press does, which is open the screen,
+    rather than what a control inside that screen does; it is shaped like the
+    rescan beside it, the two being a pair.
     """
     button = window._bottom_tray.repair_button
     assert not button.isEnabled()
-    assert button.toolTip().startswith("Accept the corrections")
+    assert button.toolTip() == "Repair the library"
     assert not button.icon().isNull(), "drawn, not merely reserved"
