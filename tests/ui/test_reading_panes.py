@@ -16,14 +16,19 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QTextBrowser
 
+from stellody.application.scan import ScanReport
+from stellody.domain.changes import LibraryChange
 from stellody.domain.health import IssueKind, LibraryIssue
+from stellody.domain.identity import AlbumIdentity
 from stellody.shared import resources
 from stellody.ui.bottom_tray import REPAIR_TOOLTIP
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.health import HealthDialog
+from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.theme import Mode, stylesheet
 
 ISSUE_COUNT = 40
+NEW_ALBUM_COUNT = 40
 CLICK_AT = QPoint(20, 20)
 
 
@@ -38,6 +43,23 @@ def issues() -> tuple[LibraryIssue, ...]:
         )
         for number in range(ISSUE_COUNT)
     )
+
+
+def a_busy_scan() -> tuple[LibraryChange, ScanReport]:
+    """A scan that found enough to make its report overflow."""
+    change = LibraryChange(
+        new_albums=tuple(
+            AlbumIdentity(album_artist=f"Artist {number}", title=f"Album {number}")
+            for number in range(NEW_ALBUM_COUNT)
+        ),
+        gone_albums=(AlbumIdentity(album_artist="Gone", title="Departed"),),
+        new_tracks=NEW_ALBUM_COUNT,
+        gone_tracks=1,
+        total_albums=NEW_ALBUM_COUNT,
+        total_tracks=NEW_ALBUM_COUNT,
+        previous_albums=1,
+    )
+    return change, ScanReport(issues=issues())
 
 
 def shown(application: QApplication, dialog):
@@ -57,6 +79,7 @@ def overflowing(application: QApplication):
             application, LicenceDialog("Model", resources.model_licence_path())
         ),
         "Health": shown(application, HealthDialog(issues())),
+        "Scan summary": shown(application, ScanSummaryDialog(*a_busy_scan())),
     }
 
 

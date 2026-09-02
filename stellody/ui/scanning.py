@@ -13,8 +13,10 @@ from __future__ import annotations
 from PySide6.QtCore import Slot
 
 from stellody.application.scan import LibraryView, ScanProgress, ScanReport
+from stellody.domain.changes import compare_libraries
 from stellody.ui.display import native_path
 from stellody.ui.health import has_serious_issues
+from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_SCAN_FINISHED,
@@ -116,10 +118,16 @@ class Scanning:
             # so the library on screen is left exactly as it was.
             self.statusBar().showMessage("Scan stopped.", STATUS_TIMEOUT_MS)
             return
+        # Compared before the library on screen is replaced, since what is on
+        # screen IS the reading this scan is being measured against. The runner
+        # tears its thread down before it emits, so opening a dialog here has
+        # nothing left waiting behind it.
+        change = compare_libraries(self._all_albums, report.albums)
         self._settings.set_setting(SETTING_SCAN_FINISHED, TRUE)
         self._issues = report.issues
         self.show_library(report.albums, report.art)
         self.statusBar().showMessage(_summary(report), STATUS_TIMEOUT_MS)
+        ScanSummaryDialog(change, report, self).exec()
 
     @Slot(str)
     def _on_failed(self, message: str) -> None:

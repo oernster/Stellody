@@ -233,6 +233,38 @@ fail.
 None for a CAF entirely, so such a file would scan into an album with no title.
 M4A and WMA need a decoder nothing here carries.
 
+## What a scan reports
+
+**A scan answers the question it was pressed to answer.** The status bar already
+carried a one-line total and keeps it, which is the right weight for something
+nobody asked for; it is the wrong weight for an answer somebody waited on, since
+it leaves the screen a few seconds later and cannot say WHICH albums turned up.
+So a finished scan also opens a report naming what arrived.
+
+**What changed is a comparison, so it is a domain rule.**
+`stellody/domain/changes.py` compares two readings of a library and says what is
+different; `stellody/ui/scan_summary.py` turns that into a page and shows it.
+The comparison is pure, so what counts as a new album can be tested with nothing
+installed.
+
+**An album is new when its identity was not there before; gone albums are
+reported too.** The identity is built from tags, so retagging one album can read
+as an album leaving and another arriving. Reporting only arrivals would describe
+a rename as a discovery, so both halves are shown, with the departures explained
+rather than left to alarm: an unplugged drive reads exactly the same way and
+nothing has been deleted.
+
+**A track is counted by its source, not by its title or its number.** A source
+survives a retag while both of the others can be rewritten by one; the slice
+is part of the key rather than the path alone, so a cue-sheet album counts its
+tracks apart instead of collapsing to the one file they share.
+
+**The window compares what it was showing, rather than asking the store again.**
+It holds the previous reading already, so the comparison costs nothing and means
+what the reader means by new: new since what was on screen. The runner tears its
+thread down before it emits its report, so a modal dialog opened from that
+handler has nothing waiting behind it.
+
 ## Searching
 
 **No index, measured rather than assumed.** A full-text table was the first

@@ -21,6 +21,7 @@ from stellody.application.transport import Transport
 from stellody.application.values import FolderListing, FolderRecord, SourceRecord
 from stellody.infrastructure.instance import SingleInstance
 from stellody.ui.main_window import MainWindow
+from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.settings_keys import FALSE, SETTING_ROOT, SETTING_SCAN_FINISHED, TRUE
 from stellody.ui.worker import ScanRunner
 
@@ -174,12 +175,15 @@ def test_with_no_folder_chosen_it_asks_for_one_rather_than_scanning(
 
 
 def test_starting_a_scan_records_that_one_is_unfinished(
-    application: QApplication,
+    application: QApplication, monkeypatch
 ) -> None:
     """The marker is written before the walk, so a kill cannot outrun it."""
     walker = SpyWalker()
     store = FakeStore(remembered(), {SETTING_ROOT: ROOT, SETTING_SCAN_FINISHED: TRUE})
     made = window(application, store, walker)
+    # A finished scan reports what it found in a modal dialog, whose event loop
+    # would never be left in a test with nobody to close it.
+    monkeypatch.setattr(ScanSummaryDialog, "exec", lambda self: None)
     made.start_scan()
     assert store.settings[SETTING_SCAN_FINISHED] == FALSE
     made._runner.wait()
