@@ -49,7 +49,12 @@ _SUMMARIES: dict[IssueKind, str] = {
         "No album artist in the tags. The track artist was used instead."
     ),
     IssueKind.NO_ARTWORK: "No cover art was found next to or inside the files.",
-    IssueKind.UNREADABLE_FILE: "The file could not be read as FLAC.",
+    # Named FLAC while FLAC was the only format Stellody read. It now scans six,
+    # so a listener whose MP3 failed was told the wrong thing about it. The
+    # second sentence is what the others all say: what Stellody did about it.
+    IssueKind.UNREADABLE_FILE: (
+        "The file could not be read, so it is not in your library."
+    ),
 }
 
 
