@@ -227,6 +227,33 @@ because a refactor that quietly moved it would empty every library's ratings
 with every gate still green. The two are told apart in the records alone; both
 still read the same on screen.
 
+**A lossy copy of an album already held lossless is not a second recording.**
+That distinction was not needed while M4A could not be decoded; the moment it
+could, the rule above did real damage. A lossy rip collided with the lossless
+one already in the library, both were told apart, so the album that had been
+there for the library's whole life had its handle moved: its cover, its album
+rating and every track rating under it orphaned by the arrival of a worse copy.
+Three albums in the reference library went that way; the first anyone knew
+of it was a report saying they were no longer found.
+
+`stellody/domain/duplicates.py` answers it in two places; the exception is
+narrow on purpose. Inside one folder a lossy file is dropped only where a
+lossless file claims the same disc and track number: The Dance held 17 FLAC and
+17 M4A of one performance and listed all 34. Across folders the lossless copy
+keeps the plain handle and only the copies are told apart, ONLY where
+exactly one of the colliding albums is lossless. None lossless or several
+leaves every one of them told apart exactly as before, which is what keeps the
+four genuine collisions already in the reference library, all classical, all
+lossless on both sides, behaving as they always have. Widening it would have
+orphaned those four to fix three.
+
+**A stated bit depth is what separates the two kinds, not a list of suffixes.**
+The probe reports no depth for a format that states none, so the distinction is
+one the library already draws and already tests. The pairing reads a missing
+disc number as the first disc, which is not a nicety: measured on the reference
+library, the FLAC rip of The Dance states no disc at all while the M4A beside it
+states disc 1, so compared as written every one of the seventeen pairs missed.
+
 **A finding is silenced only where the whole of it is pinned.** Half an accepted
 finding is still a finding: reporting it would be wrong about what is
 outstanding while dropping it would hide the part nobody answered. A kind that
@@ -765,6 +792,7 @@ only new way out.
 | `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also has no equalizer for the one planned below. |
 | PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | The same question milestone 3 asks, so it is answered once for both. PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice: `PacketReader` counts packet timestamps back into frame positions and answers the same `AudioSource` as the existing reader, so the equalizer, the visualiser and gapless were not touched. Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. |
 | The bundled FFmpeg is LGPL, verified rather than assumed | The libraries report "LGPL version 3 or later" from the licence string the build itself computes, read out of the shipped binary. The same build links libx264 and libx265, which are GPL-2.0-or-later and which `avcodec` imports outright, so they cannot be dropped from a package. The decoder lives in `infrastructure`, which is the GPL-3.0 half, so the combination is compatible and the packaged application is distributed as a GPL-3.0 work. Nothing here encodes video; those two arrive as dependencies of a shared build. |
+| A lossy duplicate never displaces what is already there | An album's handle is what its cover and every rating are looked up by, so a handle that moves is data lost. Telling both copies apart moved the incumbent's, which is how making M4A visible reported three long-standing albums as no longer found. The lossless copy is the one a listener means, so it keeps the handle; only the copies are told apart. This applies only where exactly one copy is lossless, leaving the genuine two-recording collisions untouched. |
 | Missing files are flagged, never deleted | An unplugged drive, a failed restore or an interrupted scan must not destroy library metadata. |
 | The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
 | The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |

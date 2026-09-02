@@ -18,38 +18,17 @@ what a ripper actually records, so that is what is trusted.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
-from stellody.domain import overrides
+from stellody.domain import duplicates, overrides
 from stellody.domain.album import FIRST_DISC, Album
+from stellody.domain.folder_names import folder_base_and_disc, is_unnumbered_bonus
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.ordering import TrackCandidate, resolve_tracks
 from stellody.domain.text import VARIOUS_ARTISTS, comparison_key, normalise
 
 UNKNOWN_ALBUM = "Unknown Album"
-
-# "The Book of Souls CD1", "White Album (Disc 2)", "Box Set [Disk 3]".
-# The literal CD or Disc word is required, so an album whose title merely ends
-# in a number, such as Northern Exposure 2, is never split.
-_DISC_SUFFIX = re.compile(
-    r"^(?P<base>.*?)[\s._-]*[(\[]?\s*(?:CD|Disc|Disk)\s*[.\-_]?\s*"
-    r"(?P<number>\d{1,2})\s*[)\]]?$",
-    re.IGNORECASE,
-)
-
-# "Ether Song (Bonus Disc)", "Album [Extra CD]", "Album - Bonus Disc 2". The
-# number is optional here BECAUSE the bonus word is required: that word is what
-# says the folder holds another disc of the album beside it, so nothing is
-# inferred from a name merely ending in the word Disc. Tried before the pattern
-# above, since a numbered bonus folder matches both and only this one reads it
-# without leaving half the bracket in the album name.
-_BONUS_SUFFIX = re.compile(
-    r"^(?P<base>.*?)[\s._-]*[(\[]?\s*(?:bonus|extra)\s*"
-    r"(?:CD|Disc|Disk)\s*[.\-_]?\s*(?P<number>\d{1,2})?\s*[)\]]?$",
-    re.IGNORECASE,
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,36 +43,6 @@ class SourceEntry:
     album_artist: str = ""
     date: str = ""
     genre: str = ""
-
-
-def folder_base_and_disc(folder_name: str) -> tuple[str, int | None]:
-    """Split a trailing disc marker off a folder name.
-
-    Returns the name without the marker and the disc number it carried; the
-    name unchanged and None when it carried none. A bonus disc is a marker even
-    where it names no number, so it folds into the album beside it and leaves
-    which disc it is to be worked out.
-    """
-    for pattern in (_BONUS_SUFFIX, _DISC_SUFFIX):
-        match = pattern.match(folder_name)
-        if match is None:
-            continue
-        base = match.group("base").strip()
-        if not base:
-            continue
-        number = match.group("number")
-        return base, int(number) if number else None
-    return folder_name, None
-
-
-def is_unnumbered_bonus(folder_name: str) -> bool:
-    """Whether this folder calls itself a bonus disc without saying which."""
-    match = _BONUS_SUFFIX.match(folder_name)
-    return (
-        match is not None
-        and bool(match.group("base").strip())
-        and match.group("number") is None
-    )
 
 
 def _most_common(values: list[str]) -> str:
@@ -266,6 +215,32 @@ def _is_answered(
     return overrides.covers(accepted, album, field, paths)
 
 
+def _drop_lossy_duplicates(group: _Group) -> None:
+    """Drop a lossy file where a lossless one in the same folder is that track.
+
+    The parallel lists are cut to the same shape, since each one is read by
+    position against `candidates`; a mask applied to some of them and not the
+    rest would hand an album another album's dates.
+    """
+    keep = duplicates.kept_against_lossless(group.candidates)
+    if len(keep) == len(group.candidates):
+        return
+    dropped = {
+        item.file_name
+        for position, item in enumerate(group.candidates)
+        if position not in set(keep)
+    }
+    group.candidates = [group.candidates[position] for position in keep]
+    group.albums = [group.albums[position] for position in keep]
+    group.artists = [group.artists[position] for position in keep]
+    group.dates = [group.dates[position] for position in keep]
+    group.genres = [group.genres[position] for position in keep]
+    group.tagged_artists = sum(1 for artist in group.artists if artist)
+    group.disc_conflicts = [
+        name for name in group.disc_conflicts if name not in dropped
+    ]
+
+
 def _named_apart(
     groups: dict[tuple[str, str], _Group],
 ) -> dict[tuple[str, str], AlbumIdentity]:
@@ -281,15 +256,28 @@ def _named_apart(
     which is the one thing that differs. Every other album keeps a handle built
     from its tags alone, so a folder rename still finds its cover and its
     ratings; nothing already recorded is orphaned by this rule arriving.
+
+    One lossless copy among the colliding albums is the exception; it is
+    there because separating everything orphaned real libraries. A lossy copy of
+    an album already held lossless is not a second recording; it is the same one
+    again. The lossless copy therefore keeps the handle it has always had and
+    only the copies are told apart. Where that does not apply, none lossless or
+    several, every one of them is told apart exactly as before.
     """
     named = {place: _identity_of(group) for place, group in groups.items()}
-    times: dict[tuple[str, str, str], int] = {}
-    for identity in named.values():
-        times[identity.key] = times.get(identity.key, 0) + 1
+    together: dict[tuple[str, str, str], list[tuple[str, str]]] = {}
+    for place, identity in named.items():
+        together.setdefault(identity.key, []).append(place)
+    candidates_at = {place: group.candidates for place, group in groups.items()}
+    keeps_handle = {
+        duplicates.canonical_place(places, candidates_at)
+        for places in together.values()
+        if len(places) > 1
+    }
     return {
         place: (
             identity.told_apart_by(f"{place[0]}/{place[1]}")
-            if times[identity.key] > 1
+            if len(together[identity.key]) > 1 and place not in keeps_handle
             else identity
         )
         for place, identity in named.items()
@@ -314,6 +302,10 @@ def assemble_albums(
     pinned = overrides.index(accepted)
     for group in groups.values():
         _place_bonus_discs(group)
+        # After the bonus placement, which reads positions into `candidates`,
+        # and before anything reads the dates: dropping a duplicate changes
+        # which dates an album is named from.
+        _drop_lossy_duplicates(group)
     named = _named_apart(groups)
 
     for place, group in groups.items():
