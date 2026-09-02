@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Why Stellody exists</title>
-  <meta name="description" content="Stellody was written after a commercially available music player wrote tags back into a real collection and damaged it. Why it never writes to your files, why a track is a slice of a file, then why the local-first promise is held by a test rather than a sentence.">
+  <meta name="description" content="Stellody was written after another music player rewrote the information inside a real collection and damaged 33 albums. Why it only ever reads your files, what leaves your computer and what it deliberately will not do.">
   <link rel="canonical" href="https://stellody.co.uk/why.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
@@ -43,115 +43,154 @@
   <div class="section-label">Why</div>
   <h2 class="section-title">A player broke a library.</h2>
   <p style="max-width:65ch;">
-    Stellody exists because a commercially available player wrote tags back into a real collection,
-    duplicating and overwriting metadata across 33 albums. Years of ripping and tagging, damaged by
-    software people pay for, which thought it was helping.
+    Someone spent years turning a shelf of CDs into files: ripping each one, checking the track names,
+    fixing the artist on the compilations, finding the right cover art. Then a well known music player
+    reached into those files and rewrote the information stored inside them. It duplicated and overwrote
+    the details on 33 albums. The music still played; the careful work around it was gone.
   </p>
   <p style="max-width:65ch;">
-    So the first thing Stellody is, is a player that cannot do that. It describes a damaged tag; it never
-    repairs one. That is not a promise in a readme: the tag-writing surface is unreachable from any module
-    that can read tags; a test fails the build if that ever stops being true.
+    Stellody was written because of that afternoon. It is built on one rule that everything else follows
+    from: <strong>your files are opened to be read and never to be changed</strong>. If Stellody finds
+    something muddled in the way an album is labelled, it tells you and leaves the file alone. Deciding
+    what to do about it stays your job, in whatever program you like.
   </p>
 </section>
 
 <div class="split-band">
   <section class="section">
-    <div class="section-label">The guarantee</div>
-    <h2 class="section-title">Held by a test,<br>not by a sentence.</h2>
+    <div class="section-label">The promise</div>
+    <h2 class="section-title">Not a promise.<br>A rule the program cannot break.</h2>
     <p style="max-width:65ch;">
-      A promise cannot fail a build. Every invariant below is enforced by a structural test; each of
-      those tests has been verified by planting a violation and watching it fail: a guard that has never
-      been seen to fail is not yet a guard.
+      Anybody can write "we never touch your files" on a website. It costs nothing to say and nothing to
+      quietly stop being true a year later. So in Stellody it is not a sentence. It is checked
+      automatically every single time the program is built; if it ever stopped being true the build would
+      simply fail.
     </p>
     <div class="features-grid" style="margin-top:2rem;">
       <div class="feat">
-        <h3>Your files are never written to</h3>
-        <p>Only the modules that own Stellody's own state may write to disk at all; nothing in the
-        scanning or probing path writes anything.</p>
+        <h3>Your music files are only ever read</h3>
+        <p>The part of Stellody that could write to a file is kept out of reach of every part that opens
+        your music. Not by care, by construction.</p>
       </div>
       <div class="feat">
-        <h3>Nothing reaches the network unnoticed</h3>
-        <p>Exactly two modules may hold the machinery for a connection, each named in the test with what it
-        is for. Going from one to two was an edit somebody had to make and defend, which is the point of
-        counting them.</p>
+        <h3>Nothing is put in your music folder</h3>
+        <p>No stray database, no hidden cache, no little files left behind. Everything Stellody learns
+        about your collection is kept in its own place, well away from yours.</p>
       </div>
       <div class="feat">
-        <h3>The rules stay pure</h3>
-        <p>The layer holding the library rules touches no filesystem, no network and no clock; time enters
-        as an argument rather than by being looked up. It is gated at 100% branch coverage.</p>
+        <h3>Nothing quietly reaches the internet</h3>
+        <p>Only two small pieces of Stellody are even capable of making a connection; both are named
+        below. Playing your music uses neither.</p>
       </div>
       <div class="feat">
-        <h3>Nothing grows unbounded</h3>
-        <p>No module exceeds 400 lines; one that creeps close is reduced properly rather than shaved.
-        Formatting and linting are assertions in the test suite rather than a remembered step.</p>
+        <h3>Your library survives a mistake</h3>
+        <p>An unplugged drive or a half finished scan never makes Stellody forget your albums. Missing
+        files are flagged for you rather than thrown away.</p>
       </div>
     </div>
   </section>
 </div>
 
 <section class="section">
-  <div class="section-label">The central idea</div>
-  <h2 class="section-title">A track is a slice of a file,<br>not a file.</h2>
-  <p style="max-width:65ch;">
-    In the library Stellody was built for, 163 of 482 albums are built from a cue sheet rather than one
-    file per track, 157 of them a single FLAC holding the whole album. That is a main path, not an edge
-    case, so it is captured in one value rather than special-cased everywhere.
+  <div class="section-label">Your privacy, in plain words</div>
+  <h2 class="section-title">Nothing about you<br>ever leaves this program.</h2>
+  <p style="max-width:60ch;">
+    Stellody does not know who you are. There is no account to make, no profile, no newsletter and no
+    record kept anywhere of what you listen to. Nobody is told what is in your collection. Your music
+    plays perfectly well with the internet switched off altogether.
   </p>
-  <p style="max-width:65ch;">
-    Because the distinction lives in that one place, the queue, the transport and shuffle are written once
-    and work for both shapes without knowing which they hold. The waveform inherits the same property: a
-    shape is measured for the file, then each track takes its own share of it. So does the grid of sleeves
-    and the album pane under it.
+  <p style="max-width:60ch;">
+    Three things reach outside your computer at all. Rather than leave you to discover them, here are all
+    three.
   </p>
+  <div class="features-grid" style="margin-top:2rem;">
+    <div class="feat">
+      <h3>Looking for album art</h3>
+      <p>Only ever when you ask for it, on one album at a time. Stellody looks that album up in a public
+      music archive then shows you the covers it found so you can pick one.</p>
+    </div>
+    <div class="feat">
+      <h3>Checking for a new version</h3>
+      <p>Once a day Stellody asks whether a newer version has come out. It sends nothing whatever when it
+      asks, not even which version you have; it reads one small public page then compares it on your own
+      machine. It stays quiet unless there is something new. You can tell it to skip a version for good.</p>
+    </div>
+    <div class="feat">
+      <h3>The donation button</h3>
+      <p>If you press it, Stellody hands the address to your web browser and your browser opens the page.
+      Stellody itself connects to nothing.</p>
+    </div>
+  </div>
 </section>
 
 <div class="split-band">
   <section class="section">
-    <div class="section-label">Measured, not assumed</div>
-    <h2 class="section-title">Decisions with numbers<br>behind them.</h2>
-    <div class="features-grid">
-      <div class="feat">
-        <h3>Search has no index</h3>
-        <p>A full-text table was the first plan and the measurement refused it: a pass over the whole
-        library costs under half a millisecond, against the hundred and twenty a typed character allows. An
-        index would also hold the wrong text and be empty besides.</p>
-      </div>
-      <div class="feat">
-        <h3>Grouping by folder, not by tags</h3>
-        <p>Tag grouping was tried and measured against a real library. It fragmented one Mozart folder into
-        five albums, two of them holding a single track.</p>
-      </div>
-      <div class="feat">
-        <h3>The waveform folds with numpy</h3>
-        <p>Walking frames in Python folded a 60 megabyte track in 3.2 seconds; vectorised over blocks it
-        takes 0.84, bit for bit the same answer. A 390 megabyte album FLAC went from 21.8 seconds to 5.3.</p>
-      </div>
-      <div class="feat">
-        <h3>A measurement is given up on</h3>
-        <p>Letting go of a decode used to block the interface for a full two second wait, measured at 2.00
-        seconds a step through the library. The check is handed down to the reader instead, which gives up
-        at the next block: 0.2 milliseconds a step after.</p>
-      </div>
-    </div>
+    <div class="section-label">Worth knowing</div>
+    <h2 class="section-title">What it is not.</h2>
+    <p style="max-width:65ch;">
+      Stellody plays FLAC files, which is the format people use for copies kept at full CD quality. If
+      your collection is MP3, M4A or WMA it will not find it yet. That is the one thing worth checking
+      before you download, so it is said here rather than buried. Widening it is being worked on.
+    </p>
+    <p style="max-width:65ch;">
+      It is a player and only a player. It does not stream, does not copy your CDs for you, does not sync
+      to a phone and will not reorganise your collection by rewriting your files. It can tell you what
+      looks muddled in an album's labelling, though it cannot yet tidy that up on your behalf. Where a
+      button is not ready, it is greyed out rather than left to disappoint you.
+    </p>
+    <p style="max-width:65ch;">
+      Windows is the only version today. Mac and Linux are planned.
+    </p>
   </section>
 </div>
 
 <section class="section">
-  <div class="section-label">Honesty</div>
-  <h2 class="section-title">What it is not.</h2>
+  <div class="section-label">For anyone who wants the detail</div>
+  <h2 class="section-title">Under the bonnet.</h2>
   <p style="max-width:65ch;">
-    Stellody reads FLAC and nothing else today, so a folder of MP3, M4A or WMA scans to nothing. Measured
-    over the library it is developed against, that hides 146 of the 656 folders holding audio and part of
-    23 more, most of them M4A. Widening it is planned work and both halves of it are sized.
+    You do not need any of this to use Stellody. It is here because the claims above are the kind that are
+    easy to make and hard to check, so this is the working behind them. The code is public and you are
+    welcome to go and look.
   </p>
-  <p style="max-width:65ch;">
-    It is not for streaming, not for ripping CDs, not for syncing to devices and not for managing a library
-    by rewriting its tags. It does not encrypt anything at rest: the store holds library metadata, not
-    secrets. An equalizer, gapless transitions and accepting the repairs the health report describes are
-    not built; where a control for one of those is on screen it is disabled and says so.
-  </p>
-  <p style="max-width:65ch;">
-    Windows is the only platform built today.
+  <div class="features-grid" style="margin-top:2rem;">
+    <div class="feat">
+      <h3>Every guarantee is a test</h3>
+      <p>The rules above are enforced by tests that fail the build. Each of those tests was itself checked
+      by deliberately breaking the rule and watching it fail, because a guard nobody has seen fail is not
+      yet a guard.</p>
+    </div>
+    <div class="feat">
+      <h3>A track is a slice of a file</h3>
+      <p>In the collection Stellody was built against, 163 of 482 albums come from a single file with a
+      cue sheet rather than one file per track. That is a main path rather than an edge case, so it is
+      captured once in the core idea instead of special-cased all over the program.</p>
+    </div>
+    <div class="feat">
+      <h3>Search has no index</h3>
+      <p>A full text index was the first plan and measurement refused it: reading the whole library on
+      every keystroke costs under half a millisecond, against the hundred and twenty a typed character
+      allows. An index would also have held the wrong text.</p>
+    </div>
+    <div class="feat">
+      <h3>Folders group, tags name</h3>
+      <p>Grouping albums by their tags was tried against a real collection and failed: it split one Mozart
+      folder into five albums, two holding a single track. A folder boundary is what a ripper actually
+      recorded, so that is what is trusted.</p>
+    </div>
+    <div class="feat">
+      <h3>Measured rather than assumed</h3>
+      <p>The waveform used to be folded a frame at a time and took 3.2 seconds on a 60 megabyte track;
+      done over blocks it takes 0.84, for bit for bit the same answer. Numbers like these decided the
+      design rather than opinions about them.</p>
+    </div>
+    <div class="feat">
+      <h3>The rules stay clean</h3>
+      <p>The layer holding the library rules touches no files, no network and no clock; even the time
+      arrives as an argument. It is held at 100% branch coverage, so nothing in it goes unexercised.</p>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:2.5rem;">
+    <a class="btn-secondary" href="https://github.com/oernster/stellody/blob/main/ARCHITECTURE.md">Read the architecture notes</a>
   </p>
 </section>
 
@@ -174,7 +213,7 @@
       </nav>
     </div>
     <div class="footer-bottom">
-      <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
+      <p>A free, quiet music player for the collection you already own. No cloud, no account.
       Version <!--VERSION-->0.8.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       &copy; Oliver Ernster</p>
       <div class="chips">

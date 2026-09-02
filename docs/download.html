@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Download Stellody</title>
-  <meta name="description" content="Download Stellody for Windows. A per-user setup program, no administrator rights needed. Free and open source: the model under GPL-3.0, the user interface under LGPL-3.0.">
+  <meta name="description" content="Download Stellody free for Windows. No account, no adverts and nothing to sign up for. Installs in a couple of minutes without asking for an administrator password.">
   <link rel="canonical" href="https://stellody.co.uk/download.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
@@ -44,9 +44,8 @@
     <div class="section-label">Get Stellody</div>
     <h2 class="section-title">Download Stellody</h2>
     <p class="section-sub">
-      Free and open source: the model under GPL-3.0, the user interface under LGPL-3.0. No account and no
-      cloud. Your music folder is read and never written to; everything Stellody learns lives in its own
-      store on your machine.
+      Free, with no adverts and nothing to sign up for. Your music folder is only ever read, never
+      changed. Everything Stellody works out about your collection stays on your own computer.
     </p>
     <span class="dl-version" id="dl-version">Latest release</span>
     <div class="downloads">
@@ -58,11 +57,10 @@
           Download for Windows</a>
         <p class="meta" data-asset="StellodySetup.exe">Setup program (.exe)</p>
         <p class="meta">Windows may show a SmartScreen warning when you run this: <a href="https://ernster.dev/windows-smartscreen.html">here's why</a>.</p>
-        <p class="how">Run the setup: it installs per user, so no administrator rights are needed. It reads
-        what is already installed and shows one screen for what that means, whether that is an install, an
-        update, a downgrade, a repair or an uninstall. It offers a desktop and a Start menu shortcut, then
-        offers to start Stellody when you sign in, which brings it up in the notification area rather than
-        over whatever Windows has just finished drawing.</p>
+        <p class="how">Run the file you download and follow the screens. It installs just for you, so
+        Windows will not ask for an administrator password. You can have a desktop shortcut, a Start menu
+        entry, even Stellody waiting quietly by the clock when you sign in. Running it
+        again later is how you update, repair or remove it.</p>
       </div>
     </div>
     <p class="dl-links">
@@ -80,34 +78,35 @@
   <h2 class="section-title">Point it at your music.</h2>
   <div class="features-grid">
     <div class="feat">
-      <h3>Choose a folder</h3>
-      <p>One music folder, chosen once, from the button at the left of the top tray or from the File menu.
-      Stellody scans it and remembers where it is.</p>
+      <h3>Show it your music folder</h3>
+      <p>You do this once. Press the folder button at the top left, point Stellody at wherever your music
+      lives and it reads the lot. It remembers, so you never have to do it again.</p>
     </div>
     <div class="feat">
-      <h3>It reads FLAC today</h3>
-      <p>A folder holding MP3, M4A or WMA scans to nothing for now. Widening that is planned work; the project is
-      honest about the size of it rather than quiet.</p>
+      <h3>Check your music is FLAC</h3>
+      <p>FLAC is the format used for copies kept at full CD quality. If your music is MP3, M4A or WMA,
+      Stellody will not find it yet. Worth checking before you download. More formats are being worked
+      on.</p>
     </div>
     <div class="feat">
-      <h3>Rescans are cheap</h3>
-      <p>Add an album later and rescan: a folder whose files are all unchanged is reused without opening
-      one of them, so a rescan costs a fraction of the first scan.</p>
+      <h3>Adding music later is quick</h3>
+      <p>Bought a new album? Press Rescan. Stellody only looks at what has actually changed, so it takes
+      a moment rather than starting again from scratch.</p>
     </div>
     <div class="feat">
-      <h3>It tells you when there is more</h3>
-      <p>Stellody asks GitHub whether a newer version has been published, saying nothing unless there
-      is one. Help then Check for updates asks outright. The request carries nothing about you or your
-      library, not even which version you are running.</p>
+      <h3>It tells you about new versions</h3>
+      <p>Stellody mentions it when a newer version comes out; it says nothing at all when there is not
+      one. It sends nothing about you or your music when it checks, not even which version you have.</p>
     </div>
   </div>
 </section>
 
 <section class="section">
-  <div class="section-label">Building it yourself</div>
-  <h2 class="section-title">From source</h2>
+  <div class="section-label">For developers only</div>
+  <h2 class="section-title">Building it yourself</h2>
   <p style="max-width:65ch;">
-    Stellody is Python 3.13 with PySide6. Install the development requirements, then run it:
+    You do not need any of this to use Stellody: the download above is all most people want. This is for
+    anyone who would rather build it themselves. It is Python 3.13 with PySide6.
   </p>
   <pre><code>python -m pip install -r requirements-dev.txt
 python main.py</code></pre>
@@ -144,7 +143,7 @@ python buildinstaller.py</code></pre>
       </nav>
     </div>
     <div class="footer-bottom">
-      <p>A calm, local-first FLAC player for a library you already own. Open source, no cloud.
+      <p>A free, quiet music player for the collection you already own. No cloud, no account.
       Version <!--VERSION-->0.8.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       &copy; Oliver Ernster</p>
       <div class="chips">
