@@ -82,15 +82,15 @@ does, that a seek lands where it was asked and that a lossy file claims no bit
 depth, all of which it does. Everything that has to be heard rather than
 measured remains unheard.
 
-**The packaged build has not been shown to carry the decoder.** PyAV keeps its
-FFmpeg in a sibling `av.libs` directory, 63 megabytes of DLLs that delvewheel
-put there; `buildexe.py` names no packages explicitly: it relies on Nuitka
-following the imports. A vendored DLL directory is exactly the thing that
-following imports does not find; the import is inside a function besides.
-Nothing here has been built and run, so that is a risk rather than a finding.
-The measurement that settles it is one build: run `buildexe.py`, look for an
-`avcodec` DLL in the bundle, then open an M4A album in what it produced. Adding
-build flags before that measurement would be guessing at which ones.
+**The packaged build carries the decoder; measured, not assumed.** It was
+carried here as a risk, on the reasoning that `buildexe.py` names no packages
+explicitly and a vendored DLL directory reached through a function-level import
+is what following imports misses. A standalone build settled it and the
+reasoning was wrong: Nuitka bundles `av` with all 25 of its DLLs at 62.6 MB; the whole
+dependency closure resolves inside the bundle. Since `av` is imported
+by exactly one module and that module is reached only through the import inside
+`open_source`, the bundle is itself the proof that the import was followed. No
+build flags are needed and none were added.
 
 Done when: an M4A album plays through in the built application, including a
 seek into the middle of a track and a gapless move to the next one.
