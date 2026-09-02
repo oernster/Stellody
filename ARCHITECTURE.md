@@ -182,6 +182,25 @@ digested again per user, since three spellings of one value is three chances for
 two of them to drift. The path is the tiebreak, so two identical albums in one
 library are still told apart; it also names the file a track-level pin is about.
 
+**Two albums that resolve alike are told apart; only those two.** Tags alone
+cannot separate two recordings of one work: a symphony under two conductors
+carries one composer, one title and often one year, so both answered to one
+handle. They then shared a cached cover, an album rating and every track rating
+under it; a correction accepted on one was looked up against the other,
+matched no file and recorded nothing, so it was reported again at every start
+however many times somebody accepted it. That was found in a real library, not
+reasoned about.
+
+Assembly now compares the identities it has built and gives each of any that
+collide the place it was found, which is the one thing that differs. The
+separation is appended to what the handle is digested from rather than joined in
+as an empty part, so an album nothing collides with digests exactly the run of
+text it always did: its cover and its ratings are found again rather than
+orphaned by the rule arriving. A test pins that digest to its literal value,
+because a refactor that quietly moved it would empty every library's ratings
+with every gate still green. The two are told apart in the records alone; both
+still read the same on screen.
+
 **A finding is silenced only where the whole of it is pinned.** Half an accepted
 finding is still a finding: reporting it would be wrong about what is
 outstanding while dropping it would hide the part nobody answered. A kind that

@@ -75,7 +75,7 @@ def track_handle(album: AlbumIdentity, disc_number: int, track_number: int) -> s
     numbers rather than from the title, so a title corrected in the same way
     does not either.
     """
-    return _digest(album.key + (str(disc_number), str(track_number)))
+    return _digest(album.handle_parts + (str(disc_number), str(track_number)))
 
 
 def album_handle(album: AlbumIdentity) -> str:

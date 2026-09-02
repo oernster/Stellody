@@ -266,6 +266,36 @@ def _is_answered(
     return overrides.covers(accepted, album, field, paths)
 
 
+def _named_apart(
+    groups: dict[tuple[str, str], _Group],
+) -> dict[tuple[str, str], AlbumIdentity]:
+    """Name every group, separating any two that resolve exactly alike.
+
+    Tags alone cannot tell two recordings of one work apart: a symphony under
+    two conductors carries one composer, one title and often one year. Left
+    alone both answer to one handle, so they share a cached cover, an album
+    rating and every track rating under it; a correction accepted on one is
+    looked up against the other.
+
+    Only the ones that actually collide are separated, by where they were found,
+    which is the one thing that differs. Every other album keeps a handle built
+    from its tags alone, so a folder rename still finds its cover and its
+    ratings; nothing already recorded is orphaned by this rule arriving.
+    """
+    named = {place: _identity_of(group) for place, group in groups.items()}
+    times: dict[tuple[str, str, str], int] = {}
+    for identity in named.values():
+        times[identity.key] = times.get(identity.key, 0) + 1
+    return {
+        place: (
+            identity.told_apart_by(f"{place[0]}/{place[1]}")
+            if times[identity.key] > 1
+            else identity
+        )
+        for place, identity in named.items()
+    }
+
+
 def assemble_albums(
     entries: tuple[SourceEntry, ...],
     accepted: tuple[overrides.Override, ...] = (),
@@ -282,10 +312,12 @@ def assemble_albums(
     built: list[tuple[AlbumIdentity, Album]] = []
     issues: list[LibraryIssue] = []
     pinned = overrides.index(accepted)
-
     for group in groups.values():
         _place_bonus_discs(group)
-        identity = _identity_of(group)
+    named = _named_apart(groups)
+
+    for place, group in groups.items():
+        identity = named[place]
         label = identity.label
         tracks, track_issues = resolve_tracks(
             tuple(group.candidates), label, identity.handle

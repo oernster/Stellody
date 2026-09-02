@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from stellody.domain.text import (
     comparison_key,
@@ -14,6 +14,13 @@ from stellody.domain.text import (
 )
 
 HANDLE_LENGTH = 16
+
+
+def _digest(material: str) -> str:
+    """One short handle for a run of text."""
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:HANDLE_LENGTH]
+
+
 # The name this length went by while artwork was the only thing keyed on it.
 ART_KEY_LENGTH = HANDLE_LENGTH
 
@@ -29,6 +36,15 @@ class AlbumIdentity:
     album_artist: str
     title: str
     date: str = ""
+    # Empty for almost every album, deliberately so. Tags alone cannot tell
+    # two recordings of one work apart: a symphony under two conductors carries
+    # one composer, one title and often one year, so both would answer to the
+    # same handle and would then share a cached cover, an album rating and every
+    # track rating under it. Where assembly finds two albums resolving alike it
+    # gives each the place it was found, which is the only thing that separates
+    # them. An album nothing collides with keeps an empty one, so its handle is
+    # exactly what it always was and nothing it has been told is orphaned.
+    discriminator: str = ""
 
     def __post_init__(self) -> None:
         if not self.album_artist:
@@ -44,6 +60,28 @@ class AlbumIdentity:
             comparison_key(self.title),
             str(year_of(self.date) or ""),
         )
+
+    @property
+    def handle_parts(self) -> tuple[str, ...]:
+        """What everything keyed on this album is digested from.
+
+        The discriminator is APPENDED where there is one and left out entirely
+        where there is not, rather than joined in as an empty string. An album
+        nothing collides with therefore digests exactly the run of text it
+        always did, so its cover, its rating and every rating under it are
+        found again rather than orphaned by this rule arriving.
+        """
+        if not self.discriminator:
+            return self.key
+        return self.key + (self.discriminator,)
+
+    def told_apart_by(self, place: str) -> AlbumIdentity:
+        """The same album, separated from another that resolves exactly alike.
+
+        Digested rather than carried whole, so one long path cannot make a key
+        that is mostly one album's folder name.
+        """
+        return replace(self, discriminator=_digest(place))
 
     @property
     def sort_key(self) -> tuple[str, int, str]:
@@ -65,8 +103,7 @@ class AlbumIdentity:
         again wherever it is wanted, since three spellings of one value is three
         chances for two of them to drift apart.
         """
-        material = " ".join(self.key).encode("utf-8")
-        return hashlib.sha256(material).hexdigest()[:HANDLE_LENGTH]
+        return _digest(" ".join(self.handle_parts))
 
     @property
     def art_key(self) -> str:
