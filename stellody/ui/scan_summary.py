@@ -39,9 +39,10 @@ MIN_TEXT_WIDTH_PX = 360
 # short report. The dialog is measured against what it actually holds and
 # stops growing here, beyond which the page scrolls instead.
 MAX_BODY_HEIGHT_PX = round(520 * TEXT_SCALE)
-# What the document loses to the frame and the scrollbar when it lays itself
-# out, so the measured height is of the text as it will really be shown.
-BODY_CHROME_PX = 26
+# Breathing room under the last line, so the report does not end flush against
+# the frame. The frame itself is asked for at measuring time rather than
+# guessed, since the style decides it.
+BODY_PADDING_PX = 8
 # The gap between a label and its figure. At full width the table threw every
 # number against the right edge, which left Albums an inch and a half from 502.
 VALUE_GAP_PX = 28
@@ -243,12 +244,20 @@ class ScanSummaryDialog(NeutralDialog):
         # narrower page wraps more and is therefore taller than the first
         # measurement said.
         measured.setTextWidth(used)
-        wanted = ceil(measured.size().height()) + BODY_CHROME_PX
+        # The view is made wider than the text by its own frame, because what
+        # wraps the text is the VIEWPORT rather than the widget. Giving the
+        # widget the measured width left the viewport narrower than the width
+        # the height was measured at (618 against 620, measured), which lets a
+        # line wrap that had not wrapped in the measurement and puts the report
+        # over the height it was given. The frame is asked for rather than
+        # assumed, since it is the style that decides it.
+        frame = 2 * body.frameWidth()
+        wanted = ceil(measured.size().height()) + frame + BODY_PADDING_PX
         fitted = min(wanted, MAX_BODY_HEIGHT_PX)
         # The page is fixed and the dialog is asked to fit it, rather than the
         # dialog being fixed and the page left to fill it. Setting the width on
         # the dialog would clip whenever the mark or the Close row needs more
         # than the text does, which is exactly the case a short report makes.
-        body.setFixedSize(used, fitted)
+        body.setFixedSize(used + frame, fitted)
         self.layout().activate()
         self.adjustSize()
