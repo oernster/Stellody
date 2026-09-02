@@ -11,6 +11,7 @@ from __future__ import annotations
 from enum import IntEnum
 
 from stellody.domain.album import Album, Disc
+from stellody.domain.text import year_of
 from stellody.domain.track import Track
 from stellody.ui.nodes import Node
 
@@ -48,7 +49,11 @@ def _album_text(album: Album, column: Column) -> str:
         return album.identity.display_artist
     if column is Column.LENGTH:
         return format_duration(album.duration_ms)
-    parts = [part for part in (album.identity.date, album.genre) if part]
+    # The year, not the date tag as written. A FLAC may carry "2003-05-12"
+    # and an M4A ripped by iTunes carries a whole instant, "2003-08-05T12
+    # :00:00Z", neither of which belongs in a row beside a genre.
+    year = year_of(album.identity.date)
+    parts = [part for part in (str(year) if year else "", album.genre) if part]
     parts.append(f"{album.track_count} tracks")
     if album.disc_count > 1:
         parts.append(f"{album.disc_count} discs")

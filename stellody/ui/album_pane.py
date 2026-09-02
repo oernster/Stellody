@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.domain.album import Album
+from stellody.domain.text import year_of
 from stellody.shared import resources
 from stellody.ui.covering import RowCover
 from stellody.ui.models import AlbumTreeModel
@@ -65,7 +66,6 @@ PANE_BUTTON_PX = PANE_ICON_PX + PANE_BUTTON_PADDING_PX
 PANE_GAP_PX = 10
 PANE_MARGIN_PX = 10
 TRACK_COLUMNS = 2
-YEAR_LENGTH = 4
 
 
 def _button(parent: QWidget, path, tip: str, on_click) -> QPushButton:
@@ -235,7 +235,11 @@ class AlbumPane(QWidget):
         self, album: Album, where: QModelIndex, cover: QPixmap | None
     ) -> None:
         """Open on one album, listing what is on it."""
-        year = album.identity.date[:YEAR_LENGTH]
+        # Read out of the tag rather than sliced off the front of it: a
+        # date is not always written year first, so the first four
+        # characters are not always the year.
+        found = year_of(album.identity.date)
+        year = str(found) if found else ""
         named = album.identity.title
         if year:
             named = f"{named}  ({year})"
