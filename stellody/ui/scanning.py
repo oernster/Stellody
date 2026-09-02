@@ -156,7 +156,7 @@ def _summary(report: ScanReport) -> str:
     parts = [
         f"{len(report.albums)} albums",
         f"{report.track_count} tracks",
-        f"{report.files_probed} files",
+        f"{report.files_in_library} files",
     ]
     if report.files_absent:
         parts.append(f"{report.files_absent} missing")

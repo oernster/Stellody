@@ -193,7 +193,7 @@ class AboutDialog(NeutralDialog):
         self.setWindowTitle(f"About {APP_NAME}")
         self.setMinimumWidth(ABOUT_MIN_WIDTH_PX)
         layout = QVBoxLayout(self)
-        badge = _icon_label(self)
+        badge = icon_label(self)
         if badge is not None:
             layout.addWidget(badge, alignment=Qt.AlignmentFlag.AlignHCenter)
         body = QTextBrowser(self)
@@ -206,8 +206,14 @@ class AboutDialog(NeutralDialog):
         self.pane = ReadingPane(body)
 
 
-def _icon_label(parent: QWidget) -> QLabel | None:
-    """The application icon scaled for the About dialog, when it resolves."""
+def icon_label(parent: QWidget, size: int = ABOUT_ICON_PX) -> QLabel | None:
+    """The application icon at a given size, when it resolves.
+
+    Shared rather than copied, so a second dialog wanting the mark does not
+    grow a second answer to where the file is and what to do when it is not
+    there. The size is asked for, since how big the mark should be is the one
+    part that belongs to the dialog showing it.
+    """
     path = resources.window_icon_path()
     if path is None:
         return None
@@ -217,8 +223,8 @@ def _icon_label(parent: QWidget) -> QLabel | None:
     label = QLabel(parent)
     label.setPixmap(
         pixmap.scaled(
-            ABOUT_ICON_PX,
-            ABOUT_ICON_PX,
+            size,
+            size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )

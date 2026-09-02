@@ -89,9 +89,9 @@ def test_albums_that_went_away_are_reported_and_reassured_about() -> None:
 
 def test_the_totals_name_only_the_troubles_that_happened() -> None:
     quiet = summary_html(
-        LibraryChange(previous_albums=1), ScanReport(folders_probed=3, files_probed=9)
+        LibraryChange(previous_albums=1),
+        ScanReport(folders_probed=3, files_in_library=9),
     )
-    assert "Files read" in quiet
     assert "could not be read" not in quiet
     assert "no longer there" not in quiet
 
@@ -101,6 +101,36 @@ def test_the_totals_name_only_the_troubles_that_happened() -> None:
     )
     assert "could not be read" in noisy
     assert "no longer there" in noisy
+
+
+def test_a_rescan_that_re_read_nothing_still_says_what_it_looked_at() -> None:
+    """The reported fault, from a real run: 530 folders walked, nought read.
+
+    Reporting only the folders re-read said the scan had read no folders at
+    all, which reads as a scan that did nothing rather than as one that found
+    nothing to do. The library's own file count was worse: it sat under the
+    label "Files read" while not one of those files had been opened.
+    """
+    report = ScanReport(folders_probed=0, folders_reused=530, files_in_library=5101)
+    html = summary_html(
+        LibraryChange(total_albums=502, total_tracks=7108, previous_albums=502), report
+    )
+    assert report.folders_checked == 530
+    assert "Folders checked" in html
+    assert "530" in html
+    assert "Files read" not in html, "nothing was read; naming it read is false"
+    assert "Music files" in html
+    assert "What this scan did" in html
+
+
+def test_the_library_totals_are_kept_apart_from_the_scan_work() -> None:
+    """Two questions, so two tables: what you have, then what the scan did."""
+    html = summary_html(
+        LibraryChange(total_albums=2, total_tracks=9, previous_albums=1),
+        ScanReport(folders_probed=1, folders_reused=4, files_in_library=9),
+    )
+    assert html.index("Your library now") < html.index("What this scan did")
+    assert html.index("Music files") < html.index("Folders checked")
 
 
 def test_labelling_issues_point_at_where_they_are_listed() -> None:

@@ -259,6 +259,21 @@ survives a retag while both of the others can be rewritten by one; the slice
 is part of the key rather than the path alone, so a cue-sheet album counts its
 tracks apart instead of collapsing to the one file they share.
 
+**Every count is named for what it actually counts.** Reported from a real run:
+the report said "Folders read 0" beside "Files read 5101" after a rescan that
+changed nothing. Both were true to the field names and false to the reader. The
+walk had visited 530 folders and compared every file's size and modification
+time; nought was the number it had to open again, so the scan read as having
+done nothing rather than as having found nothing to do. The file count was
+worse: `files_probed` summed the stats of every record including the reused
+ones, so it was the whole library's file count wearing the label of work just
+done, naming five thousand files that were never opened. It is now
+`files_in_library` and sits under the library's own heading, with
+`folders_checked` beside the folders re-read under a separate heading for what
+the scan did. A name that says the opposite of what a field holds is the same
+defect as the depth rule enforced in one place and not the other; this one
+reached a listener rather than a test.
+
 **The window compares what it was showing, rather than asking the store again.**
 It holds the previous reading already, so the comparison costs nothing and means
 what the reader means by new: new since what was on screen. The runner tears its

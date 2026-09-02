@@ -98,7 +98,7 @@ def test_a_folder_of_tracks_becomes_one_album() -> None:
         "Cutting Room",
     ]
     assert report.folders_probed == 1
-    assert report.files_probed == 2
+    assert report.files_in_library == 2
     assert store.saved == [FOLDER]
 
 
@@ -188,7 +188,7 @@ def test_an_unreadable_file_is_reported_and_skipped() -> None:
     )
     report = scanner.run("H:/Music")
     assert report.files_unreadable == 1
-    assert report.files_probed == 1
+    assert report.files_in_library == 1
     assert report.albums[0].track_count == 1
 
 

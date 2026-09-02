@@ -89,7 +89,12 @@ class ScanReport:
     art: tuple[AlbumArtSources, ...] = ()
     folders_probed: int = 0
     folders_reused: int = 0
-    files_probed: int = 0
+    # Every readable audio file the library holds, NOT the files this scan
+    # opened. A reused folder contributes its remembered files without one of
+    # them being touched, so on a rescan that changed nothing this is the whole
+    # library while nothing at all was read. It was called files_probed, which
+    # said the opposite and was reported to a listener as "Files read".
+    files_in_library: int = 0
     files_unreadable: int = 0
     files_absent: int = 0
     cancelled: bool = False
@@ -98,6 +103,17 @@ class ScanReport:
     def track_count(self) -> int:
         """How many tracks the assembled library holds."""
         return sum(album.track_count for album in self.albums)
+
+    @property
+    def folders_checked(self) -> int:
+        """Every folder the walk visited, whether or not it had to be re-read.
+
+        A rescan that finds nothing changed still lists every folder and
+        compares every file's size and modification time against the store.
+        Reporting only the folders it re-read says nought, which reads as a
+        scan that did nothing rather than as one that found nothing to do.
+        """
+        return self.folders_probed + self.folders_reused
 
 
 class LoadLibrary:
@@ -205,7 +221,7 @@ class ScanLibrary:
             art=sources_for(albums, tuple(records)),
             folders_probed=probed_folders,
             folders_reused=reused_folders,
-            files_probed=sum(len(record.stats) for record in records),
+            files_in_library=sum(len(record.stats) for record in records),
             files_unreadable=sum(
                 1
                 for record in records

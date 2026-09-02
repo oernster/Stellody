@@ -52,9 +52,15 @@ def a_busy_scan() -> tuple[LibraryChange, ScanReport]:
             AlbumIdentity(album_artist=f"Artist {number}", title=f"Album {number}")
             for number in range(NEW_ALBUM_COUNT)
         ),
-        gone_albums=(AlbumIdentity(album_artist="Gone", title="Departed"),),
+        # Both lists are capped in the report, so one long list alone no longer
+        # fills the dialog now that it is sized for doubled text. Overflow is
+        # what this fixture exists to produce, so it supplies both.
+        gone_albums=tuple(
+            AlbumIdentity(album_artist=f"Gone {number}", title=f"Departed {number}")
+            for number in range(NEW_ALBUM_COUNT)
+        ),
         new_tracks=NEW_ALBUM_COUNT,
-        gone_tracks=1,
+        gone_tracks=NEW_ALBUM_COUNT,
         total_albums=NEW_ALBUM_COUNT,
         total_tracks=NEW_ALBUM_COUNT,
         previous_albums=1,
