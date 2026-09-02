@@ -137,17 +137,77 @@ real damage in the reference library:
 
 Every fallback is recorded as a `LibraryIssue` and surfaced in a health
 view, so the user gets a precise list of what to repair in a tagger of their
-own choosing. That view is read-only today. Two repair controls are drawn and
-both are disabled: one on the bottom strip beside the rescan whose findings
-it would answer, one pinned at the top of the health dialog. Their tooltip is
-stated once in `stellody/ui/bottom_tray.py` and read from there by the dialog, so
-the two cannot come to say different things about the same unbuilt feature.
-They are disabled because the corrections are computed on every load while
-there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 4
-is that work.
+own choosing. That view reports; a second screen accepts. Two repair controls
+open it: one on the bottom strip beside the rescan whose findings it answers,
+one pinned at the top of the health dialog. Their tooltip is stated once in
+`stellody/ui/bottom_tray.py` and read from there by the dialog, so the two
+cannot come to say different things about one feature; whether either can act
+is answered once as well, in `can_repair`, so they cannot disagree about that
+either. Both are disabled where there is nothing outstanding to accept and
+nothing already accepted to take back, since the screen would open saying
+nothing. See "Accepting a correction" below.
 
 `stellody/domain/ordering.py` holds the track rules, `stellody/domain/grouping.py`
 the album rules and `stellody/domain/health.py` the reporting vocabulary.
+
+## Accepting a correction
+
+**Resolution has three layers: the raw tags, the automatic rules, then whatever
+has been accepted on top.** The store holds raw tags and resolves on load, so
+the library already showed corrected values; what was missing was anywhere to
+record that a correction had been ACCEPTED, which is why the same findings were
+recomputed and re-read at every start. `stellody/domain/overrides.py` is that
+record and `assemble_albums` applies it, so a load and a scan get it from one
+place rather than two that could disagree.
+
+**What is pinned is the value the rule proposed.** Accepting is a listener
+saying "yes, keep that" about a correction Stellody already made, so the library
+does not move when a report is accepted; what changes is that the finding stops
+being reported and the value stops depending on the rule that suggested it. The
+domain will apply a DIFFERENT value and is tested for it, so preferring one of
+your own is a decision rather than a rewrite; nothing in the interface sets one.
+
+**An override is keyed by the album's identity handle, with the path alongside.**
+The handle survives a folder rename and a re-rip, which is why artwork and
+ratings already use it; it is stated once as `AlbumIdentity.handle` rather than
+digested again per user, since three spellings of one value is three chances for
+two of them to drift. The path is the tiebreak, so two identical albums in one
+library are still told apart; it also names the file a track-level pin is about.
+
+**A finding is silenced only where the whole of it is pinned.** Half an accepted
+finding is still a finding: reporting it would be wrong about what is
+outstanding while dropping it would hide the part nobody answered. A kind that
+proposes no value can never be silenced, because it is absent from
+`FIELD_FOR_KIND`; that absence IS the rule, rather than a second list to
+disagree with the first.
+
+**A finding names FILE NAMES while a pin names a full path.** They have to be
+introduced; one name can stand for two tracks, since a multi-disc album
+merged from CD1 and CD2 may hold `01 Intro.flac` in both. Every track wearing
+the name is pinned rather than a guess being made about which was meant; pinning
+a value a track already holds costs nothing. The matching needs a basename, so
+it lives in `stellody/application/repairs.py` rather than in the domain, which
+may not import `os` at all.
+
+**The findings and the accepted set are two lists, not one.** This is forced
+rather than chosen: a finding that has been accepted leaves the report, so it
+cannot also be the thing pointed at to take it back. What the screen offers
+instead is the accepted set grouped by album and field, which is the same unit
+read from the other side. Reset takes a group, an album or the lot; the lot asks
+first and names the count, being the one gesture that undoes an unbounded amount
+of work in a single press.
+
+**A store that cannot be read must not cost the library its assembly.** A row
+naming a field this version does not know is skipped; a pinned number that is
+not one or that no track could hold is ignored rather than raised over. The
+asymmetry is the reason: one correction nobody sees applied against a library
+that fails to assemble at every start with no way back in.
+
+**None of it reaches a music file.** An override is Stellody's own state, kept
+in Stellody's own database beside the ratings and the settings. Resetting drops
+a row and lets the automatic rule show through again; there is nothing to
+corrupt, because the raw tags were never altered, which invariants 1 and 2
+enforce rather than describe.
 
 ## Scanning
 

@@ -119,80 +119,36 @@ backend decision with milestone 2.
 
 ## 4. Accept the repairs the health report describes
 
-The report says what Stellody worked around. It cannot yet be told "yes, keep
-that", so the same 142 findings are recomputed and re-read on every start.
+Built and gated; never watched. The overrides table, the third layer in
+load-time resolution, accepting at each of the three granularities, resetting
+and both repair controls are all in and held by tests, including an end to end
+one that closes the database and opens it again. What has not happened is
+somebody looking at it: every check so far ran offscreen, where there are no
+real fonts, no real focus and nothing anybody can see.
 
-**Most of this already exists.** The store keeps RAW tag values, not resolved
-ones; resolution happens on load, which is what lets a rule be improved
-without rescanning. So Stellody already reads damaged tags, works out what they
-should be and shows the corrected library while the files stay untouched. What
-is missing is not the correction. It is anywhere to record that a correction
-was accepted, plus any way to prefer yours over the rule's.
+**What the offscreen suite cannot settle.** How the screen reads with 36 albums
+in it at real font sizes, whether the scrolling column is comfortable to work
+down, whether the button column sits at a sensible width beside the text and
+whether the ring order through those rows makes sense under real focus rather
+than under a walk of the widget tree.
 
-**Measured on the reference library**, so the size of this is known rather than
-guessed, though measured while the walk still took FLAC alone: 142 issues across
-36 of the 482 albums. 132 are two files claiming one
-track number, 6 are a disc number disagreeing with its folder, 4 are a missing
-album artist. Every one of those three kinds already has a resolution rule, so
-every one of the 142 has a value waiting to be accepted. The two kinds with
-nothing to propose, missing artwork and an unreadable file, did not occur.
+**Measured before the walk widened**, so this is what to expect rather than a
+promise: 142 findings across 36 of the 482 albums, 132 of them two files
+claiming one track number, 6 a disc number disagreeing with its folder, 4 a
+missing album artist. The two kinds with nothing to propose, missing artwork and
+an unreadable file, did not occur and cannot be accepted by design.
 
-### An overrides table, not a file
+### A value of one's own is not offered
 
-One row per accepted correction in Stellody's own store: what it applies to,
-which field, then the value. Resolution gains a third layer, applied in this
-order: raw tags, then the automatic rules, then the accepted overrides on top.
+Accepting pins the value the rules already produced, which is what "yes, keep
+that" means and why the library does not move when a report is accepted. The
+domain will apply a DIFFERENT pinned value and is tested for it, so the layer
+is there; nothing in the interface sets one. Whether to offer it is a separate
+decision rather than an omission, since it is the point where Stellody stops
+describing a library and starts holding an opinion about it.
 
-This keeps the invariant that the project exists for. An override is Stellody's
-own state, written where Stellody's own state lives, so nothing is written to
-the music folder, sidecar or otherwise. Exporting corrections for another
-player to read is a different feature and is not this one.
-
-### Keyed by album identity, with the path as a tiebreak
-
-A file path is precise until the album is re-ripped or the folder renamed, at
-which point every correction is silently lost. The album identity handle in
-`stellody/domain/identity.py` survives both, which is why the artwork cache is
-already keyed by it. Store the path alongside, so two identical albums in one
-library can still be told apart.
-
-### Accept all, else the feature is worse than not having it
-
-142 prompts is not a workflow; a library twice the size makes it ten times
-worse. Three granularities, all of them one gesture:
-
-- accept everything the report lists,
-- accept everything in one album, which matters because the findings cluster
-  into 36 albums rather than spreading evenly,
-- accept one finding.
-
-Accept-all is the DEFAULT path through this screen, not a power-user shortcut
-hidden behind the per-issue flow. The per-issue accept exists for the case
-where the rule guessed wrong about one track.
-
-### Nothing accepted is permanent
-
-Accepting in bulk is only safe if it is reversible, so the same three
-granularities undo: reset everything, reset an album, reset one finding. A
-reset drops the override row and the automatic rule shows through again. There
-is nothing to corrupt, because the raw tags were never altered.
-
-### What it must not do
-
-An override never reaches a music file. A rescan never discards one: a
-correction outliving the scan that prompted it is the whole point. An issue
-whose kind proposes no value, missing artwork or an unreadable file, is
-reported and cannot be accepted, since there is nothing to accept.
-
-Needed: an overrides table keyed by album identity, that third layer in the
-load-time resolution, an accept and a reset at each of the three granularities,
-plus the two repair buttons enabled: the one on the bottom strip beside the
-rescan whose findings it answers and the one pinned at the top of the health
-dialog,
-both of which are already drawn and already wired to a seam that does nothing.
-
-Done when: accepting everything the report lists empties it in one gesture, the
-library shows the corrected values, both survive a restart and a rescan, then
+Done when: a real library's report is accepted in the built application and
+empties, survives closing Stellody and opening it again, survives a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
