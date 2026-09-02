@@ -17,6 +17,7 @@ from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.listening import ListeningLog
 from stellody.application.ports import SettingsStore
+from stellody.application.repairs import Repairs
 from stellody.application.scan import (
     LoadLibrary,
 )
@@ -134,6 +135,7 @@ class MainWindow(
         art: AlbumArt | None = None,
         chooser: ChooseCover | None = None,
         updates: UpdateService | None = None,
+        repairs: Repairs | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -156,6 +158,9 @@ class MainWindow(
         # A window without one still runs; it just has nothing to remember.
         self._listening = listening or ListeningLog(_ForgetfulStore())
         self._loader = loader
+        # A window given none offers no repairs at all, so both buttons stay
+        # disabled: the same shape as a window with no cover chooser.
+        self._repairs = repairs
         self._transport = transport
         # The one thing here that is set rather than injected: the transport
         # is built before the window that can turn a track into its album.

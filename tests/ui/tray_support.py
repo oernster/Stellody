@@ -109,12 +109,15 @@ def build(
     leave=None,
     chooser=None,
     shapes=None,
+    repairs=None,
 ) -> MainWindow:
     """A real window over a recording player, holding one album.
 
     The chooser is left out by default, because a window built without one
     offers no cover lookup at all: that is what lets every test here raise the
-    transport menu with no network in the room.
+    transport menu with no network in the room. The repair service is left out
+    for the same reason: a window without one offers no repairs, so both of its
+    repair controls stay disabled.
     """
 
     def session():
@@ -123,6 +126,7 @@ def build(
     made = MainWindow(
         scan_session=session,
         loader=LoadLibrary(store),
+        repairs=repairs,
         transport=Transport(player),
         settings=store,
         leave=leave,

@@ -33,17 +33,22 @@ class Scanning:
         """Scan the remembered folder again."""
         self.start_scan()
 
-    def load_remembered(self) -> None:
+    def load_remembered(self) -> LibraryView:
         """Show the library the store already holds, reading no music at all.
 
         Launch does this instead of scanning. A scan reaches for the music
         folder, which may be a sleeping drive or a machine on the network;
         starting the application is not a request for one.
+
+        The view is handed back as well as shown, so accepting a correction can
+        redraw the window and read what it now holds in one load rather than
+        two.
         """
         view = self._loader.run()
-        self._issues = view.issues
+        self.take_issues(view.issues)
         self.show_library(view.albums, view.art)
         self.statusBar().showMessage(self._remembered_message(view))
+        return view
 
     def report_library_set_aside(self, moved) -> None:
         """Say that the library index would not open and what became of it.
@@ -124,7 +129,7 @@ class Scanning:
         # nothing left waiting behind it.
         change = compare_libraries(self._all_albums, report.albums)
         self._settings.set_setting(SETTING_SCAN_FINISHED, TRUE)
-        self._issues = report.issues
+        self.take_issues(report.issues)
         self.show_library(report.albums, report.art)
         self.statusBar().showMessage(_summary(report), STATUS_TIMEOUT_MS)
         ScanSummaryDialog(change, report, self).exec()

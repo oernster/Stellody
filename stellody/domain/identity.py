@@ -87,3 +87,13 @@ class AlbumIdentity:
     def display_artist(self) -> str:
         """The album artist as it should be shown."""
         return normalise(self.album_artist)
+
+    @property
+    def label(self) -> str:
+        """How this album is named to a reader, artist first.
+
+        Stated once here because a finding is labelled with it and a screen
+        offering to accept that finding has to name the same album back. Two
+        spellings of one label read as two albums the moment either changes.
+        """
+        return f"{self.display_artist} - {self.display_title}"

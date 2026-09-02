@@ -286,7 +286,7 @@ def assemble_albums(
     for group in groups.values():
         _place_bonus_discs(group)
         identity = _identity_of(group)
-        label = f"{identity.display_artist} - {identity.display_title}"
+        label = identity.label
         tracks, track_issues = resolve_tracks(
             tuple(group.candidates), label, identity.handle
         )

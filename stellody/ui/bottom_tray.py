@@ -265,3 +265,12 @@ class BottomTray(QWidget):
         button.setIcon(_state_icon(path, not on))
         button.setChecked(on)
         button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
+
+    def offer_repairs(self, available: bool) -> None:
+        """Say whether there is anything for the repair control to act on.
+
+        Answered here rather than inside the errand, so this button and the
+        menu entry beside it cannot come to disagree, which is the rule the
+        rescan control already follows.
+        """
+        self.repair_button.setEnabled(available)

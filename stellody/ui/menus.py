@@ -15,12 +15,14 @@ from PySide6.QtCore import Slot
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMenu
 
+from stellody.domain.health import LibraryIssue
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.equaliser import EqualiserDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.links import open_externally
+from stellody.ui.repairing import RepairDialog
 from stellody.ui.settings_keys import SETTING_ROOT, STATUS_TIMEOUT_MS
 
 
@@ -115,20 +117,50 @@ class Menus:
         )
         dialog.exec()
 
+    def take_issues(self, issues: tuple[LibraryIssue, ...]) -> None:
+        """Hold what the library reported and answer the controls that act on it.
+
+        One place rather than two: a load and a scan both arrive here, so the
+        button on the strip and the one in the health dialog cannot come to
+        disagree about whether there is anything to accept.
+        """
+        self._issues = issues
+        self._bottom_tray.offer_repairs(self.can_repair)
+
+    @property
+    def can_repair(self) -> bool:
+        """Whether the repair control has anything at all to act on.
+
+        Something outstanding to accept, else something already accepted that
+        could be taken back. With neither, the screen would open saying nothing,
+        which is what a disabled control is for.
+        """
+        if self._repairs is None:
+            return False
+        return bool(self._repairs.acceptable(self._issues) or self._repairs.accepted())
+
     def show_health(self) -> None:
         """Open the library health report."""
-        HealthDialog(self._issues, self, repair_library=self.repair_library).exec()
+        HealthDialog(
+            self._issues,
+            self,
+            repair_library=self.repair_library,
+            can_repair=self.can_repair,
+        ).exec()
 
     @Slot()
     def repair_library(self) -> None:
         """Accept the corrections the health report describes.
 
-        Nothing here yet. Resolution already happens on load, so what each
-        issue should become is worked out on every start; what is missing is
-        somewhere to keep an accepted correction. The buttons that would call
-        this are disabled until there is, so this is the seam rather than the
-        feature.
+        The dialog reloads the library itself after each acceptance, through
+        the same load launch uses, so the window behind it and the screen in
+        front both say what is now true rather than what was true when it
+        opened. A window built without the service offers nothing, which is
+        what keeps every test that is about something else out of this.
         """
+        if self._repairs is None:
+            return
+        RepairDialog(self._repairs, self.load_remembered, self).exec()
 
     @Slot()
     def show_model_licence(self) -> None:

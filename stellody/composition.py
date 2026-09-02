@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QApplication
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.listening import ListeningLog
+from stellody.application.repairs import Repairs
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
@@ -101,6 +102,7 @@ def build_window(
         listening=listening,
         art=AlbumArt(artwork),
         chooser=ChooseCover(ArchiveCovers(), artwork),
+        repairs=Repairs(store),
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)
         ),

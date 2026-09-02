@@ -99,15 +99,17 @@ def has_serious_issues(issues: tuple[LibraryIssue, ...]) -> bool:
     return any(issue.kind in serious for issue in issues)
 
 
-def _repair_button(parent: QWidget, on_click: Callable[[], None]) -> QPushButton:
+def _repair_button(
+    parent: QWidget, on_click: Callable[[], None], enabled: bool
+) -> QPushButton:
     """The repair control, drawn at the smaller of the two tray sizes.
 
     Small because it sits in a dialog rather than in the tray under the menus,
     where the one it mirrors is.
 
-    Disabled for the same reason that one is: what each issue
-    should become is already worked out on every load; there is nowhere yet
-    to keep a correction once it has been accepted.
+    Enabled for the same reason that one is: there is something outstanding
+    to accept, else something already accepted that could be taken back. With
+    neither, it would open a screen saying nothing.
     """
     button = QPushButton(parent)
     button.setObjectName("TrayButton")
@@ -118,7 +120,7 @@ def _repair_button(parent: QWidget, on_click: Callable[[], None]) -> QPushButton
     if path is not None:
         button.setIcon(QIcon(str(path)))
     button.clicked.connect(on_click)
-    button.setEnabled(False)
+    button.setEnabled(enabled)
     return button
 
 
@@ -130,6 +132,7 @@ class HealthDialog(NeutralDialog):
         issues: tuple[LibraryIssue, ...],
         parent: QWidget | None = None,
         repair_library: Callable[[], None] = lambda: None,
+        can_repair: bool = False,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Library health")
@@ -137,7 +140,7 @@ class HealthDialog(NeutralDialog):
         layout = QVBoxLayout(self)
         # Above the report rather than inside it, so the report is the only
         # thing that scrolls and the repair button stays where it was put.
-        self.repair_button = _repair_button(self, repair_library)
+        self.repair_button = _repair_button(self, repair_library, can_repair)
         heading = QHBoxLayout()
         heading.addWidget(self.repair_button)
         heading.addStretch()
