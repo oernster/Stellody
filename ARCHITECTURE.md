@@ -205,6 +205,28 @@ the file instead of blaming the device. All three rules were proved by planting
 violations: claiming bit perfect for a lossy source, giving a lossy file an
 invented depth of sixteen, leaving ID3 frames untranslated.
 
+**`Track` draws the same distinction and must.** It carries its own
+`states_depth`, refuses only a negative depth and answers `is_high_resolution`
+False wherever no depth is stated, whatever the rate. Opus forces that last
+rule: it always decodes at 48 kHz whatever it was encoded from, so a rate test
+alone would badge every Opus file as better than CD on the strength of a
+property of the codec rather than of the recording.
+
+**The two halves of that rule disagreeing is what
+`tests/infrastructure/test_scanning_formats.py` exists to prevent.**
+`OutputRequest` was taught that nought means unstated while `Track` still
+refused it, yet every gate stayed green: the probe tests read a probe, the
+domain tests built a `Track` from real depths, then the branch refusing nought
+was fully covered as intended behaviour. Nothing scanned a lossy file the whole
+way through, so nothing noticed that the library could not be assembled at all.
+The failure was worse than a refused scan, because folder records are written
+inside the walk and the library is assembled after it: one MP3 put rows in the
+store that `LoadLibrary` then choked on, so every later start failed too. That
+test therefore uses the real walker, the real probe and the real store on real
+files of every format, asserting through to albums and back out of a reopened
+store. It was proved by planting the old rule and watching all six of its cases
+fail.
+
 **The suffix table is decided by what can be read, not by what can be decoded.**
 `AUDIO_SUFFIXES` in the walker holds `.flac .mp3 .ogg .oga .opus .wav .aiff
 .aif`. CAF is excluded despite libsndfile decoding it, because mutagen returns
@@ -536,6 +558,7 @@ only new way out.
 | A checkbox's ring is painted on its square, not stated in the stylesheet | The ring belongs on the box rather than round the words, because the box is what a checkbox is read as. The sheet cannot draw it there: naming `::indicator` hands Qt the whole subcontrol and the tick goes with it, measured as a square that could not be told ticked from unticked, while a rule scoped to `:focus` alone changes nothing at all. Owning the square in the sheet would mean inventing a checked picture and an unchecked one, which is a redrawn checkbox rather than a ring on Qt's. So `ringed_check.py` paints over the rectangle Qt reports for the square, in the room the sheet's own padding already leaves, taking its two colours from the sheet as properties so the palette stays the single home. The class is then the rule: a structural test forbids a plain `QCheckBox` anywhere but the module that subclasses it, since that is the one way an unringed stop could come back. |
 | The sleeve grid travels to a selection rather than snapping to it | A list view counts its scrollbar in items unless told otherwise, so the smallest move it could make was one whole row of sleeves: picking a cover two rows down jumped the grid a row at a time, which is what got reported. Counting in pixels makes the move continuous and a short run over it makes it readable, since artwork that arrives instantly somewhere else has to be found again by eye, which is the thing scrolling to it was meant to save. Where to scroll to stays Qt's answer: the jump it would have made is taken, put back and then travelled, so no second copy of the rules about revealing an item has to be kept in step with its own. Nothing travels while the grid is off screen; otherwise it would still be moving at the moment it is shown. `stellody/ui/gliding.py`, held by `tests/ui/test_gliding_grid.py`, which drives the run by setting its time rather than by sleeping. |
 | A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
+| One rule about nought, stated in both places that enforce it | A depth of nought means the file stated none; both `OutputRequest` and `Track` have to know it: the first decides whether a stream may be opened exclusively, the second whether a track may exist at all. Teaching one and not the other produced a library that probed every file correctly and could not be assembled from them, with every gate green, because a test of the probe and a test of the domain each pass while agreeing about nothing. The end to end scan is the only shape of test that can catch it, so there is one, on real files of every format. |
 | A depth of zero means the file states none, rather than a depth of zero | A lossy file carries no bit depth to report and a probe that answered sixteen would be indistinguishable downstream from a file that really held sixteen. Zero is therefore the absence of a reading and `OutputRequest.states_depth` is the one place that distinction is drawn, which is what makes `is_bit_perfect` False for every lossy source without the playback rules needing to know which formats are lossy. A negative depth is still refused, since that is a value no file could state. |
 
 ## Coverage

@@ -78,8 +78,14 @@ class Track:
             raise ValueError("duration cannot be negative")
         if self.sample_rate <= 0:
             raise ValueError("sample rate must be positive")
-        if self.bit_depth <= 0:
-            raise ValueError("bit depth must be positive")
+        # Nought is the absence of a reading, not a depth of nought: a lossy
+        # file states none and the probe reports that honestly rather than
+        # inventing a plausible sixteen. Only a negative depth is a value no
+        # file could carry. `OutputRequest` draws the same distinction; the
+        # two must agree, since a rule enforced in one of them alone is a
+        # library that scans but cannot be assembled.
+        if self.bit_depth < 0:
+            raise ValueError("bit depth cannot be negative")
 
     @property
     def ordering_key(self) -> tuple[int, int, str]:
@@ -92,6 +98,20 @@ class Track:
         return ", ".join(self.artists)
 
     @property
+    def states_depth(self) -> bool:
+        """True when the file stated a bit depth. A lossy one states none."""
+        return self.bit_depth > 0
+
+    @property
     def is_high_resolution(self) -> bool:
-        """True when the track exceeds CD rate or depth."""
+        """True when the track exceeds CD rate or depth.
+
+        A source that states no depth cannot support the claim, whatever rate
+        it decodes at. Opus is the case that forces this: it always decodes at
+        48 kHz whatever it was encoded from, so a rate test alone would badge
+        every Opus file as better than CD on the strength of a property of the
+        codec rather than of the recording.
+        """
+        if not self.states_depth:
+            return False
         return self.sample_rate > CD_SAMPLE_RATE or self.bit_depth > CD_BIT_DEPTH
