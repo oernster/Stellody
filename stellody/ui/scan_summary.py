@@ -25,10 +25,14 @@ from stellody.ui.dialogs import NeutralDialog, close_row, icon_label
 from stellody.ui.widgets import ReadingPane
 
 TEXT_SCALE = 1.5
-# The width is chosen for the line rather than scaled with the type. Scaling it
-# gave a dialog wide enough to hold a sentence of a hundred characters on one
-# line, which is further than an eye tracks back comfortably.
-DIALOG_WIDTH_PX = 700
+# Neither dimension is chosen; both are measured against the report itself.
+# The widest the text may be, which is a line an eye still tracks back
+# comfortably at this size rather than the widest that would fit a screen. A
+# report whose longest line is shorter than this takes only what it uses.
+MAX_TEXT_WIDTH_PX = 674
+# Below this the mark and the Close button decide the width anyway, so a very
+# short report is not squeezed into a slot narrower than its own furniture.
+MIN_TEXT_WIDTH_PX = 360
 # The height is NOT chosen. A scan that changed nothing says so in six lines
 # and a scan that found twenty albums needs twenty more, so a fixed height is
 # either a cramped page or (as it was) a great deal of empty dialog under a
@@ -217,14 +221,34 @@ class ScanSummaryDialog(NeutralDialog):
         space this exists to remove. A report taller than the cap keeps the cap
         and scrolls, so the pane is a tab stop exactly when there is something
         below the fold, which is the rule it already followed.
+
+        The width is measured the same way and in the same pass. The page is
+        laid out at the widest it may be, then asked what width it actually
+        used: a report whose longest line is a sentence of sixty characters
+        wants nothing like the full measure; giving it the full measure
+        left a third of the dialog empty to the right of every line.
         """
         measured = QTextDocument()
         measured.setDefaultFont(body.font())
-        measured.setTextWidth(DIALOG_WIDTH_PX - BODY_CHROME_PX)
         measured.setHtml(body.toHtml())
+        measured.setTextWidth(MAX_TEXT_WIDTH_PX)
+        used = max(
+            MIN_TEXT_WIDTH_PX, min(ceil(measured.idealWidth()), MAX_TEXT_WIDTH_PX)
+        )
+        # Measured once. A second pass was tried, on the reasoning that a
+        # narrowed page rewraps shorter. It moved nothing: once a text
+        # width is set the document reports that width back as its ideal, so
+        # the pass was a full layout that could never narrow anything.
+        # Laid out again at the width it will really be read at, since a
+        # narrower page wraps more and is therefore taller than the first
+        # measurement said.
+        measured.setTextWidth(used)
         wanted = ceil(measured.size().height()) + BODY_CHROME_PX
         fitted = min(wanted, MAX_BODY_HEIGHT_PX)
-        body.setFixedHeight(fitted)
+        # The page is fixed and the dialog is asked to fit it, rather than the
+        # dialog being fixed and the page left to fill it. Setting the width on
+        # the dialog would clip whenever the mark or the Close row needs more
+        # than the text does, which is exactly the case a short report makes.
+        body.setFixedSize(used, fitted)
         self.layout().activate()
-        self.setFixedWidth(DIALOG_WIDTH_PX)
         self.adjustSize()
