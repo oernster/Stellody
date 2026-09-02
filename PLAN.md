@@ -344,9 +344,6 @@ What is left is the part that moves it:
 - **Give the link previews their pictures.** The cards ask for `summary` with
   the 512px icon; the site holds two screenshots that would carry a
   `summary_large_image` card instead.
-- **Weigh the screenshots.** They are roughly 850KB each as PNG and page speed
-  is a ranking input. WebP at a stated width and height would cut that without
-  changing how they look.
 - **Put `lastmod` in the sitemap.** Visible dates are forbidden on these sites;
   machine metadata is exempt, so this is the only signal a sitemap carries
   beyond the list of URLs.
