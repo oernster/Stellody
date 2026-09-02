@@ -6,9 +6,12 @@
 # has no way of noticing when this repository changes. This workflow tells it,
 # and the push it makes there starts Render's own deploy.
 #
-# Needs a secret named MIRROR_TOKEN: a fine-grained personal access token
+# Needs two secrets. MIRROR_TOKEN is a fine-grained personal access token
 # scoped to oernster/stellody-website alone, with Contents set to read and
-# write. Nothing else.
+# write; without it nothing can be pushed at all. RENDER_DEPLOY_HOOK is the
+# deploy hook from the Render service, which turns the deploy from something
+# Render has to notice into something this workflow states; without it the
+# mirror still updates while stellody.com waits for somebody to press deploy.
 name: Mirror the site to stellody.com
 
 on:
@@ -57,6 +60,7 @@ jobs:
         run: python Stellody/sync_site.py --target stellody-website/public
 
       - name: Push the mirror, only when something moved
+        id: push
         working-directory: stellody-website
         run: |
           git config user.name "github-actions[bot]"
@@ -64,10 +68,39 @@ jobs:
           git add public
           if git diff --cached --quiet; then
             echo "Nothing moved; the mirror already matched."
+            echo "moved=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "Mirror the site from Stellody@${GITHUB_SHA:0:7}"
           git push
+          echo "moved=true" >> "$GITHUB_OUTPUT"
+
+      # Render's own Auto-Deploy is set to On Commit and has been throughout,
+      # yet three mirror pushes in a row went undeployed while a manual press
+      # worked: it is not hearing the pushes. Every deploy since July was
+      # triggered by hand or by a settings change, so the link has been deaf
+      # for months without anything saying so. Asking outright removes the
+      # dependency on Render noticing, which makes the deploy a step somebody
+      # can read here rather than a hope about a service elsewhere.
+      #
+      # A dispatch run always asks, even when nothing moved. Re-running this
+      # workflow is what somebody reaches for when the .com host looks stale,
+      # so that gesture should be the one that fixes it.
+      #
+      # The secret is read through env rather than tested in an `if`: the
+      # secrets context is not available to a step's `if`, so a condition
+      # written there would silently never match.
+      - name: Ask Render to deploy the mirror
+        if: steps.push.outputs.moved == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK is unset, so stellody.com keeps whatever it last deployed. Copy the deploy hook from the Render service, under Settings then Build and Deploy, then add it to this repository under Settings, Secrets and variables, Actions, named RENDER_DEPLOY_HOOK."
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK" -o /dev/null
+          echo "Render was asked to deploy the mirror."
 
       - name: Prove the two now agree
         run: python Stellody/sync_site.py --target stellody-website/public --check

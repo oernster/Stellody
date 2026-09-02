@@ -156,16 +156,22 @@ scripts call, so the site is never hand-versioned.
 
 The same pages are also served at `stellody.com`, out of the
 [stellody-website](https://github.com/oernster/stellody-website) repository
-under `public/`. Pushing a change to `docs/` runs
-`.github/workflows/mirror-site.yml`, which carries it across then pushes it.
+under `public/`. **That mirror keeps itself up to date and needs nothing from
+you.** Pushing a change to `docs/` runs `.github/workflows/mirror-site.yml`,
+which carries it across, pushes it then asks Render to deploy it. Commit here
+and both hosts follow.
 
-**That push does NOT reliably start Render's deploy.** This file claimed it did
-until the two hosts were compared: the mirror repository carried the new pages
-within seventeen seconds of the push, while stellody.com was still serving a
-site two minor releases older. So the mirror half works; the deploy half needs
-either a Render deploy hook called from the workflow else a redeploy pressed by
-hand. Until one of those is in place, check stellody.com after a release rather
-than assuming it followed.
+**The deploy is asked for rather than inferred, deliberately.** Render's own
+Auto-Deploy is set to On Commit and has been throughout, yet every deploy since
+July was triggered by hand or by a settings change: the link stopped delivering
+push events months ago with nothing anywhere saying so. The workflow already
+knows a deploy is wanted, so it says so outright, through a deploy hook held as
+`RENDER_DEPLOY_HOOK`. Without that secret the mirror still updates while
+stellody.com waits; the run then logs a warning saying exactly that.
+
+One trap is worth knowing before investigating either host. A browser holding
+the previous page is indistinguishable from a deploy that never ran, so hard
+refresh first.
 
 `sync_site.py` is what the workflow runs. It works locally too:
 
