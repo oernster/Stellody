@@ -57,7 +57,7 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 
 ## Before you download
 
-- **It plays FLAC, MP3, Ogg, WAV and AIFF.** Not M4A or WMA yet, so if your
+- **It plays FLAC, MP3, Ogg, Opus, WAV and AIFF.** Not M4A or WMA yet, so if your
   collection is in one of those, Stellody will not find it. This is the one
   thing worth checking first. The remaining formats are being worked on.
 - **Windows only.** Mac and Linux are planned.
