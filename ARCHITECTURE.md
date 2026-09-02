@@ -143,7 +143,7 @@ it would answer, one pinned at the top of the health dialog. Their tooltip is
 stated once in `stellody/ui/bottom_tray.py` and read from there by the dialog, so
 the two cannot come to say different things about the same unbuilt feature.
 They are disabled because the corrections are computed on every load while
-there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 6
+there is nowhere yet to keep one that has been accepted. `PLAN.md` milestone 4
 is that work.
 
 `stellody/domain/ordering.py` holds the track rules, `stellody/domain/grouping.py`

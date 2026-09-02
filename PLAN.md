@@ -33,75 +33,15 @@ against the music, the chooser that gives an album the art its own files never
 carried, the search that narrows the library as it is typed into and the count
 that appears on a track row once a track has played out have each been watched
 in the built application, so each is gone from this file, as the grid of covers
-was before them. Version 1.0 is a separate readiness call for the owner to make; nothing
-below is sized against it. The rest comes later, the wider formats and video
-among them.
+was before them. Version 1.0 is a separate readiness call for the owner to
+make; nothing below is sized against it. The rest comes later, the wider
+formats and video among them.
 
 Cutting a release means: the gate is green, the release notes are written in
 `NOTES.md` (which is never staged), then the tag and the release are the
 owner's to make.
 
-## 1. A visualiser
-
-**Built and gate-green; open only until it has been watched.** Twenty bars in
-the middle of the bottom strip, two to each of the equalizer's ten octave
-bands, split at the band's own centre. It is simply on: no switch and no
-setting.
-
-The decision this milestone opened with is settled. It shows a spectrum rather
-than a level, over the band edges `equalising.py` already defines, so the bars
-that move are the ones a slider lifts; a second set of edges would have been a
-second vocabulary for one idea. The band of the window and the menu entry it
-was first given were both wrong the same way, so it lost them: a small moving
-thing is not a feature a listener should be asked to decide about.
-
-What it must not do is held by tests rather than by care. The measurement is
-taken AFTER the block has gone to the device, which makes altering a sample
-structurally impossible; `tests/infrastructure/test_watching_the_output.py`
-compares every frame written with the display on against every frame written
-with it off; moving the measurement ahead of the write fails it. It never
-waits on the feeder either: the answer is left where the interface thread comes
-and takes it, as one whole tuple swapped in.
-
-The cost is measured rather than argued. On a block carrying 92.9 milliseconds
-of audio the transform takes 0.069 milliseconds at twenty bars, against the
-equalizer's own 6.9 milliseconds for the same block.
-
-Done when: somebody has watched it move with a record playing in the built
-application, seen it stop when the music stops and found the strip still
-readable at the size it opens on.
-
-## 2. The equalizer
-
-**Built and gate-green; open only until it has been heard.** Ten bands at
-the octave centres, plus or minus twelve decibels, reached from the button
-beside the sleeve size or from the Sound menu. The
-sound follows a slider as it is dragged. The switch is separate from the
-sliders, so turning it off to compare keeps the curve.
-
-The decision this milestone opened with is settled and measured. The bands
-are a fixed set applied to the decoded buffer, designed in the domain as
-biquad coefficients and applied over numpy in infrastructure, which is the
-only split the layer rules allow. Ten bands cost 6.9 milliseconds a block
-against the block's own 92.9 milliseconds of audio, having been 25.4 before
-the passes over the array were fused into one.
-
-Switching it off costs nothing in the signal path rather than little: a
-band at nought is exactly the identity, so it is dropped instead of applied
-and a flat equalizer hands the block back untouched. A test asserts that it
-is the same object, which is also what keeps an exclusive stream bit
-perfect.
-
-That the bands change what is heard is measured rather than judged: a tone
-at a band's own frequency is put through and what comes out is measured
-against what went in, in decibels, along with a tone three octaves away
-that must come through unchanged. Planting the wrong decibel exponent fails
-those.
-
-Done when: somebody has heard a band change what is playing in the built
-application and found the curve still there after a restart.
-
-## 3. macOS and Flatpak
+## 1. macOS and Flatpak
 
 Windows first, which is where it stands. macOS and Linux come later, built to
 the house pattern rather than invented here: `build_flatpak.sh` with
@@ -123,7 +63,7 @@ Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the update check reaches GitHub from inside the sandbox; the Windows
 build is untouched by either.
 
-## 4. Play every audio format, not only FLAC
+## 2. Play every audio format, not only FLAC
 
 Stellody takes `.flac` and nothing else: one suffix in the walk, a probe that
 reads FLAC stream info, a README calling it a FLAC player. A local library of
@@ -153,7 +93,7 @@ it is also the smaller half of the gain:
   WavPack, DSD. Each needs a decoder Stellody does not carry, which means
   either FFmpeg through a binding or Qt Multimedia.
 
-That second half asks the same question milestone 5 asks, so answer it once:
+That second half asks the same question milestone 3 asks, so answer it once:
 **one media backend, chosen for both**. Deciding it separately is how a player
 ends up with two decoders that disagree about what a track is.
 
@@ -170,7 +110,7 @@ Done when: an album in each of the formats in the first half scans, groups and
 plays; a format Stellody cannot decode is reported as unreadable rather than
 silently skipped.
 
-## 5. Play video files
+## 3. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -197,9 +137,9 @@ transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
 Depends on the transport the position display already built. Shares its
-backend decision with milestone 4.
+backend decision with milestone 2.
 
-## 6. Accept the repairs the health report describes
+## 4. Accept the repairs the health report describes
 
 The report says what Stellody worked around. It cannot yet be told "yes, keep
 that", so the same 142 findings are recomputed and re-read on every start.
@@ -277,7 +217,7 @@ library shows the corrected values, both survive a restart and a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
-## 7. One loudness across albums
+## 5. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -323,7 +263,7 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-## 8. Make the sites findable
+## 6. Make the sites findable
 
 The markup is already there: a title and a description on every page, a
 canonical, the full Open Graph and Twitter set, `SoftwareApplication`
@@ -370,14 +310,14 @@ search for the application by name returns the site.
   address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 6 records a correction in
+- **Repairing the files themselves.** Milestone 4 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **The album pane inserted inline after the sleeve that opened it.** That is
   what MediaMonkey does and it reads well; a list view cannot insert a row of
   its own between two rows of the model. It would mean a view written from
-  scratch, losing with it the keyboard reach an item view carries for nothing. The
-  pane sits below the grid instead, which is the same information a row lower
-  down.
+  scratch, losing with it the keyboard reach an item view carries for nothing.
+  The pane sits below the grid instead, which is the same information a row
+  lower down.
 - **A second library root.** One folder, chosen once, rescanned incrementally.
 - **Writing anything at all into the music folder**, cache included.
