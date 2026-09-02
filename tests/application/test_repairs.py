@@ -280,3 +280,56 @@ class TestAcceptingAndResetting:
         repairs = Repairs(RecordingStore())
         pins = repairs.pins_for(VIEW, (issue(kind, ("01 Mysterons.flac",)),))
         assert pins[0].field is field
+
+
+class TestTwoAlbumsWearingOneHandle:
+    """Reported from a real library, where accepting a finding did nothing.
+
+    The handle is a digest of the artist, the title and the year, so two
+    separate recordings filed apart under one title share it. Classical music
+    does this routinely: a Mahler symphony under two conductors is two albums
+    with one identity. Holding them in a dictionary of one kept the last and
+    silently dropped the other, so a finding belonging to the dropped one
+    matched no file, wrote no pins and came back at every start however many
+    times somebody pressed Accept.
+    """
+
+    def _two_albums(self) -> LibraryView:
+        """Two albums that really do resolve to one handle."""
+        mine = Album(identity=IDENTITY, tracks=(track("01 Allegro.flac"),))
+        theirs = Album(
+            identity=IDENTITY,
+            tracks=(track("01 Andante.flac", folder=f"{FOLDER}/Other"),),
+        )
+        assert mine.identity.handle == theirs.identity.handle
+        return LibraryView(albums=(mine, theirs))
+
+    def test_a_finding_on_the_first_of_them_still_pins_its_files(self) -> None:
+        """The one that used to be dropped, so this is the reported defect."""
+        repairs = Repairs(RecordingStore())
+        pins = repairs.pins_for(
+            self._two_albums(),
+            (issue(IssueKind.DISC_NUMBER_CONFLICT, ("01 Allegro.flac",)),),
+        )
+        assert pins, "accepting wrote nothing, which is the defect"
+        assert pins[0].path.endswith("01 Allegro.flac")
+
+    def test_a_finding_on_the_second_of_them_pins_its_files_too(self) -> None:
+        repairs = Repairs(RecordingStore())
+        pins = repairs.pins_for(
+            self._two_albums(),
+            (issue(IssueKind.MISSING_TITLE, ("01 Andante.flac",)),),
+        )
+        assert pins
+        assert pins[0].path.endswith("01 Andante.flac")
+
+    def test_an_album_wide_pin_covers_both_because_they_share_the_artist(
+        self,
+    ) -> None:
+        """Sharing a handle means sharing the artist, so one value serves both."""
+        repairs = Repairs(RecordingStore())
+        pins = repairs.pins_for(
+            self._two_albums(), (issue(IssueKind.MISSING_ALBUM_ARTIST),)
+        )
+        assert len(pins) == 1
+        assert pins[0].value == IDENTITY.album_artist

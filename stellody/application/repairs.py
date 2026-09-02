@@ -54,18 +54,28 @@ def _value_of(track: Track, field: OverrideField) -> str:
     return track.title
 
 
-def _tracks_by_name(album: Album) -> dict[str, tuple[Track, ...]]:
-    """Which tracks each file name in this album stands for.
+def _tracks_by_name(albums: Iterable[Album]) -> dict[str, tuple[Track, ...]]:
+    """Which tracks each file name in these albums stands for.
 
     A finding names file names while a pin names a full path, so the two have to
     be introduced. One name can stand for more than one track: a multi-disc
     album merged from CD1 and CD2 may hold "01 Intro.flac" in both, so every
     track wearing the name is pinned rather than a guess being made about which
     was meant. Pinning a value a track already holds costs nothing.
+
+    Takes every album wearing the handle rather than one, because two can. The
+    handle is a digest of the artist, the title and the year, so two separate
+    recordings filed apart under one title share it, which classical music does
+    routinely: a Mahler symphony under two conductors is two albums with one
+    identity. Keeping only the last of them in a dictionary silently threw the
+    other away; a finding belonging to the one thrown away then matched no file
+    at all, wrote no pins and was reported again at every start however many
+    times somebody accepted it.
     """
     found: dict[str, list[Track]] = {}
-    for track in album.tracks:
-        found.setdefault(os.path.basename(track.source.path), []).append(track)
+    for album in albums:
+        for track in album.tracks:
+            found.setdefault(os.path.basename(track.source.path), []).append(track)
     return {name: tuple(tracks) for name, tracks in found.items()}
 
 
@@ -124,21 +134,29 @@ class Repairs:
         reader was looking at. A finding whose album is not in this view is
         skipped rather than guessed at.
         """
-        albums = {album.identity.handle: album for album in view.albums}
+        # Every album under its handle, not one: two albums can wear the same
+        # handle and a dictionary of one would drop all but the last.
+        wearing: dict[str, list[Album]] = {}
+        for album in view.albums:
+            wearing.setdefault(album.identity.handle, []).append(album)
         named: dict[str, dict[str, tuple[Track, ...]]] = {}
         pins: list[Override] = []
         for issue in issues:
             field = FIELD_FOR_KIND.get(issue.kind)
-            album = albums.get(issue.album_key)
-            if field is None or album is None:
+            albums = wearing.get(issue.album_key)
+            if field is None or not albums:
                 continue
             if field is OverrideField.ALBUM_ARTIST:
+                # Album-wide, so it carries no path and reaches every album
+                # wearing the handle. That is right rather than a compromise:
+                # sharing a handle means sharing the artist, so the accepted
+                # value is the same for each of them.
                 pins.append(
-                    Override(issue.album_key, field, album.identity.album_artist)
+                    Override(issue.album_key, field, albums[0].identity.album_artist)
                 )
                 continue
             if issue.album_key not in named:
-                named[issue.album_key] = _tracks_by_name(album)
+                named[issue.album_key] = _tracks_by_name(albums)
             for name in issue.paths:
                 for track in named[issue.album_key].get(name, ()):
                     pins.append(
