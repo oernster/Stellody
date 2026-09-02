@@ -15,8 +15,13 @@ from stellody.application.values import FileStat, FolderListing
 # exactly that reason: libsndfile decodes it, mutagen returns nothing at all
 # for it, so it would scan into an album with no title.
 #
-# M4A, WMA, Musepack, Monkey's Audio, WavPack and DSD are absent because
-# nothing here decodes them; see PLAN.md for the decoder that would.
+# M4A is here on a different footing from the rest: libsndfile cannot open it
+# at all, so it is decoded by the packet reader in `packet_decode.py` instead.
+# Its tags still have to be readable by mutagen for the same reason as every
+# other entry. They are, as a third tag shape the probe now understands.
+#
+# WMA, Musepack, Monkey's Audio, WavPack and DSD are absent because nothing
+# here decodes them; see PLAN.md for the decoder that would.
 AUDIO_SUFFIXES = frozenset(
     {
         ".flac",
@@ -27,16 +32,20 @@ AUDIO_SUFFIXES = frozenset(
         ".wav",
         ".aiff",
         ".aif",
+        ".m4a",
     }
 )
 # Audio this build knows by sight and cannot decode. Named rather than
 # inferred from "not in AUDIO_SUFFIXES", because a stray .txt is not a missing
-# album and reporting one as though it were would be noise. M4A carries AAC or
-# ALAC. CAF is here for a different reason: libsndfile decodes it while
-# mutagen reads nothing out of it, so it would scan into an album with no title.
+# album and reporting one as though it were would be noise. CAF is here for a
+# different reason: libsndfile decodes it while mutagen reads nothing out of
+# it, so it would scan into an album with no title.
+#
+# M4B is an audiobook in the same container M4A uses. It is left here rather
+# than moved across with M4A because no file of that kind was measured; a
+# format is claimed to work only where it has been seen to.
 UNPLAYABLE_SUFFIXES = frozenset(
     {
-        ".m4a",
         ".m4b",
         ".aac",
         ".wma",

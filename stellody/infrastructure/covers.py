@@ -15,8 +15,10 @@ from __future__ import annotations
 import mutagen
 from mutagen.flac import Picture
 from mutagen.id3 import ID3, PictureType
+from mutagen.mp4 import MP4Tags
 
 ART_FRAME = "APIC"
+MP4_ART_ATOM = "covr"
 
 
 def _preference(picture: Picture) -> tuple[int, int]:
@@ -33,10 +35,16 @@ def _preference(picture: Picture) -> tuple[int, int]:
 class EmbeddedPictures:
     """The cover embedded in a music file, as the bytes the file holds.
 
-    Two shapes again, as with the tags: FLAC keeps pictures as a list of its
+    Three shapes again, as with the tags: FLAC keeps pictures as a list of its
     own, while MP3, WAV and AIFF keep them as ID3 picture frames. Both carry
     the same fields, so both sort by the same preference and neither is
     treated as the special case.
+
+    MP4 is the third and it carries less: an Apple cover atom holds the image
+    bytes and says nothing about what the picture IS, so there is no front to
+    prefer and size alone settles it. Rather than branch the ordering, each
+    cover is presented as a front one, which is what reduces the same rule to
+    the same answer without a second rule being written.
     """
 
     def picture(self, path: str) -> bytes | None:
@@ -62,4 +70,14 @@ def _pictures(audio: object) -> list:
     tags = getattr(audio, "tags", None)
     if isinstance(tags, ID3):
         return list(tags.getall(ART_FRAME))
+    if isinstance(tags, MP4Tags):
+        return [_as_picture(cover) for cover in tags.get(MP4_ART_ATOM, ())]
     return []
+
+
+def _as_picture(cover: bytes) -> Picture:
+    """An Apple cover atom presented as the picture every other format holds."""
+    picture = Picture()
+    picture.type = PictureType.COVER_FRONT
+    picture.data = bytes(cover)
+    return picture

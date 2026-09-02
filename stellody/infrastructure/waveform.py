@@ -23,7 +23,7 @@ import numpy as np
 
 from stellody.domain.track import TrackSource
 from stellody.domain.waveform import BUCKETS, Envelope, envelope_from
-from stellody.infrastructure.decode import DecodeError, SourceReader
+from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
 
 # Frames per read. Large enough that a long file is not thousands of calls,
 # small enough that one block is a modest array whatever the file's depth.
@@ -130,7 +130,7 @@ class FileWaveforms:
     def frames_in(self, path: str) -> int | None:
         """How many frames the whole file holds; None when it cannot be read."""
         try:
-            with SourceReader(TrackSource(path=path)) as reader:
+            with open_source(TrackSource(path=path)) as reader:
                 return reader.frame_count
         except (DecodeError, OSError, ValueError):
             return None
@@ -140,7 +140,7 @@ class FileWaveforms:
     ) -> tuple[float, ...] | None:
         """The loudest sample in each bucket of the file; None if unreadable."""
         try:
-            with SourceReader(TrackSource(path=path)) as reader:
+            with open_source(TrackSource(path=path)) as reader:
                 frames = reader.frame_count
                 if frames <= 0:
                     return None
@@ -149,7 +149,7 @@ class FileWaveforms:
             return None
 
     def _fold(
-        self, reader: SourceReader, frames: int, cancelled=None, progress=None
+        self, reader: AudioSource, frames: int, cancelled=None, progress=None
     ) -> tuple[float, ...] | None:
         """Read the file through, keeping the loudest sample per bucket.
 

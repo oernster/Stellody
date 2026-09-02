@@ -18,7 +18,7 @@ FORBIDDEN_IMPORTS: dict[str, frozenset[str]] = {
 }
 
 FRAMEWORK_PACKAGES = frozenset(
-    {"PySide6", "mutagen", "soundfile", "sounddevice", "numpy"}
+    {"PySide6", "mutagen", "soundfile", "sounddevice", "numpy", "av"}
 )
 
 LAYERS_WITHOUT_FRAMEWORKS = frozenset({"domain", "application"})

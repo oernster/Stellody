@@ -38,7 +38,7 @@ from stellody.domain.playback import (
 from stellody.domain.spectrum import SILENT_BANDS
 from stellody.domain.track import TrackSource
 from stellody.infrastructure.analysing import BlockAnalyser
-from stellody.infrastructure.decode import DecodeError, SourceReader
+from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
 from stellody.infrastructure.filtering import BiquadCascade
 from stellody.infrastructure.wasapi import open_output
 
@@ -57,7 +57,7 @@ Opener = Callable[
 class _Session:
     """Everything one loaded track owns. Discarded whole when playback stops."""
 
-    reader: SourceReader
+    reader: AudioSource
     stream: sounddevice.OutputStream
     report: OutputReport
     dtype: str
@@ -67,7 +67,7 @@ class _Session:
     finished: threading.Event = field(default_factory=threading.Event)
     thread: threading.Thread | None = None
     # Opened ahead of the seam so the feeder never has to wait at one.
-    follower: SourceReader | None = None
+    follower: AudioSource | None = None
     crossings: int = 0
     # The equalizer, designed for this stream's own sample rate. Empty
     # while it is flat, which is how it costs nothing.
@@ -129,7 +129,7 @@ class WasapiPlayback:
         self.stop()
         stream, report, dtype = self._opener(request, self._device)
         try:
-            reader = SourceReader(source, dtype=dtype)
+            reader = open_source(source, dtype=dtype)
         except Exception:
             stream.close()
             raise
@@ -214,7 +214,7 @@ class WasapiPlayback:
         if source is None:
             return False
         try:
-            candidate = SourceReader(source, dtype=session.dtype)
+            candidate = open_source(source, dtype=session.dtype)
         except DecodeError:
             return False
         with session.lock:

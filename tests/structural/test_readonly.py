@@ -33,7 +33,9 @@ WRITE_PERMITTED = frozenset(
 )
 
 # The tag libraries whose presence in a module makes tag writing reachable.
-TAG_LIBRARIES = frozenset({"mutagen", "soundfile", "taglib"})
+# PyAV belongs here for the same reason the others do: it opens music files
+# and it can rewrite one, so a module holding it is a module the guard reads.
+TAG_LIBRARIES = frozenset({"mutagen", "soundfile", "taglib", "av"})
 
 # The mutagen write surface. Unreachable from any module that reads tags.
 TAG_WRITE_METHODS = frozenset({"save", "delete", "add_tags", "add_picture"})
