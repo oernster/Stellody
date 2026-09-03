@@ -57,56 +57,7 @@ Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the update check reaches GitHub from inside the sandbox; the Windows
 build is untouched by either.
 
-## 2. Play the formats that need a decoder Stellody does not carry
-
-M4A is built and the backend question is answered: PyAV, so FFmpeg, chosen over
-Qt Multimedia and serving milestone 3 as well. `PacketReader` sits behind the
-same `AudioSource` the existing reader answers to, so the cue slice, the
-equalizer, the visualiser and gapless were not touched. Against the reference
-library the whole of BT's Emotional Technology now scans and groups: 21 tracks,
-titles, artist, genre and track numbers all read, no album invented and no
-unplayable finding raised for it.
-
-**What that leaves, re-measured over the reference library on 2026-09-02.** 126
-folders held nothing this build could decode; every one of them was M4A,
-1375 files. There is no WMA, Monkey's Audio, WavPack, Musepack or DSD file
-anywhere in the library, so the remaining formats are a decision about other
-people's libraries rather than about this one. They stay named in
-`UNPLAYABLE_SUFFIXES` and reported, which is the honest state until somebody
-has a library that needs them.
-
-**What is still open here is verification rather than code; it has narrowed.** An
-M4A album has now been played and heard: the screenshot on the site is BT's
-Emotional Technology partway through a track, which also settles that the tags,
-the artwork, the waveform and the rating all came through. Two of the three
-conditions below are therefore not yet answered rather than wholly unanswered:
-a seek into the middle of a track and a gapless move to the next one have not
-been watched; nor is it recorded whether the listening was done in the packaged
-build or from source. The offscreen suite cannot settle any of them;
-what it does settle is that the reader hands back the same samples the codec
-does, that a seek lands where it was asked and that a lossy file claims no bit
-depth.
-
-**The packaged build carries the decoder. It took one flag to get there.** The
-risk was carried here on the reasoning that `buildexe.py` names no packages
-explicitly and a vendored DLL directory reached through a function-level import
-is what following imports misses. A standalone build settled half of that:
-Nuitka bundles `av` with all 25 of its DLLs at 62.6 MB, so the dependency
-closure does resolve inside the bundle.
-
-The other half of the reading was wrong. The bundle then died at import with
-`ModuleNotFoundError: No module named 'av.utils'`, a submodule PyAV reaches in a
-way Nuitka does not follow, which is why an M4A played from source and did not
-play once installed. `buildexe.py` names `--include-module=av.utils` for it,
-measured against a throwaway bundle that does nothing but use PyAV: without the
-flag it fails outright, with it the same bundle decodes, seeks and resamples.
-Naming the whole package is not the alternative, since `--include-package=av`
-crashes Nuitka 4.2 with an internal assertion.
-
-Done when: an M4A album plays through in the built application, including a
-seek into the middle of a track and a gapless move to the next one.
-
-## 3. Play video files
+## 2. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -132,10 +83,12 @@ Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
-Depends on the transport the position display already built. Shares its
-backend decision with milestone 2.
+Depends on the transport the position display already built. Its backend is
+already decided: PyAV was chosen for the audio formats libsndfile cannot
+open and was chosen for this as well, so the question is answered rather
+than open. `ARCHITECTURE.md` records why.
 
-## 4. Accept the repairs the health report describes
+## 3. Accept the repairs the health report describes
 
 Built and gated; never watched. The overrides table, the third layer in
 load-time resolution, accepting at each of the three granularities, resetting
@@ -170,7 +123,7 @@ empties, survives closing Stellody and opening it again, survives a rescan, then
 resetting brings the original findings back; no music file has changed, which
 the read-only structural tests already prove.
 
-## 5. One loudness across albums
+## 4. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -216,7 +169,7 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-## 6. Make the sites findable
+## 5. Make the sites findable
 
 The markup is already there: a title and a description on every page, a
 canonical, the full Open Graph and Twitter set, `SoftwareApplication`
@@ -252,6 +205,13 @@ search for the application by name returns the site.
 
 ## Not planned, so that this is not revisited
 
+- **The formats no decoder here carries.** WMA, Monkey's Audio, WavPack,
+  Musepack and DSD stay named in `UNPLAYABLE_SUFFIXES` and reported rather than
+  played. Measured over the reference library: of the 126 folders holding
+  nothing this build could decode, every one was M4A and not one file of those
+  five existed anywhere, so writing more decoders is a decision about other
+  people's libraries rather than about this one. It reopens when somebody has a
+  library that needs it.
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as
   deliberate non-goals. The last of them is enforced by a structural test rather
   than by intention.
@@ -263,7 +223,7 @@ search for the application by name returns the site.
   address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 4 records a correction in
+- **Repairing the files themselves.** Milestone 3 records a correction in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **The album pane inserted inline after the sleeve that opened it.** That is
