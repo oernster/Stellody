@@ -47,3 +47,6 @@ FALSE = "0"
 
 # How long a finished message stays before the status line goes quiet again.
 STATUS_TIMEOUT_MS = 6000
+# How long a message about a track that would not open sits on the status
+# line. Long enough to read a sentence and short enough not to be read twice.
+UNPLAYABLE_MESSAGE_MS = 8000

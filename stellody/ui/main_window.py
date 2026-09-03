@@ -64,9 +64,6 @@ from stellody.ui.window_parts import (
 from stellody.ui.worker import ScanRunner, ScanSession
 
 # Enough frames to name the door without printing the whole interpreter.
-# How long a message about a track that would not open sits on the status
-# line. Long enough to read a sentence and short enough not to be read twice.
-UNPLAYABLE_MESSAGE_MS = 8000
 TRAIL_FRAMES = 6
 # The size the window opens at when nothing has been remembered, which is a
 # first run and a stored value that is not a number. Widened by a tenth again,
@@ -168,7 +165,6 @@ class MainWindow(
         # The one thing here that is set rather than injected: the transport
         # is built before the window that can turn a track into its album.
         transport.report_plays_to(self.count_play)
-        transport.report_failures_to(self.say_unplayable)
         self._settings = settings
         self._issues: tuple[LibraryIssue, ...] = ()
         self._quitting = False
@@ -278,18 +274,6 @@ class MainWindow(
             self._settings.get_setting,
             self._settings.set_setting,
             self,
-        )
-
-    def say_unplayable(self, track: Track, reason: str) -> None:
-        """Say on the status line that a track would not open.
-
-        A track that will not play used to do nothing whatever and say nothing
-        either, which a listener cannot tell from a press that missed. The
-        status line is where the scan already says what it could not read, so
-        it is where this belongs too.
-        """
-        self.statusBar().showMessage(
-            f"{track.title} could not be played: {reason}", UNPLAYABLE_MESSAGE_MS
         )
 
     def _set_ring_order(self) -> None:

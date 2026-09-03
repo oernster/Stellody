@@ -27,6 +27,7 @@ from stellody.ui.settings_keys import (
     SETTING_VOLUME,
     STATUS_TIMEOUT_MS,
     TRUE,
+    UNPLAYABLE_MESSAGE_MS,
 )
 from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT, MINIMUM_PERCENT
 
@@ -256,13 +257,25 @@ class Playing:
         of the port; an exception raised inside a Qt slot ends the slot in
         silence: the buttons would keep their faces and nothing would play,
         with nothing said. So it is caught here and reported.
+
+        Here is the only place it can be caught. The transport used to catch
+        it and report through a callback instead, which left this returning
+        True on a failure: the device was never given back and the caller went
+        on to say the track was playing, over the top of the message saying it
+        would not. The track is named from the transport because the one that
+        failed is not always the one somebody pressed; a track running out
+        into an unreadable next one arrives here through the poll.
         """
         try:
             action()
         except (OSError, RuntimeError, ValueError) as error:
+            failed = self._transport.current
             self._transport.stop()
             self._show_transport()
-            self.statusBar().showMessage(f"Cannot play that: {error}")
+            named = "Cannot play that"
+            if failed is not None:
+                named = f"{failed.title} could not be played"
+            self.statusBar().showMessage(f"{named}: {error}", UNPLAYABLE_MESSAGE_MS)
             return False
         self._follow_playback()
         self._show_transport()

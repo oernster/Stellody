@@ -196,7 +196,7 @@ def test_a_track_that_will_not_open_is_reported_rather_than_silent(
 
     window._player.load = refuse
     window.activate(track_index(window, 0))
-    assert "Cannot play that" in window.statusBar().currentMessage()
+    assert "Track 1 could not be played" in window.statusBar().currentMessage()
     assert "another application" in window.statusBar().currentMessage()
 
 

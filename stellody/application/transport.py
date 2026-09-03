@@ -26,7 +26,6 @@ from stellody.domain.moving import (
 from stellody.domain.playback import (
     Loudness,
     OutputRequest,
-    PlaybackError,
     PlaybackPosition,
     PlaybackState,
     RepeatMode,
@@ -41,10 +40,6 @@ from stellody.domain.track import Track
 # that has just ended may already be gone from the library that a rescan
 # rebuilt underneath it.
 PlayedOut = Callable[[Album, Track], None]
-# Told when a track would not open, with the reason in words a listener
-# can act on. Reported rather than raised: one unplayable track is not a
-# reason to take the whole transport down.
-Unplayable = Callable[[Track, str], None]
 
 
 class Transport(SoundSettings, QueueOrder):
@@ -55,7 +50,6 @@ class Transport(SoundSettings, QueueOrder):
         player: PlaybackPort,
         ordering: Ordering = scattered,
         played: PlayedOut = lambda _album, _track: None,
-        unplayable: Unplayable = lambda _track, _reason: None,
     ) -> None:
         self._player = player
         # What the device has been told to run into next. Gapless
@@ -66,7 +60,6 @@ class Transport(SoundSettings, QueueOrder):
         # is in a position to know: nothing else can see the difference
         # between a track that ended and one somebody skipped.
         self._played = played
-        self._unplayable = unplayable
         # Whether back has already been pressed and is waiting at the start of
         # the track. It is what tells a second press to leave the track; it is
         # a state rather than a stopwatch, because two presses timed against
@@ -82,15 +75,6 @@ class Transport(SoundSettings, QueueOrder):
         self._visualising = False
         self._shuffled = False
         self._repeat = RepeatMode.OFF
-
-    def report_failures_to(self, unplayable: Unplayable) -> None:
-        """Say who to tell when a track will not open.
-
-        Set after construction for the same reason plays are: whoever hears
-        this has to put it in front of somebody; that is the window, which
-        does not exist when the transport is built.
-        """
-        self._unplayable = unplayable
 
     def report_plays_to(self, played: PlayedOut) -> None:
         """Say who is told when a track plays out.
@@ -322,7 +306,16 @@ class Transport(SoundSettings, QueueOrder):
         self._following.line_up(self._queue, self._repeat, self._shuffled)
 
     def _load_current(self, playing: bool = True, waiting: bool | None = None) -> None:
-        """Open the current track and start it. Nothing to open is not a fault."""
+        """Open the current track and start it. Nothing to open is not a fault.
+
+        A track that will not open raises; the raise is the report. The caller
+        has to give the device back and say so on the status line; only the
+        caller can do either. Catching it here and telling a listener
+        through a callback looked tidier and was worse, because it left the
+        press reading as a success: the window then said the track was playing
+        and buried the one message saying it was not, with the device still
+        held open behind a track that had never started.
+        """
         track = self._queue.current
         if track is None:
             return
@@ -332,19 +325,10 @@ class Transport(SoundSettings, QueueOrder):
         # without playing it and without sitting at its beginning.
         self._waiting_at_the_start = (not playing) if waiting is None else waiting
         self._player.set_volume(self._loudness.audible)
-        try:
-            self._player.load(
-                track.source,
-                OutputRequest(sample_rate=track.sample_rate, bit_depth=track.bit_depth),
-            )
-        except PlaybackError as error:
-            # A track that will not open used to take the exception all the way
-            # out of the slot that asked for it, so the window did nothing at
-            # all and said nothing either. A file on a drive that is not there,
-            # a format this build cannot decode and a device that will not open
-            # all arrived that way. The listener is told instead.
-            self._unplayable(track, str(error))
-            return
+        self._player.load(
+            track.source,
+            OutputRequest(sample_rate=track.sample_rate, bit_depth=track.bit_depth),
+        )
         self._following.restart()
         self._line_up()
         if playing:
