@@ -362,5 +362,18 @@ class WasapiPlayback:
                 session.stream.write(self._scaled(shaped, session.dtype))
                 self._measure(shaped)
             except sounddevice.PortAudioError:
+                # A write that fails while nothing is meant to be playing is a
+                # pause landing on this thread, not a track ending. `pause`
+                # clears the resume before it stops the stream, so a feeder
+                # already past its wait writes into a stream that has just
+                # been stopped and PortAudio refuses it. Calling that an
+                # ending is what made a paused track unresumable: `play`
+                # declines to start a finished session, so the press did
+                # nothing. The poll then gave the device back, which left the
+                # press after it reloading the track from its beginning.
+                # The block in hand is dropped rather than kept, being the one
+                # the device was refusing anyway.
+                if not session.resume.is_set():
+                    continue
                 session.finished.set()
                 session.resume.clear()
