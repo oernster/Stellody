@@ -68,7 +68,7 @@ def test_a_year_on_its_own_is_left_as_it_is() -> None:
 def test_the_rest_of_the_row_is_unchanged() -> None:
     detail = _detail(ISO_INSTANT)
     assert GENRE in detail
-    assert "1 tracks" in detail
+    assert "1 track" in detail
 
 
 def test_no_date_at_all_leaves_the_row_without_one() -> None:

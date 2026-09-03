@@ -16,6 +16,9 @@ from stellody.domain.track import Track
 from stellody.ui.nodes import Node
 
 MILLISECONDS_PER_SECOND = 1000
+# One of a thing is the only count that reads singular; it is also the count a
+# second disc has to be told from.
+ONE = 1
 SECONDS_PER_MINUTE = 60
 MINUTES_PER_HOUR = 60
 
@@ -41,6 +44,15 @@ def format_duration(milliseconds: int) -> str:
     return f"{minutes}:{seconds:02d}"
 
 
+def _counted(count: int, thing: str) -> str:
+    """`count` of `thing`, kept singular where there is only one of them.
+
+    A row reading "1 tracks" was on the site's own screenshot of the list
+    view, since both counts here were written plural whatever they held.
+    """
+    return f"{count} {thing}" if count == ONE else f"{count} {thing}s"
+
+
 def _album_text(album: Album, column: Column) -> str:
     """One cell of an album row."""
     if column is Column.TITLE:
@@ -54,9 +66,9 @@ def _album_text(album: Album, column: Column) -> str:
     # :00:00Z", neither of which belongs in a row beside a genre.
     year = year_of(album.identity.date)
     parts = [part for part in (str(year) if year else "", album.genre) if part]
-    parts.append(f"{album.track_count} tracks")
-    if album.disc_count > 1:
-        parts.append(f"{album.disc_count} discs")
+    parts.append(_counted(album.track_count, "track"))
+    if album.disc_count > ONE:
+        parts.append(_counted(album.disc_count, "disc"))
     return "  ".join(parts)
 
 
@@ -65,7 +77,7 @@ def _disc_text(disc: Disc, column: Column) -> str:
     if column is Column.TITLE:
         return f"Disc {disc.number}"
     if column is Column.DETAIL:
-        return f"{len(disc.tracks)} tracks"
+        return _counted(len(disc.tracks), "track")
     if column is Column.LENGTH:
         return format_duration(disc.duration_ms)
     return ""
@@ -93,7 +105,7 @@ def detail_text(known: str, plays: int) -> str:
     """
     if plays == 0:
         return known
-    counted = f"{plays} play" + ("" if plays == 1 else "s")
+    counted = _counted(plays, "play")
     return f"{known}  {counted}" if known else counted
 
 
