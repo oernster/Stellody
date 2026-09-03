@@ -75,12 +75,17 @@ people's libraries rather than about this one. They stay named in
 `UNPLAYABLE_SUFFIXES` and reported, which is the honest state until somebody
 has a library that needs them.
 
-**What is still open here is verification, not code.** It has not been played
-through in the built application; the offscreen suite cannot settle that:
-what it can settle is that the reader hands back the same samples the codec
+**What is still open here is verification rather than code; it has narrowed.** An
+M4A album has now been played and heard: the screenshot on the site is BT's
+Emotional Technology partway through a track, which also settles that the tags,
+the artwork, the waveform and the rating all came through. Two of the three
+conditions below are therefore not yet answered rather than wholly unanswered:
+a seek into the middle of a track and a gapless move to the next one have not
+been watched; nor is it recorded whether the listening was done in the packaged
+build or from source. The offscreen suite cannot settle any of them;
+what it does settle is that the reader hands back the same samples the codec
 does, that a seek lands where it was asked and that a lossy file claims no bit
-depth, all of which it does. Everything that has to be heard rather than
-measured remains unheard.
+depth.
 
 **The packaged build carries the decoder. It took one flag to get there.** The
 risk was carried here on the reasoning that `buildexe.py` names no packages
