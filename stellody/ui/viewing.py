@@ -174,14 +174,25 @@ class Viewing:
 
     @Slot()
     def play_shown_album(self) -> None:
-        """Play the open album from its first track; pause while one plays.
+        """Answer exactly as the tray's button does; start the album from nothing.
 
-        The button wears the pause face at that point; a press on a pause
-        button is asking to stop rather than to go somewhere else. That is the
-        rule the tray's play button already follows, which this one doubles.
+        This button doubles the tray's, so a press has to mean the same thing
+        on both. It did not. Where a track was loaded and paused, the tray
+        resumed while this one started the open album from its first track,
+        which is a reload: it was reported as a paused track beginning again,
+        because that is exactly what a listener sees when the paused track was
+        the first one.
+
+        So anything with a track loaded is handed to the one method that
+        decides what a play press means, pausing included, since the button
+        wears the pause face then and a press on a pause face asks to stop
+        rather than to go somewhere else. Starting the open album is what is
+        left, which is the only thing this button could mean with nothing
+        loaded at all. That is also the one place it may differ from the tray,
+        since the tray has no album to be attached to.
         """
-        if self._transport.playing:
-            self._drive(self._transport.toggle)
+        if self._transport.current is not None:
+            self.toggle_playback()
             return
         album = self._shown_album
         if album is None:
