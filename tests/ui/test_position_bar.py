@@ -10,8 +10,8 @@ never takes the handle away from somebody holding it.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtCore import QEvent, QPointF, Qt
-from PySide6.QtGui import QMouseEvent
+from mouse_support import press_at
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtWidgets import QApplication
 
 from stellody.domain.playback import PlaybackPosition
@@ -131,13 +131,7 @@ def test_clicking_the_groove_goes_there_rather_than_nudging_a_page(bar) -> None:
     """
     bar.show_position(_at(0))
     bar.show()
-    click = QMouseEvent(
-        QEvent.Type.MouseButtonPress,
-        QPointF(bar.slider.width() * 3 / 4, bar.slider.height() / 2),
-        Qt.MouseButton.LeftButton,
-        Qt.MouseButton.LeftButton,
-        Qt.KeyboardModifier.NoModifier,
-    )
+    click = press_at(QPointF(bar.slider.width() * 3 / 4, bar.slider.height() / 2))
     bar.slider.mousePressEvent(click)
     assert bar.slider.value() > GROOVE_STEPS // 2, "it went where it was clicked"
     bar.hide()
@@ -148,12 +142,9 @@ def test_a_click_that_is_not_the_left_button_is_left_to_qt(bar) -> None:
     bar.show_position(_at(0))
     bar.show()
     before = bar.slider.value()
-    click = QMouseEvent(
-        QEvent.Type.MouseButtonPress,
+    click = press_at(
         QPointF(bar.slider.width() * 3 / 4, bar.slider.height() / 2),
         Qt.MouseButton.RightButton,
-        Qt.MouseButton.RightButton,
-        Qt.KeyboardModifier.NoModifier,
     )
     bar.slider.mousePressEvent(click)
     assert bar.slider.value() == before

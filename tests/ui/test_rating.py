@@ -10,7 +10,8 @@ from __future__ import annotations
 import pytest
 from conftest import RecordingPlayer
 from library_support import ART, PLANETS, SIMPLE
-from PySide6.QtCore import QModelIndex, Qt
+from mouse_support import press_at
+from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
@@ -171,18 +172,9 @@ class TestTheStarsThemselves:
     def _pressed(self, stars: StarRating, position: int) -> None:
         """A press in the middle of one star, counting from nought."""
         from PySide6.QtCore import QPointF
-        from PySide6.QtGui import QMouseEvent
 
         x = PANEL_MARGIN_PX + position * (STAR_PX + STAR_GAP_PX) + STAR_PX / 2
-        stars.mousePressEvent(
-            QMouseEvent(
-                QMouseEvent.Type.MouseButtonPress,
-                QPointF(x, stars.height() / 2),
-                Qt.MouseButton.LeftButton,
-                Qt.MouseButton.LeftButton,
-                Qt.KeyboardModifier.NoModifier,
-            )
-        )
+        stars.mousePressEvent(press_at(QPointF(x, stars.height() / 2)))
 
     def test_pressing_the_third_star_is_three(self, application: QApplication) -> None:
         stars = StarRating()

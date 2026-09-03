@@ -43,6 +43,9 @@ class StoppedStreamRefuses:
     def __init__(self) -> None:
         self.blocks: list[np.ndarray] = []
         self.running = False
+        # Set to fail a write while the stream is still running, which is a
+        # device going away underneath playback rather than a pause.
+        self.broken = False
 
     def start(self) -> None:
         """Accept writes again."""
@@ -62,6 +65,8 @@ class StoppedStreamRefuses:
         """
         if not self.running:
             raise sounddevice.PortAudioError("Stream is stopped")
+        if self.broken:
+            raise sounddevice.PortAudioError("Device unavailable")
         time.sleep(block.shape[0] / RATE)
         if not self.running:
             raise sounddevice.PortAudioError("Stream stopped during the write")
@@ -145,5 +150,50 @@ class TestAPauseLandingOnTheFeeder:
             player.play()
             time.sleep(SETTLE)
             assert player.position().frame > held
+        finally:
+            player.stop()
+
+
+class TestADeviceThatFailsWhilePlaying:
+    """The other side of the same branch, which nothing used to exercise.
+
+    A write refused while the resume is still set is the device going away
+    rather than a listener holding the track, so it does end playback. Without
+    a test the fix above could be widened to swallow every failure and no gate
+    would notice the track had stopped being able to end at all.
+    """
+
+    def test_the_track_ends(self, tmp_path) -> None:
+        stream = StoppedStreamRefuses()
+        player = WasapiPlayback(opener=_opener(stream))
+        try:
+            player.load(
+                TrackSource(path=_long_track(tmp_path)),
+                OutputRequest(RATE, 16),
+            )
+            player.play()
+            time.sleep(SETTLE)
+            stream.broken = True
+            time.sleep(SETTLE)
+            assert player.finished is True
+        finally:
+            player.stop()
+
+    def test_it_stops_asking_for_blocks(self, tmp_path) -> None:
+        """A feeder spinning on a dead device would burn a core."""
+        stream = StoppedStreamRefuses()
+        player = WasapiPlayback(opener=_opener(stream))
+        try:
+            player.load(
+                TrackSource(path=_long_track(tmp_path)),
+                OutputRequest(RATE, 16),
+            )
+            player.play()
+            time.sleep(SETTLE)
+            stream.broken = True
+            time.sleep(SETTLE)
+            written = len(stream.blocks)
+            time.sleep(SETTLE)
+            assert len(stream.blocks) == written
         finally:
             player.stop()
