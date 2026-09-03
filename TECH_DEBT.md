@@ -13,31 +13,7 @@ which is why the two sections at the foot carry no numbers. A resolved item is
 deleted outright rather than marked done: technical-debt history is not
 technical debt. What a resolution was worth is recorded in the release notes.
 
-## 1. The dependency floors do not pin a packaged build
-
-`requirements.txt` names floors throughout: `PySide6>=6.7`, `av>=15.0`,
-`numpy>=1.26` and so on. Two people building the installer a month apart can
-therefore ship different binaries from the same commit; a release cannot be
-rebuilt as it was.
-
-The cost is not hypothetical here. The application is compiled by Nuitka with
-`--include-module=av.utils`, a flag that exists because of how one version of
-PyAV reaches one submodule; a PySide6 or PyAV release that changes its import
-shape would be picked up silently by the next build rather than by a change
-anybody made. The gate would stay green throughout, since the suite runs against
-whatever the venv happens to hold.
-
-What it is blocked on is an owner decision rather than effort, because the two
-answers are both defensible and they are not the same answer:
-
-- **Pin the runtime and keep the floors for development.** A second file, else
-  `==` in `requirements.txt` with `requirements-dev.txt` left loose, so a build
-  is reproducible while a working copy still picks up fixes.
-- **Leave it.** Floors are what the rest of the portfolio uses; a desktop
-  application with no server to match is the case where drift costs least.
-
-A structural test already refuses to run anywhere but the project's own venv,
-so whichever is chosen, the environment cannot quietly become someone else's.
+There is no open technical debt.
 
 ## Looks like debt, not worth touching
 

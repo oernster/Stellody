@@ -7,11 +7,16 @@ for the listener and succeeded for every test. The whole gate reported green,
 the suite could have caught it, because the suite was not running on the
 machine that was broken.
 
-Two assertions close it. The first says the checks run in the project's own
+Three assertions close it. The first says the checks run in the project's own
 environment rather than whichever interpreter happened to be on the path. The
 second says everything the project declares is actually installed there, so a
 requirement added to the file and never installed fails here, naming itself,
 rather than surfacing as a feature that quietly does nothing.
+
+The third says the versions match. The runtime is pinned so that a build of one
+commit is the same build whenever it is made; a pin nothing checks is a comment,
+since an environment holding a different version reads exactly as green while
+being the environment the pin exists to rule out.
 """
 
 from __future__ import annotations
@@ -28,18 +33,42 @@ REQUIREMENTS = PROJECT_ROOT / "requirements.txt"
 
 # Where a requirement's name stops and its version constraint begins.
 CONSTRAINTS = "<>=!~;[ "
+# What an exact pin is written as, against which a floor is ">=".
+PIN = "=="
 
 
-def _declared() -> tuple[str, ...]:
-    """Every distribution named in requirements.txt, without its constraints."""
-    names = []
+def _requirements() -> tuple[str, ...]:
+    """Every requirement line in the file, comments and includes dropped."""
+    lines = []
     for line in REQUIREMENTS.read_text(encoding="utf-8").splitlines():
         text = line.strip()
         if not text or text.startswith(("#", "-")):
             continue
-        cut = min((text.find(mark) for mark in CONSTRAINTS if mark in text), default=-1)
-        names.append(text if cut < 0 else text[:cut])
-    return tuple(names)
+        lines.append(text)
+    return tuple(lines)
+
+
+def _name_of(requirement: str) -> str:
+    """The distribution a requirement names, without its constraint."""
+    cut = min(
+        (requirement.find(mark) for mark in CONSTRAINTS if mark in requirement),
+        default=-1,
+    )
+    return requirement if cut < 0 else requirement[:cut]
+
+
+def _declared() -> tuple[str, ...]:
+    """Every distribution named in requirements.txt, without its constraints."""
+    return tuple(_name_of(line) for line in _requirements())
+
+
+def _pinned() -> tuple[tuple[str, str], ...]:
+    """Each distribution pinned with `==`, as (name, exact version)."""
+    return tuple(
+        (_name_of(line), line.split(PIN, 1)[1].strip())
+        for line in _requirements()
+        if PIN in line
+    )
 
 
 def test_the_suite_runs_in_the_projects_own_environment() -> None:
@@ -77,4 +106,26 @@ def test_everything_declared_is_installed_here() -> None:
         "requirements.txt names packages that are not installed in "
         f"{sys.prefix}: {', '.join(missing)}. Install them with "
         "python -m pip install -r requirements.txt"
+    )
+
+
+def test_every_pin_is_the_version_installed() -> None:
+    """A pin nothing checks is a comment.
+
+    The runtime is pinned so a build of one commit is the same build whenever
+    it is made. An environment holding a different version reads exactly as
+    green otherwise, while being the environment the pin exists to rule out.
+    """
+    wrong = []
+    for name, wanted in _pinned():
+        try:
+            held = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            continue
+        if held != wanted:
+            wrong.append(f"{name} is {held} where requirements.txt pins {wanted}")
+    assert not wrong, (
+        "the environment does not match the pinned runtime: "
+        + "; ".join(wrong)
+        + ". Install it with python -m pip install -r requirements.txt"
     )

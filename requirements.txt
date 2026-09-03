@@ -1,6 +1,14 @@
-PySide6>=6.7
-mutagen>=1.47
-numpy>=1.26
-soundfile>=0.12
-av>=15.0
-sounddevice>=0.4
+# The runtime, pinned. A build of one commit has to be the same build whenever
+# it is made, which a floor cannot promise: the packaged application names a
+# Nuitka flag for the way one version of PyAV reaches one submodule, while the
+# suite runs against whatever the environment happens to hold, so a release
+# picking up a new PySide6 or PyAV by itself would be a change nobody made.
+# The development tools keep their floors in requirements-dev.txt, which reads
+# this file first, so the runtime is pinned there too.
+# A structural test asserts the installed versions match these exactly.
+PySide6==6.11.2
+mutagen==1.48.1
+numpy==2.5.2
+soundfile==0.14.0
+av==18.1.0
+sounddevice==0.5.6
