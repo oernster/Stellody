@@ -82,15 +82,21 @@ does, that a seek lands where it was asked and that a lossy file claims no bit
 depth, all of which it does. Everything that has to be heard rather than
 measured remains unheard.
 
-**The packaged build carries the decoder; measured, not assumed.** It was
-carried here as a risk, on the reasoning that `buildexe.py` names no packages
+**The packaged build carries the decoder. It took one flag to get there.** The
+risk was carried here on the reasoning that `buildexe.py` names no packages
 explicitly and a vendored DLL directory reached through a function-level import
-is what following imports misses. A standalone build settled it and the
-reasoning was wrong: Nuitka bundles `av` with all 25 of its DLLs at 62.6 MB; the whole
-dependency closure resolves inside the bundle. Since `av` is imported
-by exactly one module and that module is reached only through the import inside
-`open_source`, the bundle is itself the proof that the import was followed. No
-build flags are needed and none were added.
+is what following imports misses. A standalone build settled half of that:
+Nuitka bundles `av` with all 25 of its DLLs at 62.6 MB, so the dependency
+closure does resolve inside the bundle.
+
+The other half of the reading was wrong. The bundle then died at import with
+`ModuleNotFoundError: No module named 'av.utils'`, a submodule PyAV reaches in a
+way Nuitka does not follow, which is why an M4A played from source and did not
+play once installed. `buildexe.py` names `--include-module=av.utils` for it,
+measured against a throwaway bundle that does nothing but use PyAV: without the
+flag it fails outright, with it the same bundle decodes, seeks and resamples.
+Naming the whole package is not the alternative, since `--include-package=av`
+crashes Nuitka 4.2 with an internal assertion.
 
 Done when: an M4A album plays through in the built application, including a
 seek into the middle of a track and a gapless move to the next one.
