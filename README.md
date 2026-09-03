@@ -130,6 +130,8 @@ Everything above is the product. What follows is the code.
 
 `ARCHITECTURE.md` states the invariants first, each linked to the test that
 enforces it. `PLAN.md` holds the open work plus what is deliberately excluded.
+`TECH_DEBT.md` says what is still open internally, what is deliberately left
+and what only looks like debt.
 
 ## Running from source
 
