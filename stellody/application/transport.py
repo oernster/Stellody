@@ -66,6 +66,11 @@ class Transport(SoundSettings, QueueOrder):
         # each other made the user hammer the button to land two inside the
         # window.
         self._waiting_at_the_start = False
+        # Whether the listener is sitting on this track rather than hearing it.
+        # A device reports an ending and a hold the same way, since the feeder
+        # clears the same flag for both, so the difference is remembered here
+        # by the layer that knows which of the two was asked for.
+        self._held = False
         self._queue = Queue()
         self._album: Album | None = None
         self._album_order: tuple[Track, ...] = ()
@@ -132,9 +137,11 @@ class Transport(SoundSettings, QueueOrder):
         """
         self._waiting_at_the_start = False
         if self._player.state is PlaybackState.PLAYING:
+            self._held = True
             self._player.pause()
             return
         if self._player.state is PlaybackState.PAUSED:
+            self._held = False
             self._player.play()
             return
         self._load_current()
@@ -272,7 +279,18 @@ class Transport(SoundSettings, QueueOrder):
         two are different questions asked through the same door: an ending is
         what repeat is about, while pressing Next is a listener overruling it.
         Only the first of them replays the track.
+
+        **A track the listener paused is not a track that ended.** The device
+        cannot tell the two apart: the feeder clears the same flag whichever
+        it is, so a hold reports itself exactly as an ending does.
+        Acting on that turned a pause into an ending at the next poll a quarter
+        of a second later: on the last track of a queue it gave the device
+        back, so the press that should have resumed reloaded the track from its
+        beginning instead; in the middle of one it moved silently to the next
+        track while the listener was still sitting on this one.
         """
+        if self._held:
+            return False
         crossed = self._following.crossed()
         if crossed is not None:
             self._report_played()
@@ -324,6 +342,7 @@ class Transport(SoundSettings, QueueOrder):
         # that knows better says so: skipping while paused opens a track
         # without playing it and without sitting at its beginning.
         self._waiting_at_the_start = (not playing) if waiting is None else waiting
+        self._held = not playing
         self._player.set_volume(self._loudness.audible)
         self._player.load(
             track.source,
