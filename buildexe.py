@@ -124,6 +124,15 @@ def command(version: str, onefile: bool) -> list[str]:
         "--onefile" if onefile else "--standalone",
         "--assume-yes-for-downloads",
         "--enable-plugin=pyside6",
+        # PyAV reaches this submodule at import time in a way Nuitka does not
+        # follow, so a standalone build carries every one of its DLLs and then
+        # dies on "No module named 'av.utils'" the first time a track needs
+        # decoding. Measured by building a bundle that does nothing but import
+        # av: without this it fails outright, with it the same bundle decodes,
+        # seeks and resamples a real file. The whole package cannot be named
+        # instead, since --include-package=av crashes Nuitka 4.2 with an
+        # internal assertion.
+        "--include-module=av.utils",
         f"--jobs={jobs()}",
         f"--windows-console-mode={console_mode()}",
         f"--output-dir={PAYLOAD_DIR}",
