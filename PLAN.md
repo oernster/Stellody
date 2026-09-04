@@ -193,8 +193,6 @@ What is left is the part that moves it:
 - **Put `lastmod` in the sitemap.** Visible dates are forbidden on these sites;
   machine metadata is exempt, so this is the only signal a sitemap carries
   beyond the list of URLs.
-- **Link to it from the hub.** `ernster.dev` has never listed Stellody, so the
-  site has no inbound link from the one place certain to give it one.
 
 Every page change lands in `docs/` and reaches `stellody.com` on its own
 through the mirror workflow, so this is one repository's work.

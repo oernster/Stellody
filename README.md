@@ -140,6 +140,14 @@ python -m pip install -r requirements-dev.txt
 python main.py
 ```
 
+**The runtime is pinned; the tools are not.** `requirements.txt` names exact
+versions, because a build of one commit has to be the same build whenever it is
+made. `requirements-dev.txt` reads it before adding black, flake8, ruff, pytest
+and Nuitka, which keep their floors, since a linter moving forward changes the
+checks rather than what is shipped. Upgrading a pinned package therefore fails
+the suite until the pin is moved to match, naming the package and both versions;
+that is the guard working rather than a fault.
+
 ## Tests
 
 ```
