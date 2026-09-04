@@ -8,6 +8,11 @@ Picking a sleeve opens the album underneath the grid rather than replacing
 the grid, so the sleeves a listener was looking through stay where they were.
 Pressing that sleeve again rolls the pane back up, which is the gesture that
 opened it asked to undo itself. The pane's own close button does the same.
+
+A switch between the two carries the track the view being left was pointing
+at, so the other one arrives where it would have been had the listener taken
+that route in the first place: the album opened under the sleeves; else the
+row in the tree with its album opened above it.
 """
 
 from __future__ import annotations
@@ -118,12 +123,59 @@ class Viewing:
         what the change means for anything else. Expanding and collapsing are
         offered only where there is nesting to do them to.
         """
+        carried = self._carried_track()
         self._library.setCurrentIndex(1 if covers else 0)
         self._tray.set_showing_covers(covers)
         self._settings.set_setting(SETTING_COVERS, TRUE if covers else FALSE)
         self.show_nesting_actions(not covers)
         if not covers:
             self.close_album()
+        self._carry_to_view(carried)
+
+    def _carried_track(self) -> Track | None:
+        """What the view being left was pointing at; what is playing otherwise.
+
+        Only the view on show follows the transport, so the other one knows
+        nothing about what is playing: a switch used to arrive at a grid with
+        no album open under it at all. Reading the highlight rather than the
+        transport is what keeps a listener who has browsed away from being
+        dragged back to the music by the act of changing view, while still
+        landing on it in the ordinary case, where the two are the same track.
+        """
+        pointed = self._model.track_at(self.highlighted())
+        if pointed is not None:
+            return pointed
+        return self._transport.current
+
+    def _carry_to_view(self, track: Track | None) -> None:
+        """Point the view now on show at that track, by its own route.
+
+        The grid holds its highlight inside the album opened beneath it, so
+        the album has to be opened before there is anywhere to put one; the
+        pane refuses a track of any other album, which is what would otherwise
+        make this quietly do nothing.
+        """
+        if track is None:
+            return
+        where = self._model.index_for(track)
+        if not where.isValid():
+            return
+        if self.showing_covers:
+            # Picked rather than opened outright, so the arrival is the same
+            # gesture a listener's own would have been: the grid travels to
+            # the sleeve and `_on_album_picked` opens the album under it.
+            # Opening it directly leaves the sleeve wherever the grid was
+            # last scrolled to, which is an album open under sleeves that are
+            # not it.
+            self._grid.setCurrentIndex(self._album_over(where))
+        self._show_highlight(where)
+
+    def _album_over(self, where: QModelIndex) -> QModelIndex:
+        """The album row a track sits under, however deep a disc puts it."""
+        above = where.parent()
+        while above.parent().isValid():
+            above = above.parent()
+        return above
 
     def restore_view(self) -> None:
         """Start in the view last chosen, the list when none has been."""
