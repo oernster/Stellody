@@ -6,7 +6,7 @@ import pathlib
 import sys
 
 APP_NAME = "Stellody"
-APP_TAGLINE = "A calm, local-first FLAC music player."
+APP_TAGLINE = "A calm, local-first music player."
 APP_AUTHOR = "Oliver Ernster"
 # Fixed rather than read from the clock. A copyright year that moves with the
 # machine's date is a claim about nothing; it would also make two machines
