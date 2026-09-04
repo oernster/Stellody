@@ -322,6 +322,7 @@ class MainWindow(
         self._note(f"window shown, first time: {not self._started} <- {_trail()}")
         if not self._started:
             self._started = True
+            self.fit_on_screen()
             self._neutral.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def hideEvent(self, event) -> None:

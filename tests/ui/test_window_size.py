@@ -30,6 +30,8 @@ from stellody.ui.settings_keys import (
 
 ROOMY_WIDTH_PX = 2560
 ROOMY_HEIGHT_PX = 1440
+# Narrower than the window those two describe, so its content overhangs.
+CRAMPED_WIDTH_PX = 1800
 
 
 class RoomyScreen:
@@ -175,4 +177,58 @@ class TestASizeThatCannotBeUsed:
         made = window(store)
         assert made.size().width() == 1600
         assert made.size().height() == 910
+        made.close()
+
+
+class CrampedScreen:
+    """A screen the restored content is deliberately too wide for.
+
+    The real fault cannot be reached offscreen at all, since that platform
+    draws no window frame: what put the content past the edge on Windows was
+    eight pixels a side of resize border that Qt reports as nothing. So the
+    overhang is stated here instead, by giving the window a screen it does not
+    fit on, which is the same condition `fit_on_screen` answers.
+    """
+
+    def availableGeometry(self) -> QRect:
+        """Narrower than the window this module builds."""
+        return QRect(0, 0, CRAMPED_WIDTH_PX, ROOMY_HEIGHT_PX)
+
+
+class TestContentThatWouldSitPastTheEdge:
+    def test_a_window_wider_than_its_screen_opens_maximised(
+        self, application, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The measured fault: content as wide as the screen overhangs it.
+
+        A window restored at the width of the monitor is not maximised, so its
+        frame is added OUTSIDE the size asked for and the content lands past
+        the edge, taking the right-most control's focus ring with it.
+        """
+        monkeypatch.setattr(Geometry, "_usable_screen", lambda self: RoomyScreen())
+        store = RememberingStore(
+            {
+                SETTING_WINDOW_WIDTH: str(ROOMY_WIDTH_PX),
+                SETTING_WINDOW_HEIGHT: str(ROOMY_HEIGHT_PX),
+            }
+        )
+        made = window(store)
+        monkeypatch.setattr(Geometry, "_usable_screen", lambda self: CrampedScreen())
+        made.show()
+        application.processEvents()
+        assert made.isMaximized()
+        made.close()
+
+    def test_a_window_that_fits_is_left_exactly_as_it_was(
+        self, application, roomy
+    ) -> None:
+        """The guard answers an overhang; it has no opinion about anything else."""
+        store = RememberingStore(
+            {SETTING_WINDOW_WIDTH: "1600", SETTING_WINDOW_HEIGHT: "910"}
+        )
+        made = window(store)
+        made.show()
+        application.processEvents()
+        assert not made.isMaximized()
+        assert made.size().width() == 1600
         made.close()
