@@ -37,7 +37,7 @@ made a stray text file read as a missing album once already.
 **Infrastructure and the interface sit outside the coverage gate.** The gate is
 100% branch over `stellody.domain` and `stellody.application`, the layers
 reachable with no filesystem, no clock and no audio device. The rest is measured
-and not gated, currently 92% over everything. That is a decision recorded in
+and not gated, currently 94% over everything. That is a decision recorded in
 `ARCHITECTURE.md`, not an omission: a gate over code needing a real device, a
 real library and the Windows shell would either be a number nobody can hold or a
 suite full of mocks standing in for the very things worth testing.
