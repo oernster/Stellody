@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 import soundfile
 
-from stellody.domain.waveform import BUCKETS, SILENCE, Envelope
+from stellody.domain.waveform import SILENCE, Envelope, buckets_for
 from stellody.infrastructure.waveform import (
     LEVEL_PLACES,
     PROGRESS_SECONDS,
@@ -70,9 +70,10 @@ def test_the_shape_follows_the_music(cache, tmp_path) -> None:
     audio = _two_halves(tmp_path / "halves.flac")
     shape = FileWaveforms(cache).measure(str(audio))
     assert shape is not None
-    assert shape.buckets == BUCKETS
-    early = shape.levels[BUCKETS // 4]
-    late = shape.levels[BUCKETS * 3 // 4]
+    buckets = buckets_for(SAMPLE_RATE * SECONDS, SAMPLE_RATE)
+    assert shape.buckets == buckets
+    early = shape.levels[buckets // 4]
+    late = shape.levels[buckets * 3 // 4]
     assert early == pytest.approx(QUIET, abs=0.01)
     assert late == pytest.approx(LOUD, abs=0.01)
 
@@ -279,8 +280,9 @@ def test_the_bucket_being_read_may_fall_before_it_settles(cache, tmp_path) -> No
     offer_at = READ_FRAMES
     while offer_at < SAMPLE_RATE * PROGRESS_SECONDS:
         offer_at += READ_FRAMES
-    bucket = offer_at * BUCKETS // frames
-    ends_at = (bucket + 1) * frames // BUCKETS
+    buckets = buckets_for(frames, SAMPLE_RATE)
+    bucket = offer_at * buckets // frames
+    ends_at = (bucket + 1) * frames // buckets
     audio = tmp_path / "straddle.flac"
     samples = np.full((frames, 1), QUIET, dtype="float32")
     samples[: (offer_at + ends_at) // 2] = LOUD
@@ -307,7 +309,7 @@ def test_one_loud_sample_does_not_make_a_bucket_loud(cache, tmp_path) -> None:
     """
     frames = SAMPLE_RATE * SECONDS_TO_STRADDLE
     samples = np.full((frames, 1), QUIET, dtype="float32")
-    per_bucket = frames // BUCKETS
+    per_bucket = frames // buckets_for(frames, SAMPLE_RATE)
     samples[::per_bucket] = 1.0
     audio = tmp_path / "spikes.flac"
     soundfile.write(str(audio), samples, SAMPLE_RATE)

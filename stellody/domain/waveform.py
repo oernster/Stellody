@@ -12,14 +12,13 @@ track then takes the part of it that belongs to that track, which is why
 
 A bucket holds how LOUD that stretch of the file is, as the root mean square
 of its samples, on a scale where 1.0 is full scale. It held the loudest single
-sample once; that was measured to be no shape at all. A bucket is a file
-divided by two thousand, some 120 milliseconds, so the loudest sample in any
-120 milliseconds carrying a drum or a sustained note sits within a few percent
-of the whole track's peak. Measured over three unlike records, a peak envelope
-drawn against its own loudest point put more than half of every track at 90
-percent of full height and about 40 percent of it at 99. That is a clipping
-detector rather than a waveform; it says the same thing about a gentle 1998
-record as about a loud remaster.
+sample once; that was measured to be no shape at all. A bucket is a tenth of
+a second, so the loudest sample in any bucket carrying a drum or a sustained
+note sits within a few percent of the whole track's peak. Measured over three
+unlike records, a peak envelope drawn against its own loudest point put more
+than half of every track at 90 percent of full height and about 40 percent of
+it at 99. That is a clipping detector rather than a waveform; it says the same
+thing about a gentle 1998 record as about a loud remaster.
 
 Loudness answers what the drawing is for: where the quiet passage is and where
 the piece opens out. The same three records measure to a median of 0.47 to 0.68
@@ -32,13 +31,39 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# How many buckets a whole file is measured into. Wide enough that a window
-# stretched across a large display still has more than one bucket per column,
-# small enough that the measurement of a long file stays a few kilobytes.
-BUCKETS = 2000
+# How much of the music one bucket covers. A bar two thousand pixels wide
+# showing a three and a half minute track then has one bucket per pixel, which
+# is as fine as a drawing can use.
+BUCKET_MILLISECONDS = 100
+# The fewest buckets any file is measured into, however short it is. A thirty
+# second file at the resolution above would be three hundred buckets drawn as
+# blocks seven pixels wide; a short file is cheap to measure finely, so it is.
+LEAST_BUCKETS = 2000
+# The most, so one record cannot run away with the cache. A hundred minutes of
+# audio reaches it; past that the resolution eases rather than the file being
+# refused; a file that long is one recording rather than an album.
+MOST_BUCKETS = 60_000
+MILLISECONDS_A_SECOND = 1000
 
 FULL_SCALE = 1.0
 SILENCE = 0.0
+
+
+def buckets_for(frames: int, sample_rate: int) -> int:
+    """How many buckets a source of this length is measured into.
+
+    A fixed count was the first answer and it is wrong for a cue-sheet album,
+    which is one file holding a whole record: measured on a 55.7 minute FLAC
+    of nine tracks, two thousand buckets is 1671 milliseconds each, so one
+    track took 120 of them and drew as blocks seventeen pixels wide. The
+    resolution belongs to the music rather than to the file, so it is stated in
+    time and the count follows from how much music there is.
+    """
+    if frames <= 0 or sample_rate <= 0:
+        return LEAST_BUCKETS
+    span = frames * MILLISECONDS_A_SECOND // sample_rate
+    wanted = span // BUCKET_MILLISECONDS
+    return max(LEAST_BUCKETS, min(MOST_BUCKETS, wanted))
 
 
 @dataclass(frozen=True, slots=True)

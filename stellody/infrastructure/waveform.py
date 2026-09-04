@@ -24,7 +24,7 @@ import pathlib
 import numpy as np
 
 from stellody.domain.track import TrackSource
-from stellody.domain.waveform import BUCKETS, Envelope, envelope_from
+from stellody.domain.waveform import Envelope, buckets_for, envelope_from
 from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
 
 # Frames per read. Large enough that a long file is not thousands of calls,
@@ -39,8 +39,10 @@ PROGRESS_SECONDS = 5
 CACHE_SUFFIX = ".json"
 # Bumped when a kept record stops meaning what it used to. Version 1 held the
 # loudest sample in each bucket; a record of those drawn as loudness would be
-# the old shape wearing the new name, so every one is measured again.
-FORMAT_VERSION = 2
+# the old shape wearing the new name. Version 2 measured every file into the
+# same number of buckets, which made a bucket of a cue-sheet album most of two
+# seconds; the count follows the length of the music now.
+FORMAT_VERSION = 3
 LEVEL_PLACES = 4
 
 
@@ -81,17 +83,20 @@ def _fold_block(
     the block after it, so a bucket's mean cannot be known until every block
     that touches it has been folded in.
     """
-    index = (np.arange(seen, seen + square.shape[0]) * BUCKETS) // frames
-    np.clip(index, 0, BUCKETS - 1, out=index)
-    sums += np.bincount(index, weights=square, minlength=BUCKETS)
-    counts += np.bincount(index, minlength=BUCKETS)
+    buckets = sums.shape[0]
+    index = (np.arange(seen, seen + square.shape[0]) * buckets) // frames
+    np.clip(index, 0, buckets - 1, out=index)
+    sums += np.bincount(index, weights=square, minlength=buckets)
+    counts += np.bincount(index, minlength=buckets)
 
 
 def _kept(levels: tuple[float, ...]) -> tuple[float, ...]:
     """Levels at the precision a record holds, which is what is drawn.
 
-    Four places is finer than a display can show and keeps the record small;
-    a whole file measures to a few kilobytes.
+    Four places is finer than a display can show and keeps the record small.
+    The size follows the length of the file, since the resolution does: a few
+    minutes of music measures to about sixteen kilobytes, a 55.7 minute cue
+    sheet album holding nine tracks to 224.
     """
     return tuple(round(level, LEVEL_PLACES) for level in levels)
 
@@ -174,8 +179,9 @@ class FileWaveforms:
         a decode can be stopped without leaving the reader half way through
         something.
         """
-        sums = np.zeros(BUCKETS)
-        counts = np.zeros(BUCKETS, dtype=np.int64)
+        buckets = buckets_for(frames, reader.sample_rate)
+        sums = np.zeros(buckets)
+        counts = np.zeros(buckets, dtype=np.int64)
         step = max(1, reader.sample_rate * PROGRESS_SECONDS)
         seen = 0
         offered = 0

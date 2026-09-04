@@ -10,7 +10,15 @@ from __future__ import annotations
 
 import pytest
 
-from stellody.domain.waveform import Envelope, envelope_from
+from stellody.domain.waveform import (
+    LEAST_BUCKETS,
+    MOST_BUCKETS,
+    Envelope,
+    buckets_for,
+    envelope_from,
+)
+
+SAMPLE_RATE = 44100
 
 WHOLE_FILE_FRAMES = 1000
 
@@ -91,3 +99,36 @@ class TestDrawing:
     def test_a_drawing_with_no_columns_is_refused(self) -> None:
         with pytest.raises(ValueError):
             Envelope(levels=(0.5,)).scaled_to(0)
+
+
+class TestHowFinelyASourceIsMeasured:
+    """A cue-sheet album is one file holding a whole record.
+
+    Measured on a real one, BT's Still Life in Motion, 55.7 minutes of nine
+    tracks: a fixed two thousand buckets made each of them 1671 milliseconds,
+    so the 3:20 opening track took 120 buckets and drew across two thousand
+    pixels as blocks seventeen wide. The resolution belongs to the music, so
+    the count follows how much music there is.
+    """
+
+    def test_a_long_file_is_measured_finely_enough_for_one_track(self) -> None:
+        """The whole of what this is for."""
+        album = buckets_for(SAMPLE_RATE * 3342, SAMPLE_RATE)
+        opening_track = album * 200 // 3342
+        assert opening_track >= 1500, (
+            "a 3:20 track of a 55.7 minute file gets "
+            f"{opening_track} buckets, which draws as blocks"
+        )
+
+    def test_a_short_file_is_not_measured_coarsely(self) -> None:
+        """A rule stated in time alone would have made these worse."""
+        assert buckets_for(SAMPLE_RATE * 30, SAMPLE_RATE) == LEAST_BUCKETS
+
+    def test_the_count_is_bounded(self) -> None:
+        """One record cannot run away with the cache."""
+        assert buckets_for(SAMPLE_RATE * 60 * 60 * 3, SAMPLE_RATE) == MOST_BUCKETS
+
+    def test_a_source_of_nothing_still_has_a_count(self) -> None:
+        """Asked before anything is known, it answers rather than dividing."""
+        assert buckets_for(0, SAMPLE_RATE) == LEAST_BUCKETS
+        assert buckets_for(SAMPLE_RATE, 0) == LEAST_BUCKETS
