@@ -18,10 +18,11 @@ import numpy as np
 import pytest
 import soundfile
 
-from stellody.domain.waveform import BUCKETS, Envelope
+from stellody.domain.waveform import BUCKETS, SILENCE, Envelope
 from stellody.infrastructure.waveform import (
-    PEAK_PLACES,
+    LEVEL_PLACES,
     PROGRESS_SECONDS,
+    READ_FRAMES,
     FileWaveforms,
 )
 
@@ -29,6 +30,9 @@ SAMPLE_RATE = 44100
 SECONDS = 2
 QUIET = 0.1
 LOUD = 0.9
+# Long enough that the reading offers a shape several times, so one offer can
+# be aimed at the inside of a bucket rather than at a boundary.
+SECONDS_TO_STRADDLE = 60
 
 
 @pytest.fixture
@@ -67,8 +71,8 @@ def test_the_shape_follows_the_music(cache, tmp_path) -> None:
     shape = FileWaveforms(cache).measure(str(audio))
     assert shape is not None
     assert shape.buckets == BUCKETS
-    early = shape.peaks[BUCKETS // 4]
-    late = shape.peaks[BUCKETS * 3 // 4]
+    early = shape.levels[BUCKETS // 4]
+    late = shape.levels[BUCKETS * 3 // 4]
     assert early == pytest.approx(QUIET, abs=0.01)
     assert late == pytest.approx(LOUD, abs=0.01)
 
@@ -96,7 +100,7 @@ def test_a_measurement_is_kept_at_the_precision_it_is_drawn_at(cache, tmp_path) 
     audio = _two_halves(tmp_path / "precision.flac")
     shape = FileWaveforms(cache).measure(str(audio))
     assert shape is not None
-    assert shape.peaks == tuple(round(peak, PEAK_PLACES) for peak in shape.peaks)
+    assert shape.levels == tuple(round(level, LEVEL_PLACES) for level in shape.levels)
 
 
 def test_a_file_replaced_at_the_same_name_is_measured_again(cache, tmp_path) -> None:
@@ -171,12 +175,12 @@ class _CountingWaveforms(FileWaveforms):
         super().__init__(cache_dir)
         self.decodes = 0
 
-    def _peaks_of(
+    def _levels_of(
         self, path: str, cancelled=None, progress=None
     ) -> tuple[float, ...] | None:
         """Count the decode, then do it."""
         self.decodes += 1
-        return super()._peaks_of(path, cancelled, progress)
+        return super()._levels_of(path, cancelled, progress)
 
 
 def test_a_measurement_told_to_give_up_keeps_nothing(cache, tmp_path) -> None:
@@ -201,6 +205,11 @@ def test_a_measurement_nobody_stopped_is_kept(cache, tmp_path) -> None:
     assert waveforms.remembered(str(audio)) == measured
 
 
+def _reached(part: Envelope) -> int:
+    """How far along the file a partial measurement has got, in buckets."""
+    return sum(1 for level in part.levels if level != SILENCE)
+
+
 def test_the_shape_is_offered_as_it_is_read(cache, tmp_path) -> None:
     """Reading a whole album FLAC through takes 11 seconds, measured cold.
 
@@ -214,15 +223,21 @@ def test_the_shape_is_offered_as_it_is_read(cache, tmp_path) -> None:
     finished = waveforms.measure(str(audio), progress=parts.append)
     assert finished is not None
     assert parts, "nothing was offered on the way"
-    # A part is the shape as far as it has been read, so it grows and never
-    # claims anything the finished measurement does not. The last part is not
-    # the finished one: what is read after the final offer is in one and not
-    # the other, which is the whole reason there is a finished one.
+    # A part is the shape as far as it has been read, so it reaches further
+    # each time. What it has finished with does not move again: the only
+    # bucket that may still change is the one the reading is inside, which is
+    # why the drawn shape does not wobble behind the point it has reached.
+    # It is stated as a count rather than as "never falls", because a bucket
+    # in progress genuinely can fall: see the test below.
     for earlier, later in itertools.pairwise(parts):
-        assert all(was <= now for was, now in zip(earlier.peaks, later.peaks))
+        assert _reached(later) >= _reached(earlier), "the picture grew"
     for part in parts:
-        assert all(seen <= whole for seen, whole in zip(part.peaks, finished.peaks))
-    assert max(finished.peaks) > max(parts[0].peaks), "the picture grew"
+        unsettled = [
+            index
+            for index, (seen, whole) in enumerate(zip(part.levels, finished.levels))
+            if seen != whole and seen != SILENCE
+        ]
+        assert len(unsettled) <= 1, f"more than the frontier moved: {unsettled}"
 
 
 def test_only_the_finished_measurement_is_kept(cache, tmp_path) -> None:
@@ -248,3 +263,58 @@ def test_a_measurement_given_up_on_offers_nothing_further(cache, tmp_path) -> No
         is None
     )
     assert parts == []
+
+
+def test_the_bucket_being_read_may_fall_before_it_settles(cache, tmp_path) -> None:
+    """What the assertion above is stated as a count rather than a direction.
+
+    A bucket holds how loud it is, so a partial one is the loudness of what
+    has been folded into it so far. Fold a loud passage, offer the shape, then
+    complete that same bucket with quiet frames and it falls. It was tried
+    with the transition in the middle of the file and nothing fell, because an
+    offer lands inside a bucket only where the arithmetic puts it there; the
+    frame is worked out here rather than guessed, which is what made it happen.
+    """
+    frames = SAMPLE_RATE * SECONDS_TO_STRADDLE
+    offer_at = READ_FRAMES
+    while offer_at < SAMPLE_RATE * PROGRESS_SECONDS:
+        offer_at += READ_FRAMES
+    bucket = offer_at * BUCKETS // frames
+    ends_at = (bucket + 1) * frames // BUCKETS
+    audio = tmp_path / "straddle.flac"
+    samples = np.full((frames, 1), QUIET, dtype="float32")
+    samples[: (offer_at + ends_at) // 2] = LOUD
+    soundfile.write(str(audio), samples, SAMPLE_RATE)
+
+    parts: list[Envelope] = []
+    finished = FileWaveforms(cache).measure(str(audio), progress=parts.append)
+    assert finished is not None
+    seen = [part.levels[bucket] for part in parts]
+    assert seen[0] > finished.levels[bucket], "the probe did not catch it mid bucket"
+    assert min(seen) < seen[0], "the bucket never fell"
+    assert seen[-1] == finished.levels[bucket], "it did not settle where it ended"
+
+
+def test_one_loud_sample_does_not_make_a_bucket_loud(cache, tmp_path) -> None:
+    """The fault this measurement was changed for.
+
+    A bucket held the loudest single sample it covered, which is a bucket of
+    roughly 120 milliseconds. Any drum, any sustained note, one stray sample:
+    each took the whole bucket to the top. Measured over three unlike records,
+    that drew more than half of every track at 90 percent of full height, a
+    gentle 1998 album included. Loudness is what the drawing is for, so a lone
+    spike in an otherwise quiet stretch has to read as a quiet stretch.
+    """
+    frames = SAMPLE_RATE * SECONDS_TO_STRADDLE
+    samples = np.full((frames, 1), QUIET, dtype="float32")
+    per_bucket = frames // BUCKETS
+    samples[::per_bucket] = 1.0
+    audio = tmp_path / "spikes.flac"
+    soundfile.write(str(audio), samples, SAMPLE_RATE)
+
+    measured = FileWaveforms(cache).measure(str(audio))
+    assert measured is not None
+    assert measured.loudest < QUIET * 2, (
+        "one full scale sample in every bucket took the whole shape to the top: "
+        f"loudest bucket is {measured.loudest}"
+    )

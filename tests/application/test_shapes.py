@@ -18,7 +18,7 @@ from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
 
 FILE_FRAMES = 1000
-WHOLE = Envelope(peaks=tuple(index / 10 for index in range(10)))
+WHOLE = Envelope(levels=tuple(index / 10 for index in range(10)))
 
 
 class FakeWaveforms:
@@ -90,7 +90,7 @@ def test_a_cue_track_running_to_the_end_of_the_file_reaches_it() -> None:
         TrackSource(path="album.flac", start_frame=FILE_FRAMES // 2)
     )
     assert part is not None
-    assert part.peaks[-1] == pytest.approx(WHOLE.peaks[-1])
+    assert part.levels[-1] == pytest.approx(WHOLE.levels[-1])
 
 
 def test_measuring_decodes_and_answers() -> None:
@@ -137,7 +137,7 @@ def test_a_measurement_nobody_stopped_still_answers() -> None:
 
 def test_each_part_measured_is_offered_as_it_arrives() -> None:
     """The picture builds from the left rather than appearing at the end."""
-    parts = (Envelope(peaks=(0.1, 0.0)), Envelope(peaks=(0.1, 0.4)))
+    parts = (Envelope(levels=(0.1, 0.0)), Envelope(levels=(0.1, 0.4)))
     waveforms = FakeWaveforms(measurable=WHOLE, parts=parts)
     offered: list[Envelope] = []
     TrackShapes(waveforms).measured(TrackSource(path="a.flac"), progress=offered.append)

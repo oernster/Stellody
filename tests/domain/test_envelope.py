@@ -17,25 +17,25 @@ WHOLE_FILE_FRAMES = 1000
 
 def _ramp(buckets: int) -> Envelope:
     """An envelope rising from quiet to loud, so a slice is recognisable."""
-    return Envelope(peaks=tuple(index / buckets for index in range(buckets)))
+    return Envelope(levels=tuple(index / buckets for index in range(buckets)))
 
 
 class TestMaking:
     def test_an_envelope_needs_a_bucket(self) -> None:
         with pytest.raises(ValueError):
-            Envelope(peaks=())
+            Envelope(levels=())
 
     @pytest.mark.parametrize("peak", (-0.1, 1.1))
     def test_a_peak_outside_the_scale_is_refused(self, peak: float) -> None:
         with pytest.raises(ValueError):
-            Envelope(peaks=(peak,))
+            Envelope(levels=(peak,))
 
-    def test_measured_peaks_beyond_full_scale_are_flattened_to_it(self) -> None:
+    def test_measured_levels_beyond_full_scale_are_flattened_to_it(self) -> None:
         """An intersample peak is a fact about the audio, not an error."""
-        assert envelope_from((0.5, 1.4, -0.2)).peaks == (0.5, 1.0, 0.0)
+        assert envelope_from((0.5, 1.4, -0.2)).levels == (0.5, 1.0, 0.0)
 
     def test_it_knows_its_own_size_and_its_loudest_point(self) -> None:
-        envelope = Envelope(peaks=(0.1, 0.9, 0.4))
+        envelope = Envelope(levels=(0.1, 0.9, 0.4))
         assert envelope.buckets == 3
         assert envelope.loudest == pytest.approx(0.9)
 
@@ -44,13 +44,13 @@ class TestTakingATracksShare:
     def test_the_first_half_of_a_file_is_the_first_half_of_the_shape(self) -> None:
         part = _ramp(10).between(0, WHOLE_FILE_FRAMES // 2, WHOLE_FILE_FRAMES)
         assert part.buckets == 5
-        assert part.peaks[0] == pytest.approx(0.0)
+        assert part.levels[0] == pytest.approx(0.0)
 
     def test_the_last_track_of_a_file_reaches_its_end(self) -> None:
         part = _ramp(10).between(
             WHOLE_FILE_FRAMES // 2, WHOLE_FILE_FRAMES, WHOLE_FILE_FRAMES
         )
-        assert part.peaks[-1] == pytest.approx(0.9)
+        assert part.levels[-1] == pytest.approx(0.9)
 
     def test_a_region_running_past_the_file_stops_at_its_end(self) -> None:
         """A frame count off by a rounding is not a reason to lose the shape."""
@@ -73,21 +73,21 @@ class TestTakingATracksShare:
 
 class TestDrawing:
     def test_a_window_the_size_of_the_measurement_draws_it_as_it_is(self) -> None:
-        envelope = Envelope(peaks=(0.1, 0.2, 0.3))
+        envelope = Envelope(levels=(0.1, 0.2, 0.3))
         assert envelope.scaled_to(3) == pytest.approx((0.1, 0.2, 0.3))
 
     def test_a_narrow_window_keeps_the_loudest_of_what_it_covers(self) -> None:
         """Averaging would flatten the transient that makes a shape readable."""
-        envelope = Envelope(peaks=(0.1, 0.9, 0.2, 0.3))
+        envelope = Envelope(levels=(0.1, 0.9, 0.2, 0.3))
         assert envelope.scaled_to(2) == pytest.approx((0.9, 0.3))
 
     def test_a_wide_window_stretches_rather_than_inventing_detail(self) -> None:
-        envelope = Envelope(peaks=(0.2, 0.8))
+        envelope = Envelope(levels=(0.2, 0.8))
         assert envelope.scaled_to(4) == pytest.approx((0.2, 0.2, 0.8, 0.8))
 
     def test_one_column_is_the_loudest_point_in_the_whole_shape(self) -> None:
-        assert Envelope(peaks=(0.1, 0.7, 0.3)).scaled_to(1) == pytest.approx((0.7,))
+        assert Envelope(levels=(0.1, 0.7, 0.3)).scaled_to(1) == pytest.approx((0.7,))
 
     def test_a_drawing_with_no_columns_is_refused(self) -> None:
         with pytest.raises(ValueError):
-            Envelope(peaks=(0.5,)).scaled_to(0)
+            Envelope(levels=(0.5,)).scaled_to(0)

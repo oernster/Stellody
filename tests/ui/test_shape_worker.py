@@ -19,7 +19,7 @@ from stellody.ui.shape_worker import ShapeRunner
 
 FIRST = TrackSource(path="first.flac")
 SECOND = TrackSource(path="second.flac")
-SHAPE = Envelope(peaks=(0.2, 0.8))
+SHAPE = Envelope(levels=(0.2, 0.8))
 
 
 class SlowShapes:

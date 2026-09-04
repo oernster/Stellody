@@ -26,8 +26,8 @@ from stellody.domain.track import TrackSource
 from stellody.domain.waveform import Envelope
 from stellody.ui.row_text import Column
 
-SHAPE = Envelope(peaks=(0.2, 0.9, 0.4))
-OTHER = Envelope(peaks=(0.5, 0.5, 0.5))
+SHAPE = Envelope(levels=(0.2, 0.9, 0.4))
+OTHER = Envelope(levels=(0.5, 0.5, 0.5))
 SETTLE_SECONDS = 3.0
 # Comfortably under the two seconds the old blocking wait cost, comfortably
 # over anything a handful of instructions takes.

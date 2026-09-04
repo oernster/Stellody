@@ -58,7 +58,7 @@ PLAYHEAD_WIDTH = 2
 # A shape drawn at its measured height would be a thin line for a quiet track
 # and full height for a loud one, which says more about mastering than about
 # the music. Each track is drawn against its own loudest point instead.
-QUIETEST_USEFUL_PEAK = 0.05
+QUIETEST_USEFUL_LEVEL = 0.05
 FLAT_LINE_HEIGHT = 0.06
 
 
@@ -122,7 +122,7 @@ class _SeekSlider(QSlider):
         width = max(1, self.width())
         if self._shape is None:
             return (FLAT_LINE_HEIGHT,) * width
-        loudest = max(QUIETEST_USEFUL_PEAK, self._shape.loudest)
+        loudest = max(QUIETEST_USEFUL_LEVEL, self._shape.loudest)
         return tuple(
             max(FLAT_LINE_HEIGHT, level / loudest)
             for level in self._shape.scaled_to(width)
