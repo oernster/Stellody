@@ -107,10 +107,16 @@ class TestWhatItStartsWith:
 
 class TestWhatItSaysAboutATagItCannotMatch:
     def test_an_unmatched_tag_is_shown_rather_than_hidden(self, grid) -> None:
-        """Otherwise the panel shows no box ticked and says nothing at all."""
-        chooser = grid("dance-house-progressive")
+        """Otherwise the panel shows no box ticked and says nothing at all.
+
+        No tag in the reference library reaches nothing any more, so this
+        asks with one the library does not carry: a genre is stated by a
+        ruling, so a library those rulings have not met yet is the ordinary
+        case for anyone but this library's owner.
+        """
+        chooser = grid("Progressive Rock")
         assert chooser.aside.isVisibleTo(chooser)
-        assert "dance-house-progressive" in chooser.aside.text()
+        assert "Progressive Rock" in chooser.aside.text()
 
     def test_nothing_is_said_where_the_tag_matched(self, grid) -> None:
         chooser = grid("Rock")

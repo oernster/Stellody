@@ -208,7 +208,7 @@ class TestAGenreChosen:
 
     def test_a_tag_naming_nothing_in_the_catalogue_reduces_to_nothing(self) -> None:
         """No box could have been ticked for it, so it states nothing."""
-        assert stated_value(AlbumField.GENRE, "dance-house") == ""
+        assert stated_value(AlbumField.GENRE, "Progressive Rock") == ""
 
     def test_keeping_a_panel_nobody_touched_records_nothing(self) -> None:
         """The album is tagged in one case and the grid shows the other."""

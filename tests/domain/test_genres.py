@@ -8,11 +8,12 @@ from stellody.domain import genres
 
 
 class TestTheCatalogue:
-    def test_it_holds_the_eighteen_that_were_settled(self) -> None:
+    def test_it_holds_the_nineteen_that_were_settled(self) -> None:
         assert genres.GENRES == (
             "Alternative",
             "Blues",
             "Classical",
+            "Comedy",
             "Dance",
             "Drum & Bass",
             "Electronic",
@@ -88,18 +89,19 @@ class TestWhichBoxesATagTicks:
     ) -> None:
         """Ticking a box somebody did not tick leaves them unable to tell.
 
-        `classical crossover` contains a catalogue name and resolves to
-        nothing, because no ruling has been made about it. It is offered to
-        the panel as an unmatched tag instead, which is visible. Contrast
-        `Alternative Metal`, which reaches two genres because somebody said
-        so rather than because the words are in it.
+        `Progressive Rock` contains a catalogue name and resolves to nothing,
+        because no ruling has been made about it. It is offered to the panel
+        as an unmatched tag instead, which is visible. Contrast `Alternative
+        Metal`, which reaches two genres because somebody said so rather than
+        because the words are in it. `classical crossover` reaches Classical
+        and Pop for that same reason; without the ruling it would have reached
+        Classical alone by accident.
         """
-        assert genres.chosen_in("dance-house") == ()
-        assert genres.chosen_in("classical crossover") == ()
-        assert genres.chosen_in("Britpop") == ()
+        assert genres.chosen_in("Progressive Rock") == ()
+        assert genres.chosen_in("Acid House") == ()
 
     def test_a_value_naming_nothing_in_the_catalogue_ticks_nothing(self) -> None:
-        assert genres.chosen_in("Britpop") == ()
+        assert genres.chosen_in("Skiffle") == ()
         assert genres.chosen_in("") == ()
 
 
@@ -119,7 +121,7 @@ class TestWritingItDown:
 
     def test_a_name_not_in_the_catalogue_is_not_written(self) -> None:
         """The panel can only offer the catalogue, so this is a guard."""
-        assert genres.stated_as(("Britpop",)) == ""
+        assert genres.stated_as(("Skiffle",)) == ""
 
     def test_what_is_written_reads_back_as_what_was_chosen(self) -> None:
         chosen = ("Alternative", "Drum & Bass", "R&B & Soul", "Rock")
@@ -198,6 +200,92 @@ class TestTagsRuledToMeanAGenre:
         """`R&B/Soul` would otherwise name it through two separate pieces."""
         assert genres.stated_as(genres.chosen_in("R&B/Soul")) == "R&B & Soul"
 
+
+class TestTheDanceSubTaxonomy:
+    """56 files across four folders that reached nothing at all.
+
+    One person's own `dance-<style>` and `house-<style>` naming, three albums
+    and a single. Ruled to be Dance and Electronic together rather than given
+    names of their own: the styles inside are distinctions between kinds of
+    dance music, which is what carrying both names already says.
+    """
+
+    @pytest.mark.parametrize(
+        "tag",
+        (
+            # `dance-trance` is deliberately absent: its style half names a
+            # catalogue genre and was ruled to reach it, which the ruling
+            # below states on its own.
+            "house-melodic",
+            "dance-house",
+            "dance-house-progressive",
+            "House",
+            "house-progressive house",
+            "dance-house-deep",
+            "dance-house-acid",
+            "dance-house-disco",
+            "dance-electro",
+        ),
+    )
+    def test_each_reaches_dance_and_electronic(self, tag: str) -> None:
+        assert genres.chosen_in(tag) == ("Dance", "Electronic")
+
+    def test_the_one_compound_value_reaches_them_through_its_other_half(
+        self,
+    ) -> None:
+        """`minimal` names nothing and is left to, as an unknown word should
+        be; the album still reaches the catalogue through the half that does.
+        """
+        assert genres.pieces_of("dance-house-tech / minimal") == (
+            "dance-house-tech",
+            "minimal",
+        )
+        assert genres.chosen_in("dance-house-tech / minimal") == (
+            "Dance",
+            "Electronic",
+        )
+
+    def test_the_plain_dance_tag_still_reaches_dance_alone(self) -> None:
+        """432 files, measured: it names the genre outright and needs no ruling."""
+        assert genres.chosen_in("dance") == ("Dance",)
+
+
+class TestTheRulingsOnTheRest:
+    def test_indie_dance_is_alternative_dance(self) -> None:
+        """Oliver's ruling, 3 files: treated as alternative dance, so both."""
+        assert genres.chosen_in("indie dance") == ("Alternative", "Dance")
+
+    def test_dance_trance_also_reaches_trance(self) -> None:
+        """Oliver's ruling, 16 files: the style half names a genre the
+        catalogue already offers, so the album is findable under what it
+        actually is."""
+        assert genres.chosen_in("dance-trance") == ("Dance", "Electronic", "Trance")
+
+    def test_techno_was_ruled_against_a_name_of_its_own(self) -> None:
+        """3 files. Techno is a kind of electronic music, which the pair
+        already says; naming every kind would make the catalogue a taxonomy
+        rather than a list somebody can read."""
+        assert "Techno" not in genres.GENRES
+        assert genres.chosen_in("dance-techno") == ("Dance", "Electronic")
+
+    def test_classical_crossover_is_classical_and_pop(self) -> None:
+        """Oliver's ruling, 1 file: Alexis Ffrench's `Truth`, whose only other
+        tagged track carries `pop`. Crossover is classical meeting popular
+        music, so the pair says it without a name of its own."""
+        assert genres.chosen_in("classical crossover") == ("Classical", "Pop")
+
+    def test_britpop_is_a_subgenre_of_pop(self) -> None:
+        """Oliver's ruling, 1 file: Kula Shaker on the compilation `K`."""
+        assert genres.chosen_in("Britpop") == ("Pop",)
+
+    def test_comedy_is_a_name_of_its_own_rather_than_an_alias(self) -> None:
+        """1 file, The Lonely Island's `Incredibad`. Nothing else in the
+        catalogue is near it, so it is offered rather than pointed elsewhere.
+        """
+        assert "Comedy" in genres.GENRES
+        assert genres.chosen_in("Comedy") == ("Comedy",)
+        assert "comedy" not in genres.ALIASES
+
     def test_alternative_metal_reaches_both(self) -> None:
         """6 files, measured. One tag naming two genres, ruled rather than
         guessed: a single-valued table could not have said it."""
@@ -209,8 +297,15 @@ class TestTagsRuledToMeanAGenre:
         )
 
     def test_what_no_ruling_covers_is_still_left_alone(self) -> None:
-        """Named so a later alias is a decision rather than an accident."""
-        for tag in ("Comedy", "Britpop", "indie dance", "dance-techno"):
+        """Named so a later alias is a decision rather than an accident.
+
+        These four were here once and have since been ruled on, which is what
+        this test is for: a tag leaves the list by somebody deciding it does.
+        No tag in the reference library reaches nothing any more, so what is
+        named here is the half of a compound value that names no genre the
+        catalogue holds, plus two strings the library does not carry at all.
+        """
+        for tag in ("minimal", "Progressive Rock", "Skiffle"):
             assert genres.chosen_in(tag) == (), tag
 
     def test_the_jungle_tag_reaches_the_catalogue_without_an_alias(self) -> None:

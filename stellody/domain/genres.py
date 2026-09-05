@@ -7,12 +7,16 @@ list is not DERIVED from it, because the whole point of stating a genre is to
 say what the tags failed to say. A catalogue read from the files could only
 ever repeat them.
 
-Measured over 5,782 tagged files: 43 distinct strings, 38 once case is folded,
-of which sixteen names cover 5,600 files. The long tail is one private
-sub-taxonomy, thirteen `dance-*` strings over thirteen folders, which having
-more than one genre answers without a name of its own.
+Re-measured 2026-09-05 over 6,462 audio files: 5,756 carry a genre tag and 705
+carry none; the tags are 43 distinct strings, 38 once case is folded, of which
+4,913 files name a catalogue genre outright. The long tail was one private
+sub-taxonomy, `dance-<style>` and `house-<style>` over four folders, which
+having more than one genre answers without a name of its own: those all read
+as Dance and Electronic through the table below. Every tag the library carries
+now reaches the catalogue, which was not so before 2026-09-05: 62 files across
+16 strings reached nothing at all.
 
-Two of the eighteen are here on a ruling rather than on a count.
+Three of the nineteen are here on a ruling rather than on a count.
 
 Punk is the one no measurement asked for at all. No file carries a Punk tag,
 which is a fact about the tags rather than about the music: the one Green Day
@@ -26,6 +30,12 @@ not aliased: the JUNGLE half of it names the genre outright and the
 other half is left to reach nothing, which is what a wrong word should do.
 Jungle is kept apart from Drum & Bass because a listener hears the
 difference, which is reason enough for a name.
+
+Comedy is the third. One file carries it, The Lonely Island's `Incredibad`;
+nothing else in the catalogue is anywhere near it: a comedy record is not
+Pop that happens to be funny. A count of one is not the measure here, since the
+question a catalogue answers is whether a listener could state what a record
+is; without this name they could not state that one at all.
 
 An album carries any number of these, so what is held is a set rather than a
 value. It is written down as one string because that is what an album's stated
@@ -43,6 +53,7 @@ GENRES: tuple[str, ...] = (
     "Alternative",
     "Blues",
     "Classical",
+    "Comedy",
     "Dance",
     "Drum & Bass",
     "Electronic",
@@ -87,6 +98,46 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "hip-hop": ("Hip Hop",),  # 416, tagged `Hip-Hop/Rap`
     "r&b": ("R&B & Soul",),  # 39 tagged `R&B`, 12 tagged `R&B/Soul`
     "alternative metal": ("Alternative", "Metal"),  # 6 files
+    # One person's private sub-taxonomy, `dance-<style>` and `house-<style>`,
+    # across three albums and a single: 56 files that reached nothing at all.
+    # Every one of them is Dance and Electronic together, which is the ruling
+    # PLAN.md already carried and the reason none of these styles is offered a
+    # name of its own. The styles inside them are real distinctions; they are
+    # distinctions between kinds of dance music, which is what having both
+    # names on the album already says.
+    # One of the cluster names a genre the catalogue already offers in its
+    # style half and was ruled to reach it, so a Paul van Dyk album is
+    # findable under the thing it actually is. The rest name styles no
+    # catalogue name covers and stop at the two. Techno is the near miss and
+    # was ruled AGAINST a name of its own: it is a kind of electronic music,
+    # which the pair already says, and a catalogue that named every kind would
+    # be a taxonomy rather than a list somebody can read.
+    "dance-trance": ("Dance", "Electronic", "Trance"),  # 16 files
+    "house-melodic": ("Dance", "Electronic"),  # 9 files
+    "dance-house": ("Dance", "Electronic"),  # 8 files
+    "dance-house-progressive": ("Dance", "Electronic"),  # 7 files
+    "house": ("Dance", "Electronic"),  # 3 files
+    "dance-techno": ("Dance", "Electronic"),  # 3 files
+    "house-progressive house": ("Dance", "Electronic"),  # 2 files
+    # The whole value is `dance-house-tech / minimal`, which splits in two.
+    # Minimal names nothing here and is left to, as a wrong or unknown word
+    # should be; the album still reaches the catalogue through the other half.
+    "dance-house-tech": ("Dance", "Electronic"),  # 2 files
+    "dance-house-deep": ("Dance", "Electronic"),  # 2 files
+    "dance-house-acid": ("Dance", "Electronic"),  # 2 files
+    "dance-house-disco": ("Dance", "Electronic"),  # 1 file
+    "dance-electro": ("Dance", "Electronic"),  # 1 file
+    # Ruled by Oliver to be alternative dance, which is those two names.
+    "indie dance": ("Alternative", "Dance"),  # 3 files
+    # Ruled a subgenre of Pop rather than a name of its own.
+    "britpop": ("Pop",),  # 1 file
+    # Ruled to be those two together rather than a name of its own: crossover
+    # IS classical meeting popular music, so the pair says it. The album it
+    # sits on agrees, its only other tagged track carrying `pop`. This is the
+    # one tag the module used to hold up as the example of not reading a genre
+    # out of a word that contains one; the example is now `Progressive Rock`,
+    # which nobody has ruled on.
+    "classical crossover": ("Classical", "Pop"),  # 1 file
 }
 
 # One place a tag piece is looked up, whether it names a genre outright or

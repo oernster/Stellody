@@ -121,20 +121,21 @@ an equality test: an album matches when it carries any genre asked for.
 Whether it should ever mean all of them is a decision this milestone opens
 with, not one to guess at now.
 
-**The genres offered are settled. They are these eighteen:**
+**The genres offered are settled. They are these nineteen:**
 
-> Alternative, Blues, Classical, Dance, Drum & Bass, Electronic, Folk,
+> Alternative, Blues, Classical, Comedy, Dance, Drum & Bass, Electronic, Folk,
 > Hip Hop, Jazz, Jungle, Metal, Pop, Punk, R&B & Soul, Rock, Soundtrack,
 > Trance, World
 
 Chosen against a census of the library rather than from a general list of
-genres. Measured over 5,782 tagged files: 43 distinct strings, of which 38
-survive folding case; sixteen names cover 5,600 of those files. The long
-tail is a private sub-taxonomy, thirteen `dance-*` strings across thirteen
+genres. Re-measured 2026-09-05 over 6,462 audio files: 5,756 carry a genre tag
+and 705 carry none; the tags are 43 distinct strings, of which 38 survive
+folding case. 4,913 files name a catalogue genre outright. The long tail
+was a private sub-taxonomy, `dance-<style>` and `house-<style>` across four
 folders, which multi-select answers without a name of its own: an album there
 carries Dance and Electronic together.
 
-Two of the eighteen are here on a ruling rather than on a count.
+Three of the nineteen are here on a ruling rather than on a count.
 
 Punk is the first. No file in the library carries a Punk tag, which is a fact
 about the tags rather than about the music: the one Green Day album here,
@@ -157,13 +158,32 @@ only source of them, since a genre nobody tagged properly is exactly the one
 somebody wants to state.
 
 **Tags that mean a catalogue genre in other words are folded in by a table of
-rulings**, never by inference. Five stand: `Heavy Metal` is Metal (231 files),
-`Hip-Hop` is Hip Hop (416), `R&B` is R&B & Soul (51), `Hard Rock` is Rock (20)
-and `Alternative Metal` is Alternative AND Metal (6). Nothing is read as a genre
-merely because it contains one, so `classical crossover` reaches nothing and is
-reported to the listener rather than dropped. What is still open: the 56-file
-`dance-*` and `house-*` cluster, plus `Comedy`, which has no home in the
-catalogue at all.
+rulings**, never by inference. The first five: `Heavy Metal` is Metal (231
+files), `Hip-Hop` is Hip Hop (416), `R&B` is R&B & Soul (51), `Hard Rock` is
+Rock (20) and `Alternative Metal` is Alternative AND Metal (6).
+
+**The 62 files that reached nothing were settled on 2026-09-05.** The 56-file
+`dance-*`, `house-*` and `House` cluster all read as Dance and Electronic,
+which is what carrying both names already said; `dance-trance` reaches Trance as
+well, its style half naming a genre the catalogue already offers (16 files); `indie dance` was ruled to be alternative dance,
+so Alternative and Dance (3 files); `Britpop` was ruled a subgenre of Pop (1
+file, Kula Shaker on the compilation `K`); `classical crossover` was ruled
+Classical and Pop, crossover being one meeting the other (1 file, Alexis
+Ffrench's `Truth`, whose only other tagged track carries `pop`); `Comedy` was
+given a name of its own, since nothing else in the catalogue is near it (1
+file, The Lonely Island's `Incredibad`).
+
+Techno was considered for `dance-techno` and ruled against: it is a kind of
+electronic music, which Dance and Electronic together already say, and a
+catalogue naming every kind would be a taxonomy rather than a list somebody can
+read. Those 3 files reach the two.
+
+Every tag the library carries now reaches the catalogue. Nothing is read as a
+genre merely because it contains one, so a tag nobody has ruled on is still
+reported to the listener rather than dropped or guessed at: `Progressive Rock`
+would reach nothing, which is what a library these rulings have not met looks
+like.
+
 
 **The filter also offers "not stated"**, which is not a genre. 663 files, more
 than a tenth of the library, carry no genre tag at all, so a filter that could
