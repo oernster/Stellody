@@ -55,6 +55,12 @@ one the library's `R&B` tags mean. All three stand as mains. The Discogs name
 needs no alias either: nothing matches it whole, so it splits on its solidus and
 reaches Funk and Soul, which is both halves of what it says.
 
+**Rap is a main of its own**, ruled by Oliver on 2026-09-05 as a name the
+catalogue could not do without. Discogs treats it as a style under Hip Hop; the
+two are used as separate genres far more often than that filing suggests. The
+415 files tagged `Hip-Hop/Rap` still reach Hip Hop alone, since that tag was
+ruled to mean the one genre before this name existed.
+
 **Where a style hangs is a ruling too.** Both of these were Discogs' filing and
 both were overruled by Oliver on 2026-09-05. Britpop is a kind of pop and sits
 under Pop, not under Rock. Punk answers to nothing above it and is a main of its
@@ -148,6 +154,7 @@ CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Jazz", ()),
     ("Pop", ("Britpop",)),
     ("Punk", ()),
+    ("Rap", ()),
     ("Reggae", ()),
     (
         "Rock",

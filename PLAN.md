@@ -160,8 +160,12 @@ name rather than about a record:
   nothing above it and is a main, so asking for rock no longer hands somebody
   every punk record. Pop then carries one style, which is not the collapse case
   above: Pop is not Britpop; 1,310 files say Pop against one saying Britpop.
-- Country carries no tag at all and is offered anyway, on the ground Punk
-  already stands on.
+- **Rap is a main** rather than a style of Hip Hop, which is where Discogs
+  files it; the two are used as separate genres far more often than that
+  suggests. The 415 files tagged `Hip-Hop/Rap` still read as Hip Hop alone,
+  since that tag was ruled to mean the one genre before this name existed.
+- Country and Rap carry no tag of their own at all and are offered anyway, on
+  the ground Punk already stands on.
 
 Styles are added when a tag asks for one, which is why fourteen mains carry
 none:
@@ -169,7 +173,7 @@ none:
 > **Blues** · **Classical** · **Comedy** · **Contemporary R&B** · **Country** ·
 > **Electronic**: Acid House, Deep House, Disco, Drum n Bass, Electro, House,
 > Jungle, Progressive House, Tech House, Techno, Trance · **Folk** · **Funk** ·
-> **Hip Hop** · **Jazz** · **Pop**: Britpop · **Punk** · **Reggae** ·
+> **Hip Hop** · **Jazz** · **Pop**: Britpop · **Punk** · **Rap** · **Reggae** ·
 > **Rock**: Alternative Metal, Alternative Rock, Hard Rock, Heavy Metal ·
 > **Soul** · **Soundtrack** · **World**
 
