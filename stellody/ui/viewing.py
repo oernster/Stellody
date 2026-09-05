@@ -275,6 +275,8 @@ class Viewing:
         self._album_pane.show_album(album, where, self._model.data(where, DECORATION))
         self.show_album_rating()
         self._album_pane.setVisible(True)
+        # Now the pane has its room, not before: see `scroll_settled`.
+        self._grid.scroll_settled(where)
         self._ring_open(where.row())
 
     def show_pane_cover(self, key: str) -> None:

@@ -76,6 +76,28 @@ class GlidingGrid(QListView):
         self.glide.setEndValue(target)
         self.glide.start()
 
+    def scroll_settled(self, index: QModelIndex) -> None:
+        """Scroll to an item against the room the grid will actually have.
+
+        Qt chooses where to go from the viewport as it stands, which during the
+        gesture that opens the album pane is the viewport from BEFORE the pane
+        takes its room. Measured rather than reasoned about: picking an album
+        deep in the library, the grid chose its destination against a 518 pixel
+        viewport, the pane then took 300 of them and the sleeve came to rest
+        294 pixels below the bottom of what was left, so the album the listener
+        had just picked was not on screen at all.
+
+        Forcing the layout through first is what makes the destination right.
+        Asking within the same turn is what keeps it to one movement: the glide
+        has put the scrollbar back to where it started and not yet travelled,
+        so re-aiming it is invisible.
+        """
+        page = self.parentWidget()
+        layout = page.layout() if page is not None else None
+        if layout is not None:
+            layout.activate()
+        self.scrollTo(index)
+
     def _travel(self, value: int) -> None:
         """One step of the run, put on the scrollbar the base class reads."""
         self.verticalScrollBar().setValue(value)
