@@ -232,3 +232,50 @@ def test_a_real_name_holding_the_word_unknown_is_kept() -> None:
     assert sheet.album_performer == "Unknown Mortal Orchestra"
     assert sheet.album_title == "Unknown Pleasures"
     assert sheet.tracks[0].title == "Tracking Shot"
+
+
+TWO_DISC = """REM DATE 2013
+REM DISCNUMBER 2
+REM TOTALDISCS 2
+PERFORMER "Sasha"
+TITLE "Invol<3r"
+FILE "Sasha - Invol_3r.flac" WAVE
+  TRACK 01 AUDIO
+    TITLE "Growing Forehead (Sasha Beatless mix)"
+    INDEX 01 00:00:00
+"""
+
+
+def test_a_sheet_states_which_disc_of_the_set_it_is() -> None:
+    """A set spanning folders says so; throwing it away invents damage.
+
+    Two folders of one release both number their tracks from one. Reading the
+    disc each states keeps them apart; discarding it made every track of the
+    second collide with the first, which was then reported as duplicate track
+    numbers on an album whose tags were perfectly correct. Those findings could
+    never be accepted, because there was nothing wrong to accept.
+    """
+    assert parse_cue(TWO_DISC, CD_RATE).disc == 2
+
+
+def test_a_sheet_that_states_no_disc_says_nothing() -> None:
+    """Silence leaves the file's own tag to answer."""
+    assert parse_cue(SHEET, CD_RATE).disc is None
+
+
+@pytest.mark.parametrize("written", ["", "one", "0", "-1", "2.5", "  "])
+def test_a_disc_that_is_not_a_counting_number_is_no_disc(written: str) -> None:
+    """A wrong number files the music elsewhere in silence, so it is refused."""
+    sheet = parse_cue(
+        f"REM DISCNUMBER {written}\n"
+        'PERFORMER "A"\nTITLE "B"\nFILE "a.flac" WAVE\n'
+        "  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n",
+        CD_RATE,
+    )
+    assert sheet.disc is None
+
+
+def test_the_stated_disc_survives_a_sheet_with_everything_else_on_it() -> None:
+    """Read alongside the other REM values rather than instead of them."""
+    sheet = parse_cue(TWO_DISC, CD_RATE)
+    assert (sheet.disc, sheet.date, sheet.album_title) == (2, "2013", "Invol<3r")

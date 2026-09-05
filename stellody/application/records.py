@@ -86,6 +86,11 @@ def _records_from_cue(
                 title=cue_track.title,
                 date=sheet.date or fallback.date,
                 genre=sheet.genre or fallback.genre,
+                # A set spanning folders states which disc each one is, so
+                # taking it is what keeps two discs from claiming one another's
+                # track numbers. Without it a bonus disc whose folder is not
+                # named CD2 collided with disc one on every track it held.
+                disc=sheet.disc if sheet.disc is not None else fallback.disc,
                 track=cue_track.number,
             )
         )

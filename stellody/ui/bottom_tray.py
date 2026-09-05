@@ -111,7 +111,11 @@ REPEAT_TOOLTIP = "Repeat mode"
 # library health reports", which is the wording of a button on the screen this
 # one opens: a press of this accepts nothing. Shaped like the control beside
 # it, which says "Rescan the library", since the two are a pair.
-REPAIR_TOOLTIP = "Repair the library"
+# The promise is made where the gesture is offered rather than only inside the
+# screen it opens. "Repair the library" is the one control here that sounds like
+# it changes somebody's files; the whole application exists because another
+# player did exactly that, so the answer belongs on the button.
+REPAIR_TOOLTIP = "Repair the library (your music files are never changed)"
 # Said in the tooltip because pressing it leaves the application, which a
 # picture of a beer and a coffee does not on its own tell anybody.
 DONATE_TOOLTIP = "Buy the author a drink (opens your browser)"

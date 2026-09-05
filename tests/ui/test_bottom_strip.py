@@ -209,8 +209,14 @@ def test_the_repair_button_names_the_press_and_waits_to_be_told(
     one is. The tooltip names what THIS press does, which is open the screen,
     rather than what a control inside that screen does; it is shaped like the
     rescan beside it, the two being a pair.
+
+    It also carries the promise. Repair is the one control on this strip
+    that sounds like it changes somebody's files; the whole application
+    exists because another player did exactly that, so the
+    answer is given where the gesture is offered rather than only inside
+    the screen it opens.
     """
     button = window._bottom_tray.repair_button
     assert not button.isEnabled()
-    assert button.toolTip() == "Repair the library"
+    assert button.toolTip() == "Repair the library (your music files are never changed)"
     assert not button.icon().isNull(), "drawn, not merely reserved"

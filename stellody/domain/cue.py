@@ -40,6 +40,20 @@ def _a_track_name(value: str) -> str:
     return "" if _NUMBERED_ONLY.match(value) else _a_name(value)
 
 
+def _as_disc(value: str) -> int | None:
+    """A stated disc number; None where the sheet does not state a usable one.
+
+    A disc that cannot be read as a positive whole number is no disc number, so
+    it is dropped rather than guessed at: saying nothing leaves the file's own
+    tag to answer, while a wrong number silently files the music elsewhere.
+    """
+    stripped = value.strip()
+    if not stripped.isdigit():
+        return None
+    number = int(stripped)
+    return number if number > 0 else None
+
+
 @dataclass(frozen=True, slots=True)
 class CueTrack:
     """One track as described by a cue sheet."""
@@ -61,6 +75,7 @@ class CueSheet:
     tracks: tuple[CueTrack, ...]
     date: str = ""
     genre: str = ""
+    disc: int | None = None
 
     @property
     def file_names(self) -> tuple[str, ...]:
@@ -167,6 +182,7 @@ def parse_cue(text: str, sample_rate: int) -> CueSheet:
     album_performer = ""
     date = ""
     genre = ""
+    disc: int | None = None
     current_file = ""
     pending: list[_Pending] = []
 
@@ -180,6 +196,8 @@ def parse_cue(text: str, sample_rate: int) -> CueSheet:
                 date = _unquote(value)
             elif keyword == "GENRE":
                 genre = _unquote(value)
+            elif keyword == "DISCNUMBER":
+                disc = _as_disc(_unquote(value))
         elif command == "FILE":
             current_file = _file_name(remainder)
         elif command == "TRACK":
@@ -209,4 +227,5 @@ def parse_cue(text: str, sample_rate: int) -> CueSheet:
         tracks=_finish(pending, album_title or "Track"),
         date=date,
         genre=genre,
+        disc=disc,
     )
