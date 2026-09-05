@@ -21,6 +21,7 @@ has never been seen to fail is not yet a guard.
 | 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
 | 12 | Exactly two modules may open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
+| 14 | The setup program is a client of the application, never a layer of it: `installer/` reads what it needs from `stellody`, while nothing under `stellody/` imports `installer`. | `tests/structural/test_layers.py::test_the_application_never_imports_the_setup_program` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
@@ -33,6 +34,12 @@ and rewording the thing attached to it are two edits and only one was made. It
 is swept rather than checked in the one place it was noticed, for the reason the
 menu bar is swept; it is held by a planted claim plus the original wording put
 back and watched to fail.
+
+Invariant 14 is the third. It was written because TECH_DEBT.md stated the
+direction as something a layering test enforced while no test mentioned the
+setup program at all: a guarantee nobody was holding, which is worse than one
+nobody had claimed. It is held by planting `import installer` in a domain
+module and watching it fail, with the plant restored and the caches cleared.
 
 Invariant 12 is the second of that kind. A local-first player that quietly
 talks to the internet is not local-first whatever its README says, so the

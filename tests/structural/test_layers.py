@@ -47,6 +47,14 @@ IMPURE_STDLIB = frozenset(
 
 CLOCK_CALLS = frozenset({"now", "today", "utcnow", "monotonic", "time_ns"})
 
+# The setup program is a CLIENT of the application: `installer/` reads
+# stellody.shared, stellody.ui and stellody.infrastructure, while nothing under
+# stellody/ may reach back. It is asserted rather than assumed because
+# TECH_DEBT.md claimed for a while that a layering test enforced this while no
+# test mentioned the installer at all, which is the shape of a guard nobody has
+# ever seen fail.
+SETUP_PACKAGE = "installer"
+
 
 def _layer_of(module) -> str:
     """Which layer a module belongs to."""
@@ -119,3 +127,15 @@ def test_domain_never_reads_the_clock() -> None:
             if isinstance(node.func, ast.Attribute) and node.func.attr in CLOCK_CALLS:
                 offences.append(f"{relative(module)}:{node.lineno} .{node.func.attr}()")
     assert not offences, "The domain must not read the clock: " + "; ".join(offences)
+
+
+def test_the_application_never_imports_the_setup_program() -> None:
+    """The setup program reads the application; the application never reads it."""
+    offences: list[str] = []
+    for module in package_modules():
+        for name, line in _imported_roots(parsed(module)):
+            if name.split(".")[0] == SETUP_PACKAGE:
+                offences.append(f"{relative(module)}:{line} imports {name}")
+    assert (
+        not offences
+    ), "The application must not import the setup program: " + "; ".join(offences)
