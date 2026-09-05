@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from factories import make_track
 
-from stellody.domain.track import CD_SAMPLE_RATE, TrackSource
+from stellody.domain.track import CD_SAMPLE_RATE, TrackSource, suffix_of
 
 
 def test_a_whole_file_source_is_not_a_slice() -> None:
@@ -101,3 +101,42 @@ def test_a_track_may_state_no_bit_depth() -> None:
 
 def test_a_stated_depth_says_so() -> None:
     assert make_track(bit_depth=16).states_depth is True
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("H:/Album/12 Bonkers.m4v", ".m4v"),
+        (r"H:\Album\12 Bonkers.M4V", ".m4v"),
+        ("track.flac", ".flac"),
+        ("H:/An.Album.Named.So/track", ""),
+        ("H:/Album/.flac", ""),
+        ("plain", ""),
+    ],
+)
+def test_suffix_of_reads_the_name_rather_than_the_path(
+    path: str, expected: str
+) -> None:
+    assert suffix_of(path) == expected
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("H:/Album/12 Bonkers.m4v", True),
+        (r"H:\Album\12 Bonkers.M4V", True),
+        ("H:/Album/12 Bonkers.flac", False),
+        ("H:/Album/12 Bonkers.m4a", False),
+        ("H:/Video.m4v/12 Bonkers.flac", False),
+    ],
+)
+def test_a_source_says_whether_it_carries_a_picture(path: str, expected: bool) -> None:
+    assert TrackSource(path=path).carries_picture is expected
+
+
+def test_a_picture_bearing_source_is_still_an_ordinary_slice() -> None:
+    """Carrying a picture changes what is shown, never how the sound is cut."""
+    source = TrackSource(path="bonus.m4v", start_frame=48000, end_frame=96000)
+    assert source.carries_picture is True
+    assert source.is_slice is True
+    assert source.frame_count == 48000

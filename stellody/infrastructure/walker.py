@@ -6,6 +6,7 @@ import os
 from collections.abc import Iterator
 
 from stellody.application.values import FileStat, FolderListing
+from stellody.domain.track import PICTURE_SUFFIXES
 
 # What the decoder can actually open, measured against the libsndfile behind
 # soundfile rather than taken from its documentation: 26 formats, of which
@@ -58,6 +59,12 @@ UNPLAYABLE_SUFFIXES = frozenset(
     }
 )
 
+# What the walk will take as a track. A video file is one: its bonus tracks sit
+# inside albums the library already holds, numbered in sequence, so leaving them
+# out is a track missing from an album rather than a format not supported. Which
+# suffixes carry a picture is the domain's to say, so it is read from there.
+PLAYABLE_SUFFIXES = AUDIO_SUFFIXES | PICTURE_SUFFIXES
+
 CUE_SUFFIXES = frozenset({".cue"})
 IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".webp", ".bmp"})
 
@@ -97,13 +104,13 @@ def _names_audio(name: str) -> bool:
     """True when a filename is one the walk would take as audio."""
     if _is_skippable_file(name):
         return False
-    return os.path.splitext(name)[1].casefold() in AUDIO_SUFFIXES
+    return os.path.splitext(name)[1].casefold() in PLAYABLE_SUFFIXES
 
 
 def _holds_audio(name: str) -> bool:
     """True for any audio file, whether or not this build can decode it."""
     suffix = os.path.splitext(name)[1].casefold()
-    return suffix in AUDIO_SUFFIXES or suffix in UNPLAYABLE_SUFFIXES
+    return suffix in PLAYABLE_SUFFIXES or suffix in UNPLAYABLE_SUFFIXES
 
 
 def _is_skippable_directory(name: str) -> bool:

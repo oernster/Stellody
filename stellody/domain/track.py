@@ -15,6 +15,36 @@ MILLISECONDS_PER_SECOND = 1000
 CD_SAMPLE_RATE = 44100
 CD_BIT_DEPTH = 16
 
+# The containers that carry a picture alongside the sound. Measured over the
+# reference library rather than listed from a manual: every video file in it is
+# .m4v, which is the MP4 container the packet reader already opens for M4A,
+# holding H.264 beside AAC. A format is claimed only where one has been seen.
+#
+# This is the one home for that fact. The walk decides what to take, the
+# decoder decides which reader opens it and a track decides whether it has a
+# picture to show; all three read it from here, so they cannot come to disagree
+# about which files carry a picture.
+PICTURE_SUFFIXES = frozenset({".m4v"})
+
+# Both separators are answered here because the domain may not import os.path
+# and a Windows path reaches it with backslashes.
+_PATH_SEPARATORS = ("/", "\\")
+
+
+def suffix_of(path: str) -> str:
+    """The lowercased extension of a path, empty where it has none.
+
+    A name that is nothing but an extension, such as ".flac", is a hidden file
+    rather than a suffix, which is what `os.path.splitext` says of it too.
+    """
+    name = path
+    for separator in _PATH_SEPARATORS:
+        name = name.rpartition(separator)[2]
+    dot = name.rfind(".")
+    if dot <= 0:
+        return ""
+    return name[dot:].casefold()
+
 
 @dataclass(frozen=True, slots=True)
 class TrackSource:
@@ -36,6 +66,18 @@ class TrackSource:
     def is_slice(self) -> bool:
         """True when this source is part of a file rather than all of it."""
         return self.start_frame > 0 or self.end_frame is not None
+
+    @property
+    def carries_picture(self) -> bool:
+        """True when this source holds a picture stream as well as sound.
+
+        Read off the path rather than carried as a field, so a source built
+        anywhere in the application answers it the same way and no construction
+        site can forget to say. The sound path is unaffected either way: a
+        video's audio is decoded by exactly the reader its container already
+        used, so this says what to SHOW rather than how to play.
+        """
+        return suffix_of(self.path) in PICTURE_SUFFIXES
 
     @property
     def frame_count(self) -> int | None:

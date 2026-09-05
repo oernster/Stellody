@@ -21,7 +21,7 @@ import numpy as np
 import soundfile
 
 from stellody.domain.playback import PlaybackError
-from stellody.domain.track import TrackSource
+from stellody.domain.track import PICTURE_SUFFIXES, TrackSource
 
 SUBTYPE_BIT_DEPTHS = {
     "PCM_S8": 8,
@@ -38,7 +38,14 @@ WORKING_DTYPE = "float32"
 # Suffixes libsndfile cannot open, which the packet reader takes instead. Kept
 # here rather than in the walker because it is a property of the decoders;
 # the walker's own sets answer a different question: what a library holds.
-PACKET_SUFFIXES = frozenset({".m4a"})
+#
+# The picture-bearing containers join it rather than needing a reader of their
+# own: .m4v is the MP4 container .m4a already arrives in, with AAC beside the
+# H.264. Measured, not assumed: the packet reader was pointed at video files
+# off the reference library unmodified and decoded their sound correctly. The
+# picture is read separately by whatever shows it; nothing on the sound path
+# knows a picture is there.
+PACKET_SUFFIXES = frozenset({".m4a"}) | PICTURE_SUFFIXES
 
 
 class DecodeError(PlaybackError):
