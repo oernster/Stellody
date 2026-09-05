@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 
+import stamp_sitemap
 import stamp_version
 
 # The copyright notice comes from the package rather than being written
@@ -176,6 +177,7 @@ def main() -> int:
     """Stage the payload, build the setup program and place it."""
     require("nuitka", "Nuitka")
     stamp_version.main()
+    stamp_sitemap.main()
     version = read_version()
     print(f"{SETUP_NAME} {version} ({jobs()} jobs)")
     if not stage_payload():

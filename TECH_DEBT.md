@@ -43,8 +43,8 @@ real library and the Windows shell would either be a number nobody can hold or a
 suite full of mocks standing in for the very things worth testing.
 
 **The build and packaging scripts are long and are exempt from the line cap.**
-`buildexe.py`, `buildinstaller.py`, `stamp_version.py` and `sync_site.py` are
-linear recipes read top to bottom. Splitting a sequence of flags across modules
+`buildexe.py`, `buildinstaller.py`, `stamp_version.py`, `stamp_sitemap.py` and
+`sync_site.py` are linear recipes read top to bottom. Splitting a sequence of flags across modules
 costs more than it buys, so the structural line-cap test does not scope them.
 
 **`installer/` reads `stellody.shared` and `stellody.ui`.** That is the setup

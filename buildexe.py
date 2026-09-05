@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 
+import stamp_sitemap
 import stamp_version
 
 # The copyright notice comes from the package rather than being written
@@ -186,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     onefile = STANDALONE_FLAG not in arguments
     require("nuitka", "Nuitka")
     stamp_version.main()
+    stamp_sitemap.main()
     version = read_version()
     shape = "onefile" if onefile else "standalone"
     print(f"{APP_DISPLAY_NAME} {version} ({shape}, {jobs()} jobs)")
