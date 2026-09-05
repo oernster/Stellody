@@ -83,39 +83,7 @@ well; that is what keeps the audio path bit perfect where Qt Multimedia would
 bring a second idea of what a track is. `ARCHITECTURE.md` records the
 reasoning.
 
-## 3. Accept the repairs the health report describes
-
-What is left is somebody looking at it. Every check so far ran offscreen, where
-there are no real fonts, no real focus and nothing anybody can see, so the
-screen has never been read by a person.
-
-**What the offscreen suite cannot settle.** How the screen reads with 36 albums
-in it at real font sizes, whether the scrolling column is comfortable to work
-down, whether the button column sits at a sensible width beside the text and
-whether the ring order through those rows makes sense under real focus rather
-than under a walk of the widget tree.
-
-**Measured before the walk widened**, so this is what to expect rather than a
-promise: 142 findings across 36 of the 482 albums, 132 of them two files
-claiming one track number, 6 a disc number disagreeing with its folder, 4 a
-missing album artist. The two kinds with nothing to propose, missing artwork and
-an unreadable file, did not occur and cannot be accepted by design.
-
-### A value of one's own is not offered
-
-Accepting pins the value the rules already produced, which is what "yes, keep
-that" means and why the library does not move when a report is accepted. The
-domain will apply a DIFFERENT pinned value, so the layer for one is there;
-nothing in the interface sets one. Whether to offer it is a separate decision
-rather than an omission, since it is the point where Stellody stops describing
-a library and starts holding an opinion about it.
-
-Done when: a real library's report is accepted in the built application and
-empties, survives closing Stellody and opening it again, survives a rescan, then
-resetting brings the original findings back; no music file has changed, which
-the read-only structural tests already prove.
-
-## 4. One loudness across albums
+## 3. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -161,7 +129,7 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-## 5. Make the sites findable
+## 4. Make the sites findable
 
 Nothing has been submitted to a search engine, no structured data has been
 validated against a real checker and neither host has been observed in an
@@ -198,7 +166,7 @@ search for the application by name returns the site.
   address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
-- **Repairing the files themselves.** Milestone 3 records a correction in
+- **Repairing the files themselves.** Accepting a correction records it in
   Stellody's own store and shows it on load. It never writes one back; no
   amount of accepting changes that.
 - **The album pane inserted inline after the sleeve that opened it.** That is
