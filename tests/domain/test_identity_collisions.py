@@ -1,14 +1,15 @@
-"""Two albums that resolve alike are told apart; everything else is untouched.
+"""Two albums that resolve alike are one album: what that costs.
 
-Reported from a real library. Tags alone cannot separate two recordings of one
-work: a symphony under two conductors carries one composer, one title and often
-one year. Both then answered to one handle, so they shared a cached cover, an
-album rating and every track rating under it; a correction accepted on one was
-looked up against the other and silently recorded nothing.
+Tags alone cannot separate two recordings of one work: a symphony under two
+conductors carries one composer, one title and often one year. They were once
+told apart by where they were found, so that neither shared the other's cover
+and ratings. They are now folded together instead, because the same rule is
+what joins an album's audio to the bonus videos a library keeps in another
+folder, which is the common case.
 
-The second half of this matters as much as the first. Only the albums that
-actually collide may move, because a handle that changes is a cover and a
-rating that can no longer be found.
+The second half still matters as much as the first: a handle that changes is a
+cover and a rating that can no longer be found, so an album that folds with
+nothing keeps exactly the handle it always had.
 """
 
 from __future__ import annotations
@@ -55,42 +56,61 @@ ONE_RECORDING = (entry("H:/Music/Mahler/Abbado", WORK, "01 Allegro.flac"),)
 
 
 class TestTwoRecordingsOfOneWork:
-    def test_they_assemble_as_two_albums(self) -> None:
-        albums, _ = assemble_albums(TWO_RECORDINGS)
-        assert len(albums) == 2
+    """The cost of folding, written down rather than discovered in a library.
 
-    def test_they_no_longer_share_a_handle(self) -> None:
-        """Which is the defect: one handle meant one cover and one rating."""
-        albums, _ = assemble_albums(TWO_RECORDINGS)
-        assert albums[0].identity.handle != albums[1].identity.handle
+    Two recordings of one work, tagged alike, are now ONE album. That is not an
+    oversight: folders that name the same album are folded together, which is
+    what puts an album's audio and its bonus videos in one place when a library
+    keeps them in two folders. Tags cannot tell these two apart, so they go the
+    same way and share a cover, a rating and any accepted correction.
 
-    def test_they_no_longer_share_a_cached_cover(self) -> None:
-        albums, _ = assemble_albums(TWO_RECORDINGS)
-        assert albums[0].identity.art_key != albums[1].identity.art_key
+    Held as tests so that whoever reverses this decision one day sees exactly
+    what they are buying back.
+    """
 
-    def test_they_no_longer_share_an_album_rating(self) -> None:
+    def test_they_assemble_as_one_album(self) -> None:
         albums, _ = assemble_albums(TWO_RECORDINGS)
-        assert album_handle(albums[0].identity) != album_handle(albums[1].identity)
+        assert len(albums) == 1
 
-    def test_their_tracks_no_longer_share_a_rating(self) -> None:
-        """A track record is the album's handle with its numbers under it."""
+    def test_that_album_holds_both_recordings(self) -> None:
+        """Nothing is dropped by folding; both files are still in the library."""
         albums, _ = assemble_albums(TWO_RECORDINGS)
-        assert track_handle(albums[0].identity, 1, 1) != track_handle(
-            albums[1].identity, 1, 1
-        )
+        titles = {track.title for track in albums[0].tracks}
+        assert len(albums[0].tracks) == 2
+        assert titles == {"01 Allegro.flac", "01 Andante.flac"}
 
-    def test_neither_is_shown_differently_for_it(self) -> None:
-        """Told apart in the records, not on the screen: both read the same."""
+    def test_they_share_one_cover_and_one_rating(self) -> None:
+        """Which is the price: one handle is one cover and one rating."""
         albums, _ = assemble_albums(TWO_RECORDINGS)
-        assert albums[0].identity.label == albums[1].identity.label
+        plain = AlbumIdentity(album_artist=COMPOSER, title=WORK, date=YEAR)
+        assert albums[0].identity.handle == plain.handle
+        assert albums[0].identity.art_key == plain.art_key
+        assert album_handle(albums[0].identity) == album_handle(plain)
+        assert track_handle(albums[0].identity, 1, 1) == track_handle(plain, 1, 1)
 
-    def test_the_separation_is_the_same_on_every_scan(self) -> None:
-        """Derived from where each was found, so it cannot move between runs."""
+    def test_the_folding_is_the_same_on_every_scan(self) -> None:
+        """Derived from the tags, so it cannot move between runs."""
         first, _ = assemble_albums(TWO_RECORDINGS)
         again, _ = assemble_albums(TWO_RECORDINGS)
         assert [album.identity.handle for album in first] == [
             album.identity.handle for album in again
         ]
+
+    def test_folders_that_name_no_album_are_left_apart(self) -> None:
+        """Folder names collide for reasons that say nothing about the music."""
+        silent = tuple(
+            SourceEntry(
+                folder_name=WORK,
+                parent_path=parent,
+                parent_name=COMPOSER,
+                candidate=one.candidate,
+            )
+            for parent, one in zip(
+                ("H:/Music/Mahler/Abbado", "H:/Music/Mahler/Solti"), TWO_RECORDINGS
+            )
+        )
+        albums, _ = assemble_albums(silent)
+        assert len(albums) == 2
 
 
 class TestEverythingElseIsLeftExactlyAlone:

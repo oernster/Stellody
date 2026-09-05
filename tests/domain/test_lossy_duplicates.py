@@ -9,12 +9,11 @@ album that was already there had its handle moved. A moved handle is a
 cover, an album rating and every track rating under it that can no longer be
 looked up.
 
-Two rules answer it; the second half of each matters as much as the first.
-Inside one folder a lossy file is dropped only where a lossless file is that
-same track. Across folders the lossless copy keeps the handle it always had and
-only the copies are told apart, ONLY where exactly one of them is lossless:
-two lossless recordings of one work are the case the telling apart was written
-for and they must go on behaving exactly as they did.
+One rule answers it now, in one place. Folders naming the same album are one
+album, so both rips land in one group, where a lossy file is dropped exactly
+where a lossless file is that same track. The album then keeps the handle it
+always had, because nothing collides with it any more: there is one album where
+there were two.
 """
 
 from __future__ import annotations
@@ -218,10 +217,22 @@ class TestTwoFoldersHoldingTheSameAlbum:
     LOSSLESS = (entry(HERE, "01 One.flac", depth=LOSSLESS_DEPTH, track=1),)
     BOTH = LOSSLESS + (entry(THERE, "01 One.m4a", depth=LOSSY_DEPTH, track=1),)
 
-    def test_both_copies_are_still_shown(self) -> None:
-        """Preferring one is not hiding the other; nothing goes silently absent."""
+    def test_the_two_folders_fold_into_one_album(self) -> None:
+        """Folders that name one album are one album, wherever they sit."""
         albums, _ = assemble_albums(self.BOTH)
-        assert len(albums) == 2
+        assert len(albums) == 1
+
+    def test_the_lossy_copy_is_then_dropped_as_the_duplicate_it_is(self) -> None:
+        """Folding brings the two copies together, where this rule can see them.
+
+        Apart, they were two albums and each kept its own tracks. Together they
+        are one album holding one copy of each track, which is the lossless
+        one, since a lossy file of a track already held lossless is the same
+        recording again rather than another track.
+        """
+        album = _only(self.BOTH)
+        assert album.track_count == 1
+        assert album.tracks[0].source.path.endswith(".flac")
 
     def test_the_lossless_copy_keeps_the_handle_it_had_alone(self) -> None:
         """THE regression. Its cover and every rating are looked up by this.
@@ -237,52 +248,41 @@ class TestTwoFoldersHoldingTheSameAlbum:
         assert len(lossless) == 1
         assert lossless[0].identity.handle == alone[0].identity.handle
 
-    def test_the_lossless_copy_carries_no_discriminator(self) -> None:
-        together, _ = assemble_albums(self.BOTH)
-        lossless = [
-            album for album in together if album.tracks[0].source.path.endswith(".flac")
-        ]
-        assert lossless[0].identity.discriminator == ""
-
-    def test_the_lossy_copy_is_the_one_told_apart(self) -> None:
-        together, _ = assemble_albums(self.BOTH)
-        lossy = [
-            album for album in together if album.tracks[0].source.path.endswith(".m4a")
-        ]
-        assert lossy[0].identity.discriminator != ""
-
-    def test_the_two_do_not_share_a_handle(self) -> None:
-        """Sharing one is what made a rating on one appear on the other."""
-        together, _ = assemble_albums(self.BOTH)
-        assert len({album.identity.handle for album in together}) == 2
+    def test_the_album_carries_no_discriminator(self) -> None:
+        """Nothing collides with it any more, because nothing is beside it."""
+        assert _only(self.BOTH).identity.discriminator == ""
 
 
 class TestWhatMustNotChange:
     """The case the telling apart was written for, left exactly as it was."""
 
-    def test_two_lossless_recordings_are_both_told_apart(self) -> None:
-        """A symphony under two conductors. Neither may claim the plain handle.
+    def test_two_lossless_recordings_fold_into_one_album(self) -> None:
+        """A symphony under two conductors: the price of folding.
 
-        Tags cannot say which of these a listener means, so preferring either
-        would move a handle that has been settled for the life of the library.
+        Neither is a copy of the other, so neither is dropped: the album holds
+        both. What is given up is that they are one album rather than two, so
+        they share a cover and a rating. The owner chose that, against the three
+        real libraries where one album genuinely sat in two folders.
         """
         entries = (
             entry(HERE, "01 Allegro.flac", depth=LOSSLESS_DEPTH, track=1),
             entry(THERE, "01 Andante.flac", depth=LOSSLESS_DEPTH, track=1),
         )
-        albums, _ = assemble_albums(entries)
-        assert len(albums) == 2
-        assert all(album.identity.discriminator for album in albums)
+        album = _only(entries)
+        assert album.track_count == 2
+        assert album.identity.discriminator == ""
 
-    def test_two_lossy_copies_are_both_told_apart(self) -> None:
-        """With none lossless there is no copy to prefer."""
+    def test_two_lossy_copies_fold_and_both_are_kept(self) -> None:
+        """With none lossless there is no copy to prefer, so neither is dropped.
+
+        The same rule as a single folder holding only lossy files: dropping one
+        needs a lossless file to say which is the copy; there is none here.
+        """
         entries = (
             entry(HERE, "01 One.m4a", depth=LOSSY_DEPTH, track=1),
             entry(THERE, "01 One.m4a", depth=LOSSY_DEPTH, track=1),
         )
-        albums, _ = assemble_albums(entries)
-        assert len(albums) == 2
-        assert all(album.identity.discriminator for album in albums)
+        assert _only(entries).track_count == 2
 
     def test_an_album_nothing_collides_with_keeps_a_plain_handle(self) -> None:
         entries = (entry(HERE, "01 One.flac", depth=LOSSLESS_DEPTH, track=1),)

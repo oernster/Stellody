@@ -157,8 +157,15 @@ class TestFoldingTheFolderIn:
         )
         assert [disc.number for disc in albums[0].discs] == [1, 2, 3, 4]
 
-    def test_a_bonus_edition_folder_stays_its_own_album(self) -> None:
-        """It names a different pressing of the record, not a second disc."""
+    def test_a_bonus_edition_folder_is_not_read_as_a_second_disc(self) -> None:
+        """It names a different pressing, so its tracks do not become disc 2.
+
+        The two folders do end up in one album, because both are tagged Ether
+        Song and folders naming one album are folded together. What this holds
+        is the narrower point the bonus-disc rule is about: a folder saying
+        "[Bonus Track]" rather than "(Bonus Disc)" is not a disc of its own,
+        so nothing here invents one.
+        """
         albums, _ = assemble_albums(
             (
                 entry("Ether Song", "01. Blue Hour.flac", tag_track=1),
@@ -169,7 +176,8 @@ class TestFoldingTheFolderIn:
                 ),
             )
         )
-        assert len(albums) == 2
+        assert len(albums) == 1
+        assert [disc.number for disc in albums[0].discs] == [1]
 
     def test_a_bonus_folder_standing_alone_is_still_one_album(self) -> None:
         """Nothing to join, so it keeps its tracks and loses only the marker."""

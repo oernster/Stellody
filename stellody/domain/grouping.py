@@ -1,8 +1,11 @@
 """Assembling scanned sources into albums.
 
-**Folders group, tags name.** A folder is one album, with sibling CD1 and CD2
-folders merged into one multi-disc set. The tags then supply that album's
-title, artist, date and genre.
+**Folders group, tags name, then tags fold.** A folder is one album, with
+sibling CD1 and CD2 folders merged into one multi-disc set. The tags then
+supply that album's title, artist, date and genre. Finally, folders that name
+the same album are folded into one, since a library keeps one album in two
+folders more often than it keeps two albums with one name; `folding.py` holds
+that rule and what it costs.
 
 A bonus disc is a disc even where its folder names no number. "Ether Song
 (Bonus Disc)" beside "Ether Song" is one album in two folders, so it is folded
@@ -23,6 +26,7 @@ from dataclasses import dataclass
 from stellody.domain import duplicates, overrides
 from stellody.domain.album import FIRST_DISC, Album
 from stellody.domain.folder_names import folder_base_and_disc, is_unnumbered_bonus
+from stellody.domain.folding import Group, fold_by_tags, most_common
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.ordering import TrackCandidate, resolve_tracks
@@ -43,35 +47,6 @@ class SourceEntry:
     album_artist: str = ""
     date: str = ""
     genre: str = ""
-
-
-def _most_common(values: list[str]) -> str:
-    """The most frequent non-empty value, ties broken alphabetically."""
-    counts: dict[str, int] = {}
-    for value in values:
-        if value:
-            counts[value] = counts.get(value, 0) + 1
-    if not counts:
-        return ""
-    return max(counts, key=lambda name: (counts[name], name))
-
-
-@dataclass(slots=True)
-class _Group:
-    """One album's worth of entries, accumulated by folder."""
-
-    base_name: str
-    parent_name: str
-    candidates: list[TrackCandidate]
-    albums: list[str]
-    artists: list[str]
-    dates: list[str]
-    genres: list[str]
-    tagged_artists: int
-    disc_conflicts: list[str]
-    # Where in `candidates` a folder calling itself a bonus disc landed without
-    # saying which disc it is.
-    bonus_positions: list[int]
 
 
 def _with_disc(candidate: TrackCandidate, disc: int) -> TrackCandidate:
@@ -103,7 +78,7 @@ def _apply_folder_disc(
     return _with_disc(candidate, folder_disc)
 
 
-def _place_bonus_discs(group: _Group) -> None:
+def _place_bonus_discs(group: Group) -> None:
     """Give a bonus folder's tracks a disc where nothing has said which.
 
     The tags are believed where they say, since the folder name gave no number
@@ -130,28 +105,28 @@ def _place_bonus_discs(group: _Group) -> None:
         group.candidates[position] = _with_disc(group.candidates[position], disc)
 
 
-def _identity_of(group: _Group) -> AlbumIdentity:
+def _identity_of(group: Group) -> AlbumIdentity:
     """Name an album from the tags its tracks carry, falling back to folders."""
-    title = _most_common(group.albums) or normalise(group.base_name) or UNKNOWN_ALBUM
-    artist = _most_common(group.artists)
+    title = most_common(group.albums) or normalise(group.base_name) or UNKNOWN_ALBUM
+    artist = most_common(group.artists)
     if not artist:
         artist = normalise(group.parent_name) or VARIOUS_ARTISTS
     return AlbumIdentity(
         album_artist=artist,
         title=title,
-        date=_most_common(group.dates),
+        date=most_common(group.dates),
     )
 
 
-def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], _Group]:
+def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], Group]:
     """Bucket entries into one group per album folder."""
-    groups: dict[tuple[str, str], _Group] = {}
+    groups: dict[tuple[str, str], Group] = {}
     for entry in entries:
         base, folder_disc = folder_base_and_disc(entry.folder_name)
         key = (entry.parent_path, comparison_key(base))
         group = groups.get(key)
         if group is None:
-            group = _Group(
+            group = Group(
                 base_name=base,
                 parent_name=entry.parent_name,
                 candidates=[],
@@ -183,7 +158,7 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], _Group]:
     return groups
 
 
-def _paths_by_name(group: _Group) -> dict[str, tuple[str, ...]]:
+def _paths_by_name(group: Group) -> dict[str, tuple[str, ...]]:
     """Which files a group's file names stand for.
 
     A finding names the FILE NAMES it is about while an override pins a full
@@ -215,7 +190,7 @@ def _is_answered(
     return overrides.covers(accepted, album, field, paths)
 
 
-def _drop_lossy_duplicates(group: _Group) -> None:
+def _drop_lossy_duplicates(group: Group) -> None:
     """Drop a lossy file where a lossless one in the same folder is that track.
 
     The parallel lists are cut to the same shape, since each one is read by
@@ -242,7 +217,7 @@ def _drop_lossy_duplicates(group: _Group) -> None:
 
 
 def _named_apart(
-    groups: dict[tuple[str, str], _Group],
+    groups: dict[tuple[str, str], Group],
 ) -> dict[tuple[str, str], AlbumIdentity]:
     """Name every group, separating any two that resolve exactly alike.
 
@@ -296,7 +271,7 @@ def assemble_albums(
     been answered stop being reported. Passing none is the old behaviour
     exactly, which is what a library nobody has accepted anything in gets.
     """
-    groups = _collect(entries)
+    groups = fold_by_tags(_collect(entries))
     built: list[tuple[AlbumIdentity, Album]] = []
     issues: list[LibraryIssue] = []
     pinned = overrides.index(accepted)
@@ -353,7 +328,7 @@ def assemble_albums(
                 Album(
                     identity=identity,
                     tracks=tuple(laid),
-                    genre=_most_common(group.genres),
+                    genre=most_common(group.genres),
                 ),
             )
         )
