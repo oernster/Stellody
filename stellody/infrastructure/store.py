@@ -13,8 +13,8 @@ from collections.abc import Mapping
 from stellody.application.values import FileStat, FolderRecord, SourceRecord
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.listening import Listening
-from stellody.domain.overrides import Override
-from stellody.infrastructure import override_rows
+from stellody.domain.overrides import AlbumEdit, Override
+from stellody.infrastructure import album_edit_rows, override_rows
 
 UNIT_SEPARATOR = "\x1f"
 
@@ -113,7 +113,9 @@ class SqliteLibraryStore:
         try:
             self._connection.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
             self._connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
-            self._connection.executescript(SCHEMA + override_rows.SCHEMA)
+            self._connection.executescript(
+                SCHEMA + override_rows.SCHEMA + album_edit_rows.SCHEMA
+            )
             self._connection.commit()
         except Exception:
             self._connection.close()
@@ -175,6 +177,18 @@ class SqliteLibraryStore:
     def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
         """Take corrections back, so the automatic rules show through again."""
         override_rows.discard(self._connection, unwanted)
+
+    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
+        """Everything a listener has stated about an album itself."""
+        return album_edit_rows.all_album_edits(self._connection)
+
+    def state_album_edits(self, stated: tuple[AlbumEdit, ...]) -> None:
+        """Record what has been stated, replacing anything standing."""
+        album_edit_rows.state(self._connection, stated)
+
+    def discard_album_edits(self, unwanted: tuple[AlbumEdit, ...]) -> None:
+        """Withdraw statements, so the tags name the album again."""
+        album_edit_rows.discard(self._connection, unwanted)
 
     def file_signatures(self) -> Mapping[str, tuple[int, int]]:
         """Every present file against its recorded size and mtime."""

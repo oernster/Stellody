@@ -27,6 +27,7 @@ from stellody.application.values import (
 )
 from stellody.domain.album import Album
 from stellody.domain.cue import CueParseError, CueSheet, parse_cue
+from stellody.domain.entries import stated_over
 from stellody.domain.grouping import assemble_albums
 from stellody.domain.health import IssueKind, LibraryIssue
 
@@ -133,9 +134,11 @@ class LoadLibrary:
     def run(self) -> LibraryView:
         """The remembered library, assembled from stored records."""
         records = tuple(self._store.load_folders())
-        albums, issues = assemble_albums(
-            _grouping_entries(records), self._store.all_overrides()
-        )
+        # Stated album values first, since they decide what an album IS and so
+        # what folds with what; the accepted corrections are laid over the
+        # tracks afterwards, which is where they have always gone.
+        entries = stated_over(_grouping_entries(records), self._store.all_album_edits())
+        albums, issues = assemble_albums(entries, self._store.all_overrides())
         return LibraryView(
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)

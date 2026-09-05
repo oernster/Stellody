@@ -28,6 +28,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from stellody.domain.health import IssueKind
+from stellody.domain.text import split_artists
 from stellody.domain.track import Track
 
 # Album-wide rather than about one file, so an override carrying this field
@@ -41,6 +42,7 @@ class OverrideField(StrEnum):
     DISC_NUMBER = "disc-number"
     TRACK_NUMBER = "track-number"
     TITLE = "title"
+    ARTIST = "artist"
     ALBUM_ARTIST = "album-artist"
 
 
@@ -64,8 +66,76 @@ TRACK_FIELDS = frozenset(
         OverrideField.DISC_NUMBER,
         OverrideField.TRACK_NUMBER,
         OverrideField.TITLE,
+        OverrideField.ARTIST,
     }
 )
+
+# What a finding can propose, which is not everything an override can hold.
+# The artist is here because somebody may TYPE one; no rule ever infers it, so
+# nothing proposes it and it appears in no report. The two lists are kept apart
+# rather than merged, since a field the rules cannot work out is exactly the
+# field a person most needs to be able to state.
+PROPOSED_FIELDS = frozenset(FIELD_FOR_KIND.values())
+
+
+class AlbumField(StrEnum):
+    """Which part of an album's own description an edit states.
+
+    A separate vocabulary from `OverrideField` rather than more members on it,
+    because these are applied at a different moment and keyed by a different
+    thing. Sharing one enum would let a value meant for one layer be handed to
+    the other, which would be accepted and then quietly do nothing.
+    """
+
+    ALBUM_ARTIST = "album-artist"
+    TITLE = "album-title"
+    DATE = "date"
+    GENRE = "genre"
+
+
+@dataclass(frozen=True, slots=True)
+class AlbumEdit:
+    """One stated part of an album's description, against the folder holding it.
+
+    **Keyed by the folder rather than by the album's handle**, which is the
+    whole reason this is a separate thing from `Override`. A handle is a digest
+    of the album artist, the title and the year, so an edit to any of those
+    changes the handle: an edit keyed by the handle would answer to the album
+    it had already stopped describing and would undo itself the instant it took
+    effect. A folder is where the music actually sits, so it says the same
+    thing before and after.
+
+    That keying is also what makes two albums fold together. Give one the
+    artist and title another already carries and they resolve to one handle,
+    which is how two disc folders of a single release have always become one
+    album. The merged album reads the rating held against that handle, so the
+    album edited INTO another takes the rating of the one it joined.
+    """
+
+    folder: str
+    field: AlbumField
+    value: str
+
+    def __post_init__(self) -> None:
+        if not self.folder:
+            raise ValueError("an album edit needs a folder to belong to")
+        if not self.value:
+            raise ValueError("an album edit with no value states nothing")
+
+
+# What the album edits say, keyed for one lookup while entries are walked.
+AlbumEditIndex = dict[tuple[str, AlbumField], str]
+
+
+def album_index(edits: tuple[AlbumEdit, ...]) -> AlbumEditIndex:
+    """Arrange album edits for the question assembly asks of them.
+
+    A later edit for the same folder and field replaces an earlier one, so a
+    set carrying both cannot resolve differently depending on which was read
+    first. That is the rule `index` follows for the track-level table and the
+    two are deliberately the same.
+    """
+    return {(edit.folder, edit.field): edit.value for edit in edits}
 
 
 def can_be_accepted(kind: IssueKind) -> bool:
@@ -183,9 +253,15 @@ def applied(
             value_for(accepted, album, OverrideField.TRACK_NUMBER, path)
         )
         title = value_for(accepted, album, OverrideField.TITLE, path)
-        if disc is None and number is None and title is None:
+        artist = value_for(accepted, album, OverrideField.ARTIST, path)
+        if disc is None and number is None and title is None and artist is None:
             laid.append(track)
             continue
+        # One field holding several names, split the way a tag holding several
+        # is split, so a typed "Sasha; Kicks Like a Mule" reaches the library
+        # as the two artists it names rather than as one artist with a
+        # semicolon in it.
+        credited = split_artists(artist) if artist is not None else ()
         try:
             laid.append(
                 replace(
@@ -193,6 +269,7 @@ def applied(
                     disc_number=disc if disc is not None else track.disc_number,
                     track_number=(number if number is not None else track.track_number),
                     title=title if title is not None else track.title,
+                    artists=credited if credited else track.artists,
                 )
             )
         except ValueError:

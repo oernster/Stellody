@@ -17,7 +17,7 @@ from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
-from stellody.domain.overrides import Override
+from stellody.domain.overrides import AlbumEdit, Override
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import SETTING_ROOT
@@ -58,6 +58,10 @@ class BareStore:
 
     def all_overrides(self) -> tuple[Override, ...]:
         """Nothing accepted; these stores stand in for an untouched library."""
+        return ()
+
+    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
+        """Nothing stated either, for the same reason."""
         return ()
 
     def load_folders(self) -> tuple:

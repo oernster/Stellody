@@ -14,7 +14,7 @@ from stellody.application.scan import LibraryView
 from stellody.domain.album import Album
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
-from stellody.domain.overrides import Override, OverrideField
+from stellody.domain.overrides import AlbumEdit, Override, OverrideField
 from stellody.domain.track import Track, TrackSource
 
 FOLDER = "H:/Music/Portishead/Dummy"
@@ -22,6 +22,10 @@ RATE = 44100
 
 
 class RecordingStore:
+    # Whatever anybody has stated about an album, kept as the real store
+    # keeps it: a set that starts empty and grows only when something is said.
+    stated_albums: tuple = ()
+
     """Just enough store to watch what the service asks of it."""
 
     def __init__(self) -> None:
@@ -41,6 +45,20 @@ class RecordingStore:
             item
             for item in self.accepted
             if (item.album, item.path, item.field) not in dropped
+        )
+
+    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
+        return self.stated_albums
+
+    def state_album_edits(self, stated: tuple[AlbumEdit, ...]) -> None:
+        self.stated_albums = self.stated_albums + tuple(stated)
+
+    def discard_album_edits(self, unwanted: tuple[AlbumEdit, ...]) -> None:
+        dropped = {(item.folder, item.field) for item in unwanted}
+        self.stated_albums = tuple(
+            item
+            for item in self.stated_albums
+            if (item.folder, item.field) not in dropped
         )
 
 

@@ -20,7 +20,7 @@ from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
-from stellody.domain.overrides import Override
+from stellody.domain.overrides import AlbumEdit, Override
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 from stellody.shared import resources
 from stellody.ui.bottom_tray import BOTTOM_ICON_PX
@@ -53,6 +53,10 @@ def album() -> Album:
 
 
 class RememberingStore:
+    # Whatever anybody has stated about an album, kept as the real store
+    # keeps it: a set that starts empty and grows only when something is said.
+    stated_albums: tuple = ()
+
     """Enough of a store to answer a window, keeping what it is told."""
 
     def __init__(self, settings: dict[str, str] | None = None) -> None:
@@ -74,6 +78,20 @@ class RememberingStore:
             item
             for item in self.accepted
             if (item.album, item.path, item.field) not in dropped
+        )
+
+    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
+        return self.stated_albums
+
+    def state_album_edits(self, stated: tuple[AlbumEdit, ...]) -> None:
+        self.stated_albums = self.stated_albums + tuple(stated)
+
+    def discard_album_edits(self, unwanted: tuple[AlbumEdit, ...]) -> None:
+        dropped = {(item.folder, item.field) for item in unwanted}
+        self.stated_albums = tuple(
+            item
+            for item in self.stated_albums
+            if (item.folder, item.field) not in dropped
         )
 
     def load_folders(self) -> tuple:

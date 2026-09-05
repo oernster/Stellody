@@ -21,10 +21,9 @@ what a ripper actually records, so that is what is trusted.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from stellody.domain import duplicates, overrides
 from stellody.domain.album import FIRST_DISC, Album
+from stellody.domain.entries import SourceEntry, folder_of, stated_over
 from stellody.domain.folder_names import folder_base_and_disc, is_unnumbered_bonus
 from stellody.domain.folding import Group, fold_by_tags, most_common
 from stellody.domain.health import IssueKind, LibraryIssue
@@ -34,19 +33,9 @@ from stellody.domain.text import VARIOUS_ARTISTS, comparison_key, normalise
 
 UNKNOWN_ALBUM = "Unknown Album"
 
-
-@dataclass(frozen=True, slots=True)
-class SourceEntry:
-    """One scanned source, with the folder context needed to place it."""
-
-    folder_name: str
-    parent_path: str
-    parent_name: str
-    candidate: TrackCandidate
-    album: str = ""
-    album_artist: str = ""
-    date: str = ""
-    genre: str = ""
+# Re-exported: assembly is where these have always been reached from; the
+# split was about this module's length rather than about its callers.
+__all__ = ["SourceEntry", "assemble_albums", "folder_of", "stated_over"]
 
 
 def _with_disc(candidate: TrackCandidate, disc: int) -> TrackCandidate:

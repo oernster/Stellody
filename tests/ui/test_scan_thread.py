@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.scan import ScanLibrary
 from stellody.application.values import FolderListing
-from stellody.domain.overrides import Override
+from stellody.domain.overrides import AlbumEdit, Override
 from stellody.infrastructure.probe import AudioProbe
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
@@ -55,6 +55,10 @@ class QuietStore:
 
     def all_overrides(self) -> tuple[Override, ...]:
         """Nothing accepted; these stores stand in for an untouched library."""
+        return ()
+
+    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
+        """Nothing stated either, for the same reason."""
         return ()
 
     def load_folders(self) -> tuple:

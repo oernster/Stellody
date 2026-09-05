@@ -17,7 +17,7 @@ from stellody.application.values import (
 )
 from stellody.domain.equalising import Equalisation
 from stellody.domain.listening import Listening
-from stellody.domain.overrides import Override
+from stellody.domain.overrides import AlbumEdit, Override
 from stellody.domain.playback import (
     OutputReport,
     OutputRequest,
@@ -98,6 +98,22 @@ class LibraryStore(Protocol):
 
     def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
         """Take corrections back, so the automatic rules show through again."""
+
+    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
+        """Everything a listener has stated about an album itself.
+
+        Stated against the FOLDER rather than the album's handle, because
+        an edit to an album's artist or title changes that handle: keyed
+        by it, the edit would answer to the album it had already stopped
+        describing.
+        """
+
+    def state_album_edits(self, stated: tuple[AlbumEdit, ...]) -> None:
+        """Record what has been stated, replacing anything standing."""
+
+    def discard_album_edits(self, unwanted: tuple[AlbumEdit, ...]) -> None:
+        """Withdraw statements, so the tags name the album again."""
+
         ...
 
     def file_signatures(self) -> Mapping[str, tuple[int, int]]:

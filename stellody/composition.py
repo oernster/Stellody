@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.editing import TagEditing
 from stellody.application.listening import ListeningLog
 from stellody.application.pictures import Pictures
 from stellody.application.repairs import Repairs
@@ -105,6 +106,7 @@ def build_window(
         art=AlbumArt(artwork),
         chooser=ChooseCover(ArchiveCovers(), artwork),
         repairs=Repairs(store),
+        tag_editing=TagEditing(store),
         pictures=Pictures(VideoReader),
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)

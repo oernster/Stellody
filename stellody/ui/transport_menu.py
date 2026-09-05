@@ -83,6 +83,16 @@ class TransportMenu:
             menu.addSeparator()
             covers = menu.addAction("Find cover art online...")
             covers.triggered.connect(lambda: self.choose_cover(album))
+        # Over a track it states things about that track; over a sleeve
+        # about every track the album holds. Nothing here writes a music
+        # file, which the panel itself says before anything is typed.
+        if album is not None and self.can_edit_tags:
+            menu.addSeparator()
+            tags = menu.addAction("Edit tags...")
+            if track is not None:
+                tags.triggered.connect(lambda: self.edit_track_tags(album, track))
+            else:
+                tags.triggered.connect(lambda: self.edit_album_tags(album))
         self._menu = menu
         menu.popup(over.viewport().mapToGlobal(where))
 

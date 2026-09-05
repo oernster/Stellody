@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.editing import TagEditing
 from stellody.application.listening import ListeningLog
 from stellody.application.pictures import Pictures
 from stellody.application.ports import SettingsStore
@@ -32,6 +33,7 @@ from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
 from stellody.ui.covering import Covering
+from stellody.ui.editing_tags import EditingTags
 from stellody.ui.expanding import ExpandToggle
 from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
@@ -114,6 +116,7 @@ class MainWindow(
     Playing,
     TransportMenu,
     Choosing,
+    EditingTags,
     ShowingShapes,
     ShowingSpectrum,
     Menus,
@@ -140,6 +143,7 @@ class MainWindow(
         chooser: ChooseCover | None = None,
         updates: UpdateService | None = None,
         repairs: Repairs | None = None,
+        tag_editing: TagEditing | None = None,
         pictures: Pictures | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
@@ -193,6 +197,7 @@ class MainWindow(
         self.expanding = ExpandToggle(self._tree, self._tree.header())
         self.start_covering(art)
         self.start_choosing(chooser)
+        self.start_editing_tags(tag_editing)
         self.start_searching()
         self._tray = LibraryTray(
             self,
