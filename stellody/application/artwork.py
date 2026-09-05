@@ -2,9 +2,9 @@
 
 A cover sits in one of two places: a file beside the music, which the walk
 ranked with the likeliest name first, else a picture inside the audio itself.
-Measured over the reference library, 395 folders of 510 carry a file beside
-the music, 114 more carry only an embedded picture and exactly one carries
-neither. The embedded case is a main path rather than a fallback, so it is
+Measured over the reference library, most folders carry a file beside the
+music, a sizeable minority carry only a picture inside the audio and almost
+none carry neither. The embedded case is a main path rather than a fallback, so it is
 gathered here rather than left to a later milestone.
 
 An album can span several folders, since sibling disc folders merge into one

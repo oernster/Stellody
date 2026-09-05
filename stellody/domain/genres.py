@@ -17,8 +17,11 @@ here, which is also why Footwork is absent (see below).
 
 Four of the fifteen mains are left out because nothing here belongs under one:
 Brass & Military, Children's, Latin and Non-Music. Comedy takes the place of
-the last of those as a main of its own; see the ruling below. So there are
-twelve mains here, eleven of them Discogs' own.
+the last of those as a main of its own; see the ruling below. The rulings
+further down then split Discogs' compound names and raise three styles to
+mains of their own, so this catalogue carries more mains than Discogs does.
+`MAINS` is the list; no count is written here, because a count written in a
+comment is one more thing to keep true.
 
 Reggae was left out too and put back: no tag in the library says reggae, which
 is a fact about the tags. Finley Quaye's
@@ -212,9 +215,10 @@ _PIECES = re.compile(r";")
 #
 # Keyed on the folded form, so a tag is matched however it was cased.
 # One tag can mean more than one genre, so each names however many it names.
-# The count beside each is how many files in the reference library carry a tag
-# that reaches the catalogue through it, so a ruling can be weighed rather than
-# argued about.
+# The count beside each is what the reference library held WHEN THAT RULING WAS
+# MADE, kept so a decision can be weighed rather than argued about. It is a
+# record of the evidence rather than a live measurement, so it is not updated as
+# the library grows: re-count before leaning on one to make a fresh ruling.
 ALIASES: dict[str, tuple[str, ...]] = {
     # Spellings of a catalogue name that the name itself does not match.
     "hip-hop/rap": ("Hip Hop",),  # 415 files

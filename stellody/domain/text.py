@@ -29,10 +29,10 @@ _FILENAME_ORDINAL = re.compile(
 )
 _YEAR = re.compile(r"(\d{4})")
 # A date tag as the files of this library actually write one. Measured across
-# 6,445 tagged files: a bare year, a year and month, a full date written with
-# dashes or with spaces, and a full date wearing a time. The time is the reason
-# this exists. Of the 1,354 files carrying one, every single value is UTC and
-# only four times of day appear at all: noon, midnight, and the two forms of
+# every tagged file: a bare year, a year and month, a full date written with
+# dashes or with spaces, then a full date wearing a time. The time is the reason
+# this exists. Of those carrying one, every single value is UTC and only four
+# times of day appear at all: noon, midnight and the two forms of
 # midnight in US Pacific. Those are the iTunes store's padding for a release
 # DAY, so the hour names nothing that happened and the offset is not an offset.
 # The trailing offset is admitted anyway, since a file written elsewhere may

@@ -287,12 +287,12 @@ class ExpandToggle(QWidget):
     def _whole_library(self, change) -> None:
         """Move every row, then read the arrow ONCE rather than per row.
 
-        `expandAll` says what it did row by row: measured on a library of 628
-        albums holding 8164 tracks, it emits 8792 `expanded` signals, one for
-        every row it opened. Answering each of them by walking all 628 albums
-        is over five million questions asked with the interface thread held
-        throughout. It took 3.72 seconds against 0.03 for the same call with
-        nothing listening. That is the whole of the difference.
+        `expandAll` says what it did row by row: it emits one `expanded` signal
+        for every row it opened. Answering each of them by walking the whole
+        library makes the work the product of the two, with the interface
+        thread held throughout, so it grows as the square of the library
+        rather than with it. Measured on a real library, that was the
+        difference between a pause somebody notices and one nobody does.
 
         So the per-row answer is turned off for the duration of a change that
         moves everything and asked once at the end, where it is the same

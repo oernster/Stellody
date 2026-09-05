@@ -143,9 +143,9 @@ class FolderWalker:
     def count(self, root: str) -> int:
         """Count the folders holding audio, without stat-ing a single file.
 
-        Measured over a 510 folder, 4870 file library: 0.04 seconds, against a
-        full scan of the same tree in the tens of seconds. Cheap enough to pay
-        for a percentage that means something.
+        Measured over the reference library: a small fraction of a second,
+        against a full scan of the same tree in the tens of seconds. Cheap
+        enough to pay for a percentage that means something.
         """
         found = 0
         for _folder, directories, files in os.walk(root):

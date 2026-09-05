@@ -1,8 +1,8 @@
 """Cue-sheet parsing: one audio file described as many tracks.
 
-163 of the 485 albums in the reference library are built from a cue sheet with
-cue sheet, so this is a main path rather than an edge case. Parsing is pure
-text work; reading the file belongs to infrastructure.
+Enough of the reference library is built this way rather than one file per
+track that this is a main path rather than an edge case. Parsing is pure text
+work; reading the file belongs to infrastructure.
 """
 
 from __future__ import annotations

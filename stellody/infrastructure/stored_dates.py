@@ -1,12 +1,12 @@
 """Clearing the padding out of dates this database was given earlier.
 
 A date tag written by the iTunes store carries a time that names nothing: the
-release day wearing noon UTC, or one of two spellings of midnight in US
-Pacific. Measured across the reference library, every one of the 1,354 files
-holding a time held one of those four and not one carried a real offset.
+release day wearing noon UTC, else one of two spellings of midnight in US
+Pacific. Measured across the reference library, every file holding a time held
+one of those four and not one carried a real offset.
 
 The scan now reduces a date as it reads it, so nothing arriving from here on
-holds a time. Rows written before that do, and they stay wrong until the folder
+holds a time. Rows written before that do; they stay wrong until the folder
 they came from happens to be read again. A library is scanned incrementally, so
 for a folder nobody touches that is never.
 

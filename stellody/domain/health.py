@@ -1,8 +1,8 @@
 """Library health: what Stellody had to work around, reported not repaired.
 
 Stellody never writes to a music library, so a damaged tag is described rather
-than corrected. The reference library carries 21 albums whose tags collide,
-left behind by another player that did write to the files.
+than corrected. The reference library carries albums whose tags collide, left
+behind by another player that did write to the files.
 """
 
 from __future__ import annotations

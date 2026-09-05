@@ -1,15 +1,15 @@
 """Narrowing the library to what somebody is looking for.
 
 Pure, deliberately without an index of its own. Measured at the reference
-library's size, 485 albums of 6,877 tracks, a pass over text already
-normalised costs under half a millisecond, so a keystroke can afford a whole
-one. A stored index would also hold the wrong text: the store keeps raw tags
+library's size, a pass over text already normalised costs a small fraction of
+the time a typed character allows, so a keystroke can afford a whole one.
+A stored index would also hold the wrong text: the store keeps raw tags
 while the library shows resolved ones, so a title the resolver corrected would
 be unfindable and a damaged one would match a row nobody can see.
 
 **Normalising is done once, not once a keystroke.** Measured, `comparison_key`
-over 6,877 titles takes 9.2 milliseconds against 0.24 for a plain fold; the
-answer never changes between keystrokes. So an album's text is prepared
+over every title in the library costs tens of times what a plain fold does;
+the answer never changes between keystrokes. So an album's text is prepared
 when the library is assembled and a keystroke does substring tests alone.
 
 **An album is kept whole.** A phrase that hits one track keeps every track, so
