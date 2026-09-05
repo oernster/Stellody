@@ -77,23 +77,17 @@ Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
-Depends on the transport the position display already built. The backend is
-settled rather than open: PyAV was chosen for the audio formats libsndfile
-cannot open and answers this as well, which is what keeps the audio path bit
-perfect where Qt Multimedia would have brought a second idea of what a track
-is. `ARCHITECTURE.md` records the reasoning. This paragraph used to sit under
-one saying the choice had still to be made, with Qt Multimedia named as the
-honest default: two answers to one question, in one milestone, so whoever
-picked it up would have been told both.
+Depends on the transport the position display already built. Build it on PyAV,
+which is here for the audio formats libsndfile cannot open and answers this as
+well; that is what keeps the audio path bit perfect where Qt Multimedia would
+bring a second idea of what a track is. `ARCHITECTURE.md` records the
+reasoning.
 
 ## 3. Accept the repairs the health report describes
 
-Built and gated; never watched. The overrides table, the third layer in
-load-time resolution, accepting at each of the three granularities, resetting
-and both repair controls are all in and held by tests, including an end to end
-one that closes the database and opens it again. What has not happened is
-somebody looking at it: every check so far ran offscreen, where there are no
-real fonts, no real focus and nothing anybody can see.
+What is left is somebody looking at it. Every check so far ran offscreen, where
+there are no real fonts, no real focus and nothing anybody can see, so the
+screen has never been read by a person.
 
 **What the offscreen suite cannot settle.** How the screen reads with 36 albums
 in it at real font sizes, whether the scrolling column is comfortable to work
@@ -111,10 +105,10 @@ an unreadable file, did not occur and cannot be accepted by design.
 
 Accepting pins the value the rules already produced, which is what "yes, keep
 that" means and why the library does not move when a report is accepted. The
-domain will apply a DIFFERENT pinned value and is tested for it, so the layer
-is there; nothing in the interface sets one. Whether to offer it is a separate
-decision rather than an omission, since it is the point where Stellody stops
-describing a library and starts holding an opinion about it.
+domain will apply a DIFFERENT pinned value, so the layer for one is there;
+nothing in the interface sets one. Whether to offer it is a separate decision
+rather than an omission, since it is the point where Stellody stops describing
+a library and starts holding an opinion about it.
 
 Done when: a real library's report is accepted in the built application and
 empties, survives closing Stellody and opening it again, survives a rescan, then
@@ -169,31 +163,16 @@ at exactly unity, with the same samples the file holds.
 
 ## 5. Make the sites findable
 
-The markup is already there: a title and a description on every page, a
-canonical, the full Open Graph and Twitter set, `SoftwareApplication`
-structured data on the front page, a sitemap and a robots file. None of that is
-discovery. Nothing has been submitted to a search engine, no structured data
-has been validated against a real checker and neither host has been observed in
-an index.
-
-What is left is the part that moves it:
+Nothing has been submitted to a search engine, no structured data has been
+validated against a real checker and neither host has been observed in an
+index. What is left happens in a browser rather than in this repository:
 
 - **Register both hosts.** Google Search Console plus Bing Webmaster Tools for
   `stellody.co.uk`, then submit `sitemap.xml`. Register `stellody.com` as well,
   where the point is the opposite one: confirm the cross-domain canonical is
   read, so the mirror is treated as the copy rather than as a rival.
 - **Validate the structured data** in the Rich Results Test rather than by
-  reading it, then extend it past the front page. The other three pages carry
-  no JSON-LD at all.
-- **Give the link previews their pictures.** The cards ask for `summary` with
-  the 512px icon; the site holds two screenshots that would carry a
-  `summary_large_image` card instead.
-- **Put `lastmod` in the sitemap.** Visible dates are forbidden on these sites;
-  machine metadata is exempt, so this is the only signal a sitemap carries
-  beyond the list of URLs.
-
-Every page change lands in `docs/` and reaches `stellody.com` on its own
-through the mirror workflow, so this is one repository's work.
+  reading it, on each of the four pages.
 
 Done when: both hosts are verified in Search Console with the sitemap submitted
 and no coverage errors, the structured data passes the Rich Results Test and a
