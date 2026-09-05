@@ -17,7 +17,7 @@ has never been seen to fail is not yet a guard.
 | 7 | No module exceeds 400 lines. | `tests/structural/test_loc.py::test_no_module_exceeds_the_line_cap` |
 | 8 | No module sits in the 381 to 400 danger band; a file that reaches it is reduced to 350 or below rather than shaved. | `tests/structural/test_loc.py::test_no_module_sits_in_the_danger_band` |
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
-| 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/structural/test_rings.py` |
+| 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py` |
 | 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
 | 12 | Exactly two modules may open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
@@ -314,6 +314,41 @@ a row and lets the automatic rule show through again; there is nothing to
 corrupt, because the raw tags were never altered, which invariants 1 and 2
 enforce rather than describe.
 
+## Stating what an album is
+
+**A correction accepted and a value stated are different acts, so they are
+different records.** Accepting says "yes, keep what the rule proposed" about a
+value Stellody worked out; stating says what the album IS, over whatever the
+tags claim and whatever any rule would make of them. `Override` is the first
+and `AlbumEdit` in `stellody/domain/overrides.py` is the second.
+
+**A stated value is keyed by the folder, never by the handle.** That keying is
+the whole reason the two are separate types. A handle is a digest of the album
+artist, the title and the year, so an edit to any of those changes the handle:
+an edit keyed by it would answer to the album it had already stopped describing
+and would undo itself at the instant it took effect. A folder is where the
+music actually sits, so it says the same thing before and after.
+
+**Stated values are laid on BEFORE anything is folded.** `stated_over` in
+`stellody/domain/entries.py` rewrites the entries, then assembly runs on the
+result, so a stated artist or title is what the album is IDENTIFIED BY rather
+than a label hung on it afterwards. Doing it the other way round would leave
+the library sorted and folded by tags nobody agreed with while displaying the
+values somebody did.
+
+**Folding is a consequence rather than a feature.** Give one folder the artist
+and title another already carries and both resolve to one handle, which is how
+two disc folders of a single release have always become one album. So stating a
+tag is also the way to merge two folders by hand. The merged album reads the
+rating held against that handle, which means the album edited INTO another
+takes the rating of the one it joined; that is stated here because it is the
+one part of it a listener could be surprised by.
+
+**Four fields are stateable and genre is one of them.** `AlbumField` names the
+album artist, the title, the date and the genre. A genre stated this way is
+what the filter below narrows on, so correcting a tag and being findable by it
+are the same act rather than two.
+
 ## Scanning
 
 The walker lists folders, the probe reads tags out of one file and the store
@@ -586,6 +621,55 @@ than reasoned about:
 - `scrollTo` is what opens every level above a row, which a multi-disc album
   needs since its tracks sit under a disc. Expanding the parent alone leaves
   the album shut.
+
+## The genre catalogue and the filter
+
+**A settled list, not the library's own strings.** The reference library states
+43 distinct genre strings over 5,756 tagged files, which is a list nobody could
+tick through and one that spells the same idea several ways. So the catalogue
+in `stellody/domain/genres.py` is a fixed 18 mains carrying 16 styles between
+them, 34 boxes in all, alphabetical, with only Electronic (11), Rock (4) and
+Pop (1) carrying styles at all. A main with no styles is not a gap; it is a
+main nothing in the reference library subdivides.
+
+**Discogs' spellings, with the shape ruled on here.** Taking a published
+vocabulary means the names are ones a listener has seen before and that a tag
+written by another tool has a chance of matching. What is NOT taken is the
+hierarchy: Britpop sits under Pop rather than under Rock, Punk and Rap each
+stand as mains of their own, each ruled individually because the published
+answer read wrong against this library rather than because a rule was applied.
+
+**The alias table is where those rulings live.** `ALIASES` maps the spellings
+found in the wild onto catalogue entries, so `MAIN_OF` and `chosen_in` answer
+about a tag written any of several ways. It is a table of decisions, so it
+grows by somebody making one rather than by pattern.
+
+**The filter is pure and takes a FIELD, not a genre.** `Narrowing` and
+`narrowed_to` live in `stellody/domain/narrowing.py`; genre is the only field
+the interface offers today, while artist, title and date are stated in the same
+editor and answer the same question, so they arrive by being passed rather than
+by the module learning about them.
+
+**Any, not all.** An album is kept when it carries ANY of the values ticked, so
+each tick widens what is on screen. Ruled by Oliver against a library where an
+album usually carries one genre string: asking for Rock and Jazz at once would
+otherwise hold nothing, which is a filter that punishes the second tick.
+
+**A style is not its main in the ASK.** `chosen_in` already states the main of
+every style an album carries, so an album marked Trance answers to Electronic
+without the filter knowing what a style is. Ticking Trance means trance and
+nothing wider, which is why the dialog leaves the main alone as a style is
+ticked.
+
+**"Not stated" is a box because it has to be reachable.** More than a tenth of
+the library carries no genre tag and an album whose tag names nothing in the
+catalogue is in the same position: no tick could ever reach either. To somebody
+reading the dialog they are one thing, so they are one box.
+
+**The filter runs before the phrase.** Narrowing answers which albums are on
+screen and nothing about how they are arranged, so a filtered library can still
+be searched and a search can still be filtered. The two compose because neither
+knows about the other.
 
 ## Ratings and play counts
 
@@ -882,8 +966,12 @@ only new way out.
 | Every stop that can be landed on shows a ring, the same one everywhere | The ring rules had been stated one way only: which things must NOT ring. A control with no rule at all passed both checks, so a checkbox shipped as a stop that Tab landed on while nothing on screen reported it, which is worse than not being a stop since the reader is simply lost. The converse is now asserted by walking the real widgets of the window and of the dialogs, rather than against a list, because whoever forgets a rule forgets the list entry with it. Two exceptions are named and reasoned: a zero-size holder has nothing to paint on; the stars paint their own, since five glyphs standing for one value must ring once rather than five times. The stars were also ringing in a colour of their own, a second token nothing else used, so they read blue while the application read green; one name now serves both. |
 | A checkbox's ring is painted on its square, not stated in the stylesheet | The ring belongs on the box rather than round the words, because the box is what a checkbox is read as. The sheet cannot draw it there: naming `::indicator` hands Qt the whole subcontrol and the tick goes with it, measured as a square that could not be told ticked from unticked, while a rule scoped to `:focus` alone changes nothing at all. Owning the square in the sheet would mean inventing a checked picture and an unchecked one, which is a redrawn checkbox rather than a ring on Qt's. So `ringed_check.py` paints over the rectangle Qt reports for the square, in the room the sheet's own padding already leaves, taking its two colours from the sheet as properties so the palette stays the single home. The class is then the rule: a structural test forbids a plain `QCheckBox` anywhere but the module that subclasses it, since that is the one way an unringed stop could come back. |
 | The sleeve grid travels to a selection rather than snapping to it | A list view counts its scrollbar in items unless told otherwise, so the smallest move it could make was one whole row of sleeves: picking a cover two rows down jumped the grid a row at a time, which is what got reported. Counting in pixels makes the move continuous and a short run over it makes it readable, since artwork that arrives instantly somewhere else has to be found again by eye, which is the thing scrolling to it was meant to save. Where to scroll to stays Qt's answer: the jump it would have made is taken, put back and then travelled, so no second copy of the rules about revealing an item has to be kept in step with its own. Nothing travels while the grid is off screen; otherwise it would still be moving at the moment it is shown. `stellody/ui/gliding.py`, held by `tests/ui/test_gliding_grid.py`, which drives the run by setting its time rather than by sleeping. |
-| A cancelled search is silenced rather than stopped | A request already inside `urlopen` cannot be interrupted, so cancelling promises the narrower thing: the answer is not announced. The worker reads its flag after each slow call and before the emit that follows; letting go of it disconnects it as well. Asking who sent an answer does not work here: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive. |
+| A cancelled lookup is stopped where it stands, not merely silenced | Silencing was the first answer and it was the wrong promise: a listener who moves off an album has stopped waiting, while a request already inside a read went on holding a thread and a socket until it finished anyway, which is what made leaving the application take as long as the last lookup did. The work is stopped instead. The worker hands the archive a question it can ask at any moment; the archive asks it between the gaps the terms require and again inside every read, so nothing long is entered without a way back out. Neither is atomic any more: a picture arrives in `CHUNK_BYTES` pieces of 64KB and a gap is sat through in `SLEEP_SLICE_S` slices of a quarter second, so a cancel is noticed within a slice rather than at the end of a whole gap or a whole image. Asking who sent an answer does not work here and the reason is worth keeping: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive; the archive's own slicing is held by a waiter and an opener the tests inject, so what is asserted is the giving up rather than the sleeping. |
 | A depth of nought means the file stated none; both enforcers say so | A lossy file carries no bit depth to report; a probe answering sixteen would be indistinguishable downstream from a file that really held sixteen, so nought is the absence of a reading rather than a reading of nought. A negative depth is still refused, being a value no file could state. The distinction is drawn in BOTH domain types that enforce it: `OutputRequest.states_depth` decides whether a stream may be opened exclusively, which is what makes `is_bit_perfect` False for every lossy source without the playback rules knowing which formats are lossy. `Track.states_depth` decides whether a track may exist at all and whether it may be called high resolution. Teaching one and not the other produced a library that probed every file correctly then could not be assembled from them, with every gate green, because a test of the probe and a test of the domain each pass while agreeing about nothing. The end to end scan is the only shape of test that catches it, so there is one, on real files of every format. |
+| A thread that outlives its dialog is held by the window, with leaving outright as the last resort | A cover lookup is started from a dialog and can still be in a request when that dialog closes, so the thread would be owned by an object that has gone. `ThreadKeeper` is given to the runner by the window, which is still there; it holds the worker as well as the thread, since the worker sits on that thread with no parent of its own and dropping the last reference would delete an object in the middle of its own method. Each is let go of the moment it finishes, so nothing is held a second longer than the request it waits on; the connection is made before the finished state is read rather than after, because a thread that ends between the two had already made its one announcement. What none of that covers is a socket that never comes back: a thread still running when the application is torn down is one Qt ends the process over, measured on 2026-09-05 as `QThread: Destroyed while thread is still running` from Qt6Core, an abort rather than an exit. So `leave_at_once` in `stellody/composition.py` leaves the process before the tearing down begins, everything durable having already been put away. It is the last resort and should now be unreachable; what it replaces is a crash report. |
+| Where the library was looking survives a reload that changes nothing about where it should be looking | Stating a genre replaces the whole library: the store is read again, every album comes back as a new object and the model is rebuilt from the top. That is right for what the rows SAY and wrong for where somebody is, since a listener who scrolled two thirds of the way down to correct one album should still be two thirds of the way down once it is corrected. A place cannot be a row number, because the library after an edit is not the library before it: albums fold together and an edit to an artist moves one somewhere else alphabetically. So `stellody/ui/placing.py` names the album by identity with the offset in pixels beside it and works the row out again on the other side. Where possible and no further: an album that is gone after the edit takes its own restoring with it while the offset still goes back, since somebody looking at the middle of the library is still looking at the middle of it. Nothing here scrolls to something that was not on screen to begin with. |
+| The focus rule names the arrivals that ARE a choice, rather than the ones that are not | Qt invents a current index on a focus arrival where there is none, which is correct for Tab and wrong for every other way in. Coming back from a menu or a dialog is not a choice of sleeve, yet it landed the place on the top of the library with the pane opening an album nobody had picked. Measured on 2026-09-05, an empty grid went to row 0 on a focus in carrying Popup, ActiveWindow or Other, which are a menu closing, a dialog closing and everything else respectively. Listing those would be a list to keep in step with Qt's, so `ASKING_FOR_A_PLACE` in `stellody/ui/gliding.py` names the two reasons that DO ask, Tab and Backtab; everything else is left alone by default. A reason nobody has thought about therefore changes nothing, which is the safe direction for the rule to fail in. |
+| One notch of the wheel moves one row | A list view counts a wheel in its own units, which over a grid of sleeves is not the row a listener expects. The detent is Qt's own number rather than one chosen here, an eighth of a degree times 120; what has been turned without a row having moved yet is carried, so a wheel or a trackpad that reports in fractions still moves a row per notch instead of losing the remainder. |
 
 ## Coverage
 

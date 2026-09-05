@@ -44,8 +44,17 @@ suite full of mocks standing in for the very things worth testing.
 
 **The build and packaging scripts are long and are exempt from the line cap.**
 `buildexe.py`, `buildinstaller.py`, `stamp_version.py`, `stamp_sitemap.py` and
-`sync_site.py` are linear recipes read top to bottom. Splitting a sequence of flags across modules
-costs more than it buys, so the structural line-cap test does not scope them.
+`sync_site.py` are linear recipes read top to bottom. Splitting a sequence of
+flags across modules costs more than it buys, so the structural line-cap test
+does not scope them.
+
+**Quitting during a cover lookup leaves the process without unwinding.** A
+search inside a network read is given up within a slice of a second now, so
+`leave_at_once` in `composition.py` should never be reached. It stays because
+what no amount of asking covers is a socket that never comes back. Qt ends the
+process over a thread destroyed while running: an abort with a crash report
+rather than the exit code the quit meant. Everything durable is already put away
+by the time it is reached, the store closed and the claim released.
 
 **`installer/` reads `stellody.shared` and `stellody.ui`.** That is the setup
 program being a client of the application rather than a layer of it; nothing

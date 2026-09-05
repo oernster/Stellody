@@ -59,6 +59,17 @@ if it ever stopped being true the build would fail.
 - **A scan that says what it found.** Add music, press Rescan and you get the
   new albums by name, the new tracks counted and your library's totals, rather
   than a line that disappears while you are looking elsewhere.
+- **Say what an album really is.** Where a tag is wrong rather than merely
+  muddled, state the artist, the title, the year or the genre yourself and
+  Stellody remembers it. Genres come from a settled list of eighteen headings
+  with their styles under them, so the same music cannot end up under three
+  spellings of one word. Your files are read for this and never written.
+- **Show me only the folk.** Narrow the wall of covers to the genres you ask
+  for, including the albums that state none at all, then clear it in one press.
+  Every tick widens what is shown, so asking for two genres shows both.
+- **The videos that came with the album.** A bonus video sits in the album it
+  belongs to, plays from the same press as any song and draws its picture at
+  the size it was made; fill the window when you want it larger.
 - **Corrections you can keep.** Where an album's labelling is muddled, Stellody
   works out what it should be and shows you the tidy version. Now you can tell
   it to keep that answer, all of it at once or one album at a time, so the same
