@@ -28,8 +28,9 @@ tray above centres its transport. It had a whole band of the window to itself
 at first, which was room taken from the library for something that is a small
 moving thing rather than a feature anybody looks AT.
 
-The donate button sits outside them at the very end of the row: it belongs to
-nothing on screen, so it sits where nothing else is reached by accident. A
+The donate button sits outside them at the head of the row, the first thing on
+the strip: it belongs to nothing on screen, so it sits where nothing else is
+reached by accident. A
 hairline rules it off from the two beside it, which is how the tray above
 separates the mute switch from the controls that act on the application.
 
