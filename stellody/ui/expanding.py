@@ -109,6 +109,13 @@ class ExpandingTree(QTreeView):
     indentation.
     """
 
+    # The one stop in the window that answers Left and Right itself. They
+    # shut and open an album here, which is the only keyboard route into one;
+    # everywhere else the horizontal arrows step the ring. Read by `ring.py`,
+    # which is why the exception is stated on the thing it exempts rather
+    # than in a list somewhere else.
+    keeps_horizontal_keys = True
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._chevrons = Chevrons()

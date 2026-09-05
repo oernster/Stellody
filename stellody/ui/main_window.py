@@ -29,6 +29,7 @@ from stellody.application.updates import UpdateService
 from stellody.domain.health import LibraryIssue
 from stellody.domain.track import Track
 from stellody.shared.version import APP_NAME
+from stellody.ui.activating import SpaceChooses
 from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
@@ -44,6 +45,7 @@ from stellody.ui.picturing import Picturing
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.position_bar import PositionBar
 from stellody.ui.rating import Rating
+from stellody.ui.ring import ArrowRing
 from stellody.ui.scanning import Scanning
 from stellody.ui.searching import Searching
 from stellody.ui.settings_keys import (
@@ -256,6 +258,7 @@ class MainWindow(
         # has nothing to put in a chain until the menus exist.
         self._build_menus()
         self._set_ring_order()
+        self._wire_the_arrows()
         self._notification = build_tray(self, icon)
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
@@ -300,6 +303,17 @@ class MainWindow(
             self._settings.set_setting,
             self,
         )
+
+    def _wire_the_arrows(self) -> None:
+        """Give Left and Right the job Tab and Shift+Tab already have; give
+        Space the job Enter already has over a row.
+
+        Parented here so it lives exactly as long as the window whose ring it
+        walks; it listens to the application, so a dialog is covered by the
+        same rule as the window without being told about it.
+        """
+        self._arrows = ArrowRing(self)
+        self._space = SpaceChooses(self)
 
     def _set_ring_order(self) -> None:
         """Tab runs menu bar, tray, library, then strip: how they are drawn.
