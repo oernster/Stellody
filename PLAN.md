@@ -69,12 +69,6 @@ is a slice of an audio file, the output port speaks to a sound device. A video
 needs a surface to draw on, a second stream kept in step with the sound, plus a
 window that can give it room without the library view losing its place.
 
-Decide before any code: either Qt Multimedia, which brings a player and a
-surface for nothing while deciding the decode for us; else the existing decode
-beside a video decoder, which keeps the audio path bit perfect at considerably
-more cost. The first is the honest default; the second is the one to
-argue for, not to assume.
-
 Needed: the walk extended to video containers, a track that knows it carries
 picture, a video surface in the window, plus the transport driving both streams
 from one clock.
@@ -83,10 +77,14 @@ Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
 library where it was left.
 
-Depends on the transport the position display already built. Its backend is
-already decided: PyAV was chosen for the audio formats libsndfile cannot
-open and was chosen for this as well, so the question is answered rather
-than open. `ARCHITECTURE.md` records why.
+Depends on the transport the position display already built. The backend is
+settled rather than open: PyAV was chosen for the audio formats libsndfile
+cannot open and answers this as well, which is what keeps the audio path bit
+perfect where Qt Multimedia would have brought a second idea of what a track
+is. `ARCHITECTURE.md` records the reasoning. This paragraph used to sit under
+one saying the choice had still to be made, with Qt Multimedia named as the
+honest default: two answers to one question, in one milestone, so whoever
+picked it up would have been told both.
 
 ## 3. Accept the repairs the health report describes
 
