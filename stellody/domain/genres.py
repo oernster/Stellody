@@ -15,12 +15,45 @@ translation. What is NOT taken is the vocabulary entire: 1,159 styles is a
 taxonomy, not a list somebody chooses from. Only what the library needs is
 here, which is also why Footwork is absent (see below).
 
-Three of the fifteen mains are left out because nothing here is one: Brass &
-Military, Children's and Latin. Reggae was left out too and put back: no tag
-in the library says reggae, which is a fact about the tags. Finley Quaye's
+Four of the fifteen mains are left out because nothing here belongs under one:
+Brass & Military, Children's, Latin and Non-Music. Comedy takes the place of
+the last of those as a main of its own; see the ruling below. So there are
+twelve mains here, eleven of them Discogs' own.
+
+Reggae was left out too and put back: no tag in the library says reggae, which
+is a fact about the tags. Finley Quaye's
 `Maverick A Strike` is tagged `Hip-Hop/Rap` on all thirteen tracks and `Much
 More Than Much Love` is tagged `Pop`; both are reggae records. Absence
 from the tags is the wrong test, which is the same ground Punk stands on.
+
+**A main with one style is one name, not two.** Ruled by Oliver on 2026-09-05:
+Stage & Screen holding Soundtrack alone says the same thing twice; a level that
+never divides anything is a level nobody needs. Four pairs collapsed, each
+to the name the library actually uses, measured over 6,462 files that day:
+Stage & Screen (0 files) to Soundtrack (62); Folk, World, & Country (0) to Folk
+(30); Funk / Soul (0) to Contemporary R&B (49, as `R&B` and `R&B/Soul`).
+Classical collapses the other way, to Classical (175) rather than to Modern
+Classical (0), since keeping the style's name there would call 175 records
+modern when none of them is. Each name that went is kept as an alias, so a
+genre stated before the collapse still reads back as what was meant.
+
+Two of those collapses are exceptions, because neither name says one thing.
+
+Folk, World, & Country is the first. Folk, world music and country are three
+genres; the only real umbrella over them is Roots, which conventionally means
+folk, blues and country, so it would swallow Blues and misfile world music
+besides. Ruled by
+Oliver on 2026-09-05: the three stand as mains of their own. Country carries no
+tag in the library and is offered anyway, on the ground Punk already stands on.
+The umbrella name itself is NOT kept as an alias: it never said which of the
+three an album was, so any reading of it would invent that. A value carrying it
+is reported by the panel as unmatched, which is what an ambiguous name deserves.
+
+Funk / Soul is the second. Ruled by Oliver on the same day: funk and soul are
+two genres and neither is Contemporary R&B, which is the modern kind and the
+one the library's `R&B` tags mean. All three stand as mains. The Discogs name
+needs no alias either: nothing matches it whole, so it splits on its solidus and
+reaches Funk and Soul, which is both halves of what it says.
 
 **A style states its main.** Ticking Trance states Electronic too, on writing
 and on reading alike, so a filter for Electronic finds every kind of it
@@ -50,9 +83,14 @@ a wrong word should do.
 Reggae is the third and the clearest case of the rule: nothing here is tagged
 with it, two albums are it. See above.
 
-Comedy is the fourth. One file carries it, The Lonely Island's `Incredibad`;
-nothing else here is anywhere near it. Discogs files Comedy under Non-Music,
-which is why that main is kept for a single record.
+Comedy is the fourth and the one place this catalogue leaves Discogs' shape.
+One file carries it, The Lonely Island's `Incredibad`; nothing else here is
+anywhere near it. Discogs files Comedy under Non-Music, a main for spoken word,
+field recordings and interviews. Ruled by Oliver on 2026-09-05: the record in
+question is music, so filing it under a heading that says it is not would be
+wrong about the one album the name exists for. Comedy is a main here and
+Non-Music is gone. The spelling is still Discogs', so a lookup there still maps;
+what differs is only where it hangs.
 
 An album carries any number of these, so what is held is a set rather than a
 value. It is written down as one string because that is what an album's stated
@@ -74,7 +112,10 @@ import re
 # further; a style is added when a tag asks for one.
 CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Blues", ()),
-    ("Classical", ("Modern Classical",)),
+    ("Classical", ()),
+    ("Comedy", ()),
+    ("Contemporary R&B", ()),
+    ("Country", ()),
     (
         "Electronic",
         (
@@ -91,11 +132,10 @@ CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
             "Trance",
         ),
     ),
-    ("Folk, World, & Country", ("Folk",)),
-    ("Funk / Soul", ("Contemporary R&B",)),
+    ("Folk", ()),
+    ("Funk", ()),
     ("Hip Hop", ()),
     ("Jazz", ()),
-    ("Non-Music", ("Comedy",)),
     ("Pop", ()),
     ("Reggae", ()),
     (
@@ -109,7 +149,9 @@ CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
             "Punk",
         ),
     ),
-    ("Stage & Screen", ("Soundtrack",)),
+    ("Soul", ()),
+    ("Soundtrack", ()),
+    ("World", ()),
 )
 
 # Every name the catalogue offers, in the order it offers them: each main
@@ -162,7 +204,6 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "hip-hop/rap": ("Hip Hop",),  # 415 files
     "hip hop / rap": ("Hip Hop",),  # 26 files
     "drum & bass": ("Drum n Bass",),  # 14 files
-    "world": ("Folk, World, & Country",),  # 20 files
     # The bare tag says electronic and no more, so that is what it states.
     # Discogs has no Dance style and one is not invented to hold this.
     "dance": ("Electronic",),  # 873 files
@@ -199,6 +240,14 @@ ALIASES: dict[str, tuple[str, ...]] = {
     # Names the catalogue used to carry, kept so a genre stated before the
     # catalogue gained its second level still reads back as what was meant.
     "metal": ("Heavy Metal",),
+    # Mains that held one style each and collapsed into it; Classical went the
+    # other way and swallowed its own. Kept so a genre stated before the
+    # collapse still reads back as what was meant.
+    "stage & screen": ("Soundtrack",),
+    "modern classical": ("Classical",),
+    # Comedy hung under this until it was made a main of its own, so a genre
+    # stated while it did still reads back as what was meant.
+    "non-music": ("Comedy",),
     "r&b & soul": ("Contemporary R&B",),
 }
 

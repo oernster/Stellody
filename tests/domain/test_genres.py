@@ -14,22 +14,33 @@ from stellody.domain import genres
 
 class TestTheCatalogue:
     def test_it_holds_the_mains_that_were_settled(self) -> None:
-        """Twelve of Discogs' fifteen. Brass & Military, Children's and Latin
-        are left out because nothing in the library is one. Reggae is here on
-        a ruling: no tag says it and two Finley Quaye albums are it."""
+        """Discogs' vocabulary, on Oliver's rulings rather than Discogs' tree.
+        Brass & Military, Children's, Latin and Non-Music hold nothing here.
+        A main that held one style is that style's name instead, so Stage &
+        Screen is Soundtrack; Classical swallowed Modern Classical the other
+        way round, since 175 files say Classical and none says Modern. The two
+        umbrella names that said three things and two things are their parts:
+        Folk, World and Country stand alone, as do Funk, Soul and Contemporary
+        R&B. Comedy is a main rather than Discogs' Non-Music. Country and
+        Reggae carry no tag at all and are offered on a ruling, which is the
+        ground Punk stands on."""
         assert genres.MAINS == (
             "Blues",
             "Classical",
+            "Comedy",
+            "Contemporary R&B",
+            "Country",
             "Electronic",
-            "Folk, World, & Country",
-            "Funk / Soul",
+            "Folk",
+            "Funk",
             "Hip Hop",
             "Jazz",
-            "Non-Music",
             "Pop",
             "Reggae",
             "Rock",
-            "Stage & Screen",
+            "Soul",
+            "Soundtrack",
+            "World",
         )
 
     def test_the_mains_are_alphabetical(self) -> None:
@@ -90,16 +101,14 @@ class TestReadingATagSomebodyElseWrote:
     def test_nothing_but_the_semicolon_splits_a_value(self) -> None:
         """Catalogue names hold an ampersand, a solidus and a comma between
         them, so splitting on any of those would break the names themselves.
-        The comma was split on once and broke `Folk, World, & Country` into
-        pieces that matched other names; no file tag in the library holds one.
+        The comma was split on once and broke `Folk, World, & Country`, which
+        the catalogue no longer carries, into pieces that matched other names;
+        no file tag in the library holds a comma at all. The rule stands with
+        the name gone, since a tag somebody else wrote may still hold one.
         """
         assert genres.pieces_of("Drum n Bass") == ("Drum n Bass",)
         assert genres.pieces_of("Funk / Soul") == ("Funk / Soul",)
         assert genres.pieces_of("Folk, World, & Country") == ("Folk, World, & Country",)
-
-    def test_a_name_holding_a_comma_survives_the_round_trip(self) -> None:
-        """The defect this rule exists for, kept as a case of its own."""
-        assert genres.chosen_in("Folk, World, & Country") == ("Folk, World, & Country",)
 
     def test_an_empty_piece_is_dropped(self) -> None:
         assert genres.pieces_of("Rock;;Pop") == ("Rock", "Pop")
@@ -117,8 +126,13 @@ class TestWhichBoxesATagTicks:
         assert genres.chosen_in("Drum n Bass") == ("Electronic", "Drum n Bass")
 
     def test_a_name_holding_a_solidus_is_matched_whole(self) -> None:
-        """`Funk / Soul` would otherwise be split into two halves of itself."""
-        assert genres.chosen_in("Funk / Soul") == ("Funk / Soul",)
+        """`Hip Hop / Rap` is one ruling rather than two halves asked apart."""
+        assert genres.chosen_in("Hip Hop / Rap") == ("Hip Hop",)
+
+    def test_the_old_umbrella_over_funk_and_soul_reaches_both(self) -> None:
+        """Nothing matches `Funk / Soul` whole now that the umbrella is gone,
+        so it splits and both halves land, which is what it says."""
+        assert genres.chosen_in("Funk / Soul") == ("Funk", "Soul")
 
     def test_a_compound_tag_is_split_on_its_solidus_when_nothing_matches(
         self,
@@ -252,13 +266,14 @@ class TestTagsRuledToMeanAGenre:
         assert genres.chosen_in("Alternative") == ("Rock", "Alternative Rock")
 
     def test_the_r_and_b_tag_is_the_modern_kind(self) -> None:
-        """39 files tagged `R&B` and 10 `R&B/Soul`, ruled by Oliver."""
-        assert genres.chosen_in("R&B") == ("Funk / Soul", "Contemporary R&B")
-        assert genres.chosen_in("R&B/Soul") == ("Funk / Soul", "Contemporary R&B")
+        """39 files tagged `R&B` and 10 `R&B/Soul`, ruled by Oliver. Neither
+        is funk and neither is soul, which are mains of their own."""
+        assert genres.chosen_in("R&B") == ("Contemporary R&B",)
+        assert genres.chosen_in("R&B/Soul") == ("Contemporary R&B",)
 
-    def test_the_world_tag_reaches_the_main_that_holds_it(self) -> None:
-        """20 files. Discogs keeps folk, world and country in one main."""
-        assert genres.chosen_in("World") == ("Folk, World, & Country",)
+    def test_the_world_tag_is_a_name_rather_than_a_ruling_now(self) -> None:
+        """20 files. It was an alias while Discogs' umbrella held it."""
+        assert genres.chosen_in("World") == ("World",)
 
 
 class TestTheDanceSubTaxonomy:
@@ -315,10 +330,15 @@ class TestTheRulingsOnTheRest:
         carries `pop`. Crossover is classical meeting popular music."""
         assert genres.chosen_in("classical crossover") == ("Classical", "Pop")
 
-    def test_comedy_is_kept_under_non_music_as_discogs_files_it(self) -> None:
-        """1 file, The Lonely Island's `Incredibad`. A whole main is kept for
-        one record, which is what following somebody else's tree costs."""
-        assert genres.chosen_in("Comedy") == ("Non-Music", "Comedy")
+    def test_comedy_is_a_main_of_its_own(self) -> None:
+        """1 file, The Lonely Island's `Incredibad`. Discogs hangs Comedy under
+        Non-Music, a heading for spoken word and field recordings; ruled by
+        Oliver that the record is music, so it is not filed under a name saying
+        it is not. The one place this catalogue leaves Discogs' shape."""
+        assert genres.chosen_in("Comedy") == ("Comedy",)
+
+    def test_the_heading_it_used_to_hang_under_still_reads_back(self) -> None:
+        assert genres.chosen_in("Non-Music") == ("Comedy",)
 
 
 class TestNamesTheCatalogueUsedToCarry:
@@ -332,9 +352,10 @@ class TestNamesTheCatalogueUsedToCarry:
         ("stored", "expected"),
         (
             ("Metal", ("Rock", "Heavy Metal")),
-            ("R&B & Soul", ("Funk / Soul", "Contemporary R&B")),
+            ("R&B & Soul", ("Contemporary R&B",)),
             ("Drum & Bass", ("Electronic", "Drum n Bass")),
-            ("Soundtrack", ("Stage & Screen", "Soundtrack")),
+            ("Stage & Screen", ("Soundtrack",)),
+            ("Modern Classical", ("Classical",)),
             ("Jungle", ("Electronic", "Jungle")),
             ("Punk", ("Rock", "Punk")),
         ),

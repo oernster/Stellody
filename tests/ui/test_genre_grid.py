@@ -70,10 +70,12 @@ class TestWhatItOffers:
         Measured separately, on this venv: left unescaped, `Drum & Bass` draws
         at the width of `Drum  Bass` and takes Alt+Space, which is Windows' own
         system menu, while `R&B & Soul` takes Alt+B. Escaped, both draw at the
-        width of the name as written and take nothing.
+        width of the name as written and take nothing. Neither is a catalogue
+        name any more; Contemporary R&B is the one that still holds one, so it
+        is the one asked here.
         """
         chooser = grid()
-        for name in ("Folk, World, & Country", "Contemporary R&B"):
+        for name in ("Contemporary R&B",):
             box = chooser.boxes[name]
             # The escaped source is what asks Qt for a literal ampersand.
             assert box.text() == name.replace("&", "&&")
@@ -179,9 +181,9 @@ class TestWhatItAnswers:
 
     def test_what_is_answered_is_in_catalogue_order(self, grid) -> None:
         chooser = grid()
-        chooser.boxes["Folk, World, & Country"].setChecked(True)
+        chooser.boxes["World"].setChecked(True)
         chooser.boxes["Blues"].setChecked(True)
-        assert chooser.text() == "Blues; Folk, World, & Country"
+        assert chooser.text() == "Blues; World"
 
     def test_unticking_what_a_tag_started_with_states_nothing(self, grid) -> None:
         chooser = grid("Rock")

@@ -121,13 +121,14 @@ an equality test: an album matches when it carries any genre asked for.
 Whether it should ever mean all of them is a decision this milestone opens
 with, not one to guess at now.
 
-**The catalogue has two levels: main categories with styles under them.**
-One level was a lie: Dance, Trance, Drum n Bass and Jungle are all kinds of
+**The catalogue has two levels where the library divides and one where it
+does not.** Electronic and Rock carry styles; the other fourteen mains stand
+alone. One level throughout was a lie: Dance, Trance, Drum n Bass and Jungle are all kinds of
 electronic music; Alternative Rock, Heavy Metal and Punk are all kinds of
 rock. A flat list stood them beside their own parents and a listener asking
 for everything electronic could not have it.
 
-**The shape and the spellings come from Discogs, curated to this library.**
+**The spellings come from Discogs; the shape is ruled on here.**
 Discogs runs 15 genres over 1,159 styles, publishes both under CC0 and is the
 only one of the three services with a hierarchy at all: MusicBrainz offers
 several thousand flat genres and Last.fm offers folksonomy tags rather than
@@ -136,17 +137,36 @@ Taking Discogs' exact spellings means a later lookup there maps one to one
 with no translation table. What is not taken is the vocabulary entire, since
 1,159 styles is a taxonomy rather than a list somebody chooses from.
 
-Twelve of the fifteen mains survive; Brass & Military, Children's and Latin
-have nothing here. Styles are added when a tag asks for one, which is why five
-mains carry none:
+Brass & Military, Children's, Latin and Non-Music hold nothing here. Four
+rulings by Oliver on 2026-09-05 reshaped what was left, each of them about a
+name rather than about a record:
 
-> **Blues** · **Classical**: Modern Classical · **Electronic**: Acid House,
-> Deep House, Disco, Drum n Bass, Electro, House, Jungle, Progressive House,
-> Tech House, Techno, Trance · **Folk, World, & Country**: Folk ·
-> **Funk / Soul**: Contemporary R&B · **Hip Hop** · **Jazz** ·
-> **Non-Music**: Comedy · **Pop** · **Reggae** · **Rock**: Alternative Metal,
-> Alternative Rock, Britpop, Hard Rock, Heavy Metal, Punk · **Stage & Screen**:
-> Soundtrack
+- **A main holding one style is one name, not two.** Stage & Screen over
+  Soundtrack alone said the same thing twice. Each such pair collapsed to the
+  name the library uses, measured that day: Soundtrack (62 files) over Stage &
+  Screen (0). Classical collapsed the other way, keeping Classical (175) rather
+  than Modern Classical (0), since the style's name would have called 175
+  records modern when none of them is.
+- **An umbrella naming several genres is those genres.** Folk, World, & Country
+  is three of them and Roots, the only real umbrella, means folk, blues and
+  country, so it would swallow Blues and misfile world music. Folk, World and
+  Country stand alone. Funk / Soul went the same way: funk and soul are two
+  genres and neither is Contemporary R&B, which is the modern kind the `R&B`
+  tags mean.
+- **Comedy is a main** rather than a style under Discogs' Non-Music; the ruling
+  is with the other name rulings below.
+- Country carries no tag at all and is offered anyway, on the ground Punk
+  already stands on.
+
+Styles are added when a tag asks for one, which is why fourteen mains carry
+none:
+
+> **Blues** · **Classical** · **Comedy** · **Contemporary R&B** · **Country** ·
+> **Electronic**: Acid House, Deep House, Disco, Drum n Bass, Electro, House,
+> Jungle, Progressive House, Tech House, Techno, Trance · **Folk** · **Funk** ·
+> **Hip Hop** · **Jazz** · **Pop** · **Reggae** · **Rock**: Alternative Metal,
+> Alternative Rock, Britpop, Hard Rock, Heavy Metal, Punk · **Soul** ·
+> **Soundtrack** · **World**
 
 **A style states its main**, on writing and on reading alike, so a filter for
 Electronic finds every kind of it without knowing what the kinds are. A main
@@ -182,8 +202,12 @@ Love` is tagged `Pop`; both are reggae records. Absence from the tags is a
 fact about the tags, which is the ground Punk already stood on.
 
 Comedy is the fourth. One file carries it, The Lonely Island's `Incredibad`.
-Discogs files Comedy under Non-Music, so a whole main is kept for one record,
-which is what following somebody else's tree costs.
+Discogs files Comedy under Non-Music, a main for spoken word, field recordings
+and interviews. Ruled by Oliver on 2026-09-05: that record is music, so filing
+it under a heading which says it is not would be wrong about the one album the
+name exists for. Comedy is therefore a main here and Non-Music is not in the
+catalogue at all. The spelling is still Discogs', so a later lookup still maps;
+only where it hangs differs.
 
 These are why the offered names are a curated list rather than a reading of the
 library. The census settles which are worth offering; it cannot be the only

@@ -43,10 +43,11 @@ from stellody.domain.genres import (
 )
 from stellody.ui.ringed_check import RingedCheckBox
 
-# Three rather than two, measured: the catalogue's 33 boxes over two columns
-# made the album panel 852 pixels tall, which falls off a laptop screen. Three
-# brings it to 709 at 1,000 wide; a fourth column costs 240 more pixels of
-# width and saves 51 of height, since Electronic's twelve boxes are the floor.
+# Three rather than two, measured again after the catalogue was reshaped and
+# still three: its 33 boxes over two columns ask for a panel 829 pixels tall,
+# which falls off a laptop screen. Three brings it to 723; a fourth costs 222
+# more pixels of width and saves 28 of height, since Electronic's twelve boxes
+# are the floor and no number of columns gets under them.
 COLUMNS = 3
 # How far a style sits in from the main it belongs to. Enough to read as
 # beneath it rather than beside it, without pushing the longest name out of
