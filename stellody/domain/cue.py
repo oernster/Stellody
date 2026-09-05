@@ -7,6 +7,7 @@ text work; reading the file belongs to infrastructure.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from stellody.domain.text import normalise, split_artists
@@ -14,6 +15,29 @@ from stellody.domain.text import normalise, split_artists
 CD_FRAMES_PER_SECOND = 75
 SECONDS_PER_MINUTE = 60
 AUDIO_INDEX = 1
+
+# What a ripper writes where the disc was not in its database. They are the
+# absence of a name rather than a name, so a sheet carrying one must let the
+# file's own tags answer instead of overruling them with a stand-in. Measured
+# across the reference library: 2 of its 171 sheets carry these, both from
+# discs the ripper could not identify; both reported the album, the artist
+# and every track title as unknown while the files themselves were tagged.
+PLACEHOLDER_NAMES = frozenset({"unknown", "unknown artist", "unknown title"})
+
+# A track named only by its own position, which is what the same ripper writes
+# where it has no track names. It states nothing the number has not already
+# said, so it is no more a title than the names above are names.
+_NUMBERED_ONLY = re.compile(r"^track\s*0*\d+$", re.IGNORECASE)
+
+
+def _a_name(value: str) -> str:
+    """The value; empty where it is a stand-in for a name rather than one."""
+    return "" if value.casefold() in PLACEHOLDER_NAMES else value
+
+
+def _a_track_name(value: str) -> str:
+    """A track's title; empty where it only restates the track number."""
+    return "" if _NUMBERED_ONLY.match(value) else _a_name(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,11 +189,11 @@ def parse_cue(text: str, sample_rate: int) -> CueSheet:
             pending.append(_Pending(number=int(parts[0]), file_name=current_file))
         elif command == "TITLE":
             if pending:
-                pending[-1].title = normalise(_unquote(remainder))
+                pending[-1].title = _a_track_name(normalise(_unquote(remainder)))
             else:
-                album_title = normalise(_unquote(remainder))
+                album_title = _a_name(normalise(_unquote(remainder)))
         elif command == "PERFORMER":
-            performer = normalise(_unquote(remainder))
+            performer = _a_name(normalise(_unquote(remainder)))
             if pending:
                 pending[-1].performers = split_artists(performer)
             else:

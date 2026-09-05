@@ -169,3 +169,66 @@ def test_unknown_lines_blank_lines_and_stray_indexes_are_tolerated() -> None:
     assert sheet.tracks[0].start_frame == 10 * CD_RATE // 75
     assert sheet.date == ""
     assert sheet.genre == ""
+
+
+UNIDENTIFIED = """PERFORMER "Unknown Artist"
+TITLE "Unknown Title"
+FILE "Whole Disc.flac" WAVE
+  TRACK 01 AUDIO
+    TITLE "Track 01"
+    PERFORMER "Unknown Artist"
+    INDEX 01 00:00:00
+  TRACK 02 AUDIO
+    TITLE "Track 02"
+    INDEX 01 00:02:00
+"""
+
+
+def test_an_unidentified_sheet_names_neither_album_nor_artist() -> None:
+    """A ripper's stand-in must not overrule the tags in the file itself.
+
+    A disc absent from the ripper's database is written out with these words
+    in place of names. Reading them as names meant a tagged album reporting
+    as unknown, since the file's own tags answer only where the sheet is
+    silent and a stand-in is not silence.
+    """
+    sheet = parse_cue(UNIDENTIFIED, CD_RATE)
+    assert sheet.album_title == ""
+    assert sheet.album_performer == ""
+    assert sheet.tracks[0].performers == ()
+
+
+def test_a_track_named_only_by_its_number_is_no_title() -> None:
+    """It states nothing the number has not already said."""
+    sheet = parse_cue(UNIDENTIFIED, CD_RATE)
+    assert [track.title for track in sheet.tracks] == ["Track 1", "Track 2"]
+
+
+@pytest.mark.parametrize(
+    "written", ["unknown artist", "UNKNOWN ARTIST", "Unknown Artist"]
+)
+def test_the_stand_in_is_recognised_however_it_is_cased(written: str) -> None:
+    sheet = parse_cue(
+        f'PERFORMER "{written}"\nFILE "a.flac" WAVE\n'
+        "  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n",
+        CD_RATE,
+    )
+    assert sheet.album_performer == ""
+
+
+def test_a_real_name_holding_the_word_unknown_is_kept() -> None:
+    """The match is the whole name, never a word inside one.
+
+    Unknown Pleasures is an album and Unknown Mortal Orchestra is a band.
+    Reading either as a stand-in would lose a name that was really there,
+    which is the fault this exists to prevent, running the other way.
+    """
+    sheet = parse_cue(
+        'PERFORMER "Unknown Mortal Orchestra"\nTITLE "Unknown Pleasures"\n'
+        'FILE "a.flac" WAVE\n  TRACK 01 AUDIO\n    TITLE "Tracking Shot"\n'
+        "    INDEX 01 00:00:00\n",
+        CD_RATE,
+    )
+    assert sheet.album_performer == "Unknown Mortal Orchestra"
+    assert sheet.album_title == "Unknown Pleasures"
+    assert sheet.tracks[0].title == "Tracking Shot"
