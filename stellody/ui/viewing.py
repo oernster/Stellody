@@ -17,8 +17,8 @@ row in the tree with its album opened above it.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QModelIndex, QObject, Qt, Slot
-from PySide6.QtWidgets import QListView, QWidget
+from PySide6.QtCore import QModelIndex, Qt, Slot
+from PySide6.QtWidgets import QWidget
 
 from stellody.domain.album import Album
 from stellody.domain.track import Track
@@ -31,6 +31,7 @@ from stellody.ui.settings_keys import (
     SETTING_DESCENDING,
     TRUE,
 )
+from stellody.ui.sleeving import SleeveToggle
 from stellody.ui.tiles import NO_ROW
 from stellody.ui.window_parts import (
     build_covers_page,
@@ -40,39 +41,6 @@ from stellody.ui.window_parts import (
 )
 
 DECORATION = Qt.ItemDataRole.DecorationRole
-
-
-class SleeveToggle(QObject):
-    """Turns a second press on the open sleeve into a request to shut it.
-
-    Read at the PRESS rather than at the click, because Qt moves the current
-    index during the press: by the time `clicked` arrives, a first press on a
-    fresh sleeve and a second press on the open one look alike. Pressing at all
-    is also what makes a sleeve whose pane was closed open again, since it is
-    still the current one and a selection that does not change says nothing.
-    """
-
-    def __init__(self, grid: QListView, viewing) -> None:
-        super().__init__(grid)
-        self._grid = grid
-        self._viewing = viewing
-        grid.viewport().installEventFilter(self)
-
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        """Shut the pane on a second press; open it on any other."""
-        if event.type() is not QEvent.Type.MouseButtonPress:
-            return False
-        where = self._grid.indexAt(event.position().toPoint())
-        if not where.isValid():
-            return False
-        if where == self._viewing.shown_index:
-            self._viewing.close_album()
-            # Eaten, so the sleeve stays the current one with its pane shut.
-            # Qt would otherwise leave the selection exactly as it was anyway;
-            # saying so here is what stops the press reopening what it closed.
-            return True
-        self._viewing.open_album_at(where)
-        return False
 
 
 class Viewing:

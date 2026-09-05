@@ -28,6 +28,7 @@ from stellody.ui.row_text import Column
 from stellody.ui.theme import palette_for
 
 LEFT = Qt.MouseButton.LeftButton
+RIGHT = Qt.MouseButton.RightButton
 # The room asked for around the text, written out here rather than read from
 # the module it guards: taking both sides from one constant proves only that
 # the constant equals itself.
@@ -67,11 +68,13 @@ def window(application: QApplication):
     made.close()
 
 
-def press(window, row: int) -> None:
+def press(window, row: int, button: Qt.MouseButton = LEFT) -> None:
     """Press the sleeve in that row, as a listener does."""
     where = window._model.index(row, Column.TITLE, QModelIndex())
     QTest.mouseClick(
-        window._grid.viewport(), LEFT, pos=window._grid.visualRect(where).center()
+        window._grid.viewport(),
+        button,
+        pos=window._grid.visualRect(where).center(),
     )
 
 
@@ -238,3 +241,44 @@ class TestTheHeaderTextIsNotAgainstItsEdges:
         assert painted.pixelColor(*low_right).name() == behind
         assert painted.pixelColor(*top_left).name() != behind
         assert painted.pixelColor(*top_right).name() != behind
+
+
+class TestTheRightButtonLeavesThePaneAlone:
+    """A right press is somebody reaching for the sleeve's menu.
+
+    Rolling the pane up under them takes away the album they are pointing at
+    as they point at it, which is what it did: the press filter read every
+    button rather than the left one.
+    """
+
+    def test_a_right_press_on_the_open_sleeve_keeps_it_open(self, window) -> None:
+        press(window, 0)
+        press(window, 0, RIGHT)
+        assert window._album_pane.isVisible()
+        assert window._album_pane.title.text() == "Alpha"
+
+    def test_a_left_press_still_rolls_it_up_afterwards(self, window) -> None:
+        """The right press must not have consumed the gesture either."""
+        press(window, 0)
+        press(window, 0, RIGHT)
+        press(window, 0)
+        assert not window._album_pane.isVisible()
+
+    def test_a_right_press_on_another_sleeve_leaves_the_open_one(self, window) -> None:
+        """Reaching for a menu is not asking to see a different album."""
+        press(window, 0)
+        press(window, 1, RIGHT)
+        assert window._album_pane.isVisible()
+        assert window._album_pane.title.text() == "Alpha"
+
+    def test_a_right_press_on_a_shut_pane_leaves_it_shut(self, window) -> None:
+        """Nothing was on show, so the menu brings nothing out with it."""
+        press(window, 0, RIGHT)
+        assert not window._album_pane.isVisible()
+
+    def test_a_right_press_never_opens_and_shuts_in_one(self, window) -> None:
+        """Two right presses in a row are still not a toggle."""
+        press(window, 0)
+        press(window, 0, RIGHT)
+        press(window, 0, RIGHT)
+        assert window._album_pane.isVisible()
