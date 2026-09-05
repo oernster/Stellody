@@ -17,8 +17,10 @@ from stellody.infrastructure.update_source import (
     ACCEPT_HEADER,
     RELEASES_URL,
     TIMEOUT_SECONDS,
+    USER_AGENT,
     GitHubReleases,
 )
+from stellody.shared.version import __version__
 
 PAGE = "https://github.com/oernster/stellody/releases/tag/v0.6.0"
 
@@ -94,6 +96,20 @@ class TestAskingProperly:
         GitHubReleases(opener).latest_release()
         assert opener.request.get_header("Accept") == ACCEPT_HEADER
         assert opener.timeout == TIMEOUT_SECONDS
+
+    def test_the_user_agent_names_the_product_and_nothing_else(self) -> None:
+        """Left unstated, urllib sends the machine's Python version, which is
+        a fact about the listener's computer. Stated, it must not swing the
+        other way and carry the running version either: what Stellody has is
+        decided here once the answer arrives, so the far end never needs it.
+        """
+        opener = Opener(_payload())
+        GitHubReleases(opener).latest_release()
+        sent = opener.request.get_header("User-agent")
+        assert sent == USER_AGENT
+        assert "urllib" not in sent.casefold()
+        assert "python" not in sent.casefold()
+        assert __version__ not in sent
 
 
 class TestWhatComesBack:

@@ -54,9 +54,15 @@ The count in that test is the point of it. Going from one permitted module to
 two was an edit somebody had to make and defend; a guard written as "the
 network is used sparingly" would have allowed the same change silently. The
 update check is also the only one of the two that speaks without being asked,
-which is why what it sends is worth stating exactly: nothing. Not the library,
-not an identifier, not the running version. It reads a public document about
-Stellody and compares it locally.
+which is why what it sends is worth stating exactly. It carries a fixed URL,
+an Accept header naming the API version plus a user agent that is the product
+name and nothing more. Not the library, not an identifier, not the running
+version. The agent is stated rather than left to urllib, which would send
+`Python-urllib/<version>` and so name the machine's Python: a fact about the
+listener's computer that a version check has no use for. It is held by
+`tests/infrastructure/test_update_source.py`, proved by dropping the header
+and then by putting the running version into it, each read as a failure. It
+reads a public document about Stellody and compares it locally.
 
 ## Layers
 

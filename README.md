@@ -108,9 +108,10 @@ with the internet switched off.
 Three things reach outside your computer at all, so here are all three:
 
 - **Looking for album art**, only ever when you ask, one album at a time.
-- **Checking for a new version**, once a day. It sends nothing whatever when it
-  asks, not even which version you have, then stays quiet unless there is
-  something new.
+- **Checking for a new version**, once a day. It sends nothing about you or
+  your music, not even which version you have: the request names the program
+  and asks for one public page. Then it stays quiet unless there is something
+  new.
 - **The donation button**, which hands an address to your web browser. Stellody
   itself connects to nothing. It is one button on the bottom strip and the only
   place money is mentioned; its tooltip offers to buy the author a drink, which

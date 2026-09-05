@@ -17,6 +17,12 @@ body that is not the shape it should be: all of them answer None. The caller
 has no use for the difference and a listener has less, so the distinction is
 dropped here rather than carried upward to be ignored later.
 
+**What goes out is stated, not left to the library.** The request carries a
+fixed URL, an Accept header naming the API version plus a user agent that is
+the product name alone. urllib would otherwise send `Python-urllib/<version>`,
+which names the machine's Python; nothing here names the listener, the library
+or the version Stellody is running.
+
 **Nothing is trusted about the answer.** Every field is checked for its type
 before it is used and a malformed asset is dropped rather than carried, since
 this is a document from the internet being handed to a dialog that will offer
@@ -31,9 +37,18 @@ import urllib.request
 from collections.abc import Callable
 
 from stellody.application.values import ReleaseAsset, ReleaseInfo
+from stellody.shared.version import APP_NAME
 
 RELEASES_URL = "https://api.github.com/repos/oernster/stellody/releases/latest"
 ACCEPT_HEADER = "application/vnd.github+json"
+# Stated rather than left to urllib, which would otherwise send its own
+# `Python-urllib/<version>`: that says which Python the machine runs, which
+# is a fact about the listener's computer and no business of a version
+# check. The product name is what GitHub asks callers to send and is all
+# this needs to be. The running version is deliberately NOT in it: what
+# Stellody has is decided here after the answer arrives, so sending it
+# would tell the other end something it has no use for.
+USER_AGENT = APP_NAME
 # Long enough for a slow answer, short enough that nobody waits on it. The
 # check runs off the interface thread, so this only bounds that thread's life.
 TIMEOUT_SECONDS = 5.0
@@ -77,7 +92,8 @@ class GitHubReleases:
     def latest_release(self) -> ReleaseInfo | None:
         """The newest published release; None when it could not be read."""
         request = urllib.request.Request(
-            RELEASES_URL, headers={"Accept": ACCEPT_HEADER}
+            RELEASES_URL,
+            headers={"Accept": ACCEPT_HEADER, "User-Agent": USER_AGENT},
         )
         try:
             with self._open(request, timeout=TIMEOUT_SECONDS) as answer:
