@@ -69,6 +69,15 @@ def window(application: QApplication):
     made.close()
 
 
+def _hand_focus_back(window, reason: Qt.FocusReason) -> None:
+    """Give the grid focus the way the toolkit does when something closes."""
+    window._grid.clearFocus()
+    window._grid.selectionModel().clearCurrentIndex()
+    QApplication.processEvents()
+    QApplication.sendEvent(window._grid, QFocusEvent(QEvent.Type.FocusIn, reason))
+    QApplication.processEvents()
+
+
 def press(window, row: int, button: Qt.MouseButton = LEFT) -> None:
     """Press the sleeve in that row, as a listener does."""
     where = window._model.index(row, Column.TITLE, QModelIndex())
@@ -285,15 +294,21 @@ class TestTheRightButtonLeavesThePaneAlone:
         assert window._album_pane.isVisible()
 
 
-class TestClosingTheMenuLeavesThePlaceAlone:
+class TestBeingHandedFocusBackLeavesThePlaceAlone:
     """What the right press exposed, one step further along.
 
     A view holding no current item gives the place to its first one as soon as
     focus arrives by any route other than the mouse. The right press is taken
-    and dropped, so no sleeve is current; the menu it asks for takes focus.
-    Handing it back put the place on the top of the library. In the built
-    application that read as the first album highlighting itself while the
-    sleeve actually pointed at was left alone.
+    and dropped, so no sleeve is current; whatever that press opens then takes
+    focus. Handing it back put the place on the top of the library. In the
+    built application that read as the first album highlighting itself, with
+    its pane opening, while the sleeve actually pointed at was left alone.
+
+    Two ways out were met in turn, a menu and then the tag editor, so the
+    reasons are asked about by name here. The platform's own window activation
+    cannot be raised offscreen, which is why each is sent rather than staged:
+    a dialog hands focus back as ActiveWindow and a menu as Popup. Both were
+    measured inventing row 0 before this was fixed.
     """
 
     def _menu_and_back(self, window, row: int) -> None:
@@ -327,11 +342,30 @@ class TestClosingTheMenuLeavesThePlaceAlone:
         assert window._album_pane.isVisible()
         assert window._album_pane.title.text() == "Beta"
 
-    def test_focus_arriving_by_keyboard_still_finds_a_sleeve(self, window) -> None:
-        """Only the way out of a menu is refused; the ring is untouched."""
-        QApplication.sendEvent(
-            window._grid,
-            QFocusEvent(QEvent.Type.FocusIn, Qt.FocusReason.TabFocusReason),
-        )
-        QApplication.processEvents()
+    @pytest.mark.parametrize(
+        "reason",
+        (
+            Qt.FocusReason.PopupFocusReason,
+            Qt.FocusReason.ActiveWindowFocusReason,
+            Qt.FocusReason.OtherFocusReason,
+        ),
+        ids=("a menu closing", "a dialog closing", "anything else"),
+    )
+    def test_no_way_of_being_handed_focus_takes_a_sleeve(self, window, reason) -> None:
+        """The rule is the ways in that ARE a choice, not a list of doors."""
+        _hand_focus_back(window, reason)
+        assert not window._grid.currentIndex().isValid()
+        assert not window._album_pane.isVisible()
+
+    @pytest.mark.parametrize(
+        "reason",
+        (Qt.FocusReason.TabFocusReason, Qt.FocusReason.BacktabFocusReason),
+        ids=("tab", "shift tab"),
+    )
+    def test_focus_arriving_by_keyboard_still_finds_a_sleeve(
+        self, window, reason
+    ) -> None:
+        """Reaching the grid by key is asking for a place in it, which is the
+        one arrival that still gets one."""
+        _hand_focus_back(window, reason)
         assert window._grid.currentIndex().isValid()

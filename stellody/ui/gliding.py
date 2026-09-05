@@ -34,6 +34,19 @@ GLIDE_MS = 300
 # a number chosen here: a wheel notch is an eighth of a degree times 120.
 NOTCH = 120
 
+# The ways of arriving at the grid that are somebody ASKING for a place in it.
+# A view holding no current item gives the place to its first one whenever
+# focus arrives by anything but the mouse, which is right for these two and
+# wrong for every other way in. Coming back from a menu or a dialog is not a
+# choice of sleeve; it landed the place on the top of the library with the pane
+# opening an album nobody picked. Measured on 2026-09-05: an empty grid
+# went to row 0 on a focus in carrying Popup, ActiveWindow or Other, which are
+# a menu closing, a dialog closing and everything else respectively.
+ASKING_FOR_A_PLACE = (
+    Qt.FocusReason.TabFocusReason,
+    Qt.FocusReason.BacktabFocusReason,
+)
+
 
 class GlidingGrid(QListView):
     """A grid whose scrolling is measured in pixels and travelled, not jumped."""
@@ -57,39 +70,43 @@ class GlidingGrid(QListView):
         # yet, so a wheel that reports in fractions still moves a row per
         # notch rather than losing the remainder on every event.
         self._turned = 0.0
-        # True only while focus is coming back from a menu: see focusInEvent.
-        self._menu_closing = False
+        # True only while focus is arriving in a way that asks for nothing:
+        # see focusInEvent.
+        self._not_choosing = False
 
     def focusInEvent(self, event: QFocusEvent) -> None:
-        """Coming back from a menu is not a choice of sleeve.
+        """Being handed focus back is not a choice of sleeve.
 
-        A view with no current item gives the place to its first one the
-        moment focus arrives by any route other than the mouse. A right press
-        is taken and dropped, so the sleeve pointed at never becomes current;
-        the menu that press asks for then takes focus. Handing it back landed
-        the place on the top of the library, with the pane opening an album
-        nobody chose. Measured, not reasoned about: the grid went from
-        no current sleeve to row 0 on the way out of the menu.
+        A view with no current item gives the place to its first one the moment
+        focus arrives by any route other than the mouse. A right press is taken
+        and dropped, so the sleeve pointed at never becomes current; whatever
+        that press opened then takes focus. Handing it back landed the place on
+        the top of the library, with the pane opening an album nobody picked.
+
+        Measured twice, first on the way out of a menu and then on the way out
+        of the tag editor, which is why the rule names the ways in that ARE a
+        choice rather than the ways out of one thing: see
+        `ASKING_FOR_A_PLACE`.
         """
-        self._menu_closing = event.reason() is Qt.FocusReason.PopupFocusReason
+        self._not_choosing = event.reason() not in ASKING_FOR_A_PLACE
         try:
             super().focusInEvent(event)
         finally:
-            self._menu_closing = False
+            self._not_choosing = False
 
     def moveCursor(
         self,
         how: QAbstractItemView.CursorAction,
         modifiers: Qt.KeyboardModifier,
     ) -> QModelIndex:
-        """Where the place goes next; nowhere while a menu is closing.
+        """Where the place goes next; nowhere while focus is merely arriving.
 
         This is the one road Qt takes to invent a place on focus, so refusing
         it there leaves the grid as it was without touching the keyboard, which
         asks the same question by pressing a key rather than by being handed
         focus back.
         """
-        if self._menu_closing:
+        if self._not_choosing:
             return QModelIndex()
         return super().moveCursor(how, modifiers)
 
