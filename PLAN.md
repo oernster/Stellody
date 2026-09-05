@@ -35,29 +35,7 @@ since the file carries the pending release alone.
 Version 1.0 is a separate readiness call for the owner to make; nothing below is
 sized against it.
 
-## 1. macOS and Flatpak
-
-Windows first, which is where it stands. macOS and Linux come later, built to
-the house pattern rather than invented here: `build_flatpak.sh` with
-`clean_flatpak.sh` for Linux and `builddmg.py` for macOS, taking ClearBudget as
-the worked guide and stripping every inherited specific.
-
-The audio layer is the part that does not travel. `WasapiPlayback` is named for
-a Windows interface and speaks to one; the playback port it sits behind is
-already the seam a second output goes in at. So this milestone is two pieces:
-the packaging, plus an output that works where WASAPI is not.
-
-The Flatpak needs `--share=network` in its finish-args, named in a comment as
-being for the update check. The house recipe grants no network by default,
-which is right for an application with no outbound call and would leave every
-update check here reporting that GitHub could not be reached. It fails quietly,
-so it would be found by a listener rather than by a build.
-
-Done when: a Flatpak and a DMG are built by their own scripts, each plays
-audio; the update check reaches GitHub from inside the sandbox; the Windows
-build is untouched by either.
-
-## 2. Play video files
+## 1. Play video files
 
 Wanted, though after the first release. A local library holds more than audio:
 a concert film sitting beside the albums it came from is part of the same
@@ -83,7 +61,7 @@ well; that is what keeps the audio path bit perfect where Qt Multimedia would
 bring a second idea of what a track is. `ARCHITECTURE.md` records the
 reasoning.
 
-## 3. One loudness across albums
+## 2. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -129,7 +107,7 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-## 4. Make the sites findable
+## 3. Make the sites findable
 
 Nothing has been submitted to a search engine, no structured data has been
 validated against a real checker and neither host has been observed in an
@@ -145,6 +123,28 @@ index. What is left happens in a browser rather than in this repository:
 Done when: both hosts are verified in Search Console with the sitemap submitted
 and no coverage errors, the structured data passes the Rich Results Test and a
 search for the application by name returns the site.
+
+## 4. macOS and Flatpak
+
+Windows first, which is where it stands. macOS and Linux come later, built to
+the house pattern rather than invented here: `build_flatpak.sh` with
+`clean_flatpak.sh` for Linux and `builddmg.py` for macOS, taking ClearBudget as
+the worked guide and stripping every inherited specific.
+
+The audio layer is the part that does not travel. `WasapiPlayback` is named for
+a Windows interface and speaks to one; the playback port it sits behind is
+already the seam a second output goes in at. So this milestone is two pieces:
+the packaging, plus an output that works where WASAPI is not.
+
+The Flatpak needs `--share=network` in its finish-args, named in a comment as
+being for the update check. The house recipe grants no network by default,
+which is right for an application with no outbound call and would leave every
+update check here reporting that GitHub could not be reached. It fails quietly,
+so it would be found by a listener rather than by a build.
+
+Done when: a Flatpak and a DMG are built by their own scripts, each plays
+audio; the update check reaches GitHub from inside the sandbox; the Windows
+build is untouched by either.
 
 ## Not planned, so that this is not revisited
 
