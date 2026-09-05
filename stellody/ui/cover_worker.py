@@ -64,8 +64,17 @@ class SearchWorker(QObject):
         self._cancelled = False
 
     def cancel(self) -> None:
-        """Ask the search to stop at the next request boundary, saying nothing."""
+        """Ask the search to stop, saying nothing when it does."""
         self._cancelled = True
+
+    def wanted(self) -> bool:
+        """Whether anybody is still waiting for this.
+
+        Handed down to the service and through it to the archive, which asks
+        it between its slow parts and inside its reads. That is what turns a
+        cancel from a promise about the answer into one about the work.
+        """
+        return not self._cancelled
 
     def release(self) -> None:
         """Drop every connection, so a late answer reaches nobody at all."""
@@ -101,14 +110,14 @@ class SearchWorker(QObject):
     def _searched(self) -> CoverOffer:
         """What is on offer; nothing when the search could not be made."""
         try:
-            return self._chooser.offer(self._identity)
+            return self._chooser.offer(self._identity, self.wanted)
         except Exception:  # noqa: BLE001 - a search must not end the run
             return CoverOffer()
 
     def _preview(self, candidate: CoverCandidate) -> bytes | None:
         """One thumbnail; None when it could not be had."""
         try:
-            return self._chooser.preview(candidate)
+            return self._chooser.preview(candidate, self.wanted)
         except Exception:  # noqa: BLE001 - a picture must not end the run
             return None
 
@@ -126,13 +135,18 @@ class KeepWorker(QObject):
         self._cancelled = False
 
     def cancel(self) -> None:
-        """Say nothing when this finishes.
+        """Stop fetching; say nothing about what was fetched so far.
 
-        The fetch itself cannot be stopped: it is already the only thing this
-        thread does. What cancelling means here is that the answer is not
-        announced, which is the same promise the search makes.
+        It used to mean the second half alone: the fetch was one call nobody
+        could interrupt, so cancelling only promised silence. The archive now
+        reads a picture in pieces and asks between them, so this stops the
+        work as well as the announcement.
         """
         self._cancelled = True
+
+    def wanted(self) -> bool:
+        """Whether anybody is still waiting for this picture."""
+        return not self._cancelled
 
     def release(self) -> None:
         """Drop every connection, so a late answer reaches nobody at all."""
@@ -146,7 +160,7 @@ class KeepWorker(QObject):
         nothing, so there is nothing to undo.
         """
         try:
-            kept = self._chooser.accept(self._key, self._candidate)
+            kept = self._chooser.accept(self._key, self._candidate, self.wanted)
         except Exception:  # noqa: BLE001 - a picture must not end the run
             kept = None
         if not self._cancelled:

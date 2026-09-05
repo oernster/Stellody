@@ -247,3 +247,45 @@ class TestLettingGoOfASearchInFlight:
             runner.stop()
             QThread.msleep(POLL_MS)
         assert runner.retired == 0
+
+
+class TestTheQuestionTheArchiveIsAsked:
+    """Cancelling stops the work rather than only the announcement.
+
+    The worker hands the archive a question rather than a flag, so what the
+    archive asks between its slow parts and inside its reads is this worker's
+    own state at the moment it asks.
+    """
+
+    def test_a_search_is_handed_a_question_that_starts_as_yes(
+        self, application_events
+    ) -> None:
+        search = FakeSearch()
+        runner = _runner(search)
+        runner.search(PLANETS)
+        _settle(runner, application_events)
+        runner.stop()
+        assert search.asked, "the archive was given nothing to ask"
+        assert all(question() for question in search.asked)
+
+    def test_cancelling_turns_that_question_to_no(self, application_events) -> None:
+        """Which is what reaches the socket: see the archive's own tests."""
+        gate = threading.Event()
+        search = FakeSearch(gate=gate)
+        runner = _runner(search)
+        runner.search(PLANETS)
+        deadline = time.monotonic() + SETTLE_SECONDS
+        while time.monotonic() < deadline and not search.asked:
+            application_events.processEvents()
+            QThread.msleep(POLL_MS)
+        assert search.asked, "the search never reached the archive"
+        question = search.asked[0]
+        assert question(), "it was wanted while it was being asked for"
+        runner.cancel()
+        assert not question(), "the archive would still be told to carry on"
+        gate.set()
+        deadline = time.monotonic() + SETTLE_SECONDS
+        while time.monotonic() < deadline and runner.retired:
+            application_events.processEvents()
+            QThread.msleep(POLL_MS)
+        runner.stop()

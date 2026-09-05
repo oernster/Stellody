@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from stellody.application.choosing_covers import ChooseCover
+from stellody.application.choosing_covers import ChooseCover, Wanted, always_wanted
 from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 from stellody.domain.identity import AlbumIdentity
 
@@ -37,15 +37,20 @@ class RecordingSearch:
         self.pictures = pictures if pictures is not None else {}
         self.searched: list[tuple[str, str]] = []
         self.fetched: list[str] = []
+        self.asked: list[Wanted] = []
 
-    def search(self, artist: str, album: str) -> CoverOffer:
+    def search(
+        self, artist: str, album: str, wanted: Wanted = always_wanted
+    ) -> CoverOffer:
         """Answer the canned offer, noting what was asked for."""
         self.searched.append((artist, album))
+        self.asked.append(wanted)
         return CoverOffer(self.offered, refused=self.refused)
 
-    def fetch(self, url: str):
+    def fetch(self, url: str, wanted: Wanted = always_wanted):
         """The canned bytes for that address; None when there are none."""
         self.fetched.append(url)
+        self.asked.append(wanted)
         return self.pictures.get(url)
 
 

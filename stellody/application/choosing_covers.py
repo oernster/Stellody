@@ -18,11 +18,29 @@ empty and a fetch that fails keeps nothing, so the album is exactly as it was.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol
 
 from stellody.application.ports import ArtworkPort
 from stellody.domain.cover_choice import CoverCandidate, CoverOffer, ordered
 from stellody.domain.identity import AlbumIdentity
+
+
+def always_wanted() -> bool:
+    """Nobody has asked for this to stop, which is the ordinary case.
+
+    The default answer, so a caller with nothing to cancel says nothing about
+    cancelling. Named rather than written as a lambda at four call sites: it
+    is one fact about how this is asked for, so it is stated once.
+    """
+    return True
+
+
+# Asked between the slow parts of a lookup, answering False the moment nobody
+# is waiting for the result any more. It is a question rather than a flag
+# because what it reads belongs to the caller: the worker knows it was
+# cancelled and nothing below it should have to be told twice.
+Wanted = Callable[[], bool]
 
 
 class CoverSearchPort(Protocol):
@@ -34,8 +52,13 @@ class CoverSearchPort(Protocol):
     other end of the application.
     """
 
-    def search(self, artist: str, album: str) -> CoverOffer:
+    def search(
+        self, artist: str, album: str, wanted: Wanted = always_wanted
+    ) -> CoverOffer:
         """The pictures on offer for this album, plus whether it was answered.
+
+        `wanted` is asked between the slow parts, so a search nobody is
+        waiting for stops there rather than running to its own timeout.
 
         Slow, then able to fail. A lookup that fails comes back empty rather
         than raising, since nothing was changed either way. It does say which
@@ -45,8 +68,9 @@ class CoverSearchPort(Protocol):
         """
         ...
 
-    def fetch(self, url: str) -> bytes | None:
-        """The bytes of one picture; None when it cannot be had."""
+    def fetch(self, url: str, wanted: Wanted = always_wanted) -> bytes | None:
+        """The bytes of one picture; None when it cannot be had, None too as
+        soon as nobody wants it."""
         ...
 
 
@@ -57,7 +81,9 @@ class ChooseCover:
         self._search = search
         self._artwork = artwork
 
-    def offer(self, identity: AlbumIdentity) -> CoverOffer:
+    def offer(
+        self, identity: AlbumIdentity, wanted: Wanted = always_wanted
+    ) -> CoverOffer:
         """What is on offer for this album, fronts first, largest first.
 
         Slow: it goes to the network. It belongs off the interface thread.
@@ -66,26 +92,30 @@ class ChooseCover:
         identity refuses to be built without both. A guard against a state the
         type forbids is a branch no test can reach honestly.
         """
-        found = self._search.search(identity.album_artist, identity.title)
+        found = self._search.search(identity.album_artist, identity.title, wanted)
         return CoverOffer(ordered(found.candidates), refused=found.refused)
 
-    def accept(self, key: str, candidate: CoverCandidate) -> bytes | None:
+    def accept(
+        self, key: str, candidate: CoverCandidate, wanted: Wanted = always_wanted
+    ) -> bytes | None:
         """Fetch the chosen picture and keep it for this album.
 
         The kept copy comes back so the caller can draw it at once rather than
         asking the store for what it has just been handed. A fetch that fails
         keeps nothing and answers None, leaving the album as it was.
         """
-        data = self._search.fetch(candidate.image_url)
+        data = self._search.fetch(candidate.image_url, wanted)
         if not data:
             return None
         return self._artwork.keep_chosen(key, data)
 
-    def preview(self, candidate: CoverCandidate) -> bytes | None:
+    def preview(
+        self, candidate: CoverCandidate, wanted: Wanted = always_wanted
+    ) -> bytes | None:
         """The small copy the chooser draws; None when it cannot be had.
 
         A thumbnail rather than the picture itself, because a release can
         carry a dozen images and a chooser that downloads all of them at full
         size to show a grid of squares is a chooser nobody waits for.
         """
-        return self._search.fetch(candidate.thumbnail_url)
+        return self._search.fetch(candidate.thumbnail_url, wanted)

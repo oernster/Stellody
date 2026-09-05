@@ -133,12 +133,15 @@ def configure(application: QApplication) -> None:
 def leave_at_once(code: int) -> None:
     """End the process where unwinding would end it worse.
 
-    A cover lookup cannot be stopped in the middle of a network read: the
-    request runs to its own timeout, which is twenty seconds for a search and
-    thirty for a picture. Quitting inside one leaves a thread running that Qt
-    then destroys as it tears the application down; Qt ends the process over
-    that with an abort rather than an exit: measured on 2026-09-05,
-    `QThread: Destroyed while thread is still running` from Qt6Core.
+    A cover lookup is given up within a slice of a second now: the archive
+    asks whether anybody still wants it between its waits and inside its reads.
+    What no amount of asking covers is a socket that never comes back at all.
+    A thread still running when the application is torn down is one Qt ends the
+    process over: measured on 2026-09-05, `QThread: Destroyed while thread
+    is still running` from Qt6Core, an abort rather than an exit.
+
+    So this is the last resort rather than the ordinary path. It should never
+    be reached now; if it is, the alternative it replaces is a crash report.
 
     So the process is left before the tearing down begins. Everything that
     outlives a run has already been put away by the time this is reached: the

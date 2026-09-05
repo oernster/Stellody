@@ -39,6 +39,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.cover_choice import THUMBNAIL_SIZES, CoverCandidate, CoverOffer
 from stellody.shared.version import APP_NAME, __version__
 
@@ -56,6 +57,19 @@ USER_AGENT = f"{APP_NAME}/{__version__} ( {CONTACT} )"
 # generosity; it is the margin that stops a clock rounding down into a refusal.
 REQUEST_GAP_S = 1.1
 TIMEOUT_S = 20
+# How long any one socket operation may block before the question is asked
+# again. It is the cap on how long a cancelled lookup can go unnoticed, so it
+# is well inside the two seconds the window waits for a thread on the way out;
+# it is also longer than a healthy answer takes, so an ordinary request never
+# meets it. The budget above still bounds the whole request.
+SLICE_S = 1.0
+# How much of a picture is taken at a time, for the same reason: a read that
+# came back in one call could not be given up part way through.
+CHUNK_BYTES = 64 * 1024
+# How long a wait between requests may block before the question is asked
+# again. The gaps the terms ask for are seconds long; sitting through one
+# after a cancel is the same defect as sitting through a read.
+SLEEP_SLICE_S = 0.25
 # Enough releases that a reissue with the art is reached, few enough that the
 # wait stays a wait rather than a walk away. Each one is a second.
 RELEASE_LIMIT = 8
@@ -70,19 +84,55 @@ REFUSAL_CODES = frozenset({429, 503})
 SEARCH_ATTEMPTS = 5
 
 
+class Waiter:
+    """A wait somebody can give up on, taken in slices.
+
+    A wait is as uncancellable as a read when it is taken in one go, while the
+    terms ask for gaps of over a second between requests. Sliced, a cancel is
+    noticed within a slice rather than at the end of the gap.
+
+    An object rather than a function so the slicing has one home: what a test
+    injects here is asked for a whole gap and answers however it likes, which
+    keeps the tests about the gaps the terms ask for rather than about how
+    this happens to take them.
+    """
+
+    def __init__(self, sleeper=time.sleep) -> None:
+        self._sleeper = sleeper
+
+    def hold(self, seconds: float, wanted: Wanted) -> bool:
+        """Wait that long; False where somebody gave up part way through."""
+        left = seconds
+        while left > 0:
+            if not wanted():
+                return False
+            take = min(SLEEP_SLICE_S, left)
+            self._sleeper(take)
+            left -= take
+        return wanted()
+
+
 class _Gate:
     """Lets one request through at a time, no faster than the terms allow."""
 
-    def __init__(self, gap_s: float = REQUEST_GAP_S) -> None:
+    def __init__(
+        self, gap_s: float = REQUEST_GAP_S, waiter: Waiter | None = None
+    ) -> None:
         self._gap_s = gap_s
         self._last = 0.0
+        self._waiter = waiter if waiter is not None else Waiter()
 
-    def wait(self) -> None:
-        """Hold until this request is allowed to go."""
+    def wait(self, wanted: Wanted = always_wanted) -> bool:
+        """Hold until this request is allowed to go; False if nobody waits.
+
+        The clock is stamped either way, since the gap is about the service
+        rather than about who is listening: a request abandoned during the
+        wait still has to leave the next one its full gap.
+        """
         due = self._last + self._gap_s - time.monotonic()
-        if due > 0:
-            time.sleep(due)
+        going = self._waiter.hold(due, wanted) if due > 0 else wanted()
         self._last = time.monotonic()
+        return going
 
 
 def _release_query(artist: str, album: str) -> str:
@@ -150,21 +200,30 @@ class ArchiveCovers:
     """Searches MusicBrainz, then reads the Cover Art Archive for pictures."""
 
     def __init__(self, gate: _Gate | None = None, opener=None, waiter=None) -> None:
-        self._gate = gate if gate is not None else _Gate()
-        self._opener = opener if opener is not None else urllib.request.urlopen
         # The pause between asks, injected so a test can watch the backoff grow
-        # without waiting through it.
-        self._waiter = waiter if waiter is not None else time.sleep
+        # without waiting through it. It is also what makes a wait something a
+        # cancelled search can walk away from: see `Waiter`.
+        self._waiter = waiter if waiter is not None else Waiter()
+        self._gate = gate if gate is not None else _Gate(waiter=self._waiter)
+        self._opener = opener if opener is not None else urllib.request.urlopen
 
-    def search(self, artist: str, album: str) -> CoverOffer:
+    def search(
+        self, artist: str, album: str, wanted: Wanted = always_wanted
+    ) -> CoverOffer:
         """The pictures on offer for this album, plus whether it was answered.
 
         Only the release search is asked again. A listing that will not come is
         one release of several and the next one is the thing to try, where a
         search that will not come is the whole answer.
+
+        A search reaches the network up to nine times over as many seconds, so
+        it is given up wherever it happens to be when nobody wants it: inside a
+        wait or inside a read, both below. The walk over the releases needs no
+        question of its own, since the gate asks one before every request and
+        a listing nobody wants is never asked for.
         """
         found, refused = self._asked(
-            f"{SEARCH_URL}?{_release_query(artist, album)}", SEARCH_ATTEMPTS
+            f"{SEARCH_URL}?{_release_query(artist, album)}", wanted, SEARCH_ATTEMPTS
         )
         if found is None:
             return CoverOffer(refused=refused)
@@ -173,7 +232,7 @@ class ArchiveCovers:
             mbid = release.get("id")
             if not mbid:
                 continue
-            listing, _ = self._asked(f"{ART_URL}/{mbid}")
+            listing, _ = self._asked(f"{ART_URL}/{mbid}", wanted)
             if listing is None:
                 continue
             gathered.extend(
@@ -181,7 +240,7 @@ class ArchiveCovers:
             )
         return CoverOffer(tuple(gathered))
 
-    def fetch(self, url: str) -> bytes | None:
+    def fetch(self, url: str, wanted: Wanted = always_wanted) -> bytes | None:
         """The bytes of one picture; None when it cannot be had.
 
         Not gated: the pictures come from the archive's own store rather than
@@ -189,12 +248,32 @@ class ArchiveCovers:
         is a chooser that opens a dozen seconds late.
         """
         try:
-            with self._opener(_asking(url), timeout=IMAGE_TIMEOUT_S) as answer:
-                return bytes(answer.read())
+            return self._read(url, IMAGE_TIMEOUT_S, wanted)
         except (urllib.error.URLError, OSError, ValueError):
             return None
 
-    def _asked(self, url: str, attempts: int = 1) -> tuple[dict | None, bool]:
+    def _read(self, url: str, budget_s: float, wanted: Wanted) -> bytes | None:
+        """Everything at a URL, taken in slices, given up the moment nobody
+        wants it.
+
+        The socket is given a slice rather than the whole budget, so a request
+        that has stalled is noticed within a slice instead of at the end of the
+        wait. The budget still bounds the request as a whole: a service that
+        answers in dribs cannot hold the thread past it.
+        """
+        deadline = time.monotonic() + budget_s
+        with self._opener(_asking(url), timeout=SLICE_S) as answer:
+            taken: list[bytes] = []
+            while wanted() and time.monotonic() < deadline:
+                piece = answer.read(CHUNK_BYTES)
+                if not piece:
+                    return b"".join(taken)
+                taken.append(piece)
+        return None
+
+    def _asked(
+        self, url: str, wanted: Wanted, attempts: int = 1
+    ) -> tuple[dict | None, bool]:
         """What came back, plus whether the service refused to answer.
 
         A 404 from the archive means this release carries no art, which is an
@@ -205,19 +284,22 @@ class ArchiveCovers:
         """
         refused = False
         for attempt in range(attempts):
-            if attempt:
-                self._waiter(REQUEST_GAP_S * attempt)
-            self._gate.wait()
-            payload, refused = self._once(url)
+            if attempt and not self._waiter.hold(REQUEST_GAP_S * attempt, wanted):
+                return None, refused
+            if not self._gate.wait(wanted):
+                return None, refused
+            payload, refused = self._once(url, wanted)
             if payload is not None or not refused:
                 return payload, refused
         return None, refused
 
-    def _once(self, url: str) -> tuple[dict | None, bool]:
+    def _once(self, url: str, wanted: Wanted) -> tuple[dict | None, bool]:
         """One gated request, read as JSON, saying whether it was refused."""
         try:
-            with self._opener(_asking(url), timeout=TIMEOUT_S) as answer:
-                return dict(json.loads(answer.read())), False
+            payload = self._read(url, TIMEOUT_S, wanted)
+            if payload is None:
+                return None, False
+            return dict(json.loads(payload)), False
         except urllib.error.HTTPError as refusal:
             return None, refusal.code in REFUSAL_CODES
         except (urllib.error.URLError, OSError, ValueError, TypeError):

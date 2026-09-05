@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import threading
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 
 FRONT = CoverCandidate(
@@ -44,28 +45,39 @@ class FakeSearch:
         self.gate = gate
         self.searched: list[tuple[str, str]] = []
         self.fetched: list[str] = []
+        self.asked: list[Wanted] = []
 
-    def search(self, artist: str, album: str) -> CoverOffer:
-        """Answer the script, holding at the gate when a test set one."""
+    def search(
+        self, artist: str, album: str, wanted: Wanted = always_wanted
+    ) -> CoverOffer:
+        """Answer the script, holding at the gate when a test set one.
+
+        The question is recorded rather than acted on, so a test can say what
+        the real archive would have been asked between its slow parts.
+        """
         self.searched.append((artist, album))
+        self.asked.append(wanted)
         if self.gate is not None:
             self.gate.wait()
         return CoverOffer(self.candidates, refused=self.refused)
 
-    def fetch(self, url: str) -> bytes | None:
+    def fetch(self, url: str, wanted: Wanted = always_wanted) -> bytes | None:
         """The bytes a test put at this address; None when it put none."""
         self.fetched.append(url)
+        self.asked.append(wanted)
         return self.pictures.get(url)
 
 
 class RaisingSearch:
     """An archive that fails the way a decoder or a socket layer would."""
 
-    def search(self, artist: str, album: str) -> CoverOffer:
+    def search(
+        self, artist: str, album: str, wanted: Wanted = always_wanted
+    ) -> CoverOffer:
         """Raise, as a name that will not resolve does."""
         raise RuntimeError("the archive went away mid search")
 
-    def fetch(self, url: str) -> bytes | None:
+    def fetch(self, url: str, wanted: Wanted = always_wanted) -> bytes | None:
         """Raise, for the same reason."""
         raise RuntimeError("the picture went away mid fetch")
 

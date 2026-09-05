@@ -74,9 +74,10 @@ class NoWait:
     def __init__(self) -> None:
         self.waits = 0
 
-    def wait(self) -> None:
-        """Count the request and let it go."""
+    def wait(self, wanted=lambda: True) -> bool:
+        """Count the request and let it go, unless nobody wants it."""
         self.waits += 1
+        return wanted()
 
 
 class Answering:
@@ -110,9 +111,14 @@ class Pauses:
     def __init__(self) -> None:
         self.slept: list[float] = []
 
-    def __call__(self, seconds: float) -> None:
-        """Note the pause and return at once."""
+    def hold(self, seconds: float, wanted=lambda: True) -> bool:
+        """Note the whole pause and return at once.
+
+        The gap asked for rather than the slices the real waiter takes it in:
+        what the terms ask for is the thing worth pinning.
+        """
         self.slept.append(seconds)
+        return wanted()
 
 
 def client(answers: dict) -> tuple[ArchiveCovers, Answering, NoWait]:
