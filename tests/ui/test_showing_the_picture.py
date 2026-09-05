@@ -208,3 +208,96 @@ class TestAWindowWithoutTheService:
         made._tick_picture()
         assert made.picture_surface.has_picture is False
         assert made._library.currentWidget() is not made.picture_surface
+
+
+class TestFillingTheWindow:
+    def test_it_starts_at_the_library_size(self, window) -> None:
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        assert window.picture_fills_window is False
+        assert window._tray.isVisible()
+
+    def test_the_button_fills_the_window(self, window) -> None:
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        window.picture_surface.size_button.click()
+        assert window.picture_fills_window is True
+        assert window._tray.isVisible() is False
+        assert window._position_bar.isVisible() is False
+        assert window._bottom_tray.isVisible() is False
+
+    def test_the_same_button_puts_it_back(self, window) -> None:
+        """One control, reading the other way once it has been pressed."""
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        window.picture_surface.size_button.click()
+        assert window.picture_surface.size_button.filling is True
+        window.picture_surface.size_button.click()
+        assert window.picture_fills_window is False
+        assert window._tray.isVisible()
+        assert window.picture_surface.size_button.filling is False
+
+    def test_escape_puts_it_back(self, window) -> None:
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        window.fill_window_with_picture()
+        window.shrink_picture()
+        assert window.picture_fills_window is False
+        assert window._tray.isVisible()
+
+    def test_escape_answers_only_while_it_fills_the_window(self, window) -> None:
+        """So the key is left to whatever else wants it the rest of the time."""
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        assert window._picture_escape.isEnabled() is False
+        window.fill_window_with_picture()
+        assert window._picture_escape.isEnabled() is True
+        window.shrink_picture()
+        assert window._picture_escape.isEnabled() is False
+
+    def test_a_track_ending_gives_the_window_back_too(self, window) -> None:
+        """Otherwise the library returns with no toolbar around it."""
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        window.fill_window_with_picture()
+        window.activate(track_index(window, 0))
+        window._poll_transport()
+        assert window.picture_fills_window is False
+        assert window._tray.isVisible()
+        assert window._position_bar.isVisible()
+
+    def test_nothing_fills_the_window_when_no_picture_is_showing(self, window) -> None:
+        window.activate(track_index(window, 0))
+        window._poll_transport()
+        window.fill_window_with_picture()
+        assert window.picture_fills_window is False
+
+
+class TestTheButtonItself:
+    def test_it_is_a_keyboard_stop(self, window) -> None:
+        """Nothing here is reachable only by mouse."""
+        from PySide6.QtCore import Qt
+
+        assert window.picture_surface.size_button.focusPolicy() != (
+            Qt.FocusPolicy.NoFocus
+        )
+
+    def test_it_says_what_a_press_would_do(self, window) -> None:
+        button = window.picture_surface.size_button
+        assert button.toolTip() == "Fill the window"
+        button.set_filling(True)
+        assert button.toolTip() == "Put the picture back"
+
+    def test_it_stays_up_at_the_library_size(self, window) -> None:
+        """It shares the window there, so it takes nothing away."""
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        assert window.picture_surface.size_button.isVisible()
+
+    def test_it_sits_in_the_corner_of_the_surface(self, window) -> None:
+        window.activate(track_index(window, 1))
+        window._poll_transport()
+        surface = window.picture_surface
+        button = surface.size_button
+        assert button.geometry().right() < surface.width()
+        assert button.geometry().bottom() < surface.height()

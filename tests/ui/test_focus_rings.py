@@ -27,6 +27,7 @@ from stellody.domain.equalising import Equalisation
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.equaliser import EqualiserDialog
+from stellody.ui.picture_controls import SizeButton
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.settings_keys import SETTING_ROOT
 from stellody.ui.stars import StarRating
@@ -195,7 +196,7 @@ RING_WALK = 40
 # the whole subcontrol over the moment a sheet names it. Each is listed here
 # rather than passing quietly, then each is proved below.
 NOTHING_TO_PAINT = "_NeutralStart"
-PAINTS_ITS_OWN_RING = ("StarRating", "RingedCheckBox")
+PAINTS_ITS_OWN_RING = ("StarRating", "RingedCheckBox", "SizeButton")
 
 
 def _qt_class(widget: QWidget) -> str:
@@ -277,7 +278,11 @@ def test_every_control_that_can_be_landed_on_names_a_ring(
 @pytest.mark.parametrize("mode", tuple(Mode))
 @pytest.mark.parametrize(
     "build_control",
-    (lambda parent: StarRating(parent), lambda parent: RingedCheckBox("Keep", parent)),
+    (
+        lambda parent: StarRating(parent),
+        lambda parent: RingedCheckBox("Keep", parent),
+        lambda parent: SizeButton(parent),
+    ),
     ids=PAINTS_ITS_OWN_RING,
 )
 def test_a_control_exempted_above_really_does_paint_its_own_ring(

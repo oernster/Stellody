@@ -18,7 +18,8 @@ cannot drift apart because only one of them is keeping time.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QTimer, Slot
+from PySide6.QtCore import Qt, QTimer, Slot
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QWidget
 
 from stellody.application.pictures import Pictures
@@ -42,12 +43,69 @@ class Picturing:
         """
         self._pictures = pictures
         self._picture_surface = PictureSurface(self)
+        self._picture_surface.size_toggled.connect(self.toggle_picture_size)
         self._picture_page = self._library.addWidget(self._picture_surface)
         self._picture_showing = False
+        self._picture_filling = False
         self._page_left = 0
         self._picture_timer = QTimer(self)
         self._picture_timer.setInterval(PICTURE_TICK_MS)
         self._picture_timer.timeout.connect(self._tick_picture)
+        # Escape is the way out of anything that has taken the window over, so
+        # it is the way out of this. It answers only while the picture is
+        # filling the window, leaving the key to whatever else wants it.
+        self._picture_escape = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        self._picture_escape.activated.connect(self.shrink_picture)
+        self._picture_escape.setEnabled(False)
+
+    @property
+    def picture_fills_window(self) -> bool:
+        """True while the picture has the whole window rather than the library."""
+        return self._picture_filling
+
+    @Slot()
+    def toggle_picture_size(self) -> None:
+        """The one press: fill the window, else put it back."""
+        if self._picture_filling:
+            self.shrink_picture()
+        else:
+            self.fill_window_with_picture()
+
+    def fill_window_with_picture(self) -> None:
+        """Give the picture the whole window, hiding what surrounds it.
+
+        Only what is around the library goes: the toolbar above, the position
+        bar and the strip below, plus the menu and the status line. The library
+        holder itself stays, since the picture is one of its pages, so nothing
+        is rebuilt and putting it back is a matter of showing them again.
+        """
+        if self._picture_filling or not self._picture_showing:
+            return
+        self._picture_filling = True
+        for part in self._picture_surroundings():
+            part.setVisible(False)
+        self._picture_surface.set_filling(True)
+        self._picture_escape.setEnabled(True)
+
+    def shrink_picture(self) -> None:
+        """Put the picture back to the library's own area."""
+        if not self._picture_filling:
+            return
+        self._picture_filling = False
+        for part in self._picture_surroundings():
+            part.setVisible(True)
+        self._picture_surface.set_filling(False)
+        self._picture_escape.setEnabled(False)
+
+    def _picture_surroundings(self) -> tuple[QWidget, ...]:
+        """Everything that shares the window with the library."""
+        return (
+            self._tray,
+            self._position_bar,
+            self._bottom_tray,
+            self.menuBar(),
+            self.statusBar(),
+        )
 
     @property
     def picture_surface(self) -> QWidget:
@@ -75,6 +133,7 @@ class Picturing:
         self._picture_showing = True
         self._page_left = self._library.currentIndex()
         self._library.setCurrentIndex(self._picture_page)
+        self._picture_surface.set_filling(False)
         self._picture_timer.start()
         self._tick_picture()
 
@@ -85,6 +144,9 @@ class Picturing:
         still scrolled to the sleeve it was scrolled to, which is the whole
         point of taking the area rather than opening a window over it.
         """
+        # Put the window back before the page, so a track ending while the
+        # picture filled it never leaves a library with no toolbar around it.
+        self.shrink_picture()
         self._picture_showing = False
         self._picture_timer.stop()
         self._picture_surface.clear()
