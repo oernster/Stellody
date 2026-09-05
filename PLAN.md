@@ -37,19 +37,31 @@ sized against it.
 
 ## 1. Play video files
 
-Wanted, though after the first release. A local library holds more than audio:
-a concert film sitting beside the albums it came from is part of the same
-collection.
+A local library holds more than audio. **Measured over the reference library, so
+this is what the milestone is actually against rather than what it might be
+against:** 26 files in 10 of the album folders, every one `.m4v`, every one
+H.264 video with AAC audio at 48 kHz, none larger than 1280 by 720 and most 640
+wide. All 26 carry album, title and track number that mutagen reads, so they
+group into albums exactly as audio does.
 
-This is the one milestone that changes what Stellody IS, so it changes several
-things that currently assume audio: the walk takes audio suffixes only, a track
-is a slice of an audio file, the output port speaks to a sound device. A video
-needs a surface to draw on, a second stream kept in step with the sound, plus a
-window that can give it room without the library view losing its place.
+They are not films sitting beside the albums. They are bonus tracks inside
+albums already in the library, numbered in sequence, so a video is a track and
+the transport should reach it as one.
 
-Needed: the walk extended to video containers, a track that knows it carries
-picture, a video surface in the window, plus the transport driving both streams
-from one clock.
+**The audio half is already built.** The existing `PacketReader` was pointed at
+three of them unmodified and decoded them correctly: `.m4v` is the MP4
+container the reader already opens for M4A, with AAC inside. So no second
+decoder and no change to the engine; `.m4v` joins `PACKET_SUFFIXES` and the
+walk admits it.
+
+Needed: the walk extended to `.m4v`, a track that knows it carries picture,
+plus a video surface in the window fed by a PyAV frame reader. That reader is
+driven from the audio position the engine already reports rather than from a
+clock of its own.
+
+The walk admitting these files gives those ten albums tracks they do not have
+today, which moves their track counts and may raise health findings on them
+that nobody has seen yet. That is a consequence to expect rather than a defect.
 
 Done when: a video file in the library plays with its sound in step, the
 transport controls it exactly as it controls a track; closing it returns to the
