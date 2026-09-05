@@ -62,19 +62,28 @@ class TestPressingPlayAfterAPause:
         assert window._transport.current is held
 
     def test_both_buttons_answer_alike(self, window) -> None:
-        """The reported difference, stated as the rule it broke."""
+        """The reported difference, stated as the rule it broke.
+
+        Each half is read from the end of its own setup rather than from the
+        start of the test: opening the track already loaded now means play or
+        pause rather than start again, so the second setup resumes where the
+        first one loaded. What is under comparison is the two BUTTONS, so the
+        setups are taken out of both readings.
+        """
         _playing_the_second_track(window)
+        window._player.calls.clear()
         window.toggle_playback()
         window._player.state = PlaybackState.PAUSED
         window.toggle_playback()
         from_the_tray = list(window._player.calls)
-        window._player.calls.clear()
 
         _playing_the_second_track(window)
+        window._player.calls.clear()
         window.play_shown_album()
         window._player.state = PlaybackState.PAUSED
         window.play_shown_album()
         assert window._player.calls == from_the_tray
+        assert from_the_tray, "the buttons did something to agree about"
 
 
 class TestWhatEachButtonStillDoes:

@@ -226,3 +226,29 @@ def test_play_over_empty_space_resumes_what_is_paused(
     assert action.isEnabled()
     action.trigger()
     assert player.calls == ["play"]
+
+
+def test_opening_the_track_already_loaded_pauses_it(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """Oliver's ruling: Enter and Space play and PAUSE the highlighted track.
+
+    The highlight follows the transport, so the row under the keyboard is the
+    playing row; opening it again used to load it, which is what restarts a
+    track. One rule for both gestures, so a double click on it pauses too.
+    """
+    playing = track_index(window, 0)
+    window.activate(playing)
+    player.calls.clear()
+    window.activate(playing)
+    assert player.calls == ["pause"], "paused rather than started over"
+
+
+def test_opening_another_track_still_starts_that_one(
+    window: MainWindow, player: RecordingPlayer
+) -> None:
+    """The rule is about the track in hand; any other row means play it."""
+    window.activate(track_index(window, 0))
+    player.calls.clear()
+    window.activate(track_index(window, 1))
+    assert "load" in player.calls

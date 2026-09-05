@@ -97,6 +97,12 @@ class Viewing:
         for column in self._album_pane.columns:
             self.wire_transport_menu(column)
         self._grid.selectionModel().currentChanged.connect(self._on_album_picked)
+        # Opening a sleeve means showing its album in the pane, which moving
+        # the cursor already does; this is the case where the pane has been
+        # shut since, with the cursor still standing on that sleeve. There is
+        # nothing else opening an album could mean over the sleeves: an album
+        # is a container which has no rows of its own to expand here.
+        self._grid.activated.connect(self.open_album_at)
         self._sleeve_toggle = SleeveToggle(self._grid, self)
         self._shown_album = None
         self._shown_index = QModelIndex()

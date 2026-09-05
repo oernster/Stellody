@@ -82,6 +82,28 @@ class TestOverTheSleeves:
             grid, Qt.Key.Key_Return, application
         )
 
+    @pytest.mark.parametrize("key", (Qt.Key.Key_Return, Qt.Key.Key_Space))
+    def test_opening_a_sleeve_shows_its_album_in_the_pane(
+        self, application: QApplication, window, key: Qt.Key
+    ) -> None:
+        """Oliver's ruling for the sleeves, where a row is an album.
+
+        Moving the cursor already opens the album under it, so what this
+        actually covers is the pane having been shut since, with the cursor
+        still standing on that sleeve; there would be no way back to it from
+        the keyboard otherwise.
+        """
+        window.toggle_view()
+        grid = window._grid
+        sleeve = window._model.index(0, 0, QModelIndex())
+        grid.setCurrentIndex(sleeve)
+        window.close_album()
+        assert window._shown_album is None
+        grid.setFocus(Qt.FocusReason.TabFocusReason)
+        QTest.keyClick(grid, key)
+        application.processEvents()
+        assert window._shown_album is not None
+
     def test_a_track_column_beside_a_sleeve_answers_space(
         self, application: QApplication, window
     ) -> None:

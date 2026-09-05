@@ -173,13 +173,26 @@ class Playing:
 
     @Slot(QModelIndex)
     def activate(self, index: QModelIndex) -> None:
-        """Play the track that was double clicked or opened with Return.
+        """Play the track that was opened; pause the one already loaded.
+
+        Opening the track ALREADY LOADED means play or pause rather than start
+        again, which is Oliver's ruling and is what the transport button and
+        the right click menu have always done with it. Starting it over is
+        what a listener asking to pause got instead, since the row under the
+        keyboard is the playing row.
+
+        One rule for the keyboard and for the mouse, since this is the one
+        place both gestures arrive: a double click on the playing track pauses
+        it too rather than the two meaning different things on one row.
 
         Activating an album is left to the tree, which expands it: an album is
         a container, so opening it means showing what is inside.
         """
         track = self._model.track_at(index)
         if track is None:
+            return
+        if track is self._transport.current:
+            self._drive(self._transport.toggle)
             return
         album = self._model.album_at(index)
         if album is None:
