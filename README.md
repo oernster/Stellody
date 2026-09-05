@@ -99,8 +99,10 @@ Three things reach outside your computer at all, so here are all three:
   something new.
 - **The donation button**, which hands an address to your web browser. Stellody
   itself connects to nothing. It is one button on the bottom strip and the only
-  place money is mentioned: nothing prompts you, nothing reminds you later and
-  nothing about the program changes if you never press it.
+  place money is mentioned; its tooltip offers to buy the author a drink, which
+  is the whole of the asking. Nothing prompts you beyond that button being
+  there, nothing reminds you later and nothing about the program changes if you
+  never press it.
 
 It does not encrypt anything at rest: the store holds notes about your library,
 not secrets. It also keeps a plain-text account of its own comings and goings
