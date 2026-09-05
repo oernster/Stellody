@@ -471,6 +471,14 @@ returns None for a CAF entirely, so such a file would scan into an album with
 no title. WMA, Musepack, Monkey's Audio, WavPack and DSD need a decoder nothing
 here carries.
 
+**What the walk takes is that table plus the picture one.** `PLAYABLE_SUFFIXES`
+is `AUDIO_SUFFIXES` united with `PICTURE_SUFFIXES`, which holds `.m4v` and lives
+in `stellody/domain/track.py` rather than beside the walker: whether a suffix
+carries a picture is the domain's to say, so `TrackSource.carries_picture`
+reads it off the path and a source built anywhere answers the same way. So a
+bonus video is walked, probed and assembled exactly as a song is, which is what
+kept the sound path untouched when it arrived.
+
 M4A is the one entry libsndfile cannot open; it is there because a second
 decoder was added for it rather than because the rule bent. What the rule asks
 of it is unchanged: mutagen has to be able to read its tags. It can, as a
@@ -635,8 +643,8 @@ than reasoned about:
 ## The genre catalogue and the filter
 
 **A settled list, not the library's own strings.** The reference library states
-43 distinct genre strings over 5,756 tagged files, which is a list nobody could
-tick through and one that spells the same idea several ways. So the catalogue
+43 distinct genre strings, which is a list nobody could tick through and one
+that spells the same idea several ways. So the catalogue
 in `stellody/domain/genres.py` is a fixed 18 mains carrying 16 styles between
 them, 34 boxes in all, alphabetical, with only Electronic (11), Rock (4) and
 Pop (1) carrying styles at all. A main with no styles is not a gap; it is a
