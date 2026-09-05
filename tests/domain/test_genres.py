@@ -21,9 +21,9 @@ class TestTheCatalogue:
         way round, since 175 files say Classical and none says Modern. The two
         umbrella names that said three things and two things are their parts:
         Folk, World and Country stand alone, as do Funk, Soul and Contemporary
-        R&B. Comedy is a main rather than Discogs' Non-Music. Country and
-        Reggae carry no tag at all and are offered on a ruling, which is the
-        ground Punk stands on."""
+        R&B. Comedy is a main rather than Discogs' Non-Music; Punk answers to
+        nothing above it rather than sitting under Rock. Country, Punk and
+        Reggae carry no tag at all and are offered on a ruling."""
         assert genres.MAINS == (
             "Blues",
             "Classical",
@@ -36,6 +36,7 @@ class TestTheCatalogue:
             "Hip Hop",
             "Jazz",
             "Pop",
+            "Punk",
             "Reggae",
             "Rock",
             "Soul",
@@ -315,10 +316,15 @@ class TestTheDanceSubTaxonomy:
 
 
 class TestTheRulingsOnTheRest:
-    def test_britpop_is_a_rock_style(self) -> None:
-        """1 file, Kula Shaker on the compilation `K`. Ruled to follow where
-        Discogs files it rather than the earlier flat-list reading of Pop."""
-        assert genres.chosen_in("Britpop") == ("Rock", "Britpop")
+    def test_britpop_is_a_pop_style(self) -> None:
+        """1 file, Kula Shaker on the compilation `K`. Discogs files it under
+        Rock; ruled by Oliver that a kind of pop belongs under Pop."""
+        assert genres.chosen_in("Britpop") == ("Pop", "Britpop")
+
+    def test_punk_answers_to_nothing_above_it(self) -> None:
+        """Discogs hangs it under Rock. Ruled a main of its own, so asking for
+        rock no longer hands somebody every punk record."""
+        assert genres.chosen_in("Punk") == ("Punk",)
 
     def test_indie_dance_is_house(self) -> None:
         """3 files on Helsloot's `Never Tried`, whose other tags are house.
@@ -357,7 +363,7 @@ class TestNamesTheCatalogueUsedToCarry:
             ("Stage & Screen", ("Soundtrack",)),
             ("Modern Classical", ("Classical",)),
             ("Jungle", ("Electronic", "Jungle")),
-            ("Punk", ("Rock", "Punk")),
+            ("Punk", ("Punk",)),
         ),
     )
     def test_it_still_reads_back(self, stored: str, expected: tuple[str, ...]) -> None:

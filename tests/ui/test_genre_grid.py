@@ -176,8 +176,8 @@ class TestWhatItAnswers:
     def test_it_answers_as_a_line_edit_does(self, grid) -> None:
         """The panel holds it beside the lines and asks all of them `text()`."""
         chooser = grid()
-        chooser.boxes["Punk"].setChecked(True)
-        assert chooser.text() == "Rock; Punk"
+        chooser.boxes["Heavy Metal"].setChecked(True)
+        assert chooser.text() == "Rock; Heavy Metal"
 
     def test_what_is_answered_is_in_catalogue_order(self, grid) -> None:
         chooser = grid()
@@ -191,10 +191,11 @@ class TestWhatItAnswers:
         assert chooser.text() == ""
 
     def test_an_album_can_carry_a_genre_its_tag_never_named(self, grid) -> None:
-        """The Green Day case: tagged Rock alone and plainly Punk as well."""
+        """The Green Day case: tagged Rock alone and plainly Punk as well.
+        Punk is a main of its own, so this states two of them side by side."""
         chooser = grid("Rock")
         chooser.boxes["Punk"].setChecked(True)
-        assert chooser.text() == "Rock; Punk"
+        assert chooser.text() == "Punk; Rock"
 
 
 class TestTheTwoLevelsAgreeingWithEachOther:

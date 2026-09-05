@@ -55,6 +55,16 @@ one the library's `R&B` tags mean. All three stand as mains. The Discogs name
 needs no alias either: nothing matches it whole, so it splits on its solidus and
 reaches Funk and Soul, which is both halves of what it says.
 
+**Where a style hangs is a ruling too.** Both of these were Discogs' filing and
+both were overruled by Oliver on 2026-09-05. Britpop is a kind of pop and sits
+under Pop, not under Rock. Punk answers to nothing above it and is a main of its
+own, so asking for rock no longer hands somebody punk records.
+
+That leaves Pop carrying one style, which is NOT the case the collapse rule
+above is about: that rule is for a main and a style saying the same thing, as
+Stage & Screen and Soundtrack did. Pop is not Britpop; 1,310 files say Pop
+against one that says Britpop, so the two levels there both mean something.
+
 **A style states its main.** Ticking Trance states Electronic too, on writing
 and on reading alike, so a filter for Electronic finds every kind of it
 without knowing what the kinds are. A main can be stated alone, which is what
@@ -136,17 +146,16 @@ CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Funk", ()),
     ("Hip Hop", ()),
     ("Jazz", ()),
-    ("Pop", ()),
+    ("Pop", ("Britpop",)),
+    ("Punk", ()),
     ("Reggae", ()),
     (
         "Rock",
         (
             "Alternative Metal",
             "Alternative Rock",
-            "Britpop",
             "Hard Rock",
             "Heavy Metal",
-            "Punk",
         ),
     ),
     ("Soul", ()),

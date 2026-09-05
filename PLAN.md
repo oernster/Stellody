@@ -121,11 +121,11 @@ an equality test: an album matches when it carries any genre asked for.
 Whether it should ever mean all of them is a decision this milestone opens
 with, not one to guess at now.
 
-**The catalogue has two levels where the library divides and one where it
-does not.** Electronic and Rock carry styles; the other fourteen mains stand
-alone. One level throughout was a lie: Dance, Trance, Drum n Bass and Jungle are all kinds of
-electronic music; Alternative Rock, Heavy Metal and Punk are all kinds of
-rock. A flat list stood them beside their own parents and a listener asking
+**The catalogue has two levels where the library divides and one where it does
+not.** Electronic, Rock and Pop carry styles; the other fourteen mains stand
+alone. One level throughout was a lie: Dance, Trance, Drum n Bass and Jungle
+are all kinds of electronic music; Alternative Rock and Heavy Metal are kinds
+of rock. A flat list stood them beside their own parents, so a listener asking
 for everything electronic could not have it.
 
 **The spellings come from Discogs; the shape is ruled on here.**
@@ -155,6 +155,11 @@ name rather than about a record:
   tags mean.
 - **Comedy is a main** rather than a style under Discogs' Non-Music; the ruling
   is with the other name rulings below.
+- **Where a style hangs is a ruling too.** Britpop is a kind of pop and sits
+  under Pop rather than under Rock, where Discogs files it. Punk answers to
+  nothing above it and is a main, so asking for rock no longer hands somebody
+  every punk record. Pop then carries one style, which is not the collapse case
+  above: Pop is not Britpop; 1,310 files say Pop against one saying Britpop.
 - Country carries no tag at all and is offered anyway, on the ground Punk
   already stands on.
 
@@ -164,9 +169,9 @@ none:
 > **Blues** · **Classical** · **Comedy** · **Contemporary R&B** · **Country** ·
 > **Electronic**: Acid House, Deep House, Disco, Drum n Bass, Electro, House,
 > Jungle, Progressive House, Tech House, Techno, Trance · **Folk** · **Funk** ·
-> **Hip Hop** · **Jazz** · **Pop** · **Reggae** · **Rock**: Alternative Metal,
-> Alternative Rock, Britpop, Hard Rock, Heavy Metal, Punk · **Soul** ·
-> **Soundtrack** · **World**
+> **Hip Hop** · **Jazz** · **Pop**: Britpop · **Punk** · **Reggae** ·
+> **Rock**: Alternative Metal, Alternative Rock, Hard Rock, Heavy Metal ·
+> **Soul** · **Soundtrack** · **World**
 
 **A style states its main**, on writing and on reading alike, so a filter for
 Electronic finds every kind of it without knowing what the kinds are. A main
@@ -227,9 +232,9 @@ still reads back as what was meant.
 styles exist: `dance-house-progressive` is Progressive House,
 `dance-house-acid` is Acid House, `dance-techno` is Techno and so on, each
 stating Electronic through it. `indie dance` was ruled House, the album it sits
-on being house and Discogs having no Indie Dance style (3 files); `Britpop` was
-ruled to follow where Discogs files it, under Rock (1 file, Kula Shaker on the
-compilation `K`); `classical crossover` was ruled Classical and Pop, crossover
+on being house and Discogs having no Indie Dance style (3 files); `Britpop` was ruled a kind of
+pop and sits under Pop rather than under Discogs' Rock (1 file, Kula Shaker on
+the compilation `K`); `classical crossover` was ruled Classical and Pop, crossover
 being one meeting the other (1 file, Alexis Ffrench's `Truth`, whose only other
 tagged track carries `pop`).
 

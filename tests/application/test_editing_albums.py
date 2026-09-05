@@ -228,11 +228,12 @@ class TestAGenreChosen:
         """The Green Day case, as the panel would state it.
 
         Ticking Punk on an album whose tag never said it is the whole point of
-        the feature; Punk is a style of Rock, so the value says both.
+        the feature. Punk answers to nothing above it, so the value names the
+        two of them side by side, written in catalogue order.
         """
         album = an_album("Involver")
         edits = TagEditing.album_edits_for(album, {AlbumField.GENRE: "Rock; Punk"})
-        assert {edit.value for edit in edits} == {"Rock; Punk"}
+        assert {edit.value for edit in edits} == {"Punk; Rock"}
 
     def test_a_tag_outside_the_catalogue_ticks_nothing_and_states_nothing(
         self,
