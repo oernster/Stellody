@@ -46,19 +46,26 @@ other, so the whole album moves by one figure and the quiet track stays quiet
 against the loud one beside it. Track gain would flatten exactly the dynamics
 the album was mastered with.
 
-**The tags are not there.** Measured over 60 albums sampled at random from the
-library, three files each: not one carried a ReplayGain or R128 tag of any
-kind. So reading what the files already say, which would have been nearly free
-since the probe collects every tag as it walks, does nothing at all here. The
-loudness has to be measured.
+**The tags are all but absent; what is there is the wrong shape.** Read
+across every file in the library rather than a sample: 37 files, being two
+albums, carry `replaygain_album_gain` with a track gain and peak beside it. Nothing
+anywhere carries R128. A further 1,360 files across 129 folders
+carry Apple's `iTunNORM`, which is a per-track Sound Check value rather than
+the album figure this milestone is about. So reading what the files already
+say, which would have been nearly free since the probe collects every tag as
+it walks, would cover two albums of the library and nothing else. The loudness
+still has to be measured. An earlier reading here said no file carried such a
+tag at all; it sampled 60 albums at three files each, which is too small a net
+for something sitting on two of them.
 
 **Measuring it is affordable but not free.** Decoding and measuring one album
 of 42 minutes took 3.0 seconds, about 841 times real time. At that rate the
 reference library, 671 hours of music, is roughly 48 minutes of one core,
-against the 3.75 seconds the ordinary scan takes reading tags alone. So it cannot ride along quietly with a
-scan. It is either a pass the user starts and watches or work spread behind
-playback; that decision is the one this milestone opens with. Whichever is
-chosen, an album that has not been measured plays at unity rather than waiting.
+against the seconds the ordinary scan takes reading tags alone. So it cannot
+ride along quietly with a scan. It is either a pass the user starts and watches
+or work spread behind playback; that decision is the one this milestone opens
+with. Whichever is chosen, an album that has not been measured plays at unity
+rather than waiting.
 
 **Where it is applied.** The engine already multiplies each decoded block by
 the volume, so the album's gain multiplies into the same figure: no second

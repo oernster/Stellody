@@ -320,8 +320,10 @@ def uninstall(
     """Remove the application, its shortcuts and its Apps list entry.
 
     Stellody's own directory is left alone unless the user asked for it to go.
-    It holds the library index and what the window remembers, which they may
-    well want back if they reinstall, so keeping it is the default.
+    It holds the library index, the ratings and play counts, the tags stated by
+    hand, the corrections accepted plus the settings: all of it work somebody
+    did rather than anything a reinstall could rebuild, so keeping it is the
+    default.
     """
     progress(PCT_START, "Removing shortcuts...")
     for link in shortcut_paths():

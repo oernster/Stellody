@@ -83,8 +83,9 @@ SIGN_IN_HINT = (
 # and quietly taking the other.
 FORGET_LABEL = "Also remove my library index and settings"
 FORGET_HINT = (
-    "That is the scan of your music and what the window remembers, not the "
-    "music itself. It cannot be undone."
+    "That is the scan of your music, your ratings and play counts, any tags "
+    "you stated, any corrections you accepted plus your settings. Your music "
+    "itself is never touched. It cannot be undone."
 )
 
 RUNNING_HEADING = f"{APP_NAME} is open"
@@ -100,7 +101,8 @@ KEPT_LIBRARY_LEAD = (
     "Your music was never touched; the library index has been left in place."
 )
 REMOVED_LIBRARY_LEAD = (
-    "Your music was never touched; the library index and settings are gone."
+    "Your music was never touched; the library index, your ratings and "
+    "everything else Stellody had stored are gone."
 )
 REPAIRED_LEAD = "The files have been put back and nothing else was changed."
 REINSTALLED_LEAD = (
