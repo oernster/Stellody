@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.covering import RowCover
+from stellody.ui.expanding import ExpandingHeader
 from stellody.ui.gliding import GlidingGrid
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.row_text import Column
@@ -117,7 +118,10 @@ def build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
     tree.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
     tree.setExpandsOnDoubleClick(True)
     tree.setRootIsDecorated(True)
-    header = tree.header()
+    # Set before any column width is asked for, since a width is the header's
+    # to hold and the one being replaced would take them with it.
+    header = ExpandingHeader(tree)
+    tree.setHeader(header)
     header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     header.setStretchLastSection(False)
     header.setSectionResizeMode(Column.DETAIL, QHeaderView.ResizeMode.Stretch)

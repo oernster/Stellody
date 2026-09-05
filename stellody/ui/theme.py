@@ -8,6 +8,7 @@ module's own insides rather than a second thing for anybody to learn.
 
 from __future__ import annotations
 
+from stellody.ui.expanding import INDICATOR_PX
 from stellody.ui.palette import Mode, Palette, palette_for
 
 __all__ = [
@@ -154,6 +155,12 @@ def stylesheet(mode: Mode) -> str:
         border: 0px;
         border-bottom: 1px solid {colour.border};
         padding: 5px 6px;
+    }}
+    /* Room at the left of the first heading for the open-everything arrow,
+       which `expanding.py` draws into it. The width is stated there rather
+       than here, so the space kept and the thing drawn in it are one number. */
+    QHeaderView::section:first {{
+        padding-left: {INDICATOR_PX}px;
     }}
     QPushButton {{
         background-color: {colour.surface_alt};

@@ -66,11 +66,14 @@ class Menus:
             view_menu, self, "Sort &Z to A", self.toggle_order, checkable=True
         )
         view_menu.addSeparator()
+        # Through the toggle beside the heading rather than at the tree, so
+        # the arrow there cannot be left offering to do what the menu has
+        # just done.
         self._expand_action = menu_action(
-            view_menu, self, "&Expand all", self._tree.expandAll
+            view_menu, self, "&Expand all", self.expanding.open_all
         )
         self._collapse_action = menu_action(
-            view_menu, self, "&Collapse all", self._tree.collapseAll
+            view_menu, self, "&Collapse all", self.expanding.shut_all
         )
 
         sound_menu = self.menuBar().addMenu("&Sound")

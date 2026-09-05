@@ -31,6 +31,7 @@ from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
 from stellody.ui.covering import Covering
+from stellody.ui.expanding import ExpandToggle
 from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
 from stellody.ui.menus import Menus
@@ -182,6 +183,10 @@ class MainWindow(
         if icon is not None:
             self.setWindowIcon(icon)
         self._tree = build_tree(self, self._model)
+        # Parented to the tree, so what keeps the arrow honest lives exactly
+        # as long as the rows it reads. Named here because the View menu
+        # opens and shuts everything through it rather than through the tree.
+        self.expanding = ExpandToggle(self._tree, self._tree.header())
         self.start_covering(art)
         self.start_choosing(chooser)
         self.start_searching()
