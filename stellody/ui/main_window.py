@@ -43,6 +43,7 @@ from stellody.ui.menu_bar import RingedMenuBar
 from stellody.ui.menus import Menus
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.picturing import Picturing
+from stellody.ui.placing import KeepingPlace
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.position_bar import PositionBar
 from stellody.ui.rating import Rating
@@ -132,6 +133,7 @@ class MainWindow(
     Appearance,
     Viewing,
     Picturing,
+    KeepingPlace,
     QMainWindow,
 ):
     """Stellody's window: a library, a menu bar and a status line."""
@@ -211,6 +213,7 @@ class MainWindow(
         self.start_editing_tags(tag_editing)
         self.start_searching()
         self.start_filtering()
+        self.start_keeping_place()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,

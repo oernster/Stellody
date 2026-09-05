@@ -46,12 +46,19 @@ class EditingTags:
         resolves to and every view is built from that. Nothing is reloaded
         where nothing was stated, so a panel opened and closed again costs
         what looking at something costs.
+
+        Where the library was looking is put back afterwards. The reload
+        replaces every album, which is right about what the rows say and wrong
+        about where somebody is: correcting one album two thirds of the way
+        down the library is not a request to be returned to the top of it.
         """
         if self._tag_editing is None or not tracks:
             return
         dialog = TagEditor(
             self._tag_editing, album.identity.handle, tracks, self, holding=album
         )
+        was = self.library_place()
         dialog.exec()
         if dialog.written:
             self.load_remembered()
+            self.restore_place(was)

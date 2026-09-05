@@ -231,7 +231,14 @@ class Viewing:
 
     @Slot(QModelIndex, QModelIndex)
     def _on_album_picked(self, current: QModelIndex, _previous: QModelIndex) -> None:
-        """Open the picked album under the grid; shut the pane when none is."""
+        """Open the picked album under the grid; shut the pane when none is.
+
+        Silent while a place is being put back: the pane is restored there by
+        name and first, so a highlight arriving afterwards would open an album
+        over the top of the one already back on screen.
+        """
+        if self._holding_place:
+            return
         self.open_album_at(current)
 
     def open_album_at(self, where: QModelIndex) -> None:
@@ -310,11 +317,18 @@ class Viewing:
         builds every album afresh: the same album comes back as a different
         object and the pane would shut for no reason a listener could see.
         """
-        wanted = album.identity.key
+        return self.index_of_key(album.identity.key)
+
+    def index_of_key(self, key: str) -> QModelIndex:
+        """Where the album with that identity sits now; invalid where none is.
+
+        The one place a row is found by identity, so the pane and whatever
+        else has to survive a rebuilt library ask the same question.
+        """
         for row in range(self._model.rowCount(QModelIndex())):
             where = self._model.index(row, 0, QModelIndex())
             found = self._model.album_at(where)
-            if found is not None and found.identity.key == wanted:
+            if found is not None and found.identity.key == key:
                 return where
         return QModelIndex()
 
