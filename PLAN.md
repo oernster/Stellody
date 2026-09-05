@@ -121,10 +121,11 @@ an equality test: an album matches when it carries any genre asked for.
 Whether it should ever mean all of them is a decision this milestone opens
 with, not one to guess at now.
 
-**The genres offered are settled. They are these seventeen:**
+**The genres offered are settled. They are these eighteen:**
 
 > Alternative, Blues, Classical, Dance, Drum & Bass, Electronic, Folk,
-> Hip Hop, Jazz, Metal, Pop, Punk, R&B & Soul, Rock, Soundtrack, Trance, World
+> Hip Hop, Jazz, Jungle, Metal, Pop, Punk, R&B & Soul, Rock, Soundtrack,
+> Trance, World
 
 Chosen against a census of the library rather than from a general list of
 genres. Measured over 5,782 tagged files: 43 distinct strings, of which 38
@@ -133,18 +134,36 @@ tail is a private sub-taxonomy, thirteen `dance-*` strings across thirteen
 folders, which multi-select answers without a name of its own: an album there
 carries Dance and Electronic together.
 
-Punk is the deliberate exception and it earns its place. No file in the library
-carries a Punk tag, which is a fact about the tags rather than about the music:
-the one Green Day album here, `Awesome As F--k`, is tagged Rock on all
-seventeen of its tracks and is plainly both. That is the case the whole feature
-exists for. A catalogue built only from what the files already say could never
-record what they failed to say, so the listener would have no way to state the
-thing the tag left out.
+Two of the eighteen are here on a ruling rather than on a count.
 
-It is also why the offered genres are a fixed list rather than a reading of the
+Punk is the first. No file in the library carries a Punk tag, which is a fact
+about the tags rather than about the music: the one Green Day album here,
+`Awesome As F--k`, is tagged Rock on all seventeen of its tracks and is plainly
+both. That is the case the whole feature exists for. A catalogue built only
+from what the files already say could never record what they failed to say, so
+the listener would have no way to state the thing the tag left out.
+
+Jungle is the second. 35 files carry `JUNGLE / FOOTWORK` and they are three LTJ
+Bukem albums, which are atmospheric jungle and drum and bass from the mid-90s.
+Footwork is a real genre and is not this one; it is Chicago, roughly fifteen
+years later, so the word is simply wrong on these records. The tag is therefore
+not aliased: the JUNGLE half names the genre outright once Jungle is offered
+and the other half reaches nothing, which is what a wrong word should do.
+Jungle is kept apart from Drum & Bass because a listener hears the difference.
+
+Both are why the offered genres are a fixed list rather than a reading of the
 library. The census settles which names are worth offering; it cannot be the
-only source of them, since a genre nobody tagged is exactly the one somebody
-wants to add. Punk is the only name in the seventeen admitted on that ground.
+only source of them, since a genre nobody tagged properly is exactly the one
+somebody wants to state.
+
+**Tags that mean a catalogue genre in other words are folded in by a table of
+rulings**, never by inference. Five stand: `Heavy Metal` is Metal (231 files),
+`Hip-Hop` is Hip Hop (416), `R&B` is R&B & Soul (51), `Hard Rock` is Rock (20)
+and `Alternative Metal` is Alternative AND Metal (6). Nothing is read as a genre
+merely because it contains one, so `classical crossover` reaches nothing and is
+reported to the listener rather than dropped. What is still open: the 56-file
+`dance-*` and `house-*` cluster, plus `Comedy`, which has no home in the
+catalogue at all.
 
 **The filter also offers "not stated"**, which is not a genre. 663 files, more
 than a tenth of the library, carry no genre tag at all, so a filter that could
