@@ -124,16 +124,22 @@ class PictureSurface(QWidget):
         return self._image is not None
 
     def picture_rect(self) -> QRect:
-        """Where the frame is drawn: as large as fits, never larger than it is.
+        """Where the frame is drawn, which depends on what was asked for.
 
-        A frame is never blown up past the pixels it actually holds. These
-        files are 640 wide and a window is not, so filling the space meant
-        drawing each pixel four times over and calling it a picture. A video
-        shown at its own size is sharp; the black around it says plainly what
-        size the film is rather than hiding that in a blur.
+        Sharing the window, it is drawn at its own size and never blown up past
+        the pixels it holds: these files are 640 wide, so filling the library's
+        area meant drawing every pixel several times over and calling it
+        detail. At that size the black around it says what size the film is
+        rather than hiding it in a blur.
 
-        Measured in the screen's own pixels, so a display that packs more of
-        them into an inch still gets every one the file holds.
+        Filling the window, it fills the window. Somebody who asks for that has
+        asked to see it larger and knows what they are looking at; leaving a
+        small picture in the middle of a black screen answers a question nobody
+        asked. There is no more detail either way, since 640 pixels is what the
+        file holds, so this is a choice about size alone.
+
+        The native size is measured in the screen's own pixels, so a display
+        packing more of them into an inch still gets every one the file holds.
         """
         if self._image is None:
             return QRect()
@@ -144,7 +150,7 @@ class PictureSurface(QWidget):
         native = QSize(
             int(self._image.width() / density), int(self._image.height() / density)
         )
-        if size.width() > native.width():
+        if not self.size_button.filling and size.width() > native.width():
             size = native
         return QRect(
             (self.width() - size.width()) // 2,

@@ -335,3 +335,41 @@ class TestDrawingAtItsOwnSize:
         drawn = surface.picture_rect()
         assert abs(drawn.left() - (surface.width() - drawn.width()) // 2) <= 1
         assert abs(drawn.top() - (surface.height() - drawn.height()) // 2) <= 1
+
+
+class TestFillingMakesItLarger:
+    def test_filling_the_window_enlarges_the_picture(self, window, player) -> None:
+        """Asking for the whole window is asking to see it larger."""
+        window.activate(track_index(window, 1))
+        reached(player, 500)
+        window._poll_transport()
+        window._tick_picture()
+        small = window.picture_surface.picture_rect()
+        window.fill_window_with_picture()
+        window._tick_picture()
+        large = window.picture_surface.picture_rect()
+        assert large.width() > small.width()
+        assert large.height() > small.height()
+
+    def test_filled_it_reaches_an_edge_of_the_surface(self, window, player) -> None:
+        """As large as the shape allows, which is what filling means."""
+        window.activate(track_index(window, 1))
+        reached(player, 500)
+        window._poll_transport()
+        window.fill_window_with_picture()
+        window._tick_picture()
+        surface = window.picture_surface
+        drawn = surface.picture_rect()
+        assert drawn.width() == surface.width() or drawn.height() == surface.height()
+
+    def test_putting_it_back_returns_it_to_its_own_size(self, window, player) -> None:
+        """Its own size, not whatever the surface happens to be."""
+        window.activate(track_index(window, 1))
+        reached(player, 500)
+        window._poll_transport()
+        window._tick_picture()
+        window.fill_window_with_picture()
+        window.shrink_picture()
+        window._tick_picture()
+        drawn = window.picture_surface.picture_rect()
+        assert (drawn.width(), drawn.height()) == (WIDTH, HEIGHT)
