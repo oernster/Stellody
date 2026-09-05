@@ -18,6 +18,8 @@ LIGHT_MODE_ICON = "light-mode.png"
 DARK_MODE_ICON = "dark-mode.png"
 CHOOSE_FOLDER_ICON = "choose-folder.png"
 RESCAN_ICON = "rescan.png"
+EXPAND_ICON = "expand.png"
+COLLAPSE_ICON = "collapse.png"
 INFO_ICON = "info.png"
 PLAY_ICON = "play.png"
 PAUSE_ICON = "pause.png"
@@ -138,6 +140,16 @@ def volume_icon_path() -> pathlib.Path | None:
 def shuffle_icon_path() -> pathlib.Path | None:
     """The artwork for playing an album out of order."""
     return find_asset(SHUFFLE_ICON)
+
+
+def expand_icon_path() -> pathlib.Path | None:
+    """The artwork for opening every album in the list."""
+    return find_asset(EXPAND_ICON)
+
+
+def collapse_icon_path() -> pathlib.Path | None:
+    """The artwork for closing every album in the list."""
+    return find_asset(COLLAPSE_ICON)
 
 
 def view_icon_path() -> pathlib.Path | None:
