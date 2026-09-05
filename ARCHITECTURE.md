@@ -108,8 +108,8 @@ TrackSource(path, start_frame, end_frame)
 A normal track is `TrackSource("07 Venus.flac")`. A cue-sheet track is
 `TrackSource("album.flac", 18_432_000, 32_532_000)`.
 
-163 of the 482 albums in the reference library are built from a cue sheet
-rather than one file per track, 157 of them a single FLAC holding the whole
+162 of the 617 albums in the reference library are built from a cue sheet
+rather than one file per track, 155 of them a single FLAC holding the whole
 album, so this is a main path rather than an edge case. Because the
 distinction is captured in one value object, the queue, the transport and
 shuffle are written once and work for both shapes without knowing which they
@@ -355,19 +355,21 @@ The walker lists folders, the probe reads tags out of one file and the store
 caches a whole folder's result. A rescan compares each file's size and
 modification time against the store; a folder whose files are all unchanged is
 reused without opening a single file. On the reference library a cold scan of
-510 folders and 4,870 files takes about two and a half seconds and a rescan
-a little over four tenths of a second.
+657 folders holding 6,487 music files takes about three and three quarter
+seconds and a rescan a little under half a second.
 
-**The counts and the timings here were read at different widths of the walk, so
-they are stated apart rather than blended.** The widened walk reports 530
-folders holding 5,101 music files, grouping into 502 albums of 7,108 tracks;
-that is the library as it now stands. The timings above and every other library
-figure in this document were measured while the walk took FLAC alone, which is
-what those 510 folders are: the 487 that are FLAC throughout plus the 23 holding
-FLAC beside something else. So the timings are due a re-measure against a cold
-scan of the widened library and are left as measured rather than scaled up to
-fit the newer counts, since a figure nobody took is worth less than a figure
-with a reading behind it.
+**Every library figure in this document comes from one reading, taken through
+the scanner itself rather than counted beside it.** The walk visits 657 folders
+holding 6,487 music files, which assemble into 617 albums of 8,450 tracks.
+There are more tracks than files because a cue sheet turns one file into many:
+6,272 of those tracks are a whole file while 2,178 are a slice of one. Timed
+twice from cold at 3.75 and 3.77 seconds, with the rescan at 0.46 and 0.47.
+An earlier set of figures was taken while the walk still took FLAC alone and
+was left standing after the walk widened, so the counts in this document
+described a narrower library than the one being scanned; they are replaced
+rather than scaled. The reading was taken with nothing accepted and nothing
+stated, so it is the library as a scan finds it: a listener whose own
+corrections fold two folders together sees slightly fewer albums than this.
 
 **The store holds raw tag values, not resolved ones.** Resolution happens on
 load, so improving any rule above takes effect on the next start without
@@ -466,9 +468,9 @@ M4A is the one entry libsndfile cannot open; it is there because a second
 decoder was added for it rather than because the rule bent. What the rule asks
 of it is unchanged: mutagen has to be able to read its tags. It can, as a
 third tag shape the probe was taught. The scope was set by measurement, not by
-appetite: of the 126 folders in the reference library holding nothing this
-build could decode, all 126 were M4A, 1375 files of it; no WMA, APE, WV,
-MPC or DSD file existed anywhere in it to justify writing more.
+appetite: of the 126 folders that then held nothing Stellody could decode, all
+126 were M4A, 1375 files of it; no WMA, APE, WV, MPC or DSD file existed
+anywhere in the library to justify writing more.
 
 **There is a second table; nothing is silently absent.** `UNPLAYABLE_SUFFIXES`
 names the audio this build knows by sight and cannot decode. A folder holding
@@ -581,8 +583,9 @@ runs a scan to its end has to do the same.
 ## Searching
 
 **No index, measured rather than assumed.** A full-text table was the first
-plan and the measurement refused it. A pass over the whole library, 482 albums
-of 6,877 tracks, costs under half a millisecond once the text is normalised,
+plan and the measurement refused it. A pass over the whole library, 617 albums
+of 8,450 tracks, costs about one and a third milliseconds once the text is
+normalised,
 against the hundred and twenty milliseconds a typed character allows. An index
 would also hold the WRONG text, since the store keeps raw tags while the
 library shows resolved ones, so a title the resolver corrected would be
@@ -591,8 +594,8 @@ probed and a rescan reuses every folder that has not changed, so an existing
 library would search nothing until it was scanned cold. SQLite's FTS5 is
 available here and is deliberately unused.
 
-Normalising is the part that costs. `comparison_key` over 6,877 titles takes
-9.2 milliseconds against 0.24 for a plain fold; the answer cannot change
+Normalising is the part that costs. `comparison_key` over 8,450 titles takes
+10.2 milliseconds against 0.30 for a plain fold; the answer cannot change
 between keystrokes, so it is done once as the library is assembled.
 `stellody/domain/searching.py` is the filter and is pure;
 `stellody/ui/searching.py` holds what a load or a scan produced and puts the

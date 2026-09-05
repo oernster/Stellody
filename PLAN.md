@@ -53,9 +53,9 @@ since the probe collects every tag as it walks, does nothing at all here. The
 loudness has to be measured.
 
 **Measuring it is affordable but not free.** Decoding and measuring one album
-of 42 minutes took 3.0 seconds, about 841 times real time. At that rate a
-6,877 track library is roughly 33 minutes of one core, against 2.5 seconds for
-the ordinary scan that reads tags alone. So it cannot ride along quietly with a
+of 42 minutes took 3.0 seconds, about 841 times real time. At that rate the
+reference library, 671 hours of music, is roughly 48 minutes of one core,
+against the 3.75 seconds the ordinary scan takes reading tags alone. So it cannot ride along quietly with a
 scan. It is either a pass the user starts and watches or work spread behind
 playback; that decision is the one this milestone opens with. Whichever is
 chosen, an album that has not been measured plays at unity rather than waiting.
@@ -181,8 +181,8 @@ when that stage is designed.
 
 - **The formats no decoder here carries.** WMA, Monkey's Audio, WavPack,
   Musepack and DSD stay named in `UNPLAYABLE_SUFFIXES` and reported rather than
-  played. Measured over the reference library: of the 126 folders holding
-  nothing this build could decode, every one was M4A and not one file of those
+  played. Measured over the reference library: of the 126 folders that then held
+  nothing Stellody could decode, every one was M4A and not one file of those
   five existed anywhere, so writing more decoders is a decision about other
   people's libraries rather than about this one. It reopens when somebody has a
   library that needs it.
