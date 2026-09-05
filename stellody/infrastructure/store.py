@@ -14,7 +14,7 @@ from stellody.application.values import FileStat, FolderRecord, SourceRecord
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.listening import Listening
 from stellody.domain.overrides import AlbumEdit, Override
-from stellody.infrastructure import album_edit_rows, override_rows
+from stellody.infrastructure import album_edit_rows, override_rows, stored_dates
 
 UNIT_SEPARATOR = "\x1f"
 
@@ -117,6 +117,10 @@ class SqliteLibraryStore:
                 SCHEMA + override_rows.SCHEMA + album_edit_rows.SCHEMA
             )
             self._connection.commit()
+            # A date written before the scan learned to reduce one still
+            # carries its padding, and an incremental scan will not revisit
+            # the folder to correct it. Settled here rather than left waiting.
+            stored_dates.clean(self._connection)
         except Exception:
             self._connection.close()
             raise

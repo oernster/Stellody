@@ -15,6 +15,7 @@ from stellody.application import tags
 from stellody.application.values import AudioProperties, FolderRecord, SourceRecord
 from stellody.domain.cue import CueSheet
 from stellody.domain.grouping import SourceEntry
+from stellody.domain.text import tag_date
 from stellody.domain.track import MILLISECONDS_PER_SECOND
 
 
@@ -50,7 +51,7 @@ def _record_from_file(
         album_artist=tags.first(properties.tags, tags.ALBUM_ARTIST),
         artists=tags.artists(properties.tags),
         title=tags.first(properties.tags, tags.TITLE),
-        date=tags.first(properties.tags, tags.DATE),
+        date=tag_date(tags.first(properties.tags, tags.DATE)),
         genre=tags.first(properties.tags, tags.GENRE),
         disc=tags.number(properties.tags, tags.DISC),
         track=tags.number(properties.tags, tags.TRACK),
@@ -84,7 +85,7 @@ def _records_from_cue(
                 album_artist=sheet.album_performer or fallback.album_artist,
                 artists=cue_track.performers or fallback.artists,
                 title=cue_track.title,
-                date=sheet.date or fallback.date,
+                date=tag_date(sheet.date or fallback.date),
                 genre=sheet.genre or fallback.genre,
                 # A set spanning folders states which disc each one is, so
                 # taking it is what keeps two discs from claiming one another's

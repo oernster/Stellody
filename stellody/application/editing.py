@@ -26,6 +26,7 @@ from collections.abc import Iterable
 from stellody.application.ports import LibraryStore
 from stellody.domain.album import Album
 from stellody.domain.overrides import AlbumEdit, AlbumField, Override, OverrideField
+from stellody.domain.text import tag_date
 from stellody.domain.track import Track
 
 # What one track can be told about itself. The album around it is edited
@@ -107,6 +108,18 @@ def folders_of(album: Album) -> tuple[str, ...]:
     return tuple(found)
 
 
+def stated_value(field: AlbumField, value: str) -> str:
+    """What a typed value becomes before it is written down.
+
+    A date is reduced to the day it names, so pasting a tag copied from
+    somewhere else cannot put a meaningless time back into the store the scan
+    has just been taught to keep out of it. Every other field is taken as it
+    was typed, trimmed alone.
+    """
+    trimmed = value.strip()
+    return tag_date(trimmed) if field is AlbumField.DATE else trimmed
+
+
 def album_shown_for(album: Album, field: AlbumField) -> str:
     """What the panel shows for one of an album's own fields."""
     if field is AlbumField.ALBUM_ARTIST:
@@ -136,9 +149,10 @@ class TagEditing:
         one album and has to stay one.
         """
         wanted = [
-            (field, value.strip())
+            (field, stated_value(field, value))
             for field, value in stated.items()
-            if value.strip() and value.strip() != album_shown_for(album, field)
+            if stated_value(field, value)
+            and stated_value(field, value) != album_shown_for(album, field)
         ]
         return tuple(
             AlbumEdit(folder, field, value)

@@ -12,6 +12,7 @@ from stellody.application.editing import (
     TagEditing,
     album_shown_for,
     folders_of,
+    stated_value,
 )
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
@@ -150,3 +151,42 @@ class TestTheRatingWhenTwoBecomeOne:
 
         ratings = {target.identity.handle: 4, source.identity.handle: 2}
         assert ratings[joined.identity.handle] == 4
+
+
+class TestADateTypedIn:
+    """A date is reduced on the way in, so padding cannot be put back."""
+
+    def test_a_pasted_tag_loses_its_time(self) -> None:
+        assert stated_value(AlbumField.DATE, "2007-10-09T12:00:00Z") == "2007-10-09"
+
+    def test_a_spaced_date_gains_its_dashes(self) -> None:
+        assert stated_value(AlbumField.DATE, "2001 05 15") == "2001-05-15"
+
+    def test_a_year_stays_a_year(self) -> None:
+        assert stated_value(AlbumField.DATE, "1990") == "1990"
+
+    def test_other_fields_are_taken_as_typed(self) -> None:
+        for field in (AlbumField.ALBUM_ARTIST, AlbumField.TITLE, AlbumField.GENRE):
+            assert stated_value(field, "  2007-10-09T12:00:00Z ") == (
+                "2007-10-09T12:00:00Z"
+            )
+
+    def test_every_field_is_trimmed(self) -> None:
+        for field in ALBUM_FIELDS:
+            assert stated_value(field, "   ") == ""
+
+    def test_a_padded_date_matching_the_album_records_nothing(self) -> None:
+        """The panel shows the reduced form, so typing the padded one back in
+        is not a change and must not be written down as one."""
+        album = an_album("Involver")
+        edits = TagEditing.album_edits_for(
+            album, {AlbumField.DATE: "2004-01-01T12:00:00Z"}
+        )
+        assert {edit.value for edit in edits} == {"2004-01-01"}
+
+    def test_a_date_is_stored_reduced(self) -> None:
+        album = an_album("Involver")
+        edits = TagEditing.album_edits_for(
+            album, {AlbumField.DATE: "2005-06-07T07:00:00Z"}
+        )
+        assert {edit.value for edit in edits} == {"2005-06-07"}

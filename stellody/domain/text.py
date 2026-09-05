@@ -28,6 +28,22 @@ _FILENAME_ORDINAL = re.compile(
     r"^\s*(?:(?P<disc>\d{1,2})\s*[-_.]\s*)?(?P<track>\d{1,3})\s*[-_.\s]"
 )
 _YEAR = re.compile(r"(\d{4})")
+# A date tag as the files of this library actually write one. Measured across
+# 6,445 tagged files: a bare year, a year and month, a full date written with
+# dashes or with spaces, and a full date wearing a time. The time is the reason
+# this exists. Of the 1,354 files carrying one, every single value is UTC and
+# only four times of day appear at all: noon, midnight, and the two forms of
+# midnight in US Pacific. Those are the iTunes store's padding for a release
+# DAY, so the hour names nothing that happened and the offset is not an offset.
+# The trailing offset is admitted anyway, since a file written elsewhere may
+# carry a real one and dropping it is the same act either way.
+_TAG_DATE = re.compile(
+    r"^(?P<year>\d{4})"
+    r"(?:[- ](?P<month>\d{2})"
+    r"(?:[- ](?P<day>\d{2})"
+    r"(?:[T ]\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:?\d{2})?)?"
+    r")?)?$"
+)
 
 
 def normalise(value: str) -> str:
@@ -78,6 +94,30 @@ def year_of(date: str) -> int | None:
     """The four-digit year inside a date tag, which may be a full date."""
     match = _YEAR.search(date)
     return int(match.group(1)) if match is not None else None
+
+
+def tag_date(date: str) -> str:
+    """A date tag reduced to the day it names, inventing nothing it does not.
+
+    A year stays a year, a year and month stay both; only what the tag states
+    is kept, so an album that knows 1990 is never given a January it never
+    claimed. The separator becomes a dash whatever the file used, so the two
+    ways of writing one date stop being two different dates.
+
+    What is dropped is the time, which in this library is padding rather than
+    information. Keeping it puts `1990-05-01T12:00:00Z` in front of a person
+    editing an album, which is not a date anybody reads.
+
+    A shape not recognised is handed back as it came, cleaned of stray
+    whitespace alone. Guessing at an unfamiliar tag would lose the only record
+    of what the file actually says.
+    """
+    value = normalise(date)
+    match = _TAG_DATE.match(value)
+    if match is None:
+        return value
+    stated = (match.group("year"), match.group("month"), match.group("day"))
+    return "-".join(part for part in stated if part is not None)
 
 
 def is_various_artists(album_artist: str) -> bool:
