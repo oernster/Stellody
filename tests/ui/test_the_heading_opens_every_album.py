@@ -126,3 +126,47 @@ def test_the_arrow_itself_changes_when_everything_opens(window: MainWindow) -> N
     assert window.expanding.all_open()
     assert open_now != shut
     assert set(shut) != {shut[0]}
+
+
+def test_opening_everything_asks_the_rows_once_rather_than_per_row(
+    window: MainWindow,
+) -> None:
+    """The interface thread is held for the whole of a bulk change.
+
+    `expandAll` reports every row it opened: measured on a library of 628
+    albums it emits 8792 of them; answering each by walking every album took
+    3.72 seconds against 0.03 for the same call with nothing listening.
+    Counting the questions rather than timing them, since a timing that fails
+    on a slow machine teaches people to ignore it.
+    """
+    toggle = toggle_of(window)
+    asked = {"count": 0}
+    real = toggle.all_open
+
+    def counted() -> bool:
+        asked["count"] += 1
+        return real()
+
+    toggle.all_open = counted
+    toggle.open_all()
+
+    assert asked["count"] == 1
+    assert window._tree.isExpanded(album(window))
+
+
+def test_an_album_opened_by_hand_still_moves_the_arrow(window: MainWindow) -> None:
+    """The silence lasts exactly as long as the bulk change does."""
+    toggle = toggle_of(window)
+    asked = {"count": 0}
+    real = toggle.all_open
+
+    def counted() -> bool:
+        asked["count"] += 1
+        return real()
+
+    toggle.open_all()
+    toggle.shut_all()
+    toggle.all_open = counted
+    window._tree.expand(album(window))
+
+    assert asked["count"] >= 1

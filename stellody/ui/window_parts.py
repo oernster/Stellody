@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.covering import RowCover
-from stellody.ui.expanding import ExpandingHeader
+from stellody.ui.expanding import ExpandingHeader, ExpandingTree
 from stellody.ui.gliding import GlidingGrid
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.row_text import Column
@@ -101,7 +101,7 @@ def neutral_holder(window: QMainWindow) -> QWidget:
 
 def build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
     """The album tree, configured for a large library."""
-    tree = QTreeView(window)
+    tree = ExpandingTree(window)
     tree.setModel(model)
     # A sleeve is drawn at the size a row can carry rather than at the size the
     # grid keeps it, since one pixmap serves both views. setIconSize does not
