@@ -35,7 +35,13 @@ def a_track(folder: str, number: int) -> Track:
     )
 
 
-def an_album(*folders: str, title: str = "Involver", genre: str = "House") -> Album:
+def an_album(
+    *folders: str,
+    title: str = "Involver",
+    # A tag no ruling covers, so it ticks nothing: House was this once
+    # and the catalogue now offers it as a style of Electronic.
+    genre: str = "Progressive Rock",
+) -> Album:
     return Album(
         identity=AlbumIdentity(album_artist="Sasha", title=title, date="2004"),
         tracks=tuple(a_track(folder, n) for n, folder in enumerate(folders, start=1)),
@@ -92,7 +98,7 @@ class TestWhatThePanelShows:
             AlbumField.ALBUM_ARTIST: "Sasha",
             AlbumField.TITLE: "Involver",
             AlbumField.DATE: "2004",
-            AlbumField.GENRE: "House",
+            AlbumField.GENRE: "Progressive Rock",
         }
 
 
@@ -197,9 +203,7 @@ class TestAGenreChosen:
     """A genre is reduced to the catalogue, so both sides ask one question."""
 
     def test_it_is_written_in_catalogue_order(self) -> None:
-        assert stated_value(AlbumField.GENRE, "Rock; Alternative") == (
-            "Alternative; Rock"
-        )
+        assert stated_value(AlbumField.GENRE, "Pop; Blues") == ("Blues; Pop")
 
     def test_a_tag_written_in_another_case_reduces_to_the_catalogue_name(
         self,
@@ -214,24 +218,26 @@ class TestAGenreChosen:
         """The album is tagged in one case and the grid shows the other."""
         album = an_album("Involver")
         shown = album_shown_for(album, AlbumField.GENRE)
-        assert shown == "House"
-        assert TagEditing.album_edits_for(album, {AlbumField.GENRE: "house"}) == ()
+        assert shown == "Progressive Rock"
+        assert (
+            TagEditing.album_edits_for(album, {AlbumField.GENRE: "progressive rock"})
+            == ()
+        )
 
     def test_adding_a_genre_the_tag_never_named_is_recorded(self) -> None:
         """The Green Day case, as the panel would state it.
 
-        The album here is tagged House, which is deliberately not one of the
-        seventeen, so the grid starts with nothing ticked. Ticking Rock and
-        Punk states both, which is the whole point of the feature.
+        Ticking Punk on an album whose tag never said it is the whole point of
+        the feature; Punk is a style of Rock, so the value says both.
         """
         album = an_album("Involver")
         edits = TagEditing.album_edits_for(album, {AlbumField.GENRE: "Rock; Punk"})
-        assert {edit.value for edit in edits} == {"Punk; Rock"}
+        assert {edit.value for edit in edits} == {"Rock; Punk"}
 
     def test_a_tag_outside_the_catalogue_ticks_nothing_and_states_nothing(
         self,
     ) -> None:
         """Keeping a panel it could not represent must not wipe the tag."""
         album = an_album("Involver")
-        assert album_shown_for(album, AlbumField.GENRE) == "House"
+        assert album_shown_for(album, AlbumField.GENRE) == "Progressive Rock"
         assert TagEditing.album_edits_for(album, {AlbumField.GENRE: ""}) == ()

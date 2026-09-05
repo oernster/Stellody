@@ -1,41 +1,58 @@
-"""The genres an album can be stated to carry.
+"""The genres an album can be stated to carry: main categories with styles.
 
-A fixed list rather than a reading of the library; the two reasons behind that
-pull in opposite directions on purpose. The names are chosen from what the library
-actually holds, so nothing here is offered that nobody would ever tick; the
-list is not DERIVED from it, because the whole point of stating a genre is to
-say what the tags failed to say. A catalogue read from the files could only
-ever repeat them.
+Two levels rather than one flat list, because one level was a lie. Dance,
+Trance, Drum n Bass and Jungle are all kinds of electronic music;
+Alternative Rock, Heavy Metal and Punk are all kinds of rock. A flat list put
+them beside their own parents as though they were peers, so a listener asking
+for everything electronic could not have it.
 
-Re-measured 2026-09-05 over 6,462 audio files: 5,756 carry a genre tag and 705
-carry none; the tags are 43 distinct strings, 38 once case is folded, of which
-4,913 files name a catalogue genre outright. The long tail was one private
-sub-taxonomy, `dance-<style>` and `house-<style>` over four folders, which
-having more than one genre answers without a name of its own: those all read
-as Dance and Electronic through the table below. Every tag the library carries
-now reaches the catalogue, which was not so before 2026-09-05: 62 files across
-16 strings reached nothing at all.
+**Discogs' vocabulary and Discogs' shape, curated to this library.** Discogs
+runs 15 genres over 1,159 styles and publishes both under CC0; MusicBrainz
+offers several thousand genres with no hierarchy at all and Last.fm offers
+folksonomy tags rather than genres. So the two levels and the exact spellings
+come from Discogs, which means a later lookup there maps one to one with no
+translation. What is NOT taken is the vocabulary entire: 1,159 styles is a
+taxonomy, not a list somebody chooses from. Only what the library needs is
+here, which is also why Footwork is absent (see below).
 
-Three of the nineteen are here on a ruling rather than on a count.
+Three of the fifteen mains are left out because nothing here is one: Brass &
+Military, Children's and Latin. Reggae was left out too and put back: no tag
+in the library says reggae, which is a fact about the tags. Finley Quaye's
+`Maverick A Strike` is tagged `Hip-Hop/Rap` on all thirteen tracks and `Much
+More Than Much Love` is tagged `Pop`; both are reggae records. Absence
+from the tags is the wrong test, which is the same ground Punk stands on.
+
+**A style states its main.** Ticking Trance states Electronic too, on writing
+and on reading alike, so a filter for Electronic finds every kind of it
+without knowing what the kinds are. A main can be stated alone, which is what
+the bare `dance` tag on 873 files gets: Discogs has no Dance style;
+inventing one to hold a tag that says no more than "electronic" would be
+stating something the file never said.
+
+Measured against the library on 2026-09-05: 6,462 audio files, 5,756 carrying
+a genre tag and 705 carrying none, in 43 distinct strings and 38 once case is
+folded. Every one of those strings reaches the catalogue.
+
+Some names are here on a ruling rather than on a count.
 
 Punk is the one no measurement asked for at all. No file carries a Punk tag,
 which is a fact about the tags rather than about the music: the one Green Day
 album in the library is tagged Rock alone and is plainly both.
 
-Jungle is the other. 35 files carry `JUNGLE / FOOTWORK`; they are three LTJ
+Jungle is the second. 35 files carry `JUNGLE / FOOTWORK`; they are three LTJ
 Bukem albums, which are atmospheric jungle and drum and bass from the mid-90s.
-Footwork is a real genre and is not this one; it is Chicago, roughly fifteen
-years later, so the word is simply wrong on these records. The tag is therefore
-not aliased: the JUNGLE half of it names the genre outright and the
-other half is left to reach nothing, which is what a wrong word should do.
-Jungle is kept apart from Drum & Bass because a listener hears the
-difference, which is reason enough for a name.
+Footwork is a real genre; it is a real Discogs style; it is not this one. It is
+Chicago, roughly fifteen years later, so the word is simply wrong on these
+records. It is therefore left out of the catalogue rather than aliased, so the
+JUNGLE half names the genre and the other half reaches nothing, which is what
+a wrong word should do.
 
-Comedy is the third. One file carries it, The Lonely Island's `Incredibad`;
-nothing else in the catalogue is anywhere near it: a comedy record is not
-Pop that happens to be funny. A count of one is not the measure here, since the
-question a catalogue answers is whether a listener could state what a record
-is; without this name they could not state that one at all.
+Reggae is the third and the clearest case of the rule: nothing here is tagged
+with it, two albums are it. See above.
+
+Comedy is the fourth. One file carries it, The Lonely Island's `Incredibad`;
+nothing else here is anywhere near it. Discogs files Comedy under Non-Music,
+which is why that main is kept for a single record.
 
 An album carries any number of these, so what is held is a set rather than a
 value. It is written down as one string because that is what an album's stated
@@ -47,39 +64,87 @@ from __future__ import annotations
 
 import re
 
-# Alphabetical, because that is the order they are read in and any other order
-# is an opinion about music that a list of names has no business holding.
-GENRES: tuple[str, ...] = (
-    "Alternative",
-    "Blues",
-    "Classical",
-    "Comedy",
-    "Dance",
-    "Drum & Bass",
-    "Electronic",
-    "Folk",
-    "Hip Hop",
-    "Jazz",
-    "Jungle",
-    "Metal",
-    "Pop",
-    "Punk",
-    "R&B & Soul",
-    "Rock",
-    "Soundtrack",
-    "Trance",
-    "World",
+# The catalogue: each main category with the styles kept under it, both in the
+# order they are offered. Alphabetical throughout, because that is the order
+# they are read in and any other order is an opinion about music that a list of
+# names has no business holding.
+#
+# A main with no styles is not an omission. Blues, Hip Hop, Jazz and Pop are
+# each carried by a bare tag in this library and nothing here divides them
+# further; a style is added when a tag asks for one.
+CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Blues", ()),
+    ("Classical", ("Modern Classical",)),
+    (
+        "Electronic",
+        (
+            "Acid House",
+            "Deep House",
+            "Disco",
+            "Drum n Bass",
+            "Electro",
+            "House",
+            "Jungle",
+            "Progressive House",
+            "Tech House",
+            "Techno",
+            "Trance",
+        ),
+    ),
+    ("Folk, World, & Country", ("Folk",)),
+    ("Funk / Soul", ("Contemporary R&B",)),
+    ("Hip Hop", ()),
+    ("Jazz", ()),
+    ("Non-Music", ("Comedy",)),
+    ("Pop", ()),
+    ("Reggae", ()),
+    (
+        "Rock",
+        (
+            "Alternative Metal",
+            "Alternative Rock",
+            "Britpop",
+            "Hard Rock",
+            "Heavy Metal",
+            "Punk",
+        ),
+    ),
+    ("Stage & Screen", ("Soundtrack",)),
 )
+
+# Every name the catalogue offers, in the order it offers them: each main
+# followed by its own styles. One order, derived from the catalogue rather
+# than stated beside it, so the two cannot drift apart.
+GENRES: tuple[str, ...] = tuple(
+    name for main, styles in CATALOGUE for name in (main, *styles)
+)
+
+# Which main each style belongs to. A style states its main, so this is what
+# turns one tick into the two things it means.
+MAIN_OF: dict[str, str] = {
+    style: main for main, styles in CATALOGUE for style in styles
+}
+
+# The main categories on their own, for a caller that wants the top level.
+MAINS: tuple[str, ...] = tuple(main for main, _styles in CATALOGUE)
 
 # How several genres are written as one stored value.
 SEPARATOR = "; "
 
-# What separates one genre from another in a tag somebody else wrote. An
-# ampersand is deliberately absent: two of the names above contain one, so
-# splitting on it would turn Drum & Bass into a Drum nobody has heard of.
-_PIECES = re.compile(r"[;/,]")
+# What separates one genre from another. The semicolon and nothing else,
+# because that is what this application writes; a tag somebody else wrote is
+# tried whole first and split only where the whole names nothing.
+#
+# The comma was here and had to go: `Folk, World, & Country` is one name that
+# holds two of them, so splitting on a comma broke a catalogue name into
+# pieces that then matched other names. Measured across the library, no file
+# tag contains a comma or a semicolon at all, so the split bought nothing and
+# cost that name. An ampersand and a solidus are likewise absent, since names
+# hold those too; the solidus is handled as a fallback in `_named_by`.
+_PIECES = re.compile(r";")
 
-# Tags the library carries that name a catalogue genre in other words.
+# Tags the library carries now or once carried, naming a catalogue genre in
+# other words.
 #
 # Every entry is a RULING rather than a rule: the list grows only when somebody
 # says a particular tag means a particular genre. Nothing is inferred from a
@@ -93,51 +158,48 @@ _PIECES = re.compile(r"[;/,]")
 # that reaches the catalogue through it, so a ruling can be weighed rather than
 # argued about.
 ALIASES: dict[str, tuple[str, ...]] = {
-    "heavy metal": ("Metal",),  # 231 files
-    "hard rock": ("Rock",),  # 20 files
-    "hip-hop": ("Hip Hop",),  # 416, tagged `Hip-Hop/Rap`
-    "r&b": ("R&B & Soul",),  # 39 tagged `R&B`, 12 tagged `R&B/Soul`
-    "alternative metal": ("Alternative", "Metal"),  # 6 files
+    # Spellings of a catalogue name that the name itself does not match.
+    "hip-hop/rap": ("Hip Hop",),  # 415 files
+    "hip hop / rap": ("Hip Hop",),  # 26 files
+    "drum & bass": ("Drum n Bass",),  # 14 files
+    "world": ("Folk, World, & Country",),  # 20 files
+    # The bare tag says electronic and no more, so that is what it states.
+    # Discogs has no Dance style and one is not invented to hold this.
+    "dance": ("Electronic",),  # 873 files
+    # `Alternative` alone is the rock kind here, which is what every album
+    # carrying it is.
+    "alternative": ("Alternative Rock",),  # 479 files
+    "r&b": ("Contemporary R&B",),  # 39 files, ruled: the modern kind
+    "r&b/soul": ("Contemporary R&B",),  # 10 files
     # One person's private sub-taxonomy, `dance-<style>` and `house-<style>`,
-    # across three albums and a single: 56 files that reached nothing at all.
-    # Every one of them is Dance and Electronic together, which is the ruling
-    # PLAN.md already carried and the reason none of these styles is offered a
-    # name of its own. The styles inside them are real distinctions; they are
-    # distinctions between kinds of dance music, which is what having both
-    # names on the album already says.
-    # One of the cluster names a genre the catalogue already offers in its
-    # style half and was ruled to reach it, so a Paul van Dyk album is
-    # findable under the thing it actually is. The rest name styles no
-    # catalogue name covers and stop at the two. Techno is the near miss and
-    # was ruled AGAINST a name of its own: it is a kind of electronic music,
-    # which the pair already says, and a catalogue that named every kind would
-    # be a taxonomy rather than a list somebody can read.
-    "dance-trance": ("Dance", "Electronic", "Trance"),  # 16 files
-    "house-melodic": ("Dance", "Electronic"),  # 9 files
-    "dance-house": ("Dance", "Electronic"),  # 8 files
-    "dance-house-progressive": ("Dance", "Electronic"),  # 7 files
-    "house": ("Dance", "Electronic"),  # 3 files
-    "dance-techno": ("Dance", "Electronic"),  # 3 files
-    "house-progressive house": ("Dance", "Electronic"),  # 2 files
+    # across three albums and a single: 56 files that reached nothing at all
+    # before the styles existed to hold them. Each names its style outright
+    # once the catalogue has two levels; each states Electronic through it.
+    "dance-trance": ("Trance",),  # 16 files
+    "house-melodic": ("House",),  # 9 files
+    "dance-house": ("House",),  # 8 files
+    "dance-house-progressive": ("Progressive House",),  # 7 files
+    "dance-techno": ("Techno",),  # 3 files
+    "house-progressive house": ("Progressive House",),  # 2 files
     # The whole value is `dance-house-tech / minimal`, which splits in two.
-    # Minimal names nothing here and is left to, as a wrong or unknown word
-    # should be; the album still reaches the catalogue through the other half.
-    "dance-house-tech": ("Dance", "Electronic"),  # 2 files
-    "dance-house-deep": ("Dance", "Electronic"),  # 2 files
-    "dance-house-acid": ("Dance", "Electronic"),  # 2 files
-    "dance-house-disco": ("Dance", "Electronic"),  # 1 file
-    "dance-electro": ("Dance", "Electronic"),  # 1 file
-    # Ruled by Oliver to be alternative dance, which is those two names.
-    "indie dance": ("Alternative", "Dance"),  # 3 files
-    # Ruled a subgenre of Pop rather than a name of its own.
-    "britpop": ("Pop",),  # 1 file
-    # Ruled to be those two together rather than a name of its own: crossover
-    # IS classical meeting popular music, so the pair says it. The album it
-    # sits on agrees, its only other tagged track carrying `pop`. This is the
-    # one tag the module used to hold up as the example of not reading a genre
-    # out of a word that contains one; the example is now `Progressive Rock`,
-    # which nobody has ruled on.
+    # Minimal names nothing here and is left to, as an unknown word should be;
+    # the album still reaches the catalogue through the other half.
+    "dance-house-tech": ("Tech House",),  # the half of 2 files
+    "dance-house-deep": ("Deep House",),  # 2 files
+    "dance-house-acid": ("Acid House",),  # 2 files
+    "dance-house-disco": ("Disco",),  # 1 file
+    "dance-electro": ("Electro",),  # 1 file
+    # Ruled by Oliver: the album it sits on is house, which is what the rest
+    # of its tags say; Discogs has no Indie Dance style to reach for.
+    "indie dance": ("House",),  # 3 files
+    # Ruled by Oliver: crossover is classical meeting popular music, so it
+    # states both mains rather than asking for a name of its own. The album it
+    # sits on agrees, its only other tagged track carrying `pop`.
     "classical crossover": ("Classical", "Pop"),  # 1 file
+    # Names the catalogue used to carry, kept so a genre stated before the
+    # catalogue gained its second level still reads back as what was meant.
+    "metal": ("Heavy Metal",),
+    "r&b & soul": ("Contemporary R&B",),
 }
 
 # One place a tag piece is looked up, whether it names a genre outright or
@@ -150,37 +212,66 @@ _BY_KEY: dict[str, tuple[str, ...]] = {
 def pieces_of(value: str) -> tuple[str, ...]:
     """The separate genres inside one tag value, in the order they appear.
 
-    A tag is written by whoever wrote it, so `Hip-Hop/Rap` and `R&B/Soul` each
-    hold two names and `JUNGLE / FOOTWORK` holds two more. Splitting them is
-    what lets a value be recognised at all; a piece nobody recognises is still
-    returned, since dropping it would lose what the file says.
+    A tag is written by whoever wrote it, so `JUNGLE / FOOTWORK` holds two
+    names and `Rock; Pop` holds two more. Splitting them is what lets a value
+    be recognised at all; a piece nobody recognises is still returned, since
+    dropping it would lose what the file says.
     """
     found = [piece.strip() for piece in _PIECES.split(value)]
     return tuple(piece for piece in found if piece)
 
 
+def _named_by(piece: str) -> tuple[str, ...]:
+    """Every catalogue name one piece of a tag names, if any.
+
+    A piece is matched on its name, ignoring case; failing that, through
+    `ALIASES`, where somebody has ruled what a tag means. Failing both, the
+    piece is split again on a solidus and each half asked in turn, which is
+    how `JUNGLE / FOOTWORK` reaches Jungle while a name that holds a solidus
+    of its own, `Funk / Soul`, is still matched whole.
+    """
+    key = piece.casefold()
+    if key in _BY_KEY:
+        return _BY_KEY[key]
+    if "/" not in piece:
+        return ()
+    halves = (half.strip().casefold() for half in piece.split("/"))
+    return tuple(name for half in halves for name in _BY_KEY.get(half, ()))
+
+
+def with_mains(names: tuple[str, ...]) -> tuple[str, ...]:
+    """Those names plus the main of every style among them, in order.
+
+    A style states its main: an album marked Trance IS electronic, so a filter
+    for Electronic must find it without being told what the kinds of it are.
+    Done here, once, rather than at every place a genre is read.
+    """
+    wanted = set(names)
+    wanted |= {MAIN_OF[name] for name in names if name in MAIN_OF}
+    return tuple(name for name in GENRES if name in wanted)
+
+
 def chosen_in(value: str) -> tuple[str, ...]:
     """The catalogue genres a stored value names, in catalogue order.
 
-    A piece is matched on its name, ignoring case; failing that, through
-    `ALIASES`, where somebody has ruled what a tag means. One piece can name
-    more than one genre that way: `Alternative Metal` was ruled to be both,
-    which is a thing the tag says and a single-valued table could not have
-    recorded.
+    Nothing is inferred beyond a name, a ruling and the main a style belongs
+    to: a piece is never read as a genre merely because it contains one, since
+    ticking a box on somebody's behalf leaves them unable to tell which ticks
+    were theirs. `classical crossover` reaches Classical and Pop only because
+    it was ruled to, never because the word Classical is in it.
 
-    Nothing beyond those two routes is inferred: a name is never read as a
-    genre merely because it contains one, since ticking a box on somebody's
-    behalf leaves them unable to tell which ticks were theirs. `Alternative
-    Metal` reaches both only because it was ruled to, never because the words
-    are in it.
+    The WHOLE value is tried before it is split, so a catalogue name holding
+    a separator of its own is matched as itself rather than broken up.
 
     A piece naming nothing is passed over rather than guessed at. Where that
     leaves nothing at all, the panel says what the tag was instead of showing
     an empty grid and no reason for it.
     """
-    keys = {piece.casefold() for piece in pieces_of(value)}
-    named = {name for key in keys if key in _BY_KEY for name in _BY_KEY[key]}
-    return tuple(name for name in GENRES if name in named)
+    whole = _named_by(value.strip())
+    if whole:
+        return with_mains(tuple(name for name in GENRES if name in set(whole)))
+    named = {name for piece in pieces_of(value) for name in _named_by(piece)}
+    return with_mains(tuple(name for name in GENRES if name in named))
 
 
 def stated_as(genres: tuple[str, ...]) -> str:
@@ -188,7 +279,9 @@ def stated_as(genres: tuple[str, ...]) -> str:
 
     Ordered here rather than by the order somebody ticked them, so stating the
     same two genres twice cannot produce two different values that then fail
-    to compare equal.
+    to compare equal. A style carries its main into the value, so what is
+    stored says both things a tick meant.
     """
     chosen = {genre.casefold() for genre in genres}
-    return SEPARATOR.join(name for name in GENRES if name.casefold() in chosen)
+    kept = tuple(name for name in GENRES if name.casefold() in chosen)
+    return SEPARATOR.join(with_mains(kept))

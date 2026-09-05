@@ -11,8 +11,13 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from stellody.domain.genres import GENRES
-from stellody.ui.genre_grid import COLUMNS, UNSTATED, GenreGrid
+from stellody.domain.genres import CATALOGUE, GENRES, MAIN_OF
+from stellody.ui.genre_grid import (
+    COLUMNS,
+    UNSTATED,
+    GenreGrid,
+    dealt_into_columns,
+)
 from stellody.ui.ringed_check import RingedCheckBox
 
 
@@ -27,16 +32,33 @@ def grid(application: QApplication):
 class TestWhatItOffers:
     def test_every_genre_in_the_catalogue_has_a_box(self, grid) -> None:
         chooser = grid()
-        assert tuple(chooser.boxes) == GENRES
+        assert sorted(chooser.boxes) == sorted(GENRES)
 
-    def test_it_is_laid_out_in_two_columns(self, grid) -> None:
-        """Eighteen names cost nine rows rather than eighteen."""
+    def test_it_is_laid_out_in_the_columns_that_were_settled(self, grid) -> None:
+        """Three, measured: two made the album panel 852 pixels tall."""
         chooser = grid()
-        columns = {
-            chooser.layout().itemAt(1).layout().indexOf(box) % COLUMNS
-            for box in chooser.boxes.values()
-        }
-        assert columns == {0, 1}
+        assert chooser.layout().itemAt(1).layout().count() == COLUMNS
+
+    def test_every_group_stays_whole_and_in_catalogue_order(self) -> None:
+        """A main and its styles are read together, so a group is never
+        split across a column boundary."""
+        dealt = dealt_into_columns(CATALOGUE, COLUMNS)
+        placed = [main for column in dealt for main, _styles in column]
+        assert sorted(placed) == sorted(main for main, _s in CATALOGUE)
+        order = [main for main, _styles in CATALOGUE]
+        for column in dealt:
+            where = [order.index(main) for main, _styles in column]
+            assert where == sorted(where)
+
+    def test_the_columns_are_dealt_by_height_not_in_order(self) -> None:
+        """Electronic carries eleven styles while four mains carry none,
+        so filling one column then the next leaves one twice the other."""
+        heights = [
+            sum(1 + len(styles) for _main, styles in column)
+            for column in dealt_into_columns(CATALOGUE, COLUMNS)
+        ]
+        tallest = max(1 + len(styles) for _main, styles in CATALOGUE)
+        assert max(heights) - min(heights) <= tallest
 
     def test_exactly_one_ampersand_reaches_the_screen(self, grid) -> None:
         """Never two drawn; never a shortcut quietly taken either.
@@ -51,7 +73,7 @@ class TestWhatItOffers:
         width of the name as written and take nothing.
         """
         chooser = grid()
-        for name in ("Drum & Bass", "R&B & Soul"):
+        for name in ("Folk, World, & Country", "Contemporary R&B"):
             box = chooser.boxes[name]
             # The escaped source is what asks Qt for a literal ampersand.
             assert box.text() == name.replace("&", "&&")
@@ -97,7 +119,12 @@ class TestWhatItStartsWith:
 
     def test_several_genres_start_ticked(self, grid) -> None:
         chooser = grid("Rock; Alternative")
-        assert chooser.chosen() == ("Alternative", "Rock")
+        assert chooser.chosen() == ("Rock", "Alternative Rock")
+
+    def test_a_style_starts_its_main_ticked_too(self, grid) -> None:
+        """The value it would answer with holds both, so the boxes do."""
+        chooser = grid("Trance")
+        assert chooser.chosen() == ("Electronic", "Trance")
 
     def test_a_tag_naming_two_things_ticks_both(self, grid) -> None:
         """`Hip-Hop/Rap` is one tag holding two names, measured."""
@@ -139,7 +166,7 @@ class TestWhatItSaysAboutATagItCannotMatch:
     def test_the_two_asides_never_say_the_same_thing(self, grid) -> None:
         """Telling them apart is the whole point of having two."""
         silent = grid("")
-        unmatched = grid("dance-house")
+        unmatched = grid("Progressive Rock")
         assert silent.aside.text() != unmatched.aside.text()
 
 
@@ -148,14 +175,13 @@ class TestWhatItAnswers:
         """The panel holds it beside the lines and asks all of them `text()`."""
         chooser = grid()
         chooser.boxes["Punk"].setChecked(True)
-        chooser.boxes["Rock"].setChecked(True)
-        assert chooser.text() == "Punk; Rock"
+        assert chooser.text() == "Rock; Punk"
 
     def test_what_is_answered_is_in_catalogue_order(self, grid) -> None:
         chooser = grid()
-        chooser.boxes["World"].setChecked(True)
+        chooser.boxes["Folk, World, & Country"].setChecked(True)
         chooser.boxes["Blues"].setChecked(True)
-        assert chooser.text() == "Blues; World"
+        assert chooser.text() == "Blues; Folk, World, & Country"
 
     def test_unticking_what_a_tag_started_with_states_nothing(self, grid) -> None:
         chooser = grid("Rock")
@@ -166,7 +192,56 @@ class TestWhatItAnswers:
         """The Green Day case: tagged Rock alone and plainly Punk as well."""
         chooser = grid("Rock")
         chooser.boxes["Punk"].setChecked(True)
-        assert chooser.text() == "Punk; Rock"
+        assert chooser.text() == "Rock; Punk"
+
+
+class TestTheTwoLevelsAgreeingWithEachOther:
+    """A style states its main, so the boxes cannot say otherwise."""
+
+    def test_ticking_a_style_ticks_its_main(self, grid) -> None:
+        chooser = grid()
+        chooser.boxes["Trance"].setChecked(True)
+        assert chooser.boxes["Electronic"].isChecked()
+        assert chooser.text() == "Electronic; Trance"
+
+    def test_clearing_a_main_clears_its_styles(self, grid) -> None:
+        """An album that is not electronic is not trance either."""
+        chooser = grid("Trance")
+        chooser.boxes["Electronic"].setChecked(False)
+        assert not chooser.boxes["Trance"].isChecked()
+        assert chooser.text() == ""
+
+    def test_clearing_a_style_leaves_its_main_alone(self, grid) -> None:
+        """Deliberately not the mirror image: the album may still be
+        electronic after somebody decides it is not specifically trance."""
+        chooser = grid("Trance")
+        chooser.boxes["Trance"].setChecked(False)
+        assert chooser.boxes["Electronic"].isChecked()
+        assert chooser.text() == "Electronic"
+
+    def test_clearing_a_main_leaves_another_main_alone(self, grid) -> None:
+        chooser = grid("Trance; Pop")
+        chooser.boxes["Electronic"].setChecked(False)
+        assert chooser.boxes["Pop"].isChecked()
+        assert chooser.text() == "Pop"
+
+    def test_every_style_is_drawn_in_from_its_main(self, grid) -> None:
+        """Indented rather than merely listed, so the two levels are
+        visible rather than something the reader has to know."""
+        chooser = grid()
+        columns = chooser.layout().itemAt(1).layout()
+        indented = set()
+        for index in range(columns.count()):
+            stack = columns.itemAt(index).layout()
+            for row in range(stack.count()):
+                nested = stack.itemAt(row).layout()
+                if nested is None:
+                    continue
+                for held in range(nested.count()):
+                    widget = nested.itemAt(held).widget()
+                    if widget is not None:
+                        indented.add(widget.text().replace("&&", "&"))
+        assert indented == set(MAIN_OF)
 
 
 def test_every_box_carries_the_house_ring(application: QApplication) -> None:
