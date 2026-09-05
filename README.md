@@ -33,7 +33,10 @@ if it ever stopped being true the build would fail.
 ## What you get
 
 - **A wall of album covers**, else a plain list, whichever suits you. Click a
-  cover and the album opens underneath without losing your place.
+  cover and the album opens underneath without losing your place. Switching
+  between the two lands where you were, so whatever is playing is picked out
+  either way. In the list, one press on the Title heading opens every album at
+  once; another closes them.
 - **Search that narrows as you type**, however many thousands of songs you
   have. The album stays whole around whatever you were looking for.
 - **Albums that flow.** Records made to run straight through play that way,
