@@ -19,8 +19,8 @@ animating those would only mean the grid is still moving when it is shown.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QModelIndex, QVariantAnimation
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtCore import QEasingCurve, QModelIndex, Qt, QVariantAnimation
+from PySide6.QtGui import QFocusEvent, QWheelEvent
 from PySide6.QtWidgets import QAbstractItemView, QListView, QWidget
 
 # Long enough to be followed by eye, short enough that nobody is kept waiting
@@ -57,6 +57,41 @@ class GlidingGrid(QListView):
         # yet, so a wheel that reports in fractions still moves a row per
         # notch rather than losing the remainder on every event.
         self._turned = 0.0
+        # True only while focus is coming back from a menu: see focusInEvent.
+        self._menu_closing = False
+
+    def focusInEvent(self, event: QFocusEvent) -> None:
+        """Coming back from a menu is not a choice of sleeve.
+
+        A view with no current item gives the place to its first one the
+        moment focus arrives by any route other than the mouse. A right press
+        is taken and dropped, so the sleeve pointed at never becomes current;
+        the menu that press asks for then takes focus. Handing it back landed
+        the place on the top of the library, with the pane opening an album
+        nobody chose. Measured, not reasoned about: the grid went from
+        no current sleeve to row 0 on the way out of the menu.
+        """
+        self._menu_closing = event.reason() is Qt.FocusReason.PopupFocusReason
+        try:
+            super().focusInEvent(event)
+        finally:
+            self._menu_closing = False
+
+    def moveCursor(
+        self,
+        how: QAbstractItemView.CursorAction,
+        modifiers: Qt.KeyboardModifier,
+    ) -> QModelIndex:
+        """Where the place goes next; nowhere while a menu is closing.
+
+        This is the one road Qt takes to invent a place on focus, so refusing
+        it there leaves the grid as it was without touching the keyboard, which
+        asks the same question by pressing a key rather than by being handed
+        focus back.
+        """
+        if self._menu_closing:
+            return QModelIndex()
+        return super().moveCursor(how, modifiers)
 
     def scrollTo(
         self,

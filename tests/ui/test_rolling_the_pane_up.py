@@ -16,7 +16,8 @@ from __future__ import annotations
 
 import pytest
 from conftest import RecordingPlayer
-from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QEvent, QModelIndex, Qt
+from PySide6.QtGui import QFocusEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build, track
@@ -282,3 +283,55 @@ class TestTheRightButtonLeavesThePaneAlone:
         press(window, 0, RIGHT)
         press(window, 0, RIGHT)
         assert window._album_pane.isVisible()
+
+
+class TestClosingTheMenuLeavesThePlaceAlone:
+    """What the right press exposed, one step further along.
+
+    A view holding no current item gives the place to its first one as soon as
+    focus arrives by any route other than the mouse. The right press is taken
+    and dropped, so no sleeve is current; the menu it asks for takes focus.
+    Handing it back put the place on the top of the library. In the built
+    application that read as the first album highlighting itself while the
+    sleeve actually pointed at was left alone.
+    """
+
+    def _menu_and_back(self, window, row: int) -> None:
+        """Right press a sleeve, take the menu it asks for, then dismiss it."""
+        press(window, row, RIGHT)
+        window.show_transport_menu(
+            window._grid.visualRect(
+                window._model.index(row, Column.TITLE, QModelIndex())
+            ).center(),
+            window._grid,
+        )
+        window._menu.close()
+        QApplication.sendEvent(
+            window._grid,
+            QFocusEvent(QEvent.Type.FocusIn, Qt.FocusReason.PopupFocusReason),
+        )
+        QApplication.processEvents()
+
+    def test_the_first_sleeve_is_not_given_the_place(self, window) -> None:
+        self._menu_and_back(window, 1)
+        assert not window._grid.currentIndex().isValid()
+
+    def test_the_pane_stays_shut(self, window) -> None:
+        """The invented place opened an album nobody chose."""
+        self._menu_and_back(window, 1)
+        assert not window._album_pane.isVisible()
+
+    def test_the_left_press_after_it_opens_what_it_lands_on(self, window) -> None:
+        self._menu_and_back(window, 1)
+        press(window, 1)
+        assert window._album_pane.isVisible()
+        assert window._album_pane.title.text() == "Beta"
+
+    def test_focus_arriving_by_keyboard_still_finds_a_sleeve(self, window) -> None:
+        """Only the way out of a menu is refused; the ring is untouched."""
+        QApplication.sendEvent(
+            window._grid,
+            QFocusEvent(QEvent.Type.FocusIn, Qt.FocusReason.TabFocusReason),
+        )
+        QApplication.processEvents()
+        assert window._grid.currentIndex().isValid()
