@@ -301,3 +301,37 @@ class TestTheButtonItself:
         button = surface.size_button
         assert button.geometry().right() < surface.width()
         assert button.geometry().bottom() < surface.height()
+
+
+class TestDrawingAtItsOwnSize:
+    def test_a_small_picture_is_not_blown_up(self, window, player) -> None:
+        """Four copies of one pixel is not detail; it is a blur."""
+        window.activate(track_index(window, 1))
+        reached(player, 500)
+        window._poll_transport()
+        window._tick_picture()
+        surface = window.picture_surface
+        drawn = surface.picture_rect()
+        assert surface.width() > WIDTH
+        assert drawn.width() == WIDTH
+        assert drawn.height() == HEIGHT
+
+    def test_a_picture_larger_than_the_surface_is_fitted(self, window) -> None:
+        """Never larger than it is; smaller when there is no room for it."""
+        surface = window.picture_surface
+        surface.show_picture(
+            Picture(width=4000, height=2000, data=bytes(4000 * 2000 * 3))
+        )
+        drawn = surface.picture_rect()
+        assert drawn.width() <= surface.width()
+        assert drawn.height() <= surface.height()
+
+    def test_it_is_centred_either_way(self, window, player) -> None:
+        window.activate(track_index(window, 1))
+        reached(player, 500)
+        window._poll_transport()
+        window._tick_picture()
+        surface = window.picture_surface
+        drawn = surface.picture_rect()
+        assert abs(drawn.left() - (surface.width() - drawn.width()) // 2) <= 1
+        assert abs(drawn.top() - (surface.height() - drawn.height()) // 2) <= 1

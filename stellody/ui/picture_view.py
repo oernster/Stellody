@@ -13,7 +13,7 @@ the rule every pane in this application already follows.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QRect, Qt, QTimer, Signal
+from PySide6.QtCore import QRect, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import QWidget
 
@@ -124,12 +124,28 @@ class PictureSurface(QWidget):
         return self._image is not None
 
     def picture_rect(self) -> QRect:
-        """Where the frame is drawn: as large as fits, centred, in shape."""
+        """Where the frame is drawn: as large as fits, never larger than it is.
+
+        A frame is never blown up past the pixels it actually holds. These
+        files are 640 wide and a window is not, so filling the space meant
+        drawing each pixel four times over and calling it a picture. A video
+        shown at its own size is sharp; the black around it says plainly what
+        size the film is rather than hiding that in a blur.
+
+        Measured in the screen's own pixels, so a display that packs more of
+        them into an inch still gets every one the file holds.
+        """
         if self._image is None:
             return QRect()
         size = self._image.size().scaled(
             self.size(), Qt.AspectRatioMode.KeepAspectRatio
         )
+        density = self.devicePixelRatioF() or 1.0
+        native = QSize(
+            int(self._image.width() / density), int(self._image.height() / density)
+        )
+        if size.width() > native.width():
+            size = native
         return QRect(
             (self.width() - size.width()) // 2,
             (self.height() - size.height()) // 2,
