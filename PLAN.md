@@ -35,45 +35,7 @@ since the file carries the pending release alone.
 Version 1.0 is a separate readiness call for the owner to make; nothing below is
 sized against it.
 
-## 1. Play video files
-
-A local library holds more than audio. **Measured over the reference library, so
-this is what the milestone is actually against rather than what it might be
-against:** 26 files in 10 of the album folders, every one `.m4v`, every one
-H.264 video with AAC audio at 48 kHz, none larger than 1280 by 720 and most 640
-wide. All 26 carry album, title and track number that mutagen reads, so they
-group into albums exactly as audio does.
-
-They are not films sitting beside the albums. They are bonus tracks inside
-albums already in the library, numbered in sequence, so a video is a track and
-the transport should reach it as one.
-
-**The audio half is already built.** The existing `PacketReader` was pointed at
-three of them unmodified and decoded them correctly: `.m4v` is the MP4
-container the reader already opens for M4A, with AAC inside. So no second
-decoder and no change to the engine; `.m4v` joins `PACKET_SUFFIXES` and the
-walk admits it.
-
-Needed: the walk extended to `.m4v`, a track that knows it carries picture,
-plus a video surface in the window fed by a PyAV frame reader. That reader is
-driven from the audio position the engine already reports rather than from a
-clock of its own.
-
-The walk admitting these files gives those ten albums tracks they do not have
-today, which moves their track counts and may raise health findings on them
-that nobody has seen yet. That is a consequence to expect rather than a defect.
-
-Done when: a video file in the library plays with its sound in step, the
-transport controls it exactly as it controls a track; closing it returns to the
-library where it was left.
-
-Depends on the transport the position display already built. Build it on PyAV,
-which is here for the audio formats libsndfile cannot open and answers this as
-well; that is what keeps the audio path bit perfect where Qt Multimedia would
-bring a second idea of what a track is. `ARCHITECTURE.md` records the
-reasoning.
-
-## 2. One loudness across albums
+## 1. One loudness across albums
 
 Albums are mastered at whatever level their era and label chose, so moving from
 one to the next means reaching for the volume. Stellody should play them at a
@@ -119,7 +81,7 @@ within one decibel of each other with it on, differing by the original amount
 with it off; the setting survives a restart; an album with no measurement plays
 at exactly unity, with the same samples the file holds.
 
-## 3. Make the sites findable
+## 2. Make the sites findable
 
 Nothing has been submitted to a search engine, no structured data has been
 validated against a real checker and neither host has been observed in an
@@ -135,6 +97,54 @@ index. What is left happens in a browser rather than in this repository:
 Done when: both hosts are verified in Search Console with the sitemap submitted
 and no coverage errors, the structured data passes the Rich Results Test and a
 search for the application by name returns the site.
+
+## 3. Filter by genre and other stated tags
+
+Once an album carries a genre the listener stated, the library should be
+reachable by it. Six hundred albums in one grid is a scroll; the same grid
+holding only what was asked for is a choice.
+
+**It reads what the tag editor states, not what the files say.** The genres
+that matter are the ones corrected in Stellody's own store, since that is the
+whole reason the editor exists: a file's own genre is inconsistent across a
+library assembled over years. So this milestone depends on the tag editor
+having landed its genre stage; nothing here can be built before there is
+something to filter on.
+
+**Album first.** An album is the unit the grid already shows, so filtering it
+is a filter over what is on screen. Filtering by track is a second question,
+worth asking only once the album case is in use, because a track filter
+produces a result that is not an album and the grid has nowhere to put it.
+
+**Genre is multi-select on an album**, so the filter is a set test rather than
+an equality test: an album matches when it carries any genre asked for.
+Whether it should ever mean all of them is a decision this milestone opens
+with, not one to guess at now.
+
+**Other stated fields follow the same shape.** Artist and year are stated in
+the same editor and answer the same way, so the dialog is built to take a
+field rather than to know about genre.
+
+**What comes after the filter.** A filtered set is a candidate for playback:
+play it, shuffle it, queue it. That is what makes this worth more than a
+search box.
+
+The dialog is worked up from `assets/filter.png`, which is the artwork this
+feature is named by in the interface. **Its place is settled:** the icon goes at
+the TOP, in the toolbar's left hand group. Measured, that group is the
+choose-folder button, then the search button, then the search box it opens. The
+search button keeps the far right of that group so it stays against its own box;
+putting anything between the two would leave a button jumping out of a box it
+belongs to. So the drawn order becomes choose, filter, search, search box.
+`ring_stops` states that same order, since that tuple is the drawn order and the
+keyboard ring is read from it.
+
+Done when: choosing one genre leaves the grid holding only albums stated with
+it and nothing else, choosing two holds the union of both, clearing the filter
+restores the whole library; the filtered set can be played as a set. The
+library files are untouched throughout, as ever.
+
+Depends on the tag editor's genre stage.
 
 ## 4. macOS and Flatpak
 
