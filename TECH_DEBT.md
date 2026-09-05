@@ -43,8 +43,8 @@ real library and the Windows shell would either be a number nobody can hold or a
 suite full of mocks standing in for the very things worth testing.
 
 **The build and packaging scripts are long and are exempt from the line cap.**
-`buildexe.py`, `buildinstaller.py`, `stamp_version.py`, `stamp_sitemap.py` and
-`sync_site.py` are linear recipes read top to bottom. Splitting a sequence of
+`buildexe.py`, `buildinstaller.py`, `stamp_version.py`, `stamp_sitemap.py`,
+`sync_site.py` and `generate_icons.py` are linear recipes read top to bottom. Splitting a sequence of
 flags across modules costs more than it buys, so the structural line-cap test
 does not scope them.
 
@@ -56,7 +56,9 @@ process over a thread destroyed while running: an abort with a crash report
 rather than the exit code the quit meant. Everything durable is already put away
 by the time it is reached, the store closed and the claim released.
 
-**`installer/` reads `stellody.shared` and `stellody.ui`.** That is the setup
-program being a client of the application rather than a layer of it; nothing
-under `stellody/` imports back, which the layering test enforces. One identity,
-one theme and one licence viewer is the point of it.
+**`installer/` reads `stellody.shared`, `stellody.ui` and
+`stellody.infrastructure`.** That is the setup program being a client of the
+application rather than a layer of it. Nothing under `stellody/` imports back,
+which holds by reading rather than by a guard: no structural test asserts that
+direction, so it is a convention here instead of something a violation would
+fail. One identity, one theme and one licence viewer is the point of it.

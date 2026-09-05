@@ -44,7 +44,8 @@ if it ever stopped being true the build would fail.
 - **An equalizer, plus little bars that dance.** Ten sliders from deep bass to
   high treble, with twenty bars along the bottom showing what the music is
   doing. Switched off, the sound reaching your speakers is bit for bit what is
-  in the file, for the formats that store it exactly: FLAC, WAV and AIFF.
+  in the file, for the formats that store it exactly: FLAC, WAV, AIFF and the
+  lossless ALAC inside an M4A.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
 - **Stars and play counts.** Rate a song, rate the album separately, then read
@@ -85,8 +86,10 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 - **It plays FLAC, MP3, Ogg, Opus, WAV, AIFF and M4A.** Not WMA, Monkey's Audio,
   WavPack, Musepack or DSD. Anything it cannot decode is now named in the health
   report rather than passed over, so a missing album says so instead of simply
-  not appearing. An M4A carries AAC or ALAC, so it is played but never claimed
-  to be bit perfect.
+  not appearing. An M4A carries either AAC or ALAC and the difference matters:
+  the lossy one is played without ever being called bit perfect, while ALAC
+  states the depth it stores and can be. A bonus video that came with an album
+  plays as well, from the same MP4 container under a `.m4v` name.
 - **Windows only.** Mac and Linux are planned.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting
