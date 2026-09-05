@@ -42,6 +42,7 @@ from stellody.domain.album import Album
 from stellody.domain.overrides import AlbumField, OverrideField
 from stellody.domain.track import Track
 from stellody.ui.dialogs import NeutralDialog
+from stellody.ui.genre_grid import GenreGrid
 
 DIALOG_WIDTH_PX = 520
 
@@ -106,7 +107,7 @@ class TagEditor(NeutralDialog):
         self._tracks = tracks
         self._holding = holding
         self._boxes: dict[OverrideField, QLineEdit] = {}
-        self._album_boxes: dict[AlbumField, QLineEdit] = {}
+        self._album_boxes: dict[AlbumField, QLineEdit | GenreGrid] = {}
         self.written = 0
 
         outer = QVBoxLayout(self)
@@ -145,10 +146,20 @@ class TagEditor(NeutralDialog):
         return label
 
     def _album_form(self) -> QFormLayout:
-        """One box a field, holding what the album currently says."""
+        """One box a field, holding what the album currently says.
+
+        Genre is the exception and is a grid of tick boxes rather than a line,
+        since an album carries several of a settled list. It answers `text()`
+        as the lines do, so what the panel states is read the one way.
+        """
         form = QFormLayout()
         for field in ALBUM_FIELDS:
-            box = QLineEdit(album_shown_for(self._holding, field), self)
+            shown = album_shown_for(self._holding, field)
+            box: QLineEdit | GenreGrid = (
+                GenreGrid(shown, self)
+                if field is AlbumField.GENRE
+                else QLineEdit(shown, self)
+            )
             self._album_boxes[field] = box
             form.addRow(f"{ALBUM_WORDS[field]}:", box)
         return form

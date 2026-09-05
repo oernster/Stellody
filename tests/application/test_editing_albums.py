@@ -166,7 +166,8 @@ class TestADateTypedIn:
         assert stated_value(AlbumField.DATE, "1990") == "1990"
 
     def test_other_fields_are_taken_as_typed(self) -> None:
-        for field in (AlbumField.ALBUM_ARTIST, AlbumField.TITLE, AlbumField.GENRE):
+        """Genre is not among them: it answers from the catalogue instead."""
+        for field in (AlbumField.ALBUM_ARTIST, AlbumField.TITLE):
             assert stated_value(field, "  2007-10-09T12:00:00Z ") == (
                 "2007-10-09T12:00:00Z"
             )
@@ -190,3 +191,47 @@ class TestADateTypedIn:
             album, {AlbumField.DATE: "2005-06-07T07:00:00Z"}
         )
         assert {edit.value for edit in edits} == {"2005-06-07"}
+
+
+class TestAGenreChosen:
+    """A genre is reduced to the catalogue, so both sides ask one question."""
+
+    def test_it_is_written_in_catalogue_order(self) -> None:
+        assert stated_value(AlbumField.GENRE, "Rock; Alternative") == (
+            "Alternative; Rock"
+        )
+
+    def test_a_tag_written_in_another_case_reduces_to_the_catalogue_name(
+        self,
+    ) -> None:
+        assert stated_value(AlbumField.GENRE, "pop") == "Pop"
+
+    def test_a_tag_naming_nothing_in_the_catalogue_reduces_to_nothing(self) -> None:
+        """No box could have been ticked for it, so it states nothing."""
+        assert stated_value(AlbumField.GENRE, "dance-house") == ""
+
+    def test_keeping_a_panel_nobody_touched_records_nothing(self) -> None:
+        """The album is tagged in one case and the grid shows the other."""
+        album = an_album("Involver")
+        shown = album_shown_for(album, AlbumField.GENRE)
+        assert shown == "House"
+        assert TagEditing.album_edits_for(album, {AlbumField.GENRE: "house"}) == ()
+
+    def test_adding_a_genre_the_tag_never_named_is_recorded(self) -> None:
+        """The Green Day case, as the panel would state it.
+
+        The album here is tagged House, which is deliberately not one of the
+        seventeen, so the grid starts with nothing ticked. Ticking Rock and
+        Punk states both, which is the whole point of the feature.
+        """
+        album = an_album("Involver")
+        edits = TagEditing.album_edits_for(album, {AlbumField.GENRE: "Rock; Punk"})
+        assert {edit.value for edit in edits} == {"Punk; Rock"}
+
+    def test_a_tag_outside_the_catalogue_ticks_nothing_and_states_nothing(
+        self,
+    ) -> None:
+        """Keeping a panel it could not represent must not wipe the tag."""
+        album = an_album("Involver")
+        assert album_shown_for(album, AlbumField.GENRE) == "House"
+        assert TagEditing.album_edits_for(album, {AlbumField.GENRE: ""}) == ()

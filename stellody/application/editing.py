@@ -25,6 +25,7 @@ from collections.abc import Iterable
 
 from stellody.application.ports import LibraryStore
 from stellody.domain.album import Album
+from stellody.domain.genres import chosen_in, stated_as
 from stellody.domain.overrides import AlbumEdit, AlbumField, Override, OverrideField
 from stellody.domain.text import tag_date
 from stellody.domain.track import Track
@@ -113,11 +114,23 @@ def stated_value(field: AlbumField, value: str) -> str:
 
     A date is reduced to the day it names, so pasting a tag copied from
     somewhere else cannot put a meaningless time back into the store the scan
-    has just been taught to keep out of it. Every other field is taken as it
-    was typed, trimmed alone.
+    has just been taught to keep out of it.
+
+    A genre is reduced to the catalogue names it holds, written in catalogue
+    order. That is what lets the same question be asked of what the panel SHOWS
+    as of what it was given: an album tagged `pop` and a ticked Pop box are the
+    same statement, so keeping a panel nobody touched writes nothing. A tag
+    naming nothing in the catalogue reduces to nothing, which is also the right
+    answer, since no box could have been ticked for it.
+
+    Every other field is taken as it was typed, trimmed alone.
     """
     trimmed = value.strip()
-    return tag_date(trimmed) if field is AlbumField.DATE else trimmed
+    if field is AlbumField.DATE:
+        return tag_date(trimmed)
+    if field is AlbumField.GENRE:
+        return stated_as(chosen_in(trimmed))
+    return trimmed
 
 
 def album_shown_for(album: Album, field: AlbumField) -> str:
@@ -152,7 +165,8 @@ class TagEditing:
             (field, stated_value(field, value))
             for field, value in stated.items()
             if stated_value(field, value)
-            and stated_value(field, value) != album_shown_for(album, field)
+            and stated_value(field, value)
+            != stated_value(field, album_shown_for(album, field))
         ]
         return tuple(
             AlbumEdit(folder, field, value)
