@@ -45,7 +45,7 @@ from stellody.domain.album import Album
 from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 from stellody.ui.cover_worker import CoverRunner
 from stellody.ui.covering import cover_pixmap, placeholder_for
-from stellody.ui.dialogs import NeutralDialog
+from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.theme import Mode
 
 # Big enough to tell one sleeve from another, small enough that a dozen fit
@@ -91,7 +91,7 @@ def _counted(pictures: int, refused: bool = False) -> str:
     return f"{pictures} pictures on offer. Pick one to keep it."
 
 
-class CoverChooser(NeutralDialog):
+class CoverChooser(FirstStopDialog):
     """Offers an album the pictures a search found, then keeps the one picked."""
 
     chosen = Signal(str, object)

@@ -32,7 +32,7 @@ from stellody.domain.equalising import (
     MINIMUM_GAIN_DB,
     Equalisation,
 )
-from stellody.ui.dialogs import NeutralDialog, close_row
+from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.ringed_check import RingedCheckBox
 
 SLIDER_HEIGHT_PX = 160
@@ -103,7 +103,7 @@ class _Band(QWidget):
         self._show_gain(int(gain_db))
 
 
-class EqualiserDialog(NeutralDialog):
+class EqualiserDialog(FirstStopDialog):
     """Ten bands and a switch, reporting the whole curve on every move."""
 
     def __init__(

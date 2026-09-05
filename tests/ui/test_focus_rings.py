@@ -27,6 +27,7 @@ from stellody.domain.equalising import Equalisation
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.equaliser import EqualiserDialog
+from stellody.ui.menu_bar import RingedMenuBar
 from stellody.ui.picture_controls import SizeButton
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.settings_keys import SETTING_ROOT
@@ -53,12 +54,13 @@ CONTAINER_SELECTORS = (
 ITEM_VIEWS = ("QTreeView", "QListView", "QTableView", "QListWidget", "QTreeWidget")
 # The one sanctioned zero-size stop: the neutral start the main window opens on.
 NEUTRAL_START = "NeutralStart"
-# The enabled stops on the top tray, ahead of the library: choose, search, the
-# view toggle, the equaliser, volume, mute, theme and help. The four transport
-# buttons sit between the equaliser and volume and are disabled with nothing
-# playing, so they are not stops at all. The search box is not one either while
-# it is closed, since Qt skips a hidden stop; opening it adds a ninth.
-TOP_TRAY_STOPS = 8
+# The enabled stops on the top tray, ahead of the library: choose, search,
+# volume, mute, theme and help. The four transport buttons sit between search
+# and volume and are disabled with nothing playing, so they are not stops at
+# all. The search box is not one either while it is closed, since Qt skips a
+# hidden stop; opening it adds a seventh. What the library is drawn as used to
+# be counted here and now sits on the bottom strip instead.
+TOP_TRAY_STOPS = 6
 RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
 COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
@@ -134,6 +136,20 @@ def test_no_pane_appears_in_the_windows_focus_chain(
         ), "a plain container reached the focus chain"
 
 
+def test_the_menu_bar_is_the_first_stop(application: QApplication, window) -> None:
+    """Somebody reaching for the keyboard should find File before a button.
+
+    Qt gives a menu bar NO focus at all by default, measured: it answers Alt
+    and F10 and nothing else, so Tab used to land on the first tray button and
+    the menus could not be reached by Tab from anywhere.
+    """
+    assert window.menuBar().focusPolicy() is Qt.FocusPolicy.TabFocus
+    window.focusNextChild()
+    assert application.focusWidget() is window.menuBar()
+    first = next(action.text() for action in window.menuBar().actions())
+    assert first == "&File"
+
+
 def test_the_ring_follows_reading_order(application: QApplication, window) -> None:
     """The tray is drawn above the library, so Tab must reach it first."""
     order = []
@@ -153,18 +169,20 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     # must not stall on a dead one.
     tips = [button.toolTip() for button in buttons]
     # The size button is disabled over the list; Qt skips a disabled stop,
-    # so it is deliberately absent from this order.
+    # so it is deliberately absent from this order. What the library is drawn
+    # as now sits on the bottom strip after the errands rather than in the tray
+    # above, so the ring reaches it there.
     assert tips == [
         "Choose music folder",
         "Search the library",
-        "Switch to album art",
-        "Shape what is heard",
         f"Volume {DEFAULT_PERCENT}%",
         "Mute",
         "Switch to the light appearance",
         "Help",
         "Buy the author a drink (opens your browser)",
         "Rescan the library",
+        "Switch to album art",
+        "Shape what is heard",
         "Turn shuffle on",
         "Repeat mode",
     ]
@@ -196,7 +214,15 @@ RING_WALK = 40
 # the whole subcontrol over the moment a sheet names it. Each is listed here
 # rather than passing quietly, then each is proved below.
 NOTHING_TO_PAINT = "_NeutralStart"
-PAINTS_ITS_OWN_RING = ("StarRating", "RingedCheckBox", "SizeButton")
+PAINTS_ITS_OWN_RING = (
+    "StarRating",
+    "RingedCheckBox",
+    "SizeButton",
+    # Each menu TITLE is a stop, so the ring goes round the one the keyboard
+    # is on. A stylesheet cannot say that: a bar-wide rule draws a line past
+    # the last menu and names the bar rather than the title.
+    "RingedMenuBar",
+)
 
 
 def _qt_class(widget: QWidget) -> str:
@@ -275,6 +301,14 @@ def test_every_control_that_can_be_landed_on_names_a_ring(
         ), f"{control} can be landed on but names no ring"
 
 
+def _a_menu_bar(parent: QWidget) -> RingedMenuBar:
+    """A menu bar with titles to ring, since a bare one has nothing to draw."""
+    bar = RingedMenuBar(parent)
+    for title in ("&File", "&View"):
+        bar.addMenu(title)
+    return bar
+
+
 @pytest.mark.parametrize("mode", tuple(Mode))
 @pytest.mark.parametrize(
     "build_control",
@@ -282,6 +316,7 @@ def test_every_control_that_can_be_landed_on_names_a_ring(
         lambda parent: StarRating(parent),
         lambda parent: RingedCheckBox("Keep", parent),
         lambda parent: SizeButton(parent),
+        _a_menu_bar,
     ),
     ids=PAINTS_ITS_OWN_RING,
 )
@@ -312,7 +347,10 @@ def test_a_control_exempted_above_really_does_paint_its_own_ring(
     application.processEvents()
     assert not control.hasFocus(), "focus is somewhere else to start with"
     unfocused = control.grab().toImage()
-    control.setFocus()
+    # The tab reason rather than any reason: the ring says the KEYBOARD is
+    # here; one of these lights only for a keyboard arrival, because a
+    # click on a menu title already opens the menu it landed on.
+    control.setFocus(Qt.FocusReason.TabFocusReason)
     application.processEvents()
     assert control.hasFocus()
     assert control.grab().toImage() != unfocused, "focus changed nothing drawn"

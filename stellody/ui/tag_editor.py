@@ -41,7 +41,7 @@ from stellody.application.editing import (
 from stellody.domain.album import Album
 from stellody.domain.overrides import AlbumField, OverrideField
 from stellody.domain.track import Track
-from stellody.ui.dialogs import NeutralDialog
+from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.genre_grid import GenreGrid
 
 DIALOG_WIDTH_PX = 520
@@ -88,7 +88,7 @@ MANY_TRACKS_NOTE = "one track at a time"
 REFUSED_NOTE = "A disc or track number has to be a counting number."
 
 
-class TagEditor(NeutralDialog):
+class TagEditor(FirstStopDialog):
     """States values about a selection of tracks. Writes no music file."""
 
     def __init__(

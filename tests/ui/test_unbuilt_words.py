@@ -35,15 +35,22 @@ UNBUILT_PHRASES = (
 )
 
 
-def _tooltips(root: QWidget) -> dict[str, str]:
-    """Every tooltip under a widget, against the control that carries it."""
-    found: dict[str, str] = {}
-    for widget in root.findChildren(QWidget):
-        tip = widget.toolTip()
-        if tip:
-            found[f"{type(widget).__name__}({widget.objectName() or '?'})"] = tip
+def _tooltips(root: QWidget) -> list[tuple[str, str]]:
+    """Every tooltip under a widget, against the control that carries it.
+
+    A list rather than a dictionary, because most controls here carry no object
+    name: keyed by type and name, two unnamed buttons collide and one tooltip
+    is dropped in silence, so the sweep would pass over an offence it had
+    actually reached. Found by planting one on a strip that had just gained
+    three more unnamed buttons.
+    """
+    found = [
+        (f"{type(widget).__name__}({widget.objectName() or '?'})", widget.toolTip())
+        for widget in root.findChildren(QWidget)
+        if widget.toolTip()
+    ]
     if root.toolTip():
-        found[type(root).__name__] = root.toolTip()
+        found.append((type(root).__name__, root.toolTip()))
     return found
 
 
@@ -51,7 +58,7 @@ def _offences(root: QWidget) -> list[str]:
     """Every tooltip here that says its feature is not built."""
     return [
         f"{where}: {tip!r}"
-        for where, tip in _tooltips(root).items()
+        for where, tip in _tooltips(root)
         for phrase in UNBUILT_PHRASES
         if phrase in tip.casefold()
     ]

@@ -52,11 +52,13 @@ from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QPushButton, QWidget
 
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
+from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon, struck_through
+from stellody.ui.showing_controls import ShowingControls
 from stellody.ui.toolbar import (
     BUTTON_PX,
     ICON_PX,
@@ -76,6 +78,10 @@ SWITCH_DENOMINATOR = 4
 BOTTOM_BUTTON_PX = BUTTON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_ICON_PX = ICON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_MARGIN_PX = TRAY_MARGIN_PX // HALF
+# The far column of the three the strip is laid in: the errands, the
+# visualiser, then the settings. Named so the two that share what is spare
+# cannot drift apart from the one the settings are placed in.
+SPARE_COLUMN = 2
 # The hairline is inset from this strip's own button in the same proportion as
 # the one in the tray above, so the two read as the same rule at two scales.
 BOTTOM_SEPARATOR_INSET_PX = SEPARATOR_INSET_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
@@ -176,6 +182,9 @@ class BottomTray(QWidget):
         open_donation: Callable[[], None] = lambda: None,
         rescan: Callable[[], None] = lambda: None,
         repair_library: Callable[[], None] = lambda: None,
+        toggle_view: Callable[[], None] = lambda: None,
+        toggle_cover_size: Callable[[], None] = lambda: None,
+        open_equaliser: Callable[[], None] = lambda: None,
         read_levels=None,
     ) -> None:
         super().__init__(parent)
@@ -204,30 +213,75 @@ class BottomTray(QWidget):
         # Nothing to press yet: what each issue should become is worked out on
         # every load; there is nowhere to keep a correction once accepted.
         self.repair_button.setEnabled(False)
+        # What the library is SHOWN as, moved down from the tray above. Three
+        # more pictures crowded that end of a window nobody has to maximise,
+        # while this strip has room going spare. They stay in their own order
+        # and simply continue the errands already here.
+        self.showing_separator = separator(
+            self, SEPARATOR_WIDTH_PX, BOTTOM_SEPARATOR_HEIGHT_PX
+        )
+        self.showing = ShowingControls(
+            self,
+            BOTTOM_BUTTON_PX,
+            BOTTOM_ICON_PX,
+            TRAY_GAP_PX,
+            toggle_view=toggle_view,
+            toggle_cover_size=toggle_cover_size,
+            open_equaliser=open_equaliser,
+        )
         # Half the height of a button beside it, centred against them: it
         # is something to notice out of the corner of an eye rather than a
         # sixth control, so it should not stand as tall as the things that are.
         self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX // HALF)
         if read_levels is not None:
             self.visualiser.read_levels_from(read_levels)
-        row = QHBoxLayout(self)
+        left = QHBoxLayout()
+        left.setContentsMargins(0, 0, 0, 0)
+        left.setSpacing(TRAY_GAP_PX)
+        left.addWidget(self.donate_button)
+        left.addWidget(self.separator)
+        for button in self.library_stops():
+            left.addWidget(button)
+        # What the library is drawn as is a different errand from rescanning
+        # and repairing it, so a rule stands between the two groups exactly as
+        # one stands after the donation mark.
+        left.addWidget(self.showing_separator)
+        left.addWidget(self.showing)
+        right = QHBoxLayout()
+        right.setContentsMargins(0, 0, 0, 0)
+        right.setSpacing(TRAY_GAP_PX)
+        for button in self.switch_stops():
+            right.addWidget(button)
+        # Three columns, with the outer two given the same share of what is
+        # spare. A stretch either side of the visualiser centres it in what the
+        # two groups leave OVER, which is the middle of the strip only while
+        # those groups are the same width. They are not; moving three of the
+        # controls down here made them further apart, which is what pushed it
+        # off centre.
+        #
+        # Equal shares put it at the middle of the strip while there is room,
+        # and where there is not, each column keeps its own content instead:
+        # the visualiser drifts rather than being sat on. Measured, laying all
+        # three in ONE cell centres it exactly at every width and the left
+        # group then overlaps it below about 1100 pixels, which is a window
+        # nobody has to maximise.
+        row = QGridLayout(self)
         row.setContentsMargins(
             BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
         )
         row.setSpacing(TRAY_GAP_PX)
-        row.addWidget(self.donate_button)
-        row.addWidget(self.separator)
-        for button in self.library_stops():
-            row.addWidget(button)
-        # A stretch either side of the visualiser is what centres it, whatever
-        # the window is widened to. What changes the library sits under the
-        # library; the settings finish at the right edge under the
-        # application's other controls.
-        row.addStretch()
-        row.addWidget(self.visualiser, 0, Qt.AlignmentFlag.AlignVCenter)
-        row.addStretch()
-        for button in self.switch_stops():
-            row.addWidget(button)
+        row.setColumnStretch(0, 1)
+        row.setColumnStretch(SPARE_COLUMN, 1)
+        row.addLayout(
+            left, 0, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        row.addWidget(self.visualiser, 0, 1, Qt.AlignmentFlag.AlignVCenter)
+        row.addLayout(
+            right,
+            0,
+            SPARE_COLUMN,
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+        )
         self.set_shuffled(False)
         self.set_repeat(RepeatMode.OFF)
 
@@ -238,7 +292,12 @@ class BottomTray(QWidget):
         picks it up on the day it works without the order being revisited. Qt
         skips a disabled stop, so naming it costs nothing until then.
         """
-        return (self.donate_button, *self.library_stops(), *self.switch_stops())
+        return (
+            self.donate_button,
+            *self.library_stops(),
+            *self.showing.stops(),
+            *self.switch_stops(),
+        )
 
     def library_stops(self) -> tuple[QPushButton, ...]:
         """The library errands at the left end, left to right as they are drawn."""
@@ -247,6 +306,14 @@ class BottomTray(QWidget):
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""
         return (self.shuffle_button, self.repeat_button)
+
+    def set_showing_covers(self, covers: bool) -> None:
+        """Say what pressing the view toggle would do from here."""
+        self.showing.set_showing_covers(covers)
+
+    def set_next_cover_size(self, size: CoverSize) -> None:
+        """Show the size a press would move to."""
+        self.showing.set_next_cover_size(size)
 
     def set_shuffled(self, shuffled: bool) -> None:
         """Light the shuffle switch while the queue is scattered."""

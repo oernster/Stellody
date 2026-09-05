@@ -42,7 +42,11 @@ class Menus:
         self._collapse_action.setEnabled(usable)
 
     def _build_menus(self) -> None:
-        """The whole menu bar."""
+        """The whole menu bar.
+
+        The bar itself is put in place by the window's constructor, before
+        anything can ask Qt for one and get a plain bar instead.
+        """
         file_menu = self.menuBar().addMenu("&File")
         menu_action(file_menu, self, "Choose &music folder...", self.choose_folder)
         self._rescan_action = menu_action(file_menu, self, "&Rescan", self.rescan)

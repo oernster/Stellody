@@ -73,9 +73,18 @@ def stylesheet(mode: Mode) -> str:
         width: 1px;
         height: 1px;
     }}
+    /* Each TITLE is a stop, so the ring goes round the one the keyboard is
+       on rather than across the whole bar: a bar-wide rule draws a line
+       through the empty space past the last menu and says which bar has
+       focus rather than which menu a press would open. The bar paints that
+       ring itself, on the rectangle Qt reports for the title, taking the
+       colour from here so the palette stays its one home. */
     QMenuBar {{
         background-color: {colour.surface};
         border-bottom: 1px solid {colour.border};
+    }}
+    QMenuBar#RingedMenuBar {{
+        qproperty-ringColour: {colour.ring};
     }}
     QMenuBar::item {{
         padding: 4px 10px;

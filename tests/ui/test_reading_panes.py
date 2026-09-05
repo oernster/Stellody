@@ -90,8 +90,16 @@ def overflowing(application: QApplication):
 
 
 def test_clicking_a_reading_pane_never_focuses_it(overflowing) -> None:
-    """The reported fault. A ring earned by a click marks nothing to act on."""
+    """The reported fault. A ring earned by a click marks nothing to act on.
+
+    Focus is put elsewhere first, because a dialog now opens ON its first stop
+    and an overflowing pane can BE that stop. Without this the pane already
+    holds focus when the click lands, so the check would pass or fail on where
+    the dialog opened rather than on what the click did.
+    """
     for name, (_dialog, view) in overflowing.items():
+        view.clearFocus()
+        assert not view.hasFocus(), f"{name}: focus starts away from the pane"
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=CLICK_AT)
         assert not view.hasFocus(), f"{name}: a click focused the pane"
 

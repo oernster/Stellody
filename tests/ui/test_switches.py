@@ -152,29 +152,33 @@ def test_the_mute_switch_is_ruled_off_from_the_buttons_after_it(
     assert separator.focusPolicy() == 0, "a rule is not a control"
 
 
-def test_the_showing_controls_sit_beside_the_search_that_joins_them(
+def test_the_showing_controls_moved_to_the_strip_with_room_for_them(
     window: MainWindow,
 ) -> None:
     """The view toggle, then the sleeve size, then the equalizer.
 
-    All four change what is on show rather than what is playing, so they sit
-    together. Read off the layout as well as off the geometry: a group never
-    added to the layout also sits right of search, at nothing, which a
-    comparison of positions alone reports as a pass.
+    They sit along the bottom rather than in the tray above, because that end
+    of a window nobody has to maximise was getting crowded while this strip has
+    room going spare. Read off the layout as well as off the geometry: a group
+    never added to the layout also sits right of the repair button, at nothing,
+    which a comparison of positions alone reports as a pass.
     """
     window.show()
-    tray = window._tray
-    row = tray.layout()
-    widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    assert tray.showing in widgets, "the group is actually laid out"
-    assert widgets.index(tray.showing) == widgets.index(tray.search_box) + 1
+    tray = window._bottom_tray
+    assert not hasattr(window._tray, "showing"), "and no longer in the tray above"
+    laid_out = tray.showing.parentWidget() is tray and tray.showing.isVisibleTo(tray)
+    assert laid_out, "the group is actually placed on the strip"
     centres = [
         button.mapTo(tray, button.rect().center()).x()
         for button in tray.showing.stops()
     ]
     assert centres == sorted(centres), "view, then size, then the equalizer"
-    search = tray.search_button.mapTo(tray, tray.search_button.rect().center()).x()
-    assert search < min(centres), "and all three are drawn right of search"
+    repair = tray.repair_button.mapTo(tray, tray.repair_button.rect().center()).x()
+    assert repair < min(centres), "and all three are drawn right of the errands"
+    rule = tray.showing_separator.mapTo(
+        tray, tray.showing_separator.rect().center()
+    ).x()
+    assert repair < rule < min(centres), "with a rule standing between the two"
 
 
 def test_the_view_toggle_says_what_pressing_it_would_do(
@@ -182,7 +186,7 @@ def test_the_view_toggle_says_what_pressing_it_would_do(
 ) -> None:
     """A button that names the view on show is read as a state and pressed to
     confirm it, so it names the view it would move to instead."""
-    button = window._tray.showing.view_button
+    button = window._bottom_tray.showing.view_button
     assert button.isEnabled()
     assert not button.icon().isNull(), "it is drawn, not merely reserved"
     window.show_covers(False)
@@ -195,7 +199,7 @@ def test_the_view_toggle_is_a_stop_now_that_it_works(
     application: QApplication, window: MainWindow
 ) -> None:
     """It was named in the ring while disabled so this day needed no reordering."""
-    tray = window._tray
+    tray = window._bottom_tray
     assert tray.showing.view_button in tray.ring_stops()
     window.show()
     application.processEvents()

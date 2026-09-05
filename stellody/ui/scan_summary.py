@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 from stellody.application.scan import ScanReport
 from stellody.domain.changes import LibraryChange
 from stellody.domain.identity import AlbumIdentity
-from stellody.ui.dialogs import NeutralDialog, close_row, icon_label
+from stellody.ui.dialogs import FirstStopDialog, close_row, icon_label
 from stellody.ui.widgets import ReadingPane
 
 TEXT_SCALE = 1.5
@@ -174,7 +174,7 @@ def summary_html(change: LibraryChange, report: ScanReport) -> str:
     return "".join(body)
 
 
-class ScanSummaryDialog(NeutralDialog):
+class ScanSummaryDialog(FirstStopDialog):
     """Shows what a finished scan found."""
 
     def __init__(

@@ -27,9 +27,16 @@ from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.shared.version import DONATE_URL
 from stellody.ui import menus as window_module
-from stellody.ui.bottom_tray import REPEAT_TOOLTIP
+from stellody.ui.bottom_tray import REPEAT_TOOLTIP, BottomTray
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE, TRUE
+
+# Wide enough that both outer columns have room to take an equal share.
+WIDE_STRIP_PX = 1400
+# One pixel of rounding where the width is odd; no more than that.
+CENTRE_SLACK_PX = 1
+# Down to a window narrower than anything worth using.
+NARROWING_PX = (1600, 1400, 1100, 1000, 900, 800, 700)
 
 # Written out rather than read from the source it is checking. Comparing the
 # constant against itself passes whatever it is changed to, which for a payment
@@ -149,10 +156,20 @@ def test_the_donate_button_sits_outside_everything_else(window: MainWindow) -> N
     """It belongs to nothing on screen, so it sits where nothing else is."""
     window.show()
     tray = window._bottom_tray
-    row = tray.layout()
-    widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    assert widgets[0] is tray.donate_button, "first in the row, outside the rest"
-    assert widgets[1] is tray.separator, "ruled off from what follows it"
+
+    # Read off where things are DRAWN rather than off the top layout's own
+    # children: the strip is laid in three columns holding rows of their own,
+    # so the outer layout no longer names each control directly.
+    def across(widget) -> int:
+        return widget.mapTo(tray, widget.rect().center()).x()
+
+    others = [
+        across(stop) for stop in tray.ring_stops() if stop is not tray.donate_button
+    ]
+    assert across(tray.donate_button) < min(others), "left of everything else"
+    assert (
+        across(tray.donate_button) < across(tray.separator) < min(others)
+    ), "ruled off from what follows it"
     assert tray.donate_button in tray.ring_stops()
     assert tray.donate_button.isEnabled(), "unlike the repair control, this works"
     assert "opens your browser" in tray.donate_button.toolTip()
@@ -190,11 +207,12 @@ def test_repair_follows_rescan_on_the_bottom_strip(window: MainWindow) -> None:
     """
     window.show()
     tray = window._bottom_tray
-    row = tray.layout()
-    widgets = [row.itemAt(position).widget() for position in range(row.count())]
-    gap = widgets.index(None)
-    assert widgets.index(tray.rescan_button) < widgets.index(tray.repair_button)
-    assert widgets.index(tray.repair_button) < gap, "on the left of the strip"
+
+    def across(widget) -> int:
+        return widget.mapTo(tray, widget.rect().center()).x()
+
+    assert across(tray.rescan_button) < across(tray.repair_button)
+    assert across(tray.repair_button) < across(tray.visualiser), "on the left"
     assert tray.repair_button in tray.ring_stops()
     assert not hasattr(window._tray, "rescan_button"), "one home, not two"
     assert not hasattr(window._tray, "repair_button"), "one home, not two"
@@ -220,3 +238,65 @@ def test_the_repair_button_names_the_press_and_waits_to_be_told(
     assert not button.isEnabled()
     assert button.toolTip() == "Repair the library (your music files are never changed)"
     assert not button.icon().isNull(), "drawn, not merely reserved"
+
+
+class TestTheStripKeepsItsShapeAsTheWindowNarrows:
+    """The strip gained three controls, so what it does for room is settled.
+
+    A window nobody has to maximise is the case that matters: the tray above
+    was getting crowded, which is why they moved down here at all.
+    """
+
+    def test_a_rule_stands_between_the_errands_and_what_is_shown(
+        self, window: MainWindow
+    ) -> None:
+        """Rescanning the library is a different errand from drawing it."""
+        window.show()
+        tray = window._bottom_tray
+        where = tray.showing_separator.mapTo(
+            tray, tray.showing_separator.rect().center()
+        )
+        repair = tray.repair_button.mapTo(tray, tray.repair_button.rect().center())
+        first = tray.showing.stops()[0]
+        drawn = first.mapTo(tray, first.rect().center())
+        assert repair.x() < where.x() < drawn.x()
+
+    def test_the_visualiser_sits_at_the_middle_of_a_wide_strip(
+        self, application: QApplication
+    ) -> None:
+        """Not the middle of what the two groups leave over, which is not the
+        same thing once one group is wider than the other.
+
+        Built on its own rather than inside a window: the offscreen platform
+        will not grow a window past the screen it reports, so a strip measured
+        through one is only ever measured at that width.
+        """
+        tray = BottomTray(None)
+        try:
+            tray.resize(WIDE_STRIP_PX, tray.sizeHint().height())
+            tray.show()
+            application.processEvents()
+            middle = tray.visualiser.geometry().center().x()
+            assert abs(middle - WIDE_STRIP_PX // 2) <= CENTRE_SLACK_PX
+        finally:
+            tray.deleteLater()
+
+    def test_nothing_is_ever_sat_on_however_narrow_it_gets(
+        self, application: QApplication
+    ) -> None:
+        """Laying all three in one cell centres it exactly and overlaps the
+        errands below about 1100 pixels, measured. Three columns give way
+        instead: the visualiser drifts rather than being covered."""
+        tray = BottomTray(None)
+        try:
+            tray.show()
+            for width in NARROWING_PX:
+                tray.resize(width, tray.sizeHint().height())
+                application.processEvents()
+                seen = tray.visualiser.geometry()
+                left = tray.showing.geometry()
+                right = tray.shuffle_button.geometry()
+                assert left.right() < seen.left(), f"the errands clear it at {width}"
+                assert seen.right() < right.left(), f"the settings clear it at {width}"
+        finally:
+            tray.deleteLater()

@@ -123,15 +123,15 @@ class TestTheButtonItself:
         pressing the control did nothing at all. This one presses the control.
         """
         assert not window.showing_covers
-        window._tray.showing.view_button.click()
+        window._bottom_tray.showing.view_button.click()
         assert window.showing_covers, "the button is wired to the handler"
-        window._tray.showing.view_button.click()
+        window._bottom_tray.showing.view_button.click()
         assert not window.showing_covers
 
     def test_pressing_the_button_moves_the_view_that_is_shown(self, window) -> None:
         """Not merely the flag: the holder has to change what it is showing."""
         listed = window._library.currentWidget()
-        window._tray.showing.view_button.click()
+        window._bottom_tray.showing.view_button.click()
         assert window._library.currentWidget() is not listed
 
 

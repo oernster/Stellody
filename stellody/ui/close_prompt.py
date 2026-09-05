@@ -19,7 +19,7 @@ from enum import StrEnum
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from stellody.ui.dialogs import NeutralDialog
+from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.widgets import choice_row
 
@@ -37,7 +37,7 @@ class CloseAction(StrEnum):
     QUIT = "quit"
 
 
-class ClosePrompt(NeutralDialog):
+class ClosePrompt(FirstStopDialog):
     """Offers the two things the close button could mean."""
 
     def __init__(self, parent: QWidget | None = None) -> None:

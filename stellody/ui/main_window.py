@@ -37,6 +37,7 @@ from stellody.ui.editing_tags import EditingTags
 from stellody.ui.expanding import ExpandToggle
 from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
+from stellody.ui.menu_bar import RingedMenuBar
 from stellody.ui.menus import Menus
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.picturing import Picturing
@@ -150,6 +151,12 @@ class MainWindow(
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        # Put in place before anything else can ask for one. Qt makes a plain
+        # menu bar the first time `menuBar()` is called, so a later
+        # `setMenuBar` leaves that first one orphaned in the window: the
+        # stylesheet then hands the ring colour to a bar that has no such
+        # property and Qt says so on every theme change.
+        self.setMenuBar(RingedMenuBar(self))
         # Where the window writes down what happened to it. Injected because
         # the UI may not reach into infrastructure; a window given none keeps
         # its own counsel, which is what every test wants.
@@ -214,9 +221,6 @@ class MainWindow(
             toggle_playback=self.toggle_playback,
             stop_playback=self.stop_playback,
             next_track=self.next_track,
-            toggle_view=self.toggle_view,
-            toggle_cover_size=self.toggle_cover_size,
-            open_equaliser=self.show_equaliser,
         )
         self._position_bar = PositionBar(self, seek=self.seek_to)
         self._position_bar.stars.chosen.connect(self.rate_shown)
@@ -227,6 +231,9 @@ class MainWindow(
             open_donation=self.open_donation,
             rescan=self.rescan,
             repair_library=self.repair_library,
+            toggle_view=self.toggle_view,
+            toggle_cover_size=self.toggle_cover_size,
+            open_equaliser=self.show_equaliser,
             read_levels=lambda: self._transport.levels,
         )
         # The strip owns it; the window keeps the name it is reached by, so
@@ -243,10 +250,12 @@ class MainWindow(
         )
         # After the body, since the surface joins the holder the body placed.
         self.start_picturing(pictures)
-        self._set_ring_order()
         self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)
+        # Before the ring is stated, since the bar is its first stop and Qt
+        # has nothing to put in a chain until the menus exist.
         self._build_menus()
+        self._set_ring_order()
         self._notification = build_tray(self, icon)
         self._apply_theme(self.theme_mode)
         self._model.set_descending(self._flag(SETTING_DESCENDING))
@@ -293,13 +302,16 @@ class MainWindow(
         )
 
     def _set_ring_order(self) -> None:
-        """Tab reaches the tray before the library, which is how they are drawn.
+        """Tab runs menu bar, tray, library, then strip: how they are drawn.
 
         Qt builds its chain in creation order; the tree is created first because
         the tray is handed it. Reading order is what the ring must
         follow, so it is stated rather than inherited.
         """
         stops = (
+            # The menu bar leads, so somebody reaching for the keyboard finds
+            # File before anything else, exactly as it is drawn.
+            self.menuBar(),
             *self._tray.ring_stops(),
             self._tree,
             self._grid,

@@ -129,7 +129,7 @@ class Viewing:
         """
         carried = self._carried_track()
         self._library.setCurrentIndex(1 if covers else 0)
-        self._tray.set_showing_covers(covers)
+        self._bottom_tray.set_showing_covers(covers)
         self._settings.set_setting(SETTING_COVERS, TRUE if covers else FALSE)
         self.show_nesting_actions(not covers)
         if not covers:
@@ -211,7 +211,7 @@ class Viewing:
         self._tiles.show_cover_size(size)
         fit_grid(self._grid)
         self.show_cover_size(size)
-        self._tray.set_next_cover_size(next_cover_size(size))
+        self._bottom_tray.set_next_cover_size(next_cover_size(size))
         self._settings.set_setting(SETTING_COVER_SIZE, str(int(size)))
 
     @property

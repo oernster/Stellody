@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
 from stellody.application.repairs import AcceptedGroup, Repairs
 from stellody.application.scan import LibraryView
 from stellody.domain.health import LibraryIssue, sorted_issues
-from stellody.ui.dialogs import NeutralDialog, close_row
+from stellody.ui.dialogs import FirstStopDialog, close_row
 
 DIALOG_WIDTH_PX = 760
 DIALOG_HEIGHT_PX = 620
@@ -141,7 +141,7 @@ def by_album(
     return tuple((key, labels[key], tuple(held[key])) for key in order)
 
 
-class RepairDialog(NeutralDialog):
+class RepairDialog(FirstStopDialog):
     """Offers the report's corrections for accepting; undoes them too."""
 
     def __init__(

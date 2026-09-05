@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
 from stellody.shared import resources
 from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, REPAIR_TOOLTIP
-from stellody.ui.dialogs import NeutralDialog, close_row
+from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.display import native_path
 from stellody.ui.widgets import ReadingPane
 
@@ -125,7 +125,7 @@ def _repair_button(
     return button
 
 
-class HealthDialog(NeutralDialog):
+class HealthDialog(FirstStopDialog):
     """Shows the library health report."""
 
     def __init__(

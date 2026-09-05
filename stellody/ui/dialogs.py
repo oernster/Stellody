@@ -1,4 +1,4 @@
-"""Dialogs: a neutral-start base, the licence viewer and About."""
+"""Dialogs: a first-stop base, the licence viewer and About."""
 
 from __future__ import annotations
 
@@ -58,34 +58,61 @@ CREDITS = (
 )
 
 
-class _NeutralStart(QWidget):
-    """A zero-size focus holder, so a dialog opens with nothing highlighted."""
+class FirstStopDialog(QDialog):
+    """A dialog that opens already focused on its first usable control.
 
-    def __init__(self, parent: QWidget) -> None:
-        super().__init__(parent)
-        self.setFixedSize(0, 0)
-        self.setFocusPolicy(Qt.FocusPolicy.TabFocus)
+    The opposite of the main window on purpose. A window is looked at before
+    it is acted in, so nothing there is lit until the first Tab; a dialog was
+    opened deliberately, to do the one thing it is for, so making somebody
+    press Tab before anything is focused costs a keystroke and tells them
+    nothing. On a form it also puts the caret straight in the field the dialog
+    exists to fill.
 
-    def focusOutEvent(self, event) -> None:
-        """Leave the tab ring once focus has moved on to a real control."""
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        super().focusOutEvent(event)
-
-
-class NeutralDialog(QDialog):
-    """A dialog that opens with neutral focus rather than on its first control."""
+    A subclass that overrides `showEvent` must call `super()`; without it that
+    dialog quietly goes back to opening on nothing.
+    """
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._neutral = _NeutralStart(self)
         self._started = False
 
+    def first_stop(self) -> QWidget | None:
+        """The control the first Tab press would have reached; None where
+        there is not one.
+
+        Walked along the toolkit's OWN focus chain rather than over the child
+        list, so the answer is what Tab actually does rather than what the
+        order of construction suggests. The chain is a cycle, hence the seen
+        set; a dialog with nothing focusable answers None rather than failing.
+
+        Anything disabled, hidden or refusing tab focus is passed over, so a
+        dialog whose leading control is dead opens on the first live one.
+        """
+        widget, seen = self.nextInFocusChain(), set()
+        while widget is not None and id(widget) not in seen:
+            seen.add(id(widget))
+            if (
+                widget is not self
+                and self.isAncestorOf(widget)
+                and widget.isEnabled()
+                and widget.isVisible()
+                and bool(widget.focusPolicy() & Qt.FocusPolicy.TabFocus)
+            ):
+                return widget
+            widget = widget.nextInFocusChain()
+        return None
+
     def showEvent(self, event) -> None:
-        """Park focus on the neutral holder the first time the dialog opens."""
+        """Focus the first stop the first time the dialog opens."""
         super().showEvent(event)
-        if not self._started:
-            self._started = True
-            self._neutral.setFocus(Qt.FocusReason.OtherFocusReason)
+        if self._started:
+            return
+        self._started = True
+        stop = self.first_stop()
+        if stop is not None:
+            # The tab reason, so it wears the same ring a tabbed-to control
+            # wears rather than a different-looking one.
+            stop.setFocus(Qt.FocusReason.TabFocusReason)
 
 
 def close_row(dialog: QDialog) -> QHBoxLayout:
@@ -99,7 +126,7 @@ def close_row(dialog: QDialog) -> QHBoxLayout:
     return row
 
 
-class LicenceDialog(NeutralDialog):
+class LicenceDialog(FirstStopDialog):
     """Shows one licence text, sized to the text rather than to a guess."""
 
     def __init__(
@@ -189,7 +216,7 @@ def about_html() -> str:
     )
 
 
-class AboutDialog(NeutralDialog):
+class AboutDialog(FirstStopDialog):
     """Identity, licensing and credits."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
