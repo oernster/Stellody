@@ -68,9 +68,15 @@ def test_removing_promises_the_music_is_untouched() -> None:
     assert "never" in wording.lead(Route.UNINSTALL)
 
 
-def test_the_forget_box_names_the_index_as_well_as_the_settings() -> None:
-    """They share one database, so a box naming only one would take both."""
-    assert "library index" in wording.FORGET_LABEL
+def test_the_forget_box_does_not_understate_what_it_takes() -> None:
+    """One database holds several kinds of work, so a box naming one kind
+    invites somebody to tick it believing the rest is safe. The label claims
+    the lot; the hint is where the kinds are named, the ratings and the tags
+    stated by hand above all, since those are the ones nobody can rebuild.
+    """
+    assert "everything" in wording.FORGET_LABEL
+    for named in ("ratings", "stated", "settings"):
+        assert named in wording.FORGET_HINT, named
     assert "music itself" in wording.FORGET_HINT
 
 

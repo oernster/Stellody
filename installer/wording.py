@@ -81,7 +81,7 @@ SIGN_IN_HINT = (
 # The library index and the window's settings share one database, so removing
 # either removes both. The box says so rather than naming the smaller of them
 # and quietly taking the other.
-FORGET_LABEL = "Also remove my library index and settings"
+FORGET_LABEL = "Also remove everything Stellody has stored"
 FORGET_HINT = (
     "That is the scan of your music, your ratings and play counts, any tags "
     "you stated, any corrections you accepted plus your settings. Your music "
