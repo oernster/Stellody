@@ -121,6 +121,36 @@ an equality test: an album matches when it carries any genre asked for.
 Whether it should ever mean all of them is a decision this milestone opens
 with, not one to guess at now.
 
+**The genres offered are settled. They are these seventeen:**
+
+> Alternative, Blues, Classical, Dance, Drum & Bass, Electronic, Folk,
+> Hip Hop, Jazz, Metal, Pop, Punk, R&B & Soul, Rock, Soundtrack, Trance, World
+
+Chosen against a census of the library rather than from a general list of
+genres. Measured over 5,782 tagged files: 43 distinct strings, of which 38
+survive folding case; sixteen names cover 5,600 of those files. The long
+tail is a private sub-taxonomy, thirteen `dance-*` strings across thirteen
+folders, which multi-select answers without a name of its own: an album there
+carries Dance and Electronic together.
+
+Punk is the deliberate exception and it earns its place. No file in the library
+carries a Punk tag, which is a fact about the tags rather than about the music:
+the one Green Day album here, `Awesome As F--k`, is tagged Rock on all
+seventeen of its tracks and is plainly both. That is the case the whole feature
+exists for. A catalogue built only from what the files already say could never
+record what they failed to say, so the listener would have no way to state the
+thing the tag left out.
+
+It is also why the offered genres are a fixed list rather than a reading of the
+library. The census settles which names are worth offering; it cannot be the
+only source of them, since a genre nobody tagged is exactly the one somebody
+wants to add. Punk is the only name in the seventeen admitted on that ground.
+
+**The filter also offers "not stated"**, which is not a genre. 663 files, more
+than a tenth of the library, carry no genre tag at all, so a filter that could
+not reach them would hide a real part of the collection behind a field nobody
+had filled in.
+
 **Other stated fields follow the same shape.** Artist and year are stated in
 the same editor and answer the same way, so the dialog is built to take a
 field rather than to know about genre.
