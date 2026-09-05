@@ -20,6 +20,7 @@ animating those would only mean the grid is still moving when it is shown.
 from __future__ import annotations
 
 from PySide6.QtCore import QEasingCurve, QModelIndex, QVariantAnimation
+from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QAbstractItemView, QListView, QWidget
 
 # Long enough to be followed by eye, short enough that nobody is kept waiting
@@ -28,6 +29,10 @@ from PySide6.QtWidgets import QAbstractItemView, QListView, QWidget
 # the built application rather than here: a fifth of a second was smooth but
 # still read as quick, so the run was lengthened until it could be watched.
 GLIDE_MS = 300
+
+# What one detent of a mouse wheel reports, which is Qt's own unit rather than
+# a number chosen here: a wheel notch is an eighth of a degree times 120.
+NOTCH = 120
 
 
 class GlidingGrid(QListView):
@@ -48,6 +53,10 @@ class GlidingGrid(QListView):
         # about what a unit of scrolling means.
         self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        # How much of a notch has been turned without a row having been moved
+        # yet, so a wheel that reports in fractions still moves a row per
+        # notch rather than losing the remainder on every event.
+        self._turned = 0.0
 
     def scrollTo(
         self,
@@ -75,6 +84,41 @@ class GlidingGrid(QListView):
         self.glide.setStartValue(start)
         self.glide.setEndValue(target)
         self.glide.start()
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        """One notch of the wheel moves one row of sleeves, not two and a bit.
+
+        Measured before it was written: counting the scrollbar in pixels, which
+        is what makes the glide continuous, leaves Qt scrolling by the item
+        height times the system's lines-per-notch. On this machine that was
+        518 pixels a notch over a 236 pixel row, so a single detent carried
+        two rows of artwork past the eye and part of a third. A grid of covers
+        is read by the row, so a notch moves a row.
+
+        A trackpad is left alone. It reports a pixel delta rather than notches
+        and is already continuous, so rounding it to whole rows would take
+        away the one thing it does better than a wheel.
+        """
+        if not event.pixelDelta().isNull() or event.angleDelta().y() == 0:
+            super().wheelEvent(event)
+            return
+        self._turned += event.angleDelta().y() / NOTCH
+        rows = int(self._turned)
+        self._turned -= rows
+        if rows:
+            bar = self.verticalScrollBar()
+            self.glide.stop()
+            bar.setValue(bar.value() - rows * self._row_height())
+        event.accept()
+
+    def _row_height(self) -> int:
+        """How tall one row of sleeves is, asked of the view rather than kept.
+
+        The grid size is what the view lays out by, so it is the answer while
+        there is one; a view with no grid size falls back to the row it draws.
+        """
+        stated = self.gridSize().height()
+        return stated if stated > 0 else max(1, self.sizeHintForRow(0))
 
     def scroll_settled(self, index: QModelIndex) -> None:
         """Scroll to an item against the room the grid will actually have.
