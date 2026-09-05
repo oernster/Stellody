@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QApplication
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.listening import ListeningLog
+from stellody.application.pictures import Pictures
 from stellody.application.repairs import Repairs
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
@@ -38,6 +39,7 @@ from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
 from stellody.infrastructure.update_source import GitHubReleases
+from stellody.infrastructure.video import VideoReader
 from stellody.infrastructure.walker import FolderWalker
 from stellody.infrastructure.waveform import FileWaveforms
 from stellody.shared import resources
@@ -103,6 +105,7 @@ def build_window(
         art=AlbumArt(artwork),
         chooser=ChooseCover(ArchiveCovers(), artwork),
         repairs=Repairs(store),
+        pictures=Pictures(VideoReader),
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)
         ),

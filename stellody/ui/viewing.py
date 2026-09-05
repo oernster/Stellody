@@ -101,15 +101,19 @@ class Viewing:
         self._shown_album = None
         self._shown_index = QModelIndex()
         self._cover_size = DEFAULT_COVER_SIZE
-        self._library = build_library(
-            self, self._tree, build_covers_page(self, self._grid, self._album_pane)
-        )
+        self._covers_page = build_covers_page(self, self._grid, self._album_pane)
+        self._library = build_library(self, self._tree, self._covers_page)
         return self._library
 
     @property
     def showing_covers(self) -> bool:
-        """True while the grid of sleeves is the view on show."""
-        return self._library.currentWidget() is not self._tree
+        """True while the grid of sleeves is the view on show.
+
+        Named against the covers page itself rather than against "not the
+        tree", since the holder gained a third page when a picture learned to
+        take the library's area: anything but the tree is no longer the grid.
+        """
+        return self._library.currentWidget() is self._covers_page
 
     @Slot()
     def toggle_view(self) -> None:

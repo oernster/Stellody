@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.listening import ListeningLog
+from stellody.application.pictures import Pictures
 from stellody.application.ports import SettingsStore
 from stellody.application.repairs import Repairs
 from stellody.application.scan import (
@@ -36,6 +37,7 @@ from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
 from stellody.ui.menus import Menus
 from stellody.ui.models import AlbumTreeModel
+from stellody.ui.picturing import Picturing
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.position_bar import PositionBar
 from stellody.ui.rating import Rating
@@ -121,6 +123,7 @@ class MainWindow(
     Covering,
     Appearance,
     Viewing,
+    Picturing,
     QMainWindow,
 ):
     """Stellody's window: a library, a menu bar and a status line."""
@@ -137,6 +140,7 @@ class MainWindow(
         chooser: ChooseCover | None = None,
         updates: UpdateService | None = None,
         repairs: Repairs | None = None,
+        pictures: Pictures | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -232,6 +236,8 @@ class MainWindow(
                 self._bottom_tray,
             )
         )
+        # After the body, since the surface joins the holder the body placed.
+        self.start_picturing(pictures)
         self._set_ring_order()
         self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)

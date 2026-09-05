@@ -125,7 +125,22 @@ two. `SourceReader` covers everything libsndfile can address by frame.
 `PacketReader`, in `packet_decode.py`, covers M4A, which arrives as packets
 carrying timestamps rather than as addressable PCM; it counts those back
 into frame positions so that a cue slice, the equalizer, the visualiser and
-gapless all keep working without a line changed.
+gapless all keep working without a line changed. It covers the video files too:
+.m4v is the same MP4 container with AAC inside, measured by pointing the reader
+at real files off the library unmodified, so a track carrying a picture needed
+no second decoder and no change to the sound path at all.
+
+**The picture is a separate stream read by a separate module, following the
+sound.** `stellody/infrastructure/video.py` reads the picture and nothing else;
+it keeps no clock, asking instead what moment the transport has reached and
+handing back the frame due then, which is why the two streams cannot drift
+apart: only one of them is keeping time. It crosses the boundary as
+`domain/picture.py`, three bytes a pixel with no padding, which is the one
+arrangement the decoder and the toolkit can both state without either learning
+about the other. `application/pictures.py` holds one open for the track in hand
+and gives it up as the track changes; `ui/picturing.py` shows it in the
+library's own area, so closing it puts the listener back on the view they were
+on, scrolled where they had scrolled to.
 
 Three things there were measured rather than assumed; each is a comment in
 the file next to the code it explains. The timestamps do not start at nought:

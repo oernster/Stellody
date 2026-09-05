@@ -241,6 +241,7 @@ class Playing:
         self._position_bar.show_position(self._transport.position)
         self.follow_shape()
         self.follow_rating()
+        self.follow_picture()
 
     @Slot(int)
     def seek_to(self, frame: int) -> None:
