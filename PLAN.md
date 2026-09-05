@@ -180,13 +180,17 @@ search box.
 
 The dialog is worked up from `assets/filter.png`, which is the artwork this
 feature is named by in the interface. **Its place is settled:** the icon goes at
-the TOP, in the toolbar's left hand group. Measured, that group is the
-choose-folder button, then the search button, then the search box it opens. The
-search button keeps the far right of that group so it stays against its own box;
-putting anything between the two would leave a button jumping out of a box it
-belongs to. So the drawn order becomes choose, filter, search, search box.
-`ring_stops` states that same order, since that tuple is the drawn order and the
-keyboard ring is read from it.
+the TOP, in the toolbar's left hand group, LEFT of search. Search means the
+button and the box it opens together; nothing may come between the two: a
+button standing there would read as jumping out of a box it does not belong to.
+Filter is right of everything else, which after the view controls moved down to
+the strip is the choose-folder button alone.
+
+So the drawn order becomes **choose, filter, discover, search, search box**,
+with discovery taking its place there when the final milestone is built.
+`ring_stops` states that same order, since that tuple is the drawn order and
+the keyboard ring is read from it. The menu bar leads the ring ahead of all of
+them.
 
 Done when: choosing one genre leaves the grid holding only albums stated with
 it and nothing else, choosing two holds the union of both, clearing the filter
@@ -216,6 +220,63 @@ so it would be found by a listener rather than by a build.
 Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the update check reaches GitHub from inside the sandbox; the Windows
 build is untouched by either.
+
+## 5. Discover music the library does not hold
+
+Everything else here is about music already owned. This is the opposite: which
+artists and albums are worth reaching for next, given what the library already
+says about somebody's taste.
+
+**It is the last milestone because it is the largest thing on this list by a
+wide margin.** Three stages, in the order they were settled, each one usable on
+its own so the third is never a condition of the first two.
+
+**Stage one: suggest by genre, from what is already owned.** The stated genres
+give a picture of what somebody listens to, so the first suggestions come from
+that picture rather than from anything outside. It needs the tag editor's genre
+stage, which is built; it needs nothing else.
+
+**Stage two: artists, keyed by the artists already held.** For each artist
+looked up, offer ten artists not already in the library, growing towards twenty
+where the source supports it. Ten is the number to start at. Nothing already
+owned is ever offered back.
+
+The shape settled for this is a JSON file whose KEYS are the artists in the
+library and whose values are the artists to look up from them. That makes the
+mapping a piece of data rather than a rule buried in code, so it can be read,
+corrected and grown without a release. Open: where its values come from in the
+first place; whether it ships with the application or is built on the machine.
+
+**Stage three: reach the places that sell it. This needs real discussion and is
+not designed.** Once the gaps are known, this would look them
+up for sale in a browser. There are three kinds of gap:
+
+- an artist not in the library at all;
+- an album by an artist who IS in the library, where that album is not;
+- an album by an artist not held at all.
+
+The listener says which format matters, FLAC or MP3 or another; the search
+carries that filter. Named as candidate sources: 7digital, Boomkat and Qobuz;
+there are many more and the list is not settled.
+
+**This is consistent with the network stance rather than an exception to it.**
+The rule in "Not planned" forbids anything outward that carries the library or
+names the listener. It already records that handing an address to a browser is
+not such a call: the address goes out and the browser does the asking. Buying
+music is that same move. What would breach it is sending the library to a
+recommender; the same goes for anything else identifying the listener.
+
+Open questions, none answered yet:
+
+- Where do the suggestions themselves come from? Every outward call in this
+  application today is one a listener asks for, sends nothing about the machine
+  and names nobody. That must hold here too, which constrains what a source can
+  be.
+- What does a suggestion look like on screen; where does it live?
+- Is anything written down between runs; if so, where?
+
+Done when: cannot be stated yet as one thing. Each stage gets its own, settled
+when that stage is designed.
 
 ## Not planned, so that this is not revisited
 
