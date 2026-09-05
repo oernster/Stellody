@@ -6,6 +6,7 @@ package is allowed to reach both sides.
 
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 from collections.abc import Callable
@@ -129,6 +130,41 @@ def configure(application: QApplication) -> None:
         application.setWindowIcon(QIcon(str(icon_path)))
 
 
+def leave_at_once(code: int) -> None:
+    """End the process where unwinding would end it worse.
+
+    A cover lookup cannot be stopped in the middle of a network read: the
+    request runs to its own timeout, which is twenty seconds for a search and
+    thirty for a picture. Quitting inside one leaves a thread running that Qt
+    then destroys as it tears the application down; Qt ends the process over
+    that with an abort rather than an exit: measured on 2026-09-05,
+    `QThread: Destroyed while thread is still running` from Qt6Core.
+
+    So the process is left before the tearing down begins. Everything that
+    outlives a run has already been put away by the time this is reached: the
+    store is closed and the single-instance claim released. What is skipped is
+    the destruction of objects the operating system is about to reclaim
+    anyway; what is bought is a quit that reports the code it meant rather than
+    a crash the listener has to read as one.
+    """
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
+
+
+def left_with(code: int, window) -> int:
+    """Leave with this code, having decided how to leave with it.
+
+    Everything durable is already put away by the time this is asked. What is
+    left to decide is whether the ordinary unwinding is safe. It is not while
+    a cover lookup is still inside a read: see `leave_at_once`.
+    """
+    if window.lookups_in_flight:
+        diary.note("a cover lookup is still reading; leaving without unwinding")
+        leave_at_once(code)
+    return code
+
+
 def main(argv: list[str] | None = None) -> int:
     """Start Stellody, in the tray when the sign-in entry asked for that."""
     clear()
@@ -186,4 +222,4 @@ def _start(argv: list[str] | None = None) -> int:
     diary.note("store closed")
     only.release()
     diary.note(f"claim released; leaving with {code}")
-    return code
+    return left_with(code, window)

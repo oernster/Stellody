@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (
 from stellody.application.choosing_covers import ChooseCover
 from stellody.domain.album import Album
 from stellody.domain.cover_choice import CoverCandidate, CoverOffer
-from stellody.ui.cover_worker import CoverRunner
+from stellody.ui.cover_worker import CoverRunner, ThreadKeeper
 from stellody.ui.covering import cover_pixmap, placeholder_for
 from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.theme import Mode
@@ -102,6 +102,7 @@ class CoverChooser(FirstStopDialog):
         album: Album,
         mode: Mode,
         parent: QWidget | None = None,
+        keeper: ThreadKeeper | None = None,
     ) -> None:
         super().__init__(parent)
         self._album = album
@@ -120,7 +121,10 @@ class CoverChooser(FirstStopDialog):
         self.grid.currentItemChanged.connect(self._on_pick)
         layout.addWidget(self.grid, 1)
         self.keep_button, self.close_button = _buttons(self, layout)
-        self._runner = CoverRunner(chooser, self)
+        # The keeper belongs to whatever opened this, since a search still in
+        # flight when the dialog closes has to be held by something that is
+        # still there when it finishes. See `ThreadKeeper`.
+        self._runner = CoverRunner(chooser, self, keeper)
         self._runner.offered.connect(self._on_offered)
         self._runner.previewed.connect(self._on_previewed)
         self._runner.searched.connect(self._on_searched)
@@ -141,6 +145,16 @@ class CoverChooser(FirstStopDialog):
         """
         self._runner.cancel()
         super().reject()
+
+    def let_go(self) -> None:
+        """Drop whatever is still in flight, waiting for nothing.
+
+        What the dialog does as it closes. A request cannot answer a cancel
+        until it ends, so waiting here would freeze the window for as long as
+        the request had left to run; the thread is handed to the keeper the
+        window holds and collected when it finishes.
+        """
+        self._runner.cancel()
 
     def stop(self) -> None:
         """Let go of the thread on the way out of the application."""

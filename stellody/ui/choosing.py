@@ -21,15 +21,35 @@ from PySide6.QtCore import Slot
 from stellody.application.choosing_covers import ChooseCover
 from stellody.domain.album import Album
 from stellody.ui.cover_chooser import CoverChooser
+from stellody.ui.cover_worker import ThreadKeeper
 
 
 class Choosing:
     """The window's half of choosing a cover for an album."""
 
     def start_choosing(self, chooser: ChooseCover | None) -> None:
-        """Hold the service, when there is one to hold."""
+        """Hold the service, when there is one to hold.
+
+        The keeper belongs to the window rather than to the chooser dialog,
+        because that is the whole point of it: a search cancelled with a
+        request in flight leaves a thread running for as long as that request
+        takes; whatever holds it has to still be there when it ends. Held
+        by the dialog, it was destroyed with the dialog and Qt ended the
+        process over it.
+        """
         self._chooser = chooser
         self._cover_dialog: CoverChooser | None = None
+        self._lookups = ThreadKeeper(self)
+
+    @property
+    def lookups_in_flight(self) -> int:
+        """How many cover lookups are still inside a request nobody wants.
+
+        Read on the way out. A thread in a network read cannot be stopped and
+        must not be destroyed, so what is done about it is decided where the
+        application is left rather than here.
+        """
+        return self._lookups.waiting
 
     @property
     def can_choose_covers(self) -> bool:
@@ -45,19 +65,25 @@ class Choosing:
         """
         if self._chooser is None:
             return
-        dialog = CoverChooser(self._chooser, album, self.theme_mode, self)
+        dialog = CoverChooser(
+            self._chooser, album, self.theme_mode, self, self._lookups
+        )
         dialog.chosen.connect(self._on_chosen)
         self._cover_dialog = dialog
         try:
             dialog.exec()
         finally:
-            dialog.stop()
+            # Let go of rather than waited for: the keeper above holds any
+            # thread still in a request, so closing the chooser costs nothing.
+            dialog.let_go()
             self._cover_dialog = None
 
     def stop_choosing(self) -> None:
-        """Let go of a chooser still open on the way out."""
+        """Let go of a chooser still open on the way out, plus any thread
+        still in a request after it."""
         if self._cover_dialog is not None:
             self._cover_dialog.stop()
+        self._lookups.stop()
 
     @Slot(str, object)
     def _on_chosen(self, key: str, cover: object) -> None:

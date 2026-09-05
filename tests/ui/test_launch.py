@@ -294,3 +294,38 @@ def test_a_second_copy_asks_and_leaves_rather_than_opening_a_window(
     monkeypatch.setattr(composition, "open_store", never)
     assert composition._start([]) == composition.ALREADY_RUNNING
     assert refused.asked is True, "it asked the running copy to come forward"
+
+
+class _Straggler:
+    """A window with a cover lookup still inside its own network read."""
+
+    lookups_in_flight = 1
+
+
+class _Settled:
+    """A window with nothing outstanding at all."""
+
+    lookups_in_flight = 0
+
+
+class TestHowTheProcessIsLeft:
+    """A quit taken during a lookup used to be a crash rather than a quit.
+
+    A request cannot be stopped in the middle: it runs to its own timeout,
+    twenty seconds for a search and thirty for a picture. Qt ends the process
+    over a running thread that is destroyed, so the ordinary unwinding turns a
+    quit into an abort. Measured on 2026-09-05, from Qt6Core.
+    """
+
+    def test_a_settled_window_leaves_the_ordinary_way(self, monkeypatch) -> None:
+        def never(_code: int) -> None:
+            raise AssertionError("nothing was outstanding")
+
+        monkeypatch.setattr(composition, "leave_at_once", never)
+        assert composition.left_with(0, _Settled()) == 0
+
+    def test_a_lookup_still_reading_leaves_without_unwinding(self, monkeypatch) -> None:
+        left: list[int] = []
+        monkeypatch.setattr(composition, "leave_at_once", left.append)
+        composition.left_with(3, _Straggler())
+        assert left == [3], "it left with the code it meant"

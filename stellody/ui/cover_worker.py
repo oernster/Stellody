@@ -27,6 +27,13 @@ which failed on that check before it was written this way.
 
 A thread that has not finished by the time it is let go is held rather than
 forgotten, since Qt ends the process over a running thread that is destroyed.
+**What holds it has to outlive the errand.** It was held by the runner, which
+belongs to the chooser dialog, so cancelling a search and closing the dialog
+destroyed the very thing keeping the thread alive: measured on 2026-09-05, that
+is exactly the abort Oliver met, `QThread: Destroyed while thread is still
+running` with Qt6Core ending the process. A `ThreadKeeper` given by the window
+outlives every dialog it opens, so a straggler is held by something that is
+still there when it finishes.
 """
 
 from __future__ import annotations
@@ -146,6 +153,61 @@ class KeepWorker(QObject):
             self.kept.emit(self._key, kept)
 
 
+class ThreadKeeper(QObject):
+    """Holds threads that outlived the errands that started them.
+
+    Given to a runner by something long lived, the window, so that a thread
+    still in a request when its dialog closes is owned by an object that is
+    still there. Each is let go of the moment it finishes, so nothing is held
+    a second longer than the request it is waiting on.
+    """
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._held: list[tuple[QThread, QObject]] = []
+
+    @property
+    def waiting(self) -> int:
+        """How many threads are still in a request nobody is waiting for."""
+        return len(self._held)
+
+    def hold(self, thread: QThread, worker: QObject) -> None:
+        """Take a thread over, with the worker whose run it is still in.
+
+        The worker is held too. It sits on that thread with no parent of its
+        own, so dropping the last reference to it would delete an object that
+        is in the middle of its own method.
+
+        Connected before the finished state is read, then read: a thread that
+        ends between the two would otherwise be held for ever, since its one
+        announcement had already been made when the connection was set up.
+        """
+        thread.setParent(self)
+        self._held.append((thread, worker))
+        thread.finished.connect(lambda: self._forget(thread))
+        if thread.isFinished():
+            self._forget(thread)
+
+    def stop(self) -> None:
+        """Ask everything held to end, then let go of whatever did."""
+        for thread, _worker in list(self._held):
+            thread.quit()
+            if thread.wait(WAIT_MS):
+                self._forget(thread)
+
+    def _forget(self, thread: QThread) -> None:
+        """Drop one thread that has finished, plus the worker it carried.
+
+        Asked twice for the same thread where it ended as it was handed over,
+        so it removes what is there rather than assuming anything is.
+        """
+        held = [pair for pair in self._held if pair[0] is not thread]
+        if len(held) == len(self._held):
+            return
+        self._held = held
+        thread.deleteLater()
+
+
 class CoverRunner(QObject):
     """Keeps one errand in flight and drops the answer to any it let go of."""
 
@@ -154,12 +216,21 @@ class CoverRunner(QObject):
     searched = Signal()
     kept = Signal(str, object)
 
-    def __init__(self, chooser: ChooseCover, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        chooser: ChooseCover,
+        parent: QObject | None = None,
+        keeper: ThreadKeeper | None = None,
+    ) -> None:
         super().__init__(parent)
         self._chooser = chooser
         self._thread: QThread | None = None
         self._worker: SearchWorker | KeepWorker | None = None
-        self._retired: list[QThread] = []
+        # Given one by the window, which outlives every chooser it opens. A
+        # runner left to keep its own is only safe while it outlives its own
+        # errands, which is true of a runner in a test and false of one in a
+        # dialog that can be closed mid search.
+        self._keeper = keeper or ThreadKeeper(self)
 
     @property
     def running(self) -> bool:
@@ -169,7 +240,7 @@ class CoverRunner(QObject):
     @property
     def retired(self) -> int:
         """How many threads were let go of while still in a request."""
-        return len(self._retired)
+        return self._keeper.waiting
 
     def search(self, identity: AlbumIdentity) -> None:
         """Look this album up, dropping whatever was being looked up."""
@@ -196,13 +267,19 @@ class CoverRunner(QObject):
         if worker is not None:
             worker.cancel()
             worker.release()
-        if thread is not None and not self._let_go(thread):
-            self._retired.append(thread)
+        if thread is not None and worker is not None:
+            # Handed over rather than waited for. A worker inside a request
+            # cannot answer a quit until that request ends, so waiting here
+            # froze the window for the whole wait every time somebody
+            # cancelled: measured at two seconds, on the very gesture that
+            # was asking for something to stop happening.
+            thread.quit()
+            self._keeper.hold(thread, worker)
 
     def stop(self) -> None:
         """Let go of everything on the way out."""
         self.cancel()
-        self._retired = [thread for thread in self._retired if not self._let_go(thread)]
+        self._keeper.stop()
 
     def _begin(self, worker: SearchWorker | KeepWorker) -> None:
         """Put one errand on a thread of its own, after dropping the last."""

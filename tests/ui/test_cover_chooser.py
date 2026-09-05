@@ -16,7 +16,7 @@ import time
 
 from conftest import RecordingPlayer
 from cover_support import BACK, FRONT, FakeArtwork, FakeSearch
-from PySide6.QtCore import QBuffer, QIODevice, QModelIndex, QThread
+from PySide6.QtCore import QBuffer, QIODevice, QModelIndex, QThread, QTimer
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, album, build
@@ -34,6 +34,10 @@ from stellody.ui.theme import Mode
 
 SETTLE_SECONDS = 8.0
 POLL_MS = 2
+# What "waits for nothing" is held to. The wait it replaced was two seconds,
+# so anything under half of one is unambiguous about which is being measured
+# while leaving room for a machine under load.
+QUICK_SECONDS = 1.0
 ART_KEY = album().identity.art_key
 
 
@@ -46,6 +50,23 @@ def _settle(dialog: CoverChooser, application: QApplication) -> None:
             application.processEvents()
             return
         QThread.msleep(POLL_MS)
+
+
+def _released(dialog: CoverChooser, application: QApplication) -> None:
+    """Wait for a thread handed over by a cancel to end and be let go of.
+
+    A cancel does not wait: the request it is stopping cannot answer until it
+    ends, so the thread is handed to the keeper and collected when it finishes.
+    A test that walks off before that leaves a running thread to be destroyed
+    with the dialog, which is the abort this whole arrangement exists to
+    prevent, arriving from the test rather than from the application.
+    """
+    deadline = time.monotonic() + SETTLE_SECONDS
+    while time.monotonic() < deadline and dialog._runner.retired:
+        application.processEvents()
+        QThread.msleep(POLL_MS)
+    application.processEvents()
+    assert not dialog._runner.retired, "a thread was still in its request"
 
 
 def _chooser(search, artwork=None) -> ChooseCover:
@@ -140,6 +161,7 @@ class TestDrawingTheWait:
             gate.set()
             _settle(dialog, application)
             dialog.reject()
+            _released(dialog, application)
 
     def test_the_wait_stops_being_drawn_once_the_search_is_done(
         self, application
@@ -177,8 +199,9 @@ class TestDrawingTheWait:
         dialog = CoverChooser(_chooser(FakeSearch(gate=gate)), album(), Mode.DARK)
         dialog.reject()
         assert not dialog.searching
+        assert dialog._runner.retired == 1, "the request is still in flight"
         gate.set()
-        _settle(dialog, application)
+        _released(dialog, application)
 
 
 class TestTheEntryThatOpensIt:
@@ -275,3 +298,65 @@ def _png_bytes() -> bytes:
     made = bytes(buffer.data())
     buffer.close()
     return made
+
+
+class TestAThreadThatOutlivesItsDialog:
+    """The abort Oliver met on 2026-09-05, held as a test.
+
+    Cancelling a search that is inside a request leaves a thread running for
+    as long as that request takes. It used to be held by the runner, which
+    belongs to the dialog, so closing the dialog destroyed what was holding
+    it and Qt ended the process: `QThread: Destroyed while thread is still
+    running`, Qt6Core, exception code 0xc0000409 in the Windows event log.
+    """
+
+    def test_the_window_holds_it_rather_than_the_dialog(self, application) -> None:
+        """Driven through the entry a listener uses, since the wiring is the
+        thing being guarded: a dialog handed no keeper quietly makes its own,
+        which is the arrangement that crashed."""
+        gate = threading.Event()
+        window = build(
+            RememberingStore(),
+            RecordingPlayer(),
+            chooser=_chooser(FakeSearch(gate=gate)),
+        )
+        try:
+            QTimer.singleShot(POLL_MS, lambda: window._cover_dialog.reject())
+            window.choose_cover(album())
+            assert window.lookups_in_flight == 1, "the window is holding it"
+            gate.set()
+            deadline = time.monotonic() + SETTLE_SECONDS
+            while time.monotonic() < deadline and window.lookups_in_flight:
+                application.processEvents()
+                QThread.msleep(POLL_MS)
+            assert window.lookups_in_flight == 0, "let go of once it finished"
+        finally:
+            gate.set()
+            window.close()
+
+    def test_closing_the_chooser_waits_for_nothing(self, application) -> None:
+        """Cancelling used to block the window for the whole wait, which is
+        two seconds spent on the gesture that asked for something to stop."""
+        gate = threading.Event()
+        window = build(
+            RememberingStore(),
+            RecordingPlayer(),
+            chooser=_chooser(FakeSearch(gate=gate)),
+        )
+        try:
+            dialog = CoverChooser(
+                _chooser(FakeSearch(gate=gate)),
+                album(),
+                Mode.DARK,
+                window,
+                window._lookups,
+            )
+            started = time.monotonic()
+            dialog.let_go()
+            spent = time.monotonic() - started
+            assert spent < QUICK_SECONDS, f"letting go took {spent:.2f}s"
+            gate.set()
+            _released(dialog, application)
+        finally:
+            gate.set()
+            window.close()
