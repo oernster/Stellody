@@ -118,11 +118,23 @@ class Picturing:
         Called from the transport poll, so it is asked of every track, most of
         which have no picture at all. Whether anything has changed is decided
         below rather than by the caller.
+
+        A track waiting unplayed at its beginning shows nothing, whatever it
+        holds. Back lands there, so stepping back through a run of videos was
+        leaving the library area taken by a first frame nobody had asked to
+        see: these files open on black and fade in over about a second, so the
+        window went black and stayed black. A listener who has not started a
+        track is still looking for one; the library is what they are
+        looking through. Pausing part way through is the other case entirely
+        and keeps its picture, since that track has been started.
         """
         if self._pictures is None:
             return
         playing = self._transport.current
-        self._pictures.follow(playing.source if playing is not None else None)
+        if playing is None or self._transport.waiting_at_the_start:
+            self._pictures.follow(None)
+        else:
+            self._pictures.follow(playing.source)
         if self._pictures.showing and not self._picture_showing:
             self._take_the_library_area()
         elif not self._pictures.showing and self._picture_showing:

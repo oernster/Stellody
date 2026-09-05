@@ -114,6 +114,17 @@ class Transport(SoundSettings, QueueOrder):
         """Whether sound is being produced right now."""
         return self._player.state is PlaybackState.PLAYING
 
+    @property
+    def waiting_at_the_start(self) -> bool:
+        """Whether the track in hand is open at its beginning, never played.
+
+        Where Back lands; where a listener has decided nothing yet. It is
+        not the same as being paused: a track paused part way through has been
+        listened to and is waiting to go on, while this one has not been
+        started at all.
+        """
+        return self._waiting_at_the_start
+
     def play_album(self, album: Album, first: Track) -> None:
         """Queue an album and start at the track that was activated.
 
