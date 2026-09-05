@@ -233,6 +233,13 @@ def stylesheet(mode: Mode) -> str:
     QPushButton#TrayButton:enabled:hover, QPushButton#TrayButton:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};
     }}
+    /* A picture button that stays down while what it opened is still acting
+       on the library: the filter is the one of these there is. The selection
+       colour rather than a border, since the ring belongs to the keyboard and
+       two rectangles round one button say nothing about which is which. */
+    QPushButton#TrayButton:enabled:checked {{
+        background-color: {colour.selection};
+    }}
     QPushButton#TrayButton:disabled {{
         border: {FOCUS_WIDTH_PX}px solid {colour.danger};
     }}

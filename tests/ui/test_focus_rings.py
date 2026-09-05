@@ -7,31 +7,13 @@ appear in the toolkit's own focus chain.
 
 from __future__ import annotations
 
-import pathlib
 import re
-import tempfile
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QAbstractItemView,
-    QApplication,
-    QHBoxLayout,
-    QPushButton,
-    QTreeView,
-    QWidget,
-)
+from PySide6.QtWidgets import QApplication, QPushButton, QTreeView
+from ring_support import RING_WALK, build_ring_window, ring_rules
 
-from stellody.composition import build_window
-from stellody.domain.equalising import Equalisation
-from stellody.infrastructure.store import SqliteLibraryStore
-from stellody.ui.close_prompt import ClosePrompt
-from stellody.ui.equaliser import EqualiserDialog
-from stellody.ui.menu_bar import RingedMenuBar
-from stellody.ui.picture_controls import SizeButton
-from stellody.ui.ringed_check import RingedCheckBox
-from stellody.ui.settings_keys import SETTING_ROOT
-from stellody.ui.stars import StarRating
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.volume import DEFAULT_PERCENT
 
@@ -54,50 +36,19 @@ CONTAINER_SELECTORS = (
 ITEM_VIEWS = ("QTreeView", "QListView", "QTableView", "QListWidget", "QTreeWidget")
 # The one sanctioned zero-size stop: the neutral start the main window opens on.
 NEUTRAL_START = "NeutralStart"
-# The enabled stops on the top tray, ahead of the library: choose, search,
-# volume, mute, theme and help. The four transport buttons sit between search
-# and volume and are disabled with nothing playing, so they are not stops at
-# all. The search box is not one either while it is closed, since Qt skips a
-# hidden stop; opening it adds a seventh. What the library is drawn as used to
-# be counted here and now sits on the bottom strip instead.
-TOP_TRAY_STOPS = 6
-RING_RULE = re.compile(r"([^{}]*):(?:focus|hover)[^{}]*\{([^{}]*)\}")
-COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
+# The enabled stops on the top tray, ahead of the library: choose, filter,
+# search, volume, mute, theme and help. The four transport buttons sit between
+# search and volume and are disabled with nothing playing, so they are not
+# stops at all. The search box is not one either while it is closed, since Qt
+# skips a hidden stop; opening it adds an eighth. What the library is drawn as
+# used to be counted here and now sits on the bottom strip instead.
+TOP_TRAY_STOPS = 7
 
 
 @pytest.fixture
 def window(application: QApplication):
-    """The real main window over a throwaway store, pointed at a folder.
-
-    The folder is named rather than left empty because Rescan is offered only
-    where there is somewhere to rescan, so a window that has never been pointed
-    anywhere drops that control out of the ring entirely. The order below is
-    what a settled installation shows, which is the one worth pinning. Nothing
-    reads the folder: launch shows what the store already holds and never
-    scans, so an empty temporary directory is enough to say one was chosen.
-    """
-    folder = pathlib.Path(tempfile.mkdtemp())
-    store = SqliteLibraryStore(str(folder / "t.sqlite3"))
-    store.set_setting(SETTING_ROOT, str(folder))
-    made = build_window(store)
-    made.show()
-    application.processEvents()
-    yield made
-    made.close()
-    store.close()
-
-
-def ring_rules(sheet: str) -> list[tuple[str, str]]:
-    """Every selector whose focus or hover block paints a visible border.
-
-    Comments are stripped first: a comment explaining why a class gets NO rule
-    names that class; scanning it would report the explanation as the fault.
-    """
-    found = []
-    for selector, block in RING_RULE.findall(COMMENT.sub("", sheet)):
-        if "border" in block or "outline" in block:
-            found.append((selector.strip(), block))
-    return found
+    """The real main window, built as both ring suites build it."""
+    yield from build_ring_window(application)
 
 
 @pytest.mark.parametrize("mode", tuple(Mode))
@@ -174,6 +125,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     # above, so the ring reaches it there.
     assert tips == [
         "Choose music folder",
+        "Filter the library",
         "Search the library",
         f"Volume {DEFAULT_PERCENT}%",
         "Mute",
@@ -197,184 +149,3 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
     for row, name in ((top, "top tray"), (bottom, "bottom strip")):
         centres = [w.mapTo(window, w.rect().center()).x() for w in row]
         assert centres == sorted(centres), f"the {name}'s stops run left to right"
-
-
-# A control that takes focus and paints nothing is the one defect the two
-# checks above cannot see: they say which classes must NOT ring, while this
-# says every class that CAN be landed on must. A checkbox shipped with no rule
-# at all, so Tab stopped on it and nothing on screen reported that it had.
-# Item views are the sanctioned exception and are listed as such rather than
-# quietly passing: their current row is the indicator.
-# Long enough for the walk to come back round to where it started.
-RING_WALK = 40
-# Stops the stylesheet is right not to name. A zero-size holder has nothing to
-# paint a ring on. The other two paint their own and say in their modules why
-# the sheet cannot do it for them: five glyphs standing for one value must ring
-# once rather than five times; a checkbox's square belongs to Qt, which takes
-# the whole subcontrol over the moment a sheet names it. Each is listed here
-# rather than passing quietly, then each is proved below.
-NOTHING_TO_PAINT = "_NeutralStart"
-PAINTS_ITS_OWN_RING = (
-    "StarRating",
-    "RingedCheckBox",
-    "SizeButton",
-    # Each menu TITLE is a stop, so the ring goes round the one the keyboard
-    # is on. A stylesheet cannot say that: a bar-wide rule draws a line past
-    # the last menu and names the bar rather than the title.
-    "RingedMenuBar",
-)
-
-
-def _qt_class(widget: QWidget) -> str:
-    """The class a stylesheet selector would have to name to reach `widget`.
-
-    A Qt class selector matches every subclass, so a view of our own is styled
-    by the Qt class it derives from. Reporting the leaf name instead would ask
-    for a rule per subclass, which is how this check first failed against the
-    grid rather than against anything actually missing a ring.
-    """
-    for klass in type(widget).__mro__:
-        if klass.__module__.startswith("PySide6"):
-            return klass.__name__
-    return type(widget).__name__
-
-
-def _own_ring_painters(root: QWidget) -> set[str]:
-    """The exempted stops actually found inside `root`.
-
-    An exemption nobody uses is dead weight that still hides a class, so the
-    list is checked against the application rather than only trusted.
-    """
-    return {
-        type(widget).__name__
-        for widget in [root, *root.findChildren(QWidget)]
-        if type(widget).__name__ in PAINTS_ITS_OWN_RING
-    }
-
-
-def _focusable(root: QWidget) -> set[str]:
-    """The Qt class of every tab stop inside `root`, itself included.
-
-    Item views are dropped here rather than filtered later, because they are
-    ringless by design and asserted so by the check above. The other two
-    exceptions are dropped by their own class, each for a stated reason.
-    """
-    found = set()
-    for widget in [root, *root.findChildren(QWidget)]:
-        tabbable = int(widget.focusPolicy()) & int(Qt.FocusPolicy.TabFocus)
-        leaf = type(widget).__name__
-        if not tabbable or leaf == NOTHING_TO_PAINT:
-            continue
-        if leaf in PAINTS_ITS_OWN_RING:
-            continue
-        if isinstance(widget, QAbstractItemView):
-            continue
-        found.add(_qt_class(widget))
-    return found
-
-
-@pytest.mark.parametrize("mode", tuple(Mode))
-def test_every_control_that_can_be_landed_on_names_a_ring(
-    application: QApplication, window, mode: Mode
-) -> None:
-    """Walked off the real widgets rather than off a list somebody maintains.
-
-    A list would not have caught the checkbox, since whoever forgot the rule
-    would have forgotten the list entry with it. The dialogs are built here
-    too: both of the application's checkboxes live in one, so a window alone
-    would still have passed while the defect stood.
-    """
-    dialogs = (
-        ClosePrompt(window),
-        EqualiserDialog(window, Equalisation(), lambda _curve: None),
-    )
-    controls = _focusable(window)
-    painters = _own_ring_painters(window)
-    for dialog in dialogs:
-        controls |= _focusable(dialog)
-        painters |= _own_ring_painters(dialog)
-    assert painters == set(PAINTS_ITS_OWN_RING), "every exemption is really used"
-    ringed = {selector for selector, _block in ring_rules(stylesheet(mode))}
-    for control in sorted(controls):
-        assert any(
-            re.search(rf"(^|[\s,]){control}[:#\s,]", selector) for selector in ringed
-        ), f"{control} can be landed on but names no ring"
-
-
-def _a_menu_bar(parent: QWidget) -> RingedMenuBar:
-    """A menu bar with titles to ring, since a bare one has nothing to draw."""
-    bar = RingedMenuBar(parent)
-    for title in ("&File", "&View"):
-        bar.addMenu(title)
-    return bar
-
-
-@pytest.mark.parametrize("mode", tuple(Mode))
-@pytest.mark.parametrize(
-    "build_control",
-    (
-        lambda parent: StarRating(parent),
-        lambda parent: RingedCheckBox("Keep", parent),
-        lambda parent: SizeButton(parent),
-        _a_menu_bar,
-    ),
-    ids=PAINTS_ITS_OWN_RING,
-)
-def test_a_control_exempted_above_really_does_paint_its_own_ring(
-    application: QApplication, build_control, mode: Mode
-) -> None:
-    """Each exemption held to what it claims, in both appearances.
-
-    Rendering runs the widget's own paintEvent, so what is compared is the
-    drawing rather than the screen. The stylesheet is applied because one of
-    these reads its colours from it and would otherwise have none to paint.
-
-    A second control shares the host so that focus has somewhere else to be.
-    A lone focusable widget takes focus the moment it is shown, which makes
-    both renders the focused one and the comparison pass while proving nothing.
-    """
-    application.setStyleSheet(stylesheet(mode))
-    host = QWidget()
-    row = QHBoxLayout(host)
-    elsewhere = QPushButton("elsewhere", host)
-    control = build_control(host)
-    row.addWidget(elsewhere)
-    row.addWidget(control)
-    host.show()
-    host.activateWindow()
-    application.processEvents()
-    elsewhere.setFocus()
-    application.processEvents()
-    assert not control.hasFocus(), "focus is somewhere else to start with"
-    unfocused = control.grab().toImage()
-    # The tab reason rather than any reason: the ring says the KEYBOARD is
-    # here; one of these lights only for a keyboard arrival, because a
-    # click on a menu title already opens the menu it landed on.
-    control.setFocus(Qt.FocusReason.TabFocusReason)
-    application.processEvents()
-    assert control.hasFocus()
-    assert control.grab().toImage() != unfocused, "focus changed nothing drawn"
-    host.close()
-
-
-def test_the_ringed_checkbox_still_shows_whether_it_is_ticked(
-    application: QApplication,
-) -> None:
-    """The reason the ring is painted rather than styled, held as a test.
-
-    Naming `::indicator` in the stylesheet hands Qt the whole subcontrol and
-    the tick goes with it. Nothing about that is visible in a rule that looks
-    perfectly reasonable, so what would catch it is this: a box that cannot be
-    told ticked from unticked.
-    """
-    application.setStyleSheet(stylesheet(Mode.DARK))
-    host = QWidget()
-    box = RingedCheckBox("Keep", host)
-    QHBoxLayout(host).addWidget(box)
-    host.show()
-    application.processEvents()
-    unticked = box.grab().toImage()
-    box.setChecked(True)
-    application.processEvents()
-    assert box.grab().toImage() != unticked, "a tick that cannot be seen is no tick"
-    host.close()

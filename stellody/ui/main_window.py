@@ -36,6 +36,7 @@ from stellody.ui.choosing import Choosing
 from stellody.ui.covering import Covering
 from stellody.ui.editing_tags import EditingTags
 from stellody.ui.expanding import ExpandToggle
+from stellody.ui.filtering import Filtering
 from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
 from stellody.ui.menu_bar import RingedMenuBar
@@ -116,6 +117,7 @@ def _trail() -> str:
 class MainWindow(
     Scanning,
     Searching,
+    Filtering,
     Playing,
     TransportMenu,
     Choosing,
@@ -208,9 +210,11 @@ class MainWindow(
         self.start_choosing(chooser)
         self.start_editing_tags(tag_editing)
         self.start_searching()
+        self.start_filtering()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
+            open_filter=self.open_filter,
             toggle_search=self.toggle_search,
             search_changed=self.search_changed,
             search_again=self.search_again,

@@ -24,6 +24,8 @@ album form hold one dictionary rather than two.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -52,6 +54,10 @@ COLUMNS = 3
 INDENT_PX = 18
 
 HINT = "An album can carry several. What you tick replaces what it carries now."
+# Said over the same boxes when they are asking rather than stating. Each tick
+# widens what is on screen, which is the opposite of what ticking means when an
+# album is being described, so the line says so before anything is ticked.
+ASK_HINT = "Every tick adds to what is shown. A style shows that style alone."
 
 # Said where the album's own tag names nothing in the catalogue, so the panel
 # never silently drops what the file says while showing no box ticked.
@@ -61,6 +67,33 @@ UNMATCHED = "Currently tagged {value}, which is not one of these."
 # shown that could not be represented. Somebody reading it cannot
 # tell whether Stellody found nothing or ignored what it found.
 UNSTATED = "This album states no genre."
+
+
+@dataclass(frozen=True, slots=True)
+class Manner:
+    """What a grid of these boxes is being used FOR.
+
+    The same catalogue serves two questions and they differ in three places,
+    all of them following from the one distinction: describing an album states
+    what it is, while asking of the library states what to show.
+
+    A style states its main when an album is described, since an album marked
+    Trance IS electronic. It must NOT when the library is asked, since ticking
+    Trance to have every kind of electronic music put in front of you is not
+    what the tick said.
+    """
+
+    hint: str
+    couples_mains: bool
+    says_aside: bool
+
+
+# Describing one album: ticking a style ticks its main; the line underneath
+# says what the album carries when no box can hold it.
+STATING = Manner(hint=HINT, couples_mains=True, says_aside=True)
+# Asking the library: a tick is a question rather than a statement, so nothing
+# is ticked on somebody's behalf and there is no album to say anything about.
+ASKING = Manner(hint=ASK_HINT, couples_mains=False, says_aside=False)
 
 
 def _mnemonic_safe(name: str) -> str:
@@ -109,8 +142,14 @@ def _aside(stated: str, ticked: set[str]) -> str:
 class GenreGrid(QWidget):
     """The catalogue as tick boxes, standing in for a line edit."""
 
-    def __init__(self, value: str = "", parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        value: str = "",
+        parent: QWidget | None = None,
+        manner: Manner = STATING,
+    ) -> None:
         super().__init__(parent)
+        self._manner = manner
         # A container is never a stop on the keyboard ring; the boxes are.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.boxes: dict[str, RingedCheckBox] = {}
@@ -118,7 +157,7 @@ class GenreGrid(QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        hint = QLabel(HINT, self)
+        hint = QLabel(manner.hint, self)
         hint.setWordWrap(True)
         font = hint.font()
         font.setItalic(True)
@@ -127,7 +166,8 @@ class GenreGrid(QWidget):
 
         outer.addLayout(self._build_columns(ticked))
 
-        self.aside = QLabel(_aside(value.strip(), ticked), self)
+        said = _aside(value.strip(), ticked) if manner.says_aside else ""
+        self.aside = QLabel(said, self)
         self.aside.setWordWrap(True)
         self.aside.setVisible(bool(self.aside.text()))
         outer.addWidget(self.aside)
@@ -167,7 +207,12 @@ class GenreGrid(QWidget):
         The pair a listener would find surprising, clearing a style clearing
         its main, is deliberately absent: the album may still be electronic
         after they decide it is not specifically trance.
+
+        Neither rule applies while the boxes are asking rather than stating:
+        see `Manner`.
         """
+        if not self._manner.couples_mains:
+            return
         if on and name in MAIN_OF:
             self.boxes[MAIN_OF[name]].setChecked(True)
             return

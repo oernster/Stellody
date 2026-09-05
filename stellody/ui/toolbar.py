@@ -1,10 +1,16 @@
 """The icon tray under the menus.
 
-Picture-only buttons in reading order: choose the music folder, search it and
-say how it is shown on the left, the transport centred, then the volume, the
+Picture-only buttons in reading order: choose the music folder, narrow it to a
+genre and search it on the left, the transport centred, then the volume, the
 mute switch, the appearance toggle and About on the right. The library buttons
 repeat something the menus already offer, so they add reach rather than
 capability; nothing here owns any state of its own.
+
+Filter sits between choosing and searching, which is where it belongs on both
+counts. The search button and the box it opens are one control in two pieces,
+so nothing may come between them; a filter is a question about the library in
+the same way choosing a folder is. It opens a dialog rather than narrowing
+on the press, since what to show has to be said before it can be shown.
 
 Search is the one place a box joins the pictures. The button carries the
 magnifier and the box appears beside it only while searching, so the tray
@@ -82,6 +88,11 @@ SEARCH_BOX_PX = 260
 # a default line edit is a third of a tray button and reads as a mistake.
 SEARCH_BOX_HEIGHT_PX = 48
 SEARCH_PLACEHOLDER = "Album, artist or track"
+# The filter button's own name, said while nothing is being asked for.
+FILTER_TOOLTIP = "Filter the library"
+# Said in its place while something is, so what is on screen can be read off
+# the control rather than guessed at from what is missing.
+FILTERED_TOOLTIP = "Showing {what}"
 
 
 def _icon_button(parent: QWidget, path, tip: str, on_click: Callable) -> QPushButton:
@@ -99,6 +110,7 @@ class LibraryTray(QWidget):
         toggle_theme: Callable[[], None],
         show_about: Callable[[], None],
         check_for_updates: Callable[[], None] = lambda: None,
+        open_filter: Callable[[], None] = lambda: None,
         toggle_search: Callable[[], None] = lambda: None,
         search_changed: Callable[[str], None] = lambda _phrase: None,
         search_again: Callable[[], None] = lambda: None,
@@ -122,6 +134,14 @@ class LibraryTray(QWidget):
             "Choose music folder",
             choose_folder,
         )
+        self.filter_button = _icon_button(
+            self, resources.filter_icon_path(), FILTER_TOOLTIP, open_filter
+        )
+        # Checkable so a filter that is on can hold the button down. The
+        # artwork says what the control is; the pressed look says whether it
+        # is currently doing anything, which a narrowed library cannot say
+        # for itself: it looks exactly like a small one.
+        self.filter_button.setCheckable(True)
         self.search_button = _icon_button(
             self, resources.search_icon_path(), "Search the library", toggle_search
         )
@@ -169,6 +189,7 @@ class LibraryTray(QWidget):
         )
         row.setSpacing(TRAY_GAP_PX)
         row.addWidget(self.choose_button)
+        row.addWidget(self.filter_button)
         row.addWidget(self.search_button)
         row.addWidget(self.search_box)
         # A stretch either side is what centres the transport, whatever the
@@ -201,6 +222,7 @@ class LibraryTray(QWidget):
         """
         return (
             self.choose_button,
+            self.filter_button,
             self.search_button,
             self.search_box,
             *self.transport_stops(),
@@ -219,6 +241,18 @@ class LibraryTray(QWidget):
         area, so a toggle reading it would stop working exactly there.
         """
         return not self.search_box.isHidden()
+
+    def set_filtering(self, filtering: bool, what: str) -> None:
+        """Hold the filter button down while it is narrowing the library.
+
+        The tooltip names what is being asked for rather than repeating the
+        control's own name, so the state can be read without opening the
+        dialog to look at the ticks.
+        """
+        self.filter_button.setChecked(filtering)
+        self.filter_button.setToolTip(
+            FILTERED_TOOLTIP.format(what=what) if filtering else FILTER_TOOLTIP
+        )
 
     def set_searching(self, searching: bool) -> None:
         """Open the box and put the caret in it, else close it and forget it.

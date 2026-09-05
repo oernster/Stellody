@@ -8,6 +8,10 @@ in front of somebody.
 box restores the library without reading a single file and without asking the
 store for anything.
 
+**The filter goes first.** A phrase searches what the filter left, so typing
+while a filter is on searches what is on screen; asking them the other way
+round would let a phrase produce albums the filter had just excluded.
+
 **An album is kept whole.** A phrase that hits one track keeps every track, so
 the album reads the way it always does. The track it hit is selected as though
 it were about to play, then its row is flashed to take the eye to it.
@@ -67,6 +71,10 @@ class Searching:
         self._search = Search(phrase=phrase)
         self._narrow()
 
+    def _asked(self) -> tuple[AlbumText, ...]:
+        """The albums the filter leaves, which is what a phrase is asked of."""
+        return self.filtered(self._prepared)
+
     def search_again(self) -> None:
         """Ask the phrase once more, for one that has already answered.
 
@@ -78,7 +86,7 @@ class Searching:
         Only the pointing is redone. The phrase has not changed, so neither
         can the rows; replacing them would be a reset with nothing behind it.
         """
-        self._point_at(narrowed(self._prepared, self._search))
+        self._point_at(narrowed(self._asked(), self._search))
 
     def _narrow(self) -> None:
         """Show the albums that survive the phrase and nothing else.
@@ -89,7 +97,7 @@ class Searching:
         re-roots on the whole library and lists it down BOTH columns. Keeping
         it open is done by opening it again.
         """
-        found = narrowed(self._prepared, self._search)
+        found = narrowed(self._asked(), self._search)
         albums = tuple(one.album for one in found)
         was_open = self.pane_state()
         self._model.set_albums(albums)

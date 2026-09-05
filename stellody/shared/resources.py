@@ -37,6 +37,7 @@ EXTRA_LARGE_GRID_ICON = "extra-large-grid.png"
 DONATE_ICON = "donate.png"
 LIBRARY_HEALTH_ICON = "library-health.png"
 SEARCH_ICON = "search.png"
+FILTER_ICON = "filter.png"
 REPEAT_ICON = "repeat.png"
 REPEAT_ONE_ICON = "repeat-1-track.png"
 UNMUTE_ICON = "unmute.png"
@@ -95,6 +96,11 @@ def choose_folder_icon_path() -> pathlib.Path | None:
 def search_icon_path() -> pathlib.Path | None:
     """The magnifier on the button that opens the search box."""
     return find_asset(SEARCH_ICON)
+
+
+def filter_icon_path() -> pathlib.Path | None:
+    """The artwork on the button that opens the genre filter."""
+    return find_asset(FILTER_ICON)
 
 
 def rescan_icon_path() -> pathlib.Path | None:

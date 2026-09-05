@@ -80,6 +80,13 @@ class TestRing:
         stops = tray.ring_stops()
         assert stops.index(tray.search_box) == stops.index(tray.search_button) + 1
 
-    def test_search_follows_the_folder_it_searches(self, tray) -> None:
+    def test_search_follows_the_filter_beside_it(self, tray) -> None:
+        """Filter came between search and the folder button it used to follow.
+
+        Its place is settled: a filter is a question about the library, as
+        choosing a folder is, while search is a button and a box that nothing
+        may come between.
+        """
         stops = tray.ring_stops()
-        assert stops.index(tray.search_button) == stops.index(tray.choose_button) + 1
+        assert stops.index(tray.filter_button) == stops.index(tray.choose_button) + 1
+        assert stops.index(tray.search_button) == stops.index(tray.filter_button) + 1
