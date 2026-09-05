@@ -14,6 +14,7 @@ steps straight past the titles and reports a pass while proving nothing.
 
 from __future__ import annotations
 
+import contextlib
 import pathlib
 import tempfile
 
@@ -29,13 +30,18 @@ from stellody.ui.menu_bar import NOWHERE
 from stellody.ui.settings_keys import SETTING_ROOT
 
 TITLES = ("&File", "&View", "&Sound", "&Help")
+# The one entry chosen by these tests, reached with two Down presses in the
+# View menu. It is picked because it toggles and nothing else: choosing an
+# appearance would restyle the window under the test and move the focus.
+HARMLESS = "Sort &Z to A"
+STEPS_TO_HARMLESS = 2
 # One more press than there are titles, so the walk is seen to LEAVE the bar
 # rather than stopping at the last one.
 PAST_THE_END = len(TITLES) + 1
 
 
-@pytest.fixture
-def window(application: QApplication):
+@contextlib.contextmanager
+def a_window(application: QApplication):
     """The real window over a throwaway store, pointed at a folder."""
     folder = pathlib.Path(tempfile.mkdtemp())
     store = SqliteLibraryStore(str(folder / "t.sqlite3"))
@@ -43,9 +49,17 @@ def window(application: QApplication):
     made = build_window(store)
     made.show()
     application.processEvents()
-    yield made
-    made.close()
-    store.close()
+    try:
+        yield made
+    finally:
+        made.close()
+        store.close()
+
+
+@pytest.fixture
+def window(application: QApplication):
+    with a_window(application) as made:
+        yield made
 
 
 def press(application: QApplication, key: Qt.Key) -> None:
@@ -218,3 +232,140 @@ class TestATitleThatCannotBeUsed:
             assert bar.cursor_at == 1
         finally:
             bar.actions()[0].setEnabled(True)
+
+
+def harmless_in(menu: QMenu):
+    """The one entry these tests are willing to choose."""
+    for action in menu.actions():
+        if action.text() == HARMLESS:
+            return action
+    raise AssertionError(f"{HARMLESS} has left the View menu")
+
+
+def live(window) -> QMenu | None:
+    """Whichever menu is down, if one is."""
+    showing = [menu for menu in window.findChildren(QMenu) if menu.isVisible()]
+    return showing[0] if showing else None
+
+
+class TestWhileOneIsDown:
+    """An open menu owns the keyboard, so the bar never sees these presses.
+
+    Measured on Qt 6.11.2 before any of this was written: with a popup down
+    the horizontal arrows and Tab did nothing whatever, so the ring stopped
+    dead at the first title opened. Space did nothing at any point in a menu
+    either, since the Windows styles answer SH_Menu_SpaceActivatesItem with 0.
+    """
+
+    def opened_first(self, application: QApplication, window) -> QMenu:
+        window.focusNextChild()
+        press(application, Qt.Key.Key_Down)
+        return live(window)
+
+    def test_a_menu_comes_down_on_its_first_item(
+        self, application: QApplication, window
+    ) -> None:
+        """Qt opens a popup with nothing highlighted; the model does not."""
+        menu = self.opened_first(application, window)
+        assert menu.activeAction() is menu.actions()[0]
+
+    def test_a_dead_first_item_is_not_where_it_comes_down(
+        self, application: QApplication, window
+    ) -> None:
+        """Planted, since the File menu disables none of its own."""
+        window.focusNextChild()
+        first = window.menuBar().actions()[0].menu().actions()[0]
+        first.setEnabled(False)
+        try:
+            press(application, Qt.Key.Key_Down)
+            menu = live(window)
+            assert menu.activeAction() is not first
+            assert menu.activeAction().isEnabled()
+        finally:
+            first.setEnabled(True)
+
+    @pytest.mark.parametrize("key", (Qt.Key.Key_Right, Qt.Key.Key_Tab))
+    def test_stepping_on_brings_the_next_title_down_too(
+        self, application: QApplication, window, key: Qt.Key
+    ) -> None:
+        """A menu already down says the bar is being read, so the title the
+        ring steps to arrives open rather than asking a second time."""
+        menu = self.opened_first(application, window)
+        QTest.keyClick(menu, key)
+        application.processEvents()
+        assert opened(window) == [TITLES[1]]
+        assert window.menuBar().cursor_at == 1
+
+    @pytest.mark.parametrize("key", (Qt.Key.Key_Left, Qt.Key.Key_Backtab))
+    def test_stepping_back_brings_the_previous_title_down_too(
+        self, application: QApplication, window, key: Qt.Key
+    ) -> None:
+        menu = self.opened_first(application, window)
+        QTest.keyClick(menu, Qt.Key.Key_Right)
+        application.processEvents()
+        QTest.keyClick(live(window), key)
+        application.processEvents()
+        assert opened(window) == [TITLES[0]]
+        assert window.menuBar().cursor_at == 0
+
+    def test_running_out_shuts_the_menu_and_hands_the_ring_on(
+        self, application: QApplication, window
+    ) -> None:
+        """The bar is bounded here as everywhere; it never traps the ring."""
+        bar = window.menuBar()
+        self.opened_first(application, window)
+        for _ in range(len(TITLES)):
+            menu = live(window)
+            if menu is None:
+                break
+            QTest.keyClick(menu, Qt.Key.Key_Right)
+            application.processEvents()
+        assert opened(window) == []
+        assert bar.cursor_at == NOWHERE
+        assert application.focusWidget() is not bar
+
+    def test_space_chooses_the_highlighted_item(
+        self, application: QApplication, window
+    ) -> None:
+        """Qt gives Space to a menu item nowhere, so the bar gives it."""
+        window.focusNextChild()
+        press(application, Qt.Key.Key_Right)
+        press(application, Qt.Key.Key_Down)
+        menu = live(window)
+        for _ in range(STEPS_TO_HARMLESS):
+            QTest.keyClick(menu, Qt.Key.Key_Down)
+        chosen = menu.activeAction()
+        assert chosen.text() == HARMLESS
+        was = chosen.isChecked()
+        QTest.keyClick(menu, Qt.Key.Key_Space)
+        application.processEvents()
+        assert chosen.isChecked() is not was, "the item acted"
+
+    def test_space_leaves_exactly_what_enter_leaves(
+        self, application: QApplication
+    ) -> None:
+        """Measured on Enter first: the menu shut, the cursor still on its
+        title and the bar's active action cleared. Space is the same key by
+        another name, so it lands in the same state.
+
+        A window each, because the two have to be compared like with like:
+        measured with Enter on BOTH passes, the first choosing made in a
+        freshly shown window leaves the cursor cleared and the second does
+        not, so one window would report a difference the keys never made.
+        """
+
+        def choose_with(key: Qt.Key) -> tuple:
+            with a_window(application) as window:
+                bar = window.menuBar()
+                window.focusNextChild()
+                press(application, Qt.Key.Key_Right)
+                press(application, Qt.Key.Key_Down)
+                menu = live(window)
+                # Said outright rather than walked to, so what is under test
+                # is the choosing rather than where Down presses land.
+                menu.setActiveAction(harmless_in(menu))
+                QTest.keyClick(menu, key)
+                application.processEvents()
+                return (opened(window), bar.cursor_at, bar.activeAction())
+
+        assert choose_with(Qt.Key.Key_Space) == choose_with(Qt.Key.Key_Return)

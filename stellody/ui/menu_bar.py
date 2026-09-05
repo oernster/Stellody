@@ -25,9 +25,16 @@ does for the same reason.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Property, Qt
-from PySide6.QtGui import QColor, QFocusEvent, QKeyEvent, QPainter, QPen
-from PySide6.QtWidgets import QMenuBar, QWidget
+from PySide6.QtCore import Property, QEvent, QObject, Qt
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QFocusEvent,
+    QKeyEvent,
+    QPainter,
+    QPen,
+)
+from PySide6.QtWidgets import QApplication, QMenu, QMenuBar, QWidget
 
 RING_PX = 2
 RING_RADIUS_PX = 4
@@ -58,10 +65,33 @@ OPEN_KEYS = (
     Qt.Key.Key_Enter,
     Qt.Key.Key_Space,
 )
+# What chooses the highlighted item of an OPEN menu. Enter is Qt's own;
+# Space is not, measured: the Windows styles answer
+# SH_Menu_SpaceActivatesItem with 0, so a highlighted item ignores it.
+CHOOSE_KEY = Qt.Key.Key_Space
+# What Space is handed to the menu AS, so choosing has one implementation
+# rather than two that can drift apart.
+CHOSEN_AS = Qt.Key.Key_Return
 BY_KEYBOARD = (
     Qt.FocusReason.TabFocusReason,
     Qt.FocusReason.BacktabFocusReason,
 )
+
+
+def first_usable_item(menu: QMenu) -> QAction | None:
+    """The item a menu comes down on: the first that can be chosen.
+
+    Qt opens a popup with nothing highlighted, measured, so a listener
+    who asked for the menu has to press Down before anything is offered.
+    The model wants the menu to arrive already on its first item.
+    """
+    for action in menu.actions():
+        if action.isSeparator() or not action.isEnabled():
+            continue
+        if not action.isVisible():
+            continue
+        return action
+    return None
 
 
 class RingedMenuBar(QMenuBar):
@@ -75,6 +105,10 @@ class RingedMenuBar(QMenuBar):
         self.setFocusPolicy(Qt.FocusPolicy.TabFocus)
         self._cursor = NOWHERE
         self._ring = ""
+        # The popups already being listened to. An open menu owns the
+        # keyboard, so the bar's own key handler never sees a press made
+        # while one is down; the filter is where that half lives.
+        self._watched: set[QMenu] = set()
 
     # The stylesheet hands the colour down, so the palette stays its one home.
     def _read_ring(self) -> str:
@@ -139,7 +173,69 @@ class RingedMenuBar(QMenuBar):
         """
         if not self._usable(self._cursor):
             return False
-        self.setActiveAction(self.actions()[self._cursor])
+        action = self.actions()[self._cursor]
+        menu = action.menu()
+        if menu is not None and menu not in self._watched:
+            menu.installEventFilter(self)
+            self._watched.add(menu)
+        self.setActiveAction(action)
+        if menu is not None:
+            menu.setActiveAction(first_usable_item(menu))
+        return True
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        """Hold the ring's contract inside a menu Qt has opened.
+
+        Measured on Qt 6.11.2: with a popup down, neither the horizontal
+        arrows nor Tab reach the bar at all, so the ring stops dead there;
+        Space does nothing anywhere in a menu whatever is highlighted.
+        Both are answered here rather than by fighting the popup for focus.
+        """
+        if not isinstance(watched, QMenu):
+            return False
+        if event.type() is not QEvent.Type.KeyPress:
+            return False
+        key = event.key()
+        if key in FORWARD_KEYS or key in BACKWARD_KEYS:
+            self.walk_from_open(watched, FORWARD if key in FORWARD_KEYS else BACKWARD)
+            return True
+        if key == CHOOSE_KEY:
+            return self.choose_in(watched)
+        return False
+
+    def walk_from_open(self, menu: QMenu, delta: int) -> None:
+        """Step to the next title with the menu still down; leave at the ends.
+
+        A menu already down says the listener is reading the bar, so the
+        title the ring steps to comes down with it rather than asking to be
+        opened a second time. Qt clears the bar's active action when it
+        closes a popup itself; closing one here does not, so it is said.
+        """
+        menu.hide()
+        self.setActiveAction(None)
+        if self.step_cursor(delta):
+            self.open_current()
+            return
+        self.clear_cursor()
+        self.setFocus(Qt.FocusReason.OtherFocusReason)
+        super().focusNextPrevChild(delta == FORWARD)
+
+    def choose_in(self, menu: QMenu) -> bool:
+        """Choose the highlighted item, by handing the menu an Enter.
+
+        Space is meant to be Enter by another name, so it IS one here rather
+        than a second implementation of choosing: closing the menu and firing
+        the item by hand looked equivalent and was not, measured. Qt hides the
+        popup and fires the item in an order of its own; doing it the obvious
+        way instead left the ring's cursor off the title Enter leaves it on.
+        Handing Qt the key it already understands cannot drift.
+        """
+        if menu.activeAction() is None:
+            return False
+        for kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+            QApplication.sendEvent(
+                menu, QKeyEvent(kind, CHOSEN_AS, Qt.KeyboardModifier.NoModifier)
+            )
         return True
 
     def focusInEvent(self, event: QFocusEvent) -> None:
