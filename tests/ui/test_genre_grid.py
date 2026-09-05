@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from stellody.domain.genres import GENRES
-from stellody.ui.genre_grid import COLUMNS, GenreGrid
+from stellody.ui.genre_grid import COLUMNS, UNSTATED, GenreGrid
 from stellody.ui.ringed_check import RingedCheckBox
 
 
@@ -109,21 +109,32 @@ class TestWhatItSaysAboutATagItCannotMatch:
     def test_an_unmatched_tag_is_shown_rather_than_hidden(self, grid) -> None:
         """Otherwise the panel shows no box ticked and says nothing at all."""
         chooser = grid("dance-house-progressive")
-        assert chooser.unmatched.isVisibleTo(chooser)
-        assert "dance-house-progressive" in chooser.unmatched.text()
+        assert chooser.aside.isVisibleTo(chooser)
+        assert "dance-house-progressive" in chooser.aside.text()
 
     def test_nothing_is_said_where_the_tag_matched(self, grid) -> None:
         chooser = grid("Rock")
-        assert not chooser.unmatched.isVisibleTo(chooser)
-        assert chooser.unmatched.text() == ""
+        assert not chooser.aside.isVisibleTo(chooser)
+        assert chooser.aside.text() == ""
 
-    def test_nothing_is_said_where_there_was_no_tag(self, grid) -> None:
+    def test_an_album_stating_no_genre_is_told_so(self, grid) -> None:
+        """An empty grid otherwise means two things and looks the same in both:
+        nothing to show; something shown that no box could hold. Silence in
+        the first case reads as a defect, which is how this came to be asked
+        for: a cue-ripped album whose FLAC carries no genre tag at all."""
         chooser = grid("")
-        assert not chooser.unmatched.isVisibleTo(chooser)
+        assert chooser.aside.isVisibleTo(chooser)
+        assert chooser.aside.text() == UNSTATED
 
     def test_whitespace_alone_is_not_a_tag(self, grid) -> None:
         chooser = grid("   ")
-        assert not chooser.unmatched.isVisibleTo(chooser)
+        assert chooser.aside.text() == UNSTATED
+
+    def test_the_two_asides_never_say_the_same_thing(self, grid) -> None:
+        """Telling them apart is the whole point of having two."""
+        silent = grid("")
+        unmatched = grid("dance-house")
+        assert silent.aside.text() != unmatched.aside.text()
 
 
 class TestWhatItAnswers:

@@ -25,9 +25,14 @@ COLUMNS = 2
 
 HINT = "An album can carry several. What you tick replaces what it carries now."
 
-# Said only where the album's own tag names nothing in the catalogue, so the
-# panel never silently drops what the file says while showing no box ticked.
+# Said where the album's own tag names nothing in the catalogue, so the panel
+# never silently drops what the file says while showing no box ticked.
 UNMATCHED = "Currently tagged {value}, which is not one of these."
+# Said where there is no tag to drop at all. Without it an empty grid means
+# two different things and looks identical in both: nothing to show; something
+# shown that could not be represented. Somebody reading it cannot
+# tell whether Stellody found nothing or ignored what it found.
+UNSTATED = "This album states no genre."
 
 
 def _mnemonic_safe(name: str) -> str:
@@ -38,6 +43,19 @@ def _mnemonic_safe(name: str) -> str:
     underline. Doubling it is how one is asked for literally.
     """
     return name.replace("&", "&&")
+
+
+def _aside(stated: str, ticked: set[str]) -> str:
+    """What the panel says under the boxes, which is nothing where all is well.
+
+    Three states rather than two, because an empty grid is ambiguous: it means
+    the album says nothing; or it means the album says something no box can
+    hold. Silence in the first case reads as a defect, which is how this line
+    came to be asked for.
+    """
+    if ticked:
+        return ""
+    return UNMATCHED.format(value=stated) if stated else UNSTATED
 
 
 class GenreGrid(QWidget):
@@ -68,12 +86,10 @@ class GenreGrid(QWidget):
             grid.addWidget(box, index // COLUMNS, index % COLUMNS)
         outer.addLayout(grid)
 
-        stated = value.strip()
-        unnamed = bool(stated) and not ticked
-        self.unmatched = QLabel(UNMATCHED.format(value=stated) if unnamed else "", self)
-        self.unmatched.setWordWrap(True)
-        self.unmatched.setVisible(unnamed)
-        outer.addWidget(self.unmatched)
+        self.aside = QLabel(_aside(value.strip(), ticked), self)
+        self.aside.setWordWrap(True)
+        self.aside.setVisible(bool(self.aside.text()))
+        outer.addWidget(self.aside)
 
     def chosen(self) -> tuple[str, ...]:
         """Every genre ticked, in catalogue order."""
