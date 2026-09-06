@@ -220,6 +220,19 @@ __marimo__/
 # Stellody build output
 dist-installer/
 dist-installer.build/
+
+# What build_flatpak.sh writes. The manifest, the launcher and the desktop
+# entry are GENERATED from the script rather than committed, so the script
+# stays the one place the packaging is stated; clean_flatpak.sh removes all
+# of it.
+.flatpak-build/
+.flatpak-builder/
+.flatpak-repo/
+.flatpak-wheels/
+.flatpak-vendor/
+packaging/
+stellody.flatpak
+uk.codecrafter.Stellody.yml
 installer/payload/
 installer/stage/
 *.spec
