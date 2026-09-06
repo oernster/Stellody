@@ -78,10 +78,11 @@ SIGN_IN_HINT = (
     "opening over whatever Windows has just put on screen."
 )
 
-# The library index and the window's settings share one database, so removing
-# either removes both. The box says so rather than naming the smaller of them
-# and quietly taking the other.
-FORGET_LABEL = "Also remove everything Stellody has stored"
+# One database holds the scan, the ratings, the stated tags, the accepted
+# corrections and the settings, so removing any of them removes the lot. The
+# label claims all of it rather than naming one kind and quietly taking the
+# rest; the hint below is where the kinds are named.
+FORGET_LABEL = f"Also remove everything {APP_NAME} has stored"
 FORGET_HINT = (
     "That is the scan of your music, your ratings and play counts, any tags "
     "you stated, any corrections you accepted plus your settings. Your music "
@@ -102,7 +103,7 @@ KEPT_LIBRARY_LEAD = (
 )
 REMOVED_LIBRARY_LEAD = (
     "Your music was never touched; the library index, your ratings and "
-    "everything else Stellody had stored are gone."
+    f"everything else {APP_NAME} had stored are gone."
 )
 REPAIRED_LEAD = "The files have been put back and nothing else was changed."
 REINSTALLED_LEAD = (
