@@ -25,8 +25,8 @@ from installer.registry import (
 )
 from stellody.infrastructure import switch_reset
 from stellody.infrastructure.paths import data_location
+from stellody.shared.version import APP_NAME
 
-APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
 PAYLOAD_ZIP = "payload.zip"
 PAYLOAD_DIR = "payload"

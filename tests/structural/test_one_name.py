@@ -6,21 +6,47 @@ directory the library sits in and the system wide names the single instance
 guard claims. A rename would have reached the ones somebody remembered to
 grep for and left the rest announcing a product that no longer existed.
 
+The setup program is scanned too and was the worse half: it held four
+definitions of its own, one apiece in the actions, the registry writer, the
+process check and the payload builder. Four copies agree until the day one of
+them is edited. It is a client of the application, so it reads the name from
+the same place everything else does.
+
 Docstrings and comments are prose ABOUT the module rather than text anybody is
 shown, so they are left alone; what is scanned is the string literals a reader
-or the operating system could actually meet.
+or the operating system could actually meet. Nuitka writes generated code under
+the payload and stage directories, which is nobody's to hold to a rule.
 """
 
 from __future__ import annotations
 
 import ast
 
-from conftest import PACKAGE_ROOT, package_modules, parsed, relative
+from conftest import (
+    PACKAGE_ROOT,
+    REPO_ROOT,
+    package_modules,
+    parsed,
+    relative,
+)
 
 from stellody.shared.version import APP_NAME
 
 # Where the name is defined. Everything else builds on it.
 NAME_HOME = "shared/version.py"
+
+# Build output written inside the setup program's own tree.
+GENERATED_DIRECTORIES = ("payload", "stage")
+
+
+def _scanned() -> list:
+    """Every module of the application and of the setup program around it."""
+    setup = [
+        path
+        for path in sorted((REPO_ROOT / "installer").rglob("*.py"))
+        if not any(part in GENERATED_DIRECTORIES for part in path.parts)
+    ]
+    return [*package_modules(), *setup]
 
 
 def _docstring_nodes(tree: ast.Module) -> set[int]:
@@ -50,8 +76,11 @@ def _docstring_nodes(tree: ast.Module) -> set[int]:
 def test_the_product_name_is_written_in_one_place() -> None:
     """No string a reader or the system meets spells the name out again."""
     offences: list[str] = []
-    for module in package_modules():
-        if module.relative_to(PACKAGE_ROOT).as_posix() == NAME_HOME:
+    for module in _scanned():
+        if (
+            module.is_relative_to(PACKAGE_ROOT)
+            and module.relative_to(PACKAGE_ROOT).as_posix() == NAME_HOME
+        ):
             continue
         tree = parsed(module)
         docstrings = _docstring_nodes(tree)

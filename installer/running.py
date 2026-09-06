@@ -22,7 +22,8 @@ from __future__ import annotations
 import subprocess
 import time
 
-APP_NAME = "Stellody"
+from stellody.shared.version import APP_NAME
+
 EXE_NAME = f"{APP_NAME}.exe"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 LIST_TIMEOUT_S = 5.0

@@ -12,8 +12,8 @@ import pathlib
 
 from installer.plan import InstallPlan
 from stellody.shared.startup import HIDDEN_FLAG
+from stellody.shared.version import APP_NAME
 
-APP_NAME = "Stellody"
 EXE_NAME = f"{APP_NAME}.exe"
 UNINSTALL_FLAG = "--uninstall"
 REGISTRY_ROOT = r"Software\Microsoft\Windows\CurrentVersion\Uninstall"

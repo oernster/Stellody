@@ -16,8 +16,9 @@ import shutil
 import sys
 import zipfile
 
+from stellody.shared.version import APP_NAME
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-APP_NAME = "Stellody"
 BUILD_DIR = ROOT / "installer" / "payload"
 BUNDLE_DIR = BUILD_DIR / APP_NAME
 ONEFILE_EXE = BUILD_DIR / f"{APP_NAME}.exe"
