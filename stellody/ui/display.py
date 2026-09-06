@@ -5,7 +5,7 @@ joins its folders with the separator the operating system actually uses. Shown
 side by side on one status line that reads as two different machines:
 
     Scanning H:/FLACMusic
-    43% (220 of 510) H:/FLACMusic\\Massive Attack\\Mezzanine
+    <percent>% (<done> of <total>) H:/FLACMusic\\Massive Attack\\Mezzanine
 
 Stellody stores what it was given and writes the native form when it shows it,
 so nothing stored has to change for the window to read properly.

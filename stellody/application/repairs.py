@@ -119,9 +119,9 @@ class Repairs:
     ) -> tuple[LibraryIssue, ...]:
         """The findings belonging to one album, by its handle not its label.
 
-        The findings cluster into a few albums rather than spreading evenly, 36
-        of 482 on the reference library, which is what makes this granularity
-        worth having.
+        The findings cluster into a small minority of albums rather than
+        spreading evenly across the library, which is what makes this
+        granularity worth having.
         """
         return tuple(issue for issue in issues if issue.album_key == album)
 
