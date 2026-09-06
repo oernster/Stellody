@@ -10,7 +10,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from enum import StrEnum
 
+from stellody.domain.discovery import Gaps
 from stellody.domain.health import LibraryIssue
 from stellody.domain.ordering import TrackCandidate
 from stellody.domain.track import TrackSource
@@ -169,3 +171,77 @@ class UpdateStatus:
     def reached(self) -> bool:
         """Whether the release was read at all; False when nothing answered."""
         return bool(self.latest)
+
+
+class RunOutcome(StrEnum):
+    """How a discovery run ended, which decides whether it has anything to say.
+
+    Four endings rather than two, because "nothing was written" covers three
+    quite different things and a listener is owed which one it was.
+    """
+
+    COMPLETED = "completed"
+    NOTHING_TO_ASK = "nothing-to-ask"
+    CANCELLED = "cancelled"
+    UNAVAILABLE = "unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryProgress:
+    """How far a run has got, named rather than merely counted.
+
+    A run over a whole library takes about eleven minutes at the rate the
+    catalogues permit, so a bar with no name against it is indistinguishable
+    from a hang.
+    """
+
+    artist: str
+    done: int
+    total: int
+
+
+@dataclass(frozen=True, slots=True)
+class Ambiguity:
+    """An artist whose name reached more than one artist in the catalogue.
+
+    Reported rather than guessed at: choosing between two bands of one name on
+    somebody's behalf files a whole discography under the wrong heading, and
+    does it silently.
+    """
+
+    artist: str
+    identifiers: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SourceFailure:
+    """An artist a catalogue could not answer about, with what it said."""
+
+    artist: str
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class RunReport:
+    """Everything one discovery run found, including what it could not.
+
+    The failures are carried beside the results rather than logged and
+    forgotten, because an artist nobody could look up is exactly the artist
+    somebody would otherwise assume had nothing missing.
+    """
+
+    outcome: RunOutcome
+    gaps: tuple[Gaps, ...] = ()
+    unresolved: tuple[str, ...] = ()
+    ambiguous: tuple[Ambiguity, ...] = ()
+    failed: tuple[SourceFailure, ...] = ()
+
+    @property
+    def is_writable(self) -> bool:
+        """Whether this run has anything to replace the discovery file with.
+
+        Only a completed run does. A cancelled one discards what it gathered,
+        an unavailable one never gathered anything and a run with nobody to ask
+        about has nothing to say that a file could carry.
+        """
+        return self.outcome is RunOutcome.COMPLETED
