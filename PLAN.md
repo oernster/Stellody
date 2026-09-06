@@ -35,60 +35,7 @@ since the file carries the pending release alone.
 Version 1.0 is a separate readiness call for the owner to make; nothing below is
 sized against it.
 
-## 1. One loudness across albums
-
-Albums are mastered at whatever level their era and label chose, so moving from
-one to the next means reaching for the volume. Stellody should play them at a
-comparable loudness, on by default, remembered between runs.
-
-**Album gain, not track gain.** The point is that albums sit level with each
-other, so the whole album moves by one figure and the quiet track stays quiet
-against the loud one beside it. Track gain would flatten exactly the dynamics
-the album was mastered with.
-
-**The tags are all but absent; what is there is the wrong shape.** Read
-across every file in the library rather than a sample: 37 files, being two
-albums, carry `replaygain_album_gain` with a track gain and peak beside it. Nothing
-anywhere carries R128. A further 1,360 files across 129 folders
-carry Apple's `iTunNORM`, which is a per-track Sound Check value rather than
-the album figure this milestone is about. So reading what the files already
-say, which would have been nearly free since the probe collects every tag as
-it walks, would cover two albums of the library and nothing else. The loudness
-still has to be measured. An earlier reading here said no file carried such a
-tag at all; it sampled 60 albums at three files each, which is too small a net
-for something sitting on two of them.
-
-**Measuring it is affordable but not free.** Decoding and measuring one album
-of 42 minutes took 3.0 seconds, about 841 times real time. At that rate the
-reference library, 671 hours of music, is roughly 48 minutes of one core,
-against the seconds the ordinary scan takes reading tags alone. So it cannot
-ride along quietly with a scan. It is either a pass the user starts and watches
-or work spread behind playback; that decision is the one this milestone opens
-with. Whichever is chosen, an album that has not been measured plays at unity
-rather than waiting.
-
-**Where it is applied.** The engine already multiplies each decoded block by
-the volume, so the album's gain multiplies into the same figure: no second
-signal path and nothing to switch on and off in the hot loop. The measured peak
-is stored beside the gain; the applied gain is held below the point where that
-peak would clip, an album asking for more is left at the loudest that
-does not.
-
-**Where it is kept.** In Stellody's own store, keyed by album identity, never
-written back into the files: writing tags is a non-goal enforced by a
-structural test, which this does not change.
-
-**Its state.** One setting, on unless the user turned it off. An absent setting
-reads as on, so a fresh install has it on without the setup program being
-involved at all, unlike shuffle and repeat, which default off and therefore
-need clearing when a reinstall inherits the directory.
-
-Done when: two albums that differ by a known amount in measured loudness play
-within one decibel of each other with it on, differing by the original amount
-with it off; the setting survives a restart; an album with no measurement plays
-at exactly unity, with the same samples the file holds.
-
-## 2. Make the sites findable
+## 1. Make the sites findable
 
 Nothing has been submitted to a search engine, no structured data has been
 validated against a real checker and neither host has been observed in an
@@ -105,7 +52,7 @@ Done when: both hosts are verified in Search Console with the sitemap submitted
 and no coverage errors, the structured data passes the Rich Results Test and a
 search for the application by name returns the site.
 
-## 3. macOS and Flatpak
+## 2. macOS and Flatpak
 
 Windows first, which is where it stands. macOS and Linux come later, built to
 the house pattern rather than invented here: `build_flatpak.sh` with
@@ -127,7 +74,7 @@ Done when: a Flatpak and a DMG are built by their own scripts, each plays
 audio; the update check reaches GitHub from inside the sandbox; the Windows
 build is untouched by either.
 
-## 4. Discover music the library does not hold
+## 3. Discover music the library does not hold
 
 Everything else here is about music already owned. This is the opposite: which
 artists and albums are worth reaching for next, given what the library already
@@ -213,5 +160,23 @@ when that stage is designed.
   scratch, losing with it the keyboard reach an item view carries for nothing.
   The pane sits below the grid instead, which is the same information a row
   lower down.
+- **Levelling the loudness across albums.** Albums are mastered at whatever
+  level their era chose, so moving between them means reaching for the volume.
+  That is real; it is not worth what it costs here. The decode is not the
+  expensive part, which is the thing most likely to be re-argued:
+  `infrastructure/waveform.py` already reads every file through to measure its
+  shape and already accumulates the sums of squares a loudness figure is built
+  from, so the measurement would ride on a pass that happens anyway. What rules
+  it out is the output. Measured in `infrastructure/audio.py`, a block reaches
+  the device untouched only where the volume is exactly unity; any other figure
+  multiplies the block and casts it back to the file's own integer type. A
+  levelling gain is nearly always a reduction, so every album that had been
+  measured would be scaled and requantised on the way out. This application
+  exists because another player altered somebody's files; handing the device
+  exactly what the file holds is that same promise, so spending it to save
+  reaching for the volume once a record is a poor trade. It reopens for somebody
+  who listens by shuffling across the library rather than by playing records
+  through, since that is the pattern it would actually pay off for; it would
+  default to off even then.
 - **A second library root.** One folder, chosen once, rescanned incrementally.
 - **Writing anything at all into the music folder**, cache included.
