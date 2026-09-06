@@ -18,7 +18,7 @@ has never been seen to fail is not yet a guard.
 | 8 | No module sits in the 381 to 400 danger band; a file that reaches it is reduced to 350 or below rather than shaved. | `tests/structural/test_loc.py::test_no_module_sits_in_the_danger_band` |
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
 | 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py` |
-| 11 | A read-only page is never focused by a click; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py` |
+| 11 | A read-only page is never focused by a click and is never what a dialog opens on; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py`, `tests/ui/test_dialog_first_stop.py` |
 | 12 | Exactly two modules may open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
 | 14 | The setup program is a client of the application, never a layer of it: `installer/` reads what it needs from `stellody`, while nothing under `stellody/` imports `installer`. | `tests/structural/test_layers.py::test_the_application_never_imports_the_setup_program` |
@@ -385,8 +385,12 @@ reused without opening a single file. On the reference library a cold scan of
 657 folders holding 6,487 music files takes about three and three quarter
 seconds and a rescan a little under half a second.
 
-**Every library figure in this document comes from one reading, taken through
-the scanner itself rather than counted beside it.** The walk visits 657 folders
+**Every figure describing the library ITSELF comes from one reading, taken
+through the scanner itself rather than counted beside it.** A measurement taken
+during an experiment records the library as it stood that day and says so where
+it appears, which is why the expand-all timing below counts 628 albums rather
+than the 617 stated here: it is a reading of signals taken on another day, not
+a second reading of the library. The walk visits 657 folders
 holding 6,487 music files, which assemble into 617 albums of 8,450 tracks.
 There are more tracks than files because a cue sheet turns one file into many:
 6,272 of those tracks are a whole file while 2,178 are a slice of one. Timed
@@ -940,6 +944,37 @@ on stdlib `urllib` rather than a new dependency; `stellody/ui/update_check.py`
 is the controller and the dialogs. Invariant 12 is what keeps the adapter the
 only new way out.
 
+## The guide
+
+**It is drawn from the same pictures the window is.** A guide naming the
+furniture in words or with a stand-in glyph gives a second description of the
+window that drifts from it the moment a button changes. `stellody/ui/guide.py`
+resolves every icon through `stellody.shared.resources`, which is the lookup the
+trays themselves use, so a button that gains a new picture gains it here too.
+An icon that cannot be found yields no picture rather than an exception, since a
+missing asset must not be the thing that stops the guide opening.
+
+**The pictures are half again the size of the words around them.** At body-text
+size two icons somebody is trying to tell apart read as one smudge, which is the
+whole task this screen exists for; `INLINE_ICON_PX` states it once.
+
+**A tray that gains a control the guide does not explain is a failure.**
+`tests/ui/test_guide.py` is parametrised over every resource getter, so the
+guard is walked off the real assets rather than off a list somebody maintains,
+for the reason the menu bar is swept.
+
+**Under the furniture sit the rules no single screen can state.** Files are only
+ever read, folders group while tags name, a correction differs from a stated
+tag, ratings follow the album rather than the file. Each is stated elsewhere in
+this document as a structural decision; the guide is where a listener meets it.
+
+**Its one added line is why the window shed two modules.** `main_window.py`
+reached the 381 to 399 danger band, so it was reduced rather than shaved:
+`stellody/ui/ring_order.py` took what the keyboard walks and the order it walks
+it in, `stellody/ui/standing_in.py` took the stand-ins a window can be built
+without. Both are cohesive concerns rather than arbitrary slices, which is what
+invariant 8 asks for.
+
 ## Design decisions
 
 | Decision | Reason |
@@ -982,7 +1017,8 @@ only new way out.
 | A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. |
 | Every switch says what a press would do, on both strips | One convention for the whole application, arrived at in two steps. The tray always worked this way: the appearance toggle shows the appearance it would move to, the view toggle names the view it would move to and the mute switch is struck through while the sound is on, because that press is the one that silences it. The bottom strip reported its own state instead, on the reasoning that a strip of settings is not a strip of actions. That failed in use: a crossed wheel on a switch doing nothing reads as a refusal rather than as an offer; two strips inches apart also disagreed about what a picture meant. The strip now follows the tray, which is what its own tooltips had always said in words. Repeat's tooltip is the one exception and names the control instead: a two-state switch is fully described by its next press, while three states named one at a time read as a switch stuck the wrong way round. Its picture still names the press, which is the half of the rule that is read at a glance rather than on a hover. |
 | The album pane's play button doubles the tray's, so it toggles with it | Two play buttons on one screen that disagree about what a press does are worse than one. It offered to start the open album whatever was already playing; it wears the pause face while something plays now and pauses on a press, which is the rule the tray's button has always followed. It is told what is playing from the one place that already tells the tray, so the two faces cannot drift apart. The faces agreeing was not enough: the presses still disagreed, which is how a paused track appeared to start again. Pausing was handled here while everything else fell through to starting the open album from its first track, so pressing play on a paused track reloaded rather than resumed; on the first track of an album that is indistinguishable from the track beginning again, which is what was reported. Anything with a track loaded is handed to `toggle_playback` now, the one method that decides what a play press means. Starting the open album is what is left, which is the only thing this button can mean with nothing loaded and the one place it may still differ, the tray having no album to be attached to. `tests/ui/test_both_play_buttons_agree.py` asserts the two answer a press identically, proved by planting the old branch. |
-| The About button became a Help button with a menu under it | A picture button is named by its tooltip alone, so a button that opens several things cannot be named after one of them. Its tooltip is Help and the menu says what each entry does. The two entries are also on the menu bar's Help menu, since a menu bar is where somebody looks for About before they look at a strip of pictures. |
+| The About button became a Help button with a menu under it | A picture button is named by its tooltip alone, so a button that opens several things cannot be named after one of them. Its tooltip is Help and the menu says what each entry does. It leads with the guide, then About and the update check; the menu bar's Help menu carries the same three in the same order, since a menu bar is where somebody looks for About before they look at a strip of pictures. The order is stated in each place rather than shared, which `tests/ui/test_update_check.py` pins on the tray side and `tests/ui/test_menu_sweep.py` on the bar side. |
+| A reading dialog never opens on its own page | A dialog opens focused on its first stop, which puts somebody where they can act rather than costing them a press that tells them nothing. A page that overflows is a genuine stop, so it WAS the first stop of every reading dialog: the guide, About, the licences and the health report each opened with the ring drawn round the whole page before anybody had done anything, outlining everything while offering nothing to act on. Reported against the guide and measured across the four, so it was never one dialog's fault. `first_stop` passes over a scrolling region now; the pane keeps its stop, so a long page is still readable from the keyboard; where a pane is all there is, the dialog opens on nothing rather than on it. Held by a sweep over every dialog the package defines, discovered from the source rather than listed, since a list is exactly what let the guide arrive ringed with the suite green. Proved by taking the check back out and watching four of them fail. |
 | A prompt waved away decides nothing | The close prompt set its answer to the offered default the moment it was built, so being dismissed reported exactly what choosing Minimise to tray reported and the caller could not tell them apart: the cross on it minimised the window, while with the remember box ticked it wrote that non-answer down as the standing behaviour. The answer now starts at ASK, which is the word the settings already use for nobody has said; only a button moves it off that. A non-answer takes the whole press back: the window neither leaves nor hides, nothing is written. |
 | A three-state switch is told apart by its artwork, never by a fill | A fill behind one unchanging picture says exactly two things, so it could never carry repeat's three. Each state has its own picture instead, made from two files plus a cross composed over one of them at run time rather than a third drawing. The fill was then removed altogether rather than left repeating what the picture already said, in a wash that fought the artwork above it; shuffle lost it at the same time, so one rule reads the whole strip. |
 | Holding one track is decided where an ending is noticed, not in `next` | An ending is the question repeat answers; pressing Next is a listener overruling it. Deciding both in one place would make Next dead under repeat-one, leaving no way off the track but the switch. So `advance_if_finished` replays the track while `next` advances under every mode. |
