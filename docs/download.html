@@ -140,30 +140,6 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="section-label">For developers only</div>
-  <h2 class="section-title">Building it yourself</h2>
-  <p style="max-width:65ch;">
-    You do not need any of this to use Stellody: the download above is all most people want. This is for
-    anyone who would rather build it themselves. It is Python 3.13 with PySide6.
-  </p>
-  <pre><code>python -m pip install -r requirements-dev.txt
-python main.py</code></pre>
-  <p style="max-width:65ch;">
-    The test suite gates at 100% branch coverage over the layers reachable with no filesystem, no clock and
-    no audio device. It also runs black, flake8 and ruff as assertions, so a formatting or linting
-    regression is a test failure:
-  </p>
-  <pre><code>python -m pytest</code></pre>
-  <p style="max-width:65ch;">
-    Each platform builds on itself. The Windows build is two scripts: the first compiles the application
-    with Nuitka using every core the machine has, the second zips that as a payload and compiles the setup
-    program around it. macOS is <code>builddmg.py</code> and Linux is <code>build_flatpak.sh</code>:
-  </p>
-  <pre><code>python buildexe.py
-python buildinstaller.py</code></pre>
-</section>
-
 <footer>
   <div class="footer-inner">
     <div class="footer-top">
