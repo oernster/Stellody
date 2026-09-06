@@ -58,27 +58,32 @@ Everything else here is about music already owned. This is the opposite: which
 artists and albums are worth reaching for next, given what the library already
 says about somebody's taste.
 
-**It is the last milestone because it is the largest thing on this list by a
-wide margin.** Three stages, in the order they were settled, each one usable on
-its own so the third is never a condition of the first two.
+**It is the largest thing on this list by a wide margin.** Two stages rather
+than the three first written here, each usable on its own so the second is never
+a condition of the first.
 
-**Stage one: suggest by genre, from what is already owned.** The stated genres
-give a picture of what somebody listens to, so the first suggestions come from
-that picture rather than from anything outside. It needs the tag editor's genre
-stage, which is built; it needs nothing else.
+**Stage one: what the library is missing. Specified in `DISCOVERY.md`.** A
+button in the toolbar opens a dialog carrying the genre catalogue. Ticking
+genres scopes the run to the artists inside them, so what leaves the machine is
+a subset somebody chose rather than an inventory of everything they own. For
+each of those artists the run collects the albums by them that are not held plus
+the artists like them that are not held, filtered by the same ticks, then writes
+one JSON file keyed by the source artists.
 
-**Stage two: artists, keyed by the artists already held.** For each artist
-looked up, offer ten artists not already in the library, growing towards twenty
-where the source supports it. Ten is the number to start at. Nothing already
-owned is ever offered back.
+Genre is a FILTER over a single source rather than a suggestion mechanism of its
+own. That is the change from the three stages first written here; it was made
+because specifying a genre stage alone would have designed a surface the artist
+stage then had to break.
 
-The shape settled for this is a JSON file whose KEYS are the artists in the
-library and whose values are the artists to look up from them. That makes the
-mapping a piece of data rather than a rule buried in code, so it can be read,
-corrected and grown without a release. Open: where its values come from in the
-first place; whether it ships with the application or is built on the machine.
+MusicBrainz supplies the catalogue and ListenBrainz the similarity, neither
+needing a credential. The reasoning behind that choice, the rule deciding when
+two albums are the same album and the measurements behind both are in
+`DISCOVERY.md`. Nothing from it is repeated here, so the two cannot disagree.
 
-**Stage three: reach the places that sell it. This needs real discussion and is
+Done when: a run over one of the small genres completes against the real
+sources and writes a file whose gaps are checked by hand and are real.
+
+**Stage two: reach the places that sell it. This needs real discussion and is
 not designed.** Once the gaps are known, this would look them
 up for sale in a browser. There are three kinds of gap:
 
@@ -97,17 +102,37 @@ not such a call: the address goes out and the browser does the asking. Buying
 music is that same move. What would breach it is sending the library to a
 recommender; the same goes for anything else identifying the listener.
 
-Open questions, none answered yet:
+Done when: a gap chosen from a run can be reached at a shop that sells it in a
+format the listener asked for, in a browser, having sent nothing about them.
 
-- Where do the suggestions themselves come from? Every outward call in this
-  application today is one a listener asks for, sends nothing about the machine
-  and names nobody. That must hold here too, which constrains what a source can
-  be.
-- What does a suggestion look like on screen; where does it live?
-- Is anything written down between runs; if so, where?
+## 3. A music video for a track. Not designed.
 
-Done when: cannot be stated yet as one thing. Each stage gets its own, settled
-when that stage is designed.
+Idea recorded 2026-09-06 for later scoping. It is written down so it is not
+lost, not because it is understood: what it costs, whether it can be done at
+all within this project's stance and whether it should be are all open.
+
+The thought: for a track with no video beside it on disk, find and play a music
+video for it from an outside service, else fetch one to keep.
+
+Playing a video with the sound is already built, so this is about where a video
+comes from rather than about showing one. `infrastructure/video.py` reads the
+picture out of a container with the sound as the clock.
+
+Three things to settle before anything else, none of them small:
+
+- **The network stance.** Naming every track to a video service is a much larger
+  outward reach than the discovery run, which names artists inside genres the
+  listener ticked. What the equivalent scoping is here has to be found before
+  the rest is worth discussing.
+- **Fetching a copy is a separate question from playing one; it is the harder
+  one.** The terms of the obvious services forbid it; this project ships publicly
+  under a licence that would carry that decision to everyone who forks it.
+  Playing an address in a browser and keeping a file are not one feature.
+- **What "the video for this track" even means.** A title and an artist do not
+  identify a video; the first result for a track is frequently not the record.
+
+Done when: cannot be stated. It is an idea rather than a milestone; it becomes
+one only after the discussion above.
 
 ## Not planned, so that this is not revisited
 
