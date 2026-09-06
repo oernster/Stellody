@@ -76,6 +76,12 @@ if it ever stopped being true the build would fail.
   it to keep that answer, all of it at once or one album at a time, so the same
   list of problems stops greeting you at every start. Changed your mind? One
   press puts it back. Your files are untouched either way.
+- **A guide to the window itself.** Help then Guide names every button on both
+  trays beside the picture the window actually draws, so nothing has to be
+  recognised from a description. Under that sit the four rules no single screen
+  can state for itself: your files are only ever read, folders group while tags
+  name, a correction differs from a stated tag, ratings follow the album rather
+  than the file.
 - **Everything reachable from the keyboard.** It can also wait quietly by the
   clock rather than filling your screen.
 
