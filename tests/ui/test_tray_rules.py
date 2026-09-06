@@ -76,7 +76,7 @@ def _rows(widget: QWidget) -> tuple[str, str]:
 def test_the_top_tray_is_ruled_off_along_its_bottom(dressed: QApplication) -> None:
     """The library below it starts at a line, not at a change of shade."""
     colour = palette_for(Mode.DARK)
-    tray = LibraryTray(None, lambda: None, lambda: None, lambda: None)
+    tray = LibraryTray(None, lambda: None, lambda: None, lambda: None, lambda: None)
     host = _hosted(tray)
     assert host is not None
     dressed.processEvents()

@@ -20,6 +20,7 @@ from stellody.shared import resources
 from stellody.shared.version import APP_NAME, DONATE_URL
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.equaliser import EqualiserDialog
+from stellody.ui.guide import GuideDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.links import open_externally
 from stellody.ui.repairing import RepairDialog
@@ -84,6 +85,8 @@ class Menus:
         menu_action(sound_menu, self, "&Equalizer...", self.show_equaliser)
 
         help_menu = self.menuBar().addMenu("&Help")
+        menu_action(help_menu, self, "&Guide...", self.show_guide)
+        help_menu.addSeparator()
         menu_action(help_menu, self, "Library &health...", self.show_health)
         help_menu.addSeparator()
         menu_action(
@@ -145,6 +148,10 @@ class Menus:
         if self._repairs is None:
             return False
         return bool(self._repairs.acceptable(self._issues) or self._repairs.accepted())
+
+    def show_guide(self) -> None:
+        """Open the guide to the window."""
+        GuideDialog(self).exec()
 
     def show_health(self) -> None:
         """Open the library health report."""

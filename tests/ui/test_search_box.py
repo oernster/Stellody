@@ -24,6 +24,7 @@ def tray(application: QApplication):
         parent,
         choose_folder=lambda: None,
         toggle_theme=lambda: None,
+        show_guide=lambda: None,
         show_about=lambda: None,
         toggle_search=lambda: presses.append(1),
         search_changed=typed.append,

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
-import pathlib
-import traceback
 from collections.abc import Callable
 
 from PySide6.QtCore import QSize, Qt, QTimer
@@ -29,7 +26,7 @@ from stellody.application.updates import UpdateService
 from stellody.domain.health import LibraryIssue
 from stellody.domain.track import Track
 from stellody.shared.version import APP_NAME
-from stellody.ui.activating import SpaceChooses
+from stellody.ui import ring_order, standing_in
 from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
@@ -47,7 +44,6 @@ from stellody.ui.placing import KeepingPlace
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
 from stellody.ui.position_bar import PositionBar
 from stellody.ui.rating import Rating
-from stellody.ui.ring import ArrowRing
 from stellody.ui.scanning import Scanning
 from stellody.ui.searching import Searching
 from stellody.ui.settings_keys import (
@@ -73,8 +69,6 @@ from stellody.ui.window_parts import (
 )
 from stellody.ui.worker import ScanRunner, ScanSession
 
-# Enough frames to name the door without printing the whole interpreter.
-TRAIL_FRAMES = 6
 # The size the window opens at when nothing has been remembered, which is a
 # first run and a stored value that is not a number. Widened by a tenth again,
 # so the library gets the extra room rather than the strips: what the strips
@@ -85,34 +79,6 @@ WINDOW_WIDTH_PX = 1791
 WINDOW_HEIGHT_PX = 864
 TITLE_COLUMN_PX = 460
 ARTIST_COLUMN_PX = 240
-
-
-class _ForgetfulStore:
-    """Stands in where nothing was given: it holds nothing and keeps nothing.
-
-    A window built without a store still shows the stars, which is what every
-    test that is not about ratings wants; what it says is simply never kept.
-    """
-
-    def all_listening(self) -> dict:
-        """Nothing has ever been kept here."""
-        return {}
-
-    def set_listening(self, handle: str, path: str, record) -> None:
-        """Take it and forget it."""
-
-
-def _say_nothing(message: str) -> None:
-    """The default diary: one that keeps no account at all."""
-
-
-def _trail() -> str:
-    """The calling frames, innermost last, on one line."""
-    frames = traceback.extract_stack()[:-2]
-    return " <- ".join(
-        f"{pathlib.PurePath(frame.filename).name}:{frame.lineno} {frame.name}"
-        for frame in frames[-TRAIL_FRAMES:]
-    )
 
 
 class MainWindow(
@@ -166,7 +132,7 @@ class MainWindow(
         # Where the window writes down what happened to it. Injected because
         # the UI may not reach into infrastructure; a window given none keeps
         # its own counsel, which is what every test wants.
-        self._note = note or _say_nothing
+        self._note = note or standing_in.say_nothing
         # How the application is put down. Injected so a test can watch it
         # happen without the test run quitting itself; the running
         # application's own quit when nobody supplies one.
@@ -178,7 +144,7 @@ class MainWindow(
         self._update_service = updates
         self._updates = None
         # A window without one still runs; it just has nothing to remember.
-        self._listening = listening or ListeningLog(_ForgetfulStore())
+        self._listening = listening or ListeningLog(standing_in.ForgetfulStore())
         self._loader = loader
         # A window given none offers no repairs at all, so both buttons stay
         # disabled: the same shape as a window with no cover chooser.
@@ -222,6 +188,7 @@ class MainWindow(
             search_changed=self.search_changed,
             search_again=self.search_again,
             toggle_theme=self.toggle_theme,
+            show_guide=self.show_guide,
             show_about=self.show_about,
             check_for_updates=self.check_for_updates,
             toggle_mute=self.toggle_mute,
@@ -312,38 +279,12 @@ class MainWindow(
         )
 
     def _wire_the_arrows(self) -> None:
-        """Give Left and Right the job Tab and Shift+Tab already have; give
-        Space the job Enter already has over a row.
-
-        Parented here so it lives exactly as long as the window whose ring it
-        walks; it listens to the application, so a dialog is covered by the
-        same rule as the window without being told about it.
-        """
-        self._arrows = ArrowRing(self)
-        self._space = SpaceChooses(self)
+        """Give the cursor keys and Space the jobs Tab and Enter have."""
+        self._arrows, self._space = ring_order.wire_the_arrows(self)
 
     def _set_ring_order(self) -> None:
-        """Tab runs menu bar, tray, library, then strip: how they are drawn.
-
-        Qt builds its chain in creation order; the tree is created first because
-        the tray is handed it. Reading order is what the ring must
-        follow, so it is stated rather than inherited.
-        """
-        stops = (
-            # The menu bar leads, so somebody reaching for the keyboard finds
-            # File before anything else, exactly as it is drawn.
-            self.menuBar(),
-            *self._tray.ring_stops(),
-            self._tree,
-            self._grid,
-            self._album_pane.album_stars,
-            *self._album_pane.columns,
-            self._position_bar.slider,
-            self._position_bar.stars,
-            *self._bottom_tray.ring_stops(),
-        )
-        for earlier, later in itertools.pairwise(stops):
-            QWidget.setTabOrder(earlier, later)
+        """Pin Tab to reading order; `ring_order` states what that is."""
+        ring_order.state_ring_order(self)
 
     @property
     def library_root(self) -> str:
@@ -368,7 +309,9 @@ class MainWindow(
         nobody thought to watch.
         """
         super().showEvent(event)
-        self._note(f"window shown, first time: {not self._started} <- {_trail()}")
+        self._note(
+            f"window shown, first time: {not self._started} <- {standing_in.trail()}"
+        )
         if not self._started:
             self._started = True
             self.fit_on_screen()

@@ -54,6 +54,8 @@ EXPECTED = {
     "Collapse all": (True, True, False),
     "Equalizer...": (True, True, True),
     "Library health...": (True, True, True),
+    # The guide describes the window itself, so it is never out of reach.
+    "Guide...": (True, True, True),
     "Model licence (GPL-3.0)": (True, True, True),
     "UI licence (LGPL-3.0)": (True, True, True),
     "About Stellody": (True, True, True),

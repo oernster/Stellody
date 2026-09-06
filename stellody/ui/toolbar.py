@@ -69,6 +69,7 @@ from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
 # named for the menu it opens rather than for the entry that used to be all
 # of it. What each entry does is said by the entry.
 HELP_TOOLTIP = "Help"
+GUIDE_ENTRY = "Guide"
 ABOUT_ENTRY = "About"
 UPDATES_ENTRY = "Check for updates"
 
@@ -108,6 +109,7 @@ class LibraryTray(QWidget):
         parent: QWidget,
         choose_folder: Callable[[], None],
         toggle_theme: Callable[[], None],
+        show_guide: Callable[[], None],
         show_about: Callable[[], None],
         check_for_updates: Callable[[], None] = lambda: None,
         open_filter: Callable[[], None] = lambda: None,
@@ -181,6 +183,8 @@ class LibraryTray(QWidget):
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
         )
         self.help_menu = QMenu(self)
+        self.help_menu.addAction(GUIDE_ENTRY, show_guide)
+        self.help_menu.addSeparator()
         self.help_menu.addAction(ABOUT_ENTRY, show_about)
         self.help_menu.addAction(UPDATES_ENTRY, check_for_updates)
         row = QHBoxLayout(self)

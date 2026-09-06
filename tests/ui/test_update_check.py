@@ -20,7 +20,12 @@ from tray_support import RememberingStore, build
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.application.values import ReleaseAsset, ReleaseInfo, UpdateStatus
 from stellody.ui.settings_keys import SETTING_SKIPPED_UPDATE
-from stellody.ui.toolbar import ABOUT_ENTRY, HELP_TOOLTIP, UPDATES_ENTRY
+from stellody.ui.toolbar import (
+    ABOUT_ENTRY,
+    GUIDE_ENTRY,
+    HELP_TOOLTIP,
+    UPDATES_ENTRY,
+)
 from stellody.ui.update_check import (
     DOWNLOAD,
     LATER,
@@ -103,8 +108,9 @@ class TestTheHelpButton:
 
     def test_the_menu_carries_about_and_the_update_check(self, window) -> None:
         labels = [action.text() for action in window._tray.help_menu.actions()]
-        assert labels == ["About", "Check for updates"]
-        assert [ABOUT_ENTRY, UPDATES_ENTRY] == labels
+        # The separator under the guide reads as an entry with no words.
+        assert labels == ["Guide", "", "About", "Check for updates"]
+        assert [GUIDE_ENTRY, "", ABOUT_ENTRY, UPDATES_ENTRY] == labels
 
     def test_the_menu_drops_under_the_button_and_closes_again(self, window) -> None:
         """A second press takes it down, as the volume popup behaves."""
