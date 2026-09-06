@@ -221,6 +221,15 @@ __marimo__/
 dist-installer/
 dist-installer.build/
 
+# What builddmg.py writes. The .app is compiled into dist/, staged for the
+# image in _dmg_staging/ and converted through a writable image on the way to
+# the volume icon; only the finished stellody.dmg is worth keeping, and that
+# is a release artefact rather than a tracked file.
+dist/
+_dmg_staging/
+stellody.dmg
+_stellody_rw.dmg
+
 # What build_flatpak.sh writes. The manifest, the launcher and the desktop
 # entry are GENERATED from the script rather than committed, so the script
 # stays the one place the packaging is stated; clean_flatpak.sh removes all
