@@ -775,6 +775,18 @@ The three tables are data rather than rules buried in code:
   mix, mixes, unmixed, dj, session, sessions, mono, radio, edit, single, cover,
   tribute, score, soundtrack.
 
+**Amended 2026-09-06, while the domain was being built.** As first written, this
+section compared a release key plus the secondary types and said no more, which
+would have made every live and remix album a false gap: the library holds
+`Secret World (Live)`, keying to `secret world (live)`, while the catalogue has
+that record as `Secret World Live` with the type stated separately. The two
+never meet. The rule is therefore symmetric; the principle behind it is that
+**a title word merely restating a stated type is noise**. The library reads its
+kinds out of the title and then takes the qualifier off; the catalogue takes its
+kinds as data and drops any trailing word that only repeats one of them. Both
+sides arrive as a key plus a kind. A record actually titled `Live` keeps its
+title rather than reducing to nothing.
+
 **The source's own types do the rest.** A release group states a primary type
 and secondary types, which are stated data rather than a string parsed by us. A
 release group's identity for matching is its release key together with its
