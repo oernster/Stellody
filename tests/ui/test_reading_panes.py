@@ -23,6 +23,7 @@ from stellody.domain.identity import AlbumIdentity
 from stellody.shared import resources
 from stellody.ui.bottom_tray import REPAIR_TOOLTIP
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
+from stellody.ui.guide import GuideDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.theme import Mode, stylesheet
@@ -78,9 +79,10 @@ def shown(application: QApplication, dialog):
 
 @pytest.fixture
 def overflowing(application: QApplication):
-    """The three reading panes that hold more than fits."""
+    """Every reading pane that holds more than fits."""
     return {
         "About": shown(application, AboutDialog()),
+        "Guide": shown(application, GuideDialog()),
         "Licence": shown(
             application, LicenceDialog("Model", resources.model_licence_path())
         ),
