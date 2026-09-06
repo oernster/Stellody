@@ -199,9 +199,10 @@
     </div>
     <div class="feat">
       <h3>Measured rather than assumed</h3>
-      <p>The waveform used to be folded a frame at a time and took 3.2 seconds on a 60 megabyte track;
-      done over blocks it takes 0.84, for bit for bit the same answer. Numbers like these decided the
-      design rather than opinions about them.</p>
+      <p>Working out the shape drawn along the bottom of the window used to take over three seconds for a
+      long track. Doing the same arithmetic a different way brought it under one; the picture that
+      comes out is identical. That is how things get decided here: time it, then keep the quicker way only
+      where it gives exactly the same answer.</p>
     </div>
     <div class="feat">
       <h3>What a file does not say is not invented</h3>
@@ -212,8 +213,11 @@
     </div>
     <div class="feat">
       <h3>The rules stay clean</h3>
-      <p>The layer holding the library rules touches no files, no network and no clock; even the time
-      arrives as an argument. It is held at 100% branch coverage, so nothing in it goes unexercised.</p>
+      <p>The part of Stellody that decides what counts as an album, which tracks belong to it and what it
+      should be called never reaches for your disk, the internet or even the clock. It is handed what it
+      needs and works from that alone, which means it can be tested completely rather than nearly. It is:
+      every one of those decisions is put through a test each time the program is built, so it behaves the
+      same on your machine as on anybody else's.</p>
     </div>
   </div>
 </section>
