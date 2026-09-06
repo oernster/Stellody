@@ -88,7 +88,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice, Qt's image codecs, the filesystem. | `domain` and `application`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt's image codecs, the filesystem. | `domain` and `application`. |
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain` and `application`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
@@ -974,6 +974,81 @@ reached the 381 to 399 danger band, so it was reduced rather than shaved:
 it in, `stellody/ui/standing_in.py` took the stand-ins a window can be built
 without. Both are cohesive concerns rather than arbitrary slices, which is what
 invariant 8 asks for.
+
+## Reaching the sound device
+
+**One class touches a device; PortAudio is what it speaks to.** That was
+true before Stellody ran anywhere but Windows; what was not true is that the
+module holding it was named for a Windows interface and asked for one by name.
+WASAPI is a host API WITHIN PortAudio, so the split is along that line rather
+than along the platforms: `infrastructure/portaudio.py` is the substrate and
+holds what every platform shares, `infrastructure/wasapi.py` is the one host
+API worth asking for by name and reads its vocabulary from the substrate. The
+direction cannot be the other way round, since a specialisation importing the
+thing it specialises is a cycle waiting to be written.
+
+**`infrastructure/output.py` is the whole of what the application knows about
+there being two.** It switches on `sys.platform` rather than on what a device
+reports, because what differs is the INTERFACE rather than the hardware: asking
+a Mac whether it has WASAPI is asking the wrong question. Everything that is
+not Windows takes the substrate, which is the safe direction for the rule to
+fail in: a platform nobody has thought about plays through its mixer rather
+than not at all. The Windows module is imported inside the call rather than at
+module scope, so a Mac never loads a module naming a host API it does not have.
+
+**Exclusive mode is Windows only; that is a statement about the route
+rather than about the machines.** A system mixer owns the device on macOS and
+on Linux exactly as one does on Windows; reaching past it means CoreAudio's own
+interface on the Mac and ALSA addressing the hardware directly on Linux,
+neither of which is reachable through the settings object a stream is opened
+with here. Inside a Flatpak the sandbox hands over a sound socket rather than a
+device at all, so there is nothing to take exclusively. A request for exclusive
+mode is therefore answered with the mixer path and a reason naming why, which
+is the answer a Windows device refusing exclusive mode already gets. Nothing
+claims to be bit perfect that is not, which is the half that matters: the
+promise the README leads with is held by reporting rather than by hoping.
+
+`tests/infrastructure/test_portaudio_output.py` asserts the ASKING, which is
+what a machine with no audio hardware can still measure: that no host API
+settings object is passed at all, since one belongs to a single host API and
+handing a WASAPI object to CoreAudio fails the stream outright. Proved by
+planting exactly that. `tests/infrastructure/test_output_switch.py` walks the
+switch under a stated platform, because the Windows branch is the only one that
+runs on the machine the suite is developed on and the other would otherwise
+ship on a reading of the source alone.
+
+## Shipping to three platforms
+
+**Each platform builds on itself; none of the three cross-compiles.**
+`buildexe.py` with `buildinstaller.py` produce the Windows setup program,
+`builddmg.py` the macOS disk image and `build_flatpak.sh` the Linux Flatpak,
+with `clean_flatpak.sh` undoing only what that one wrote. The three output
+paths are deliberately independent, so a cleaner reaching into a sibling
+platform's output is a cleaner nobody dares run.
+
+**Nuitka compiles on both Windows and macOS**, which is one set of packaging
+surprises rather than two. The PyAV workaround is the worked example: PyAV
+reaches one submodule at import time in a way Nuitka does not follow, so both
+builds name `av.utils` explicitly. That is a property of PyAV rather than of
+either platform, which is why the same flag appears in both scripts.
+
+**PortAudio is built from source in the Flatpak.** Measured in the installed
+sounddevice: its bundled binaries are reached for Darwin and for Windows only,
+while every other system re-raises "PortAudio library not found". The wheel
+carries no library on Linux and the freedesktop runtime ships none, so nothing
+would have played at all.
+
+**The Flatpak is granted the home directory READ ONLY.** Stellody never writes
+to a music file, which invariants 1 and 2 enforce; granting it no way to do so
+puts the sandbox behind the same rule, so on that platform it is not merely
+true, it is unable to be otherwise.
+
+**macOS notarization is not optional.** Gatekeeper rejects a signed but
+unnotarized application, so `builddmg.py` notarizes by default and treats
+building without it as an explicit escape hatch for local testing. Both the
+application and the image are notarized: stapling only the image leaves the
+copied-out application with no local ticket, so Gatekeeper falls back to an
+online check and it will not launch for somebody offline.
 
 ## Design decisions
 

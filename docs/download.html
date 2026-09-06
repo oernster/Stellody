@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Download Stellody</title>
-  <meta name="description" content="Download Stellody free for Windows. No account, no adverts and nothing to sign up for. Installs in a couple of minutes without asking for an administrator password.">
+  <meta name="description" content="Download Stellody free for Windows, macOS or Linux. No account, no adverts and nothing to sign up for. Installs for one user, without asking for an administrator password.">
   <link rel="canonical" href="https://stellody.co.uk/download.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Stellody">
   <meta property="og:url" content="https://stellody.co.uk/download.html">
   <meta property="og:title" content="Download Stellody">
-  <meta property="og:description" content="A per-user setup program for Windows, no administrator rights needed. Free and open source.">
+  <meta property="og:description" content="A setup program for Windows, a signed disk image for macOS and a Flatpak for Linux. Installed for one user, no administrator rights needed. Free and open source.">
   <meta property="og:image" content="https://stellody.co.uk/stellody-512.png">
   <meta property="og:image:alt" content="Stellody app icon">
   <meta property="og:locale" content="en_GB">
@@ -20,8 +20,8 @@
   {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": "Download Stellody for Windows",
-    "description": "Download Stellody free for Windows. It installs for one user, so it never asks for an administrator password.",
+    "name": "Download Stellody",
+    "description": "Download Stellody free for Windows, macOS or Linux. It installs for one user, so it never asks for an administrator password.",
     "url": "https://stellody.co.uk/download.html",
     "primaryImageOfPage": "https://stellody.co.uk/stellody-512.png",
     "isPartOf": {"@type": "WebSite", "@id": "https://stellody.co.uk/#site",
@@ -75,6 +75,30 @@
         Windows will not ask for an administrator password. You can have a desktop shortcut, a Start menu
         entry, even Stellody waiting quietly by the clock when you sign in. Running it
         again later is how you update, repair or remove it.</p>
+      </div>
+      <div class="dl-card">
+        <div class="ico">🍎</div>
+        <h3>macOS</h3>
+        <p class="req">macOS 12 or later, Apple silicon</p>
+        <a class="btn-primary" href="https://github.com/oernster/stellody/releases/latest/download/stellody.dmg">
+          Download for macOS</a>
+        <p class="meta" data-asset="stellody.dmg">Disk image (.dmg)</p>
+        <p class="meta">Signed and notarized with Apple, so it opens without argument.</p>
+        <p class="how">Open the disk image and drag Stellody to your Applications folder. The first time
+        you point it at music kept in Documents, on the Desktop or on an external drive, macOS asks you
+        to allow it; music in your Music folder needs no permission at all.</p>
+      </div>
+      <div class="dl-card">
+        <div class="ico">🐧</div>
+        <h3>Linux</h3>
+        <p class="req">Any distribution with Flatpak, 64-bit</p>
+        <a class="btn-primary" href="https://github.com/oernster/stellody/releases/latest/download/stellody.flatpak">
+          Download for Linux</a>
+        <p class="meta" data-asset="stellody.flatpak">Flatpak bundle (.flatpak)</p>
+        <p class="meta">Installs for one user; no root password needed.</p>
+        <p class="how">Install it with <code>flatpak install --user stellody.flatpak</code>, then run it
+        from your applications menu. It asks for your home folder READ ONLY, which is the whole of what
+        it needs: Stellody never writes to a music file, so it is not given the means to.</p>
       </div>
     </div>
     <p class="dl-links">
@@ -132,8 +156,9 @@ python main.py</code></pre>
   </p>
   <pre><code>python -m pytest</code></pre>
   <p style="max-width:65ch;">
-    The Windows build is two scripts. The first compiles the application with Nuitka using every core the
-    machine has; the second zips that as a payload and compiles the setup program around it:
+    Each platform builds on itself. The Windows build is two scripts: the first compiles the application
+    with Nuitka using every core the machine has, the second zips that as a payload and compiles the setup
+    program around it. macOS is <code>builddmg.py</code> and Linux is <code>build_flatpak.sh</code>:
   </p>
   <pre><code>python buildexe.py
 python buildinstaller.py</code></pre>
@@ -159,7 +184,7 @@ python buildinstaller.py</code></pre>
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->0.13.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->0.14.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       &copy; Oliver Ernster</p>
       <div class="chips">
         <span class="chip">Python</span>

@@ -10,7 +10,7 @@ your music folder and it does the rest.
 
 Above all, it never changes a single one of your files.
 
-[Download for Windows](https://github.com/oernster/stellody/releases/latest/download/StellodySetup.exe)
+[Download](https://stellody.co.uk/download.html) for Windows, macOS or Linux
 &middot;
 [stellody.co.uk](https://stellody.co.uk/)
 
@@ -43,9 +43,11 @@ if it ever stopped being true the build would fail.
   with no silence dropped in where the artist never put one.
 - **An equalizer, plus little bars that dance.** Ten sliders from deep bass to
   high treble, with twenty bars along the bottom showing what the music is
-  doing. Switched off, the sound reaching your speakers is bit for bit what is
-  in the file, for the formats that store it exactly: FLAC, WAV, AIFF and the
-  lossless ALAC inside an M4A.
+  doing. Switched off it adds nothing of its own, handing each block back
+  untouched. On Windows, where Stellody can take the sound device exclusively,
+  that means what reaches your speakers is bit for bit what is in the file, for
+  the formats that store it exactly: FLAC, WAV, AIFF and the lossless ALAC
+  inside an M4A.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
 - **Stars and play counts.** Rate a song, rate the album separately, then read
@@ -96,7 +98,12 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   the lossy one is played without ever being called bit perfect, while ALAC
   states the depth it stores and can be. A bonus video that came with an album
   plays as well, from the same MP4 container under a `.m4v` name.
-- **Windows only.** Mac and Linux are planned.
+- **Windows, macOS and Linux.** A setup program on Windows, a disk image
+  on macOS and a Flatpak on Linux. One difference is worth knowing before you
+  choose: on Windows, Stellody can take the sound device exclusively and hand
+  it the file's own samples untouched. macOS and Linux reach the device through
+  the system mixer instead, which converts on the way, so playback there is not
+  bit perfect and Stellody says so rather than claiming otherwise.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting
   them.
@@ -126,15 +133,30 @@ Three things reach outside your computer at all, so here are all three:
   never press it.
 
 It does not encrypt anything at rest: the store holds notes about your library,
-not secrets. It also keeps a plain-text account of its own comings and goings
-at `%TEMP%\stellody-diary.log`, which records no music and no personal data, is
-never sent anywhere and can be deleted whenever you like.
+not secrets. It also keeps a plain-text account of its own comings and goings, named
+`stellody-diary.log` and written wherever your system puts temporary files:
+`%TEMP%` on Windows, `/tmp` on Linux and the per-user temporary directory on
+macOS. It records no music and no personal data, is never sent anywhere and can
+be deleted whenever you like.
 
 ## Installing
 
-Download the setup program and run it. It installs just for you, so Windows
-will not ask for an administrator password. Running it again later is how you
-update, repair or remove it.
+**Windows.** Download the setup program and run it. It installs just for you, so
+Windows will not ask for an administrator password. Running it again later is
+how you update, repair or remove it.
+
+**macOS.** Download the disk image, open it and drag Stellody to Applications.
+It is signed and notarized, so it opens without argument.
+
+**Linux.** Download the Flatpak and install it for yourself:
+
+```
+flatpak install --user stellody.flatpak
+flatpak run uk.codecrafter.Stellody
+```
+
+It asks for your home directory READ ONLY, which is the whole of what it needs:
+Stellody never writes to a music file, so on Linux it is not given the means to.
 
 ---
 
@@ -192,6 +214,10 @@ assertions, so a formatting or linting regression is a test failure.
 
 ## Building
 
+Each platform builds on itself; none of the three cross-compiles.
+
+**Windows:**
+
 ```
 python buildexe.py
 python buildinstaller.py
@@ -204,6 +230,33 @@ setup program around it, producing `dist-installer/StellodySetup.exe`.
 Everything the setup program writes is per user, so Windows never asks for
 administrator rights. Pass `--standalone` to the first script for a directory
 bundle instead, which is quicker to inspect when a build misbehaves.
+
+**macOS:**
+
+```
+python builddmg.py
+```
+
+Compiles with Nuitka as the Windows build does, strips the object files PySide6
+ships inside its QML plugins, signs with a Developer ID, then notarizes both
+the application and the image before stapling each. Notarization is not
+optional: Gatekeeper rejects a signed but unnotarized application, so the
+credential comes from a keychain profile stored once with
+`xcrun notarytool store-credentials Stellody`. `ALLOW_UNNOTARIZED=1` builds
+without it, for local testing only.
+
+**Linux:**
+
+```
+./build_flatpak.sh
+./clean_flatpak.sh
+```
+
+The wheels are fetched to the host first, so the build itself reaches the
+network for nothing. PortAudio is compiled from source into the bundle, because
+the sounddevice wheel carries a library for Windows and macOS only and the
+freedesktop runtime ships none. The cleaner removes the Flatpak artefacts and
+nothing else; pass `--purge-data` to remove your ratings and settings as well.
 
 ## The website
 

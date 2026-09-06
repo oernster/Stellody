@@ -312,13 +312,19 @@
     <div class="feat">
       <h3>Switched off means genuinely untouched</h3>
       <p>Plenty of players still push your music through their sound processing even with everything set
-      to zero. Stellody does not: turned off, the audio reaching your speakers is bit for bit what is in
-      the file. If you have good equipment, this is the difference you paid for. That holds for FLAC, WAV
-      and AIFF, which store the sound exactly; it holds for an M4A carrying ALAC, which stores it exactly too.
+      to zero. Stellody adds nothing of its own: turned off, the equalizer hands the block back untouched
+      rather than multiplying it by one. On Windows it can go further and take the sound device
+      exclusively, so what reaches your speakers is bit for bit what is in the file. If you have good
+      equipment, that is the difference you paid for. It holds for FLAC, WAV and AIFF, which store the
+      sound exactly; it holds for an M4A carrying ALAC, which stores it exactly too.
       MP3 and Ogg threw part of it away when they were made, so what reaches your speakers there is the
-      decoder's output rather than the file itself; Stellody still adds nothing of its own to it. An M4A
-      holding AAC is in that second group and is never called bit perfect: the file says which of the two
-      it carries, so Stellody reads that rather than assuming either way.</p>
+      decoder's output rather than the file itself. An M4A holding AAC is in that second group and is
+      never called bit perfect: the file says which of the two it carries, so Stellody reads that rather
+      than assuming either way.</p>
+      <p>On macOS and Linux the sound goes through the system mixer, which converts on the way, so nothing
+      there is bit perfect. Stellody reports that rather than claiming otherwise: exclusive access to a
+      device is a Windows interface, while reaching past a mixer on the other two means something
+      different on each.</p>
     </div>
     <div class="feat">
       <h3>Little bars that dance</h3>
@@ -451,7 +457,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->0.13.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->0.14.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       &copy; Oliver Ernster</p>
       <div class="chips">
         <span class="chip">Python</span>
