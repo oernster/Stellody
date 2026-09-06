@@ -17,7 +17,13 @@ import tempfile
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QLineEdit, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QApplication,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
 from stellody.composition import build_window
 from stellody.domain.equalising import Equalisation
@@ -25,6 +31,7 @@ from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.dialogs import AboutDialog, FirstStopDialog
 from stellody.ui.equaliser import EqualiserDialog
+from stellody.ui.guide import GuideDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.settings_keys import SETTING_ROOT
@@ -61,6 +68,7 @@ DIALOGS = {
         (), window, can_repair=True
     ),
     "about": lambda window: AboutDialog(window),
+    "guide": lambda window: GuideDialog(window),
 }
 
 
@@ -74,6 +82,30 @@ def test_every_dialog_opens_on_its_own_first_stop(
         assert focused is not None, "something is focused"
         assert focused is dialog.first_stop(), "and it is where Tab would land"
         assert dialog.isAncestorOf(focused), "inside the dialog, not behind it"
+    finally:
+        dialog.close()
+        dialog.deleteLater()
+
+
+@pytest.mark.parametrize("build", DIALOGS.values(), ids=DIALOGS.keys())
+def test_no_dialog_opens_on_a_reading_pane(
+    application: QApplication, window, build
+) -> None:
+    """The reported fault: a green rectangle round the whole page on opening.
+
+    A pane that overflows is a real Tab stop, so it was the first stop of every
+    reading dialog and every one of them opened ringed before anybody had done
+    anything. The ring is correct once somebody tabs to it; drawn on opening it
+    outlines the entire page while offering nothing to act on.
+
+    Asserted over the widget the dialog actually focused rather than over the
+    stylesheet, since what is wrong is where focus lands and not what a focused
+    pane looks like.
+    """
+    dialog = build(window)
+    try:
+        focused = opened(dialog, application)
+        assert not isinstance(focused, QAbstractScrollArea), type(focused).__name__
     finally:
         dialog.close()
         dialog.deleteLater()

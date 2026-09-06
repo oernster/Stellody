@@ -8,6 +8,7 @@ import pathlib
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
+    QAbstractScrollArea,
     QApplication,
     QDialog,
     QHBoxLayout,
@@ -87,6 +88,15 @@ class FirstStopDialog(QDialog):
 
         Anything disabled, hidden or refusing tab focus is passed over, so a
         dialog whose leading control is dead opens on the first live one.
+
+        A reading pane is passed over as well, even though it is a genuine Tab
+        stop while it overflows. Opening on one draws the ring round the whole
+        page before anybody has done anything, which outlines everything while
+        offering nothing to act on: the reason a dialog opens focused at all is
+        to put somebody where they can act; a page they can only read is not
+        that place. It keeps its stop, so a long guide is still readable
+        from the keyboard; it is simply not what the dialog opens on. Where a
+        pane is all there is, the dialog opens on nothing rather than on it.
         """
         widget, seen = self.nextInFocusChain(), set()
         while widget is not None and id(widget) not in seen:
@@ -96,6 +106,7 @@ class FirstStopDialog(QDialog):
                 and self.isAncestorOf(widget)
                 and widget.isEnabled()
                 and widget.isVisible()
+                and not isinstance(widget, QAbstractScrollArea)
                 and bool(widget.focusPolicy() & Qt.FocusPolicy.TabFocus)
             ):
                 return widget
