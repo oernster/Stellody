@@ -52,29 +52,7 @@ Done when: both hosts are verified in Search Console with the sitemap submitted
 and no coverage errors, the structured data passes the Rich Results Test and a
 search for the application by name returns the site.
 
-## 2. macOS and Flatpak
-
-Windows first, which is where it stands. macOS and Linux come later, built to
-the house pattern rather than invented here: `build_flatpak.sh` with
-`clean_flatpak.sh` for Linux and `builddmg.py` for macOS, taking ClearBudget as
-the worked guide and stripping every inherited specific.
-
-The audio layer is the part that does not travel. `WasapiPlayback` is named for
-a Windows interface and speaks to one; the playback port it sits behind is
-already the seam a second output goes in at. So this milestone is two pieces:
-the packaging, plus an output that works where WASAPI is not.
-
-The Flatpak needs `--share=network` in its finish-args, named in a comment as
-being for the update check. The house recipe grants no network by default,
-which is right for an application with no outbound call and would leave every
-update check here reporting that GitHub could not be reached. It fails quietly,
-so it would be found by a listener rather than by a build.
-
-Done when: a Flatpak and a DMG are built by their own scripts, each plays
-audio; the update check reaches GitHub from inside the sandbox; the Windows
-build is untouched by either.
-
-## 3. Discover music the library does not hold
+## 2. Discover music the library does not hold
 
 Everything else here is about music already owned. This is the opposite: which
 artists and albums are worth reaching for next, given what the library already
