@@ -10,8 +10,10 @@ import os
 import pathlib
 import sys
 
-APP_DIR_NAME = "Stellody"
-APP_DIR_SLUG = "stellody"
+from stellody.shared.version import APP_NAME
+
+APP_DIR_NAME = APP_NAME
+APP_DIR_SLUG = APP_NAME.lower()
 DATABASE_NAME = "library.sqlite3"
 ART_CACHE_DIR = "artwork"
 SHAPE_CACHE_DIR = "shapes"

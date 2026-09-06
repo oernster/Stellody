@@ -41,6 +41,7 @@ from stellody.application.editing import (
 from stellody.domain.album import Album
 from stellody.domain.overrides import AlbumField, OverrideField
 from stellody.domain.track import Track
+from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.genre_grid import GenreGrid
 
@@ -78,7 +79,8 @@ FOLDING_NOTE = (
 
 PROMISE = (
     "<p><b>Your music files are not touched.</b> What you state here is kept "
-    "in Stellody's own store and laid over the tags it reads. Resetting takes "
+    f"in {APP_NAME}'s own store and laid over the tags it reads. Resetting "
+    "takes "
     "it straight back out.</p>"
     "<p>A box left empty is a field left alone. Where the tracks you have "
     "chosen disagree, the box starts empty.</p>"

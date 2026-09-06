@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 from stellody.application.repairs import AcceptedGroup, Repairs
 from stellody.application.scan import LibraryView
 from stellody.domain.health import LibraryIssue, sorted_issues
+from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import FirstStopDialog, close_row
 
 DIALOG_WIDTH_PX = 760
@@ -45,15 +46,16 @@ FINDING_INDENT_PX = 24
 
 HEADING = (
     "<h3>Accept these corrections</h3>"
-    "<p>Stellody worked each of these out for you and is already showing the "
+    f"<p>{APP_NAME} worked each of these out for you and is already showing the "
     "corrected library. Accepting one keeps it, so it stops being worked out "
     "and reported every time you start.</p>"
     "<p><b>Your music files are not touched.</b> An accepted correction lives "
-    "in Stellody's own store; resetting takes it straight back out and the "
+    f"in {APP_NAME}'s own store; resetting takes it straight back out and the "
     "original finding returns.</p>"
 )
 NOTHING_TO_ACCEPT = (
-    "<p><i>Nothing is waiting to be accepted. Anything Stellody cannot propose "
+    f"<p><i>Nothing is waiting to be accepted. Anything {APP_NAME} cannot "
+    "propose "
     "a value for, such as missing artwork or a file it could not read, is "
     "reported rather than offered here.</i></p>"
 )

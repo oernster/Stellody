@@ -19,6 +19,7 @@ from enum import StrEnum
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.widgets import choice_row
@@ -42,7 +43,7 @@ class ClosePrompt(FirstStopDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Close Stellody")
+        self.setWindowTitle(f"Close {APP_NAME}")
         self.setMinimumWidth(PROMPT_WIDTH_PX)
         # Nothing has been chosen yet. Only the two buttons below may change
         # this, so every other way out of the dialog leaves it saying so.
@@ -51,7 +52,7 @@ class ClosePrompt(FirstStopDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(
             QLabel(
-                "Keep Stellody running in the system tray? "
+                f"Keep {APP_NAME} running in the system tray? "
                 "Quitting closes it completely.",
                 self,
             )

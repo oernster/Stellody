@@ -24,11 +24,13 @@ from collections.abc import Callable
 from PySide6.QtCore import QSharedMemory, QSystemSemaphore
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
+from stellody.shared.version import APP_NAME
+
 # System wide names rather than paths, since the application may live in more
 # than one place and there is still only one of it running.
-GUARD_NAME = "Stellody.instance.guard"
-CLAIM_NAME = "Stellody.instance.claim"
-CHANNEL_NAME = "Stellody.activation"
+GUARD_NAME = f"{APP_NAME}.instance.guard"
+CLAIM_NAME = f"{APP_NAME}.instance.claim"
+CHANNEL_NAME = f"{APP_NAME}.activation"
 
 GUARD_HOLDERS = 1
 CLAIM_BYTES = 1

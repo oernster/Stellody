@@ -39,7 +39,7 @@ SEVERITY_ORDER: dict[IssueKind, int] = {
 
 _SUMMARIES: dict[IssueKind, str] = {
     IssueKind.UNPLAYABLE_FORMAT: (
-        "Stellody cannot play this format yet, so these files are not in your "
+        "This format cannot be played yet, so these files are not in your "
         "library. Nothing has been skipped quietly: they are listed here."
     ),
     IssueKind.DUPLICATE_TRACK_NUMBER: (

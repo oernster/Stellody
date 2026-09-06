@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from stellody.domain.health import IssueKind, LibraryIssue, issue_counts, sorted_issues
 from stellody.shared import resources
+from stellody.shared.version import APP_NAME
 from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, REPAIR_TOOLTIP
 from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.display import native_path
@@ -33,8 +34,9 @@ CLEAN_MESSAGE = (
 
 PREAMBLE = (
     "<h2>Library health</h2>"
-    "<p>Stellody never writes to your music files, so nothing below has been "
-    "repaired. Each entry says what the tags claimed and what Stellody used "
+    f"<p>{APP_NAME} never writes to your music files, so nothing below has "
+    f"been repaired. Each entry says what the tags claimed and what {APP_NAME} "
+    "used "
     "instead, so you can fix them in a tagger of your choosing.</p>"
 )
 
