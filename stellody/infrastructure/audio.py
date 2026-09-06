@@ -40,7 +40,7 @@ from stellody.domain.track import TrackSource
 from stellody.infrastructure.analysing import BlockAnalyser
 from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
 from stellody.infrastructure.filtering import BiquadCascade
-from stellody.infrastructure.wasapi import open_output
+from stellody.infrastructure.output import open_output
 
 BLOCK_FRAMES = 4096
 JOIN_TIMEOUT_SECONDS = 2.0

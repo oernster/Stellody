@@ -70,9 +70,10 @@ class RepeatMode(Enum):
 class OutputMode(Enum):
     """How the stream reaches the device.
 
-    SHARED goes through the Windows mixer, which resamples whatever it is given
-    and always opens. EXCLUSIVE bypasses the mixer, so it delivers the track's
-    own rate untouched; the device may refuse it outright.
+    SHARED goes through the system's own mixer, which converts whatever it is
+    given and always opens. EXCLUSIVE bypasses the mixer, so it delivers the
+    track's own rate untouched; the device may refuse it outright, while a
+    platform reached through its mixer alone offers it nowhere.
     """
 
     SHARED = "shared"

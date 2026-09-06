@@ -20,27 +20,21 @@ from __future__ import annotations
 
 import sounddevice
 
-from stellody.domain.playback import (
-    OutputMode,
-    OutputReport,
-    OutputRequest,
-    PlaybackError,
+from stellody.domain.playback import OutputMode, OutputReport, OutputRequest
+from stellody.infrastructure.portaudio import (
+    DTYPE_BIT_DEPTHS,
+    SHARED_DTYPE,
+    OutputUnavailableError,
+    shared_result,
 )
 
 CANDIDATE_DTYPES = ("int32", "int16")
-SHARED_DTYPE = "float32"
-DTYPE_BIT_DEPTHS = {"int16": 16, "int32": 32, "float32": 32}
-MIXER_BIT_DEPTH = DTYPE_BIT_DEPTHS[SHARED_DTYPE]
 NO_EXCLUSIVE_FORMAT = "the device offers no exclusive format at this rate"
 NO_STATED_DEPTH = "the file states no bit depth, so nothing can be bit perfect"
 
 
 WASAPI_API_NAME = "WASAPI"
 NO_DEVICE = -1
-
-
-class OutputUnavailableError(PlaybackError):
-    """Raised when no stream at all could be opened for a request."""
 
 
 def default_device() -> int | None:
@@ -121,21 +115,19 @@ def _open_shared(
 def _shared_result(
     device: int | None, request: OutputRequest, reason: str
 ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
-    """Open the mixer path, recording why it was taken when it was a fallback."""
+    """Open the mixer path, recording why it was taken when it was a fallback.
+
+    The stream is opened here because a WASAPI mixer stream needs settings of
+    its own; the report is built by the substrate, so a mixer stream is
+    described identically whichever platform opened one.
+    """
     try:
         stream = _open_shared(device, request)
     except Exception as error:  # reported, never swallowed
         raise OutputUnavailableError(
             f"no output at {request.sample_rate} Hz: {error}"
         ) from error
-    report = OutputReport(
-        request=request,
-        mode=OutputMode.SHARED,
-        sample_rate=request.sample_rate,
-        bit_depth=MIXER_BIT_DEPTH,
-        fallback_reason=reason,
-    )
-    return stream, report, SHARED_DTYPE
+    return shared_result(stream, request, reason)
 
 
 def open_output(
