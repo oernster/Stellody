@@ -20,7 +20,8 @@ Env vars:
     APPLE_ID                  : Apple ID, for CI that has no keychain
     APPLE_APP_PASSWORD        : app-specific password, paired with APPLE_ID
     DEVELOPER_ID_APPLICATION  : override the default signing identity
-    APPLE_TEAM_ID             : Team ID for notarization (defaults to W7K465GKFJ)
+    APPLE_TEAM_ID             : Team ID for notarization. Read from the signing
+                                identity when unset, since Apple prints it there
     ALLOW_UNNOTARIZED         : set to 1 to build without notarizing. The result
                                 is for local testing only and must never be
                                 published as a release artifact.
@@ -29,6 +30,7 @@ Env vars:
 from __future__ import annotations
 
 import os
+import plistlib
 import re
 import shutil
 import subprocess
@@ -78,6 +80,28 @@ STAGING_DIR = "_dmg_staging"
 ICNS_FILE = ROOT / "assets" / "stellody.icns"
 FILE_ICON_PNG = ROOT / "assets" / "stellody_icon_1024.png"
 
+# Everything Nuitka lays down goes here, so the payload check and the search
+# for binaries to sign both read one place rather than each spelling it out.
+BUNDLE_PAYLOAD_DIR = "Contents/MacOS"
+# The Info.plist key naming the bundle's own executable.
+MAIN_EXECUTABLE_KEY = "CFBundleExecutable"
+# Where data belongs in a bundle, which is not beside the executable.
+BUNDLE_RESOURCES_NAME = "Resources"
+BUNDLE_RESOURCES_DIR = f"Contents/{BUNDLE_RESOURCES_NAME}"
+PARENT_DIR = "../"
+
+# sounddevice ships PortAudio for every platform it supports in one directory:
+# one dylib for macOS and six Windows DLLs beside it. Nuitka takes the whole
+# directory and then stops with "cannot use file ... (PE32 executable (DLL) ...
+# for MS Windows) to build arch 'arm64' result", so the Windows half is named
+# out. Measured: with the pattern the build completes, without it the build
+# dies after producing a partial bundle.
+WINDOWS_PORTAUDIO_PATTERN = "_sounddevice_data/portaudio-binaries/*.dll"
+# The half that must survive that exclusion. sounddevice loads it at import
+# time, so its absence is a dead audio device rather than a build failure; it
+# is asserted after the build for that reason.
+PORTAUDIO_LIBRARY = "_sounddevice_data/portaudio-binaries/libportaudio.dylib"
+
 # Directories shipped whole, as (source, destination inside the bundle); loose
 # files shipped at its root. The same two lists the Windows build uses.
 DATA_DIRS: tuple[tuple[Path, str], ...] = ((ROOT / "assets", "assets"),)
@@ -94,7 +118,15 @@ DEVELOPER_ID = os.environ.get(
 )
 APPLE_ID = os.environ.get("APPLE_ID", "")
 APPLE_APP_PASSWORD = os.environ.get("APPLE_APP_PASSWORD", "")
-APPLE_TEAM_ID = os.environ.get("APPLE_TEAM_ID", "W7K465GKFJ")
+
+# Apple prints the Team ID in parentheses at the end of every Developer ID
+# identity, so it is read from the identity rather than written down twice
+# where the two could drift apart. APPLE_TEAM_ID overrides it.
+TEAM_ID_RE = re.compile(r"\(([A-Z0-9]+)\)\s*$")
+_team_id_match = TEAM_ID_RE.search(DEVELOPER_ID)
+APPLE_TEAM_ID = os.environ.get("APPLE_TEAM_ID", "") or (
+    _team_id_match.group(1) if _team_id_match else ""
+)
 
 # The notarization credential for this app, created once with
 #   xcrun notarytool store-credentials Stellody \
@@ -119,6 +151,24 @@ ALLOW_UNNOTARIZED = os.environ.get("ALLOW_UNNOTARIZED", "") == "1"
 # Notarization is the default and the keychain profile always resolves, so the
 # only way to skip it is to ask for that explicitly.
 NOTARIZING = not ALLOW_UNNOTARIZED
+
+APPLE_TOOLS = ("codesign", "xcrun", "ditto", "hdiutil", "spctl", "xattr")
+
+# The options every signature in this build carries. The hardened runtime is
+# what notarization checks for; the timestamp is what keeps a signature valid
+# after the certificate that made it expires.
+SIGN_OPTIONS = ("--force", "--options", "runtime", "--timestamp")
+
+# The first four bytes of a Mach-O binary: 64-bit, 32-bit and the two byte
+# orders of a universal file. Read from the file itself, since a name says
+# nothing reliable about whether something is code.
+MACH_O_MAGICS = (
+    b"\xcf\xfa\xed\xfe",
+    b"\xce\xfa\xed\xfe",
+    b"\xca\xfe\xba\xbe",
+    b"\xbe\xba\xfe\xca",
+)
+MACH_O_MAGIC_LENGTH = 4
 
 BYTES_PER_MIB = 1024 * 1024
 CREATE_DMG_OK = (0, 2)  # 2 means it could not set a window background, headless
@@ -154,7 +204,17 @@ def check_platform() -> None:
     if not shutil.which("python3"):
         sys.exit("ERROR: no python3 on PATH.")
     require("create-dmg", "create-dmg")
-    require("codesign")
+    # These arrive with the Xcode command-line tools rather than from Homebrew,
+    # so asking brew for them (which require() would do) offers a remedy that
+    # cannot work. They are named rather than assumed because every signing,
+    # notarising and imaging step below runs one of them.
+    missing = [tool for tool in APPLE_TOOLS if not shutil.which(tool)]
+    if missing:
+        sys.exit(
+            f"ERROR: {', '.join(missing)} not found.\n"
+            "  Install the Xcode command-line tools:\n"
+            "    xcode-select --install"
+        )
     print("  All tools present.")
 
 
@@ -170,6 +230,14 @@ def check_notarization_credentials() -> None:
         print("  WARNING: this build is for local testing and must not be released.")
         return
     if APPLE_ID and APPLE_APP_PASSWORD:
+        if not APPLE_TEAM_ID:
+            sys.exit(
+                "ERROR: no Team ID.\n"
+                f"  It could not be read from the signing identity {DEVELOPER_ID}\n"
+                "  and APPLE_TEAM_ID is unset. Set APPLE_TEAM_ID; alternatively\n"
+                "  leave APPLE_ID and APPLE_APP_PASSWORD unset and use the keychain\n"
+                f"  profile {NOTARY_PROFILE}, which carries the Team ID already."
+            )
         if not APP_SPECIFIC_PASSWORD_RE.match(APPLE_APP_PASSWORD):
             sys.exit(
                 "ERROR: APPLE_APP_PASSWORD is not an app-specific password.\n"
@@ -358,6 +426,9 @@ def build_app_bundle() -> Path:
         # needs decoding. Measured on the Windows build; the same flag is
         # needed here because it is a property of PyAV rather than of Windows.
         "--include-module=av.utils",
+        # See WINDOWS_PORTAUDIO_PATTERN: the Windows PortAudio builds that ship
+        # beside the macOS one are fatal to an arm64 build.
+        f"--noinclude-dlls={WINDOWS_PORTAUDIO_PATTERN}",
         f"--jobs={os.cpu_count() or 1}",
         f"--macos-app-name={APP_NAME}",
         f"--macos-app-version={APP_VERSION}",
@@ -386,11 +457,69 @@ def build_app_bundle() -> Path:
     return app_path
 
 
+def check_bundle_payload(app_path: Path) -> None:
+    """Fail if the compiled bundle is short of anything it was told to carry.
+
+    check_bundled_assets proves the sources exist before the build; this proves
+    they arrived. The two lists that named them are read again rather than
+    restated, so an addition to either is checked here without being copied.
+    A missing asset is invisible until the packaged application is run and
+    looked at, which is far too late to learn it.
+    """
+    section("Bundle payload")
+    payload = app_path / BUNDLE_PAYLOAD_DIR
+    expected = [item.name for item in DATA_FILES]
+    expected += [destination for _source, destination in DATA_DIRS]
+    expected.append(PORTAUDIO_LIBRARY)
+    missing = [name for name in expected if not (payload / name).exists()]
+    if missing:
+        sys.exit(
+            "ERROR: the bundle is missing:\n  "
+            + "\n  ".join(missing)
+            + f"\n  Looked in {payload}."
+        )
+    print(f"  {len(expected)} expected item(s) present.")
+
+
+def relocate_bundle_resources(app_path: Path) -> None:
+    """Move the shipped data into Contents/Resources, leaving symlinks behind.
+
+    codesign treats everything sitting beside the main executable as code, so a
+    plain file there fails the bundle signature with "code object is not signed
+    at all. In subcomponent: ... LICENSE". Apple's layout keeps data in
+    Contents/Resources, which is where these belong.
+
+    Nuitka does the same relocation for the directories it knows it cannot
+    sign, recognising them by a dot in the name; these carry none, so they are
+    left where they land and dealt with here. The symlink is what Nuitka leaves
+    too: the application looks for its data beside the executable, which is
+    still exactly where it finds it.
+    """
+    section("Relocate bundle resources")
+    payload = app_path / BUNDLE_PAYLOAD_DIR
+    resources = app_path / BUNDLE_RESOURCES_DIR
+    names = [item.name for item in DATA_FILES]
+    names += [destination for _source, destination in DATA_DIRS]
+    for name in names:
+        placed = payload / name
+        if placed.is_symlink():
+            continue
+        relocated = resources / name
+        relocated.parent.mkdir(parents=True, exist_ok=True)
+        placed.rename(relocated)
+        # One ".." to climb out of Contents/MacOS, plus one for each directory
+        # the name itself descends into.
+        climb = PARENT_DIR * (name.count("/") + 1)
+        placed.symlink_to(Path(climb) / BUNDLE_RESOURCES_NAME / name)
+    print(f"  {len(names)} item(s) moved to {BUNDLE_RESOURCES_DIR}, symlinked back.")
+
+
 def strip_build_artifacts(app_path: Path) -> None:
     section("Strip build artifacts")
     # PySide6 ships .cpp.o object files inside its QML plugin directories.
-    # They are Mach-O relocatable binaries that codesign --deep silently skips
-    # but Gatekeeper flags as unsigned, causing the entire bundle to be rejected.
+    # They are Mach-O relocatable objects: not loadable code, so signing them
+    # means nothing, while leaving them unsigned has Gatekeeper reject the
+    # whole bundle. They are removed before anything is signed for that reason.
     removed = 0
     for found in app_path.rglob("*.o"):
         if found.is_file():
@@ -402,15 +531,68 @@ def strip_build_artifacts(app_path: Path) -> None:
     print(f"  Removed {removed} intermediate object file(s)")
 
 
+def _mach_o_files(app_path: Path) -> list[Path]:
+    """Every Mach-O file in the bundle, deepest first.
+
+    Recognised by the file's own magic number rather than by its name: the
+    bundle carries binaries called .so, .dylib and nothing at all, while a data
+    file whose name merely ends that way is not code and must not be signed.
+    Symlinks are skipped, since signing one signs its target twice.
+    """
+    found: list[Path] = []
+    for path in app_path.rglob("*"):
+        if path.is_symlink() or not path.is_file():
+            continue
+        with path.open("rb") as handle:
+            if handle.read(MACH_O_MAGIC_LENGTH) in MACH_O_MAGICS:
+                found.append(path)
+    return sorted(found, key=lambda item: len(item.parts), reverse=True)
+
+
+def _main_executable(app_path: Path) -> Path:
+    """The bundle's own executable, read from the Info.plist that names it.
+
+    It is signed as part of the bundle and never on its own: codesign resolves
+    a lone main executable back to the bundle around it, then fails on the
+    first data file sitting beside it ("In subcomponent: ... LICENSE").
+    """
+    info = plistlib.loads((app_path / "Contents" / "Info.plist").read_bytes())
+    return app_path / BUNDLE_PAYLOAD_DIR / info[MAIN_EXECUTABLE_KEY]
+
+
 def sign_bundle(app_path: Path, entitlements_path: Path) -> None:
+    """Sign the nested binaries innermost first, then the bundle itself.
+
+    Not codesign --deep, which has been deprecated for signing since macOS 13
+    and (in its own manual's words) applies all signing options in turn to all
+    nested content, entitlements included. The entitlements describe the
+    application, so they are given to the bundle alone.
+
+    --timestamp is explicit because notarization requires a secure timestamp
+    and codesign's documented default may leave "some but not all" signatures
+    carrying one, which is not a thing to leave to a default.
+    """
     section("Code signing")
+    # codesign refuses a file carrying Finder information or a resource fork.
+    # Nuitka clears these before its own signing pass; this covers whatever the
+    # steps since have picked up.
+    run(["xattr", "-cr", str(app_path)])
+
+    main_executable = _main_executable(app_path)
+    binaries = [item for item in _mach_o_files(app_path) if item != main_executable]
+    print(f"  Signing {len(binaries)} nested binaries, deepest first.")
+    for binary in binaries:
+        # subprocess directly rather than run(): echoing one line per binary
+        # would bury the rest of the build in output nobody reads.
+        subprocess.run(
+            ["codesign", *SIGN_OPTIONS, "--sign", DEVELOPER_ID, str(binary)],
+            check=True,
+        )
+
     run(
         [
             "codesign",
-            "--force",
-            "--deep",
-            "--options",
-            "runtime",
+            *SIGN_OPTIONS,
             "--entitlements",
             str(entitlements_path),
             "--sign",
@@ -495,7 +677,18 @@ def create_dmg(app_path: Path) -> None:
 
 def sign_dmg() -> None:
     section("Sign DMG")
-    run(["codesign", "--force", "--sign", DEVELOPER_ID, str(ROOT / FINAL_DMG)])
+    # No hardened runtime on a disk image, which holds no code of its own; the
+    # timestamp matters here for the same reason it does on the bundle.
+    run(
+        [
+            "codesign",
+            "--force",
+            "--timestamp",
+            "--sign",
+            DEVELOPER_ID,
+            str(ROOT / FINAL_DMG),
+        ]
+    )
     print("  DMG signed.")
 
 
@@ -520,7 +713,20 @@ def verify_dmg() -> None:
     # Gatekeeper performs on the end user's machine. Together they catch the
     # silent case where signing succeeded but notarization never happened.
     run(["xcrun", "stapler", "validate", str(final)])
-    run(["spctl", "--assess", "--type", "install", "-vv", str(final)])
+    # The assessment Gatekeeper makes when a user opens a disk image. "install"
+    # is the assessment for an installer package, which this is not.
+    run(
+        [
+            "spctl",
+            "--assess",
+            "--type",
+            "open",
+            "--context",
+            "context:primary-signature",
+            "-vv",
+            str(final),
+        ]
+    )
     print(f"  {FINAL_DMG}  ({size_mib:.1f} MiB): notarized, ready for distribution")
 
 
@@ -554,6 +760,8 @@ def main() -> int:
 
     try:
         app_path = build_app_bundle()
+        check_bundle_payload(app_path)
+        relocate_bundle_resources(app_path)
         strip_build_artifacts(app_path)
         sign_bundle(app_path, entitlements_path)
         notarize_bundle(app_path)
