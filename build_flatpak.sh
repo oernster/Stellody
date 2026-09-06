@@ -41,12 +41,23 @@ MANIFEST="${APP_ID}.yml"
 # Matched to the runtime above. A wheel built for a newer glibc than the
 # runtime holds installs cleanly then fails to load, which is a worse failure
 # than refusing to download.
-WHEEL_PLATFORM="manylinux_2_34_x86_64"
+#
+# Every tag the runtime can load has to be named, not just the newest one.
+# Measured: pip matches --platform as an exact string and understands nothing
+# about manylinux being cumulative, so asking for manylinux_2_34 alone finds
+# PySide6 and then reports "no matching distribution" for numpy, which ships
+# manylinux_2_28. The runtime carries glibc 2.42, so every tag below loads.
+WHEEL_PLATFORMS="manylinux2014_x86_64 manylinux_2_17_x86_64 manylinux_2_28_x86_64 manylinux_2_34_x86_64"
 WHEEL_PYTHON="3.13"
 
 PORTAUDIO_VERSION="19.7.0"
 PORTAUDIO_URL="https://github.com/PortAudio/portaudio/archive/refs/tags/v${PORTAUDIO_VERSION}.tar.gz"
 PORTAUDIO_ARCHIVE="portaudio-${PORTAUDIO_VERSION}.tar.gz"
+
+KRB5_VERSION="1.21.3"
+KRB5_URL="https://kerberos.org/dist/krb5/1.21/krb5-${KRB5_VERSION}.tar.gz"
+KRB5_ARCHIVE="krb5-${KRB5_VERSION}.tar.gz"
+
 VENDOR_DIR=".flatpak-vendor"
 
 ICON_SIZES="16 24 32 48 64 96 128 256"
@@ -88,25 +99,36 @@ flatpak remote-add --if-not-exists --user \
 flatpak install --user --noninteractive \
     flathub "${RUNTIME}//${RUNTIME_VERSION}" "${SDK}//${RUNTIME_VERSION}"
 
-section "Fetching PortAudio"
+section "Fetching the libraries the runtime does not carry"
 # Fetched to a local file rather than named in the manifest with a checksum
 # beside it. A checksum written from memory is a checksum that is wrong; it
 # fails the build with an error about integrity rather than about the guess. A
 # local archive needs none: the file that was downloaded is the file that is
 # built.
 mkdir -p "${VENDOR_DIR}"
-if [ ! -f "${VENDOR_DIR}/${PORTAUDIO_ARCHIVE}" ]; then
-    curl -fL -o "${VENDOR_DIR}/${PORTAUDIO_ARCHIVE}" "${PORTAUDIO_URL}"
-fi
+
+fetch_once() {
+    local archive="$1"
+    local url="$2"
+    [ -f "${VENDOR_DIR}/${archive}" ] && return 0
+    curl -fL -o "${VENDOR_DIR}/${archive}" "${url}"
+}
+
+fetch_once "${PORTAUDIO_ARCHIVE}" "${PORTAUDIO_URL}"
+fetch_once "${KRB5_ARCHIVE}" "${KRB5_URL}"
 
 section "Fetching the wheels"
 # Downloaded on the host so the build itself needs no network at all. What the
 # application asks the network for at RUNTIME is one thing, the update check;
 # what it asks for while being built should be nothing.
 rm -rf "${WHEEL_DIR}"
+platform_args=()
+for tag in ${WHEEL_PLATFORMS}; do
+    platform_args+=(--platform "${tag}")
+done
 pip download --only-binary :all: \
     --python-version "${WHEEL_PYTHON}" --implementation cp \
-    --platform "${WHEEL_PLATFORM}" \
+    "${platform_args[@]}" \
     -d "${WHEEL_DIR}" -r requirements.txt
 
 section "Writing the packaging helpers"
@@ -127,12 +149,15 @@ export PYTHONPATH="${SITE}:/app/share/${COMMAND}\${PYTHONPATH:+:\$PYTHONPATH}"
 export QT_PLUGIN_PATH="${SITE}/PySide6/Qt/plugins"
 export QT_QPA_PLATFORM_PLUGIN_PATH="${SITE}/PySide6/Qt/plugins/platforms"
 export QML2_IMPORT_PATH="${SITE}/PySide6/Qt/qml"
-if [ -n "\$WAYLAND_DISPLAY" ] && [ -z "\$FORCE_X11" ]; then
-    export QT_QPA_PLATFORM=wayland
-elif [ -n "\$DISPLAY" ]; then
-    export QT_QPA_PLATFORM=xcb
-else
-    export QT_QPA_PLATFORM=xcb
+# Chosen only where nobody has chosen already, so passing the platform in
+# (--env=QT_QPA_PLATFORM=offscreen, which is how the packaged application gets
+# looked at without a screen) reaches Qt rather than being overwritten here.
+if [ -z "\$QT_QPA_PLATFORM" ]; then
+    if [ -n "\$WAYLAND_DISPLAY" ] && [ -z "\$FORCE_X11" ]; then
+        export QT_QPA_PLATFORM=wayland
+    else
+        export QT_QPA_PLATFORM=xcb
+    fi
 fi
 exec python3 /app/share/${COMMAND}/main.py "\$@"
 LAUNCHER
@@ -203,6 +228,35 @@ finish-args:
   - --filesystem=/run/media:ro
 
 modules:
+  # Measured in the built application: libQt6Network links libgssapi_krb5.so.2
+  # and the freedesktop runtime ships no krb5 at all, only libcom_err. Every
+  # Qt library that reaches Network transitively then fails to load, so the
+  # first import of QtNetwork ends the process before a window is drawn.
+  # Stellody authenticates against nothing; this is here to satisfy the link,
+  # which is why the build is cut down to the client library alone.
+  - name: krb5
+    buildsystem: autotools
+    subdir: src
+    # Measured: the SDK's compiler defaults to C23, where the old style
+    # function definitions still present in krb5's util/ss are an error rather
+    # than a warning, so the build dies in a command line helper this
+    # application never runs. The language standard is pinned to the one the
+    # source was written for instead of patching upstream code.
+    build-options:
+      cflags: -std=gnu17
+    config-opts:
+      - --prefix=/app
+      - --disable-static
+      - --disable-rpath
+      - --without-ldap
+      - --without-tcl
+      - --without-keyutils
+      - --without-libedit
+      - --without-readline
+    sources:
+      - type: archive
+        path: ${VENDOR_DIR}/${KRB5_ARCHIVE}
+
   # Measured in the installed sounddevice: the bundled binaries are for Darwin
   # and Windows only, so on Linux the library has to come from somewhere.
   - name: portaudio
@@ -218,7 +272,9 @@ modules:
   - name: python-deps
     buildsystem: simple
     build-commands:
-      - python3 -m ensurepip --upgrade
+      # No ensurepip here. The SDK already carries pip3; ensurepip --upgrade
+      # writes into /usr, which is the SDK mounted read only during a build,
+      # so it fails on a step that was never needed.
       - pip3 install --no-cache-dir --no-index --find-links wheels
         --prefix=/app -r requirements.txt
     sources:
@@ -253,6 +309,18 @@ cat >> "${MANIFEST}" <<MANIFEST_TAIL
     sources:
       - type: dir
         path: .
+        # The source directory contains the build directory, the local wheel
+        # cache and a development virtualenv. Copied in, they make the build
+        # tree several gigabytes for no gain; the build directory copied into
+        # itself is worse than merely slow.
+        skip:
+          - .git
+          - ${BUILD_DIR}
+          - ${REPO_DIR}
+          - ${WHEEL_DIR}
+          - ${VENDOR_DIR}
+          - venv
+          - ${BUNDLE}
 MANIFEST_TAIL
 
 section "Building"
