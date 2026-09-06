@@ -16,6 +16,7 @@ import pathlib
 import tempfile
 
 import pytest
+from dialog_support import BUILDERS, dialog_classes, settled
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
@@ -26,13 +27,8 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.composition import build_window
-from stellody.domain.equalising import Equalisation
 from stellody.infrastructure.store import SqliteLibraryStore
-from stellody.ui.close_prompt import ClosePrompt
-from stellody.ui.dialogs import AboutDialog, FirstStopDialog
-from stellody.ui.equaliser import EqualiserDialog
-from stellody.ui.guide import GuideDialog
-from stellody.ui.health import HealthDialog
+from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.settings_keys import SETTING_ROOT
 
@@ -58,18 +54,20 @@ def opened(dialog, application: QApplication):
     return application.focusWidget()
 
 
-DIALOGS = {
-    "close prompt": lambda window: ClosePrompt(window),
-    "equaliser": lambda window: EqualiserDialog(
-        window, Equalisation(), lambda _curve: None
-    ),
-    "health": lambda window: HealthDialog((), window),
-    "health offering a repair": lambda window: HealthDialog(
-        (), window, can_repair=True
-    ),
-    "about": lambda window: AboutDialog(window),
-    "guide": lambda window: GuideDialog(window),
-}
+DIALOGS = BUILDERS
+
+
+def test_the_sweep_covers_every_dialog_the_package_defines() -> None:
+    """The assertion that gives the rest of this file its value.
+
+    Without it the tests below walk a list somebody maintains, so a dialog
+    added later is outside the first-stop rules until somebody remembers it;
+    whoever forgot the rule forgets the list entry with it. That is not a
+    hypothetical: the guide was added, opened with its whole page ringed and
+    the suite stayed green. The set is read out of the package instead, so a
+    new dialog with no builder fails HERE rather than going unexamined.
+    """
+    assert set(DIALOGS) == dialog_classes()
 
 
 @pytest.mark.parametrize("build", DIALOGS.values(), ids=DIALOGS.keys())
@@ -83,6 +81,7 @@ def test_every_dialog_opens_on_its_own_first_stop(
         assert focused is dialog.first_stop(), "and it is where Tab would land"
         assert dialog.isAncestorOf(focused), "inside the dialog, not behind it"
     finally:
+        settled(dialog, application)
         dialog.close()
         dialog.deleteLater()
 
@@ -107,6 +106,7 @@ def test_no_dialog_opens_on_a_reading_pane(
         focused = opened(dialog, application)
         assert not isinstance(focused, QAbstractScrollArea), type(focused).__name__
     finally:
+        settled(dialog, application)
         dialog.close()
         dialog.deleteLater()
 
