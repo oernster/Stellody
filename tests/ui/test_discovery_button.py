@@ -24,19 +24,19 @@ def make_tray(parent: QWidget, **wiring) -> LibraryTray:
     )
 
 
-def test_discovery_sits_before_the_theme_button(application) -> None:
-    """After the separator and left of theme, ruled on 2026-09-06.
+def test_discovery_sits_left_of_the_volume_button(application) -> None:
+    """Left of volume with the separator between, ruled on 2026-09-07.
 
     Discovery is a library action rather than a sound control; the separator
-    is already the line between those two ideas.
+    is what keeps that line visible now the two sit beside each other.
     """
     holder = QWidget()
     tray = make_tray(holder)
     row = tray.layout()
     order = [row.itemAt(index).widget() for index in range(row.count())]
     placed = [widget for widget in order if widget is not None]
-    assert placed.index(tray.discover_button) == placed.index(tray.separator) + 1
-    assert placed.index(tray.discover_button) == placed.index(tray.theme_button) - 1
+    assert placed.index(tray.discover_button) == placed.index(tray.separator) - 1
+    assert placed.index(tray.separator) == placed.index(tray.volume_button) - 1
 
 
 def test_discovery_is_reachable(application) -> None:
@@ -45,8 +45,8 @@ def test_discovery_is_reachable(application) -> None:
     tray = make_tray(holder)
     stops = tray.ring_stops()
     assert tray.discover_button in stops
-    assert stops.index(tray.discover_button) == stops.index(tray.theme_button) - 1
-    assert stops.index(tray.discover_button) == stops.index(tray.mute_button) + 1
+    assert stops.index(tray.discover_button) == stops.index(tray.volume_button) - 1
+    assert stops.index(tray.discover_button) == stops.index(tray.next_button) + 1
 
 
 def test_the_button_says_what_it_is_for(application) -> None:
