@@ -22,6 +22,7 @@ from stellody.application.discovering import Discovery
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
+from stellody.ui.run_estimate import RunEstimate
 from stellody.ui.tray_metrics import show_discovery_running
 
 # Handed a finished run; answers where it was written. Raises where it could
@@ -74,6 +75,9 @@ class Discovering:
         # modal question and land in a burst once it closes.
         self._discovery_stopping = False
         self._discovery_dialog: DiscoveryDialog | None = None
+        # How long the run has left, measured from its own pace. Held across
+        # reports because the answer depends on when each stage began.
+        self._discovery_estimate = RunEstimate()
         self._discovery_runner = DiscoveryRunner(self)
         self._discovery_runner.progressed.connect(self.discovery_progressed)
         self._discovery_runner.completed.connect(self.discovery_completed)
@@ -127,6 +131,7 @@ class Discovering:
             self.statusBar().showMessage(STILL_STOPPING)
             return
         self._discovery_stopping = False
+        self._discovery_estimate.restart()
         show_discovery_running(self._tray.discover_button, True)
 
     def stop_discovery(self) -> None:
@@ -159,6 +164,10 @@ class Discovering:
         if self._discovery_stopping:
             return
         self._tray.discovery_bar.show_progress(progress)
+        # The bar says how far; the status bar says how long. A run over a
+        # whole library is tens of minutes; somebody who cannot tell a long
+        # run from a hang closes the window, which throws it away.
+        self.statusBar().showMessage(self._discovery_estimate.said_about(progress))
 
     def discovery_completed(self, report: RunReport) -> None:
         """Write what was found where there is anything to write, then say so.
