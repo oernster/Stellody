@@ -138,7 +138,7 @@ class FileGenreMemory:
     """What earlier runs learned about candidates, kept beside the answer.
 
     A thin object over the two functions above rather than a store of its own:
-    what a run needs is somewhere to read from and somewhere to write to, and
+    what a run needs is somewhere to read from and somewhere to write to;
     the file is already both.
     """
 

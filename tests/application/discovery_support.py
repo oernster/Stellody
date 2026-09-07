@@ -8,7 +8,7 @@ happen in rather than anything a network did.
 
 from __future__ import annotations
 
-from stellody.application.discovering import RateRefused
+from stellody.application.discovery_ports import RateRefused
 from stellody.application.values import DiscoveryProgress
 from stellody.domain.album import Album
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist

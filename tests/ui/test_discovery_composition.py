@@ -17,7 +17,7 @@ import tempfile
 import pytest
 from PySide6.QtCore import QEvent
 
-from stellody.application.discovering import NothingRemembered
+from stellody.application.discovery_ports import NothingRemembered
 from stellody.composition import build_window
 from stellody.infrastructure.discovery_file import FileGenreMemory
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -30,8 +30,8 @@ def window(application):
     store = SqliteLibraryStore(str(folder / "t.sqlite3"))
     made = build_window(store)
     yield made
-    # Deleted rather than merely closed, and the deletion actually delivered:
-    # the suite's own cleanup closes any window still standing, and a window
+    # Deleted rather than merely closed, with the deletion actually delivered:
+    # the suite's own cleanup closes any window still standing, so a window
     # closed a second time writes its settings to a store already shut.
     made.close()
     made.deleteLater()

@@ -50,6 +50,22 @@ class Palette:
     # Measured against `surface_alt`: 4.44 to 1 in the light appearance, 9.28
     # to 1 in the dark one, where a graphic of this kind asks for 3.
     star: str
+    # A progress bar carries writing across BOTH halves of itself, so three
+    # colours have to settle together: the text must read against the fill AND
+    # against the groove, while the fill must still be told apart from that
+    # groove. The bar used the accent as its fill and the muted text over it,
+    # which measured 1.29 to 1 in the light appearance and 1.32 to 1 in the
+    # dark one: a smudge rather than a sentence.
+    #
+    # The groove is a role of its own rather than `surface_alt`, because with
+    # that surface fixed the three constraints have almost no solution left:
+    # every fill readable enough for the text sat within 2.5 to 1 of the
+    # groove. Measured for these, in order text on groove, text on fill, fill
+    # on groove: light 17.42, 5.54 and 3.14; dark 16.81, 4.82 and 3.48. The
+    # bar is 4.5 for the writing and 3 for one shape against another.
+    progress_groove: str
+    progress_fill: str
+    on_progress: str
     on_accent: str
     selection: str
     on_selection: str
@@ -73,6 +89,9 @@ LIGHT = Palette(
     accent_hover="#1750b3",
     found="#ffe135",
     star="#b45309",
+    progress_groove="#ffffff",
+    progress_fill="#5c93de",
+    on_progress="#141a26",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -96,6 +115,9 @@ DARK = Palette(
     accent_hover="#69a1ff",
     found="#7a5f14",
     star="#fbbf24",
+    progress_groove="#0d1220",
+    progress_fill="#3466cc",
+    on_progress="#eef3ff",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",

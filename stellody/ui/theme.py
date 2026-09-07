@@ -41,6 +41,13 @@ RADIUS_PX = 4
 LABEL_PAD_PX = 8
 ROW_HEIGHT_PX = 24
 HAIRLINE_PX = 1
+# The progress bar is as tall as a tray button, so the house radius on a shape
+# that size reads as a square with the corners filed. Three times it, so the bar
+# reads as a rounded track rather than as a block. The fill sits inside the
+# groove's own border, so it is rounded one pixel tighter and the two curves
+# stay concentric instead of the fill's corner poking through.
+PROGRESS_RADIUS_PX = RADIUS_PX * 3
+PROGRESS_FILL_RADIUS_PX = PROGRESS_RADIUS_PX - HAIRLINE_PX
 HALF = 2
 
 # The volume slider. The handle carries an outline in the window colour, so it
@@ -260,16 +267,19 @@ def stylesheet(mode: Mode) -> str:
         border-top: 1px solid {colour.border};
         color: {colour.text_muted};
     }}
+    /* The writing crosses both halves of the bar, so one colour has to
+       carry against the groove AND against the fill. The accent as a fill
+       left it at 1.3 to 1, which is not writing at all. */
     QProgressBar {{
-        background-color: {colour.surface_alt};
+        background-color: {colour.progress_groove};
         border: 1px solid {colour.border};
-        border-radius: {RADIUS_PX}px;
+        border-radius: {PROGRESS_RADIUS_PX}px;
         text-align: center;
-        color: {colour.text_muted};
+        color: {colour.on_progress};
     }}
     QProgressBar::chunk {{
-        background-color: {colour.accent};
-        border-radius: {RADIUS_PX - 1}px;
+        background-color: {colour.progress_fill};
+        border-radius: {PROGRESS_FILL_RADIUS_PX}px;
     }}
     QScrollBar:vertical, QScrollBar:horizontal {{
         background-color: {colour.window};

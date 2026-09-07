@@ -13,7 +13,7 @@ import urllib.error
 
 import pytest
 
-from stellody.application.discovering import (
+from stellody.application.discovery_ports import (
     RateRefused,
     SourceFailed,
     SourceUnavailable,

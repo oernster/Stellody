@@ -1,7 +1,7 @@
 """The second half of a run: asking what each suggested artist plays.
 
 Its own module because the run tests beside it went over the line cap once
-these arrived, and because this half is its own concern: it is the long half,
+these arrived; also because this half is its own concern: it is the long half,
 the half that used to report nothing at all and the only half that remembers
 anything between runs.
 """

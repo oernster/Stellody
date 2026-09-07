@@ -22,7 +22,7 @@ from stellody.ui.discovering import (
     WENT_WRONG,
     Discovering,
 )
-from stellody.ui.discovery_progress import RESTING, DiscoveryBar
+from stellody.ui.discovery_progress import RESTING, STOPPING, DiscoveryBar
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.tray_metrics import (
     BUTTON_PX,
@@ -305,3 +305,16 @@ def test_pressing_it_during_a_run_stops_the_run(application) -> None:
     window._discovery_runner = runner
     window.open_discovery()
     assert runner.stopped == 1, "it cancelled rather than opening a second dialog"
+
+
+def test_a_stop_is_acknowledged_before_the_run_has_stopped(application) -> None:
+    """A run gives up between requests, so the press lands before the ending."""
+    window = make_window(application)
+    runner = RunnerInProgress()
+    window._discovery_runner = runner
+    window.discovery_progressed(
+        DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
+    )
+    window.open_discovery()
+    assert window._tray.discovery_bar.format() == STOPPING
+    assert runner.stopped == 1

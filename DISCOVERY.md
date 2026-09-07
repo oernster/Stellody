@@ -419,11 +419,20 @@ than parks, ruled on 2026-09-06: a resumable run means keeping partial state
 that has to be reconciled against a library that may have changed; the
 smallest genres cost seconds to run again.
 
+A stop is also felt rather than merely obeyed. A run waits out a refusal for two
+seconds, then four; those waits were taken whole, so a stop pressed at the start
+of one was not acted on until it ended. They are taken in slices now; the
+toolbar says the stop was heard the instant it is pressed, since giving up
+happens between requests rather than during one. Amended on 2026-09-07 after the
+button was reported as not working.
+
 Acceptance: Given a run in progress over an existing discovery file, when cancel
 is pressed, then no further request is issued, nothing of that run is retained
-and the existing file is byte for byte what it was.
+and the existing file is byte for byte what it was; given the run is waiting out
+a refusal when cancel is pressed, then it stops within one slice of that wait
+rather than at the end of it.
 
-Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`
+Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_wiring.py::test_a_stop_is_acknowledged_before_the_run_has_stopped`
 
 ---
 
@@ -700,6 +709,29 @@ saving cannot be stated before a real run and is recorded in OQ-04.
 
 Verification: a test with two source artists sharing a candidate, asserting one
 genre lookup rather than two.
+
+---
+
+**NFR-USE-001 The toolbar bar can be read**
+
+Priority: Must
+
+Requirement: The text on the discovery bar shall hold a contrast ratio of at
+least 4.5 to 1 against both the filled and the unfilled part of that bar, in
+both appearances. The fill shall hold at least 3 to 1 against the groove behind
+it.
+
+Rationale: The bar drew its text in the muted colour over the accent as a fill,
+which measured 1.29 to 1 in the light appearance and 1.32 to 1 in the dark one.
+Reported on 2026-09-07 as difficult to read, which was an understatement. A bar
+is the one surface here carrying one colour of text across two backgrounds, so
+both are measured; nothing caught it because nothing measured it.
+
+Acceptance: Given either appearance, when the three colours are measured by the
+WCAG relative luminance formula, then text against fill and text against groove
+each reach 4.5 and fill against groove reaches 3.
+
+Verified by: `tests/ui/test_progress_contrast.py`
 
 ---
 

@@ -104,8 +104,14 @@ class Discovering:
         self._tray.discover_button.setToolTip(STOP_DISCOVERY_TOOLTIP)
 
     def stop_discovery(self) -> None:
-        """Ask a running discovery to give up at its next boundary."""
+        """Ask a running discovery to give up at its next boundary.
+
+        The bar says so at once. Giving up happens between requests rather than
+        during one, so there is a moment between the press and the ending; a
+        bar still counting through that moment reads as a press nobody heard.
+        """
         self._discovery_runner.cancel()
+        self._tray.discovery_bar.show_stopping()
 
     def discovery_progressed(self, progress: DiscoveryProgress) -> None:
         """Draw how far along the run is, in the tray it reports to."""

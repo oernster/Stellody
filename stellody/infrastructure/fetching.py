@@ -22,7 +22,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from stellody.application.discovering import (
+from stellody.application.discovery_ports import (
     RateRefused,
     SourceFailed,
     SourceUnavailable,

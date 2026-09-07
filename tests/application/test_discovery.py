@@ -7,6 +7,7 @@ what the application layer is for.
 
 from __future__ import annotations
 
+import pytest
 from discovery_support import (
     ROCK,
     Catalogue,
@@ -19,14 +20,20 @@ from discovery_support import (
 
 from stellody.application.discovering import (
     RETRY_ATTEMPTS,
+    RETRY_PAUSE_SECONDS,
     SIMILAR_WANTED,
+    WAIT_SLICE_SECONDS,
     Discovery,
-    SourceFailed,
-    SourceUnavailable,
     held_by_artist,
 )
+from stellody.application.discovery_ports import SourceFailed, SourceUnavailable
 from stellody.application.values import DiscoveryProgress, RunOutcome
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+
+# How many times the run is allowed to ask whether it should stop before the
+# answer becomes yes. Two, so the stop lands inside a wait rather than at the
+# boundary before one, which is the case that used to cost seconds.
+SLICES_BEFORE_STOP = 2
 
 
 def make_run(
@@ -165,7 +172,10 @@ def test_rate_refusal_is_retried() -> None:
     run, source, _, waits = make_run(catalogue)
     report = run.run((make_album("U2", "The Joshua Tree"),), ROCK, nothing, never)
     assert source.identified == ["U2", "U2"]
-    assert len(waits.waited) == 1
+    # The total owed to the service, not the number of naps it was taken in:
+    # the wait is sliced so a stop can be felt part way through it, which is
+    # this run's business rather than the catalogue's.
+    assert sum(waits.waited) == pytest.approx(RETRY_PAUSE_SECONDS)
     assert report.outcome is RunOutcome.COMPLETED
 
 
@@ -175,7 +185,8 @@ def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
     run, _, _, waits = make_run(catalogue)
     report = run.run((make_album("U2", "A"),), ROCK, nothing, never)
     assert [failure.artist for failure in report.failed] == ["U2"]
-    assert len(waits.waited) == RETRY_ATTEMPTS - 1
+    owed = RETRY_PAUSE_SECONDS * sum(range(1, RETRY_ATTEMPTS))
+    assert sum(waits.waited) == pytest.approx(owed)
 
 
 def test_other_errors_do_not_stop_the_run() -> None:
@@ -265,3 +276,43 @@ def test_what_each_artist_is_already_held_to_have() -> None:
     albums = (make_album("U2", "The Joshua Tree"), make_album("U2", "Achtung Baby"))
     held = held_by_artist(albums)
     assert len(held["U2"]) == 2
+
+
+class Stopping:
+    """A cancel that is pressed once a given number of waits have passed."""
+
+    def __init__(self, after: int = 0) -> None:
+        self.after = after
+        self.asked = 0
+
+    def __call__(self) -> bool:
+        """Answer no until the run has waited long enough, then yes."""
+        self.asked += 1
+        return self.asked > self.after
+
+
+def test_a_stop_is_felt_part_way_through_a_wait() -> None:
+    """The defect this exists for: stop pressed, nothing happening for seconds.
+
+    Waiting out two refusals is six seconds, once taken in whole naps of two
+    and four. A stop pressed at the start of the four second one
+    was not acted on until it ended, which reads as a button that does not
+    work. The wait is sliced now, so what is spent after the press is one
+    slice rather than the rest of the nap.
+    """
+    catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
+    run, _, _, waits = make_run(catalogue)
+    report = run.run(
+        (make_album("U2", "A"),), ROCK, nothing, Stopping(after=SLICES_BEFORE_STOP)
+    )
+    assert report.outcome is RunOutcome.CANCELLED
+    assert sum(waits.waited) <= WAIT_SLICE_SECONDS * SLICES_BEFORE_STOP
+    assert sum(waits.waited) < RETRY_PAUSE_SECONDS, "it did not sit out the wait"
+
+
+def test_a_stopped_run_asks_the_catalogue_nothing_further() -> None:
+    """FR-D17: no further request is issued once somebody has stopped it."""
+    catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
+    run, source, _, _ = make_run(catalogue)
+    run.run((make_album("U2", "A"),), ROCK, nothing, Stopping(after=SLICES_BEFORE_STOP))
+    assert source.identified == ["U2"], "it asked once and never again"

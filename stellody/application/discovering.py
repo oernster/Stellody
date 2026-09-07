@@ -32,8 +32,18 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import Protocol, TypeVar
+from typing import TypeVar
 
+from stellody.application.discovery_ports import (
+    CatalogueSource,
+    GenreMemory,
+    NothingRemembered,
+    RateRefused,
+    RunCancelled,
+    SimilaritySource,
+    SourceFailed,
+    SourceUnavailable,
+)
 from stellody.application.ports import CancelledCheck
 from stellody.application.values import (
     Ambiguity,
@@ -46,7 +56,6 @@ from stellody.application.values import (
 from stellody.domain.album import Album
 from stellody.domain.discovery import (
     Gaps,
-    ReleaseGroup,
     SimilarArtist,
     albums_missing,
     artists_missing,
@@ -64,6 +73,12 @@ SIMILAR_WANTED = 10
 # refusing twice is asking for more room than one refusing once.
 RETRY_ATTEMPTS = 3
 RETRY_PAUSE_SECONDS = 2.0
+# A wait is taken in slices so that stopping is felt rather than merely
+# obeyed. Waiting out two refusals is six seconds; a listener who has pressed
+# stop and watched nothing happen for six seconds has been told the button
+# does not work. Small enough to read as immediate, large enough that a run
+# is not spending its time asking whether it should stop.
+WAIT_SLICE_SECONDS = 0.2
 
 Answer = TypeVar("Answer")
 # Handed a number of seconds to wait out a refusal. Injected rather than
@@ -71,82 +86,6 @@ Answer = TypeVar("Answer")
 Pause = Callable[[float], None]
 # Handed how far a run has got, so a window can say so.
 ProgressReport = Callable[[DiscoveryProgress], None]
-
-
-class DiscoveryError(RuntimeError):
-    """Something went wrong reaching a catalogue."""
-
-
-class SourceUnavailable(DiscoveryError):
-    """Nothing could be reached at all, so no later question will fare better."""
-
-
-class RateRefused(DiscoveryError):
-    """The catalogue asked to be asked again later."""
-
-
-class SourceFailed(DiscoveryError):
-    """One question failed for a reason of its own."""
-
-
-class CatalogueSource(Protocol):
-    """Knows which artist a name means and what that artist released."""
-
-    def identify(self, name: str) -> tuple[str, ...]:
-        """Every artist this name reaches; empty where it reaches none.
-
-        More than one is not an error here: it is the answer; the decision
-        about what to do with it belongs above rather than inside a client.
-        """
-        ...
-
-    def albums_of(self, identifier: str) -> tuple[ReleaseGroup, ...]:
-        """Everything this artist released, with each album's stated genres."""
-        ...
-
-    def genres_of(self, identifier: str) -> tuple[str, ...]:
-        """What this artist is said to play; empty where nothing is said."""
-        ...
-
-
-class SimilaritySource(Protocol):
-    """Knows which artists resemble a given one."""
-
-    def similar_to(self, identifier: str, wanted: int) -> tuple[SimilarArtist, ...]:
-        """The artists most like this one, at most `wanted` of them."""
-        ...
-
-
-class GenreMemory(Protocol):
-    """Keeps what earlier runs learned about candidate artists.
-
-    What a candidate plays never changes between one run and the next, while
-    asking costs a whole second each time at the rate the catalogue permits.
-    A run that remembers nothing asks the same questions for ever.
-    """
-
-    def remembered(self) -> dict[str, tuple[str, ...]]:
-        """What is already known; empty where nothing is."""
-        ...
-
-    def remember(self, known: dict[str, tuple[str, ...]]) -> None:
-        """Keep this for the next run. Failing to keep it is not an error."""
-        ...
-
-
-class NothingRemembered:
-    """A memory that forgets, for a run given nowhere to keep anything.
-
-    The null object rather than an optional collaborator, so the run has one
-    path through it instead of two.
-    """
-
-    def remembered(self) -> dict[str, tuple[str, ...]]:
-        """Nothing was kept, because nothing is kept."""
-        return {}
-
-    def remember(self, known: dict[str, tuple[str, ...]]) -> None:
-        """Drop it, deliberately."""
 
 
 def held_by_artist(albums: tuple[Album, ...]) -> dict[str, frozenset[ReleaseMatch]]:
@@ -214,7 +153,11 @@ class Discovery:
             report(DiscoveryProgress(artist=artist, done=done, total=len(artists)))
             try:
                 gaps = self._about(
-                    artist, held.get(artist, frozenset()), everyone, ticked
+                    artist, held.get(artist, frozenset()), everyone, ticked, cancelled
+                )
+            except RunCancelled:
+                return self._so_far(found, unresolved, ambiguous, failed), RunReport(
+                    outcome=RunOutcome.CANCELLED
                 )
             except SourceUnavailable:
                 return self._so_far(found, unresolved, ambiguous, failed), RunReport(
@@ -253,6 +196,7 @@ class Discovery:
         held: frozenset[ReleaseMatch],
         everyone: tuple[str, ...],
         ticked: tuple[str, ...],
+        cancelled: CancelledCheck,
     ) -> Gaps | Ambiguity | None:
         """What one artist turned out to be missing.
 
@@ -260,14 +204,14 @@ class Discovery:
         where it knows too many, since neither is a gap and both are worth
         telling a listener about.
         """
-        identifiers = self._asked(self.catalogue.identify, artist)
+        identifiers = self._asked(self.catalogue.identify, cancelled, artist)
         if not identifiers:
             return None
         if len(identifiers) > 1:
             return Ambiguity(artist=artist, identifiers=identifiers)
-        offered = self._asked(self.catalogue.albums_of, identifiers[0])
+        offered = self._asked(self.catalogue.albums_of, cancelled, identifiers[0])
         similar = self._asked(
-            self.similarity.similar_to, identifiers[0], SIMILAR_WANTED
+            self.similarity.similar_to, cancelled, identifiers[0], SIMILAR_WANTED
         )
         return Gaps(
             artist=artist,
@@ -290,7 +234,7 @@ class Discovery:
         the run met them: the well-connected recur constantly.
 
         It reports as it goes for the same reason the first half does. This
-        half used to say nothing at all, and a listener watching a bar that had
+        half used to say nothing at all; a listener watching a bar that had
         stopped moving had no way to tell a long wait from a hang.
         """
         known = self.memory.remembered()
@@ -306,7 +250,10 @@ class Discovery:
                     stage=DiscoveryStage.NARROWING,
                 )
             )
-            known[identifier] = self._genres_of(identifier)
+            try:
+                known[identifier] = self._genres_of(identifier, cancelled)
+            except RunCancelled:
+                return None
         self.memory.remember(known)
         return tuple(
             replace(gaps, artists=self._kept(gaps.artists, known, ticked))
@@ -347,7 +294,7 @@ class Discovery:
             if wanted_by(known.get(candidate.identifier, ()), ticked)
         )
 
-    def _genres_of(self, identifier: str) -> tuple[str, ...]:
+    def _genres_of(self, identifier: str, cancelled: CancelledCheck) -> tuple[str, ...]:
         """What a candidate plays; nothing where the catalogue would not say.
 
         It is never asked about a candidate with no identifier: `_to_ask` drops
@@ -355,11 +302,16 @@ class Discovery:
         up and is kept on the same ground as every other undescribed one.
         """
         try:
-            return self._asked(self.catalogue.genres_of, identifier)
+            return self._asked(self.catalogue.genres_of, cancelled, identifier)
         except SourceFailed:
             return ()
 
-    def _asked(self, call: Callable[..., Answer], *arguments: object) -> Answer:
+    def _asked(
+        self,
+        call: Callable[..., Answer],
+        cancelled: CancelledCheck,
+        *arguments: object,
+    ) -> Answer:
         """Ask a catalogue, waiting out a refusal rather than giving up on it."""
         attempts = 0
         while True:
@@ -369,4 +321,23 @@ class Discovery:
             except RateRefused:
                 if attempts >= RETRY_ATTEMPTS:
                     raise SourceFailed("refused after every attempt")
-                self.pause(RETRY_PAUSE_SECONDS * attempts)
+                self._waited(RETRY_PAUSE_SECONDS * attempts, cancelled)
+
+    def _waited(self, seconds: float, cancelled: CancelledCheck) -> None:
+        """Wait that long, in slices, giving up the moment somebody asks.
+
+        The whole wait used to be taken in one go, so a stop pressed at the
+        start of a four second pause was not acted on for four seconds. It is
+        checked before the first slice as well as after each one, so a stop
+        pressed while the request was in flight is honoured without waiting
+        at all.
+        """
+        left = seconds
+        while left > 0:
+            if cancelled():
+                raise RunCancelled("stopped while waiting out a refusal")
+            take = min(WAIT_SLICE_SECONDS, left)
+            self.pause(take)
+            left -= take
+        if cancelled():
+            raise RunCancelled("stopped while waiting out a refusal")
