@@ -20,7 +20,8 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
-from stellody.ui.tray_parts import icon_button
+from stellody.ui.toolbar import SEPARATOR_WIDTH_PX
+from stellody.ui.tray_parts import icon_button, separator
 
 COVERS_TOOLTIP = "Switch to album art"
 LIST_TOOLTIP = "Switch to the list"
@@ -48,6 +49,7 @@ class ShowingControls(QWidget):
         button_px: int,
         icon_px: int,
         gap_px: int,
+        separator_px: int,
         toggle_view: Callable[[], None] = lambda: None,
         toggle_cover_size: Callable[[], None] = lambda: None,
         open_equaliser: Callable[[], None] = lambda: None,
@@ -74,11 +76,19 @@ class ShowingControls(QWidget):
             button_px,
             icon_px,
         )
+        # The line's height belongs to the strip this sits on, so it arrives
+        # with the other sizes; its width is the one hairline both trays draw.
+        self.sound_separator = separator(self, SEPARATOR_WIDTH_PX, separator_px)
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(gap_px)
-        for button in self.stops():
-            row.addWidget(button)
+        row.addWidget(self.view_button)
+        row.addWidget(self.size_button)
+        # The two before it say what the library is DRAWN as; the equalizer
+        # shapes what comes out of it. Ruled on 2026-09-07: a line keeps that
+        # boundary visible rather than leaving the three to read as one group.
+        row.addWidget(self.sound_separator)
+        row.addWidget(self.equaliser_button)
 
     def stops(self) -> tuple[QPushButton, ...]:
         """These controls, left to right as they are drawn."""

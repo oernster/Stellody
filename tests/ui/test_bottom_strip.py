@@ -261,6 +261,23 @@ class TestTheStripKeepsItsShapeAsTheWindowNarrows:
         drawn = first.mapTo(tray, first.rect().center())
         assert repair.x() < where.x() < drawn.x()
 
+    def test_a_rule_stands_between_what_is_shown_and_what_is_heard(
+        self, window: MainWindow
+    ) -> None:
+        """The sleeve size draws the library; the equalizer shapes its sound."""
+        window.show()
+        tray = window._bottom_tray
+        showing = tray.showing
+        line = showing.sound_separator
+        where = line.mapTo(tray, line.rect().center()).x()
+        size = showing.size_button.mapTo(tray, showing.size_button.rect().center()).x()
+        equaliser = showing.equaliser_button.mapTo(
+            tray, showing.equaliser_button.rect().center()
+        ).x()
+        assert size < where < equaliser
+        assert line.focusPolicy() == 0, "a rule is not a control"
+        assert line not in showing.stops(), "the ring steps over it"
+
     def test_the_visualiser_sits_at_the_middle_of_a_wide_strip(
         self, application: QApplication
     ) -> None:

@@ -226,6 +226,7 @@ class BottomTray(QWidget):
             BOTTOM_BUTTON_PX,
             BOTTOM_ICON_PX,
             TRAY_GAP_PX,
+            BOTTOM_SEPARATOR_HEIGHT_PX,
             toggle_view=toggle_view,
             toggle_cover_size=toggle_cover_size,
             open_equaliser=open_equaliser,
