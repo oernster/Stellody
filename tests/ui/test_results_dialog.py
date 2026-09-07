@@ -28,12 +28,14 @@ from results_support import (
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.ui.expansion_worker import ExpansionRunner
 from stellody.ui.palette import Mode, palette_for
-from stellody.ui.results_dialog import (
-    ASKING,
+from stellody.ui.results_dialog import ResultsDialog
+from stellody.ui.results_words import (
     COULD_NOT_ASK,
     NOBODY_TO_ASK,
     NOTHING_OFFERED,
-    ResultsDialog,
+    asking_about,
+    candidate_row,
+    source_row,
 )
 
 
@@ -97,7 +99,8 @@ def test_a_source_artist_carries_its_albums(application) -> None:
     dialog = made((gaps_with(albums=2, artist="Kate Bush"),))
     assert dialog.tree.topLevelItemCount() == 1
     source = dialog.tree.topLevelItem(0)
-    assert source.text(0) == "Kate Bush"
+    assert source.text(0) == source_row(gaps_with(albums=2, artist="Kate Bush"))
+    assert "Kate Bush" in source.text(0)
     assert rows_under(source) == ("Album 0", "Album 1")
 
 
@@ -106,7 +109,7 @@ def test_a_candidate_artist_starts_collapsed(application) -> None:
     asking = Asking()
     dialog = made((gaps_with(artists=3),), asking=asking)
     source = dialog.tree.topLevelItem(0)
-    assert rows_under(source) == ("Artist 0", "Artist 1", "Artist 2")
+    assert rows_under(source) == tuple(candidate_row(f"Artist {n}") for n in range(3))
     for at in range(source.childCount()):
         assert source.child(at).childCount() == 0
     assert asking.asked == []
@@ -119,7 +122,8 @@ def test_expanding_a_candidate_asks_for_their_albums(application) -> None:
     candidate = candidate_in(dialog, at=1)
     candidate.setExpanded(True)
     assert asking.asked == ["id-0"]
-    assert rows_under(candidate) == (ASKING,)
+    assert rows_under(candidate) == ()
+    assert dialog.asking_bar.format() == asking_about(("Artist 0",))
     dialog.show_releases("id-0", (ReleaseGroup(title="Hounds of Love"),))
     assert rows_under(candidate) == ("Hounds of Love",)
 
@@ -285,8 +289,7 @@ def test_the_answer_reaches_the_dialog_across_the_thread_it_is_asked_on(
     runner.setParent(dialog)
     candidate = candidate_in(dialog)
     candidate.setExpanded(True)
-    assert waited_for(application, lambda: rows_under(candidate) != (ASKING,))
-    assert rows_under(candidate) == ("Hounds of Love",)
+    assert waited_for(application, lambda: rows_under(candidate) == ("Hounds of Love",))
     assert catalogue.asked == ["id-0"]
     assert not runner.asking_about("id-0")
     dialog.reject()
@@ -302,8 +305,9 @@ def test_a_failure_on_that_thread_arrives_as_a_line_under_the_artist(
     runner.setParent(dialog)
     candidate = candidate_in(dialog)
     candidate.setExpanded(True)
-    assert waited_for(application, lambda: rows_under(candidate) != (ASKING,))
-    assert rows_under(candidate) == (
-        COULD_NOT_ASK.format(reason="nothing answered at all"),
+    assert waited_for(
+        application,
+        lambda: rows_under(candidate)
+        == (COULD_NOT_ASK.format(reason="nothing answered at all"),),
     )
     dialog.reject()

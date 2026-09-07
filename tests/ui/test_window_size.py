@@ -59,10 +59,51 @@ def window(store: RememberingStore):
 
 
 class TestWhatIsWrittenDown:
-    def test_a_first_run_opens_at_the_default(self, application, roomy) -> None:
+    def test_a_first_run_opens_at_the_default_size(self, application, roomy) -> None:
+        """The size under the maximised state, which is where restoring down
+        from it lands."""
         made = window(RememberingStore())
         assert made.size().width() == WINDOW_WIDTH_PX
         assert made.size().height() == WINDOW_HEIGHT_PX
+        made.close()
+
+    def test_a_first_run_opens_maximised(self, application, roomy) -> None:
+        """Ruled on 2026-09-07: a freshly installed copy fills the screen.
+
+        A window opening at its default size is one somebody has to maximise
+        before doing anything with a library, every time they install it.
+        """
+        made = window(RememberingStore())
+        assert made.windowState() & Qt.WindowState.WindowMaximized
+        made.close()
+
+    def test_a_run_with_something_remembered_is_not_a_first_run(
+        self, application, roomy
+    ) -> None:
+        """The choice sticks: a window left at half the screen comes back so.
+
+        The unwanted sibling of the test above. Maximising every launch would
+        be a simpler rule and a worse one, since it would quietly throw away
+        the size somebody deliberately left.
+        """
+        store = RememberingStore(
+            {
+                SETTING_WINDOW_MAXIMISED: FALSE,
+                SETTING_WINDOW_WIDTH: "1520",
+                SETTING_WINDOW_HEIGHT: "800",
+            }
+        )
+        made = window(store)
+        assert not made.windowState() & Qt.WindowState.WindowMaximized
+        assert made.size().width() == 1520
+        made.close()
+
+    def test_a_settings_file_half_written_is_not_read_as_a_first_run(
+        self, application, roomy
+    ) -> None:
+        """One key present is an earlier run, so its choice is honoured."""
+        made = window(RememberingStore({SETTING_WINDOW_MAXIMISED: FALSE}))
+        assert not made.windowState() & Qt.WindowState.WindowMaximized
         made.close()
 
     def test_closing_writes_the_size_down(self, application, roomy) -> None:

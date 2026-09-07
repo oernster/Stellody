@@ -11,6 +11,12 @@ screen that is not actually maximised: the same shape with none of the
 behaviour; no way back to the size it had before either. The size kept is
 therefore the one it would return to, with the maximised state beside it.
 
+A run with nothing written down opens MAXIMISED. Ruled on 2026-09-07: a
+freshly installed copy has no remembered size, so it opened at a default that
+somebody then had to maximise before doing anything with a library. It applies
+to the first run alone, since every run after it has a choice to honour: a
+window deliberately left at half the screen comes back at half the screen.
+
 What comes back is checked rather than trusted. A size is clamped to the screen
 now attached, because a window sized for a monitor that is no longer there
 opens with its controls past the edge. That clamp is necessary and not
@@ -39,16 +45,36 @@ class Geometry:
     """The window's half of remembering the size it was left at."""
 
     def restore_geometry(self, default: QSize) -> None:
-        """Open at the size last left, at the given size when none was."""
+        """Open at the size last left; maximised where nothing was left.
+
+        The size is set either way, since it is the one to come back to when
+        the window is restored down from maximised.
+        """
         wanted = QSize(
             self._stored_length(SETTING_WINDOW_WIDTH, default.width()),
             self._stored_length(SETTING_WINDOW_HEIGHT, default.height()),
         )
         self.resize(self._usable(wanted))
-        if self._flag(SETTING_WINDOW_MAXIMISED):
+        if self._first_run() or self._flag(SETTING_WINDOW_MAXIMISED):
             # Set rather than shown: this runs while the window is still
             # being built; showMaximized here would put it on screen early.
             self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
+
+    def _first_run(self) -> bool:
+        """Whether any earlier run wrote down a size to come back to.
+
+        All three keys are asked rather than one, so a settings file half
+        written by an older version is read as remembering something rather
+        than as a fresh install to be maximised over the top of.
+        """
+        return not any(
+            self._settings.get_setting(key, "")
+            for key in (
+                SETTING_WINDOW_WIDTH,
+                SETTING_WINDOW_HEIGHT,
+                SETTING_WINDOW_MAXIMISED,
+            )
+        )
 
     def fit_on_screen(self) -> None:
         """Maximise where the content restored to will not fit the screen.

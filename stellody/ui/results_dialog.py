@@ -21,6 +21,23 @@ by whoever wants the answer. FR-D31.
 **It holds no catalogue and reaches no network.** Asking is handed in, so the
 whole dialog can be driven with nothing behind it; where nothing is handed in,
 a candidate simply does not open.
+
+**It says what it is showing, in a key and on every row.** Reported on
+2026-09-07: shown a tree of blue names, amber names and plain names, Oliver
+asked which lines were albums and which were tracks, then whether two of the
+amber names were artists at all. An amber row indented under a blue one reads
+as an album under an artist; its own children then read as tracks. So the kind
+is now written on the row rather than carried by the colour alone, with a key
+at the top saying which colour is which. The words are in
+`results_words.py`; this module is where they are put on screen.
+
+**A strip at the top says when the catalogue is being asked.** One expansion
+costs at least the gap the terms require and may wait out two refusals, so
+several seconds of nothing happening is the ordinary case rather than a fault.
+Reported the same day as looking stuck. The space is reserved rather than shown
+only while something is in flight: a strip that appeared would push the whole
+list down at the moment somebody clicked an arrow in it. At rest it carries the
+instruction instead.
 """
 
 from __future__ import annotations
@@ -29,6 +46,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QLabel,
+    QProgressBar,
     QPushButton,
     QTreeWidget,
     QTreeWidgetItem,
@@ -36,32 +55,48 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from stellody.application.values import PERCENT
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.ui.results_words import (
+    COULD_NOT_ASK,
+    LEGEND_ALBUM,
+    LEGEND_CANDIDATE,
+    LEGEND_SOURCE,
+    NOBODY_TO_ASK,
+    NOT_ASKING,
+    NOTHING_OFFERED,
+    asking_about,
+    candidate_row,
+    source_row,
+)
 from stellody.ui.theme import Mode, palette_for
 
 TITLE = "What the last run found"
 CLOSE_LABEL = "Close"
-# Said under a candidate whose lookup could not be made. Against that artist
-# rather than in the status bar, since every other entry is still usable and
-# a message elsewhere would say nothing about which one failed. FR-D32.
-COULD_NOT_ASK = "Could not be looked up: {reason}"
-# Said under a candidate the catalogue answered about with nothing worth
-# offering. An entry that opens onto emptiness reads as one still loading.
-NOTHING_OFFERED = "Nothing worth offering"
-# Said under a candidate that arrived without an identifier, which is a name
-# the similarity catalogue gave without saying who it meant. Nobody can be
-# asked about that, so the entry says why rather than opening onto nothing.
-NOBODY_TO_ASK = "The catalogue did not say which artist this is"
-ASKING = "Asking the catalogue..."
 # Wide enough for an album title under an artist under a heading without the
 # titles wrapping; the same measurement the discovery dialog is built to.
 DIALOG_WIDTH_PX = 700
-DIALOG_HEIGHT_PX = 520
+DIALOG_HEIGHT_PX = 560
 APART_PX = 12
+# The key's own spacing, tighter than the gaps between parts of the dialog:
+# three lines that belong together read as one block rather than as three.
+KEY_GAP_PX = 2
+# The filled circle each line of the key is marked with, in the colour that
+# line is about. One rich text label per line rather than a swatch beside a
+# label, because Qt cannot align two widgets on a baseline.
+MARK = "\u25cf"
+KEY_LINE = '<span style="color: {colour}">{mark}</span>&nbsp; {words}'
+# Tall enough to read as a strip rather than as a line, short enough that the
+# list keeps the room. The same height a dialog button takes.
+ASKING_BAR_PX = 28
 # Where a candidate artist's identifier is kept, so an answer arriving later
 # can find the rows it belongs under.
 IDENTIFIER_ROLE = Qt.ItemDataRole.UserRole
+# Where a candidate artist's name is kept, so the strip at the top can say who
+# is being asked about without reading it back out of a row that now says more
+# than the name.
+NAME_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 def _coloured(item: QTreeWidgetItem, colour: str) -> QTreeWidgetItem:
@@ -97,14 +132,90 @@ class ResultsDialog(FirstStopDialog):
         self._answered: set[str] = set()
         self.setWindowTitle(TITLE)
         self.resize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
+        # Who is being asked about right now, by identifier. What the strip
+        # at the top reads; also why it can say a name rather than a number
+        # when there is only one.
+        self._in_flight: dict[str, str] = {}
         outer = QVBoxLayout(self)
         self.title = title_label(TITLE, self)
         outer.addWidget(self.title)
         outer.addSpacing(APART_PX)
+        outer.addLayout(self._key())
+        outer.addSpacing(APART_PX)
+        self.asking_bar = self._built_bar()
+        outer.addWidget(self.asking_bar)
         self.tree = self._built_tree(gaps)
         outer.addWidget(self.tree)
         outer.addLayout(self._buttons())
         self._listen()
+
+    def _key(self) -> QVBoxLayout:
+        """What each colour means, marked with a filled circle in that colour.
+
+        Every row of the tree is one of these three things, so three lines say
+        the whole of it. The circle carries the colour and the words carry the
+        meaning, which is the arrangement that still works in a screenshot,
+        for a reader who cannot separate the two hues and for anybody who has
+        simply not been told.
+        """
+        lines = QVBoxLayout()
+        lines.setSpacing(KEY_GAP_PX)
+        self.key = tuple(
+            self._key_line(colour, words)
+            for colour, words in (
+                (self._colour.source_artist, LEGEND_SOURCE),
+                (self._colour.candidate_artist, LEGEND_CANDIDATE),
+                (self._colour.text, LEGEND_ALBUM),
+            )
+        )
+        for line in self.key:
+            lines.addWidget(line)
+        return lines
+
+    def _key_line(self, colour: str, words: str) -> QLabel:
+        """One line of the key: a filled circle, then what it means."""
+        line = QLabel(KEY_LINE.format(colour=colour, mark=MARK, words=words), self)
+        line.setTextFormat(Qt.TextFormat.RichText)
+        line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        # Wrapped rather than clipped: a key that runs off the edge of a
+        # narrowed dialog is a key nobody can read, which is the fault it
+        # exists to fix.
+        line.setWordWrap(True)
+        return line
+
+    def _built_bar(self) -> QProgressBar:
+        """The strip that says whether the catalogue is being asked anything.
+
+        Busy rather than counted, because one lookup has no measurable
+        progress: it is a request that either comes back or is waited out.
+        What a reader needs is that something is happening rather than how far
+        through it is.
+        """
+        bar = QProgressBar(self)
+        bar.setFixedHeight(ASKING_BAR_PX)
+        bar.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        bar.setTextVisible(True)
+        self._rest_bar(bar)
+        return bar
+
+    @staticmethod
+    def _rest_bar(bar: QProgressBar) -> None:
+        """Back to the instruction, with nothing being asked."""
+        bar.setRange(0, PERCENT)
+        bar.setValue(0)
+        bar.setFormat(NOT_ASKING)
+
+    def _say_what_is_being_asked(self) -> None:
+        """Put whoever is being looked up on the strip, else the instruction.
+
+        A busy range while anything is in flight, since Qt animates that: a
+        bar that merely said words would look as stuck as the dialog did.
+        """
+        if not self._in_flight:
+            self._rest_bar(self.asking_bar)
+            return
+        self.asking_bar.setRange(0, 0)
+        self.asking_bar.setFormat(asking_about(tuple(self._in_flight.values())))
 
     def _listen(self) -> None:
         """Take the answers the asker brings back, where there is one.
@@ -136,8 +247,13 @@ class ResultsDialog(FirstStopDialog):
         The albums first and the candidates after, which is the order they
         were found in: a record by somebody already held is a closer answer
         than an artist nobody has heard yet.
+
+        The row says how many of each sit under it, because both kinds sit in
+        one list and a name alone leaves a reader to work out which is which.
         """
-        item = _coloured(QTreeWidgetItem([found.artist]), self._colour.source_artist)
+        item = _coloured(
+            QTreeWidgetItem([source_row(found)]), self._colour.source_artist
+        )
         for album in found.albums:
             item.addChild(self._album_item(album))
         for candidate in found.artists:
@@ -156,9 +272,11 @@ class ResultsDialog(FirstStopDialog):
         somebody opens it. FR-D30.
         """
         item = _coloured(
-            QTreeWidgetItem([candidate.name]), self._colour.candidate_artist
+            QTreeWidgetItem([candidate_row(candidate.name)]),
+            self._colour.candidate_artist,
         )
         item.setData(0, IDENTIFIER_ROLE, candidate.identifier)
+        item.setData(0, NAME_ROLE, candidate.name)
         item.setChildIndicatorPolicy(QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator)
         self._rows.setdefault(candidate.identifier, []).append(item)
         return item
@@ -190,15 +308,24 @@ class ResultsDialog(FirstStopDialog):
             return
         if self._asking.ask(identifier):
             self._answered.add(identifier)
-            self._said_under(item, ASKING)
+            self._in_flight[identifier] = item.data(0, NAME_ROLE)
+            self._say_what_is_being_asked()
 
     def show_releases(self, identifier: str, releases: object) -> None:
-        """Put what an artist released under every row that artist occupies."""
+        """Put what an artist released under every row that artist occupies.
+
+        The row itself gains the count, which answers how many lines sit
+        beneath it; the key above answers what they are.
+        """
+        albums = tuple(releases)
+        self._in_flight.pop(identifier, None)
+        self._say_what_is_being_asked()
         for item in self._rows.get(identifier, ()):
             self._emptied(item)
-            for album in releases:
+            item.setText(0, candidate_row(item.data(0, NAME_ROLE), len(albums)))
+            for album in albums:
                 item.addChild(self._album_item(album))
-            if not item.childCount():
+            if not albums:
                 self._said_under(item, NOTHING_OFFERED)
 
     def show_failure(self, identifier: str, reason: str) -> None:
@@ -210,6 +337,8 @@ class ResultsDialog(FirstStopDialog):
         refused once may well answer next time. FR-D32.
         """
         self._answered.discard(identifier)
+        self._in_flight.pop(identifier, None)
+        self._say_what_is_being_asked()
         for item in self._rows.get(identifier, ()):
             self._said_under(item, COULD_NOT_ASK.format(reason=reason))
 

@@ -840,6 +840,68 @@ Verified by: `tests/ui/test_results_dialog.py::test_the_two_kinds_of_artist_are_
 
 ---
 
+**FR-D39 The results say what they are showing**
+
+Priority: Must
+
+Requirement: The results dialog shall carry a key naming each kind of row it
+draws, each entry marked with a filled circle in the colour that kind is drawn
+in. Every artist row shall state its kind in words: a source artist row shall
+give the number of albums and the number of similar artists beneath it. A
+candidate artist row shall name itself as a similar artist, gaining the number
+of its albums once they have been fetched.
+
+Rationale: Reported by Oliver on 2026-09-07, looking at a real run: shown blue
+names, amber names and plain names, he asked which lines were albums and which
+were tracks, then whether two of the amber names were artists at all. They were.
+A candidate artist is drawn indented under the source artist that led to it, so
+it reads as an album under an artist; its own albums then read as tracks under
+that. Nothing in the run is ever a track, which the key can say outright.
+
+Colour is not left to carry the meaning by itself. It fails a reader who cannot
+separate the two hues, it fails a screenshot pasted into a message and it failed
+the person who commissioned it. FR-D34 keeps the colours; this states what they
+mean in words beside them.
+
+Acceptance: Given a dialog holding both kinds, when the key is read, then it
+names all three kinds of row with a mark in each kind's own colour; when a
+source artist row is read, then it gives both counts; when a candidate row is
+read, then it names itself a similar artist.
+
+Verified by: `tests/ui/test_results_dialog.py::test_the_key_names_all_three_kinds_in_their_own_colours`, `tests/ui/test_results_dialog.py::test_a_source_row_says_how_many_of_each_sit_under_it`, `tests/ui/test_results_dialog.py::test_a_candidate_row_says_that_it_is_an_artist`
+
+---
+
+**FR-D40 The results say when the catalogue is being asked**
+
+Priority: Must
+
+Requirement: While one or more candidate artist lookups are in flight, the
+results dialog shall show a busy indicator naming the artist being asked about;
+where there is more than one, it shall name the number of artists instead. The indicator shall
+occupy its place whether or not anything is in flight, carrying instead what to
+do to fetch an artist's albums.
+
+Rationale: Reported by Oliver on 2026-09-07: opening an amber name left the
+dialog doing nothing visible for several seconds, which reads as stuck. It is
+not stuck. One lookup costs at least the gap NFR-PERF-001 requires and may wait
+out two refusals before answering, so several seconds of quiet is the ordinary
+case rather than a fault; what was missing was anything on screen saying so.
+
+Busy rather than counted, since one request has no measurable progress: it
+either comes back or is waited out. The space is reserved rather than shown only
+while something is in flight, because a strip that appeared would push the whole
+list down at the moment somebody clicked an arrow in it.
+
+Acceptance: Given a candidate artist being expanded, when the dialog is read,
+then the indicator names that artist and is busy rather than counted; given two
+in flight, then it names the number; given the last answer arriving, then it
+returns to carrying the instruction.
+
+Verified by: `tests/ui/test_results_dialog.py::test_the_strip_names_who_is_being_asked_about`, `tests/ui/test_results_dialog.py::test_the_strip_counts_them_when_several_are_in_flight`, `tests/ui/test_results_dialog.py::test_the_strip_goes_quiet_when_the_last_answer_lands`
+
+---
+
 **FR-D35 How long the run has left**
 
 Priority: Must
@@ -1270,7 +1332,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D38 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D40 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.
