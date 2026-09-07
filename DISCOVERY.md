@@ -419,18 +419,28 @@ than parks, ruled on 2026-09-06: a resumable run means keeping partial state
 that has to be reconciled against a library that may have changed; the
 smallest genres cost seconds to run again.
 
-A stop is also felt rather than merely obeyed. A run waits out a refusal for two
-seconds, then four; those waits were taken whole, so a stop pressed at the start
-of one was not acted on until it ended. They are taken in slices now; the
-toolbar says the stop was heard the instant it is pressed, since giving up
-happens between requests rather than during one. Amended on 2026-09-07 after the
-button was reported as not working.
+A stop is also felt rather than merely obeyed. Amended twice on 2026-09-07,
+after the button was reported as not working and then reported again once the
+first amendment turned out to have fixed only how it looked.
+
+The run is asked whether it is still wanted before EVERY request rather than
+once an artist. One artist costs three requests, each of which may take the full
+twenty second timeout and may be attempted three times, so a run consulted once
+an artist could go on for minutes after being told to stop. The waits between
+attempts are sliced as well, so a stop lands inside one rather than at the end
+of it.
+
+What cannot be removed is the request already in flight: nothing calls an
+outstanding HTTP request back, so that timeout is the floor. It is why the
+toolbar lets go of a run when the stop is agreed to rather than when the run
+notices, which is FR-D27.
 
 Acceptance: Given a run in progress over an existing discovery file, when cancel
 is pressed, then no further request is issued, nothing of that run is retained
 and the existing file is byte for byte what it was; given the run is waiting out
 a refusal when cancel is pressed, then it stops within one slice of that wait
-rather than at the end of it.
+rather than at the end of it; given a cancel arrives between two of the three
+requests made about one artist, then the remaining two are never issued.
 
 Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_wiring.py::test_a_stop_is_acknowledged_before_the_run_has_stopped`
 
@@ -638,16 +648,21 @@ thirty one, when the discovery button is pressed, then the question names seven
 of thirty one and no cancel is issued; when it is declined, then the run
 continues untouched; when it is agreed to, then the run is asked to stop. Given
 a run that has reported nothing yet, when the button is pressed, then the
-question is still asked, without a count. Given the stop is agreed to, when
-reports the run had already sent arrive afterwards, then the toolbar keeps
-saying that it is stopping.
+question is still asked, without a count. Given the stop is agreed to, then the
+toolbar bar returns to rest at once and reports are ignored until the run ends;
+given a new run is asked for before the last one has finished winding down,
+then the window says so rather than appearing to do nothing.
 
-The last clause is not hypothetical. The run reports right up to the moment it
-notices; anything it says while the question stands queues behind that modal, so it arrives in a burst the instant the question closes. Drawing those
-put the bar back to counting immediately after a stop was agreed to, which was
-reported on 2026-09-07 as the stop not working at all.
+Ruled on 2026-09-07 after the stop was reported as not working twice over. The
+bar is let go of on the press rather than on the ending, because the request
+already in flight cannot be called back and may take twenty seconds: a bar held
+until the run noticed would go on reporting a run somebody had finished with.
+Reports arriving afterwards are dropped for the same reason. They are not
+hypothetical: the run reports right up to the moment it notices, anything it
+says while the question stands queues behind that modal, then the whole burst
+arrives the instant the question closes.
 
-Verified by: `tests/ui/test_discovery_stopping.py::test_stopping_is_asked_about_before_it_happens`, `tests/ui/test_discovery_stopping.py::test_the_question_names_how_much_would_be_thrown_away`, `tests/ui/test_discovery_stopping.py::test_progress_reported_after_a_stop_does_not_undo_the_stopping`
+Verified by: `tests/ui/test_discovery_stopping.py::test_stopping_is_asked_about_before_it_happens`, `tests/ui/test_discovery_stopping.py::test_the_question_names_how_much_would_be_thrown_away`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/ui/test_discovery_stopping.py::test_a_new_run_asked_for_too_soon_says_so`
 
 ---
 

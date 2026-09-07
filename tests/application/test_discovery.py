@@ -141,7 +141,14 @@ def test_cancel_stops_before_the_next_request() -> None:
 
 
 def test_closing_stops_the_run() -> None:
-    """A close is a cancel expressed differently; it gets the same answer."""
+    """A close is a cancel expressed differently; it gets the same answer.
+
+    Nothing is asked at all here. The run consults the cancel once for the
+    artist and again before the request about that artist, so a stop arriving
+    between those two lands before anything goes out. That is stronger than
+    this asserted while the run only asked once an artist, when the request
+    already under way went out regardless.
+    """
     asked: list[bool] = []
 
     def once_around() -> bool:
@@ -153,7 +160,7 @@ def test_closing_stops_the_run() -> None:
     albums = (make_album("One", "A"), make_album("Two", "B"))
     report = run.run(albums, ROCK, nothing, once_around)
     assert report.outcome is RunOutcome.CANCELLED
-    assert catalogue.identified == ["One"]
+    assert catalogue.identified == []
 
 
 def test_no_network_stops_the_run() -> None:
@@ -304,3 +311,23 @@ def test_a_stopped_run_asks_the_catalogue_nothing_further() -> None:
     run, source, _, _ = make_run(catalogue)
     run.run((make_album("U2", "A"),), ROCK, nothing, Stopping(after=SLICES_BEFORE_STOP))
     assert source.identified == ["U2"], "it asked once and never again"
+
+
+def test_a_stop_lands_between_requests_rather_than_between_artists() -> None:
+    """The defect reported twice: a stop that took minutes to be felt.
+
+    One artist costs three requests, each of which may take the full twenty
+    second timeout and may be attempted three times. Asked once an artist, a
+    run could go on for minutes after being told to stop; asked before every
+    request, what is left is the one already in flight.
+    """
+    catalogue = Catalogue(identities={"U2": ("u2-id",)})
+    run, source, similarity, _ = make_run(catalogue)
+    # False for the artist, false for the first request, true after it: the
+    # stop arrives while the run is between the first and second requests.
+    stopping = Stopping(after=2)
+    report = run.run((make_album("U2", "A"),), ROCK, nothing, stopping)
+    assert report.outcome is RunOutcome.CANCELLED
+    assert source.identified == ["U2"], "the one already asked"
+    assert source.albums_asked == [], "and not the two that would have followed"
+    assert similarity.asked == []

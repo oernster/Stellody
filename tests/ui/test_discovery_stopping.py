@@ -17,9 +17,9 @@ from discovery_wiring_support import (
 from PySide6.QtWidgets import QMessageBox
 
 from stellody.application.values import DiscoveryProgress
-from stellody.ui.discovering import STOP_QUESTION_EARLY
-from stellody.ui.discovery_progress import STOPPING
-from stellody.ui.tray_metrics import STOP_DISCOVERY_TOOLTIP
+from stellody.ui.discovering import STILL_STOPPING, STOP_QUESTION_EARLY
+from stellody.ui.discovery_progress import RESTING
+from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 
 
 def test_a_started_run_turns_the_button_into_a_stop(application) -> None:
@@ -47,14 +47,23 @@ def test_pressing_it_during_a_run_stops_the_run(
 def test_stopping_is_asked_about_before_it_happens(
     application, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A run is minutes of waiting and none of it survives being stopped."""
+    """A run is minutes of waiting and none of it survives being stopped.
+
+    Declining leaves everything exactly as it was, bar included: the bar is
+    reset by agreeing to stop, so a decline that reset it would throw the run
+    away on screen while leaving it running underneath.
+    """
     window = make_window(application)
     runner = RunnerInProgress()
     window._discovery_runner = runner
+    window.discovery_progressed(
+        DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
+    )
     answer(monkeypatch, QMessageBox.StandardButton.No)
     window.open_discovery()
     assert runner.stopped == 0, "the run was left alone"
-    assert window._tray.discovery_bar.format() != STOPPING
+    assert window._tray.discovery_bar.value() == 25, "still counting"
+    assert window._tray.discovery_bar.format() != RESTING
 
 
 def test_the_question_names_how_much_would_be_thrown_away(
@@ -100,10 +109,15 @@ def test_an_ended_run_forgets_where_it_had_got_to(
     assert asked == [STOP_QUESTION_EARLY]
 
 
-def test_a_stop_is_acknowledged_before_the_run_has_stopped(
+def test_a_stop_lets_go_of_the_run_at_once(
     application, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A run gives up between requests, so the press lands before the ending."""
+    """Ruled on 2026-09-07: the bar resets on the press, not on the ending.
+
+    A request already in flight cannot be called back and may take the full
+    twenty second timeout, so a bar held until the run noticed would go on
+    reporting a run somebody had already finished with.
+    """
     window = make_window(application)
     runner = RunnerInProgress()
     window._discovery_runner = runner
@@ -112,11 +126,13 @@ def test_a_stop_is_acknowledged_before_the_run_has_stopped(
         DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
     )
     window.open_discovery()
-    assert window._tray.discovery_bar.format() == STOPPING
     assert runner.stopped == 1
+    assert window._tray.discovery_bar.format() == RESTING
+    assert window._tray.discovery_bar.value() == 0
+    assert window._tray.discover_button.toolTip() == DISCOVER_TOOLTIP
 
 
-def test_progress_reported_after_a_stop_does_not_undo_the_stopping(
+def test_progress_reported_after_a_stop_does_not_revive_the_bar(
     application, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Reported as the stop not working, on 2026-09-07.
@@ -134,4 +150,48 @@ def test_progress_reported_after_a_stop_does_not_undo_the_stopping(
     window.discovery_progressed(
         DiscoveryProgress(artist="Howlin' Wolf", done=8, total=31)
     )
-    assert window._tray.discovery_bar.format() == STOPPING
+    assert window._tray.discovery_bar.format() == RESTING
+
+
+class RunnerThatWillNotStart:
+    """A runner still winding down, which refuses to take a second run."""
+
+    running = False
+
+    def __init__(self) -> None:
+        self.asked = 0
+
+    def start(self, *_arguments) -> bool:
+        """Refuse, as the real one does while its thread is still going."""
+        self.asked += 1
+        return False
+
+    def cancel(self) -> None:
+        """Never reached in these tests."""
+
+
+def test_a_new_run_asked_for_too_soon_says_so(application) -> None:
+    """The trap the reset opened, closed before anybody could fall into it.
+
+    Letting go of a stopped run at once means the button is offering to start
+    another while the thread is still winding down. The runner refuses that;
+    a refusal nobody is told about is a press that does nothing, which is the
+    defect this whole area was reported for.
+    """
+    window = make_window(application)
+    window._discovery_runner = RunnerThatWillNotStart()
+    window.begin_discovery(("Blues",))
+    assert window._status.said == [STILL_STOPPING]
+
+
+def test_a_stopped_run_does_not_announce_itself_when_it_finally_ends(
+    application, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """It was reported on when it was stopped, which is what was asked."""
+    window = make_window(application)
+    window._discovery_runner = RunnerInProgress()
+    answer(monkeypatch, QMessageBox.StandardButton.Yes)
+    window.open_discovery()
+    said_when_stopped = list(window._status.said)
+    window.discovery_completed(a_report(albums=2, artists=3))
+    assert window._status.said == said_when_stopped, "it did not speak twice"

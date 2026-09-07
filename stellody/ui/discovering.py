@@ -38,6 +38,10 @@ NOTHING_TO_ASK = (
     "Nothing in the library carries those genres, so there was nobody to ask about."
 )
 STOPPED = "Stopped. Nothing was written; any earlier answer is untouched."
+# Said where a new run is asked for while the last one is still winding down.
+# A request already in flight cannot be called back, so there is a moment
+# after a stop when the thread is not free yet.
+STILL_STOPPING = "Still stopping the last run. Try again in a moment."
 UNREACHABLE = "Nothing answered. Check the connection, then try again."
 COULD_NOT_WRITE = (
     "The answer could not be written: {reason}. Any earlier one is untouched."
@@ -125,10 +129,20 @@ class Discovering:
             self._discovery_dialog = None
 
     def begin_discovery(self, ticked: tuple[str, ...]) -> None:
-        """Start a run over the artists inside these genres."""
+        """Start a run over the artists inside these genres.
+
+        A stopped run is let go of at once while the thread it was on winds
+        down, so a new one can be asked for before there is anywhere to put it.
+        The runner refuses that rather than quietly doing nothing, so the
+        refusal is said out loud: a press that appears to do nothing is the
+        defect this whole area has already been reported for once.
+        """
         if self._discovery is None:
             return
-        self._discovery_runner.start(self._discovery, self._all_albums, ticked)
+        if not self._discovery_runner.start(self._discovery, self._all_albums, ticked):
+            self.statusBar().showMessage(STILL_STOPPING)
+            return
+        self._discovery_stopping = False
         self._tray.discover_button.setToolTip(STOP_DISCOVERY_TOOLTIP)
 
     def _agreed_to_stop(self) -> bool:
@@ -162,7 +176,14 @@ class Discovering:
         """
         self._discovery_stopping = True
         self._discovery_runner.cancel()
-        self._tray.discovery_bar.show_stopping()
+        # Let go of at once rather than held until the run notices. A request
+        # already in flight cannot be called back and may take the full twenty
+        # second timeout, so a bar still saying something about a run somebody
+        # has finished with is a bar reporting on nothing they care about.
+        self._discovery_progress = None
+        self._tray.discovery_bar.rest()
+        self._tray.discover_button.setToolTip(DISCOVER_TOOLTIP)
+        self.statusBar().showMessage(STOPPED)
 
     def discovery_progressed(self, progress: DiscoveryProgress) -> None:
         """Draw how far along the run is, in the tray it reports to.
@@ -180,7 +201,15 @@ class Discovering:
         self._tray.discovery_bar.show_progress(progress)
 
     def discovery_completed(self, report: RunReport) -> None:
-        """Write what was found where there is anything to write, then say so."""
+        """Write what was found where there is anything to write, then say so.
+
+        A run somebody stopped has already been reported on, at the moment
+        they stopped it, so it says nothing further: the answer to a question
+        nobody is waiting for any more.
+        """
+        if self._discovery_stopping:
+            self._discovery_stopping = False
+            return
         self._say_about_discovery(self._settled(report))
 
     def discovery_failed(self, reason: str) -> None:

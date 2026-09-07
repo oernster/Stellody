@@ -23,11 +23,6 @@ from PySide6.QtWidgets import QProgressBar, QWidget
 from stellody.application.values import PERCENT, DiscoveryProgress, DiscoveryStage
 
 RESTING = "Music discovery"
-# Said the instant a stop is pressed. A run gives up at its next safe boundary
-# rather than mid request, which is a moment away rather than instant; a bar
-# that carried on counting through that moment would read as a button nobody
-# heard.
-STOPPING = "Stopping"
 # What each half of a run is called where somebody can see it. Short enough to
 # sit beside a percentage in a strip this narrow.
 STAGE_NAMES = {
@@ -61,11 +56,6 @@ class DiscoveryBar(QProgressBar):
         self.setValue(0)
         self.setFormat(RESTING)
         self.setToolTip(RESTING)
-
-    def show_stopping(self) -> None:
-        """Say that a stop was heard, before the run has finished stopping."""
-        self.setFormat(STOPPING)
-        self.setToolTip(STOPPING)
 
     def show_progress(self, progress: DiscoveryProgress) -> None:
         """Say how far along the run is, plus what it is doing right now."""

@@ -209,6 +209,9 @@ class Discovery:
             return None
         if len(identifiers) > 1:
             return Ambiguity(artist=artist, identifiers=identifiers)
+        # Three requests are made about one artist. Each is asked about
+        # separately inside `_asked`, so a stop between any two of them is
+        # honoured rather than waiting for the artist to be finished with.
         offered = self._asked(self.catalogue.albums_of, cancelled, identifiers[0])
         similar = self._asked(
             self.similarity.similar_to, cancelled, identifiers[0], SIMILAR_WANTED
@@ -240,8 +243,11 @@ class Discovery:
         known = self.memory.remembered()
         asking = self._to_ask(gathered, known)
         for done, (identifier, name) in enumerate(asking):
-            if cancelled():
-                return None
+            # No check of its own here. Every candidate is asked about through
+            # `_asked`, which consults the cancel before each request, so a
+            # check at the top of this loop only asked the same question a
+            # progress report earlier and gave a stop two places to be
+            # noticed rather than one.
             report(
                 DiscoveryProgress(
                     artist=name,
@@ -312,9 +318,19 @@ class Discovery:
         cancelled: CancelledCheck,
         *arguments: object,
     ) -> Answer:
-        """Ask a catalogue, waiting out a refusal rather than giving up on it."""
+        """Ask a catalogue, waiting out a refusal rather than giving up on it.
+
+        Asked whether it is still wanted before EVERY request rather than once
+        per artist. Measured on 2026-09-07: a request may take the full twenty
+        second timeout and may be attempted three times, so a run asked once
+        an artist could go on for minutes after being told to stop. A request
+        already in flight cannot be called back, so one of those is the floor;
+        what this removes is every one after it.
+        """
         attempts = 0
         while True:
+            if cancelled():
+                raise RunCancelled("stopped before the next request")
             attempts += 1
             try:
                 return call(*arguments)
