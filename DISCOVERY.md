@@ -18,16 +18,16 @@ public catalogues what is missing around it and writes the answer down as data.
 ### 1.2 Scope
 
 In scope: a toolbar button, a dialog carrying the genre catalogue, a run that
-looks up the artists inside the ticked genres and a JSON file holding what it
-found.
+looks up the artists inside the ticked genres, a JSON file holding what it found
+and a dialog showing what that file holds when a run completes.
 
 Out of scope, stated first so it is a past decision rather than a future
 argument:
 
 - **Buying anything.** Reaching a shop is stage three of the milestone and is
   not designed.
-- **Showing the results on screen.** The output of this stage is a file. A
-  results view is a later stage and would be built from that file.
+- **Buying from the results.** Reaching a shop is stage three and is still not
+  designed. The results dialog names records; it never offers to get them.
 - **Recommending by anything except what is held.** No listening history, no
   taste model, no ranking beyond what a source itself states.
 - **Writing to a music file.** The invariant the whole project exists for.
@@ -692,6 +692,224 @@ Verified by: `tests/ui/test_discovery_stopping.py::test_a_press_stops_at_once_wi
 
 ---
 
+**FR-D28 The results are shown when a run completes**
+
+Priority: Must
+
+Requirement: When a discovery run completes having found at least one candidate,
+the window shall write the discovery file and then open the results dialog on
+what that file holds.
+
+Rationale: Reverses the stage-one exclusion, which ruled a results view out and
+said it would be built from the file. It is built from the file: one thing stays
+authoritative, so showing a past run's answer again later then costs nothing
+extra on the day that is wanted.
+
+Acceptance: Given a run that found two candidate albums, when it completes, then
+the file is written and a dialog opens naming both.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_completed_run_opens_the_results`
+
+---
+
+**FR-D29 What a source artist shows**
+
+Priority: Must
+
+Requirement: For each source artist the run found something for, the results
+dialog shall show that artist once, with the candidate albums beneath them.
+
+Rationale: The source artist is the reason each album is being offered, so an
+album shown without the name it hangs under says nothing about why it is there.
+
+Acceptance: Given a source artist with two candidate albums, when the dialog
+opens, then the artist appears once and both albums appear beneath that name.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_source_artist_carries_its_albums`
+
+---
+
+**FR-D30 What a candidate artist shows**
+
+Priority: Must
+
+Requirement: For each candidate artist, the results dialog shall show that
+artist's name collapsed, with no album beneath it until it is expanded.
+
+Rationale: A candidate artist is one the library holds nothing by, so every
+record they made is unheld and the list beneath them would be their whole
+discography. Most are never opened; FR-D31 states what asking for all of them
+would cost.
+
+Acceptance: Given a run that found three candidate artists, when the dialog
+opens, then three names are shown and no album sits under any of them.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_candidate_artist_starts_collapsed`
+
+---
+
+**FR-D31 A candidate artist's albums are fetched on demand**
+
+Priority: Must
+
+Requirement: When a candidate artist is expanded in the results dialog, the
+results dialog shall show the releases that artist made which pass the offering
+rule FR-D08 states, fetched at the moment of expanding rather than during the
+run.
+
+Rationale: Measured on 2026-09-07: one catalogue request costs at least the 1.1
+second gap NFR-PERF-001 requires. Asking during the run would add a request for
+every candidate surviving the genre filter, roughly doubling a second stage that
+is already the longer half. Ruled by Oliver the same day: pay it only for the
+ones somebody actually opens.
+
+Acceptance: Given a collapsed candidate artist, when it is expanded, then that
+artist's offered releases appear beneath it; given the run that produced the
+file, then it issued no request about that artist's releases.
+
+Verified by: `tests/ui/test_results_dialog.py::test_expanding_a_candidate_asks_for_their_albums`
+
+---
+
+**FR-D32 The lookup for an expanded artist cannot be made**
+
+Priority: Must
+
+Requirement: If the releases of an expanded candidate artist cannot be fetched,
+then the results dialog shall show what went wrong against that artist, leaving
+every other entry as it was.
+
+Rationale: The unwanted sibling of FR-D31. One artist nobody could look up is
+not a reason to lose the rest of a run that took minutes to make.
+
+Acceptance: Given a candidate artist whose lookup fails, when it is expanded,
+then that artist shows what went wrong; when another is expanded, then it still
+lists its releases.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_failed_expansion_says_so_and_spares_the_rest`
+
+---
+
+**FR-D33 A run that found nothing opens no dialog**
+
+Priority: Must
+
+Requirement: If a discovery run completes having found no candidate album and no
+candidate artist, then the window shall not open the results dialog.
+
+Rationale: The unwanted sibling of FR-D28. An empty dialog says less than the
+sentence shown in its place, while still landing in front of whatever somebody
+had moved on to doing. What the status bar says in that case is unchanged, so
+this adds no requirement about it; FR-D16 already governs that.
+
+Acceptance: Given a run that found nothing, when it completes, then no dialog
+opens and the status bar carries the message it carries today.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_run_that_found_nothing_shows_no_dialog`
+
+---
+
+**FR-D34 A source artist and a candidate artist are told apart by colour**
+
+Priority: Must
+
+Requirement: The results dialog shall draw source artist names in a different
+colour from candidate artist names, both colours taken from the theme's
+semantic tokens.
+
+Rationale: The two mean different things. A source artist is somebody already
+held who is missing records; a candidate artist is somebody not held at all. A
+list reading the same for both leaves the reader working out which is which from
+context that is not on the screen.
+
+Acceptance: Given a dialog holding both kinds, when the two colours are read
+from the theme, then they differ in each appearance.
+
+Verified by: `tests/ui/test_results_dialog.py::test_the_two_kinds_of_artist_are_coloured_apart`
+
+---
+
+**FR-D35 How long the run has left**
+
+Priority: Must
+
+Requirement: While a discovery run is under way, the window shall show in the
+status bar an estimate of the time remaining for the whole run, rounded to the
+nearest minute, saying less than a minute where the estimate is under sixty
+seconds.
+
+Rationale: Reported by Oliver on 2026-09-07: a small run took a minute or two
+with nothing on screen saying whether that was normal. NFR-PERF-002 puts a whole
+library at about eleven minutes for the first stage alone. Somebody who cannot
+tell a long run from a hang closes the window, which throws the run away.
+
+Acceptance: Given a run under way with an estimate available, when the status
+bar is read, then it names a whole number of minutes or says less than a minute.
+
+Verified by: `tests/ui/test_run_estimate.py::test_the_status_bar_names_the_time_left`
+
+---
+
+**FR-D36 The estimate is taken from the run itself**
+
+Priority: Must
+
+Requirement: The window shall derive the estimate from the time the run has
+actually taken for each unit of work finished, rather than from the request gap
+NFR-PERF-001 states.
+
+Rationale: A run meets refusals; each costs up to three attempts with a
+lengthening wait between them, as FR-D21 requires. An estimate built on the
+configured gap would read as confident while being wrong by minutes on exactly
+the runs where somebody most needs it.
+
+Acceptance: Given a run whose finished units took twice the gap apiece, when the
+estimate is computed, then it follows the observed pace rather than the
+configured one.
+
+Verified by: `tests/domain/test_estimating.py::test_the_pace_comes_from_what_happened`
+
+---
+
+**FR-D37 The second stage is estimated before it begins**
+
+Priority: Must
+
+Requirement: While a run is in its first stage, the window shall include in the
+estimate a projection of the second stage, sized from the candidate artists seen
+so far against the source artists finished so far.
+
+Rationale: The second stage asks about every candidate the first stage turns up,
+so its size is unknown until the first stage ends. An estimate covering only the
+first stage would understate the wait by the larger half of it, which is worse
+than saying nothing at all.
+
+Acceptance: Given a run that has finished two of ten source artists and turned up
+twelve distinct candidates, when the estimate is computed, then it covers a
+projected sixty candidates alongside the eight source artists left.
+
+Verified by: `tests/domain/test_estimating.py::test_the_second_stage_is_projected_from_the_first`
+
+---
+
+**FR-D38 Too little has happened to estimate**
+
+Priority: Must
+
+Requirement: If fewer than two units of the current stage have finished, then
+the window shall say the run is under way without naming a time.
+
+Rationale: The unwanted sibling of FR-D35. A pace measured over one sample is
+wrong by a factor on any run whose first request met a refusal. A number that
+swings is trusted less than an honest silence.
+
+Acceptance: Given a run that has finished one source artist, when the status bar
+is read, then it says the run is under way and names no time.
+
+Verified by: `tests/domain/test_estimating.py::test_one_sample_is_not_enough_to_estimate`
+
+---
+
 ### 3.2 Non-functional requirements
 
 ---
@@ -812,6 +1030,28 @@ WCAG relative luminance formula, then text against fill and text against groove
 each reach 4.5 and fill against groove reaches 3.
 
 Verified by: `tests/ui/test_progress_contrast.py`
+
+---
+
+**NFR-USE-002 The results dialog can be read**
+
+Priority: Must
+
+Requirement: Every colour the results dialog uses for text, the two artist
+colours FR-D34 requires included, shall hold a contrast ratio of at least 4.5 to
+1 against the surface behind it, in both appearances.
+
+Rationale: FR-D34 asks for two colours that differ from each other, which is not
+the same as two colours that can each be read. The discovery bar was shipped at
+1.29 to 1 by satisfying one of those and not the other, reported on 2026-09-07
+as difficult to read. Two colours chosen to be distinguishable are exactly where
+that happens again.
+
+Acceptance: Given either appearance, when each text colour is measured against
+its surface by the WCAG relative luminance formula, then every ratio reaches
+4.5.
+
+Verified by: `tests/ui/test_results_contrast.py`
 
 ---
 
@@ -993,13 +1233,15 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D38 and every NFR except
+NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.
 
-Won't, this time, recorded so it is not re-proposed: an on-screen results view;
-any purchase path; ranking candidates by anything beyond what a source states;
-remembering across runs what was offered and rejected.
+Won't, this time, recorded so it is not re-proposed: any purchase path; ranking
+candidates by anything beyond what a source states; remembering across runs what
+was offered and rejected; reopening a past run's results from the menu, which
+FR-D28 makes cheap to add later and which nobody has asked for yet.
 
 ## 5. Open questions
 
