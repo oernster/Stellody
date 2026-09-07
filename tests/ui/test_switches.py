@@ -137,18 +137,20 @@ def test_the_switches_come_back_as_they_were_left(
     assert player.volume == SILENT_VOLUME
 
 
-def test_the_mute_switch_is_ruled_off_from_the_buttons_after_it(
+def test_discovery_is_ruled_off_from_the_sound_controls(
     window: MainWindow,
 ) -> None:
-    """It acts on what is playing; the two after it act on the application."""
+    """It acts on the library; the two after it act on what is playing."""
     window.show()
     tray = window._tray
     separator = tray.separator
     assert separator.isVisible()
     centre = separator.mapTo(tray, separator.rect().center()).x()
-    mute = tray.mute_button.mapTo(tray, tray.mute_button.rect().center()).x()
-    theme = tray.theme_button.mapTo(tray, tray.theme_button.rect().center()).x()
-    assert mute < centre < theme, "the line sits between the two groups"
+    discover = tray.discover_button.mapTo(
+        tray, tray.discover_button.rect().center()
+    ).x()
+    volume = tray.volume_button.mapTo(tray, tray.volume_button.rect().center()).x()
+    assert discover < centre < volume, "the line sits between the two groups"
     assert separator.focusPolicy() == 0, "a rule is not a control"
 
 

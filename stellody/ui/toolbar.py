@@ -179,16 +179,16 @@ class LibraryTray(QWidget):
         self.mute_button = _icon_button(
             self, resources.unmute_icon_path(), "Mute", toggle_mute
         )
-        self.separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
-        # After the separator rather than beside the volume, because discovery
-        # is a library action rather than a sound control and the separator is
-        # already the line between those two ideas.
+        # Left of the volume rather than right of it, ruled on 2026-09-07:
+        # discovery is a library action rather than a sound control, so the
+        # separator goes between the two to keep that line visible.
         self.discover_button = _icon_button(
             self,
             resources.discover_icon_path(),
             DISCOVER_TOOLTIP,
             open_discovery,
         )
+        self.separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
         self.theme_button = _icon_button(self, None, "", toggle_theme)
         self.help_button = _icon_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
@@ -213,10 +213,10 @@ class LibraryTray(QWidget):
         for button in self.transport_stops():
             row.addWidget(button)
         row.addStretch()
+        row.addWidget(self.discover_button)
+        row.addWidget(self.separator)
         row.addWidget(self.volume_button)
         row.addWidget(self.mute_button)
-        row.addWidget(self.separator)
-        row.addWidget(self.discover_button)
         row.addWidget(self.theme_button)
         row.addWidget(self.help_button)
 
@@ -242,9 +242,9 @@ class LibraryTray(QWidget):
             self.search_button,
             self.search_box,
             *self.transport_stops(),
+            self.discover_button,
             self.volume_button,
             self.mute_button,
-            self.discover_button,
             self.theme_button,
             self.help_button,
         )
