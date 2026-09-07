@@ -1,8 +1,9 @@
 """Looking an album up in MusicBrainz and its art up in the Cover Art Archive.
 
-One of the two modules in Stellody that open a connection, the other being the
-update check. This one is reached only when a listener asks for a cover, never
-on a scan and never on a draw.
+One of the three modules in Stellody that open a connection, the others being
+the update check and the fetcher a discovery run asks its catalogues through.
+This one is reached only when a listener asks for a cover, never on a scan and
+never on a draw.
 
 **Two services, because they are two questions.** MusicBrainz knows which
 releases an album has; the Cover Art Archive knows which pictures a release
@@ -41,22 +42,17 @@ import urllib.request
 
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.cover_choice import THUMBNAIL_SIZES, CoverCandidate, CoverOffer
-from stellody.shared.version import APP_NAME, __version__
+from stellody.infrastructure.courtesy import (
+    REFUSAL_CODES,
+    REQUEST_GAP_S,
+    TIMEOUT_S,
+    USER_AGENT,
+    Gate,
+    Waiter,
+)
 
 SEARCH_URL = "https://musicbrainz.org/ws/2/release"
 ART_URL = "https://coverartarchive.org/release"
-# What the terms mean by contact: a URL or an address whoever runs the service
-# can reach the author of the application at, sent with every request so a
-# misbehaving client can be told about rather than merely blocked. An address
-# kept for this, since the project's own site is somewhere to read rather than
-# somewhere anyone can be reached. It goes out with every search; it is here
-# for that and for nothing else.
-CONTACT = "stellody@hotmail.com"
-USER_AGENT = f"{APP_NAME}/{__version__} ( {CONTACT} )"
-# One request a second is what the terms ask for. A tenth over it is not
-# generosity; it is the margin that stops a clock rounding down into a refusal.
-REQUEST_GAP_S = 1.1
-TIMEOUT_S = 20
 # How long any one socket operation may block before the question is asked
 # again. It is the cap on how long a cancelled lookup can go unnoticed, so it
 # is well inside the two seconds the window waits for a thread on the way out;
@@ -66,73 +62,15 @@ SLICE_S = 1.0
 # How much of a picture is taken at a time, for the same reason: a read that
 # came back in one call could not be given up part way through.
 CHUNK_BYTES = 64 * 1024
-# How long a wait between requests may block before the question is asked
-# again. The gaps the terms ask for are seconds long; sitting through one
-# after a cancel is the same defect as sitting through a read.
-SLEEP_SLICE_S = 0.25
 # Enough releases that a reissue with the art is reached, few enough that the
 # wait stays a wait rather than a walk away. Each one is a second.
 RELEASE_LIMIT = 8
 IMAGE_TIMEOUT_S = 30
-# What a refusal looks like: too many requests, else the service declining to
-# answer this one. Both mean ask again rather than tell the listener anything.
-REFUSAL_CODES = frozenset({429, 503})
 # Enough asks that the measured refusal rate is unlikely to survive all of
 # them, few enough that a listener is not left waiting through a minute of
 # them. At 6 refusals in 10 asks, four more tries after the first leave about
 # one search in thirteen still refused, which the chooser then says plainly.
 SEARCH_ATTEMPTS = 5
-
-
-class Waiter:
-    """A wait somebody can give up on, taken in slices.
-
-    A wait is as uncancellable as a read when it is taken in one go, while the
-    terms ask for gaps of over a second between requests. Sliced, a cancel is
-    noticed within a slice rather than at the end of the gap.
-
-    An object rather than a function so the slicing has one home: what a test
-    injects here is asked for a whole gap and answers however it likes, which
-    keeps the tests about the gaps the terms ask for rather than about how
-    this happens to take them.
-    """
-
-    def __init__(self, sleeper=time.sleep) -> None:
-        self._sleeper = sleeper
-
-    def hold(self, seconds: float, wanted: Wanted) -> bool:
-        """Wait that long; False where somebody gave up part way through."""
-        left = seconds
-        while left > 0:
-            if not wanted():
-                return False
-            take = min(SLEEP_SLICE_S, left)
-            self._sleeper(take)
-            left -= take
-        return wanted()
-
-
-class _Gate:
-    """Lets one request through at a time, no faster than the terms allow."""
-
-    def __init__(
-        self, gap_s: float = REQUEST_GAP_S, waiter: Waiter | None = None
-    ) -> None:
-        self._gap_s = gap_s
-        self._last = 0.0
-        self._waiter = waiter if waiter is not None else Waiter()
-
-    def wait(self, wanted: Wanted = always_wanted) -> bool:
-        """Hold until this request is allowed to go; False if nobody waits.
-
-        The clock is stamped either way, since the gap is about the service
-        rather than about who is listening: a request abandoned during the
-        wait still has to leave the next one its full gap.
-        """
-        due = self._last + self._gap_s - time.monotonic()
-        going = self._waiter.hold(due, wanted) if due > 0 else wanted()
-        self._last = time.monotonic()
-        return going
 
 
 def _release_query(artist: str, album: str) -> str:
@@ -199,12 +137,12 @@ def _release_label(release: dict) -> str:
 class ArchiveCovers:
     """Searches MusicBrainz, then reads the Cover Art Archive for pictures."""
 
-    def __init__(self, gate: _Gate | None = None, opener=None, waiter=None) -> None:
+    def __init__(self, gate: Gate | None = None, opener=None, waiter=None) -> None:
         # The pause between asks, injected so a test can watch the backoff grow
         # without waiting through it. It is also what makes a wait something a
         # cancelled search can walk away from: see `Waiter`.
         self._waiter = waiter if waiter is not None else Waiter()
-        self._gate = gate if gate is not None else _Gate(waiter=self._waiter)
+        self._gate = gate if gate is not None else Gate(waiter=self._waiter)
         self._opener = opener if opener is not None else urllib.request.urlopen
 
     def search(

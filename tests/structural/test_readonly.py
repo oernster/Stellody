@@ -29,6 +29,10 @@ WRITE_PERMITTED = frozenset(
         "stellody/infrastructure/switch_reset.py",
         "stellody/infrastructure/artwork.py",
         "stellody/infrastructure/waveform.py",
+        # What a discovery run found, plus what it learned about candidates so a
+        # later run asks about less. Both sit in Stellody's own directory
+        # beside the database; neither goes anywhere near the music.
+        "stellody/infrastructure/discovery_file.py",
     }
 )
 

@@ -18,15 +18,17 @@ from typing import Self
 
 import pytest
 
+from stellody.infrastructure.courtesy import (
+    REQUEST_GAP_S,
+    SLEEP_SLICE_S,
+    Waiter,
+)
 from stellody.infrastructure.cover_search import (
     ART_URL,
     CHUNK_BYTES,
-    REQUEST_GAP_S,
     SEARCH_ATTEMPTS,
     SEARCH_URL,
-    SLEEP_SLICE_S,
     ArchiveCovers,
-    Waiter,
 )
 
 PICTURE_URL = "https://example.invalid/front.jpg"

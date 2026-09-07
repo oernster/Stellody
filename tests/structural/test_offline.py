@@ -1,17 +1,21 @@
 """The second safety invariant: Stellody opens no connection behind your back.
 
 A local-first player that quietly talks to the internet is not local-first,
-whatever its README says. Exactly two modules may reach the network and each is
-named here with what it is for: cover art when a listener asks for a picture,
-then the update check asking GitHub whether a newer Stellody has been
-published.
+whatever its README says. Exactly three modules may reach the network and each
+is named here with what it is for: cover art when a listener asks for a
+picture, the update check asking GitHub whether a newer Stellody has been
+published, then the one fetcher a discovery run asks two catalogues through.
 Nothing on the scan path, the draw path or the playback path may hold the
 machinery to open a socket.
 
-Two rather than one is a change worth reading as such. The update check was
-added deliberately, with the count in this file being what had to be edited to
-allow it; a permitted module is granted its permission in front of somebody
-rather than by a test quietly continuing to pass.
+Each addition is a change worth reading as such. The update check was added
+deliberately, with the count in this file being what had to be edited to allow
+it; a permitted module is granted its permission in front of somebody rather
+than by a test quietly continuing to pass.
+
+Discovery reaches two services and added ONE name rather than two: neither
+catalogue client holds a socket, since both hand their questions to the fetcher
+and get answers back. That was the point of writing it that way.
 
 Stated as a structural test rather than as a promise, for the same reason the
 read-only invariant is: a promise cannot fail a build. This one was proved to
@@ -36,6 +40,10 @@ NETWORK_PERMITTED = frozenset(
         # Asking GitHub whether a newer Stellody has been published. It sends
         # nothing about the listener or their library; see the module itself.
         "stellody/infrastructure/update_source.py",
+        # The one fetcher a discovery run asks its two catalogues through. It
+        # sends artist names and identifiers from the genres a listener ticked,
+        # and the application's own user agent. Nothing about the machine.
+        "stellody/infrastructure/fetching.py",
     }
 )
 

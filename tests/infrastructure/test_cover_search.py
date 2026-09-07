@@ -15,11 +15,10 @@ import json
 import urllib.error
 from io import BytesIO
 
+from stellody.infrastructure.courtesy import CONTACT, USER_AGENT
 from stellody.infrastructure.cover_search import (
-    CONTACT,
     RELEASE_LIMIT,
     SEARCH_ATTEMPTS,
-    USER_AGENT,
     ArchiveCovers,
 )
 
