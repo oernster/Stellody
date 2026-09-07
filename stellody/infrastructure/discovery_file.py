@@ -10,6 +10,16 @@ the only claim it can honestly make.
 Written beside the target and moved over it: a half-written file never exists
 under the name anything reads.
 
+**What was written is read back rather than kept in hand.** A run's answer is
+shown from this file rather than from the report still in memory when the run
+ended, so one thing is authoritative and showing a past run's answer on some
+later day costs nothing extra. FR-D28.
+
+**A file that cannot be read is no results rather than no application.** The
+same judgement the genre cache makes below: an answer nobody can show is a
+disappointment, while an exception on the way out of a run that took eleven
+minutes is worse.
+
 **The genre cache is the other half of affording the result filter.** The
 similarity catalogue names artists without saying what they play, so each has
 to be asked about separately; that is the expensive part of a run. What was
@@ -24,6 +34,8 @@ import os
 import pathlib
 
 from stellody.application.values import RunReport
+from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure import paths
 
 DISCOVERY_NAME = "discovered.json"
@@ -101,6 +113,103 @@ def write(report: RunReport) -> pathlib.Path:
     where = discovery_path()
     _written(where, _as_written(report))
     return where
+
+
+def _listed(entry: dict, key: str) -> list:
+    """The list under this key; empty where it is anything else."""
+    found = entry.get(key)
+    return found if isinstance(found, list) else []
+
+
+def _kind_of(name: str) -> ReleaseKind:
+    """The kind this name means; OTHER for one this version does not know.
+
+    The same rule the catalogue client applies on the way in, so a file
+    written by a later Stellody is read by an earlier one without a kind it
+    has never heard of being mistaken for a plain album.
+    """
+    try:
+        return ReleaseKind(name)
+    except ValueError:
+        return ReleaseKind.OTHER
+
+
+def _album(entry: object) -> ReleaseGroup | None:
+    """One album as the file carries it; None where it carries nothing usable.
+
+    A title is required rather than defaulted, since the domain refuses an
+    album without one and a record nobody can name is not one to offer.
+    """
+    if not isinstance(entry, dict):
+        return None
+    title = str(entry.get("title") or "").strip()
+    if not title:
+        return None
+    return ReleaseGroup(
+        title=title,
+        kinds=tuple(_kind_of(str(kind)) for kind in _listed(entry, "kinds")),
+        genres=tuple(str(genre) for genre in _listed(entry, "genres")),
+    )
+
+
+def _artist(entry: object) -> SimilarArtist | None:
+    """One candidate artist as the file carries it; None where unusable."""
+    if not isinstance(entry, dict):
+        return None
+    name = str(entry.get("name") or "").strip()
+    if not name:
+        return None
+    return SimilarArtist(name=name, identifier=str(entry.get("identifier") or ""))
+
+
+def read() -> tuple[Gaps, ...]:
+    """What the last run found; empty where there is nothing to show.
+
+    Order is the file's own, which is the order the run met the artists in.
+    Anything the file carries that cannot be read as a gap is passed over
+    rather than raising: a results screen missing one album is worth more than
+    no results screen.
+    """
+    try:
+        held = json.loads(discovery_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ()
+    gaps = held.get("gaps") if isinstance(held, dict) else None
+    if not isinstance(gaps, dict):
+        return ()
+    found: list[Gaps] = []
+    for artist, entry in gaps.items():
+        if not isinstance(entry, dict) or not str(artist).strip():
+            continue
+        found.append(
+            Gaps(
+                artist=str(artist),
+                albums=tuple(
+                    album
+                    for album in (_album(one) for one in _listed(entry, "albums"))
+                    if album is not None
+                ),
+                artists=tuple(
+                    candidate
+                    for candidate in (_artist(one) for one in _listed(entry, "artists"))
+                    if candidate is not None
+                ),
+            )
+        )
+    return tuple(found)
+
+
+class FileDiscoveryResults:
+    """What the last completed run wrote, read back when it is wanted.
+
+    A thin object over `read` for the same reason `FileGenreMemory` is one
+    over its pair: what a window needs is somewhere to read from; the file
+    is already that.
+    """
+
+    def last_run(self) -> tuple[Gaps, ...]:
+        """What the last run found; empty where there is nothing to show."""
+        return read()
 
 
 def remembered() -> dict[str, tuple[str, ...]]:
