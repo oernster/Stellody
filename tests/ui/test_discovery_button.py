@@ -35,8 +35,9 @@ def test_discovery_sits_left_of_the_volume_button(application) -> None:
     row = tray.layout()
     order = [row.itemAt(index).widget() for index in range(row.count())]
     placed = [widget for widget in order if widget is not None]
-    assert placed.index(tray.discover_button) == placed.index(tray.separator) - 1
-    assert placed.index(tray.separator) == placed.index(tray.volume_button) - 1
+    line = placed.index(tray.library_separator)
+    assert placed.index(tray.discover_button) == line - 1
+    assert line == placed.index(tray.volume_button) - 1
 
 
 def test_discovery_is_reachable(application) -> None:
