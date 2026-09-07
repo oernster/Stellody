@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QMessageBox, QPushButton, QWidget
 from stellody.application.values import RunOutcome, RunReport
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import Discovering
-from stellody.ui.discovery_progress import DiscoveryBar
+from stellody.ui.discovery_progress import DiscoveryBars
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import BUTTON_PX
 
@@ -30,7 +30,7 @@ class Tray:
 
     def __init__(self, parent: QWidget) -> None:
         self.discover_button = QPushButton(parent)
-        self.discovery_bar = DiscoveryBar(parent, BUTTON_PX)
+        self.discovery_bar = DiscoveryBars(parent, BUTTON_PX)
 
 
 class StatusBar:

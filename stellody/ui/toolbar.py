@@ -60,7 +60,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.shared import resources
-from stellody.ui.discovery_progress import DiscoveryBar
+from stellody.ui.discovery_progress import DiscoveryBars
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import (
@@ -167,7 +167,11 @@ class LibraryTray(QWidget):
         # the moment it has been told what to look for. Reserved rather than
         # shown only while a run is under way: appearing would move every
         # button beside it and shift the centred transport with them.
-        self.discovery_bar = DiscoveryBar(self, BUTTON_PX)
+        #
+        # Two bars in the height one used to take, one for each half of a run.
+        # The name is unchanged, since what the window has to say to it is
+        # unchanged: here is a report, draw it.
+        self.discovery_bar = DiscoveryBars(self, BUTTON_PX)
         # Left of the volume rather than right of it, ruled on 2026-09-07:
         # discovery is a library action rather than a sound control, so a line
         # goes between the two to keep that boundary visible.
