@@ -179,11 +179,14 @@ class Discovering:
         """
         if self._discovery_stopping:
             return
-        self._tray.discovery_bar.show_progress(progress)
-        # The bar says how far; the status bar says how long. A run over a
-        # whole library is tens of minutes; somebody who cannot tell a long
-        # run from a hang closes the window, which throws it away.
-        self.statusBar().showMessage(self._discovery_estimate.said_about(progress))
+        # One reading of the pace, said in both places it is wanted. The status
+        # bar carries the sentence; the bar itself carries the same thing in
+        # three characters, because the bar is at the top of the window and the
+        # status bar is at the bottom, so somebody watching the percentage was
+        # never meeting the time. Reported on 2026-09-07. FR-D35.
+        said = self._discovery_estimate.about(progress)
+        self._tray.discovery_bar.show_progress(progress, said.brief)
+        self.statusBar().showMessage(said.sentence)
 
     def discovery_completed(self, report: RunReport) -> None:
         """Write what was found where there is anything to write, then say so.

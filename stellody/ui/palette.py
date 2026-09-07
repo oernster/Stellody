@@ -65,6 +65,20 @@ class Palette:
     # bar is 4.5 for the writing and 3 for one shape against another.
     progress_groove: str
     progress_fill: str
+    # A line round the filled part, which is what tells it from the groove now
+    # that the fill is dark. Reported on 2026-09-07: the white writing did not
+    # carry over the fill, measured at 4.82 to 1 in the dark appearance, which
+    # clears the bar and still reads as grey on blue. Taking the fill down to
+    # #24478f lifts that to 7.96; the cost is that the fill then sits at 2.11
+    # against a groove which is nearly black, so the two shapes could no
+    # longer be told apart by lightness alone.
+    #
+    # So the boundary is drawn rather than inferred. Measured for the edge, in
+    # order against the fill then against the groove: 3.64 and 7.68 in the dark
+    # appearance. The light appearance keeps a fill its groove already separates
+    # (3.14 to 1 against white), so its edge is there to mark the boundary
+    # rather than to carry it: 2.50 against the fill, 7.84 against the groove.
+    progress_edge: str
     on_progress: str
     # The two kinds of artist a discovery run turns up, which mean opposite
     # things: a source artist is somebody the library already holds who is
@@ -105,6 +119,7 @@ LIGHT = Palette(
     star="#b45309",
     progress_groove="#ffffff",
     progress_fill="#5c93de",
+    progress_edge="#14509f",
     on_progress="#141a26",
     source_artist="#0f4fb0",
     candidate_artist="#8a4708",
@@ -132,7 +147,8 @@ DARK = Palette(
     found="#7a5f14",
     star="#fbbf24",
     progress_groove="#0d1220",
-    progress_fill="#3466cc",
+    progress_fill="#24478f",
+    progress_edge="#74a6ff",
     on_progress="#eef3ff",
     source_artist="#8ab4ff",
     candidate_artist="#f5b342",

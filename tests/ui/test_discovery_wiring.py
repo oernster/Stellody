@@ -173,7 +173,7 @@ def test_an_ending_puts_the_bar_and_the_button_back(application) -> None:
         DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
     )
     window.discovery_failed("the roof fell in")
-    assert window._tray.discovery_bar.format() == RESTING
+    assert window._tray.discovery_bar.writing().wanted == RESTING
     assert window._tray.discover_button.toolTip() == DISCOVER_TOOLTIP
 
 

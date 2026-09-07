@@ -11,8 +11,10 @@ from discovery_wiring_support import make_window
 
 from stellody.application.values import DiscoveryProgress, DiscoveryStage
 from stellody.ui.run_estimate import (
+    BRIEFLY_UNDER_A_MINUTE,
     MINUTES_LEFT,
     NOT_LONG,
+    NOTHING_BRIEF,
     ONE_MINUTE,
     UNDER_WAY,
     RunEstimate,
@@ -63,27 +65,27 @@ class TestNamingTheTimeLeft:
         """Two of sixty artists at two seconds each leaves about two minutes."""
         clock = Ticking()
         estimate = RunEstimate(now=clock)
-        estimate.said_about(looking(done=0, total=60))
+        estimate.about(looking(done=0, total=60))
         clock.at = 2 * EACH_S
-        assert estimate.said_about(looking(done=2, total=60)) == MINUTES_LEFT.format(
-            minutes=2
-        )
+        assert estimate.about(
+            looking(done=2, total=60)
+        ).sentence == MINUTES_LEFT.format(minutes=2)
 
     def test_under_a_minute_is_said_as_under_a_minute(self) -> None:
         """A number of seconds is no use to somebody deciding whether to wait."""
         clock = Ticking()
         estimate = RunEstimate(now=clock)
-        estimate.said_about(looking(done=0, total=6))
+        estimate.about(looking(done=0, total=6))
         clock.at = 2 * EACH_S
-        assert estimate.said_about(looking(done=2, total=6)) == NOT_LONG
+        assert estimate.about(looking(done=2, total=6)).sentence == NOT_LONG
 
     def test_a_single_minute_reads_as_a_minute(self) -> None:
         """Never "1 minutes"."""
         clock = Ticking()
         estimate = RunEstimate(now=clock)
-        estimate.said_about(looking(done=0, total=32))
+        estimate.about(looking(done=0, total=32))
         clock.at = 2 * EACH_S
-        assert estimate.said_about(looking(done=2, total=32)) == ONE_MINUTE
+        assert estimate.about(looking(done=2, total=32)).sentence == ONE_MINUTE
 
 
 class TestWhenItWillNotSay:
@@ -93,17 +95,17 @@ class TestWhenItWillNotSay:
         """A pace over one artist is wrong by a factor after a refusal."""
         clock = Ticking()
         estimate = RunEstimate(now=clock)
-        estimate.said_about(looking(done=0, total=60))
+        estimate.about(looking(done=0, total=60))
         clock.at = EACH_S
-        assert estimate.said_about(looking(done=1, total=60)) == UNDER_WAY
+        assert estimate.about(looking(done=1, total=60)).sentence == UNDER_WAY
 
     def test_a_stage_too_young_to_have_a_pace_says_nothing(self) -> None:
         """One finished candidate is one sample, here as anywhere else."""
         clock = Ticking()
         estimate = RunEstimate(now=clock)
-        estimate.said_about(narrowing(done=0, total=30))
+        estimate.about(narrowing(done=0, total=30))
         clock.at = EACH_S
-        assert estimate.said_about(narrowing(done=1, total=30)) == UNDER_WAY
+        assert estimate.about(narrowing(done=1, total=30)).sentence == UNDER_WAY
 
     def test_the_second_stage_is_measured_from_when_it_began(self) -> None:
         """Not from when the run did, which would price it by the first stage.
@@ -116,14 +118,14 @@ class TestWhenItWillNotSay:
         """
         clock = Ticking()
         estimate = RunEstimate(now=clock)
-        estimate.said_about(looking(done=0, total=4))
+        estimate.about(looking(done=0, total=4))
         clock.at = 20 * EACH_S
-        estimate.said_about(looking(done=4, total=4))
-        estimate.said_about(narrowing(done=0, total=62))
+        estimate.about(looking(done=4, total=4))
+        estimate.about(narrowing(done=0, total=62))
         clock.at = 20 * EACH_S + 2 * EACH_S
-        assert estimate.said_about(narrowing(done=2, total=62)) == MINUTES_LEFT.format(
-            minutes=2
-        )
+        assert estimate.about(
+            narrowing(done=2, total=62)
+        ).sentence == MINUTES_LEFT.format(minutes=2)
 
 
 class TestWhatThePaceIsTakenFrom:
@@ -133,13 +135,13 @@ class TestWhatThePaceIsTakenFrom:
         """The pace is the run's own, so refusals lengthen the answer."""
         quick, slow = Ticking(), Ticking()
         first, second = RunEstimate(now=quick), RunEstimate(now=slow)
-        first.said_about(looking(done=0, total=60))
-        second.said_about(looking(done=0, total=60))
+        first.about(looking(done=0, total=60))
+        second.about(looking(done=0, total=60))
         quick.at, slow.at = 2 * EACH_S, 4 * EACH_S
-        assert first.said_about(looking(done=2, total=60)) == MINUTES_LEFT.format(
+        assert first.about(looking(done=2, total=60)).sentence == MINUTES_LEFT.format(
             minutes=2
         )
-        assert second.said_about(looking(done=2, total=60)) == MINUTES_LEFT.format(
+        assert second.about(looking(done=2, total=60)).sentence == MINUTES_LEFT.format(
             minutes=4
         )
 
@@ -147,13 +149,15 @@ class TestWhatThePaceIsTakenFrom:
         """FR-D37: the second stage is in the number before it has begun."""
         clock = Ticking()
         bare, met = RunEstimate(now=clock), RunEstimate(now=clock)
-        bare.said_about(looking(done=0, total=60))
-        met.said_about(looking(done=0, total=60, candidates=0))
+        bare.about(looking(done=0, total=60))
+        met.about(looking(done=0, total=60, candidates=0))
         clock.at = 2 * EACH_S
-        without = bare.said_about(looking(done=2, total=60))
-        within = met.said_about(looking(done=2, total=60, candidates=10))
-        assert without == MINUTES_LEFT.format(minutes=2)
-        assert within == MINUTES_LEFT.format(minutes=7), "the projection is in it"
+        without = bare.about(looking(done=2, total=60))
+        within = met.about(looking(done=2, total=60, candidates=10))
+        assert without.sentence == MINUTES_LEFT.format(minutes=2)
+        assert within.sentence == MINUTES_LEFT.format(
+            minutes=7
+        ), "the projection is in it"
 
 
 class TestTheWindowSaysIt:
@@ -198,6 +202,47 @@ def test_a_stage_with_nothing_in_it_says_nothing(total: int) -> None:
     """Guarded rather than trusted, since a run can be told to ask about none."""
     clock = Ticking()
     estimate = RunEstimate(now=clock)
-    estimate.said_about(looking(done=0, total=total))
+    estimate.about(looking(done=0, total=total))
     clock.at = EACH_S
-    assert estimate.said_about(looking(done=0, total=total)) == UNDER_WAY
+    assert estimate.about(looking(done=0, total=total)).sentence == UNDER_WAY
+
+
+class TestBothPlacesAgree:
+    """One reading of the pace, so the two surfaces cannot contradict.
+
+    Asked twice, the sentence and the word would be taken a moment apart and
+    could land either side of a rounding: the foot of the window saying four
+    minutes while the toolbar says five is worse than either alone.
+    """
+
+    def test_the_word_on_the_bar_carries_the_same_number_as_the_sentence(
+        self,
+    ) -> None:
+        """The plant that proved this was missing: a brief taken from twice
+        the seconds left the whole suite green."""
+        clock = Ticking()
+        estimate = RunEstimate(now=clock)
+        estimate.about(looking(done=0, total=60))
+        clock.at = 2 * EACH_S
+        said = estimate.about(looking(done=2, total=60))
+        assert said.sentence == MINUTES_LEFT.format(minutes=2)
+        assert said.brief == "2m"
+
+    def test_under_a_minute_is_short_in_both(self) -> None:
+        """The other end of the same agreement."""
+        clock = Ticking()
+        estimate = RunEstimate(now=clock)
+        estimate.about(looking(done=0, total=6))
+        clock.at = 2 * EACH_S
+        said = estimate.about(looking(done=2, total=6))
+        assert said.sentence == NOT_LONG
+        assert said.brief == BRIEFLY_UNDER_A_MINUTE
+
+    def test_a_run_with_no_pace_yet_gives_the_bar_nothing_to_write(self) -> None:
+        """A bar cannot say "under way" in three characters, so it says none."""
+        clock = Ticking()
+        estimate = RunEstimate(now=clock)
+        estimate.about(looking(done=0, total=60))
+        said = estimate.about(looking(done=1, total=60))
+        assert said.sentence == UNDER_WAY
+        assert said.brief == NOTHING_BRIEF

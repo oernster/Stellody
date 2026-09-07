@@ -1,4 +1,4 @@
-"""How long a run has left, in the words a status bar carries.
+"""How long a run has left, in the words two surfaces carry.
 
 The arithmetic is the domain's. This holds the two things it cannot: a clock,
 plus what to say. A run is measured from the moment each stage begins, so the
@@ -10,12 +10,18 @@ pace measured over one finished unit is wrong by a factor on a run whose first
 request met a refusal; a number that swings is trusted less than an honest
 silence. So the words for that case exist deliberately and are not a fallback
 nobody thought about.
+
+**Two sayings of one reading, never two readings.** The status bar carries the
+sentence and the toolbar bar carries the shortest form of the same thing, so
+they are answered together from a single look at the clock. Asked twice, they
+would be taken a moment apart and could disagree by a minute at the rounding.
 """
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from stellody.application.values import DiscoveryProgress, DiscoveryStage
 from stellody.domain.estimating import (
@@ -37,6 +43,27 @@ ONE_MINUTE = "Looking for music you do not hold. About a minute left."
 MINUTES_LEFT = "Looking for music you do not hold. About {minutes} minutes left."
 # A minute reads as "a minute" rather than "1 minutes".
 ONE = 1
+# The same thing in the fewest characters there are, for the right hand end of
+# a toolbar strip 170 pixels wide. Nothing at all where there is no pace worth
+# quoting, since a bar cannot say "under way" in the space it has.
+BRIEFLY_UNDER_A_MINUTE = "<1m"
+BRIEFLY_MINUTES = "{minutes}m"
+NOTHING_BRIEF = ""
+
+
+@dataclass(frozen=True, slots=True)
+class Said:
+    """One reading of how long is left, in the two lengths it is wanted in."""
+
+    sentence: str
+    brief: str
+
+
+def briefly(seconds: float) -> str:
+    """That many seconds, in the fewest characters that still mean it."""
+    if seconds < SECONDS_PER_MINUTE:
+        return BRIEFLY_UNDER_A_MINUTE
+    return BRIEFLY_MINUTES.format(minutes=rounded_minutes(seconds))
 
 
 def how_long(seconds: float) -> str:
@@ -70,8 +97,12 @@ class RunEstimate:
         self._stage = None
         self._began = 0.0
 
-    def said_about(self, progress: DiscoveryProgress) -> str:
+    def about(self, progress: DiscoveryProgress) -> Said:
         """What to tell somebody, given how far the run has got.
+
+        Both surfaces are answered from ONE reading of the clock, so the
+        sentence at the foot of the window and the word on the bar cannot land
+        either side of a rounding and disagree.
 
         The clock is read here rather than handed in with the report, because
         a report is a statement about the run and not about the time; the run
@@ -81,7 +112,9 @@ class RunEstimate:
             self._stage = progress.stage
             self._began = self._now()
         left = self._seconds_left(progress, self._now() - self._began)
-        return UNDER_WAY if left is None else how_long(left)
+        if left is None:
+            return Said(sentence=UNDER_WAY, brief=NOTHING_BRIEF)
+        return Said(sentence=how_long(left), brief=briefly(left))
 
     @staticmethod
     def _seconds_left(progress: DiscoveryProgress, elapsed_s: float) -> float | None:

@@ -833,20 +833,33 @@ Verified by: `tests/ui/test_results_dialog.py::test_the_two_kinds_of_artist_are_
 
 Priority: Must
 
-Requirement: While a discovery run is under way, the window shall show in the
-status bar an estimate of the time remaining for the whole run, rounded to the
-nearest minute, saying less than a minute where the estimate is under sixty
-seconds.
+Requirement: While a discovery run is under way, the window shall show an
+estimate of the time remaining for the whole run in BOTH of two places. In the
+status bar it shall be a sentence rounded to the nearest minute, saying less
+than a minute where the estimate is under sixty seconds. At the right hand end
+of the discovery bar it shall be an abbreviated form of that same estimate.
+Both shall be answered from one reading of the pace.
 
 Rationale: Reported by Oliver on 2026-09-07: a small run took a minute or two
 with nothing on screen saying whether that was normal. NFR-PERF-002 puts a whole
 library at about eleven minutes for the first stage alone. Somebody who cannot
 tell a long run from a hang closes the window, which throws the run away.
 
-Acceptance: Given a run under way with an estimate available, when the status
-bar is read, then it names a whole number of minutes or says less than a minute.
+The second place was added the same day, on his report that the estimate could
+not be found. It was in the status bar as this required, which is the foot of a
+window whose discovery bar is at the top: somebody watching a percentage climb
+never meets a sentence 800 pixels below it. The bar is a strip 170 pixels wide,
+so what it carries is "4m" rather than the sentence; the room for it is taken
+out of the bar before the stage name is centred in what is left. One
+reading of the pace answers both, else the two could be taken a moment apart
+and disagree across a rounding.
 
-Verified by: `tests/ui/test_run_estimate.py::test_the_status_bar_names_the_time_left`
+Acceptance: Given a run under way with an estimate available, when the status
+bar is read, then it names a whole number of minutes or says less than a
+minute; when the discovery bar is read, then its right hand end carries the
+same estimate abbreviated, drawn clear of the stage name.
+
+Verified by: `tests/ui/test_run_estimate.py::test_the_status_bar_names_the_time_left`, `tests/ui/test_discovery_bar.py::test_it_writes_how_long_is_left_at_its_right_hand_end`, `tests/ui/test_discovery_bar.py::test_the_time_and_the_stage_are_never_drawn_over_each_other`, `tests/ui/test_discovery_bar.py::test_the_time_is_actually_drawn_on_the_bar`
 
 ---
 
@@ -1016,8 +1029,9 @@ Priority: Must
 
 Requirement: The text on the discovery bar shall hold a contrast ratio of at
 least 4.5 to 1 against both the filled and the unfilled part of that bar, in
-both appearances. The fill shall hold at least 3 to 1 against the groove behind
-it.
+both appearances. The filled part shall be distinguishable from the groove by at
+least 3 to 1, either by the fill itself or by an edge drawn round it reaching
+that against both the fill and the groove.
 
 Rationale: The bar drew its text in the muted colour over the accent as a fill,
 which measured 1.29 to 1 in the light appearance and 1.32 to 1 in the dark one.
@@ -1025,9 +1039,19 @@ Reported on 2026-09-07 as difficult to read, which was an understatement. A bar
 is the one surface here carrying one colour of text across two backgrounds, so
 both are measured; nothing caught it because nothing measured it.
 
-Acceptance: Given either appearance, when the three colours are measured by the
-WCAG relative luminance formula, then text against fill and text against groove
-each reach 4.5 and fill against groove reaches 3.
+The first repair cleared 4.5 and was still reported as hard to read: 4.82 to 1
+of white on blue is a pass and a smudge at the same time. Taking the dark fill
+down to #24478f lifts it to 7.96. What that costs is the other half, since the
+groove in the dark appearance is nearly black: a fill dark enough for white
+writing sits at 2.11 against it. The two constraints have no solution together,
+so the boundary is DRAWN instead of inferred, which is what the second clause
+allows. The requirement is that the filled part can be told from the groove;
+lightness was only ever one way of meeting it.
+
+Acceptance: Given either appearance, when the colours are measured by the WCAG
+relative luminance formula, then text against fill and text against groove each
+reach 4.5; either fill against groove reaches 3 or the edge reaches 3 against
+both the fill and the groove.
 
 Verified by: `tests/ui/test_progress_contrast.py`
 

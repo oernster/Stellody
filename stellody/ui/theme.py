@@ -277,8 +277,18 @@ def stylesheet(mode: Mode) -> str:
         text-align: center;
         color: {colour.on_progress};
     }}
+    /* The filled part carries its own outline. The fill is dark enough for
+       the writing to read over it, which leaves it close to a groove that is
+       nearly black, so the line is what says where the fill ends. */
+    /* The bar draws its own writing, in two places, so the colour reaches it
+       as a property rather than as `color`. The one home for the value is
+       still the palette. */
+    QProgressBar#DiscoveryBar {{
+        qproperty-writingColour: {colour.on_progress};
+    }}
     QProgressBar::chunk {{
         background-color: {colour.progress_fill};
+        border: {HAIRLINE_PX}px solid {colour.progress_edge};
         border-radius: {PROGRESS_FILL_RADIUS_PX}px;
     }}
     QScrollBar:vertical, QScrollBar:horizontal {{

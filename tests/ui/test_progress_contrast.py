@@ -45,11 +45,22 @@ def test_the_writing_on_a_bar_reads_over_the_part_that_is_not(mode: Mode) -> Non
 
 
 @pytest.mark.parametrize("mode", tuple(Mode))
-def test_the_fill_is_visible_against_the_groove_behind_it(mode: Mode) -> None:
+def test_the_filled_part_can_be_told_from_the_groove_behind_it(mode: Mode) -> None:
     """A bar whose fill matched its groove would be readable and useless.
 
-    Three to one rather than four and a half: this is a shape being told
-    apart from another shape rather than writing being read.
+    Three to one rather than four and a half: this is a shape being told apart
+    from another shape rather than writing being read.
+
+    Either way of doing it counts, which is the change made on 2026-09-07 when
+    the fill was darkened so the writing over it could be read. The groove in
+    the dark appearance is nearly black, so a fill dark enough for white text
+    cannot also stand off it by lightness; the boundary is then drawn as a line
+    round the fill instead. What must not happen is NEITHER.
     """
     colour = palette_for(mode)
-    assert contrast(colour.progress_fill, colour.progress_groove) >= DISTINCT
+    by_fill = contrast(colour.progress_fill, colour.progress_groove)
+    by_edge = min(
+        contrast(colour.progress_edge, colour.progress_fill),
+        contrast(colour.progress_edge, colour.progress_groove),
+    )
+    assert max(by_fill, by_edge) >= DISTINCT
