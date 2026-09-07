@@ -83,17 +83,16 @@ two albums are the same album and the measurements behind both are in
 Done when: a run over one of the small genres completes against the real
 sources and writes a file whose gaps are checked by hand and are real.
 
-**Stage two: reach the places that sell it. This needs real discussion and is
-not designed.** Once the gaps are known, this would look them
-up for sale in a browser. There are three kinds of gap:
+**Stage two: reach the places that sell it. Specified in `SHOPS.md`.** Designed
+with Oliver on 2026-09-08 and not yet built. Once the gaps are known, this looks
+them up for sale in a browser: ticked albums, a dialog listing the shops, then
+one search opened per album at whichever shop is chosen. The shops are data in a
+file rather than a list inside the application, since three of the eight checked
+on 2026-09-07 had closed, walled or moved their search that same afternoon.
 
-- an artist not in the library at all;
-- an album by an artist who IS in the library, where that album is not;
-- an album by an artist not held at all.
-
-The listener says which format matters, FLAC or MP3 or another; the search
-carries that filter. Named as candidate sources: 7digital, Boomkat and Qobuz;
-there are many more and the list is not settled.
+Nothing else from the specification is repeated here, so the two cannot come to
+disagree. What is open is the build itself, inside out, in the order that
+document ends with.
 
 **This is consistent with the network stance rather than an exception to it.**
 The rule in "Not planned" forbids anything outward that carries the library or
@@ -102,8 +101,8 @@ not such a call: the address goes out and the browser does the asking. Buying
 music is that same move. What would breach it is sending the library to a
 recommender; the same goes for anything else identifying the listener.
 
-Done when: a gap chosen from a run can be reached at a shop that sells it in a
-format the listener asked for, in a browser, having sent nothing about them.
+Done when: a gap ticked in the results dialog opens that shop's own search for
+it in a browser, having sent nothing about the listener.
 
 ## 3. A music video for a track. Not designed.
 
