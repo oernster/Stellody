@@ -180,15 +180,21 @@ class LibraryTray(QWidget):
             self, resources.unmute_icon_path(), "Mute", toggle_mute
         )
         # Left of the volume rather than right of it, ruled on 2026-09-07:
-        # discovery is a library action rather than a sound control, so the
-        # separator goes between the two to keep that line visible.
+        # discovery is a library action rather than a sound control, so a line
+        # goes between the two to keep that boundary visible.
         self.discover_button = _icon_button(
             self,
             resources.discover_icon_path(),
             DISCOVER_TOOLTIP,
             open_discovery,
         )
-        self.separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
+        self.library_separator = separator(
+            self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX
+        )
+        # The second line, ruled on 2026-09-07: theme and help act on the
+        # application rather than on what is playing, so the sound controls are
+        # fenced on both sides rather than running into their neighbours.
+        self.sound_separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
         self.theme_button = _icon_button(self, None, "", toggle_theme)
         self.help_button = _icon_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
@@ -214,9 +220,10 @@ class LibraryTray(QWidget):
             row.addWidget(button)
         row.addStretch()
         row.addWidget(self.discover_button)
-        row.addWidget(self.separator)
+        row.addWidget(self.library_separator)
         row.addWidget(self.volume_button)
         row.addWidget(self.mute_button)
+        row.addWidget(self.sound_separator)
         row.addWidget(self.theme_button)
         row.addWidget(self.help_button)
 

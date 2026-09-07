@@ -137,21 +137,34 @@ def test_the_switches_come_back_as_they_were_left(
     assert player.volume == SILENT_VOLUME
 
 
-def test_discovery_is_ruled_off_from_the_sound_controls(
+def across(tray, widget) -> int:
+    """Where this control sits along the tray, left to right."""
+    return widget.mapTo(tray, widget.rect().center()).x()
+
+
+def test_the_sound_controls_are_ruled_off_on_both_sides(
     window: MainWindow,
 ) -> None:
-    """It acts on the library; the two after it act on what is playing."""
+    """Discovery acts on the library and theme and help on the application.
+
+    Only the two between the lines act on what is playing, so the fence is
+    drawn on both sides of them rather than on one.
+    """
     window.show()
     tray = window._tray
-    separator = tray.separator
-    assert separator.isVisible()
-    centre = separator.mapTo(tray, separator.rect().center()).x()
-    discover = tray.discover_button.mapTo(
-        tray, tray.discover_button.rect().center()
-    ).x()
-    volume = tray.volume_button.mapTo(tray, tray.volume_button.rect().center()).x()
-    assert discover < centre < volume, "the line sits between the two groups"
-    assert separator.focusPolicy() == 0, "a rule is not a control"
+    for line in (tray.library_separator, tray.sound_separator):
+        assert line.isVisible()
+        assert line.focusPolicy() == 0, "a rule is not a control"
+    assert (
+        across(tray, tray.discover_button)
+        < across(tray, tray.library_separator)
+        < across(tray, tray.volume_button)
+    ), "the first line sits between discovery and the sound controls"
+    assert (
+        across(tray, tray.mute_button)
+        < across(tray, tray.sound_separator)
+        < across(tray, tray.theme_button)
+    ), "the second line sits between the sound controls and the application"
 
 
 def test_the_showing_controls_moved_to_the_strip_with_room_for_them(
