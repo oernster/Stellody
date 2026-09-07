@@ -20,12 +20,9 @@ from discovery_support import (
     nothing,
 )
 
+from stellody.application.asking import RETRY_PAUSE_SECONDS, WAIT_SLICE_SECONDS
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.application.discovering import (
-    RETRY_PAUSE_SECONDS,
-    WAIT_SLICE_SECONDS,
-    Discovery,
-)
+from stellody.application.discovering import Discovery
 from stellody.application.discovery_ports import RateRefused
 from stellody.application.values import DiscoveryProgress, DiscoveryStage, RunOutcome
 from stellody.domain.album import Album
@@ -197,3 +194,59 @@ def test_a_stop_arriving_as_a_wait_ends_is_still_a_stop() -> None:
     report = run.run(one_blues_artist(), ("Blues",), nothing, stopping)
     assert report.outcome is RunOutcome.CANCELLED
     assert catalogue.genres_asked == [], "it never got to ask again"
+
+
+def two_blues_artists() -> tuple[Album, ...]:
+    """A library of two artists, so a count can be watched growing."""
+    return (
+        make_album("Muddy Waters", "Electric Mud", "Blues"),
+        make_album("John Lee Hooker", "The Healer", "Blues"),
+    )
+
+
+def test_the_first_half_counts_the_candidates_it_meets() -> None:
+    """FR-D37: the only reading of how big the second half will be.
+
+    Reported before each artist is looked up, so the count against artist two
+    is what artist one turned up. Nought against the first, since nothing has
+    been met yet.
+    """
+    run, _, report = narrowing_run()
+    run.run(two_blues_artists(), ("Blues",), report, never)
+    looking = [seen for seen in report.seen if seen.stage is DiscoveryStage.LOOKING_UP]
+    assert [seen.candidates for seen in looking] == [0, 2]
+
+
+def test_one_candidate_met_twice_is_counted_once() -> None:
+    """The second half asks about each candidate once, so it costs once.
+
+    The well-connected turn up against nearly every artist; counting them each
+    time would project a second stage several times the size of the real one.
+    """
+    run, _, report = narrowing_run()
+    run.run(two_blues_artists(), ("Blues",), report, never)
+    looking = [seen for seen in report.seen if seen.stage is DiscoveryStage.LOOKING_UP]
+    assert looking[-1].candidates == 2, "the same two, not four"
+
+
+def test_a_candidate_already_known_about_is_not_counted() -> None:
+    """It costs no request, so counting it would overstate the wait.
+
+    A run over a library met these before and kept what they play, which is
+    the whole reason the cache exists. An estimate that ignored it would
+    promise minutes of work that will not happen.
+    """
+    remembered = Memory({"cray": ("Blues",), "wolf": ("Techno",)})
+    run, _, report = narrowing_run(memory=remembered)
+    run.run(two_blues_artists(), ("Blues",), report, never)
+    looking = [seen for seen in report.seen if seen.stage is DiscoveryStage.LOOKING_UP]
+    assert [seen.candidates for seen in looking] == [0, 0]
+
+
+def test_the_second_half_projects_nothing_because_it_knows() -> None:
+    """The count is for projecting; by the second half the total is real."""
+    run, _, report = narrowing_run()
+    run.run(one_blues_artist(), ("Blues",), report, never)
+    narrowing = [seen for seen in report.seen if seen.stage is DiscoveryStage.NARROWING]
+    assert {seen.candidates for seen in narrowing} == {0}
+    assert {seen.total for seen in narrowing} == {2}, "the real count, not a guess"

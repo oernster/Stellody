@@ -217,6 +217,12 @@ class DiscoveryProgress:
     done: int
     total: int
     stage: DiscoveryStage = DiscoveryStage.LOOKING_UP
+    # How many distinct candidate artists the run has met so far that it does
+    # not already know what to make of. Carried because the second stage asks
+    # about exactly these, so it is the only reading available of how big that
+    # stage will be while the first one is still running. FR-D37. Nought
+    # during the second stage, where the total is known rather than projected.
+    candidates: int = 0
 
     @property
     def percent(self) -> int:

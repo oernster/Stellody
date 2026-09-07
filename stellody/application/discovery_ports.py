@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 
 
 class DiscoveryError(RuntimeError):
@@ -87,6 +87,20 @@ class SimilaritySource(Protocol):
         questions grew a `wanted` predicate: one name meaning a number here and
         a question elsewhere is a name nobody can read twice the same way.
         """
+        ...
+
+
+class DiscoveryResults(Protocol):
+    """Reads back what the last completed run wrote down.
+
+    The results are shown from the FILE rather than from the report still in
+    hand when a run ends, which is what the specification said this stage would
+    do: one thing stays authoritative, so showing a past run's answer again on
+    some later day then costs nothing extra. FR-D28.
+    """
+
+    def last_run(self) -> tuple[Gaps, ...]:
+        """What the last run found; empty where there is nothing to show."""
         ...
 
 

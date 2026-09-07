@@ -19,12 +19,14 @@ from discovery_support import (
     nothing,
 )
 
-from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.application.discovering import (
+from stellody.application.asking import (
     RETRY_ATTEMPTS,
     RETRY_PAUSE_SECONDS,
-    SIMILAR_WANTED,
     WAIT_SLICE_SECONDS,
+)
+from stellody.application.choosing_covers import Wanted, always_wanted
+from stellody.application.discovering import (
+    SIMILAR_WANTED,
     Discovery,
     held_by_artist,
 )

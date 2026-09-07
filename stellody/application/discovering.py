@@ -32,13 +32,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import TypeVar
 
+from stellody.application.asking import Pause, asked
 from stellody.application.discovery_ports import (
     CatalogueSource,
     GenreMemory,
     NothingRemembered,
-    RateRefused,
     RunCancelled,
     SimilaritySource,
     SourceFailed,
@@ -68,22 +67,6 @@ from stellody.domain.matching import ReleaseMatch, matched
 # 2026-09-06: it is a decision about how much to put in front of somebody
 # rather than a fact about anything, so it is named here and nowhere else.
 SIMILAR_WANTED = 10
-# How many times one question is asked before it is given up on; how long to
-# wait between asks. The wait lengthens with each attempt, since a host
-# refusing twice is asking for more room than one refusing once.
-RETRY_ATTEMPTS = 3
-RETRY_PAUSE_SECONDS = 2.0
-# A wait is taken in slices so that stopping is felt rather than merely
-# obeyed. Waiting out two refusals is six seconds; a listener who has pressed
-# stop and watched nothing happen for six seconds has been told the button
-# does not work. Small enough to read as immediate, large enough that a run
-# is not spending its time asking whether it should stop.
-WAIT_SLICE_SECONDS = 0.2
-
-Answer = TypeVar("Answer")
-# Handed a number of seconds to wait out a refusal. Injected rather than
-# reached for, so the suite waits for nothing at all.
-Pause = Callable[[float], None]
 # Handed how far a run has got, so a window can say so.
 ProgressReport = Callable[[DiscoveryProgress], None]
 
@@ -122,10 +105,17 @@ class Discovery:
         artists = source_artists(albums, ticked)
         if not artists:
             return RunReport(outcome=RunOutcome.NOTHING_TO_ASK)
-        gathered, ending = self._gathered(albums, artists, ticked, report, cancelled)
+        # Read once and handed to both halves. The first half counts the
+        # candidates it meets that are NOT in here, since those are exactly
+        # what the second half will have to ask about; reading it twice would
+        # let the two halves disagree about what is already known.
+        known = self.memory.remembered()
+        gathered, ending = self._gathered(
+            albums, artists, ticked, report, cancelled, known
+        )
         if ending is not None:
             return ending
-        kept = self._narrowed(gathered.gaps, ticked, report, cancelled)
+        kept = self._narrowed(gathered.gaps, ticked, report, cancelled, known)
         if kept is None:
             return RunReport(outcome=RunOutcome.CANCELLED)
         return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept)
@@ -137,20 +127,35 @@ class Discovery:
         ticked: tuple[str, ...],
         report: ProgressReport,
         cancelled: CancelledCheck,
+        known: dict[str, tuple[str, ...]],
     ) -> tuple[RunReport, RunReport | None]:
-        """Everything the catalogues said, plus an ending where one cut in."""
+        """Everything the catalogues said, plus an ending where one cut in.
+
+        It counts the distinct candidates it meets as it goes, so a listener
+        can be told how long the whole run has left rather than how long this
+        half of it has. Only candidates nothing is already known about are
+        counted, since those are the ones the second half will pay for.
+        """
         held = held_by_artist(albums)
         everyone = tuple(held)
         found: list[Gaps] = []
         unresolved: list[str] = []
         ambiguous: list[Ambiguity] = []
         failed: list[SourceFailure] = []
+        met: set[str] = set()
         for done, artist in enumerate(artists):
             if cancelled():
                 return self._so_far(found, unresolved, ambiguous, failed), RunReport(
                     outcome=RunOutcome.CANCELLED
                 )
-            report(DiscoveryProgress(artist=artist, done=done, total=len(artists)))
+            report(
+                DiscoveryProgress(
+                    artist=artist,
+                    done=done,
+                    total=len(artists),
+                    candidates=len(met),
+                )
+            )
             try:
                 gaps = self._about(
                     artist, held.get(artist, frozenset()), everyone, ticked, cancelled
@@ -172,6 +177,11 @@ class Discovery:
                 ambiguous.append(gaps)
             else:
                 found.append(gaps)
+                met.update(
+                    candidate.identifier
+                    for candidate in gaps.artists
+                    if candidate.identifier and candidate.identifier not in known
+                )
         return self._so_far(found, unresolved, ambiguous, failed), None
 
     @staticmethod
@@ -204,7 +214,7 @@ class Discovery:
         where it knows too many, since neither is a gap and both are worth
         telling a listener about.
         """
-        identifiers = self._asked(self.catalogue.identify, cancelled, artist)
+        identifiers = asked(self.catalogue.identify, cancelled, self.pause, artist)
         if not identifiers:
             return None
         if len(identifiers) > 1:
@@ -212,9 +222,13 @@ class Discovery:
         # Three requests are made about one artist. Each is asked about
         # separately inside `_asked`, so a stop between any two of them is
         # honoured rather than waiting for the artist to be finished with.
-        offered = self._asked(self.catalogue.albums_of, cancelled, identifiers[0])
-        similar = self._asked(
-            self.similarity.similar_to, cancelled, identifiers[0], SIMILAR_WANTED
+        offered = asked(self.catalogue.albums_of, cancelled, self.pause, identifiers[0])
+        similar = asked(
+            self.similarity.similar_to,
+            cancelled,
+            self.pause,
+            identifiers[0],
+            SIMILAR_WANTED,
         )
         return Gaps(
             artist=artist,
@@ -228,6 +242,7 @@ class Discovery:
         ticked: tuple[str, ...],
         report: ProgressReport,
         cancelled: CancelledCheck,
+        known: dict[str, tuple[str, ...]],
     ) -> tuple[Gaps, ...] | None:
         """The same gaps with candidate artists outside the ticks taken out.
 
@@ -240,7 +255,6 @@ class Discovery:
         half used to say nothing at all; a listener watching a bar that had
         stopped moving had no way to tell a long wait from a hang.
         """
-        known = self.memory.remembered()
         asking = self._to_ask(gathered, known)
         for done, (identifier, name) in enumerate(asking):
             # No check of its own here. Every candidate is asked about through
@@ -308,61 +322,6 @@ class Discovery:
         up and is kept on the same ground as every other undescribed one.
         """
         try:
-            return self._asked(self.catalogue.genres_of, cancelled, identifier)
+            return asked(self.catalogue.genres_of, cancelled, self.pause, identifier)
         except SourceFailed:
             return ()
-
-    def _asked(
-        self,
-        call: Callable[..., Answer],
-        cancelled: CancelledCheck,
-        *arguments: object,
-    ) -> Answer:
-        """Ask a catalogue, waiting out a refusal rather than giving up on it.
-
-        Asked whether it is still wanted before EVERY request rather than once
-        per artist. Measured on 2026-09-07: a request may take the full twenty
-        second timeout and may be attempted three times, so a run asked once
-        an artist could go on for minutes after being told to stop.
-
-        The same question goes down WITH the request, phrased the way a client
-        wants it. A request in flight used to be the floor on how quickly a
-        stop could be felt, since nothing could reach a thread waiting on a
-        socket; the catalogue clients now drop one part way through, so the
-        floor is gone rather than merely lowered.
-        """
-
-        def wanted() -> bool:
-            """Whether the answer to this is still worth waiting for."""
-            return not cancelled()
-
-        attempts = 0
-        while True:
-            if cancelled():
-                raise RunCancelled("stopped before the next request")
-            attempts += 1
-            try:
-                return call(*arguments, wanted=wanted)
-            except RateRefused:
-                if attempts >= RETRY_ATTEMPTS:
-                    raise SourceFailed("refused after every attempt")
-                self._waited(RETRY_PAUSE_SECONDS * attempts, cancelled)
-
-    def _waited(self, seconds: float, cancelled: CancelledCheck) -> None:
-        """Wait that long, in slices, giving up the moment somebody asks.
-
-        The whole wait used to be taken in one go, so a stop pressed at the
-        start of a four second pause was not acted on for four seconds. It is
-        checked before the first slice as well as after each one, so a stop
-        pressed while the request was in flight is honoured without waiting
-        at all.
-        """
-        left = seconds
-        while True:
-            if cancelled():
-                raise RunCancelled("stopped while waiting out a refusal")
-            if left <= 0:
-                return
-            take = min(WAIT_SLICE_SECONDS, left)
-            self.pause(take)
-            left -= take
