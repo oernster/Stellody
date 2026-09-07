@@ -87,6 +87,9 @@ class DiscoveryRunner(QObject):
         super().__init__(parent)
         self._thread: QThread | None = None
         self._worker: DiscoveryWorker | None = None
+        # Runs somebody stopped, still winding down. Held so Qt does not
+        # destroy a thread that is still running, which ends the process.
+        self._abandoned: list[QThread] = []
 
     @property
     def running(self) -> bool:
@@ -115,22 +118,72 @@ class DiscoveryRunner(QObject):
         return True
 
     def cancel(self) -> None:
-        """Ask a running discovery to give up. Harmless when none is running."""
+        """Give up on a run at once. Harmless when none is running.
+
+        The run is ABANDONED rather than waited for. Ruled on 2026-09-07: a
+        stop means stop, so everything a listener can see has to happen now
+        rather than when the run gets round to noticing.
+
+        A request already issued cannot be called back. Nothing portable
+        interrupts a thread blocked waiting for a socket, while the wait for
+        a response happens inside `urlopen` before there is anything to close,
+        so the honest choice is between making somebody wait for it and
+        letting go of it. This lets go: the thread is moved aside with its
+        signals cut, so it reports to nobody and blocks nothing. It ends on
+        its own at its next check or when its socket times out.
+
+        The thread is kept rather than dropped. A QThread destroyed while it
+        is still running takes the process down with it, so the reference is
+        held until the run it carries has actually finished.
+        """
+        worker, thread = self._worker, self._thread
+        self._worker = None
+        self._thread = None
+        if worker is None or thread is None:
+            return
+        worker.cancel()
+        worker.progressed.disconnect()
+        worker.completed.disconnect()
+        worker.failed.disconnect()
+        # Whatever it ends up saying, it says it to this and nothing else.
+        worker.completed.connect(lambda _report: self._abandoned_ended(thread))
+        worker.failed.connect(lambda _message: self._abandoned_ended(thread))
+        self._abandoned.append(thread)
+        self.stopped.emit()
+
+    def _abandoned_ended(self, thread: QThread) -> None:
+        """An abandoned run has finished; let go of the thread it was on."""
+        thread.quit()
+        thread.wait()
+        if thread in self._abandoned:
+            self._abandoned.remove(thread)
+        thread.deleteLater()
+
+    def wait(self, milliseconds: int = WAIT_MS) -> None:
+        """Block until every run finishes, abandoned ones included.
+
+        A different thing from a stop, deliberately not built on one. A
+        stop lets go of a run because somebody is waiting to carry on using
+        the window; this waits for it, because the application is closing and
+        a thread still running when Qt tears it down ends the process.
+
+        Qt cannot interrupt a slot already running, so quitting the thread does
+        nothing at all while a run is in flight: it is the flag that ends it.
+        The run keeps its signals here, so a run that finishes in time still
+        reports what it found.
+        """
         worker = self._worker
         if worker is not None:
             worker.cancel()
-
-    def wait(self, milliseconds: int = WAIT_MS) -> None:
-        """Block until the run finishes. For shutdown and for tests.
-
-        Qt cannot interrupt a slot already running, so quitting the thread does
-        nothing at all while a run is in flight: it is the cancel that ends it.
-        """
         thread = self._thread
         if thread is not None:
-            self.cancel()
             thread.quit()
             thread.wait(milliseconds)
+        for abandoned in tuple(self._abandoned):
+            abandoned.quit()
+            abandoned.wait(milliseconds)
+            if abandoned in self._abandoned:
+                self._abandoned.remove(abandoned)
 
     @Slot(object)
     def _on_progress(self, progress: DiscoveryProgress) -> None:

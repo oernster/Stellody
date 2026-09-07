@@ -7,6 +7,9 @@ ended against what is SHOWN while one is still going.
 
 from __future__ import annotations
 
+import threading
+import time
+
 import pytest
 from discovery_wiring_support import (
     RunnerInProgress,
@@ -16,10 +19,19 @@ from discovery_wiring_support import (
 )
 from PySide6.QtWidgets import QMessageBox
 
-from stellody.application.values import DiscoveryProgress
+from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovering import STILL_STOPPING, STOP_QUESTION_EARLY
 from stellody.ui.discovery_progress import RESTING
+from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
+
+# What a stop is allowed to take. Oliver's ruling is one to two seconds, so a
+# fifth of that leaves room for a slow machine while still failing the twenty
+# second wait this exists to stop coming back.
+STOP_LIMIT_S = 0.5
+# How long a wedged run waits before giving up on its own, so a test that goes
+# wrong ends rather than hanging the suite.
+WEDGED_LIMIT_S = 10
 
 
 def test_a_started_run_turns_the_button_into_a_stop(application) -> None:
@@ -195,3 +207,41 @@ def test_a_stopped_run_does_not_announce_itself_when_it_finally_ends(
     said_when_stopped = list(window._status.said)
     window.discovery_completed(a_report(albums=2, artists=3))
     assert window._status.said == said_when_stopped, "it did not speak twice"
+
+
+class Wedged:
+    """A run that will not end, standing in for a service that will not answer.
+
+    The case a stop has to survive: not a run between requests, rather one
+    blocked inside a request nobody can call back.
+    """
+
+    def __init__(self) -> None:
+        self.let_go = threading.Event()
+
+    def run(self, _albums, _ticked, _report, _cancelled):
+        """Sit there until the test says otherwise."""
+        self.let_go.wait(WEDGED_LIMIT_S)
+        return RunReport(outcome=RunOutcome.COMPLETED)
+
+
+def test_a_stop_is_instant_even_while_a_request_is_wedged(application) -> None:
+    """Ruled on 2026-09-07: a stop means stop, not stop within twenty seconds.
+
+    Driven through the real runner and a real thread rather than a stand-in,
+    because what is asserted is precisely the thing a stand-in would fake: that
+    the stop does not wait for the run. The run here cannot be hurried at all,
+    which is the worst case a listener meets when a service stops answering.
+    """
+    wedged = Wedged()
+    runner = DiscoveryRunner()
+    try:
+        assert runner.start(wedged, (), ("Blues",))
+        started = time.monotonic()
+        runner.cancel()
+        assert time.monotonic() - started < STOP_LIMIT_S
+        assert not runner.running, "the runner is free for another run at once"
+        assert runner.start(wedged, (), ("Folk",)), "and takes one"
+    finally:
+        wedged.let_go.set()
+        runner.wait()

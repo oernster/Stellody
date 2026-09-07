@@ -131,11 +131,10 @@ class Discovering:
     def begin_discovery(self, ticked: tuple[str, ...]) -> None:
         """Start a run over the artists inside these genres.
 
-        A stopped run is let go of at once while the thread it was on winds
-        down, so a new one can be asked for before there is anywhere to put it.
-        The runner refuses that rather than quietly doing nothing, so the
-        refusal is said out loud: a press that appears to do nothing is the
-        defect this whole area has already been reported for once.
+        A stopped run is abandoned rather than waited for, so there is room
+        for this one at once. The runner still answers whether it took it;
+        a refusal nobody is told about is a press that appears to do nothing,
+        which is the defect this area has already been reported for.
         """
         if self._discovery is None:
             return
@@ -174,12 +173,12 @@ class Discovering:
         during one, so there is a moment between the press and the ending; a
         bar still counting through that moment reads as a press nobody heard.
         """
+        # The run is abandoned rather than asked to hurry: its thread is cut
+        # loose to end in its own time, reporting to nobody. Everything below
+        # is therefore what a stop IS, rather than a guess at what it will
+        # shortly become.
         self._discovery_stopping = True
         self._discovery_runner.cancel()
-        # Let go of at once rather than held until the run notices. A request
-        # already in flight cannot be called back and may take the full twenty
-        # second timeout, so a bar still saying something about a run somebody
-        # has finished with is a bar reporting on nothing they care about.
         self._discovery_progress = None
         self._tray.discovery_bar.rest()
         self._tray.discover_button.setToolTip(DISCOVER_TOOLTIP)

@@ -430,17 +430,26 @@ an artist could go on for minutes after being told to stop. The waits between
 attempts are sliced as well, so a stop lands inside one rather than at the end
 of it.
 
-What cannot be removed is the request already in flight: nothing calls an
-outstanding HTTP request back, so that timeout is the floor. It is why the
-toolbar lets go of a run when the stop is agreed to rather than when the run
-notices, which is FR-D27.
+The request already in flight still cannot be called back: nothing portable
+interrupts a thread waiting on a socket, while the wait for a response happens
+inside the call that opens it, before there is any object to close. So the run
+is not hurried at all. It is ABANDONED: cut loose from the window, reporting to
+nobody, ending in its own time at its next check or when its socket gives up.
+
+That is what makes a stop instant rather than eventual, which is the ruling in
+FR-D27. What the abandoned run costs is its share of the request pacing: a new
+run started immediately is queued behind whatever the old one has left, since
+both go through the same gate and that gate exists to keep a promise to the
+services rather than to either run.
 
 Acceptance: Given a run in progress over an existing discovery file, when cancel
 is pressed, then no further request is issued, nothing of that run is retained
 and the existing file is byte for byte what it was; given the run is waiting out
 a refusal when cancel is pressed, then it stops within one slice of that wait
 rather than at the end of it; given a cancel arrives between two of the three
-requests made about one artist, then the remaining two are never issued.
+requests made about one artist, then the remaining two are never issued; given
+a run is wedged inside a request that will not answer at all, then the stop
+still returns at once and the window is free to start another.
 
 Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_wiring.py::test_a_stop_is_acknowledged_before_the_run_has_stopped`
 
