@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.discovering import Discovery
 from stellody.application.editing import TagEditing
 from stellody.application.listening import ListeningLog
 from stellody.application.pictures import Pictures
@@ -31,6 +32,7 @@ from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
 from stellody.ui.covering import Covering
+from stellody.ui.discovering import Discovering, WriteDiscovery
 from stellody.ui.editing_tags import EditingTags
 from stellody.ui.expanding import ExpandToggle
 from stellody.ui.filtering import Filtering
@@ -85,6 +87,7 @@ class MainWindow(
     Scanning,
     Searching,
     Filtering,
+    Discovering,
     Playing,
     TransportMenu,
     Choosing,
@@ -118,6 +121,8 @@ class MainWindow(
         repairs: Repairs | None = None,
         tag_editing: TagEditing | None = None,
         pictures: Pictures | None = None,
+        discovery: Discovery | None = None,
+        write_discovery: WriteDiscovery | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -179,11 +184,13 @@ class MainWindow(
         self.start_editing_tags(tag_editing)
         self.start_searching()
         self.start_filtering()
+        self.start_discovering(discovery, write_discovery)
         self.start_keeping_place()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
             open_filter=self.open_filter,
+            open_discovery=self.open_discovery,
             toggle_search=self.toggle_search,
             search_changed=self.search_changed,
             search_again=self.search_again,
@@ -198,6 +205,7 @@ class MainWindow(
             stop_playback=self.stop_playback,
             next_track=self.next_track,
         )
+        self.show_discovery_offer()
         self._position_bar = PositionBar(self, seek=self.seek_to)
         self._position_bar.stars.chosen.connect(self.rate_shown)
         self._bottom_tray = BottomTray(

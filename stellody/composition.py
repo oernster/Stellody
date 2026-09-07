@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 import traceback
 from collections.abc import Callable
 
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.discovering import Discovery
 from stellody.application.editing import TagEditing
 from stellody.application.listening import ListeningLog
 from stellody.application.pictures import Pictures
@@ -24,11 +26,13 @@ from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
-from stellody.infrastructure import diary, instance, switch_reset
+from stellody.infrastructure import diary, discovery_file, instance, switch_reset
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
+from stellody.infrastructure.catalogue import MusicBrainz
 from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
+from stellody.infrastructure.fetching import Fetcher
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.paths import (
     art_cache_dir,
@@ -37,6 +41,7 @@ from stellody.infrastructure.paths import (
     shape_cache_dir,
 )
 from stellody.infrastructure.probe import AudioProbe
+from stellody.infrastructure.similarity import ListenBrainz
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
@@ -109,6 +114,15 @@ def build_window(
         repairs=Repairs(store),
         tag_editing=TagEditing(store),
         pictures=Pictures(VideoReader),
+        # Two services rather than one because neither catalogue answers both
+        # questions; two gates rather than one because a gap owed to one
+        # host says nothing about the other.
+        discovery=Discovery(
+            catalogue=MusicBrainz(Fetcher()),
+            similarity=ListenBrainz(Fetcher()),
+            pause=time.sleep,
+        ),
+        write_discovery=discovery_file.write,
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)
         ),
