@@ -33,10 +33,10 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.application.values import DiscoveryProgress
-from stellody.ui.dialogs import FirstStopDialog
+from stellody.ui.dialogs import FirstStopDialog, title_label
 from stellody.ui.genre_grid import ASKING, GenreGrid
 
-TITLE = "Discover music"
+TITLE = "Discover new music"
 FIND_LABEL = "Find"
 CLOSE_LABEL = "Close"
 CANCEL_LABEL = "Cancel"
@@ -67,6 +67,11 @@ class DiscoveryDialog(FirstStopDialog):
         self.setWindowTitle(TITLE)
         self.setMinimumWidth(DIALOG_WIDTH_PX)
         outer = QVBoxLayout(self)
+        # The same words as the title bar, from the same constant: two spellings
+        # of one name is the kind of drift nobody notices until it is shipped.
+        self.title = title_label(TITLE, self)
+        outer.addWidget(self.title)
+        outer.addSpacing(APART_PX)
         self.grid = GenreGrid("", self, manner=ASKING)
         for box in self.grid.boxes.values():
             box.toggled.connect(self._ticks_changed)

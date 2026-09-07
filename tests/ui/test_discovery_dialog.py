@@ -15,8 +15,10 @@ from stellody.ui.discovery_dialog import (
     CANCEL_LABEL,
     CLOSE_LABEL,
     RESTING,
+    TITLE,
     DiscoveryDialog,
 )
+from stellody.ui.theme import DIALOG_TITLE_FONT_PX, Mode, stylesheet
 
 
 class Watched:
@@ -197,3 +199,40 @@ def test_the_key_that_closes_it_is_the_ordinary_one() -> None:
     )
     dialog.keyPressEvent(event)
     assert dialog.isHidden()
+
+
+def test_it_says_what_it_is_across_the_top_of_itself() -> None:
+    """A picture-only button opens this, so its face has to name it.
+
+    The same words as the title bar, from the same constant, since a heading
+    that drifts from the window title is two names for one dialog.
+    """
+    dialog, _ = make_dialog()
+    assert dialog.title.text() == TITLE == dialog.windowTitle()
+    assert dialog.title.alignment() & Qt.AlignmentFlag.AlignHCenter
+    assert dialog.title.focusPolicy() == Qt.FocusPolicy.NoFocus
+
+
+def test_the_heading_is_the_first_thing_in_the_dialog() -> None:
+    """Above the ticking rather than beside it, which is what makes it read."""
+    dialog, _ = make_dialog()
+    outer = dialog.layout()
+    assert outer.itemAt(0).widget() is dialog.title
+    assert outer.indexOf(dialog.title) < outer.indexOf(dialog.grid)
+
+
+def test_the_appearance_draws_the_heading_larger_than_the_words_under_it() -> None:
+    """The size lives in the stylesheet, so it is measured through one.
+
+    Asserted after polishing: a fresh widget still carries the fallback font,
+    so reading the font before that reports the default and passes whatever
+    the rule says.
+    """
+    dialog, _ = make_dialog()
+    for mode in Mode:
+        dialog.setStyleSheet(stylesheet(mode))
+        dialog.title.ensurePolished()
+        dialog.message.ensurePolished()
+        assert dialog.title.font().pixelSize() == DIALOG_TITLE_FONT_PX
+        assert dialog.title.font().bold()
+        assert dialog.title.font().pixelSize() > dialog.message.font().pointSize()

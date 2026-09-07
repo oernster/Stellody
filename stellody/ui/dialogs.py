@@ -30,6 +30,9 @@ from stellody.shared.version import (
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.widgets import ReadingPane
 
+# The stylesheet rule that makes a label a heading. Named once here so the
+# rule and every dialog asking for it cannot come to disagree.
+DIALOG_TITLE_NAME = "DialogTitle"
 ABOUT_ICON_PX = 96
 ABOUT_MIN_WIDTH_PX = 560
 ABOUT_BODY_MIN_HEIGHT_PX = 330
@@ -124,6 +127,24 @@ class FirstStopDialog(QDialog):
             # The tab reason, so it wears the same ring a tabbed-to control
             # wears rather than a different-looking one.
             stop.setFocus(Qt.FocusReason.TabFocusReason)
+
+
+def title_label(text: str, parent: QWidget) -> QLabel:
+    """A dialog's own name, centred across the top of it.
+
+    The title bar already carries the name, so this is not the only place it
+    is said; it is the place it is READ. A dialog opened from a picture-only
+    button arrives with nothing on its face saying what was just pressed;
+    a title bar is a thin strip somebody is not looking at.
+
+    A heading is not a control, so it takes no focus and the ring steps over
+    it exactly as it steps over a separator.
+    """
+    label = QLabel(text, parent)
+    label.setObjectName(DIALOG_TITLE_NAME)
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    label.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    return label
 
 
 def close_row(dialog: QDialog) -> QHBoxLayout:

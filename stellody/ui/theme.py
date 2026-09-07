@@ -24,6 +24,11 @@ __all__ = [
 
 FOCUS_WIDTH_PX = 2
 LICENCE_FONT_PX = 13
+# A dialog's own heading, drawn inside it rather than in the title bar a
+# maximised window can push off the top of a screen. Larger than the search
+# box, which is the biggest text this application otherwise sets, so it reads
+# as the name of the thing rather than as another control in it.
+DIALOG_TITLE_FONT_PX = 24
 # The search box sits among the tray's buttons, so it is sized against them
 # rather than against a dialog's default field.
 SEARCH_FONT_PX = 20
@@ -127,6 +132,13 @@ def stylesheet(mode: Mode) -> str:
     QLineEdit#SearchBox {{
         font-size: {SEARCH_FONT_PX}px;
         padding-left: {RADIUS_PX}px;
+    }}
+    /* A dialog says its own name at the top of itself. The bold is what keeps
+       it a heading rather than a large sentence, since the size alone reads
+       as emphasis on whatever the first line happens to be. */
+    QLabel#DialogTitle {{
+        font-size: {DIALOG_TITLE_FONT_PX}px;
+        font-weight: bold;
     }}
     QLineEdit:enabled:hover, QLineEdit:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};
