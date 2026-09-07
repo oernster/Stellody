@@ -132,3 +132,20 @@ def remember(known: dict[str, tuple[str, ...]]) -> None:
         _written(cache_path(), {name: list(genres) for name, genres in known.items()})
     except OSError:
         return
+
+
+class FileGenreMemory:
+    """What earlier runs learned about candidates, kept beside the answer.
+
+    A thin object over the two functions above rather than a store of its own:
+    what a run needs is somewhere to read from and somewhere to write to, and
+    the file is already both.
+    """
+
+    def remembered(self) -> dict[str, tuple[str, ...]]:
+        """What is already known about candidate artists."""
+        return remembered()
+
+    def remember(self, known: dict[str, tuple[str, ...]]) -> None:
+        """Keep what this run learned for the next one."""
+        remember(known)

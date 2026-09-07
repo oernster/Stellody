@@ -186,6 +186,24 @@ class RunOutcome(StrEnum):
     UNAVAILABLE = "unavailable"
 
 
+# A whole of anything, so a fraction can be said as a percentage.
+PERCENT = 100
+
+
+class DiscoveryStage(StrEnum):
+    """Which half of a run the progress being reported belongs to.
+
+    A run asks about the library's own artists first, then about the artists
+    those turned out to resemble. The second half is the longer of the two and
+    used to report nothing at all, which looked exactly like a hang. Named
+    rather than counted into one total, since the size of the second half is
+    not known until the first has finished.
+    """
+
+    LOOKING_UP = "looking-up"
+    NARROWING = "narrowing"
+
+
 @dataclass(frozen=True, slots=True)
 class DiscoveryProgress:
     """How far a run has got, named rather than merely counted.
@@ -198,6 +216,19 @@ class DiscoveryProgress:
     artist: str
     done: int
     total: int
+    stage: DiscoveryStage = DiscoveryStage.LOOKING_UP
+
+    @property
+    def percent(self) -> int:
+        """How far through this stage the run is, as a whole number.
+
+        Counted in work FINISHED rather than in work started, so a bar and the
+        name beside it are answering two different questions: the name says
+        what is happening now, the bar says what is behind it.
+        """
+        if self.total <= 0:
+            return 0
+        return self.done * PERCENT // self.total
 
 
 @dataclass(frozen=True, slots=True)

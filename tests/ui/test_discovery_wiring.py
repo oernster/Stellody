@@ -10,7 +10,7 @@ from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QPushButton, QWidget
 
-from stellody.application.values import RunOutcome, RunReport
+from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import (
     COULD_NOT_WRITE,
@@ -22,16 +22,38 @@ from stellody.ui.discovering import (
     WENT_WRONG,
     Discovering,
 )
+from stellody.ui.discovery_progress import RESTING, DiscoveryBar
 from stellody.ui.discovery_worker import DiscoveryRunner
+from stellody.ui.tray_metrics import (
+    BUTTON_PX,
+    DISCOVER_TOOLTIP,
+    STOP_DISCOVERY_TOOLTIP,
+)
 
 WHERE = "C:/somewhere/discovered.json"
 
 
 class Tray:
-    """Just enough tray to hold the one button the mixin touches."""
+    """Just enough tray to hold the two things the mixin touches.
+
+    The bar is the real one rather than a stand-in, since what the mixin does
+    with it is the whole point of the change that put it there.
+    """
 
     def __init__(self, parent: QWidget) -> None:
         self.discover_button = QPushButton(parent)
+        self.discovery_bar = DiscoveryBar(parent, BUTTON_PX)
+
+
+class StatusBar:
+    """A status bar that only remembers what it was told to say."""
+
+    def __init__(self) -> None:
+        self.said: list[str] = []
+
+    def showMessage(self, message: str) -> None:
+        """Qt's own spelling, since the mixin calls Qt's own method."""
+        self.said.append(message)
 
 
 class Window(Discovering, QObject):
@@ -46,6 +68,28 @@ class Window(Discovering, QObject):
         self._all_albums = ()
         self._holder = QWidget()
         self._tray = Tray(self._holder)
+        self._status = StatusBar()
+
+    def statusBar(self) -> StatusBar:
+        """Where an ended run is announced now that no dialog is open."""
+        return self._status
+
+
+class RunnerInProgress:
+    """A runner that is always mid-run and only records being stopped.
+
+    Hand written rather than a real runner held open: a test that had to keep
+    a thread alive to assert what a button does would be a test of the thread.
+    """
+
+    running = True
+
+    def __init__(self) -> None:
+        self.stopped = 0
+
+    def cancel(self) -> None:
+        """Record that stopping was asked for."""
+        self.stopped += 1
 
 
 class Service:
@@ -214,3 +258,50 @@ def test_a_run_that_raises_is_reported_rather_than_silent(application) -> None:
     runner.wait()
     application.processEvents()
     assert said == ["the roof fell in"]
+
+
+def test_an_ending_is_announced_where_a_dialog_no_longer_is(application) -> None:
+    """The dialog closed when the run started, so the strip says how it ended."""
+    window = make_window(application)
+    window.discovery_completed(a_report(albums=2, artists=3))
+    assert window._status.said == [FOUND.format(albums=2, artists=3, where=WHERE)]
+
+
+def test_an_ending_puts_the_bar_and_the_button_back(application) -> None:
+    """However a run ended, the tray stops offering to stop it."""
+    window = make_window(application)
+    window.discovery_progressed(
+        DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
+    )
+    window.discovery_failed("the roof fell in")
+    assert window._tray.discovery_bar.format() == RESTING
+    assert window._tray.discover_button.toolTip() == DISCOVER_TOOLTIP
+
+
+def test_progress_is_drawn_in_the_tray(application) -> None:
+    """It reports where the run is watched from now, which is the strip."""
+    window = make_window(application)
+    window.discovery_progressed(
+        DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
+    )
+    assert window._tray.discovery_bar.value() == 25
+    assert "Muddy Waters" in window._tray.discovery_bar.toolTip()
+
+
+def test_a_started_run_turns_the_button_into_a_stop(application) -> None:
+    """One control carries both meanings once the dialog has gone."""
+    window = make_window(application)
+    window.begin_discovery(("Rock",))
+    try:
+        assert window._tray.discover_button.toolTip() == STOP_DISCOVERY_TOOLTIP
+    finally:
+        window._discovery_runner.wait()
+
+
+def test_pressing_it_during_a_run_stops_the_run(application) -> None:
+    """The whole reason the button changes meaning rather than going dead."""
+    window = make_window(application)
+    runner = RunnerInProgress()
+    window._discovery_runner = runner
+    window.open_discovery()
+    assert runner.stopped == 1, "it cancelled rather than opening a second dialog"

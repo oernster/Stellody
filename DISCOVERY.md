@@ -382,18 +382,26 @@ Verified by: `tests/domain/test_discovery_gaps.py::test_unstated_genre_is_kept_a
 
 Priority: Must
 
-Requirement: While a run is under way, the discovery dialog shall show the name
-of the artist currently being looked up, the number of artists completed and the
-number to be done.
+Requirement: While a run is under way, the toolbar shall show which stage the
+run is in together with how far through that stage it is as a percentage. On
+hover it shall name the artist currently being asked about, with the number
+completed and the number to be done.
 
 Rationale: A run over the whole library takes about eleven minutes at the rate
 the sources permit. A spinner over eleven minutes is indistinguishable from a
-hang.
+hang. Amended on 2026-09-07 after a measured failure: the dialog reported the
+first half of a run only, so a run over Blues sat at 75% and silent for the
+whole of the second half, which is the longer one. Both halves now report; they
+report to the toolbar rather than to a dialog, since the dialog closes when the
+run starts. The stage rather than the artist is drawn, because a strip of a
+toolbar does not hold "Jools Holland & His Rhythm & Blues Orchestra".
 
 Acceptance: Given a run over three source artists, when the second is reached,
-then the dialog shows that artist's name and a count of one completed of three.
+then the bar reads one third and names that artist on hover; given the run
+reaches its second stage, then the bar says so and restarts against the number
+of candidates to be asked about.
 
-Verified by: `tests/ui/test_discovery_dialog.py::test_progress_names_the_artist`
+Verified by: `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery.py::test_the_second_half_of_a_run_reports_as_it_goes`
 
 ---
 
@@ -445,8 +453,9 @@ Verified by: `tests/infrastructure/test_discovery_file.py::test_shape_of_the_wri
 
 Priority: Must
 
-Requirement: If the discovery file cannot be written, then the discovery dialog
-shall report the failure with the path it tried while leaving any previous file untouched.
+Requirement: If the discovery file cannot be written, then the window shall
+report the failure in its status bar with the reason, while leaving any previous
+file untouched.
 
 Acceptance: Given a destination that refuses writes, when a run completes, then
 the failure is reported naming the path and the previous file is unchanged.
@@ -512,17 +521,21 @@ Verified by: `tests/application/test_discovery.py::test_other_errors_do_not_stop
 
 Priority: Must
 
-Requirement: While a run is under way, the discovery dialog shall keep its action
-button disabled.
+Requirement: While a run is under way, pressing the discovery button shall stop
+that run rather than offer a second one.
 
 Rationale: Two runs racing would double the request rate, breaching NFR-PERF-001
 against both hosts, then race each other to replace the same file. Found by the
-silence check rather than by anybody asking for it.
+silence check rather than by anybody asking for it. Amended on 2026-09-07: the
+dialog closes when a run starts, so there is no action button left to disable
+and the thing wanted of a run in progress is to stop it. The runner refuses a
+second run of its own accord, which is where the guard belongs.
 
-Acceptance: Given a run in progress, when the action button is examined, then it
-is disabled; when the run ends, then it is enabled again.
+Acceptance: Given a run in progress, when the discovery button is pressed, then
+that run is asked to stop and no dialog opens; when no run is under way, then
+the same press opens the dialog.
 
-Verified by: `tests/ui/test_discovery_dialog.py::test_a_second_run_cannot_start`
+Verified by: `tests/ui/test_discovery_wiring.py::test_pressing_it_during_a_run_stops_the_run`, `tests/ui/test_discovery_wiring.py::test_the_runner_refuses_a_second_run`
 
 ---
 
@@ -542,6 +555,51 @@ window is closed, then no further request is issued and the existing file is
 byte for byte what it was.
 
 Verified by: `tests/application/test_discovery.py::test_closing_stops_the_run`
+
+---
+
+**FR-D25 The dialog asks, then leaves**
+
+Priority: Must
+
+Requirement: When a run is started, the discovery dialog shall close.
+
+Rationale: Ruled on 2026-09-07 after a run was watched. A run takes minutes at
+the rate the sources permit; a dialog held open for all of them is one
+somebody has to work around to carry on listening; a listener who wants to
+watch a bar can watch the one in the toolbar. The dialog therefore knows nothing
+about a run: it cannot report on one, cannot stop one and does not know whether
+one is under way.
+
+Acceptance: Given a genre is ticked, when the action is pressed, then the ticks
+are handed over and the dialog closes; given nothing is ticked, when the action
+is reached from the keyboard and pressed, then nothing is started and the dialog
+stays.
+
+Verified by: `tests/ui/test_discovery_dialog.py::test_finding_closes_the_dialog`
+
+---
+
+**FR-D26 What a candidate plays is remembered**
+
+Priority: Must
+
+Requirement: The discovery service shall keep what each candidate artist was
+found to play and shall not ask about a candidate it already holds an answer for.
+
+Rationale: The second stage of a run asks the catalogue what every suggested
+artist plays, at one request a second. What somebody plays does not change
+between one run and the next, so asking again spends a listener's minutes on an
+answer already held. Ruled on 2026-09-07, when the cache was found to exist,
+to be tested and to be wired to nothing: every run had been asking from scratch.
+An answer already held is still judged against the genres ticked, so remembering
+cannot smuggle a candidate past the scope of a run.
+
+Acceptance: Given a run that asked about two candidates, when a second run meets
+the same two, then no request is issued about either and both are judged against
+that run's own ticks.
+
+Verified by: `tests/application/test_discovery.py::test_what_was_remembered_is_not_asked_about_again`, `tests/ui/test_discovery_composition.py::test_a_run_is_given_somewhere_to_remember_what_it_learns`
 
 ---
 

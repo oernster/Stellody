@@ -121,6 +121,9 @@ def build_window(
             catalogue=MusicBrainz(Fetcher()),
             similarity=ListenBrainz(Fetcher()),
             pause=time.sleep,
+            # What a candidate plays does not change between runs, while
+            # asking costs a second each at the rate the catalogue permits.
+            memory=discovery_file.FileGenreMemory(),
         ),
         write_discovery=discovery_file.write,
         updates=UpdateService(

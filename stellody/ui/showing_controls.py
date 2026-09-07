@@ -20,7 +20,7 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
-from stellody.ui.toolbar import SEPARATOR_WIDTH_PX
+from stellody.ui.tray_metrics import SEPARATOR_WIDTH_PX
 from stellody.ui.tray_parts import icon_button, separator
 
 COVERS_TOOLTIP = "Switch to album art"

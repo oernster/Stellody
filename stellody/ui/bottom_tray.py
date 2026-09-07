@@ -60,7 +60,7 @@ from stellody.shared import resources
 from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.showing_controls import ShowingControls
-from stellody.ui.toolbar import (
+from stellody.ui.tray_metrics import (
     BUTTON_PX,
     ICON_PX,
     SEPARATOR_INSET_PX,

@@ -31,13 +31,14 @@ of saying the network is down.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Protocol, TypeVar
 
 from stellody.application.ports import CancelledCheck
 from stellody.application.values import (
     Ambiguity,
     DiscoveryProgress,
+    DiscoveryStage,
     RunOutcome,
     RunReport,
     SourceFailure,
@@ -116,6 +117,38 @@ class SimilaritySource(Protocol):
         ...
 
 
+class GenreMemory(Protocol):
+    """Keeps what earlier runs learned about candidate artists.
+
+    What a candidate plays never changes between one run and the next, while
+    asking costs a whole second each time at the rate the catalogue permits.
+    A run that remembers nothing asks the same questions for ever.
+    """
+
+    def remembered(self) -> dict[str, tuple[str, ...]]:
+        """What is already known; empty where nothing is."""
+        ...
+
+    def remember(self, known: dict[str, tuple[str, ...]]) -> None:
+        """Keep this for the next run. Failing to keep it is not an error."""
+        ...
+
+
+class NothingRemembered:
+    """A memory that forgets, for a run given nowhere to keep anything.
+
+    The null object rather than an optional collaborator, so the run has one
+    path through it instead of two.
+    """
+
+    def remembered(self) -> dict[str, tuple[str, ...]]:
+        """Nothing was kept, because nothing is kept."""
+        return {}
+
+    def remember(self, known: dict[str, tuple[str, ...]]) -> None:
+        """Drop it, deliberately."""
+
+
 def held_by_artist(albums: tuple[Album, ...]) -> dict[str, frozenset[ReleaseMatch]]:
     """What each album artist is already held to have, ready to compare.
 
@@ -137,6 +170,7 @@ class Discovery:
     catalogue: CatalogueSource
     similarity: SimilaritySource
     pause: Pause
+    memory: GenreMemory = field(default_factory=NothingRemembered)
 
     def run(
         self,
@@ -152,7 +186,7 @@ class Discovery:
         gathered, ending = self._gathered(albums, artists, ticked, report, cancelled)
         if ending is not None:
             return ending
-        kept = self._narrowed(gathered.gaps, ticked, cancelled)
+        kept = self._narrowed(gathered.gaps, ticked, report, cancelled)
         if kept is None:
             return RunReport(outcome=RunOutcome.CANCELLED)
         return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept)
@@ -245,6 +279,7 @@ class Discovery:
         self,
         gathered: tuple[Gaps, ...],
         ticked: tuple[str, ...],
+        report: ProgressReport,
         cancelled: CancelledCheck,
     ) -> tuple[Gaps, ...] | None:
         """The same gaps with candidate artists outside the ticks taken out.
@@ -253,30 +288,72 @@ class Discovery:
         so each has to be asked about separately. That is the expensive part of
         a run, which is why an artist is asked about ONCE however many times
         the run met them: the well-connected recur constantly.
+
+        It reports as it goes for the same reason the first half does. This
+        half used to say nothing at all, and a listener watching a bar that had
+        stopped moving had no way to tell a long wait from a hang.
         """
-        known: dict[str, tuple[str, ...]] = {}
-        narrowed: list[Gaps] = []
+        known = self.memory.remembered()
+        asking = self._to_ask(gathered, known)
+        for done, (identifier, name) in enumerate(asking):
+            if cancelled():
+                return None
+            report(
+                DiscoveryProgress(
+                    artist=name,
+                    done=done,
+                    total=len(asking),
+                    stage=DiscoveryStage.NARROWING,
+                )
+            )
+            known[identifier] = self._genres_of(identifier)
+        self.memory.remember(known)
+        return tuple(
+            replace(gaps, artists=self._kept(gaps.artists, known, ticked))
+            for gaps in gathered
+        )
+
+    @staticmethod
+    def _to_ask(
+        gathered: tuple[Gaps, ...], known: dict[str, tuple[str, ...]]
+    ) -> tuple[tuple[str, str], ...]:
+        """Every candidate still to ask about, each once, in the order met.
+
+        Counted before any of them is asked, so the total a bar is measured
+        against is the truth rather than a guess revised as it goes.
+        """
+        asking: dict[str, str] = {}
         for gaps in gathered:
-            kept: list[SimilarArtist] = []
             for candidate in gaps.artists:
-                if cancelled():
-                    return None
-                if candidate.identifier not in known:
-                    known[candidate.identifier] = self._genres_of(candidate.identifier)
-                if wanted_by(known[candidate.identifier], ticked):
-                    kept.append(candidate)
-            narrowed.append(replace(gaps, artists=tuple(kept)))
-        return tuple(narrowed)
+                if candidate.identifier and candidate.identifier not in known:
+                    asking.setdefault(candidate.identifier, candidate.name)
+        return tuple(asking.items())
+
+    @staticmethod
+    def _kept(
+        candidates: tuple[SimilarArtist, ...],
+        known: dict[str, tuple[str, ...]],
+        ticked: tuple[str, ...],
+    ) -> tuple[SimilarArtist, ...]:
+        """Those of these candidates playing something that was ticked.
+
+        A candidate nothing is known about is kept rather than dropped, on the
+        same ground as every other undescribed one: silence from a catalogue
+        is not a statement that somebody plays the wrong thing.
+        """
+        return tuple(
+            candidate
+            for candidate in candidates
+            if wanted_by(known.get(candidate.identifier, ()), ticked)
+        )
 
     def _genres_of(self, identifier: str) -> tuple[str, ...]:
-        """What a candidate plays; nothing where there is nobody to ask about.
+        """What a candidate plays; nothing where the catalogue would not say.
 
-        An unnamed candidate is treated as one the catalogue could not
-        describe, which keeps it rather than dropping it, on the same ground as
-        every other undescribed candidate.
+        It is never asked about a candidate with no identifier: `_to_ask` drops
+        those before anything is asked, so an unnamed candidate is never looked
+        up and is kept on the same ground as every other undescribed one.
         """
-        if not identifier:
-            return ()
         try:
             return self._asked(self.catalogue.genres_of, identifier)
         except SourceFailed:

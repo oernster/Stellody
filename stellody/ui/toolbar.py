@@ -60,46 +60,30 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.shared import resources
+from stellody.ui.discovery_progress import DiscoveryBar
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.theme import Mode
-from stellody.ui.tray_parts import icon_button, separator
+from stellody.ui.tray_metrics import (
+    ABOUT_ENTRY,
+    BUTTON_PX,
+    DISCOVER_TOOLTIP,
+    FILTER_TOOLTIP,
+    FILTERED_TOOLTIP,
+    GUIDE_ENTRY,
+    HELP_TOOLTIP,
+    ICON_PX,
+    SEARCH_BOX_HEIGHT_PX,
+    SEARCH_BOX_PX,
+    SEARCH_PLACEHOLDER,
+    SEPARATOR_HEIGHT_PX,
+    SEPARATOR_WIDTH_PX,
+    TRAY_GAP_PX,
+    TRAY_MARGIN_PX,
+    UPDATES_ENTRY,
+    tray_button,
+)
+from stellody.ui.tray_parts import separator
 from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
-
-# The button is a way in to several things rather than one thing, so it is
-# named for the menu it opens rather than for the entry that used to be all
-# of it. What each entry does is said by the entry.
-HELP_TOOLTIP = "Help"
-GUIDE_ENTRY = "Guide"
-ABOUT_ENTRY = "About"
-UPDATES_ENTRY = "Check for updates"
-
-ICON_PX = 60
-BUTTON_PX = 91
-TRAY_MARGIN_PX = 6
-TRAY_GAP_PX = 6
-SEPARATOR_WIDTH_PX = 1
-# The line stops short of the tray's own edges, so it reads as a division
-# between buttons rather than as a border on the tray.
-SEPARATOR_INSET_PX = 12
-SEPARATOR_HEIGHT_PX = BUTTON_PX - SEPARATOR_INSET_PX - SEPARATOR_INSET_PX
-# Wide enough for an album title rather than for a word, since that is what
-# somebody types when they are looking for one.
-SEARCH_BOX_PX = 260
-# Sized against the buttons beside it rather than against a dialog field:
-# a default line edit is a third of a tray button and reads as a mistake.
-SEARCH_BOX_HEIGHT_PX = 48
-SEARCH_PLACEHOLDER = "Album, artist or track"
-# The filter button's own name, said while nothing is being asked for.
-FILTER_TOOLTIP = "Filter the library"
-DISCOVER_TOOLTIP = "Discover music the library does not hold"
-# Said in its place while something is, so what is on screen can be read off
-# the control rather than guessed at from what is missing.
-FILTERED_TOOLTIP = "Showing {what}"
-
-
-def _icon_button(parent: QWidget, path, tip: str, on_click: Callable) -> QPushButton:
-    """One picture-only button at this tray's own size."""
-    return icon_button(parent, path, tip, on_click, BUTTON_PX, ICON_PX)
 
 
 class LibraryTray(QWidget):
@@ -132,13 +116,13 @@ class LibraryTray(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.choose_button = _icon_button(
+        self.choose_button = tray_button(
             self,
             resources.choose_folder_icon_path(),
             "Choose music folder",
             choose_folder,
         )
-        self.filter_button = _icon_button(
+        self.filter_button = tray_button(
             self, resources.filter_icon_path(), FILTER_TOOLTIP, open_filter
         )
         # Checkable so a filter that is on can hold the button down. The
@@ -146,7 +130,7 @@ class LibraryTray(QWidget):
         # is currently doing anything, which a narrowed library cannot say
         # for itself: it looks exactly like a small one.
         self.filter_button.setCheckable(True)
-        self.search_button = _icon_button(
+        self.search_button = tray_button(
             self, resources.search_icon_path(), "Search the library", toggle_search
         )
         self.search_box = QLineEdit(self)
@@ -159,30 +143,35 @@ class LibraryTray(QWidget):
         # Return asks the same phrase again, which is the only way back to
         # what it found for somebody who has since moved off it.
         self.search_box.returnPressed.connect(search_again)
-        self.previous_button = _icon_button(
+        self.previous_button = tray_button(
             self, resources.previous_icon_path(), "Previous track", previous_track
         )
-        self.play_button = _icon_button(
+        self.play_button = tray_button(
             self, resources.play_icon_path(), "Play", toggle_playback
         )
-        self.stop_button = _icon_button(
+        self.stop_button = tray_button(
             self, resources.stop_icon_path(), "Stop", stop_playback
         )
-        self.next_button = _icon_button(
+        self.next_button = tray_button(
             self, resources.next_icon_path(), "Next track", next_track
         )
-        self.volume_button = _icon_button(
+        self.volume_button = tray_button(
             self, resources.volume_icon_path(), "Volume", self._open
         )
         self._popup = VolumeSlider(self, set_volume)
         self._percent = DEFAULT_PERCENT
-        self.mute_button = _icon_button(
+        self.mute_button = tray_button(
             self, resources.unmute_icon_path(), "Mute", toggle_mute
         )
+        # The run reports here rather than in a dialog, so the dialog can shut
+        # the moment it has been told what to look for. Reserved rather than
+        # shown only while a run is under way: appearing would move every
+        # button beside it and shift the centred transport with them.
+        self.discovery_bar = DiscoveryBar(self, BUTTON_PX)
         # Left of the volume rather than right of it, ruled on 2026-09-07:
         # discovery is a library action rather than a sound control, so a line
         # goes between the two to keep that boundary visible.
-        self.discover_button = _icon_button(
+        self.discover_button = tray_button(
             self,
             resources.discover_icon_path(),
             DISCOVER_TOOLTIP,
@@ -195,8 +184,8 @@ class LibraryTray(QWidget):
         # application rather than on what is playing, so the sound controls are
         # fenced on both sides rather than running into their neighbours.
         self.sound_separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
-        self.theme_button = _icon_button(self, None, "", toggle_theme)
-        self.help_button = _icon_button(
+        self.theme_button = tray_button(self, None, "", toggle_theme)
+        self.help_button = tray_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
         )
         self.help_menu = QMenu(self)
@@ -219,6 +208,7 @@ class LibraryTray(QWidget):
         for button in self.transport_stops():
             row.addWidget(button)
         row.addStretch()
+        row.addWidget(self.discovery_bar)
         row.addWidget(self.discover_button)
         row.addWidget(self.library_separator)
         row.addWidget(self.volume_button)

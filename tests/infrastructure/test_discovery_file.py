@@ -129,3 +129,17 @@ def test_a_cache_that_cannot_be_written_is_not_reported(
     monkeypatch.setattr(discovery_file, "_written", refuse)
     discovery_file.remember({"tt": ("Rock",)})
     assert not discovery_file.cache_path().exists()
+
+
+def test_the_memory_a_run_is_handed_reads_and_writes_that_same_cache() -> None:
+    """The object the composition root injects, over the file above it.
+
+    Asserted through the object rather than the functions, since the object is
+    what a run actually holds: a facade that read somewhere else would pass
+    every test above and still forget everything.
+    """
+    memory = discovery_file.FileGenreMemory()
+    assert memory.remembered() == {}
+    memory.remember({"tt": ("Rock", "Pop")})
+    assert memory.remembered() == {"tt": ("Rock", "Pop")}
+    assert discovery_file.cache_path().exists()

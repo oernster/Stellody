@@ -22,6 +22,7 @@ from stellody.application.discovering import Discovery
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
+from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 
 # Handed a finished run; answers where it was written. Raises where it could
 # not be, which is reported rather than swallowed.
@@ -75,17 +76,24 @@ class Discovering:
         self._tray.discover_button.setEnabled(self._discovery is not None)
 
     def open_discovery(self) -> None:
-        """Ask which genres to look around, then look."""
+        """Ask what to look for; stop what is already being looked for.
+
+        One button carrying both meanings, ruled on 2026-09-07. The dialog
+        shuts the moment it has been told what to look for, so a run that takes
+        eleven minutes does not hold a window open in front of everything else;
+        that leaves the button as the only thing left to press, while the
+        thing somebody wants of a run in progress is to stop it.
+        """
         if self._discovery is None:
             return
-        dialog = DiscoveryDialog(
-            start=self.begin_discovery, stop=self.stop_discovery, parent=self
-        )
+        if self._discovery_runner.running:
+            self.stop_discovery()
+            return
+        dialog = DiscoveryDialog(start=self.begin_discovery, parent=self)
         self._discovery_dialog = dialog
         try:
             dialog.exec()
         finally:
-            self._discovery_runner.wait()
             self._discovery_dialog = None
 
     def begin_discovery(self, ticked: tuple[str, ...]) -> None:
@@ -93,15 +101,15 @@ class Discovering:
         if self._discovery is None:
             return
         self._discovery_runner.start(self._discovery, self._all_albums, ticked)
+        self._tray.discover_button.setToolTip(STOP_DISCOVERY_TOOLTIP)
 
     def stop_discovery(self) -> None:
         """Ask a running discovery to give up at its next boundary."""
         self._discovery_runner.cancel()
 
     def discovery_progressed(self, progress: DiscoveryProgress) -> None:
-        """Say which artist is being looked up, where anybody is watching."""
-        if self._discovery_dialog is not None:
-            self._discovery_dialog.progressed(progress)
+        """Draw how far along the run is, in the tray it reports to."""
+        self._tray.discovery_bar.show_progress(progress)
 
     def discovery_completed(self, report: RunReport) -> None:
         """Write what was found where there is anything to write, then say so."""
@@ -131,6 +139,12 @@ class Discovering:
         return FOUND.format(albums=albums, artists=artists, where=where)
 
     def _say_about_discovery(self, message: str) -> None:
-        """Put the ending in front of whoever asked for the run."""
-        if self._discovery_dialog is not None:
-            self._discovery_dialog.finished(message)
+        """Put the ending in front of whoever asked for the run.
+
+        The status bar rather than a dialog, since the dialog closed the moment
+        the run started: putting one back on screen minutes later would land in
+        front of whatever somebody had moved on to doing.
+        """
+        self._tray.discovery_bar.rest()
+        self._tray.discover_button.setToolTip(DISCOVER_TOOLTIP)
+        self.statusBar().showMessage(message)
