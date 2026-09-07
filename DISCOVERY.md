@@ -382,9 +382,12 @@ Verified by: `tests/domain/test_discovery_gaps.py::test_unstated_genre_is_kept_a
 
 Priority: Must
 
-Requirement: While a run is under way, the toolbar shall show which stage the
-run is in together with how far through that stage it is as a percentage. On
-hover it shall name the artist currently being asked about, with the number
+Requirement: The toolbar shall carry one progress bar per stage of a run,
+stacked in the order the stages happen and each labelled with the name of its
+stage. While a run is under way each bar shall show how far through its own
+stage the run is as a percentage; a stage that has finished shall be left full
+and a stage that has not begun shall show no percentage at all. On hover the
+pair shall name the artist currently being asked about, with the number
 completed and the number to be done.
 
 Rationale: A run over the whole library takes about eleven minutes at the rate
@@ -396,12 +399,20 @@ report to the toolbar rather than to a dialog, since the dialog closes when the
 run starts. The stage rather than the artist is drawn, because a strip of a
 toolbar does not hold "Jools Holland & His Rhythm & Blues Orchestra".
 
-Acceptance: Given a run over three source artists, when the second is reached,
-then the bar reads one third and names that artist on hover; given the run
-reaches its second stage, then the bar says so and restarts against the number
-of candidates to be asked about.
+Amended again the same day, on Oliver's ruling. One bar carrying both halves in
+turn says how far through the current half a run is and nothing whatever about
+the other, so a bar back at a tenth is either bad news or ordinary progress with
+no way to tell which. Two bars say where the run is at a glance: the first full
+with the second climbing is plainly further on than the first climbing with the
+second empty. They occupy the height the single bar had, so the tray does not
+grow and the centred transport does not move.
 
-Verified by: `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery.py::test_the_second_half_of_a_run_reports_as_it_goes`
+Acceptance: Given a run over three source artists, when the second is reached,
+then the first bar reads one third and the pair names that artist on hover;
+given the run reaches its second stage, then the first bar is left full and the
+second counts against the number of candidates to be asked about.
+
+Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery.py::test_the_second_half_of_a_run_reports_as_it_goes`
 
 ---
 
@@ -1041,7 +1052,9 @@ both are measured; nothing caught it because nothing measured it.
 
 The first repair cleared 4.5 and was still reported as hard to read: 4.82 to 1
 of white on blue is a pass and a smudge at the same time. Taking the dark fill
-down to #24478f lifts it to 7.96. What that costs is the other half, since the
+down to #24478f and the writing up to plain white lifts it to 8.85, measured
+after the near-white it carried was reported as still not bright enough. What
+that costs is the other half, since the
 groove in the dark appearance is nearly black: a fill dark enough for white
 writing sits at 2.11 against it. The two constraints have no solution together,
 so the boundary is DRAWN instead of inferred, which is what the second clause

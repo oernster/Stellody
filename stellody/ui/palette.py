@@ -63,6 +63,10 @@ class Palette:
     # groove. Measured for these, in order text on groove, text on fill, fill
     # on groove: light 17.42, 5.54 and 3.14; dark 16.81, 4.82 and 3.48. The
     # bar is 4.5 for the writing and 3 for one shape against another.
+    #
+    # Re-measured on 2026-09-07 after the dark fill was taken down and its
+    # writing taken up to plain white, reported as still not bright enough at
+    # the near-white it had: text on fill 8.85, text on groove 18.68.
     progress_groove: str
     progress_fill: str
     # A line round the filled part, which is what tells it from the groove now
@@ -149,7 +153,7 @@ DARK = Palette(
     progress_groove="#0d1220",
     progress_fill="#24478f",
     progress_edge="#74a6ff",
-    on_progress="#eef3ff",
+    on_progress="#ffffff",
     source_artist="#8ab4ff",
     candidate_artist="#f5b342",
     on_accent="#08101f",

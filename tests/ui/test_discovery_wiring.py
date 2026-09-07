@@ -25,7 +25,6 @@ from stellody.ui.discovering import (
     UNREACHABLE,
     WENT_WRONG,
 )
-from stellody.ui.discovery_progress import RESTING
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.tray_metrics import (
     DISCOVER_TOOLTIP,
@@ -173,7 +172,7 @@ def test_an_ending_puts_the_bar_and_the_button_back(application) -> None:
         DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
     )
     window.discovery_failed("the roof fell in")
-    assert window._tray.discovery_bar.writing().wanted == RESTING
+    assert window._tray.discovery_bar.resting
     assert window._tray.discover_button.toolTip() == DISCOVER_TOOLTIP
 
 
@@ -183,5 +182,5 @@ def test_progress_is_drawn_in_the_tray(application) -> None:
     window.discovery_progressed(
         DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
     )
-    assert window._tray.discovery_bar.value() == 25
+    assert window._tray.discovery_bar.looking_up.value() == 25
     assert "Muddy Waters" in window._tray.discovery_bar.toolTip()

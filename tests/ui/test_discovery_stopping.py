@@ -22,7 +22,6 @@ from PySide6.QtWidgets import QMessageBox, QPushButton
 
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovering import STILL_STOPPING
-from stellody.ui.discovery_progress import RESTING
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.tray_metrics import (
     DISCOVER_TOOLTIP,
@@ -94,7 +93,7 @@ def test_a_press_stops_at_once_without_asking_anything(
     window.open_discovery()
     assert asked == [], "nothing stands between the press and the stop"
     assert runner.stopped == 1, "and the run was actually stopped"
-    assert window._tray.discovery_bar.writing().wanted == RESTING
+    assert window._tray.discovery_bar.resting
 
 
 def shown(button) -> QImage:
@@ -185,8 +184,8 @@ def test_a_stop_lets_go_of_the_run_at_once(
     )
     window.open_discovery()
     assert runner.stopped == 1
-    assert window._tray.discovery_bar.writing().wanted == RESTING
-    assert window._tray.discovery_bar.value() == 0
+    assert window._tray.discovery_bar.resting
+    assert window._tray.discovery_bar.looking_up.value() == 0
     assert window._tray.discover_button.toolTip() == DISCOVER_TOOLTIP
 
 
@@ -207,7 +206,7 @@ def test_progress_reported_after_a_stop_does_not_revive_the_bar(
     window.discovery_progressed(
         DiscoveryProgress(artist="Howlin' Wolf", done=8, total=31)
     )
-    assert window._tray.discovery_bar.writing().wanted == RESTING
+    assert window._tray.discovery_bar.resting
 
 
 class RunnerThatWillNotStart:
