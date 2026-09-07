@@ -91,6 +91,7 @@ SEARCH_BOX_HEIGHT_PX = 48
 SEARCH_PLACEHOLDER = "Album, artist or track"
 # The filter button's own name, said while nothing is being asked for.
 FILTER_TOOLTIP = "Filter the library"
+DISCOVER_TOOLTIP = "Discover music the library does not hold"
 # Said in its place while something is, so what is on screen can be read off
 # the control rather than guessed at from what is missing.
 FILTERED_TOOLTIP = "Showing {what}"
@@ -113,6 +114,7 @@ class LibraryTray(QWidget):
         show_about: Callable[[], None],
         check_for_updates: Callable[[], None] = lambda: None,
         open_filter: Callable[[], None] = lambda: None,
+        open_discovery: Callable[[], None] = lambda: None,
         toggle_search: Callable[[], None] = lambda: None,
         search_changed: Callable[[str], None] = lambda _phrase: None,
         search_again: Callable[[], None] = lambda: None,
@@ -178,6 +180,15 @@ class LibraryTray(QWidget):
             self, resources.unmute_icon_path(), "Mute", toggle_mute
         )
         self.separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
+        # After the separator rather than beside the volume, because discovery
+        # is a library action rather than a sound control and the separator is
+        # already the line between those two ideas.
+        self.discover_button = _icon_button(
+            self,
+            resources.discover_icon_path(),
+            DISCOVER_TOOLTIP,
+            open_discovery,
+        )
         self.theme_button = _icon_button(self, None, "", toggle_theme)
         self.help_button = _icon_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
@@ -205,6 +216,7 @@ class LibraryTray(QWidget):
         row.addWidget(self.volume_button)
         row.addWidget(self.mute_button)
         row.addWidget(self.separator)
+        row.addWidget(self.discover_button)
         row.addWidget(self.theme_button)
         row.addWidget(self.help_button)
 
@@ -232,6 +244,7 @@ class LibraryTray(QWidget):
             *self.transport_stops(),
             self.volume_button,
             self.mute_button,
+            self.discover_button,
             self.theme_button,
             self.help_button,
         )

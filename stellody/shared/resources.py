@@ -38,6 +38,7 @@ DONATE_ICON = "donate.png"
 LIBRARY_HEALTH_ICON = "library-health.png"
 SEARCH_ICON = "search.png"
 FILTER_ICON = "filter.png"
+DISCOVER_ICON = "discover-new-music.png"
 REPEAT_ICON = "repeat.png"
 REPEAT_ONE_ICON = "repeat-1-track.png"
 UNMUTE_ICON = "unmute.png"
@@ -101,6 +102,11 @@ def search_icon_path() -> pathlib.Path | None:
 def filter_icon_path() -> pathlib.Path | None:
     """The artwork on the button that opens the genre filter."""
     return find_asset(FILTER_ICON)
+
+
+def discover_icon_path() -> pathlib.Path | None:
+    """The artwork on the button that opens the discovery dialog."""
+    return find_asset(DISCOVER_ICON)
 
 
 def rescan_icon_path() -> pathlib.Path | None:

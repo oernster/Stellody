@@ -40,6 +40,7 @@ from stellody.shared import resources
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.cover_chooser import CoverChooser
 from stellody.ui.dialogs import AboutDialog, LicenceDialog
+from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.equaliser import EqualiserDialog
 from stellody.ui.filter_dialog import FilterDialog
 from stellody.ui.guide import GuideDialog
@@ -118,6 +119,7 @@ BUILDERS = {
     "EqualiserDialog": lambda parent: EqualiserDialog(
         parent, Equalisation(), lambda _curve: None
     ),
+    "DiscoveryDialog": lambda parent: DiscoveryDialog(parent=parent),
     "FilterDialog": lambda parent: FilterDialog(Narrowing(), parent),
     "GuideDialog": lambda parent: GuideDialog(parent),
     "HealthDialog": lambda parent: HealthDialog(_issues(), parent),

@@ -123,7 +123,7 @@ Acceptance: Given the main window is open, when the toolbar is read left to
 right, then the buttons after the separator are discovery, theme, help in that
 order.
 
-Verified by: `tests/ui/test_toolbar.py::test_discovery_sits_before_the_theme_button`
+Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_before_the_theme_button`
 
 ---
 
@@ -140,7 +140,7 @@ application's users do not have.
 Acceptance: Given focus is on the button left of discovery, when Tab is pressed,
 then focus is on the discovery button.
 
-Verified by: `tests/ui/test_ring_order.py::test_discovery_is_reachable`
+Verified by: `tests/ui/test_discovery_button.py::test_discovery_is_reachable`
 
 ---
 

@@ -37,12 +37,12 @@ ITEM_VIEWS = ("QTreeView", "QListView", "QTableView", "QListWidget", "QTreeWidge
 # The one sanctioned zero-size stop: the neutral start the main window opens on.
 NEUTRAL_START = "NeutralStart"
 # The enabled stops on the top tray, ahead of the library: choose, filter,
-# search, volume, mute, theme and help. The four transport buttons sit between
-# search and volume and are disabled with nothing playing, so they are not
-# stops at all. The search box is not one either while it is closed, since Qt
-# skips a hidden stop; opening it adds an eighth. What the library is drawn as
-# used to be counted here and now sits on the bottom strip instead.
-TOP_TRAY_STOPS = 7
+# search, volume, mute, discover, theme and help. The four transport buttons
+# sit between search and volume and are disabled with nothing playing, so they
+# are not stops at all. The search box is not one either while it is closed,
+# since Qt skips a hidden stop; opening it adds a ninth. What the library is
+# drawn as used to be counted here and now sits on the bottom strip instead.
+TOP_TRAY_STOPS = 8
 
 
 @pytest.fixture
@@ -129,6 +129,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Search the library",
         f"Volume {DEFAULT_PERCENT}%",
         "Mute",
+        "Discover music the library does not hold",
         "Switch to the light appearance",
         "Help",
         "Buy the author a drink (opens your browser)",
