@@ -638,9 +638,16 @@ thirty one, when the discovery button is pressed, then the question names seven
 of thirty one and no cancel is issued; when it is declined, then the run
 continues untouched; when it is agreed to, then the run is asked to stop. Given
 a run that has reported nothing yet, when the button is pressed, then the
-question is still asked, without a count.
+question is still asked, without a count. Given the stop is agreed to, when
+reports the run had already sent arrive afterwards, then the toolbar keeps
+saying that it is stopping.
 
-Verified by: `tests/ui/test_discovery_wiring.py::test_stopping_is_asked_about_before_it_happens`, `tests/ui/test_discovery_wiring.py::test_the_question_names_how_much_would_be_thrown_away`
+The last clause is not hypothetical. The run reports right up to the moment it
+notices; anything it says while the question stands queues behind that modal, so it arrives in a burst the instant the question closes. Drawing those
+put the bar back to counting immediately after a stop was agreed to, which was
+reported on 2026-09-07 as the stop not working at all.
+
+Verified by: `tests/ui/test_discovery_stopping.py::test_stopping_is_asked_about_before_it_happens`, `tests/ui/test_discovery_stopping.py::test_the_question_names_how_much_would_be_thrown_away`, `tests/ui/test_discovery_stopping.py::test_progress_reported_after_a_stop_does_not_undo_the_stopping`
 
 ---
 

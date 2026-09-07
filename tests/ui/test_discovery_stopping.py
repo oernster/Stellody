@@ -114,3 +114,24 @@ def test_a_stop_is_acknowledged_before_the_run_has_stopped(
     window.open_discovery()
     assert window._tray.discovery_bar.format() == STOPPING
     assert runner.stopped == 1
+
+
+def test_progress_reported_after_a_stop_does_not_undo_the_stopping(
+    application, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reported as the stop not working, on 2026-09-07.
+
+    The run carries on while the question stands, so it goes on reporting;
+    those reports queue on the interface thread while the dialog holds it. They
+    arrive the moment the dialog closes, after the stop has been asked for.
+    A bar that took them would go straight back to counting, which is what a
+    stop that had not worked would look like.
+    """
+    window = make_window(application)
+    window._discovery_runner = RunnerInProgress()
+    answer(monkeypatch, QMessageBox.StandardButton.Yes)
+    window.open_discovery()
+    window.discovery_progressed(
+        DiscoveryProgress(artist="Howlin' Wolf", done=8, total=31)
+    )
+    assert window._tray.discovery_bar.format() == STOPPING

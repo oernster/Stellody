@@ -1,7 +1,7 @@
 """The window mixin over nothing else, ready to be driven.
 
-Shared by the two suites that drive it: what is said about each ending, and
-what the tray does while a run is under way. One module rather than two copies,
+Shared by the two suites that drive it: what is said about each ending,
+against what the tray does while a run is under way. One module rather than two copies,
 since a stand-in window that drifted between them would have the two suites
 testing different things while appearing to test one.
 """

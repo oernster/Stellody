@@ -88,6 +88,10 @@ class Discovering:
         # The last thing reported, so a question about stopping can say how
         # much would be thrown away rather than asking in the abstract.
         self._discovery_progress: DiscoveryProgress | None = None
+        # Whether a stop has been asked for and not yet arrived. A run reports
+        # right up to the moment it notices, so those reports queue behind a
+        # modal question and land in a burst once it closes.
+        self._discovery_stopping = False
         self._discovery_dialog: DiscoveryDialog | None = None
         self._discovery_runner = DiscoveryRunner(self)
         self._discovery_runner.progressed.connect(self.discovery_progressed)
@@ -156,11 +160,22 @@ class Discovering:
         during one, so there is a moment between the press and the ending; a
         bar still counting through that moment reads as a press nobody heard.
         """
+        self._discovery_stopping = True
         self._discovery_runner.cancel()
         self._tray.discovery_bar.show_stopping()
 
     def discovery_progressed(self, progress: DiscoveryProgress) -> None:
-        """Draw how far along the run is, in the tray it reports to."""
+        """Draw how far along the run is, in the tray it reports to.
+
+        Ignored once a stop has been asked for. The run goes on reporting
+        until it reaches the check that ends it; anything it said while a
+        modal question stood is delivered in one burst the moment that
+        question closes. A bar that drew those would go back to counting
+        after being told to stop, which is precisely what a stop that had
+        not worked looks like. Reported as exactly that on 2026-09-07.
+        """
+        if self._discovery_stopping:
+            return
         self._discovery_progress = progress
         self._tray.discovery_bar.show_progress(progress)
 
@@ -199,6 +214,7 @@ class Discovering:
         front of whatever somebody had moved on to doing.
         """
         self._discovery_progress = None
+        self._discovery_stopping = False
         self._tray.discovery_bar.rest()
         self._tray.discover_button.setToolTip(DISCOVER_TOOLTIP)
         self.statusBar().showMessage(message)
