@@ -45,7 +45,7 @@ def make_album(artist: str, title: str, genre: str = "Rock") -> Album:
 
 
 class Catalogue:
-    """A catalogue that answers from what it was handed, and counts the asks."""
+    """A catalogue that answers from what it was handed, counting the asks."""
 
     def __init__(
         self,
@@ -172,7 +172,7 @@ def test_unknown_artist_is_recorded() -> None:
 
 
 def test_ambiguous_name_is_reported() -> None:
-    """Two bands of one name is an answer, and guessing files one wrongly."""
+    """Two bands of one name is an answer; guessing files one wrongly."""
     catalogue = Catalogue(identities={"Nirvana": ("us-band", "uk-band")})
     run, source, _, _ = make_run(catalogue)
     report = run.run((make_album("Nirvana", "Bleach"),), ROCK, nothing, never)
@@ -222,7 +222,7 @@ def test_cancel_stops_before_the_next_request() -> None:
 
 
 def test_closing_stops_the_run() -> None:
-    """A close is a cancel expressed differently, and gets the same answer."""
+    """A close is a cancel expressed differently; it gets the same answer."""
     asked: list[bool] = []
 
     def once_around() -> bool:
@@ -259,7 +259,7 @@ def test_rate_refusal_is_retried() -> None:
 
 
 def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
-    """Patience has an end, and what happens then is written down."""
+    """Patience has an end; what happens then is written down."""
     catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
     run, _, _, waits = make_run(catalogue)
     report = run.run((make_album("U2", "A"),), ROCK, nothing, never)

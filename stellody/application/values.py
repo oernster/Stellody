@@ -205,8 +205,7 @@ class Ambiguity:
     """An artist whose name reached more than one artist in the catalogue.
 
     Reported rather than guessed at: choosing between two bands of one name on
-    somebody's behalf files a whole discography under the wrong heading, and
-    does it silently.
+    somebody's behalf files a whole discography under the wrong heading, silently.
     """
 
     artist: str

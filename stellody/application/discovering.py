@@ -23,7 +23,7 @@ each is recorded against that artist and the run goes on. An artist nobody
 could look up is exactly the artist somebody would otherwise assume was
 complete.
 
-**One failure does stop everything, and only one.** No connection at all means
+**One failure does stop everything; only that one.** No connection at all means
 every remaining artist will fail the same way, so continuing is 327 slow ways
 of saying the network is down.
 """
@@ -58,8 +58,8 @@ from stellody.domain.matching import ReleaseMatch, matched
 # 2026-09-06: it is a decision about how much to put in front of somebody
 # rather than a fact about anything, so it is named here and nowhere else.
 SIMILAR_WANTED = 10
-# How many times one question is asked before it is given up on, and how long
-# to wait between asks. The wait lengthens with each attempt, since a host
+# How many times one question is asked before it is given up on; how long to
+# wait between asks. The wait lengthens with each attempt, since a host
 # refusing twice is asking for more room than one refusing once.
 RETRY_ATTEMPTS = 3
 RETRY_PAUSE_SECONDS = 2.0
@@ -94,7 +94,7 @@ class CatalogueSource(Protocol):
     def identify(self, name: str) -> tuple[str, ...]:
         """Every artist this name reaches; empty where it reaches none.
 
-        More than one is not an error here: it is the answer, and the decision
+        More than one is not an error here: it is the answer; the decision
         about what to do with it belongs above rather than inside a client.
         """
         ...

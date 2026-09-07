@@ -27,7 +27,8 @@ def make_tray(parent: QWidget, **wiring) -> LibraryTray:
 def test_discovery_sits_before_the_theme_button(application) -> None:
     """After the separator and left of theme, ruled on 2026-09-06.
 
-    Discovery is a library action rather than a sound control; the separator is already the line between those two ideas.
+    Discovery is a library action rather than a sound control; the separator
+    is already the line between those two ideas.
     """
     holder = QWidget()
     tray = make_tray(holder)
