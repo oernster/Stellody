@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import pathlib
+import urllib.parse
 
 import pytest
 from PySide6.QtWidgets import QApplication, QTextBrowser
 
+from stellody.infrastructure import catalogue, cover_search, similarity
 from stellody.shared import version
 from stellody.shared.version import (
     APP_AUTHOR,
@@ -14,7 +16,7 @@ from stellody.shared.version import (
     COPYRIGHT_YEAR,
 )
 from stellody.ui import dialogs
-from stellody.ui.dialogs import AboutDialog, LicenceDialog
+from stellody.ui.dialogs import SOURCES, AboutDialog, LicenceDialog, about_html
 
 WIDE_SCREEN_PX = 4000
 NARROW_SCREEN_PX = 400
@@ -132,3 +134,55 @@ def test_the_about_dialog_draws_that_notice(application: QApplication) -> None:
     shown = dialog.findChild(QTextBrowser)
     assert shown is not None
     assert COPYRIGHT_NOTICE in shown.toPlainText()
+
+
+def test_about_credits_every_service_the_application_asks_anything_of() -> None:
+    """Read off the clients rather than off a list somebody maintains.
+
+    A credits box is exactly the thing that goes stale in silence: a source
+    added to the code owes an acknowledgement that nothing else would notice
+    was missing. So the hosts are taken from the modules that actually open
+    the connections; every one of them has to be named.
+    """
+    hosts = {
+        urllib.parse.urlparse(url).hostname
+        for module in (catalogue, similarity, cover_search)
+        for name, url in vars(module).items()
+        if name.endswith("_URL") and isinstance(url, str)
+    }
+    assert hosts, "the clients name no hosts, so this test would prove nothing"
+    body = about_html()
+    named = " ".join(name for name, _terms, _purpose in SOURCES)
+    for host in hosts:
+        # musicbrainz.org and labs.api.listenbrainz.org both reduce to the
+        # project's own name, which is what a person is owed rather than a
+        # domain: coverartarchive.org is the Cover Art Archive.
+        project = host.split(".")[-2]
+        assert project.lower() in named.lower().replace(" ", ""), host
+    for name, terms, purpose in SOURCES:
+        assert name in body
+        assert terms in body
+        assert purpose in body
+
+
+def test_about_keeps_the_services_apart_from_the_libraries() -> None:
+    """Ruled on 2026-09-07: a different kind of debt, so its own section."""
+    body = about_html()
+    assert "Open source credits" in body
+    assert "Where the information comes from" in body
+    assert body.index("Open source credits") < body.index(
+        "Where the information comes from"
+    )
+
+
+def test_about_states_the_musicbrainz_terms_that_ask_for_credit() -> None:
+    """Genres are supplementary data, which is the half that is not CC0.
+
+    Read from the MusicBrainz data licence page on 2026-09-07: core data is
+    CC0 and supplementary data is CC BY-NC-SA 3.0, which asks to be credited
+    by name. Written down here so a later tidy of the wording cannot quietly
+    drop the licence that actually carries an obligation.
+    """
+    terms = {name: terms for name, terms, _purpose in SOURCES}
+    assert "CC0" in terms["MusicBrainz"]
+    assert "CC BY-NC-SA 3.0" in terms["MusicBrainz"]
