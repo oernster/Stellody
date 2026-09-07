@@ -17,6 +17,7 @@ from stellody.domain.discovery import (
     albums_missing,
     artists_missing,
     catalogue_genres,
+    everything_offered,
     held_matches,
     source_artists,
     wanted_by,
@@ -167,3 +168,39 @@ def test_an_artist_offered_twice_is_offered_once() -> None:
     """A catalogue naming somebody twice is still one artist to look for."""
     offered = (SimilarArtist(name="Talk Talk"), SimilarArtist(name="talk  talk"))
     assert len(artists_missing((), offered)) == 1
+
+
+def test_an_unheld_artist_offers_everything_they_made() -> None:
+    """FR-D31: nothing is held by them, so nothing can be dropped as held."""
+    released = (
+        ReleaseGroup(title="First", kinds=(), genres=("Rock",)),
+        ReleaseGroup(title="Second", kinds=(), genres=("Jazz",)),
+    )
+    kept = everything_offered(released)
+    assert [group.title for group in kept] == ["First", "Second"]
+
+
+def test_the_ticked_genres_do_not_narrow_a_discography() -> None:
+    """The ticks chose the ARTIST; hiding their other records helps nobody.
+
+    Somebody expanding a candidate has asked what that artist made, not what
+    that artist made inside the genres they happened to tick an hour ago.
+    """
+    released = (ReleaseGroup(title="Sideways", kinds=(), genres=("Techno",)),)
+    assert [group.title for group in everything_offered(released)] == ["Sideways"]
+
+
+def test_a_hits_package_is_still_noise() -> None:
+    """The one rule that survives: a compilation is not a discovery."""
+    released = (
+        ReleaseGroup(title="Greatest Hits", kinds=(ReleaseKind.COMPILATION,)),
+        ReleaseGroup(title="A Record", kinds=()),
+        ReleaseGroup(title="At The Apollo", kinds=(ReleaseKind.LIVE,)),
+    )
+    kept = everything_offered(released)
+    assert [group.title for group in kept] == ["A Record", "At The Apollo"]
+
+
+def test_an_artist_with_nothing_offers_nothing() -> None:
+    """A catalogue that answered with nothing is not an error here."""
+    assert everything_offered(()) == ()

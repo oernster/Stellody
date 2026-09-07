@@ -171,6 +171,25 @@ def albums_missing(
     )
 
 
+def everything_offered(
+    released: tuple[ReleaseGroup, ...],
+) -> tuple[ReleaseGroup, ...]:
+    """What a candidate artist has worth showing, all of it unheld. FR-D31.
+
+    A sibling of `albums_missing` with two of its three tests gone; that is
+    the whole point of it existing separately rather than as an argument to
+    that one. A candidate artist is one the library holds NOTHING by, so there
+    is no held set to compare against and every record they made is missing;
+    the ticked genres chose which artists to offer, so applying them again here
+    would hide the rest of a discography from somebody who went looking for it
+    on purpose.
+
+    The offering rule is the one test that survives, because a hits package or
+    a mixed set is noise wherever it turns up.
+    """
+    return tuple(group for group in released if group.is_offered)
+
+
 def artists_missing(
     held: tuple[str, ...], offered: tuple[SimilarArtist, ...]
 ) -> tuple[SimilarArtist, ...]:
