@@ -17,6 +17,7 @@ test and are each granted their permission in front of somebody.
 
 from __future__ import annotations
 
+import threading
 import time
 
 from stellody.application.choosing_covers import Wanted, always_wanted
@@ -75,8 +76,18 @@ class Waiter:
 class Gate:
     """Lets one request through at a time, no faster than the terms allow.
 
-    One gate stands in front of one service. Two services are two gates, since
-    a gap owed to one says nothing about the other.
+    One gate stands in front of one SERVICE rather than in front of one
+    client. Two services are two gates, since a gap owed to one says nothing
+    about the other; two clients asking the same service share one gate, since
+    the service is owed the gap whoever is asking.
+
+    **So it is asked from more than one thread and holds a lock.** A run asks
+    on its own thread while expanding a candidate artist asks on another; a
+    results dialog left open outlives the run that filled it. Two threads
+    reading the same stamp would each find the gap elapsed and both go, which
+    is precisely the burst the terms forbid. The lock is held across the wait
+    as well as across the stamp, so the second caller waits for the first
+    request AND then for its own gap.
     """
 
     def __init__(
@@ -85,6 +96,7 @@ class Gate:
         self._gap_s = gap_s
         self._last = 0.0
         self._waiter = waiter if waiter is not None else Waiter()
+        self._turn = threading.Lock()
 
     def wait(self, wanted: Wanted = always_wanted) -> bool:
         """Hold until this request is allowed to go; False if nobody waits.
@@ -93,7 +105,8 @@ class Gate:
         rather than about who is listening: a request abandoned during the
         wait still has to leave the next one its full gap.
         """
-        due = self._last + self._gap_s - time.monotonic()
-        going = self._waiter.hold(due, wanted) if due > 0 else wanted()
-        self._last = time.monotonic()
-        return going
+        with self._turn:
+            due = self._last + self._gap_s - time.monotonic()
+            going = self._waiter.hold(due, wanted) if due > 0 else wanted()
+            self._last = time.monotonic()
+            return going

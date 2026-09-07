@@ -66,6 +66,20 @@ class Palette:
     progress_groove: str
     progress_fill: str
     on_progress: str
+    # The two kinds of artist a discovery run turns up, which mean opposite
+    # things: a source artist is somebody the library already holds who is
+    # missing records, while a candidate artist is somebody it holds nothing
+    # by. Blue for the one already there, amber for the one that is not; two
+    # hues rather than two shades of one, so the pair survives a reader who
+    # cannot separate red from green. FR-D34.
+    #
+    # Measured against the surface a results row sits on, in order surface
+    # then the alternating surface: source 7.59 and 6.72 in the light
+    # appearance, 8.21 and 7.41 in the dark one; candidate 7.03 and 6.22
+    # light, 9.32 and 8.41 dark. The bar is 4.5, since these are names being
+    # read rather than shapes being told apart. NFR-USE-002.
+    source_artist: str
+    candidate_artist: str
     on_accent: str
     selection: str
     on_selection: str
@@ -92,6 +106,8 @@ LIGHT = Palette(
     progress_groove="#ffffff",
     progress_fill="#5c93de",
     on_progress="#141a26",
+    source_artist="#0f4fb0",
+    candidate_artist="#8a4708",
     on_accent="#ffffff",
     selection="#d6e2fb",
     on_selection="#101725",
@@ -118,6 +134,8 @@ DARK = Palette(
     progress_groove="#0d1220",
     progress_fill="#3466cc",
     on_progress="#eef3ff",
+    source_artist="#8ab4ff",
+    candidate_artist="#f5b342",
     on_accent="#08101f",
     selection="#213158",
     on_selection="#eef3ff",

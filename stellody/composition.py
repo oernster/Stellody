@@ -19,6 +19,7 @@ from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.discovering import Discovery
 from stellody.application.editing import TagEditing
+from stellody.application.expanding import Expansion
 from stellody.application.listening import ListeningLog
 from stellody.application.pictures import Pictures
 from stellody.application.repairs import Repairs
@@ -30,6 +31,7 @@ from stellody.infrastructure import diary, discovery_file, instance, switch_rese
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.catalogue import MusicBrainz
+from stellody.infrastructure.courtesy import Gate
 from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
 from stellody.infrastructure.fetching import Fetcher
@@ -99,6 +101,11 @@ def build_window(
     source, which are the only two things in Stellody that can open a
     connection; a structural test says so rather than a comment.
     """
+    # One gate per host rather than per client: a gap owed to MusicBrainz is
+    # owed by everything that asks it anything, so the run and an expansion
+    # share this one.
+    gate = Gate()
+    catalogue = MusicBrainz(Fetcher(gate))
     artwork = FileArtwork(art_cache_dir(), EmbeddedPictures())
     listening = ListeningLog(store)
     listening.load()
@@ -118,7 +125,7 @@ def build_window(
         # questions; two gates rather than one because a gap owed to one
         # host says nothing about the other.
         discovery=Discovery(
-            catalogue=MusicBrainz(Fetcher()),
+            catalogue=catalogue,
             similarity=ListenBrainz(Fetcher()),
             pause=time.sleep,
             # What a candidate plays does not change between runs, while
@@ -126,6 +133,13 @@ def build_window(
             memory=discovery_file.FileGenreMemory(),
         ),
         write_discovery=discovery_file.write,
+        # What the results dialog is made of: the file read back, plus the one
+        # question a candidate artist is worth asking. The expansion is given
+        # its own client over the SAME gate, so the two cannot come to ask
+        # MusicBrainz twice inside the gap its terms require while a run is
+        # still going on behind an open dialog.
+        discovery_results=discovery_file.FileDiscoveryResults(),
+        expansion=Expansion(catalogue=MusicBrainz(Fetcher(gate)), pause=time.sleep),
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)
         ),

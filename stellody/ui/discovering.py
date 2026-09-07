@@ -19,9 +19,13 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from stellody.application.discovering import Discovery
+from stellody.application.discovery_ports import DiscoveryResults
+from stellody.application.expanding import Expansion
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
+from stellody.ui.expansion_worker import ExpansionRunner
+from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.run_estimate import RunEstimate
 from stellody.ui.tray_metrics import show_discovery_running
 
@@ -62,14 +66,26 @@ class Discovering:
         self,
         discovery: Discovery | None,
         write: WriteDiscovery | None = None,
+        results: DiscoveryResults | None = None,
+        expansion: Expansion | None = None,
     ) -> None:
         """Take the service and the writer, if this window has been given any.
 
         A window with neither is the same shape as one with no cover chooser:
         the control is there and disabled, rather than there and dead.
+
+        The reader and the expansion are what the results dialog is made of:
+        where a run is written down but nothing can read it back, the run
+        still happens and the bar still reports on it; there is simply
+        nothing to open afterwards.
         """
         self._discovery = discovery
         self._write_discovery = write
+        self._discovery_results = results
+        self._expansion = expansion
+        # Held so it is not collected the moment it is shown, since a dialog
+        # nobody keeps a name for goes away with the call that made it.
+        self._results_dialog: ResultsDialog | None = None
         # Whether a stop has been asked for and not yet arrived. A run reports
         # right up to the moment it notices, so those reports queue behind a
         # modal question and land in a burst once it closes.
@@ -202,7 +218,37 @@ class Discovering:
             where = self._write_discovery(report)
         except (OSError, ValueError) as trouble:
             return COULD_NOT_WRITE.format(reason=trouble)
+        # Written first, then shown from what was written: the file is what a
+        # later day would be shown from too, so showing anything else now
+        # would be showing something nothing else can reproduce. FR-D28.
+        self.show_discovery_results()
         return FOUND.format(albums=albums, artists=artists, where=where)
+
+    def show_discovery_results(self) -> None:
+        """Open the results on what the discovery file holds.
+
+        Nothing opens where the file holds nothing, which is a run that found
+        nothing: an empty dialog says less than the sentence shown in its
+        place, while still landing in front of whatever somebody had moved on
+        to doing. FR-D33.
+
+        Not modal, for the same reason the run reports to the bar rather than
+        to a dialog: the answer arrives minutes after the question, so it is
+        put where it can be read rather than in the way.
+        """
+        if self._discovery_results is None:
+            return
+        gaps = self._discovery_results.last_run()
+        if not gaps:
+            return
+        asking = None if self._expansion is None else ExpansionRunner(self._expansion)
+        dialog = ResultsDialog(gaps, asking=asking, mode=self.theme_mode, parent=self)
+        if asking is not None:
+            # Parented to the dialog once there is one, so what asks the
+            # questions lives exactly as long as the rows the answers go in.
+            asking.setParent(dialog)
+        self._results_dialog = dialog
+        dialog.show()
 
     def _say_about_discovery(self, message: str) -> None:
         """Put the ending in front of whoever asked for the run.

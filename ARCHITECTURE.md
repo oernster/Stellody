@@ -62,7 +62,8 @@ and no others. `stellody/infrastructure/cover_search.py` is reached when
 somebody asks for a cover; `stellody/infrastructure/update_source.py` asks
 GitHub whether a newer Stellody has been published;
 `stellody/infrastructure/fetching.py` is the one socket a discovery run asks
-its two catalogues through; `stellody/infrastructure/instance.py` is the
+its two catalogues through; it is also how an expanded candidate artist is
+looked up afterwards; `stellody/infrastructure/instance.py` is the
 channel a second launch tells the running copy to show itself over, which is a
 pipe on this machine rather than a way off it. The composition root is the only thing that may name any of them,
 so the reach outward stays a few named things rather than a capability spread

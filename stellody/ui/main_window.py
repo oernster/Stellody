@@ -13,7 +13,9 @@ from PySide6.QtWidgets import (
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.discovering import Discovery
+from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.editing import TagEditing
+from stellody.application.expanding import Expansion
 from stellody.application.listening import ListeningLog
 from stellody.application.pictures import Pictures
 from stellody.application.ports import SettingsStore
@@ -123,6 +125,8 @@ class MainWindow(
         pictures: Pictures | None = None,
         discovery: Discovery | None = None,
         write_discovery: WriteDiscovery | None = None,
+        discovery_results: DiscoveryResults | None = None,
+        expansion: Expansion | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -184,7 +188,7 @@ class MainWindow(
         self.start_editing_tags(tag_editing)
         self.start_searching()
         self.start_filtering()
-        self.start_discovering(discovery, write_discovery)
+        self.start_discovering(discovery, write_discovery, discovery_results, expansion)
         self.start_keeping_place()
         self._tray = LibraryTray(
             self,

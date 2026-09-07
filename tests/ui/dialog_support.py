@@ -32,6 +32,7 @@ from stellody.application.editing import TagEditing
 from stellody.application.repairs import Repairs
 from stellody.application.scan import ScanReport
 from stellody.domain.changes import LibraryChange
+from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.equalising import Equalisation
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
@@ -46,6 +47,7 @@ from stellody.ui.filter_dialog import FilterDialog
 from stellody.ui.guide import GuideDialog
 from stellody.ui.health import HealthDialog
 from stellody.ui.repairing import RepairDialog
+from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.tag_editor import TagEditor
 from stellody.ui.theme import Mode
@@ -102,6 +104,17 @@ def _a_scan() -> tuple[LibraryChange, ScanReport]:
     return change, ScanReport(issues=_issues())
 
 
+def _found() -> tuple[Gaps, ...]:
+    """A run's answer with both kinds of artist in it, which is the full shape."""
+    return (
+        Gaps(
+            artist="Kate Bush",
+            albums=(ReleaseGroup(title="Aerial"),),
+            artists=(SimilarArtist(name="Peter Gabriel", identifier="id-pg"),),
+        ),
+    )
+
+
 def _repairs() -> Repairs:
     """The real service over a store nobody has accepted anything in yet."""
     return Repairs(MemoryStore())
@@ -127,6 +140,7 @@ BUILDERS = {
         "Model", resources.model_licence_path(), parent
     ),
     "RepairDialog": lambda parent: _repair_dialog(parent),
+    "ResultsDialog": lambda parent: ResultsDialog(_found(), parent=parent),
     "ScanSummaryDialog": lambda parent: ScanSummaryDialog(*_a_scan(), parent),
     "TagEditor": lambda parent: TagEditor(
         TagEditing(MemoryStore()), ALBUM_KEY, album().ordered_tracks(), parent

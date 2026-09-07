@@ -9,13 +9,13 @@ testing different things while appearing to test one.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox, QPushButton, QWidget
 
 from stellody.application.values import RunOutcome, RunReport
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import Discovering
 from stellody.ui.discovery_progress import DiscoveryBar
+from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import BUTTON_PX
 
 WHERE = "C:/somewhere/discovered.json"
@@ -44,12 +44,20 @@ class StatusBar:
         self.said.append(message)
 
 
-class Window(Discovering, QObject):
+class Window(Discovering, QWidget):
     """The mixin over nothing else, which is all it needs to be driven.
 
     The holder is kept on the window rather than left as a local: a parent
     that goes out of scope is collected, taking the button with it.
+
+    A widget rather than a plain object, since the results dialog opens with
+    this as its parent: a dialog belonging to a window that is not one is a
+    dialog Qt refuses to build.
     """
+
+    # What appearance the results are drawn in. A plain attribute here, where
+    # the real window reads it from the settings it was given.
+    theme_mode = Mode.DARK
 
     def __init__(self) -> None:
         super().__init__()
@@ -136,8 +144,28 @@ def a_report(albums: int = 1, artists: int = 1) -> RunReport:
     )
 
 
-def make_window(application, write=wrote, service=None) -> Window:
-    """A window mixin wired to a service and a writer."""
+class Results:
+    """A reader answering with whatever the test wrote down."""
+
+    def __init__(self, gaps: tuple[Gaps, ...] = ()) -> None:
+        self._gaps = gaps
+        self.reads = 0
+
+    def last_run(self) -> tuple[Gaps, ...]:
+        """What the last run found, as this fake was told."""
+        self.reads += 1
+        return self._gaps
+
+
+def make_window(
+    application, write=wrote, service=None, results=None, expansion=None
+) -> Window:
+    """A window mixin wired to a service, a writer and maybe a reader."""
     window = Window()
-    window.start_discovering(service if service is not None else Service(), write=write)
+    window.start_discovering(
+        service if service is not None else Service(),
+        write=write,
+        results=results,
+        expansion=expansion,
+    )
     return window
