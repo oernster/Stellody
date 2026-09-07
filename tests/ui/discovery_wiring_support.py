@@ -90,6 +90,12 @@ class RunnerInProgress:
 
     def __init__(self) -> None:
         self.stopped = 0
+        self.started = 0
+
+    def start(self, *_arguments) -> bool:
+        """Take the run, so a test can reach the state a started run is in."""
+        self.started += 1
+        return True
 
     def cancel(self) -> None:
         """Record that stopping was asked for."""

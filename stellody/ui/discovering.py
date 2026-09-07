@@ -18,13 +18,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtWidgets import QMessageBox
-
 from stellody.application.discovering import Discovery
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
-from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
+from stellody.ui.tray_metrics import show_discovery_running
 
 # Handed a finished run; answers where it was written. Raises where it could
 # not be, which is reported rather than swallowed.
@@ -47,24 +45,6 @@ COULD_NOT_WRITE = (
     "The answer could not be written: {reason}. Any earlier one is untouched."
 )
 WENT_WRONG = "The run stopped: {reason}"
-# Asked before a run is thrown away. A run over a whole library is eleven
-# minutes of somebody's waiting and of two public services' patience;
-# nothing of it survives being stopped, so the press that discards it is the
-# kind that names what it is discarding before it happens rather than
-# reporting it afterwards. Defaulted to No, as every other question here is.
-STOP_TITLE = "Stop looking"
-STOP_QUESTION = (
-    "Stop looking after {done} of {total} artists? "
-    "Nothing of this run is kept, so it would start again from the beginning. "
-    "Any answer you already have is untouched."
-)
-# What is asked before a single artist has been reported, when there is no
-# count to name yet.
-STOP_QUESTION_EARLY = (
-    "Stop looking? "
-    "Nothing of this run is kept, so it would start again from the beginning. "
-    "Any answer you already have is untouched."
-)
 
 
 def _counted(report: RunReport) -> tuple[int, int]:
@@ -89,9 +69,6 @@ class Discovering:
         """
         self._discovery = discovery
         self._write_discovery = write
-        # The last thing reported, so a question about stopping can say how
-        # much would be thrown away rather than asking in the abstract.
-        self._discovery_progress: DiscoveryProgress | None = None
         # Whether a stop has been asked for and not yet arrived. A run reports
         # right up to the moment it notices, so those reports queue behind a
         # modal question and land in a burst once it closes.
@@ -114,12 +91,20 @@ class Discovering:
         eleven minutes does not hold a window open in front of everything else;
         that leaves the button as the only thing left to press, while the
         thing somebody wants of a run in progress is to stop it.
+
+        **A stop is not asked about.** It used to raise a question defaulting
+        to No, so a press had to get past that before anything stopped.
+        Measured on 2026-09-07 by tracing the real application: the question
+        answered False and the run carried straight on. That is the whole of
+        the defect reported three times as the stop never stopping; no
+        amount of work below this line could have fixed it. A control named
+        stop that stops is worth more than a run rescued from somebody who
+        pressed stop deliberately.
         """
         if self._discovery is None:
             return
         if self._discovery_runner.running:
-            if self._agreed_to_stop():
-                self.stop_discovery()
+            self.stop_discovery()
             return
         dialog = DiscoveryDialog(start=self.begin_discovery, parent=self)
         self._discovery_dialog = dialog
@@ -142,29 +127,7 @@ class Discovering:
             self.statusBar().showMessage(STILL_STOPPING)
             return
         self._discovery_stopping = False
-        self._tray.discover_button.setToolTip(STOP_DISCOVERY_TOOLTIP)
-
-    def _agreed_to_stop(self) -> bool:
-        """Whether somebody, asked, still wants this run thrown away.
-
-        The run carries on while the question stands: it is asking rather than
-        pausing, so a run that stalled behind a dialog would owe the services
-        the same wait all over again.
-        """
-        progress = self._discovery_progress
-        asked = (
-            STOP_QUESTION_EARLY
-            if progress is None
-            else STOP_QUESTION.format(done=progress.done, total=progress.total)
-        )
-        answer = QMessageBox.question(
-            self,
-            STOP_TITLE,
-            asked,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        return answer is QMessageBox.StandardButton.Yes
+        show_discovery_running(self._tray.discover_button, True)
 
     def stop_discovery(self) -> None:
         """Ask a running discovery to give up at its next boundary.
@@ -179,9 +142,8 @@ class Discovering:
         # shortly become.
         self._discovery_stopping = True
         self._discovery_runner.cancel()
-        self._discovery_progress = None
         self._tray.discovery_bar.rest()
-        self._tray.discover_button.setToolTip(DISCOVER_TOOLTIP)
+        show_discovery_running(self._tray.discover_button, False)
         self.statusBar().showMessage(STOPPED)
 
     def discovery_progressed(self, progress: DiscoveryProgress) -> None:
@@ -196,7 +158,6 @@ class Discovering:
         """
         if self._discovery_stopping:
             return
-        self._discovery_progress = progress
         self._tray.discovery_bar.show_progress(progress)
 
     def discovery_completed(self, report: RunReport) -> None:
@@ -241,8 +202,7 @@ class Discovering:
         the run started: putting one back on screen minutes later would land in
         front of whatever somebody had moved on to doing.
         """
-        self._discovery_progress = None
         self._discovery_stopping = False
         self._tray.discovery_bar.rest()
-        self._tray.discover_button.setToolTip(DISCOVER_TOOLTIP)
+        show_discovery_running(self._tray.discover_button, False)
         self.statusBar().showMessage(message)

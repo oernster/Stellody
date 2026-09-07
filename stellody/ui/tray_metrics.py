@@ -17,6 +17,8 @@ from collections.abc import Callable
 
 from PySide6.QtWidgets import QPushButton, QWidget
 
+from stellody.shared import resources
+from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.tray_parts import icon_button
 
 # The button is a way in to several things rather than one thing, so it is
@@ -57,3 +59,24 @@ FILTERED_TOOLTIP = "Showing {what}"
 def tray_button(parent: QWidget, path, tip: str, on_click: Callable) -> QPushButton:
     """One picture-only button at the top tray's own size."""
     return icon_button(parent, path, tip, on_click, BUTTON_PX, ICON_PX)
+
+
+def show_discovery_running(button: QPushButton, running: bool) -> None:
+    """Say on the button itself whether a press starts a run or stops one.
+
+    The picture and the words are set together, in one place, because they are
+    one statement: a button wearing the cross while its tooltip offers to start
+    a run is worse than either alone. Three separate places used to set the
+    tooltip on its own, so the two agreed only by everybody remembering.
+
+    The cross is the same artwork the switches at the foot of the window wear,
+    laid over the discovery picture rather than drawn into a second file, so a
+    change to it reaches every use of it at once.
+    """
+    discover = resources.discover_icon_path()
+    button.setIcon(
+        struck_through(discover, resources.negative_icon_path(), ICON_PX)
+        if running
+        else plain_icon(discover)
+    )
+    button.setToolTip(STOP_DISCOVERY_TOOLTIP if running else DISCOVER_TOOLTIP)

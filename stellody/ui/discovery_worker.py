@@ -145,16 +145,28 @@ class DiscoveryRunner(QObject):
         worker.progressed.disconnect()
         worker.completed.disconnect()
         worker.failed.disconnect()
-        # Whatever it ends up saying, it says it to this and nothing else.
-        worker.completed.connect(lambda _report: self._abandoned_ended(thread))
-        worker.failed.connect(lambda _message: self._abandoned_ended(thread))
+        # Whatever it ends up saying, it says it to the thread's own quit and
+        # to nothing else. A BOUND METHOD rather than a lambda, deliberately:
+        # the thread object belongs to the interface thread, so this crosses
+        # back to it, where a lambda would have run on the dying thread. That
+        # is the rule this module's own note states, broken here on 2026-09-07
+        # and caught by Qt saying "thread tried to wait on itself".
+        worker.completed.connect(thread.quit)
+        worker.failed.connect(thread.quit)
+        thread.finished.connect(self._abandoned_gone)
         self._abandoned.append(thread)
         self.stopped.emit()
 
-    def _abandoned_ended(self, thread: QThread) -> None:
-        """An abandoned run has finished; let go of the thread it was on."""
-        thread.quit()
-        thread.wait()
+    @Slot()
+    def _abandoned_gone(self) -> None:
+        """An abandoned thread has ended; let go of it.
+
+        Reached from the thread's own `finished`, so there is nothing left to
+        wait for: waiting was what went wrong, since the wait ran ON the thread
+        being waited for and Qt refused it. The list is touched here rather
+        than there for the same reason, as it belongs to the interface thread.
+        """
+        thread = self.sender()
         if thread in self._abandoned:
             self._abandoned.remove(thread)
         thread.deleteLater()

@@ -642,47 +642,53 @@ Verified by: `tests/application/test_discovery.py::test_what_was_remembered_is_n
 
 ---
 
-**FR-D27 Stopping is asked about first**
+**FR-D27 Stopping is immediate**
 
 Priority: Must
 
 Requirement: When the discovery button is pressed while a run is under way, the
-window shall ask for confirmation naming how many artists have been looked up
-of how many. It shall stop the run only where that is agreed to. The question
-shall default to leaving the run alone.
+window shall stop that run at once, without asking anything. While a run is
+under way the button shall wear the negative mark over its picture and shall
+say "Stop looking"; the mark shall come off on EVERY ending, whether the run
+was stopped, completed, found nothing, could not be reached or failed.
 
-Rationale: Ruled on 2026-09-07. A run over a whole library is eleven minutes of
-somebody's waiting and of two public services' patience; nothing of it
-survives being stopped: a stopped run starts again from the beginning. The
-button that starts a run is the button that stops one, so a second press meant
-to reopen the dialog would otherwise discard all of it in one gesture. The count
-is named before it happens rather than reported after it, as it is for every
-other gesture here that undoes an unbounded amount of work.
+Rationale: Ruled on 2026-09-07, REVERSING the confirmation this requirement
+asked for earlier the same day. The question was added so that eleven minutes
+of waiting could not be discarded by a stray press. It was measured doing the
+opposite: a trace of the running application caught the question answering No
+while the run carried on, which is the whole of a defect reported three times
+as the stop never stopping. A question defaulting to leaving the run alone is a
+thing a press has to get past, so the control that says stop did not stop.
 
-The run carries on while the question stands. Pausing it would owe both services
-the same waiting again; the question is about what to do rather than a reason
-to stop doing anything.
+What the question was protecting against is now answered by the button saying
+what it is. One control carries both meanings, so it shows which one it is
+carrying: crossed out and reading "Stop looking" while a run is going, plain
+and offering to discover while none is. A press on a control that plainly says
+stop is not a press that needs checking; the accident the question guarded
+against was a button that gave no sign of having changed meaning.
 
-Acceptance: Given a run in progress that has reported seven artists of
-thirty one, when the discovery button is pressed, then the question names seven
-of thirty one and no cancel is issued; when it is declined, then the run
-continues untouched; when it is agreed to, then the run is asked to stop. Given
-a run that has reported nothing yet, when the button is pressed, then the
-question is still asked, without a count. Given the stop is agreed to, then the
-toolbar bar returns to rest at once and reports are ignored until the run ends;
-given a new run is asked for before the last one has finished winding down,
-then the window says so rather than appearing to do nothing.
+The mark is the same artwork the switches at the foot of the window wear rather
+than a second discovery picture, so a change to it reaches every use. Picture
+and words are set together in one place, because a button crossed out while
+offering to start a run is worse than either alone.
 
-Ruled on 2026-09-07 after the stop was reported as not working twice over. The
-bar is let go of on the press rather than on the ending, because the request
-already in flight cannot be called back and may take twenty seconds: a bar held
-until the run noticed would go on reporting a run somebody had finished with.
-Reports arriving afterwards are dropped for the same reason. They are not
-hypothetical: the run reports right up to the moment it notices, anything it
-says while the question stands queues behind that modal, then the whole burst
-arrives the instant the question closes.
+Acceptance: Given a run in progress, when the discovery button is pressed, then
+the run is asked to stop with no question raised, the toolbar bar returns to
+rest at once and reports are ignored until the run ends. Given a run in
+progress, then the button carries the negative mark and says "Stop looking".
+Given a run that is stopped, one that completes, one that fails and one that
+reaches nothing, then in every case the mark comes off and the button says
+"Discover music the library does not hold" again. Given a new run is asked for
+before the last one has finished winding down, then the window says so rather
+than appearing to do nothing.
 
-Verified by: `tests/ui/test_discovery_stopping.py::test_stopping_is_asked_about_before_it_happens`, `tests/ui/test_discovery_stopping.py::test_the_question_names_how_much_would_be_thrown_away`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/ui/test_discovery_stopping.py::test_a_new_run_asked_for_too_soon_says_so`
+The bar is let go of on the press rather than on the ending, because a run is
+abandoned rather than waited for: a bar held until the run noticed would go on
+reporting a run somebody had finished with. Reports arriving afterwards are
+dropped for the same reason. They are not hypothetical: the run reports right
+up to the moment it notices.
+
+Verified by: `tests/ui/test_discovery_stopping.py::test_a_press_stops_at_once_without_asking_anything`, `tests/ui/test_discovery_stopping.py::test_the_button_wears_the_cross_while_a_run_is_under_way`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_is_stopped`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_finishes_on_its_own`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_fails`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/ui/test_discovery_stopping.py::test_a_new_run_asked_for_too_soon_says_so`
 
 ---
 
