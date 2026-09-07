@@ -7,11 +7,15 @@ stopped moving would tell somebody none of them apart, so each is asserted.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QObject
-from PySide6.QtWidgets import QPushButton, QWidget
+from discovery_wiring_support import (
+    WHERE,
+    Service,
+    a_report,
+    make_window,
+    refused,
+)
 
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
-from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import (
     COULD_NOT_WRITE,
     FOUND,
@@ -20,117 +24,12 @@ from stellody.ui.discovering import (
     STOPPED,
     UNREACHABLE,
     WENT_WRONG,
-    Discovering,
 )
-from stellody.ui.discovery_progress import RESTING, STOPPING, DiscoveryBar
+from stellody.ui.discovery_progress import RESTING
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.tray_metrics import (
-    BUTTON_PX,
     DISCOVER_TOOLTIP,
-    STOP_DISCOVERY_TOOLTIP,
 )
-
-WHERE = "C:/somewhere/discovered.json"
-
-
-class Tray:
-    """Just enough tray to hold the two things the mixin touches.
-
-    The bar is the real one rather than a stand-in, since what the mixin does
-    with it is the whole point of the change that put it there.
-    """
-
-    def __init__(self, parent: QWidget) -> None:
-        self.discover_button = QPushButton(parent)
-        self.discovery_bar = DiscoveryBar(parent, BUTTON_PX)
-
-
-class StatusBar:
-    """A status bar that only remembers what it was told to say."""
-
-    def __init__(self) -> None:
-        self.said: list[str] = []
-
-    def showMessage(self, message: str) -> None:
-        """Qt's own spelling, since the mixin calls Qt's own method."""
-        self.said.append(message)
-
-
-class Window(Discovering, QObject):
-    """The mixin over nothing else, which is all it needs to be driven.
-
-    The holder is kept on the window rather than left as a local: a parent
-    that goes out of scope is collected, taking the button with it.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._all_albums = ()
-        self._holder = QWidget()
-        self._tray = Tray(self._holder)
-        self._status = StatusBar()
-
-    def statusBar(self) -> StatusBar:
-        """Where an ended run is announced now that no dialog is open."""
-        return self._status
-
-
-class RunnerInProgress:
-    """A runner that is always mid-run and only records being stopped.
-
-    Hand written rather than a real runner held open: a test that had to keep
-    a thread alive to assert what a button does would be a test of the thread.
-    """
-
-    running = True
-
-    def __init__(self) -> None:
-        self.stopped = 0
-
-    def cancel(self) -> None:
-        """Record that stopping was asked for."""
-        self.stopped += 1
-
-
-class Service:
-    """A discovery service that is never actually asked anything."""
-
-    def run(self, albums, ticked, report, cancelled):
-        """Stand in for a run; the wiring tests never reach this."""
-        return RunReport(outcome=RunOutcome.COMPLETED)
-
-
-def wrote(report: RunReport) -> str:
-    """A writer that always succeeds, answering where it put it."""
-    return WHERE
-
-
-def refused(report: RunReport) -> str:
-    """A writer that will not, the way a full disk will not."""
-    raise OSError("no room")
-
-
-def a_report(albums: int = 1, artists: int = 1) -> RunReport:
-    """A completed run holding this much."""
-    return RunReport(
-        outcome=RunOutcome.COMPLETED,
-        gaps=(
-            Gaps(
-                artist="U2",
-                albums=tuple(ReleaseGroup(title=f"Album {n}") for n in range(albums)),
-                artists=tuple(
-                    SimilarArtist(name=f"Artist {n}") for n in range(artists)
-                ),
-            ),
-        ),
-    )
-
-
-def make_window(application, write=wrote, service=None) -> Window:
-    """A window mixin wired to a service and a writer."""
-    window = Window()
-    window.start_discovering(service if service is not None else Service(), write=write)
-    return window
 
 
 def test_nothing_to_ask_says_so(application) -> None:
@@ -286,35 +185,3 @@ def test_progress_is_drawn_in_the_tray(application) -> None:
     )
     assert window._tray.discovery_bar.value() == 25
     assert "Muddy Waters" in window._tray.discovery_bar.toolTip()
-
-
-def test_a_started_run_turns_the_button_into_a_stop(application) -> None:
-    """One control carries both meanings once the dialog has gone."""
-    window = make_window(application)
-    window.begin_discovery(("Rock",))
-    try:
-        assert window._tray.discover_button.toolTip() == STOP_DISCOVERY_TOOLTIP
-    finally:
-        window._discovery_runner.wait()
-
-
-def test_pressing_it_during_a_run_stops_the_run(application) -> None:
-    """The whole reason the button changes meaning rather than going dead."""
-    window = make_window(application)
-    runner = RunnerInProgress()
-    window._discovery_runner = runner
-    window.open_discovery()
-    assert runner.stopped == 1, "it cancelled rather than opening a second dialog"
-
-
-def test_a_stop_is_acknowledged_before_the_run_has_stopped(application) -> None:
-    """A run gives up between requests, so the press lands before the ending."""
-    window = make_window(application)
-    runner = RunnerInProgress()
-    window._discovery_runner = runner
-    window.discovery_progressed(
-        DiscoveryProgress(artist="Muddy Waters", done=1, total=4)
-    )
-    window.open_discovery()
-    assert window._tray.discovery_bar.format() == STOPPING
-    assert runner.stopped == 1

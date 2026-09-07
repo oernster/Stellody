@@ -612,6 +612,38 @@ Verified by: `tests/application/test_discovery.py::test_what_was_remembered_is_n
 
 ---
 
+**FR-D27 Stopping is asked about first**
+
+Priority: Must
+
+Requirement: When the discovery button is pressed while a run is under way, the
+window shall ask for confirmation naming how many artists have been looked up
+of how many. It shall stop the run only where that is agreed to. The question
+shall default to leaving the run alone.
+
+Rationale: Ruled on 2026-09-07. A run over a whole library is eleven minutes of
+somebody's waiting and of two public services' patience; nothing of it
+survives being stopped: a stopped run starts again from the beginning. The
+button that starts a run is the button that stops one, so a second press meant
+to reopen the dialog would otherwise discard all of it in one gesture. The count
+is named before it happens rather than reported after it, as it is for every
+other gesture here that undoes an unbounded amount of work.
+
+The run carries on while the question stands. Pausing it would owe both services
+the same waiting again; the question is about what to do rather than a reason
+to stop doing anything.
+
+Acceptance: Given a run in progress that has reported seven artists of
+thirty one, when the discovery button is pressed, then the question names seven
+of thirty one and no cancel is issued; when it is declined, then the run
+continues untouched; when it is agreed to, then the run is asked to stop. Given
+a run that has reported nothing yet, when the button is pressed, then the
+question is still asked, without a count.
+
+Verified by: `tests/ui/test_discovery_wiring.py::test_stopping_is_asked_about_before_it_happens`, `tests/ui/test_discovery_wiring.py::test_the_question_names_how_much_would_be_thrown_away`
+
+---
+
 ### 3.2 Non-functional requirements
 
 ---

@@ -1,4 +1,4 @@
-"""What a discovery run asks of the world, and what can go wrong asking.
+"""What a discovery run asks of the world, plus what can go wrong asking.
 
 Split out of `discovering.py` on 2026-09-07, when that module went over the
 line cap. The seam is the ordinary one: what a run NEEDS from outside itself,

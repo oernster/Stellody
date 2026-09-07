@@ -136,3 +136,16 @@ def never() -> bool:
 
 def nothing(progress: DiscoveryProgress) -> None:
     """A window nobody is watching."""
+
+
+class Stopping:
+    """A cancel that is pressed once a given number of waits have passed."""
+
+    def __init__(self, after: int = 0) -> None:
+        self.after = after
+        self.asked = 0
+
+    def __call__(self) -> bool:
+        """Answer no until the run has waited long enough, then yes."""
+        self.asked += 1
+        return self.asked > self.after

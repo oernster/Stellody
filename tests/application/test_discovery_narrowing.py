@@ -13,16 +13,28 @@ from discovery_support import (
     Memory,
     Recorder,
     Similarity,
+    Stopping,
     Waits,
     make_album,
     never,
     nothing,
 )
 
-from stellody.application.discovering import Discovery
+from stellody.application.discovering import (
+    RETRY_PAUSE_SECONDS,
+    WAIT_SLICE_SECONDS,
+    Discovery,
+)
+from stellody.application.discovery_ports import RateRefused
 from stellody.application.values import DiscoveryProgress, DiscoveryStage, RunOutcome
 from stellody.domain.album import Album
 from stellody.domain.discovery import SimilarArtist
+
+# How many times a run asks whether it is still wanted before it reaches the
+# second half: once for the one source artist, then once at the head of the
+# narrowing. Derived here rather than guessed, so a change to the order of the
+# asking fails this loudly instead of quietly testing nothing.
+STOPS_AFTER_THE_FIRST_HALF = 2
 
 
 def one_blues_artist() -> tuple[Album, ...]:
@@ -130,3 +142,55 @@ def test_the_percentage_counts_work_finished() -> None:
     """One of four done is a quarter, not the quarter that is under way."""
     assert DiscoveryProgress(artist="U2", done=1, total=4).percent == 25
     assert DiscoveryProgress(artist="U2", done=4, total=4).percent == 100
+
+
+class Refusing(Catalogue):
+    """A catalogue that refuses to say what a candidate plays, once."""
+
+    def __init__(self, **known) -> None:
+        super().__init__(**known)
+        self.refusals_left = 1
+
+    def genres_of(self, identifier: str) -> tuple[str, ...]:
+        """Ask to be asked again the first time, then answer as told."""
+        if self.refusals_left:
+            self.refusals_left -= 1
+            raise RateRefused("asked to wait")
+        return super().genres_of(identifier)
+
+
+def test_a_stop_during_the_second_half_ends_the_run() -> None:
+    """The long half is the one somebody is most likely to give up on."""
+    catalogue = Refusing(genres={"cray": ("Blues",), "wolf": ("Techno",)})
+    similar = Similarity(
+        (
+            SimilarArtist(name="Robert Cray", identifier="cray"),
+            SimilarArtist(name="Howlin' Wolf", identifier="wolf"),
+        )
+    )
+    run = Discovery(
+        catalogue=catalogue, similarity=similar, pause=Waits(), memory=Memory()
+    )
+    stopping = Stopping(after=STOPS_AFTER_THE_FIRST_HALF)
+    report = run.run(one_blues_artist(), ("Blues",), nothing, stopping)
+    assert report.outcome is RunOutcome.CANCELLED
+
+
+def test_a_stop_arriving_as_a_wait_ends_is_still_a_stop() -> None:
+    """The last slice is a slice like any other, so it is checked like one.
+
+    Without the check after the final slice, a stop pressed during it would
+    cost one more request: the wait would end, the attempt would go out and
+    only then would anybody ask whether it was still wanted.
+    """
+    catalogue = Refusing(genres={"cray": ("Blues",)})
+    similar = Similarity((SimilarArtist(name="Robert Cray", identifier="cray"),))
+    run = Discovery(
+        catalogue=catalogue, similarity=similar, pause=Waits(), memory=Memory()
+    )
+    asked_before_the_wait = STOPS_AFTER_THE_FIRST_HALF
+    slices = int(RETRY_PAUSE_SECONDS / WAIT_SLICE_SECONDS)
+    stopping = Stopping(after=asked_before_the_wait + slices)
+    report = run.run(one_blues_artist(), ("Blues",), nothing, stopping)
+    assert report.outcome is RunOutcome.CANCELLED
+    assert catalogue.genres_asked == [], "it never got to ask again"

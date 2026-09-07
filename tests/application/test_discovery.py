@@ -12,6 +12,7 @@ from discovery_support import (
     ROCK,
     Catalogue,
     Similarity,
+    Stopping,
     Waits,
     make_album,
     never,
@@ -276,19 +277,6 @@ def test_what_each_artist_is_already_held_to_have() -> None:
     albums = (make_album("U2", "The Joshua Tree"), make_album("U2", "Achtung Baby"))
     held = held_by_artist(albums)
     assert len(held["U2"]) == 2
-
-
-class Stopping:
-    """A cancel that is pressed once a given number of waits have passed."""
-
-    def __init__(self, after: int = 0) -> None:
-        self.after = after
-        self.asked = 0
-
-    def __call__(self) -> bool:
-        """Answer no until the run has waited long enough, then yes."""
-        self.asked += 1
-        return self.asked > self.after
 
 
 def test_a_stop_is_felt_part_way_through_a_wait() -> None:

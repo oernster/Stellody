@@ -333,11 +333,11 @@ class Discovery:
         at all.
         """
         left = seconds
-        while left > 0:
+        while True:
             if cancelled():
                 raise RunCancelled("stopped while waiting out a refusal")
+            if left <= 0:
+                return
             take = min(WAIT_SLICE_SECONDS, left)
             self.pause(take)
             left -= take
-        if cancelled():
-            raise RunCancelled("stopped while waiting out a refusal")
