@@ -2,129 +2,79 @@
 
 Every answer here is handed to the client rather than fetched, so what is
 tested is the reading of an answer and the turning of a failure into something
-the service above knows what to do with.
+the service above knows what to do with. The fetcher itself is tested against a
+real service in `test_fetching.py`; neither client holds a socket, which is why
+they can be asked everything here without one.
 """
 
 from __future__ import annotations
 
-import io
-import json
-import urllib.error
-
 import pytest
 
-from stellody.application.discovery_ports import (
-    RateRefused,
-    SourceFailed,
-    SourceUnavailable,
-)
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure.catalogue import (
     ARTIST_URL,
     RELEASE_GROUP_URL,
     MusicBrainz,
 )
-from stellody.infrastructure.courtesy import USER_AGENT
-from stellody.infrastructure.fetching import Fetcher
 from stellody.infrastructure.similarity import ALGORITHM, SIMILAR_URL, ListenBrainz
+
+# How many similar artists the tests ask for. The figure a run uses is settled
+# in the application layer; here it only has to be a number.
+SOME = 10
 
 
 class Answering:
-    """An opener handing back one prepared answer and recording the ask."""
+    """A fetcher handing back one prepared answer and recording the ask.
+
+    Address and parameters are kept apart rather than joined into a URL, so
+    what is asserted is what the client asked for rather than how the fetcher
+    happens to spell it.
+    """
 
     def __init__(self, body: object) -> None:
         self._body = body
-        self.asked: list[str] = []
-        self.agents: list[str] = []
+        self.addresses: list[str] = []
+        self.parameters: list[dict[str, str]] = []
+        self.wanted: list[Wanted] = []
 
-    def __call__(self, request, timeout=None):
+    def json(
+        self,
+        address: str,
+        parameters: dict[str, str],
+        wanted: Wanted = always_wanted,
+    ) -> object:
         """Record what was asked for, then answer with the prepared body."""
-        self.asked.append(request.full_url)
-        self.agents.append(request.get_header("User-agent"))
-        return io.BytesIO(json.dumps(self._body).encode("utf-8"))
+        self.addresses.append(address)
+        self.parameters.append(dict(parameters))
+        self.wanted.append(wanted)
+        return self._body
 
 
-class Refusing:
-    """An opener that always raises whatever it was given."""
-
-    def __init__(self, trouble: Exception) -> None:
-        self._trouble = trouble
-
-    def __call__(self, request, timeout=None):
-        """Fail the way this stand-in was told to."""
-        raise self._trouble
+def fetching(body: object) -> Answering:
+    """A fetcher stand-in that answers with this and remembers the asking."""
+    return Answering(body)
 
 
-class OpenGate:
-    """A gate that lets everything through at once and counts the asks."""
+class TestHandingTheQuestionDown:
+    """A client passes on whether anybody still wants the answer."""
 
-    def __init__(self) -> None:
-        self.waits = 0
+    def test_every_question_carries_whether_it_is_still_wanted(self) -> None:
+        """Otherwise a request in flight outlives the run that asked it."""
+        given: Wanted = lambda: False
+        fetch = fetching({"artists": []})
+        MusicBrainz(fetch).identify("U2", given)
+        MusicBrainz(fetch).albums_of("id", given)
+        MusicBrainz(fetch).genres_of("id", given)
+        ListenBrainz(fetch).similar_to("id", SOME, given)
+        assert fetch.wanted == [given, given, given, given]
 
-    def wait(self, wanted=None) -> bool:
-        """Let it through, having noted that permission was sought."""
-        self.waits += 1
-        return True
-
-
-def fetching(body: object) -> tuple[Fetcher, Answering, OpenGate]:
-    """A fetcher wired to an opener that answers with this."""
-    opener = Answering(body)
-    gate = OpenGate()
-    return Fetcher(gate=gate, opener=opener), opener, gate
-
-
-def failing(trouble: Exception) -> Fetcher:
-    """A fetcher whose opener always fails this way."""
-    return Fetcher(gate=OpenGate(), opener=Refusing(trouble))
-
-
-def http_error(code: int) -> urllib.error.HTTPError:
-    """An answer from a service that declined to give one."""
-    return urllib.error.HTTPError(
-        url="https://example.invalid", code=code, msg="no", hdrs=None, fp=None
-    )
-
-
-class TestTheFetcher:
-    """The one module that opens a connection, asked without one."""
-
-    def test_it_waits_its_turn_and_names_the_application(self) -> None:
-        """The courtesies are applied here so no client can forget them."""
-        fetcher, opener, gate = fetching({"ok": True})
-        assert fetcher.json("https://example.invalid/a", {"q": "x"}) == {"ok": True}
-        assert gate.waits == 1
-        assert opener.agents == [USER_AGENT]
-
-    def test_it_builds_the_query_so_a_client_needs_no_networking(self) -> None:
-        """The reason the permitted-module list gained one name rather than two."""
-        fetcher, opener, _ = fetching({})
-        fetcher.json("https://example.invalid/a", {"q": "a b", "fmt": "json"})
-        assert opener.asked == ["https://example.invalid/a?q=a+b&fmt=json"]
-
-    @pytest.mark.parametrize("code", [429, 503])
-    def test_a_refusal_is_asked_again_rather_than_reported(self, code: int) -> None:
-        """The service asking for patience is not the service saying no."""
-        with pytest.raises(RateRefused):
-            failing(http_error(code)).json("https://example.invalid", {})
-
-    def test_another_answer_is_that_artist_failing(self) -> None:
-        """One artist nobody could answer about, rather than the run ending."""
-        with pytest.raises(SourceFailed, match="500"):
-            failing(http_error(500)).json("https://example.invalid", {})
-
-    def test_nothing_answering_at_all_is_a_different_thing(self) -> None:
-        """No connection means every later question fares the same way."""
-        with pytest.raises(SourceUnavailable):
-            failing(urllib.error.URLError("no route")).json("https://a.invalid", {})
-
-    def test_an_answer_that_is_not_json_is_that_artist_failing(self) -> None:
-        """A service changing shape is one artist lost, not a run."""
-        fetcher = Fetcher(
-            gate=OpenGate(), opener=lambda r, timeout=None: io.BytesIO(b"{")
-        )
-        with pytest.raises(SourceFailed, match="could not be read"):
-            fetcher.json("https://example.invalid", {})
+    def test_a_caller_with_nothing_to_stop_leaves_it_alone(self) -> None:
+        """The default is a question nobody has to answer."""
+        fetch = fetching({"artists": []})
+        MusicBrainz(fetch).identify("U2")
+        assert fetch.wanted == [always_wanted]
 
 
 class TestIdentifyingAnArtist:
@@ -133,14 +83,14 @@ class TestIdentifyingAnArtist:
     def test_one_exact_match_is_the_artist(self) -> None:
         """The ordinary case, being the only one that yields a lookup."""
         body = {"artists": [{"id": "u2-id", "name": "U2"}]}
-        fetcher, opener, _ = fetching(body)
-        assert MusicBrainz(fetcher).identify("U2") == ("u2-id",)
-        assert opener.asked[0].startswith(ARTIST_URL)
+        fetch = fetching(body)
+        assert MusicBrainz(fetch).identify("U2") == ("u2-id",)
+        assert fetch.addresses == [ARTIST_URL]
 
     def test_a_ranked_near_miss_is_not_the_artist(self) -> None:
         """Accepting the top hit files a discography under whoever ranked first."""
         body = {"artists": [{"id": "other", "name": "U2 Tribute Band"}]}
-        assert MusicBrainz(fetching(body)[0]).identify("U2") == ()
+        assert MusicBrainz(fetching(body)).identify("U2") == ()
 
     def test_two_exact_matches_are_both_returned(self) -> None:
         """Ambiguity is an answer for somebody to be told about."""
@@ -150,23 +100,23 @@ class TestIdentifyingAnArtist:
                 {"id": "uk", "name": "nirvana"},
             ]
         }
-        assert MusicBrainz(fetching(body)[0]).identify("Nirvana") == ("us", "uk")
+        assert MusicBrainz(fetching(body)).identify("Nirvana") == ("us", "uk")
 
     def test_an_entry_with_no_identifier_is_passed_over(self) -> None:
         """Nothing can be looked up by an artist with no identifier."""
         body = {"artists": [{"name": "U2"}]}
-        assert MusicBrainz(fetching(body)[0]).identify("U2") == ()
+        assert MusicBrainz(fetching(body)).identify("U2") == ()
 
     def test_a_quote_in_a_name_cannot_break_the_search(self) -> None:
         """A term goes inside a quoted phrase, so it may not carry one."""
-        fetcher, opener, _ = fetching({"artists": []})
-        MusicBrainz(fetcher).identify('The "Band"')
-        assert "%22Band%22" not in opener.asked[0]
+        fetch = fetching({"artists": []})
+        MusicBrainz(fetch).identify('The "Band"')
+        assert '"Band"' not in fetch.parameters[0]["query"]
 
     @pytest.mark.parametrize("body", [[], "not a dict", {"artists": "not a list"}])
     def test_an_answer_of_the_wrong_shape_names_nobody(self, body: object) -> None:
         """A service that changed shape answers nothing, rather than raising."""
-        assert MusicBrainz(fetching(body)[0]).identify("U2") == ()
+        assert MusicBrainz(fetching(body)).identify("U2") == ()
 
 
 class TestWhatAnArtistReleased:
@@ -184,9 +134,9 @@ class TestWhatAnArtistReleased:
                 }
             ]
         }
-        fetcher, opener, _ = fetching(body)
-        found = MusicBrainz(fetcher).albums_of("pg-id")
-        assert opener.asked[0].startswith(RELEASE_GROUP_URL)
+        fetch = fetching(body)
+        found = MusicBrainz(fetch).albums_of("pg-id")
+        assert fetch.addresses == [RELEASE_GROUP_URL]
         assert found[0].title == "Secret World Live"
         assert found[0].kinds == (ReleaseKind.LIVE,)
         assert found[0].genres == ("Rock",)
@@ -202,7 +152,7 @@ class TestWhatAnArtistReleased:
                 }
             ]
         }
-        found = MusicBrainz(fetching(body)[0]).albums_of("id")
+        found = MusicBrainz(fetching(body)).albums_of("id")
         assert found[0].kinds == (ReleaseKind.OTHER,)
         assert not found[0].is_offered
 
@@ -215,7 +165,7 @@ class TestWhatAnArtistReleased:
                 {"title": "", "primary-type": "Album"},
             ]
         }
-        found = MusicBrainz(fetching(body)[0]).albums_of("id")
+        found = MusicBrainz(fetching(body)).albums_of("id")
         assert [group.title for group in found] == ["An EP"]
 
     def test_a_genre_list_of_the_wrong_shape_states_nothing(self) -> None:
@@ -225,7 +175,7 @@ class TestWhatAnArtistReleased:
                 {"title": "A Record", "primary-type": "Album", "genres": "Rock"}
             ]
         }
-        assert MusicBrainz(fetching(body)[0]).albums_of("id")[0].genres == ()
+        assert MusicBrainz(fetching(body)).albums_of("id")[0].genres == ()
 
 
 class TestWhatAnArtistPlays:
@@ -234,16 +184,18 @@ class TestWhatAnArtistPlays:
     def test_the_genres_are_read(self) -> None:
         """One ask per candidate per run, so it has to answer usefully."""
         body = {"genres": [{"name": "Rock"}, {"name": "Pop"}]}
-        assert MusicBrainz(fetching(body)[0]).genres_of("id") == ("Rock", "Pop")
+        fetch = fetching(body)
+        assert MusicBrainz(fetch).genres_of("pg-id") == ("Rock", "Pop")
+        assert fetch.addresses == [f"{ARTIST_URL}/pg-id"]
 
     def test_an_answer_of_the_wrong_shape_says_nothing(self) -> None:
         """Which keeps the candidate rather than dropping it."""
-        assert MusicBrainz(fetching([])[0]).genres_of("id") == ()
+        assert MusicBrainz(fetching([])).genres_of("id") == ()
 
     def test_a_nameless_genre_is_passed_over(self) -> None:
         """A genre with no name describes nothing."""
         body = {"genres": [{"name": ""}, {"count": 3}, "Rock"]}
-        assert MusicBrainz(fetching(body)[0]).genres_of("id") == ()
+        assert MusicBrainz(fetching(body)).genres_of("id") == ()
 
 
 class TestWhoResemblesWhom:
@@ -255,23 +207,23 @@ class TestWhoResemblesWhom:
             {"artist_mbid": "a", "name": "Talk Talk"},
             {"artist_mbid": "b", "name": "The Blue Nile"},
         ]
-        fetcher, opener, _ = fetching(body)
-        found = ListenBrainz(fetcher).similar_to("pg-id", 10)
+        fetch = fetching(body)
+        found = ListenBrainz(fetch).similar_to("pg-id", SOME)
         assert [artist.name for artist in found] == ["Talk Talk", "The Blue Nile"]
-        assert opener.asked[0].startswith(SIMILAR_URL)
-        assert ALGORITHM in opener.asked[0]
+        assert fetch.addresses == [SIMILAR_URL]
+        assert fetch.parameters[0]["algorithm"] == ALGORITHM
 
     def test_only_as_many_as_were_wanted(self) -> None:
         """Ten is the figure the plan settled on, applied here."""
         body = [{"artist_mbid": str(n), "name": f"Artist {n}"} for n in range(20)]
-        assert len(ListenBrainz(fetching(body)[0]).similar_to("id", 10)) == 10
+        assert len(ListenBrainz(fetching(body)).similar_to("id", SOME)) == SOME
 
     def test_an_entry_nobody_could_be_told_about_is_passed_over(self) -> None:
         """A candidate with no name is not a candidate."""
         body = [{"artist_mbid": "a", "name": ""}, "not a dict", {"name": "Real"}]
-        found = ListenBrainz(fetching(body)[0]).similar_to("id", 10)
+        found = ListenBrainz(fetching(body)).similar_to("id", SOME)
         assert [artist.name for artist in found] == ["Real"]
 
     def test_an_answer_of_the_wrong_shape_resembles_nobody(self) -> None:
         """A service that changed shape loses one artist, not a run."""
-        assert ListenBrainz(fetching({"error": "no"})[0]).similar_to("id", 10) == ()
+        assert ListenBrainz(fetching({"error": "no"})).similar_to("id", SOME) == ()

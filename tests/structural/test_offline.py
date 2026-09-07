@@ -1,12 +1,13 @@
 """The second safety invariant: Stellody opens no connection behind your back.
 
 A local-first player that quietly talks to the internet is not local-first,
-whatever its README says. Exactly three modules may reach the network and each
-is named here with what it is for: cover art when a listener asks for a
-picture, the update check asking GitHub whether a newer Stellody has been
-published, then the one fetcher a discovery run asks two catalogues through.
-Nothing on the scan path, the draw path or the playback path may hold the
-machinery to open a socket.
+whatever its README says. Exactly four modules may hold the machinery to open a
+connection and each is named here with what it is for: cover art when a
+listener asks for a picture, the update check asking GitHub whether a newer
+Stellody has been published, the one fetcher a discovery run asks two
+catalogues through, then the channel a second launch speaks to the copy already
+running over, which leaves the machine at all. Nothing on the scan path, the
+draw path or the playback path may hold that machinery.
 
 Each addition is a change worth reading as such. The update check was added
 deliberately, with the count in this file being what had to be edited to allow
@@ -16,6 +17,14 @@ than by a test quietly continuing to pass.
 Discovery reaches two services and added ONE name rather than two: neither
 catalogue client holds a socket, since both hand their questions to the fetcher
 and get answers back. That was the point of writing it that way.
+
+**A package is named by its top level except where that says nothing.** Qt's
+network module is `PySide6.QtNetwork`, whose top level is `PySide6`; listing
+that would name every window in the application. So a dotted entry is matched
+in full. The fetcher moved onto Qt on 2026-09-07 and would otherwise have gone
+unwatched, which is how the fourth module came to be noticed at all: the
+activation channel had been holding a local socket, unseen, since it was
+written.
 
 Stated as a structural test rather than as a promise, for the same reason the
 read-only invariant is: a promise cannot fail a build. This one was proved to
@@ -42,10 +51,21 @@ NETWORK_PERMITTED = frozenset(
         "stellody/infrastructure/update_source.py",
         # The one fetcher a discovery run asks its two catalogues through. It
         # sends artist names and identifiers from the genres a listener ticked,
-        # and the application's own user agent. Nothing about the machine.
+        # plus the application's own user agent. Nothing about the machine.
         "stellody/infrastructure/fetching.py",
+        # The channel a second launch tells the running copy to show itself
+        # over. A named pipe on Windows, a socket file the system owns
+        # elsewhere: it is addressed by name rather than by host and reaches
+        # nothing off this machine. It is listed because it holds the same
+        # machinery as the three above, not because it goes anywhere.
+        "stellody/infrastructure/instance.py",
     }
 )
+
+# Networking packages named in FULL, for the case where a top-level name would
+# be useless. Kept apart from the set above so neither kind of entry has to
+# carry a rule about the other.
+NETWORK_MODULES = frozenset({"PySide6.QtNetwork"})
 
 # Anything that can reach a socket. Named rather than guessed at: each of these
 # is a way a module could go outward without any of the others being present.
@@ -67,27 +87,43 @@ NETWORK_LIBRARIES = frozenset(
 )
 
 
-def _root_of(name: str) -> str:
-    """The top package a dotted import belongs to."""
-    return name.split(".")[0]
+def _reaching(name: str) -> str | None:
+    """The networking package this import reaches; None where it reaches none.
+
+    Two shapes of entry, matched two ways. A stdlib package is named by its top
+    level, since `urllib.request` and `urllib.parse` both arrive under
+    `urllib`. A Qt module cannot be, because its top level is imported by every
+    window in the application, so it is matched in full instead.
+    """
+    if name in NETWORK_MODULES:
+        return name
+    root = name.split(".")[0]
+    return root if root in NETWORK_LIBRARIES else None
 
 
 def _network_imports(tree: ast.AST) -> set[str]:
-    """Every networking package a module imports, by its top-level name."""
+    """Every networking package a module imports, however it was written.
+
+    `from PySide6 import QtNetwork` names the module across the two halves of
+    the statement, so the names are rejoined before being asked about; matching
+    only what follows `from` would read that line as an ordinary Qt import.
+    """
     found: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            found.update(
-                _root_of(alias.name)
-                for alias in node.names
-                if _root_of(alias.name) in NETWORK_LIBRARIES
-            )
-        elif (
-            isinstance(node, ast.ImportFrom)
-            and node.module
-            and _root_of(node.module) in NETWORK_LIBRARIES
-        ):
-            found.add(_root_of(node.module))
+            for alias in node.names:
+                reached = _reaching(alias.name)
+                if reached is not None:
+                    found.add(reached)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            reached = _reaching(node.module)
+            if reached is not None:
+                found.add(reached)
+                continue
+            for alias in node.names:
+                joined = _reaching(f"{node.module}.{alias.name}")
+                if joined is not None:
+                    found.add(joined)
     return found
 
 

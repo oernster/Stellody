@@ -8,6 +8,7 @@ happen in rather than anything a network did.
 
 from __future__ import annotations
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovery_ports import RateRefused
 from stellody.application.values import DiscoveryProgress
 from stellody.domain.album import Album
@@ -56,10 +57,14 @@ class Catalogue:
         self.identified: list[str] = []
         self.albums_asked: list[str] = []
         self.genres_asked: list[str] = []
+        # Every question carries whether anybody still wants the answer, so
+        # what was handed down is kept for the tests that are about that.
+        self.wanted: list[Wanted] = []
 
-    def identify(self, name: str) -> tuple[str, ...]:
+    def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
         """Every artist this name reaches, as this fake was told."""
         self.identified.append(name)
+        self.wanted.append(wanted)
         if self._refusals:
             self._refusals -= 1
             raise RateRefused("asked to wait")
@@ -67,14 +72,20 @@ class Catalogue:
             raise self._raises
         return self._identities.get(name, (name.lower(),))
 
-    def albums_of(self, identifier: str) -> tuple[ReleaseGroup, ...]:
+    def albums_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[ReleaseGroup, ...]:
         """Everything this artist released, as this fake was told."""
         self.albums_asked.append(identifier)
+        self.wanted.append(wanted)
         return self._albums.get(identifier, ())
 
-    def genres_of(self, identifier: str) -> tuple[str, ...]:
+    def genres_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
         """What this artist plays, as this fake was told."""
         self.genres_asked.append(identifier)
+        self.wanted.append(wanted)
         return self._genres.get(identifier, ())
 
 
@@ -84,10 +95,14 @@ class Similarity:
     def __init__(self, artists: tuple[SimilarArtist, ...] = ()) -> None:
         self._artists = artists
         self.asked: list[tuple[str, int]] = []
+        self.wanted: list[Wanted] = []
 
-    def similar_to(self, identifier: str, wanted: int) -> tuple[SimilarArtist, ...]:
+    def similar_to(
+        self, identifier: str, most: int, wanted: Wanted = always_wanted
+    ) -> tuple[SimilarArtist, ...]:
         """The artists this fake stands for; the ask is recorded."""
-        self.asked.append((identifier, wanted))
+        self.asked.append((identifier, most))
+        self.wanted.append(wanted)
         return self._artists
 
 

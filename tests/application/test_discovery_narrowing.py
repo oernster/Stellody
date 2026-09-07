@@ -20,6 +20,7 @@ from discovery_support import (
     nothing,
 )
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovering import (
     RETRY_PAUSE_SECONDS,
     WAIT_SLICE_SECONDS,
@@ -151,12 +152,14 @@ class Refusing(Catalogue):
         super().__init__(**known)
         self.refusals_left = 1
 
-    def genres_of(self, identifier: str) -> tuple[str, ...]:
+    def genres_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
         """Ask to be asked again the first time, then answer as told."""
         if self.refusals_left:
             self.refusals_left -= 1
             raise RateRefused("asked to wait")
-        return super().genres_of(identifier)
+        return super().genres_of(identifier, wanted)
 
 
 def test_a_stop_during_the_second_half_ends_the_run() -> None:

@@ -9,19 +9,34 @@ have added two more names to a list whose whole value is being short.
 **It also means the courtesies cannot be forgotten in one client and honoured
 in the other.** The gate, the user agent and the timeout are applied here, once.
 
-**What comes back is an answer or a typed refusal, never a stack trace from
-urllib.** The service above knows what to do with each: a refusal is waited out
-and asked again, an unreachable host ends the run, anything else is recorded
-against that artist and the run goes on.
+**What comes back is an answer or a typed refusal, never a stack trace.** The
+service above knows what to do with each: a refusal is waited out and asked
+again, an unreachable host ends the run, anything else is recorded against that
+artist and the run goes on.
+
+**A request here can be given up on, which is the whole reason it is written
+this way.** It used to block a thread inside `urlopen`, where nothing could
+reach it: a listener who pressed stop waited out the request; against a
+service that had gone quiet that was the full twenty second timeout. Nothing
+portable interrupts a thread waiting on a socket, so the answer is not to wait
+on one. Qt's network stack is event driven and a reply in flight can be
+abandoned outright.
+
+Measured on 2026-09-07 against a server that accepts a connection and then says
+nothing: `abort()` ends the reply in under a millisecond, where the blocking
+client sat there until its timeout. Qt was already a dependency and its network
+module already in use, so this costs nothing that was not being paid.
 """
 
 from __future__ import annotations
 
 import json
-import urllib.error
 import urllib.parse
-import urllib.request
 
+from PySide6.QtCore import QEventLoop, QThread, QTimer, QUrl
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
+
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovery_ports import (
     RateRefused,
     SourceFailed,
@@ -29,10 +44,21 @@ from stellody.application.discovery_ports import (
 )
 from stellody.infrastructure.courtesy import (
     REFUSAL_CODES,
+    SLEEP_SLICE_S,
     TIMEOUT_S,
     USER_AGENT,
     Gate,
 )
+
+# How often a request in flight asks whether anybody still wants it. The same
+# slice the waits between requests are taken in, for the same reason and so
+# there is one number rather than two that drift.
+GIVE_UP_SLICE_MS = int(SLEEP_SLICE_S * 1000)
+MS_PER_SECOND = 1000
+# The statuses that mean the service is asking to be asked again rather than
+# answering. Read off the reply's own header, since Qt reports a refusal as a
+# protocol error rather than as an answer.
+STATUS_ATTRIBUTE = QNetworkRequest.Attribute.HttpStatusCodeAttribute
 
 
 class Fetcher:
@@ -40,35 +66,100 @@ class Fetcher:
 
     One fetcher stands in front of one service, because it carries that
     service's gate and a gap owed to one says nothing about another.
+
+    The access manager is built on the thread that first asks; rebuilt where
+    a later run asks from a different one. Qt objects belong to the thread that
+    made them, while a discovery runs on a thread of its own, so the manager
+    has to live where the requests are made rather than where the fetcher was.
     """
 
-    def __init__(self, gate: Gate | None = None, opener=None, timeout_s=TIMEOUT_S):
+    def __init__(
+        self,
+        gate: Gate | None = None,
+        timeout_s: float = TIMEOUT_S,
+        manager: QNetworkAccessManager | None = None,
+    ) -> None:
         self._gate = gate if gate is not None else Gate()
-        self._opener = opener if opener is not None else urllib.request.urlopen
         self._timeout_s = timeout_s
+        self._manager = manager
+        self._manager_thread = QThread.currentThread() if manager else None
 
-    def json(self, address: str, parameters: dict[str, str]) -> object:
+    def _asking(self) -> QNetworkAccessManager:
+        """An access manager belonging to the thread doing the asking."""
+        here = QThread.currentThread()
+        if self._manager is None or self._manager_thread is not here:
+            self._manager = QNetworkAccessManager()
+            self._manager_thread = here
+        return self._manager
+
+    def json(
+        self, address: str, parameters: dict[str, str], wanted: Wanted = always_wanted
+    ) -> object:
         """What the service said, decoded; a typed error where it said nothing.
 
         The parameters are encoded here rather than by the caller, so a client
         needs no networking package of its own and the structural test that
         counts those packages keeps meaning what it says.
+
+        `wanted` is asked throughout, during the gap owed to the service and
+        again while the request is in flight. Answering False abandons the
+        request there and then rather than at the end of it.
         """
-        self._gate.wait()
         url = f"{address}?{urllib.parse.urlencode(parameters)}"
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        if not self._gate.wait(wanted):
+            raise SourceFailed(f"given up on before it was asked: {url}")
+        reply = self._sent(url)
+        self._waited_on(reply, wanted)
+        return self._read(reply, url)
+
+    def _sent(self, url: str) -> QNetworkReply:
+        """Put the question, without waiting for the answer."""
+        request = QNetworkRequest(QUrl(url))
+        request.setRawHeader(b"User-Agent", USER_AGENT.encode("utf-8"))
+        return self._asking().get(request)
+
+    def _waited_on(self, reply: QNetworkReply, wanted: Wanted) -> None:
+        """Wait for the reply, giving it up where nobody wants it any more.
+
+        A loop of its own rather than the thread's: this runs on a worker with
+        no loop running, so one is started for exactly as long as the request
+        takes. Both timers are asked on THIS thread, so nothing here touches a
+        Qt object across a thread boundary.
+        """
+        loop = QEventLoop()
+        reply.finished.connect(loop.quit)
+        giving_up = QTimer()
+        giving_up.setInterval(GIVE_UP_SLICE_MS)
+        giving_up.timeout.connect(lambda: None if wanted() else reply.abort())
+        giving_up.start()
+        QTimer.singleShot(int(self._timeout_s * MS_PER_SECOND), reply.abort)
+        if not reply.isFinished():
+            loop.exec()
+        giving_up.stop()
+
+    @staticmethod
+    def _read(reply: QNetworkReply, url: str) -> object:
+        """What the reply turned out to be: an answer, a refusal or a failure.
+
+        The status is read off the reply rather than inferred from the error,
+        since a service asking to be asked again arrives as a protocol error
+        carrying a 429 or a 503, which is an ordinary answer to this run.
+        """
         try:
-            with self._opener(request, timeout=self._timeout_s) as answer:
-                return json.loads(answer.read().decode("utf-8"))
-        except urllib.error.HTTPError as refusal:
-            if refusal.code in REFUSAL_CODES:
-                raise RateRefused(f"the service asked to be asked again: {url}") from (
-                    refusal
-                )
-            raise SourceFailed(f"the service answered {refusal.code}") from refusal
-        except urllib.error.URLError as unreachable:
-            raise SourceUnavailable(f"nothing answered at all: {unreachable}") from (
-                unreachable
-            )
-        except (ValueError, OSError) as broken:
+            status = reply.attribute(STATUS_ATTRIBUTE)
+            trouble = reply.error()
+            body = bytes(reply.readAll().data())
+        finally:
+            reply.deleteLater()
+        if status in REFUSAL_CODES:
+            raise RateRefused(f"the service asked to be asked again: {url}")
+        if trouble is QNetworkReply.NetworkError.OperationCanceledError:
+            raise SourceFailed(f"given up on part way through: {url}")
+        if status is not None and trouble is not QNetworkReply.NetworkError.NoError:
+            raise SourceFailed(f"the service answered {status}")
+        if trouble is not QNetworkReply.NetworkError.NoError:
+            raise SourceUnavailable(f"nothing answered at all: {trouble.name}")
+        try:
+            return json.loads(body.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError) as broken:
             raise SourceFailed(f"the answer could not be read: {broken}") from broken

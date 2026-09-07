@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 
 
@@ -46,9 +47,14 @@ class RunCancelled(DiscoveryError):
 
 
 class CatalogueSource(Protocol):
-    """Knows which artist a name means and what that artist released."""
+    """Knows which artist a name means and what that artist released.
 
-    def identify(self, name: str) -> tuple[str, ...]:
+    Every question takes `wanted`, asked while the request is in flight. A run
+    that has been stopped drops the request there and then rather than at the
+    end of it; a caller with nothing to stop leaves the default alone.
+    """
+
+    def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
         """Every artist this name reaches; empty where it reaches none.
 
         More than one is not an error here: it is the answer; the decision
@@ -56,11 +62,15 @@ class CatalogueSource(Protocol):
         """
         ...
 
-    def albums_of(self, identifier: str) -> tuple[ReleaseGroup, ...]:
+    def albums_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[ReleaseGroup, ...]:
         """Everything this artist released, with each album's stated genres."""
         ...
 
-    def genres_of(self, identifier: str) -> tuple[str, ...]:
+    def genres_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
         """What this artist is said to play; empty where nothing is said."""
         ...
 
@@ -68,8 +78,15 @@ class CatalogueSource(Protocol):
 class SimilaritySource(Protocol):
     """Knows which artists resemble a given one."""
 
-    def similar_to(self, identifier: str, wanted: int) -> tuple[SimilarArtist, ...]:
-        """The artists most like this one, at most `wanted` of them."""
+    def similar_to(
+        self, identifier: str, most: int, wanted: Wanted = always_wanted
+    ) -> tuple[SimilarArtist, ...]:
+        """The artists most like this one, at most `most` of them.
+
+        The count is `most` rather than `wanted`, which it was called until the
+        questions grew a `wanted` predicate: one name meaning a number here and
+        a question elsewhere is a name nobody can read twice the same way.
+        """
         ...
 
 

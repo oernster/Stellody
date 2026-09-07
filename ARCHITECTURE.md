@@ -19,7 +19,7 @@ has never been seen to fail is not yet a guard.
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
 | 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py` |
 | 11 | A read-only page is never focused by a click and is never what a dialog opens on; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py`, `tests/ui/test_dialog_first_stop.py` |
-| 12 | Exactly two modules may open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
+| 12 | Exactly four modules may hold the machinery to open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
 | 14 | The setup program is a client of the application, never a layer of it: `installer/` reads what it needs from `stellody`, while nothing under `stellody/` imports `installer`. | `tests/structural/test_layers.py::test_the_application_never_imports_the_setup_program` |
 | 15 | The product name is written in one place, for the application and for the setup program alike. No string a reader or the operating system meets spells it out again; every other surface builds it from `APP_NAME`. | `tests/structural/test_one_name.py::test_the_product_name_is_written_in_one_place` |
@@ -57,12 +57,25 @@ module and watching it fail, with the plant restored and the caches cleared.
 
 Invariant 12 is the second of that kind. A local-first player that quietly
 talks to the internet is not local-first whatever its README says, so the
-guarantee is held by a test rather than by a promise. It permits two modules
+guarantee is held by a test rather than by a promise. It permits four modules
 and no others. `stellody/infrastructure/cover_search.py` is reached when
 somebody asks for a cover; `stellody/infrastructure/update_source.py` asks
-GitHub whether a newer Stellody has been published. The composition root is the
-only thing that may name either, so the reach outward stays two named things
-rather than a capability spread through the application.
+GitHub whether a newer Stellody has been published;
+`stellody/infrastructure/fetching.py` is the one socket a discovery run asks
+its two catalogues through; `stellody/infrastructure/instance.py` is the
+channel a second launch tells the running copy to show itself over, which is a
+pipe on this machine rather than a way off it. The composition root is the only thing that may name any of them,
+so the reach outward stays a few named things rather than a capability spread
+through the application.
+
+The last of the four was found rather than added. The guard matched a package
+by its top-level name, which is right for `urllib` and useless for
+`PySide6.QtNetwork`, whose top level every window in the application imports.
+So the fetcher's move onto Qt's network stack on 2026-09-07 would have gone
+unwatched; the activation channel turned out to have been holding a local
+socket unseen since it was written. Dotted names are now matched in full, in
+each of the three ways an import can be spelled, every one of them proved by
+planting it.
 
 The count in that test is the point of it. Going from one permitted module to
 two was an edit somebody had to make and defend; a guard written as "the

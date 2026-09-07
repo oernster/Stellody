@@ -323,17 +323,26 @@ class Discovery:
         Asked whether it is still wanted before EVERY request rather than once
         per artist. Measured on 2026-09-07: a request may take the full twenty
         second timeout and may be attempted three times, so a run asked once
-        an artist could go on for minutes after being told to stop. A request
-        already in flight cannot be called back, so one of those is the floor;
-        what this removes is every one after it.
+        an artist could go on for minutes after being told to stop.
+
+        The same question goes down WITH the request, phrased the way a client
+        wants it. A request in flight used to be the floor on how quickly a
+        stop could be felt, since nothing could reach a thread waiting on a
+        socket; the catalogue clients now drop one part way through, so the
+        floor is gone rather than merely lowered.
         """
+
+        def wanted() -> bool:
+            """Whether the answer to this is still worth waiting for."""
+            return not cancelled()
+
         attempts = 0
         while True:
             if cancelled():
                 raise RunCancelled("stopped before the next request")
             attempts += 1
             try:
-                return call(*arguments)
+                return call(*arguments, wanted=wanted)
             except RateRefused:
                 if attempts >= RETRY_ATTEMPTS:
                     raise SourceFailed("refused after every attempt")

@@ -21,6 +21,7 @@ Nothing here opens a connection; `fetching.py` holds the socket.
 
 from __future__ import annotations
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.discovery import SimilarArtist
 from stellody.infrastructure.fetching import Fetcher
 
@@ -40,14 +41,18 @@ class ListenBrainz:
     def __init__(self, fetcher: Fetcher | None = None) -> None:
         self._fetch = fetcher if fetcher is not None else Fetcher()
 
-    def similar_to(self, identifier: str, wanted: int) -> tuple[SimilarArtist, ...]:
-        """The artists most like this one, at most `wanted` of them.
+    def similar_to(
+        self, identifier: str, most: int, wanted: Wanted = always_wanted
+    ) -> tuple[SimilarArtist, ...]:
+        """The artists most like this one, at most `most` of them.
 
         An entry with no name is passed over rather than carried: a candidate
         nobody can be told about is not a candidate.
         """
         answer = self._fetch.json(
-            SIMILAR_URL, {"artist_mbids": identifier, "algorithm": ALGORITHM}
+            SIMILAR_URL,
+            {"artist_mbids": identifier, "algorithm": ALGORITHM},
+            wanted,
         )
         if not isinstance(answer, list):
             return ()
@@ -61,6 +66,6 @@ class ListenBrainz:
             found.append(
                 SimilarArtist(name=name, identifier=str(entry.get("artist_mbid") or ""))
             )
-            if len(found) == wanted:
+            if len(found) == most:
                 break
         return tuple(found)

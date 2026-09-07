@@ -419,9 +419,10 @@ than parks, ruled on 2026-09-06: a resumable run means keeping partial state
 that has to be reconciled against a library that may have changed; the
 smallest genres cost seconds to run again.
 
-A stop is also felt rather than merely obeyed. Amended twice on 2026-09-07,
-after the button was reported as not working and then reported again once the
-first amendment turned out to have fixed only how it looked.
+A stop is also felt rather than merely obeyed. Amended three times on
+2026-09-07, after the button was reported as not working, then reported again
+once the first amendment turned out to have fixed only how it looked, then
+amended once more when the request in flight stopped being a floor.
 
 The run is asked whether it is still wanted before EVERY request rather than
 once an artist. One artist costs three requests, each of which may take the full
@@ -430,17 +431,26 @@ an artist could go on for minutes after being told to stop. The waits between
 attempts are sliced as well, so a stop lands inside one rather than at the end
 of it.
 
-The request already in flight still cannot be called back: nothing portable
+The request already in flight is killed rather than merely abandoned. It used
+to be the floor on how quickly a stop could be felt: nothing portable
 interrupts a thread waiting on a socket, while the wait for a response happens
-inside the call that opens it, before there is any object to close. So the run
-is not hurried at all. It is ABANDONED: cut loose from the window, reporting to
-nobody, ending in its own time at its next check or when its socket gives up.
+inside the call that opens it, before there is any object to close. So the
+fetcher no longer waits on one. Qt's network stack is event driven and a reply
+in flight can be dropped outright; the request is asked whether anybody still
+wants it every quarter second and ends the moment the answer is no. Measured on
+2026-09-07 against a service that accepts a connection then says nothing: the
+reply ends in under a millisecond, where the blocking client sat there until
+its twenty second timeout.
 
-That is what makes a stop instant rather than eventual, which is the ruling in
-FR-D27. What the abandoned run costs is its share of the request pacing: a new
-run started immediately is queued behind whatever the old one has left, since
-both go through the same gate and that gate exists to keep a promise to the
-services rather than to either run.
+The run itself is still not hurried. It is ABANDONED: cut loose from the
+window, reporting to nobody, ending in its own time. That is what makes a stop
+instant rather than eventual, which is the ruling in FR-D27. What the abandoned
+run costs is its share of the request pacing: a new run started immediately is
+queued behind whatever the old one has left, since both go through the same
+gate and that gate exists to keep a promise to the services rather than to
+either run. That cost is now bounded by the gap the terms ask for rather than
+by a request that will not answer, because the last request of an abandoned run
+dies with it instead of outliving it.
 
 Acceptance: Given a run in progress over an existing discovery file, when cancel
 is pressed, then no further request is issued, nothing of that run is retained
@@ -449,9 +459,10 @@ a refusal when cancel is pressed, then it stops within one slice of that wait
 rather than at the end of it; given a cancel arrives between two of the three
 requests made about one artist, then the remaining two are never issued; given
 a run is wedged inside a request that will not answer at all, then the stop
-still returns at once and the window is free to start another.
+still returns at once, the window is free to start another and that request is
+dropped rather than left to reach its timeout.
 
-Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_wiring.py::test_a_stop_is_acknowledged_before_the_run_has_stopped`
+Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_wiring.py::test_a_stop_is_acknowledged_before_the_run_has_stopped`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`
 
 ---
 

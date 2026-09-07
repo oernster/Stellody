@@ -19,6 +19,7 @@ from discovery_support import (
     nothing,
 )
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovering import (
     RETRY_ATTEMPTS,
     RETRY_PAUSE_SECONDS,
@@ -197,17 +198,47 @@ def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
     assert sum(waits.waited) == pytest.approx(owed)
 
 
+class Pressed:
+    """A cancel somebody can press between one question and the next."""
+
+    def __init__(self) -> None:
+        self.stopped = False
+
+    def __call__(self) -> bool:
+        """Whether the run has been told to stop."""
+        return self.stopped
+
+
+def test_the_question_handed_down_is_the_cancel_turned_round() -> None:
+    """A predicate wired the wrong way round abandons every request at once.
+
+    The run asks whether it has been CANCELLED; a client asks whether its
+    answer is still WANTED. The two are opposites, so the one place they meet
+    is worth an assertion of its own: nothing else in a passing run would
+    notice the sense being inverted.
+    """
+    cancel = Pressed()
+    run, catalogue, _, _ = make_run()
+    run.run((make_album("One", "A"),), ROCK, nothing, cancel)
+    handed = catalogue.wanted[0]
+    assert handed() is True, "still wanted while nobody has pressed anything"
+    cancel.stopped = True
+    assert handed() is False, "not wanted the moment the run is stopped"
+
+
 def test_other_errors_do_not_stop_the_run() -> None:
     """One artist nobody could answer about is not the end of the library."""
 
     class Awkward(Catalogue):
         """Fails on the first artist and answers about the second."""
 
-        def identify(self, name: str) -> tuple[str, ...]:
+        def identify(
+            self, name: str, wanted: Wanted = always_wanted
+        ) -> tuple[str, ...]:
             """Raise for One; behave for anybody else."""
             if name == "One":
                 raise SourceFailed("the catalogue fell over")
-            return super().identify(name)
+            return super().identify(name, wanted)
 
     run, _, _, _ = make_run(Awkward())
     albums = (make_album("One", "A"), make_album("Two", "B"))
@@ -254,7 +285,9 @@ def test_a_candidate_whose_genres_cannot_be_read_is_kept() -> None:
     class Silent(Catalogue):
         """Answers about artists and falls over on genres."""
 
-        def genres_of(self, identifier: str) -> tuple[str, ...]:
+        def genres_of(
+            self, identifier: str, wanted: Wanted = always_wanted
+        ) -> tuple[str, ...]:
             """Always fails, which must not lose the candidate."""
             raise SourceFailed("no genres today")
 

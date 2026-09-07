@@ -19,6 +19,7 @@ Nothing here opens a connection. It says what to ask and reads what came back;
 
 from __future__ import annotations
 
+from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.discovery import ReleaseGroup
 from stellody.domain.matching import ReleaseKind
 from stellody.domain.text import comparison_key
@@ -95,7 +96,7 @@ class MusicBrainz:
     def __init__(self, fetcher: Fetcher | None = None) -> None:
         self._fetch = fetcher if fetcher is not None else Fetcher()
 
-    def identify(self, name: str) -> tuple[str, ...]:
+    def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
         """Every artist whose name reads exactly as this one; usually one."""
         answer = self._fetch.json(
             ARTIST_URL,
@@ -104,16 +105,19 @@ class MusicBrainz:
                 "fmt": "json",
                 "limit": str(NAME_LIMIT),
             },
+            wanted,
         )
-        wanted = comparison_key(name)
+        sought = comparison_key(name)
         return tuple(
             str(entry["id"])
             for entry in _entries(answer, "artists")
             if entry.get("id")
-            and comparison_key(str(entry.get("name") or "")) == wanted
+            and comparison_key(str(entry.get("name") or "")) == sought
         )
 
-    def albums_of(self, identifier: str) -> tuple[ReleaseGroup, ...]:
+    def albums_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[ReleaseGroup, ...]:
         """The albums and EPs this artist released, with their stated genres."""
         answer = self._fetch.json(
             RELEASE_GROUP_URL,
@@ -124,6 +128,7 @@ class MusicBrainz:
                 "fmt": "json",
                 "limit": str(GROUP_LIMIT),
             },
+            wanted,
         )
         found = []
         for entry in _entries(answer, "release-groups"):
@@ -140,10 +145,12 @@ class MusicBrainz:
             )
         return tuple(found)
 
-    def genres_of(self, identifier: str) -> tuple[str, ...]:
+    def genres_of(
+        self, identifier: str, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
         """What this artist is said to play; empty where nothing is said."""
         answer = self._fetch.json(
-            f"{ARTIST_URL}/{identifier}", {"inc": "genres", "fmt": "json"}
+            f"{ARTIST_URL}/{identifier}", {"inc": "genres", "fmt": "json"}, wanted
         )
         if not isinstance(answer, dict):
             return ()
