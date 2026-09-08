@@ -15,13 +15,14 @@ from __future__ import annotations
 import pathlib
 
 from PySide6.QtCore import QRect, QSize, Qt
-from PySide6.QtGui import QIcon, QImage, QPainter, QPixmap
+from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPixmap
 
 # The cross is drawn over the whole square rather than inset, because it reads
 # as a strike across the icon rather than as a badge in a corner.
 TRANSPARENT = Qt.GlobalColor.transparent
 SMOOTH = Qt.TransformationMode.SmoothTransformation
 KEEP_ASPECT = Qt.AspectRatioMode.KeepAspectRatio
+CENTRED = Qt.AlignmentFlag.AlignCenter
 
 
 def _scaled(path: pathlib.Path, size: QSize) -> QPixmap | None:
@@ -47,6 +48,31 @@ def plain_icon(path: pathlib.Path | None) -> QIcon:
     if path is None:
         return QIcon()
     return QIcon(str(path))
+
+
+def glyph_icon(glyph: str, size_px: int, colour: str) -> QIcon:
+    """One character drawn as artwork, at the size a button will draw it.
+
+    For a control whose picture is a shape every font already carries, where
+    a file would be a second thing to ship and to keep in step with the
+    others. Measured on 2026-09-08 against this machine's own font files:
+    Segoe UI Symbol carries the two joined squares, so Qt's own fallback
+    finds it where the interface font does not.
+
+    Drawn in a colour handed in rather than in whatever the palette happens to
+    be, since an icon is a picture and knows nothing about appearances.
+    """
+    size = QSize(size_px, size_px)
+    canvas = QPixmap(size)
+    canvas.fill(TRANSPARENT)
+    painter = QPainter(canvas)
+    painter.setPen(QColor(colour))
+    face = painter.font()
+    face.setPixelSize(size_px)
+    painter.setFont(face)
+    painter.drawText(QRect(0, 0, size_px, size_px), CENTRED, glyph)
+    painter.end()
+    return QIcon(canvas)
 
 
 def struck_through(

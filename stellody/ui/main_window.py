@@ -190,7 +190,9 @@ class MainWindow(
         self.start_editing_tags(tag_editing)
         self.start_searching()
         self.start_filtering()
-        self.start_discovering(discovery, write_discovery, discovery_results, expansion)
+        self.start_discovering(
+            discovery, write_discovery, discovery_results, expansion, shopping
+        )
         self.start_keeping_place()
         self._tray = LibraryTray(
             self,

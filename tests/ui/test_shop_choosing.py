@@ -12,7 +12,7 @@ from results_support import Asking, candidate_in, gaps_with, made, rows_under
 from stellody.application.shopping import Shopping
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.shopping import Shop, WantedAlbum
-from stellody.ui.results_dialog import COPIED, COPY_LABEL
+from stellody.ui.results_dialog import CONTROL_ICON_PX, COPIED, COPY_LABEL
 from stellody.ui.results_ticks import TICKED, is_tickable
 
 QOBUZ = Shop(name="Qobuz", template="https://q/?q={artist}%20{album}")
@@ -219,6 +219,22 @@ def test_the_ticks_and_the_controls_are_stops_on_the_ring(application) -> None:
     for control in (dialog.copy_button, dialog.shops_button, dialog.close_button):
         assert control.focusPolicy() is not control.focusPolicy().NoFocus
     assert dialog.tree.focusPolicy() is not dialog.tree.focusPolicy().NoFocus
+
+
+def test_the_controls_wear_their_artwork_at_the_size_the_trays_use(
+    application,
+) -> None:
+    """Reported 2026-09-08: the shop picture arrived far too small to notice.
+
+    Qt draws an icon at its own small default unless a button is told
+    otherwise; nothing here told it. The size is read from the bottom strip
+    rather than stated again, so the two cannot drift apart.
+    """
+    dialog, _opener, _clipboard = with_shopping((gaps_with(albums=1),))
+    for control in (dialog.copy_button, dialog.shops_button):
+        assert control.iconSize().width() == CONTROL_ICON_PX, control.text()
+        assert control.iconSize().height() == CONTROL_ICON_PX, control.text()
+        assert not control.icon().isNull(), control.text()
 
 
 class TestADialogWithNoShoppingWiredIn:

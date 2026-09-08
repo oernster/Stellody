@@ -49,6 +49,8 @@ instruction instead.
 
 from __future__ import annotations
 
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
@@ -60,8 +62,9 @@ from PySide6.QtWidgets import (
 from stellody.application.shopping import Shopping
 from stellody.domain.discovery import Gaps
 from stellody.shared import resources
+from stellody.ui.bottom_tray import BOTTOM_ICON_PX
 from stellody.ui.dialogs import FirstStopDialog, title_label
-from stellody.ui.icons import plain_icon
+from stellody.ui.icons import glyph_icon, plain_icon
 from stellody.ui.results_ticks import anything_ticked, ticked_albums
 from stellody.ui.results_top import ResultsTop
 from stellody.ui.results_tree import (
@@ -93,10 +96,17 @@ SHOPS_LABEL = "Find in shops"
 # nothing visible is still a press somebody saw work.
 COPIED = "Copied"
 # What the two controls carry. The shop artwork is Oliver's; the copy artwork
-# is the two squares everything else in the world uses for it. A control whose
-# artwork is missing keeps its words rather than becoming a blank square.
+# is the two joined squares everything else in the world uses for it, drawn
+# from the character rather than shipped as a file, since it is a shape every
+# machine already has. Measured on 2026-09-08 against this machine's own font
+# files: Segoe UI Symbol carries it. A control whose artwork is missing keeps
+# its words rather than becoming a blank square.
 SHOP_ICON = "shop.png"
-COPY_ICON = "copy.png"
+COPY_GLYPH = "⧉"
+# The same size the switches along the foot of the window are drawn at, which
+# is the smaller of the two the trays use. Read from there rather than stated
+# again, so a picture in a dialog cannot drift from a picture in a tray.
+CONTROL_ICON_PX = BOTTOM_ICON_PX
 
 
 class ResultsDialog(FirstStopDialog):
@@ -176,9 +186,11 @@ class ResultsDialog(FirstStopDialog):
     def _buttons(self) -> QHBoxLayout:
         """What can be done with the ticked albums, then the way out."""
         row = QHBoxLayout()
-        self.copy_button = self._control(COPY_LABEL, COPY_ICON, self.copy_ticked)
+        copy_artwork = glyph_icon(COPY_GLYPH, CONTROL_ICON_PX, self._colour.text)
+        self.copy_button = self._control(COPY_LABEL, copy_artwork, self.copy_ticked)
         row.addWidget(self.copy_button)
-        self.shops_button = self._control(SHOPS_LABEL, SHOP_ICON, self.open_shops)
+        shop_artwork = plain_icon(resources.find_asset(SHOP_ICON))
+        self.shops_button = self._control(SHOPS_LABEL, shop_artwork, self.open_shops)
         row.addWidget(self.shops_button)
         row.addStretch()
         self.close_button = QPushButton(CLOSE_LABEL, self)
@@ -187,17 +199,20 @@ class ResultsDialog(FirstStopDialog):
         row.addWidget(self.close_button)
         return row
 
-    def _control(self, label: str, artwork: str, pressed) -> QPushButton:
+    def _control(self, label: str, artwork: QIcon, pressed) -> QPushButton:
         """One control acting on the ticked albums, wearing its artwork.
 
         The words stay whatever the artwork does, since a picture-only button
         here would be two unlabelled squares under a list; the artwork is what
         makes them findable rather than what says what they do.
+
+        Sized to the artwork like every other picture in the application.
+        Reported on 2026-09-08: left to Qt's own default the shop picture
+        arrived at a size nobody would notice under a list this long.
         """
         button = QPushButton(label, self)
-        found = resources.find_asset(artwork)
-        if found is not None:
-            button.setIcon(plain_icon(found))
+        button.setIcon(artwork)
+        button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
         button.setAutoDefault(False)
         button.clicked.connect(pressed)
         return button
