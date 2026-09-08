@@ -30,6 +30,7 @@ of saying the network is down.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
@@ -46,6 +47,7 @@ from stellody.application.discovery_ports import (
 from stellody.application.ports import CancelledCheck
 from stellody.application.remembering import (
     CatalogueMemory,
+    Clock,
     NothingKept,
     RememberingCatalogue,
     RememberingSimilarity,
@@ -100,6 +102,9 @@ class Discovery:
     pause: Pause
     memory: GenreMemory = field(default_factory=NothingRemembered)
     recall: CatalogueMemory = field(default_factory=NothingKept)
+    # What a remembered answer's age is measured against. Injected for the
+    # reason the pause is: a test standing a month from now must not wait one.
+    now: Clock = time.time
 
     def run(
         self,
@@ -124,8 +129,8 @@ class Discovery:
         try:
             return replace(
                 self,
-                catalogue=RememberingCatalogue(self.catalogue, kept),
-                similarity=RememberingSimilarity(self.similarity, kept),
+                catalogue=RememberingCatalogue(self.catalogue, kept, self.now),
+                similarity=RememberingSimilarity(self.similarity, kept, self.now),
             )._asked(albums, ticked, report, cancelled)
         finally:
             self.recall.remember(kept)

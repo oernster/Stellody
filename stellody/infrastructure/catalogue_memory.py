@@ -78,6 +78,11 @@ def _kept(held: object) -> Recollection:
             )
             for question, found in _mapping(held, "similar").items()
         },
+        written_at={
+            str(question): float(when)
+            for question, when in _mapping(held, "written_at").items()
+            if isinstance(when, (int, float))
+        },
     )
 
 
@@ -93,6 +98,7 @@ def _as_written(kept: Recollection) -> dict:
             question: [artist_as(artist) for artist in found]
             for question, found in kept.similar.items()
         },
+        "written_at": dict(kept.written_at),
     }
 
 

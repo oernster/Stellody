@@ -24,6 +24,7 @@ Nothing here opens a connection. It says what to ask and what to keep;
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 
 from stellody.application.asking import (
@@ -35,6 +36,7 @@ from stellody.application.discovery_ports import CatalogueSource
 from stellody.application.ports import CancelledCheck
 from stellody.application.remembering import (
     CatalogueMemory,
+    Clock,
     NothingKept,
     RememberingCatalogue,
 )
@@ -58,6 +60,7 @@ class Expansion:
     catalogue: CatalogueSource
     pause: Pause
     recall: CatalogueMemory = field(default_factory=NothingKept)
+    now: Clock = time.time
 
     def releases_of(
         self, identifier: str, cancelled: CancelledCheck = never_stopped
@@ -77,7 +80,7 @@ class Expansion:
         try:
             return everything_offered(
                 asked(
-                    RememberingCatalogue(self.catalogue, kept).albums_of,
+                    RememberingCatalogue(self.catalogue, kept, self.now).albums_of,
                     cancelled,
                     self.pause,
                     identifier,

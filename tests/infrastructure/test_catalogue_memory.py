@@ -44,6 +44,7 @@ def _full() -> Recollection:
                 SimilarArtist(name="Muddy Waters", identifier="mw-id"),
             )
         },
+        written_at={f"albums:{WOLF}": 1_700_000_000.0},
     )
 
 

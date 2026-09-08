@@ -18,12 +18,18 @@ nothing is known about is asked about at all. Two runs over the same library
 then give the same answer; a refusal can no longer take away something
 already known.
 
-**What this deliberately does NOT do is expire.** A remembered answer stands
-until something clears it. That is the whole point: an answer with a lifetime
-is an answer that differs before and after the lifetime, which is the fault
-being fixed. The cost is that a record released after an artist was first
-asked about will not appear until the memory is cleared, which is a decision
-for a control somebody presses rather than for a clock nobody sees.
+**An answer does age, over a month rather than over minutes.** Oliver's own
+statement of what is wanted: the same run over the same library should differ
+over days or weeks, because the catalogues themselves change; it should not
+differ over five minutes, because they do not. So an answer stands for
+`MEMORY_LIFE_DAYS` and is then asked about again, which is the only way a
+record released since would ever be seen.
+
+**A refresh that cannot be made keeps what it had.** An artist whose second
+asking is refused is reported as a failure of that run; the answer already in
+the discovery file is then carried over for it, so nothing is lost by trying.
+That is `carrying_over.py` doing its job, which is why nothing here catches
+anything.
 
 Nothing here opens a connection or reads a clock. It stands between the run
 and a catalogue, keeping what it is given in a `Recollection` that whoever
@@ -32,6 +38,8 @@ built it decides what to do with.
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -41,6 +49,19 @@ from stellody.application.discovery_ports import (
     SimilaritySource,
 )
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+
+# How long an answer stands before it is asked about again. A month rather
+# than a day, since what a catalogue holds about an artist who released a
+# record in 1969 does not change often; long enough that a run over a library
+# asks nothing at all most of the time, short enough that a record released
+# this year is found this year.
+MEMORY_LIFE_DAYS = 30
+SECONDS_A_DAY = 86400
+MEMORY_LIFE_S = MEMORY_LIFE_DAYS * SECONDS_A_DAY
+
+# Answers the seconds since the epoch. Injected rather than reached for, so a
+# test can stand a month away from now without waiting one.
+Clock = Callable[[], float]
 
 
 @dataclass(slots=True)
@@ -56,6 +77,15 @@ class Recollection:
     identifiers: dict[str, tuple[str, ...]] = field(default_factory=dict)
     albums: dict[str, tuple[ReleaseGroup, ...]] = field(default_factory=dict)
     similar: dict[str, tuple[SimilarArtist, ...]] = field(default_factory=dict)
+    # When each answer was written down, by the question it answers, kept in
+    # one place rather than beside each answer so the three shapes above stay
+    # what they are. A question with no stamp is one written by a Stellody
+    # that did not keep them, so it is asked again.
+    written_at: dict[str, float] = field(default_factory=dict)
+
+    def standing(self, question: str, now: float) -> bool:
+        """Whether the answer to this question is still worth reusing."""
+        return now - self.written_at.get(question, 0.0) < MEMORY_LIFE_S
 
 
 class CatalogueMemory(Protocol):
@@ -105,23 +135,33 @@ class RememberingCatalogue:
 
     catalogue: CatalogueSource
     kept: Recollection
+    now: Clock = time.time
+
+    def _standing(self, kind: str, key: str, held: dict) -> bool:
+        """Whether this answer is both known and still young enough to use."""
+        return key in held and self.kept.standing(f"{kind}:{key}", self.now())
+
+    def _kept(self, kind: str, key: str, held: dict, found: object) -> None:
+        """Write an answer down, with when it was written."""
+        held[key] = found
+        self.kept.written_at[f"{kind}:{key}"] = self.now()
 
     def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
         """Who this name means, from memory where it is already known."""
-        if name in self.kept.identifiers:
+        if self._standing("identifiers", name, self.kept.identifiers):
             return self.kept.identifiers[name]
         found = self.catalogue.identify(name, wanted)
-        self.kept.identifiers[name] = found
+        self._kept("identifiers", name, self.kept.identifiers, found)
         return found
 
     def albums_of(
         self, identifier: str, wanted: Wanted = always_wanted
     ) -> tuple[ReleaseGroup, ...]:
         """What this artist released, from memory where it is already known."""
-        if identifier in self.kept.albums:
+        if self._standing("albums", identifier, self.kept.albums):
             return self.kept.albums[identifier]
         found = self.catalogue.albums_of(identifier, wanted)
-        self.kept.albums[identifier] = found
+        self._kept("albums", identifier, self.kept.albums, found)
         return found
 
     def genres_of(
@@ -142,14 +182,17 @@ class RememberingSimilarity:
 
     similarity: SimilaritySource
     kept: Recollection
+    now: Clock = time.time
 
     def similar_to(
         self, identifier: str, most: int, wanted: Wanted = always_wanted
     ) -> tuple[SimilarArtist, ...]:
         """Who resembles this artist, from memory where it is already known."""
         question = similar_key(identifier, most)
-        if question in self.kept.similar:
+        stamp = f"similar:{question}"
+        if question in self.kept.similar and self.kept.standing(stamp, self.now()):
             return self.kept.similar[question]
         found = self.similarity.similar_to(identifier, most, wanted)
         self.kept.similar[question] = found
+        self.kept.written_at[stamp] = self.now()
         return found

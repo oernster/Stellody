@@ -29,6 +29,7 @@ from discovery_support import (
 from stellody.application.carrying_over import carried_over
 from stellody.application.discovering import Discovery
 from stellody.application.remembering import (
+    MEMORY_LIFE_S,
     NothingKept,
     Recollection,
     RememberingCatalogue,
@@ -40,6 +41,20 @@ from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 
 ROCK = ("Rock",)
 WOLF = "wolf-id"
+# A fixed moment to stand answers at, so nothing here waits for a clock.
+NOW = 1_700_000_000.0
+
+
+def _now() -> float:
+    """The moment every test here is standing at."""
+    return NOW
+
+
+def _stamped(kept: Recollection, *questions: str) -> Recollection:
+    """The same recollection, with these answers written down just now."""
+    for question in questions:
+        kept.written_at[question] = NOW
+    return kept
 
 
 class Keeping:
@@ -93,9 +108,10 @@ class TestTwoRunsOverOneLibrary:
 
 class TestAskingOnlyWhatIsUnknown:
     def test_an_identity_already_known_is_not_asked_for(self) -> None:
-        kept = Recollection(identifiers={"U2": ("u2-id",)})
+        kept = _stamped(Recollection(identifiers={"U2": ("u2-id",)}), "identifiers:U2")
         catalogue = Catalogue()
-        assert RememberingCatalogue(catalogue, kept).identify("U2") == ("u2-id",)
+        found = RememberingCatalogue(catalogue, kept, _now).identify("U2")
+        assert found == ("u2-id",)
         assert catalogue.identified == []
 
     def test_an_identity_not_known_is_asked_for_and_kept(self) -> None:
@@ -107,9 +123,9 @@ class TestAskingOnlyWhatIsUnknown:
 
     def test_albums_already_known_are_not_asked_for(self) -> None:
         held = (ReleaseGroup(title="Pop"),)
-        kept = Recollection(albums={WOLF: held})
+        kept = _stamped(Recollection(albums={WOLF: held}), f"albums:{WOLF}")
         catalogue = Catalogue()
-        assert RememberingCatalogue(catalogue, kept).albums_of(WOLF) == held
+        assert RememberingCatalogue(catalogue, kept, _now).albums_of(WOLF) == held
         assert catalogue.albums_asked == []
 
     def test_albums_not_known_are_asked_for_and_kept(self) -> None:
@@ -127,9 +143,13 @@ class TestAskingOnlyWhatIsUnknown:
 
     def test_similar_artists_already_known_are_not_asked_for(self) -> None:
         held = (SimilarArtist(name="Muddy Waters", identifier="mw"),)
-        kept = Recollection(similar={similar_key(WOLF, 5): held})
+        kept = _stamped(
+            Recollection(similar={similar_key(WOLF, 5): held}),
+            f"similar:{similar_key(WOLF, 5)}",
+        )
         similarity = Similarity()
-        assert RememberingSimilarity(similarity, kept).similar_to(WOLF, 5) == held
+        found = RememberingSimilarity(similarity, kept, _now).similar_to(WOLF, 5)
+        assert found == held
         assert similarity.asked == []
 
     def test_similar_artists_not_known_are_asked_for_and_kept(self) -> None:
@@ -157,9 +177,26 @@ class TestCarryingAnAnswerOver:
     """A run may add to what is known and may correct it. It may not take it
     away because a service said no."""
 
-    def test_a_run_that_failed_at_nothing_is_left_alone(self) -> None:
+    def test_a_run_that_failed_at_nothing_keeps_its_own_answer(self) -> None:
         report = RunReport(outcome=RunOutcome.COMPLETED, gaps=(Gaps(artist="U2"),))
-        assert carried_over(report, (Gaps(artist="Elbow"),)) is report
+        carried = carried_over(report, (Gaps(artist="Elbow"),))
+        assert carried.gaps == (Gaps(artist="U2"),), "and takes nothing else on"
+
+    def test_the_artists_come_out_in_one_order_however_they_went_in(self) -> None:
+        """An artist carried over would otherwise sit where the carrying put
+        it, while the same artist answered for directly sits in library order.
+        The same content in two orders is two different screens."""
+        report = RunReport(
+            outcome=RunOutcome.COMPLETED,
+            gaps=(Gaps(artist="Wire"), Gaps(artist="Aztec Camera")),
+            failed=(SourceFailure(artist="Móż", reason="refused"),),
+        )
+        carried = carried_over(report, (Gaps(artist="Móż"),))
+        assert [gaps.artist for gaps in carried.gaps] == [
+            "Aztec Camera",
+            "Móż",
+            "Wire",
+        ]
 
     def test_an_artist_that_failed_keeps_what_was_known_about_it(self) -> None:
         known = Gaps(artist="U2", albums=(ReleaseGroup(title="Pop"),))
@@ -180,3 +217,51 @@ class TestCarryingAnAnswerOver:
         carried = carried_over(report, ())
         assert carried.gaps == ()
         assert [entry.artist for entry in carried.failed] == ["U2"]
+
+
+class TestHowLongAnAnswerStands:
+    """Oliver's own statement of what is wanted, on 2026-09-08: the same run
+    over the same library should differ over days or weeks, because the
+    catalogues themselves change; it should not differ over five minutes,
+    because they do not.
+    """
+
+    def test_an_answer_from_this_month_is_used_rather_than_asked_for(self) -> None:
+        kept = _stamped(Recollection(albums={WOLF: ()}), f"albums:{WOLF}")
+        catalogue = Catalogue()
+        RememberingCatalogue(catalogue, kept, _now).albums_of(WOLF)
+        assert catalogue.albums_asked == []
+
+    def test_an_answer_older_than_that_is_asked_about_again(self) -> None:
+        """Otherwise a record released since would never be seen."""
+        kept = Recollection(albums={WOLF: ()})
+        kept.written_at[f"albums:{WOLF}"] = NOW - MEMORY_LIFE_S - 1
+        catalogue = Catalogue(albums={WOLF: (ReleaseGroup(title="New One"),)})
+        found = RememberingCatalogue(catalogue, kept, _now).albums_of(WOLF)
+        assert [group.title for group in found] == ["New One"]
+        assert catalogue.albums_asked == [WOLF]
+
+    def test_asking_again_starts_the_month_over(self) -> None:
+        kept = Recollection(albums={WOLF: ()})
+        kept.written_at[f"albums:{WOLF}"] = NOW - MEMORY_LIFE_S - 1
+        RememberingCatalogue(Catalogue(), kept, _now).albums_of(WOLF)
+        assert kept.written_at[f"albums:{WOLF}"] == NOW
+
+    def test_an_answer_with_no_age_at_all_is_asked_about_again(self) -> None:
+        """Written by a Stellody that kept no ages, so its age is unknown."""
+        kept = Recollection(identifiers={"U2": ("u2-id",)})
+        catalogue = Catalogue(identities={"U2": ("u2-id",)})
+        RememberingCatalogue(catalogue, kept, _now).identify("U2")
+        assert catalogue.identified == ["U2"]
+
+    def test_similar_artists_age_the_same_way(self) -> None:
+        kept = Recollection(similar={similar_key(WOLF, 5): ()})
+        kept.written_at[f"similar:{similar_key(WOLF, 5)}"] = NOW - MEMORY_LIFE_S - 1
+        similarity = Similarity()
+        RememberingSimilarity(similarity, kept, _now).similar_to(WOLF, 5)
+        assert similarity.asked == [(WOLF, 5)]
+
+    def test_a_month_is_what_it_stands_for(self) -> None:
+        """Stated rather than read back off the constant, since a test that
+        reads it agrees with every value it could hold."""
+        assert MEMORY_LIFE_S == 30 * 86400
