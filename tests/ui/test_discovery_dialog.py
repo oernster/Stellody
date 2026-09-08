@@ -16,7 +16,13 @@ from PySide6.QtGui import QKeyEvent
 
 from stellody.domain.genres import GENRES
 from stellody.ui.dialogs import CONTROL_ICON_PX
-from stellody.ui.discovery_dialog import RESTING, TITLE, DiscoveryDialog
+from stellody.ui.discovery_dialog import (
+    CLEAR_LABEL,
+    RESTING,
+    SELECT_ALL_LABEL,
+    TITLE,
+    DiscoveryDialog,
+)
 from stellody.ui.theme import DIALOG_TITLE_FONT_PX, Mode, stylesheet
 
 
@@ -49,6 +55,54 @@ def test_action_needs_a_genre() -> None:
     assert not dialog.find_button.isEnabled()
     dialog.grid.boxes[GENRES[0]].setChecked(True)
     assert dialog.find_button.isEnabled()
+
+
+def test_the_sweep_ticks_every_genre_in_one_press() -> None:
+    """Ticking 34 boxes by hand to ask about a whole library is a chore."""
+    dialog, _ = make_dialog()
+    dialog.select_button.click()
+    assert set(dialog.chosen()) == set(GENRES)
+
+
+def test_a_second_press_clears_them_again() -> None:
+    """With everything ticked the only thing left to offer is clearing."""
+    dialog, _ = make_dialog()
+    dialog.select_button.click()
+    dialog.select_button.click()
+    assert dialog.chosen() == ()
+
+
+def test_the_sweep_says_what_a_press_would_do() -> None:
+    """The convention both trays already follow, applied to this control."""
+    dialog, _ = make_dialog()
+    assert dialog.select_button.text() == SELECT_ALL_LABEL
+    dialog.select_button.click()
+    assert dialog.select_button.text() == CLEAR_LABEL
+
+
+def test_ticking_the_last_box_by_hand_moves_the_sweep_too() -> None:
+    """Read off the boxes rather than remembered from the last press."""
+    dialog, _ = make_dialog()
+    for name in GENRES:
+        dialog.grid.boxes[name].setChecked(True)
+    assert dialog.select_button.text() == CLEAR_LABEL
+    dialog.grid.boxes[GENRES[0]].setChecked(False)
+    assert dialog.select_button.text() == SELECT_ALL_LABEL
+
+
+def test_the_sweep_is_a_button_rather_than_a_tick_box() -> None:
+    """Distinct from the genres, so it cannot read as one more of them."""
+    dialog, _ = make_dialog()
+    assert dialog.select_button not in dialog.grid.boxes.values()
+    assert set(dialog.grid.boxes) == set(GENRES)
+
+
+def test_sweeping_leaves_the_dialog_open() -> None:
+    """Somebody who swept by accident has lost nothing."""
+    dialog, watched = make_dialog()
+    dialog.select_button.click()
+    assert dialog.isVisible() is False or dialog.result() == 0
+    assert watched.started == [], "a sweep asks for nothing"
 
 
 def test_the_ticks_are_what_a_run_is_given() -> None:

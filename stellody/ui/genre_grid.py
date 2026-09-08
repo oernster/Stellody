@@ -222,6 +222,26 @@ class GenreGrid(QWidget):
                 if main == name:
                     self.boxes[style].setChecked(False)
 
+    def set_all(self, on: bool) -> None:
+        """Tick or clear every box in one go.
+
+        Held here rather than in either dialog, since both of them want it and
+        two loops over the same boxes are two chances to walk a different set.
+        Each box is set individually, so the coupling rules in `_agree_with`
+        see every change exactly as they would see a press.
+        """
+        for box in self.boxes.values():
+            box.setChecked(on)
+
+    def all_ticked(self) -> bool:
+        """Whether there is nothing left to tick.
+
+        Asked rather than counted by the caller, because what "everything"
+        means is this grid's business: the catalogue decides how many boxes
+        there are and a dialog should not have to know.
+        """
+        return all(box.isChecked() for box in self.boxes.values())
+
     def chosen(self) -> tuple[str, ...]:
         """Every genre ticked, in catalogue order.
 

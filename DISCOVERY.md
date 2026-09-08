@@ -204,6 +204,43 @@ Verified by: `tests/ui/test_discovery_dialog.py::test_action_needs_a_genre`
 
 ---
 
+**FR-D44 Every genre can be ticked in one press**
+
+Priority: Must
+
+Requirement: The discovery dialog shall carry a control, distinct from the
+genre tick boxes, that ticks every genre in the catalogue. Where every genre is
+already ticked that control shall instead clear them all. It shall name
+whichever of the two a press would do, read from the boxes rather than from the
+last press it received. Pressing it shall not close the dialog and shall start
+no run.
+
+Rationale: Asked for by Oliver on 2026-09-08. The catalogue holds 34 boxes, so
+asking about a whole library meant 34 presses; that is the kind of tidying a
+dialog should do for somebody. A push button rather than a 35th tick box,
+placed where the filter dialog's Clear already sits, because a tick box here
+would read as one more genre and would be swept by its own sweep.
+
+**It names its next press**, which is the convention both trays already follow
+and the reason one control carries both meanings rather than two sitting side
+by side. It is read off the boxes so that ticking the last genre by hand moves
+it too, which a control remembering its own last press would get wrong.
+
+It does not close, for the reason FR-D25 gives for Clear in the filter dialog:
+sweeping and then asking is two presses, while somebody who swept by accident
+has lost nothing.
+
+Acceptance: Given a dialog with nothing ticked, when the control is read, then
+it offers to select all; when it is pressed, then every genre in the catalogue
+is ticked, the dialog is still open and no run has started; when it is pressed
+again, then nothing is ticked. Given every genre ticked by hand, then the
+control offers to clear; given one then unticked by hand, then it offers to
+select all again.
+
+Verified by: `tests/ui/test_discovery_dialog.py::test_the_sweep_ticks_every_genre_in_one_press`, `tests/ui/test_discovery_dialog.py::test_a_second_press_clears_them_again`, `tests/ui/test_discovery_dialog.py::test_the_sweep_says_what_a_press_would_do`, `tests/ui/test_discovery_dialog.py::test_ticking_the_last_box_by_hand_moves_the_sweep_too`, `tests/ui/test_discovery_dialog.py::test_the_sweep_is_a_button_rather_than_a_tick_box`, `tests/ui/test_discovery_dialog.py::test_sweeping_leaves_the_dialog_open`
+
+---
+
 **FR-D05 Who a run asks about**
 
 Priority: Must
@@ -1523,7 +1560,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D43 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D44 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.

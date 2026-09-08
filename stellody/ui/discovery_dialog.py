@@ -34,6 +34,14 @@ from stellody.ui.genre_grid import ASKING, GenreGrid
 TITLE = "Discover new music"
 FIND_LABEL = "Find"
 CLOSE_LABEL = "Close"
+# One control naming what a press would do, which is the convention both trays
+# already follow. Ticking 34 boxes by hand to ask about a whole library is the
+# kind of tidying a dialog should do for somebody; once they are all ticked the
+# only thing left to want is them gone. A push button rather than a 35th tick
+# box, so it cannot read as one more genre: the same shape the filter dialog's
+# Clear already has, in the same place.
+SELECT_ALL_LABEL = "Select all"
+CLEAR_LABEL = "Clear"
 # What the dialog says before anything has been asked of it. It names where the
 # answer will appear, since the dialog will not be there to show it.
 RESTING = (
@@ -76,8 +84,11 @@ class DiscoveryDialog(FirstStopDialog):
         self._ticks_changed()
 
     def _buttons(self) -> QHBoxLayout:
-        """Away to the left, then the one that does the work."""
+        """The sweep away to the left, then away, then the one that works."""
         row = QHBoxLayout()
+        self.select_button = QPushButton(SELECT_ALL_LABEL, self)
+        self.select_button.clicked.connect(self._select_or_clear)
+        row.addWidget(self.select_button)
         row.addStretch()
         self.close_button = wearing(
             QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
@@ -103,8 +114,26 @@ class DiscoveryDialog(FirstStopDialog):
 
         A run over no genres has no artists to look up, so offering it invites
         a press that can only report emptiness.
+
+        The sweep says what a press would do rather than what the boxes are:
+        with anything left to tick it offers to tick it; with everything
+        ticked the only thing left to offer is clearing. Read off the boxes
+        rather than remembered, since a listener ticking the last one by hand
+        moves it without touching this.
         """
         self.find_button.setEnabled(bool(self.chosen()))
+        self.select_button.setText(
+            CLEAR_LABEL if self.grid.all_ticked() else SELECT_ALL_LABEL
+        )
+
+    def _select_or_clear(self) -> None:
+        """Tick everything, else clear it where there is nothing left to tick.
+
+        It does not close, for the reason the filter's Clear does not: sweeping
+        and then asking is two presses, while somebody who swept by accident
+        has lost nothing.
+        """
+        self.grid.set_all(not self.grid.all_ticked())
 
     def _find(self) -> None:
         """Hand the ticked genres over, then get out of the way.

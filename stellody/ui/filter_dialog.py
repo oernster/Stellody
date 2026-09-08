@@ -89,8 +89,7 @@ class FilterDialog(FirstStopDialog):
         It does not close: clearing and then showing the whole library is two
         presses, while somebody who cleared by accident has lost nothing.
         """
-        for box in self.grid.boxes.values():
-            box.setChecked(False)
+        self.grid.set_all(False)
         self.unstated_box.setChecked(False)
 
     def narrowing(self) -> Narrowing:
