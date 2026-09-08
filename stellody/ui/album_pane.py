@@ -39,6 +39,7 @@ from stellody.domain.album import Album
 from stellody.domain.text import year_of
 from stellody.shared import resources
 from stellody.ui.covering import RowCover
+from stellody.ui.dialogs import CLOSE_ICON
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.row_text import Column
 from stellody.ui.stars import StarRating
@@ -145,8 +146,16 @@ class AlbumPane(QWidget):
         self.play_button = _button(
             self, resources.play_icon_path(), PLAY_TOOLTIP, self.play_wanted.emit
         )
+        # The close picture rather than the negative mark. That mark is what
+        # every switch wears LAID OVER another picture to say it is off; alone
+        # on a control it says nothing about what a press would do. This press
+        # closes the album, so it wears what every Close in the application
+        # wears. Ruled on 2026-09-08.
         self.close_button = _button(
-            self, resources.negative_icon_path(), "Close this album", self.closed.emit
+            self,
+            resources.find_asset(CLOSE_ICON),
+            "Close this album",
+            self.closed.emit,
         )
         self._model = model
         self.columns = tuple(_track_column(self, model) for _ in range(TRACK_COLUMNS))
