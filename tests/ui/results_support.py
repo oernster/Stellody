@@ -123,7 +123,7 @@ def made(
 
 def candidate_in(dialog: ResultsDialog, at: int = 0) -> QTreeWidgetItem:
     """The candidate artist sitting at this place under the first source."""
-    source = dialog.tree.topLevelItem(0)
+    source = dialog.sources[0]
     return source.child(source.childCount() - 1 - at)
 
 

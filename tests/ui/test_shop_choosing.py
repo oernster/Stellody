@@ -78,7 +78,7 @@ def with_shopping(gaps, asking=None, **shops):
 
 def albums_in(dialog):
     """Every row that can be ticked, in the order they are drawn."""
-    source = dialog.tree.topLevelItem(0)
+    source = dialog.sources[0]
     return [
         source.child(at)
         for at in range(source.childCount())
@@ -100,7 +100,7 @@ def test_an_artist_row_carries_no_tick_box(application) -> None:
     dialog, _opener, _clipboard = with_shopping(
         (gaps_with(albums=1, artists=1),), asking=Asking()
     )
-    source = dialog.tree.topLevelItem(0)
+    source = dialog.sources[0]
     assert not is_tickable(source)
     assert not is_tickable(source.child(source.childCount() - 1))
 
@@ -219,7 +219,10 @@ def test_the_ticks_and_the_controls_are_stops_on_the_ring(application) -> None:
     dialog, _opener, _clipboard = with_shopping((gaps_with(albums=1),))
     for control in (dialog.copy_button, dialog.shops_button, dialog.close_button):
         assert control.focusPolicy() is not control.focusPolicy().NoFocus
-    assert dialog.tree.focusPolicy() is not dialog.tree.focusPolicy().NoFocus
+    assert (
+        dialog.columns.trees[0].focusPolicy()
+        is not dialog.columns.trees[0].focusPolicy().NoFocus
+    )
 
 
 def test_the_controls_wear_their_artwork_at_the_size_the_trays_use(

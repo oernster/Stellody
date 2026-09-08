@@ -68,13 +68,18 @@ from stellody.ui.dialogs import (
     title_label,
     wearing,
 )
+from stellody.ui.results_columns import ResultsColumns
+from stellody.ui.results_room import (
+    DIALOG_HEIGHT_PX,
+    DIALOG_WIDTH_PX,
+    opening_size,
+)
 from stellody.ui.results_ticks import anything_ticked, ticked_albums
 from stellody.ui.results_top import ResultsTop
 from stellody.ui.results_tree import (
     IDENTIFIER_ROLE,
     NAME_ROLE,
     album_item,
-    built_tree,
     coloured,
 )
 from stellody.ui.results_words import (
@@ -88,22 +93,6 @@ from stellody.ui.theme import Mode, palette_for
 
 TITLE = "What the last run found"
 CLOSE_LABEL = "Close"
-# The floor, not the size it opens at. Wide enough for an album title under an
-# artist under a heading without the titles wrapping; the same measurement the
-# discovery dialog is built to.
-DIALOG_WIDTH_PX = 700
-DIALOG_HEIGHT_PX = 560
-# What it actually opens at, as a share of the screen it opens on. A run over
-# a whole library answers with hundreds of artists carrying albums and similar
-# artists under each: at 700 by 560 that is a column of text somebody scrolls
-# for minutes, while the room to show it was sitting unused either side.
-# Reported by Oliver on 2026-09-08 as far too small for a large run.
-#
-# A share rather than a stated size, since the screens this runs on differ by a
-# factor of three; nine tenths rather than everything, so the window underneath
-# still shows at the edges and the screen does not read as having been taken
-# over by a dialog.
-SCREEN_SHARE = 0.9
 APART_PX = 12
 COPY_LABEL = "Copy"
 SHOPS_LABEL = "Find in shops"
@@ -150,7 +139,8 @@ class ResultsDialog(FirstStopDialog):
         self._answered: set[str] = set()
         self.setWindowTitle(TITLE)
         self.setMinimumSize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
-        self.resize(self._opening_size())
+        room = self._opening_size()
+        self.resize(room)
         # Who is being asked about right now, by identifier. What the strip
         # at the top reads; also why it can say a name rather than a number
         # when there is only one.
@@ -166,37 +156,37 @@ class ResultsDialog(FirstStopDialog):
         self.key = self.top.key
         self.asking_bar = self.top.bar
         outer.addWidget(self.top)
-        # The tree and the note of where every candidate landed arrive
-        # together, since one is only useful with the other.
-        self.tree, self._rows = built_tree(gaps, self._colour, self)
-        self.tree.itemExpanded.connect(self.opened)
-        self.tree.itemChanged.connect(self.ticks_changed)
-        outer.addWidget(self.tree)
+        # The columns and the note of where every candidate landed arrive
+        # together, since one is only useful with the other. How many columns
+        # follows the width the dialog just took, so the answer is spread over
+        # the room there is rather than over a number somebody guessed.
+        self.columns = ResultsColumns(gaps, self._colour, room.width(), self)
+        self._rows = self.columns.rows
+        self.sources = self.columns.sources
+        for tree in self.columns.trees:
+            tree.itemExpanded.connect(self.opened)
+            tree.itemChanged.connect(self.ticks_changed)
+        outer.addWidget(self.columns)
         outer.addLayout(self._buttons())
         self._listen()
         self._ticks_changed()
 
     def _opening_size(self) -> QSize:
-        """As much of the screen as this may take, floored at the old size.
+        """How big this opens on the screen it is opening on.
 
         The screen is asked for rather than assumed, so the same request means
         the same share of a laptop panel and of a wide monitor. Where there is
         no screen to ask, which is what an offscreen test has, the floor is
         the answer: a dialog that cannot measure a screen must still open.
 
-        `availableGeometry` is the room for a WHOLE window rather than for its
-        content, which is why the share is under one: asking for all of it
-        would ask for a window wider than the screen, exactly as
-        `geometry.fit_on_screen` records against the main window.
+        What is done with the room is `results_room`'s, so the share, the
+        floor and the 13 inch ceiling can be read at widths no machine running
+        the suite has.
         """
         screen = self.screen() or QGuiApplication.primaryScreen()
         if screen is None:
             return QSize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
-        room = screen.availableGeometry()
-        return QSize(
-            max(DIALOG_WIDTH_PX, int(room.width() * SCREEN_SHARE)),
-            max(DIALOG_HEIGHT_PX, int(room.height() * SCREEN_SHARE)),
-        )
+        return opening_size(screen.availableGeometry().size())
 
     def _listen(self) -> None:
         """Take the answers the asker brings back, where there is one.
@@ -254,14 +244,14 @@ class ResultsDialog(FirstStopDialog):
         press that can only report emptiness is a press worth preventing.
         FR-S04.
         """
-        ready = self._shopping is not None and anything_ticked(self.tree)
+        ready = self._shopping is not None and anything_ticked(self.columns.trees)
         self.copy_button.setEnabled(ready)
         self.shops_button.setEnabled(ready)
         self.copy_button.setText(COPY_LABEL)
 
     def ticked(self) -> tuple:
         """The albums somebody has ticked, in the order they are drawn."""
-        return ticked_albums(self.tree)
+        return ticked_albums(self.columns.trees)
 
     def copy_ticked(self) -> None:
         """Put the ticked albums on the clipboard as text. FR-S14."""

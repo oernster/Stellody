@@ -52,7 +52,7 @@ def test_a_completed_run_opens_the_results(application, monkeypatch) -> None:
     window = make_window(application, results=Results(found))
     completed(window, a_report(albums=2, artists=0))
     assert len(shown) == 1
-    assert rows_under(shown[0].tree.topLevelItem(0)) == ("Album 0", "Album 1")
+    assert rows_under(shown[0].sources[0]) == ("Album 0", "Album 1")
 
 
 def test_the_results_are_modal(application, monkeypatch) -> None:
@@ -160,8 +160,8 @@ def test_the_dialog_is_given_something_to_ask_with_where_there_is_one(
 def test_a_source_artist_carries_its_albums(application) -> None:
     """Once each, with what they are missing beneath the name. FR-D29."""
     dialog = made((gaps_with(albums=2, artist="Kate Bush"),))
-    assert dialog.tree.topLevelItemCount() == 1
-    source = dialog.tree.topLevelItem(0)
+    assert len(dialog.sources) == 1
+    source = dialog.sources[0]
     assert source.text(0) == source_row(gaps_with(albums=2, artist="Kate Bush"))
     assert "Kate Bush" in source.text(0)
     assert rows_under(source) == ("Album 0", "Album 1")
@@ -171,7 +171,7 @@ def test_a_candidate_artist_starts_collapsed(application) -> None:
     """Named, with nothing beneath and nothing asked for yet. FR-D30."""
     asking = Asking()
     dialog = made((gaps_with(artists=3),), asking=asking)
-    source = dialog.tree.topLevelItem(0)
+    source = dialog.sources[0]
     assert rows_under(source) == tuple(candidate_row(f"Artist {n}") for n in range(3))
     for at in range(source.childCount()):
         assert source.child(at).childCount() == 0
@@ -232,7 +232,7 @@ def test_opening_a_source_artist_asks_for_nothing(application) -> None:
     """What a source artist holds was found by the run; there is nothing to ask."""
     asking = Asking()
     dialog = made((gaps_with(albums=1, artists=1),), asking=asking)
-    source = dialog.tree.topLevelItem(0)
+    source = dialog.sources[0]
     source.setExpanded(False)
     source.setExpanded(True)
     assert asking.asked == []
@@ -263,7 +263,7 @@ def test_a_failed_expansion_says_so_and_spares_the_rest(application) -> None:
     second.setExpanded(True)
     dialog.show_releases("id-1", (ReleaseGroup(title="Aerial"),))
     assert rows_under(second) == ("Aerial",)
-    assert rows_under(dialog.tree.topLevelItem(0))[0] == "Album 0"
+    assert rows_under(dialog.sources[0])[0] == "Album 0"
 
 
 def test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened(
@@ -292,10 +292,10 @@ def test_the_same_candidate_under_two_sources_is_answered_under_both(
         ),
         asking=Asking(),
     )
-    dialog.tree.topLevelItem(0).child(0).setExpanded(True)
+    dialog.sources[0].child(0).setExpanded(True)
     dialog.show_releases("id-pg", (ReleaseGroup(title="So"),))
-    assert rows_under(dialog.tree.topLevelItem(0).child(0)) == ("So",)
-    assert rows_under(dialog.tree.topLevelItem(1).child(0)) == ("So",)
+    assert rows_under(dialog.sources[0].child(0)) == ("So",)
+    assert rows_under(dialog.sources[1].child(0)) == ("So",)
 
 
 def test_a_dialog_given_nobody_to_ask_simply_does_not_open_a_candidate(
@@ -328,7 +328,7 @@ def test_the_two_kinds_of_artist_are_coloured_apart(application, mode: Mode) -> 
     """A list reading the same for both says nothing about which is which. FR-D34."""
     colour = palette_for(mode)
     dialog = ResultsDialog((gaps_with(albums=1, artists=1),), mode=mode)
-    source = dialog.tree.topLevelItem(0)
+    source = dialog.sources[0]
     candidate = source.child(source.childCount() - 1)
     drawn = source.foreground(0).color().name()
     assert drawn == colour.source_artist

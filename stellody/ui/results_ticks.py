@@ -16,6 +16,8 @@ put on the row as data when the row is built instead.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
@@ -57,12 +59,22 @@ def _rows(item: QTreeWidgetItem):
 
 
 def every_row(tree: QTreeWidget):
-    """Every row in the tree, in the order they are drawn."""
+    """Every row in one list, in the order they are drawn."""
     for at in range(tree.topLevelItemCount()):
         yield from _rows(tree.topLevelItem(at))
 
 
-def ticked_albums(tree: QTreeWidget) -> tuple[WantedAlbum, ...]:
+def every_row_across(trees: Sequence[QTreeWidget]):
+    """Every row in every column, a column at a time from the left.
+
+    Reading order over the whole answer, which down a column is the order the
+    run answered in and across them is the order somebody reads.
+    """
+    for tree in trees:
+        yield from every_row(tree)
+
+
+def ticked_albums(trees: Sequence[QTreeWidget]) -> tuple[WantedAlbum, ...]:
     """What has been ticked, in the order it is drawn.
 
     Reading order rather than tick order, since the list is shown back to
@@ -71,13 +83,14 @@ def ticked_albums(tree: QTreeWidget) -> tuple[WantedAlbum, ...]:
     """
     return tuple(
         WantedAlbum(artist=row.data(0, ARTIST_ROLE), title=row.text(0))
-        for row in every_row(tree)
+        for row in every_row_across(trees)
         if is_tickable(row) and row.checkState(0) is TICKED
     )
 
 
-def anything_ticked(tree: QTreeWidget) -> bool:
+def anything_ticked(trees: Sequence[QTreeWidget]) -> bool:
     """Whether there is anything to look up at all."""
     return any(
-        is_tickable(row) and row.checkState(0) is TICKED for row in every_row(tree)
+        is_tickable(row) and row.checkState(0) is TICKED
+        for row in every_row_across(trees)
     )

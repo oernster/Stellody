@@ -92,20 +92,23 @@ def source_item(found: Gaps, colour: Palette, rows: CandidateRows) -> QTreeWidge
     return item
 
 
-def built_tree(
-    gaps: tuple[Gaps, ...], colour: Palette, parent: QWidget | None = None
-) -> tuple[QTreeWidget, CandidateRows]:
-    """The whole answer as a tree, source artists at the top level.
+def filled_tree(
+    gaps: tuple[Gaps, ...],
+    colour: Palette,
+    rows: CandidateRows,
+    parent: QWidget | None = None,
+) -> QTreeWidget:
+    """One list of source artists, noting its candidates in the index handed in.
 
-    Answers the rows it recorded alongside it rather than writing into
-    something handed in, so a caller cannot be given a tree whose index was
-    quietly filled somewhere else.
+    The index is handed in rather than answered alongside, because the answer
+    is now dealt over several lists side by side and a candidate can sit under
+    artists that landed in different ones. One index across the lot is what
+    lets an answer arriving later reach every row it belongs under.
     """
-    rows: CandidateRows = {}
     tree = QTreeWidget(parent)
     tree.setHeaderHidden(True)
     tree.setColumnCount(1)
     for found in gaps:
         tree.addTopLevelItem(source_item(found, colour, rows))
     tree.expandToDepth(0)
-    return tree, rows
+    return tree

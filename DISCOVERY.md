@@ -1121,6 +1121,55 @@ Verified by: `tests/ui/test_results_reading.py::test_it_says_which_genres_the_ru
 
 ---
 
+**FR-D45 The answer is dealt across the width of the screen**
+
+Priority: Must
+
+Requirement: The results dialog shall open at nine tenths of the screen it
+opens on, never below 700 by 560 and never above what a 13 inch display can
+show. It shall deal the source artists across as many columns as that width
+affords at one column per 700 pixels, each column being a list read top to
+bottom. Artists shall be dealt to the shortest column at the time, counting an
+artist's height as its own row plus one for each album and each candidate under
+it. A column shall be built only where an artist landed in it; a run that found
+nobody shall still show one. One selection shall stand across the columns.
+
+Rationale: Reported by Oliver on 2026-09-08 against a run over two genres,
+which already ran off the foot of the screen with the room to show it sitting
+empty either side. A run over a whole library answers with hundreds of source
+artists carrying albums and candidates under each, so a single list is a shape
+nobody reaches the end of whatever height it is given.
+
+The ceiling is his ruling of the same day: no bigger than a 13 inch display can
+show. Nine tenths of a 3440 monitor is 3096 pixels of dialog, which is a window
+nobody reads across in one go; it is also a shape that cannot be checked on the
+machines this has to run on, so a defect at that width would only ever be found
+by the one person with that screen.
+
+Dealt by height rather than in equal counts because one artist can carry fifteen
+albums while the next carries one, so a count-by-count fill leaves one column
+twice the length of another. It is the rule the genre grid already deals its
+groups by, which is why that helper reads as it does.
+
+The column width is the width the whole dialog was built to when it held one
+list, so it is stated once and read twice rather than being a second number
+that can drift from the first. One selection across the columns for the reason
+the album pane shares one across its tracks: a highlight per column says a
+reader is in two places at once. What a press acts on is the ticks, which is
+unchanged.
+
+Acceptance: Given a screen wider than two column widths, when the dialog opens,
+then the source artists are drawn over two or more lists side by side and each
+artist appears exactly once; given a screen at the floor, then one list is
+drawn as before; given a 3440 monitor, then the dialog opens no wider than a 13
+inch display; given fewer artists than the width affords columns, then no empty
+column is built; given a row chosen in one column, then any selection in the
+others is cleared.
+
+Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_two`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`
+
+---
+
 **FR-D35 How long the run has left**
 
 Priority: Must
@@ -1566,7 +1615,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D44 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D45 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.

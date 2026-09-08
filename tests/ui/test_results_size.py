@@ -13,11 +13,11 @@ from __future__ import annotations
 
 from PySide6.QtGui import QGuiApplication
 
-from stellody.ui.results_dialog import (
+from stellody.ui.results_dialog import ResultsDialog
+from stellody.ui.results_room import (
     DIALOG_HEIGHT_PX,
     DIALOG_WIDTH_PX,
     SCREEN_SHARE,
-    ResultsDialog,
 )
 
 

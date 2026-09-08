@@ -29,15 +29,13 @@ def test_a_source_row_says_how_many_of_each_sit_under_it(application) -> None:
     answers that; the key above the tree is the other half.
     """
     dialog = made((gaps_with(albums=3, artists=2, artist="Blues Pills"),))
-    assert dialog.tree.topLevelItem(0).text(0) == (
-        "Blues Pills (3 albums, 2 similar artists)"
-    )
+    assert dialog.sources[0].text(0) == ("Blues Pills (3 albums, 2 similar artists)")
 
 
 def test_a_single_album_is_not_called_albums(application) -> None:
     """One of something reads as one of it."""
     dialog = made((gaps_with(albums=1, artist="Kate Bush"),))
-    assert dialog.tree.topLevelItem(0).text(0) == "Kate Bush (1 album)"
+    assert dialog.sources[0].text(0) == "Kate Bush (1 album)"
 
 
 def test_a_candidate_row_says_that_it_is_an_artist(application) -> None:
@@ -113,7 +111,7 @@ def test_a_run_that_names_no_genres_shows_no_line_at_all(application) -> None:
     """
     dialog = made((gaps_with(albums=1),))
     assert dialog.top.looked_in is None
-    assert dialog.tree.topLevelItemCount() == 1
+    assert len(dialog.sources) == 1
 
 
 def test_the_genres_sit_above_the_key(application) -> None:
