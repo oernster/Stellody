@@ -33,6 +33,17 @@ WRITE_PERMITTED = frozenset(
         # later run asks about less. Both sit in Stellody's own directory
         # beside the database; neither goes anywhere near the music.
         "stellody/infrastructure/discovery_file.py",
+        # The write itself: a temporary file beside the target, then a rename
+        # over it. It was permitted here as part of discovery_file.py and was
+        # lifted out when the shop list came to need the same care, so this
+        # grants nothing that was not already granted.
+        #
+        # What it does cost is precision: the guard now sees one writer rather
+        # than each module that writes. That is accepted because this module
+        # takes a path it is handed and holds no idea of its own about where
+        # anything lives, so a module reaching the music through it would have
+        # to name the music itself, which is what paths.py settles.
+        "stellody/infrastructure/atomic.py",
     }
 )
 

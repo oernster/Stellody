@@ -31,6 +31,13 @@ is now written on the row rather than carried by the colour alone, with a key
 at the top saying which colour is which. The words are in
 `results_words.py`; this module is where they are put on screen.
 
+**An album can be ticked; what is ticked can be taken to a shop.** Stage
+two, specified in SHOPS.md. A tick box is a state that survives focus moving
+and a row being rebuilt, which a selection does not; the two controls beneath
+the list act on whatever is ticked. Nothing here opens anything: the use case
+handed in does that, over ports, so this whole dialog still runs with no
+browser and no shop file.
+
 **A strip at the top says when the catalogue is being asked.** One expansion
 costs at least the gap the terms require and may wait out two refusals, so
 several seconds of nothing happening is the ordinary case rather than a fault.
@@ -42,34 +49,35 @@ instruction instead.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QLabel,
-    QProgressBar,
     QPushButton,
-    QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
-from stellody.application.values import PERCENT
-from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.application.shopping import Shopping
+from stellody.domain.discovery import Gaps
+from stellody.shared import resources
 from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.ui.icons import plain_icon
+from stellody.ui.results_ticks import anything_ticked, ticked_albums
+from stellody.ui.results_top import ResultsTop
+from stellody.ui.results_tree import (
+    IDENTIFIER_ROLE,
+    NAME_ROLE,
+    album_item,
+    built_tree,
+    coloured,
+)
 from stellody.ui.results_words import (
     COULD_NOT_ASK,
-    LEGEND_ALBUM,
-    LEGEND_CANDIDATE,
-    LEGEND_SOURCE,
     NOBODY_TO_ASK,
-    NOT_ASKING,
     NOTHING_OFFERED,
-    asking_about,
     candidate_row,
-    source_row,
 )
+from stellody.ui.shops_dialog import ShopsDialog
 from stellody.ui.theme import Mode, palette_for
 
 TITLE = "What the last run found"
@@ -79,30 +87,16 @@ CLOSE_LABEL = "Close"
 DIALOG_WIDTH_PX = 700
 DIALOG_HEIGHT_PX = 560
 APART_PX = 12
-# The key's own spacing, tighter than the gaps between parts of the dialog:
-# three lines that belong together read as one block rather than as three.
-KEY_GAP_PX = 2
-# The filled circle each line of the key is marked with, in the colour that
-# line is about. One rich text label per line rather than a swatch beside a
-# label, because Qt cannot align two widgets on a baseline.
-MARK = "\u25cf"
-KEY_LINE = '<span style="color: {colour}">{mark}</span>&nbsp; {words}'
-# Tall enough to read as a strip rather than as a line, short enough that the
-# list keeps the room. The same height a dialog button takes.
-ASKING_BAR_PX = 28
-# Where a candidate artist's identifier is kept, so an answer arriving later
-# can find the rows it belongs under.
-IDENTIFIER_ROLE = Qt.ItemDataRole.UserRole
-# Where a candidate artist's name is kept, so the strip at the top can say who
-# is being asked about without reading it back out of a row that now says more
-# than the name.
-NAME_ROLE = Qt.ItemDataRole.UserRole + 1
-
-
-def _coloured(item: QTreeWidgetItem, colour: str) -> QTreeWidgetItem:
-    """Paint one row's writing, answering the row so this reads inline."""
-    item.setForeground(0, QBrush(QColor(colour)))
-    return item
+COPY_LABEL = "Copy"
+SHOPS_LABEL = "Find in shops"
+# Said on the copy control once it has been pressed, so a press that changed
+# nothing visible is still a press somebody saw work.
+COPIED = "Copied"
+# What the two controls carry. The shop artwork is Oliver's; the copy artwork
+# is the two squares everything else in the world uses for it. A control whose
+# artwork is missing keeps its words rather than becoming a blank square.
+SHOP_ICON = "shop.png"
+COPY_ICON = "copy.png"
 
 
 class ResultsDialog(FirstStopDialog):
@@ -117,16 +111,21 @@ class ResultsDialog(FirstStopDialog):
         self,
         gaps: tuple[Gaps, ...] = (),
         asking: object | None = None,
+        shopping: Shopping | None = None,
         mode: Mode = Mode.DARK,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._asking = asking
+        # A dialog given none offers neither control, the same shape as a
+        # window with no cover chooser: there and disabled rather than absent.
+        self._shopping = shopping
+        # The shops dialog, once there is one. Named here rather than only
+        # where it is built, since an attribute that exists only after a
+        # press is one that raises for anybody asking whether it is open.
+        self.shops: ShopsDialog | None = None
+        self._mode = mode
         self._colour = palette_for(mode)
-        # Every row a candidate artist occupies, by the identifier to ask
-        # about. A list rather than one row, since two source artists can lead
-        # to the same candidate and both rows are owed the same answer.
-        self._rows: dict[str, list[QTreeWidgetItem]] = {}
         # The candidates already asked about, so opening one twice does not
         # ask twice and closing then reopening one shows what came back.
         self._answered: set[str] = set()
@@ -140,82 +139,22 @@ class ResultsDialog(FirstStopDialog):
         self.title = title_label(TITLE, self)
         outer.addWidget(self.title)
         outer.addSpacing(APART_PX)
-        outer.addLayout(self._key())
-        outer.addSpacing(APART_PX)
-        self.asking_bar = self._built_bar()
-        outer.addWidget(self.asking_bar)
-        self.tree = self._built_tree(gaps)
+        # The key and the busy strip together, since both explain the screen
+        # rather than acting on it. Named here as well so what reads them does
+        # not have to know which widget they ended up in.
+        self.top = ResultsTop(self._colour, self)
+        self.key = self.top.key
+        self.asking_bar = self.top.bar
+        outer.addWidget(self.top)
+        # The tree and the note of where every candidate landed arrive
+        # together, since one is only useful with the other.
+        self.tree, self._rows = built_tree(gaps, self._colour, self)
+        self.tree.itemExpanded.connect(self.opened)
+        self.tree.itemChanged.connect(self.ticks_changed)
         outer.addWidget(self.tree)
         outer.addLayout(self._buttons())
         self._listen()
-
-    def _key(self) -> QVBoxLayout:
-        """What each colour means, marked with a filled circle in that colour.
-
-        Every row of the tree is one of these three things, so three lines say
-        the whole of it. The circle carries the colour and the words carry the
-        meaning, which is the arrangement that still works in a screenshot,
-        for a reader who cannot separate the two hues and for anybody who has
-        simply not been told.
-        """
-        lines = QVBoxLayout()
-        lines.setSpacing(KEY_GAP_PX)
-        self.key = tuple(
-            self._key_line(colour, words)
-            for colour, words in (
-                (self._colour.source_artist, LEGEND_SOURCE),
-                (self._colour.candidate_artist, LEGEND_CANDIDATE),
-                (self._colour.text, LEGEND_ALBUM),
-            )
-        )
-        for line in self.key:
-            lines.addWidget(line)
-        return lines
-
-    def _key_line(self, colour: str, words: str) -> QLabel:
-        """One line of the key: a filled circle, then what it means."""
-        line = QLabel(KEY_LINE.format(colour=colour, mark=MARK, words=words), self)
-        line.setTextFormat(Qt.TextFormat.RichText)
-        line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        # Wrapped rather than clipped: a key that runs off the edge of a
-        # narrowed dialog is a key nobody can read, which is the fault it
-        # exists to fix.
-        line.setWordWrap(True)
-        return line
-
-    def _built_bar(self) -> QProgressBar:
-        """The strip that says whether the catalogue is being asked anything.
-
-        Busy rather than counted, because one lookup has no measurable
-        progress: it is a request that either comes back or is waited out.
-        What a reader needs is that something is happening rather than how far
-        through it is.
-        """
-        bar = QProgressBar(self)
-        bar.setFixedHeight(ASKING_BAR_PX)
-        bar.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        bar.setTextVisible(True)
-        self._rest_bar(bar)
-        return bar
-
-    @staticmethod
-    def _rest_bar(bar: QProgressBar) -> None:
-        """Back to the instruction, with nothing being asked."""
-        bar.setRange(0, PERCENT)
-        bar.setValue(0)
-        bar.setFormat(NOT_ASKING)
-
-    def _say_what_is_being_asked(self) -> None:
-        """Put whoever is being looked up on the strip, else the instruction.
-
-        A busy range while anything is in flight, since Qt animates that: a
-        bar that merely said words would look as stuck as the dialog did.
-        """
-        if not self._in_flight:
-            self._rest_bar(self.asking_bar)
-            return
-        self.asking_bar.setRange(0, 0)
-        self.asking_bar.setFormat(asking_about(tuple(self._in_flight.values())))
+        self._ticks_changed()
 
     def _listen(self) -> None:
         """Take the answers the asker brings back, where there is one.
@@ -230,66 +169,76 @@ class ResultsDialog(FirstStopDialog):
         self._asking.ready.connect(self.show_releases)
         self._asking.failed.connect(self.show_failure)
 
-    def _built_tree(self, gaps: tuple[Gaps, ...]) -> QTreeWidget:
-        """The whole answer as a tree, source artists at the top level."""
-        tree = QTreeWidget(self)
-        tree.setHeaderHidden(True)
-        tree.setColumnCount(1)
-        for found in gaps:
-            tree.addTopLevelItem(self._source_item(found))
-        tree.expandToDepth(0)
-        tree.itemExpanded.connect(self.opened)
-        return tree
-
-    def _source_item(self, found: Gaps) -> QTreeWidgetItem:
-        """One source artist, with everything that artist turned up beneath.
-
-        The albums first and the candidates after, which is the order they
-        were found in: a record by somebody already held is a closer answer
-        than an artist nobody has heard yet.
-
-        The row says how many of each sit under it, because both kinds sit in
-        one list and a name alone leaves a reader to work out which is which.
-        """
-        item = _coloured(
-            QTreeWidgetItem([source_row(found)]), self._colour.source_artist
-        )
-        for album in found.albums:
-            item.addChild(self._album_item(album))
-        for candidate in found.artists:
-            item.addChild(self._candidate_item(candidate))
-        return item
-
-    def _album_item(self, album: ReleaseGroup) -> QTreeWidgetItem:
-        """One album the library does not hold."""
-        return _coloured(QTreeWidgetItem([album.title]), self._colour.text)
-
-    def _candidate_item(self, candidate: SimilarArtist) -> QTreeWidgetItem:
-        """One artist the library holds nothing by, closed until it is opened.
-
-        The arrow is stated rather than inherited from having children,
-        because it has none: the whole point is that nothing is asked until
-        somebody opens it. FR-D30.
-        """
-        item = _coloured(
-            QTreeWidgetItem([candidate_row(candidate.name)]),
-            self._colour.candidate_artist,
-        )
-        item.setData(0, IDENTIFIER_ROLE, candidate.identifier)
-        item.setData(0, NAME_ROLE, candidate.name)
-        item.setChildIndicatorPolicy(QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator)
-        self._rows.setdefault(candidate.identifier, []).append(item)
-        return item
+    def _say_what_is_being_asked(self) -> None:
+        """Put whoever is being looked up on the strip above the list."""
+        self.top.say_asking(tuple(self._in_flight.values()))
 
     def _buttons(self) -> QHBoxLayout:
-        """One way out, away to the right where the house puts it."""
+        """What can be done with the ticked albums, then the way out."""
         row = QHBoxLayout()
+        self.copy_button = self._control(COPY_LABEL, COPY_ICON, self.copy_ticked)
+        row.addWidget(self.copy_button)
+        self.shops_button = self._control(SHOPS_LABEL, SHOP_ICON, self.open_shops)
+        row.addWidget(self.shops_button)
         row.addStretch()
         self.close_button = QPushButton(CLOSE_LABEL, self)
         self.close_button.setDefault(True)
         self.close_button.clicked.connect(self.reject)
         row.addWidget(self.close_button)
         return row
+
+    def _control(self, label: str, artwork: str, pressed) -> QPushButton:
+        """One control acting on the ticked albums, wearing its artwork.
+
+        The words stay whatever the artwork does, since a picture-only button
+        here would be two unlabelled squares under a list; the artwork is what
+        makes them findable rather than what says what they do.
+        """
+        button = QPushButton(label, self)
+        found = resources.find_asset(artwork)
+        if found is not None:
+            button.setIcon(plain_icon(found))
+        button.setAutoDefault(False)
+        button.clicked.connect(pressed)
+        return button
+
+    def ticks_changed(self, _item=None, _column: int = 0) -> None:
+        """Qt hands a row and a column; what changed does not matter here."""
+        self._ticks_changed()
+
+    def _ticks_changed(self) -> None:
+        """Nothing ticked is nothing to look up, so both controls go.
+
+        The same rule the discovery dialog applies to its own Find button: a
+        press that can only report emptiness is a press worth preventing.
+        FR-S04.
+        """
+        ready = self._shopping is not None and anything_ticked(self.tree)
+        self.copy_button.setEnabled(ready)
+        self.shops_button.setEnabled(ready)
+        self.copy_button.setText(COPY_LABEL)
+
+    def ticked(self) -> tuple:
+        """The albums somebody has ticked, in the order they are drawn."""
+        return ticked_albums(self.tree)
+
+    def copy_ticked(self) -> None:
+        """Put the ticked albums on the clipboard as text. FR-S14."""
+        if self._shopping is None:
+            return
+        self._shopping.copy(self.ticked())
+        self.copy_button.setText(COPIED)
+
+    def open_shops(self) -> None:
+        """Offer the shops for whatever is ticked. FR-S05.
+
+        Held on the dialog rather than left as a local, since a dialog nobody
+        keeps a name for goes away with the call that made it.
+        """
+        if self._shopping is None:
+            return
+        self.shops = ShopsDialog(self._shopping, self.ticked(), self._mode, self)
+        self.shops.show()
 
     def opened(self, item: QTreeWidgetItem) -> None:
         """Ask about a candidate artist the first time somebody opens it.
@@ -322,9 +271,10 @@ class ResultsDialog(FirstStopDialog):
         self._say_what_is_being_asked()
         for item in self._rows.get(identifier, ()):
             self._emptied(item)
-            item.setText(0, candidate_row(item.data(0, NAME_ROLE), len(albums)))
+            name = item.data(0, NAME_ROLE)
+            item.setText(0, candidate_row(name, len(albums)))
             for album in albums:
-                item.addChild(self._album_item(album))
+                item.addChild(album_item(album, name, self._colour))
             if not albums:
                 self._said_under(item, NOTHING_OFFERED)
 
@@ -345,7 +295,7 @@ class ResultsDialog(FirstStopDialog):
     def _said_under(self, item: QTreeWidgetItem, message: str) -> None:
         """Put one line under a row, replacing whatever was under it."""
         self._emptied(item)
-        item.addChild(_coloured(QTreeWidgetItem([message]), self._colour.text_muted))
+        item.addChild(coloured(QTreeWidgetItem([message]), self._colour.text_muted))
 
     @staticmethod
     def _emptied(item: QTreeWidgetItem) -> None:

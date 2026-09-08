@@ -21,6 +21,7 @@ from collections.abc import Callable
 from stellody.application.discovering import Discovery
 from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.expanding import Expansion
+from stellody.application.shopping import Shopping
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
@@ -68,6 +69,7 @@ class Discovering:
         write: WriteDiscovery | None = None,
         results: DiscoveryResults | None = None,
         expansion: Expansion | None = None,
+        shopping: Shopping | None = None,
     ) -> None:
         """Take the service and the writer, if this window has been given any.
 
@@ -83,6 +85,9 @@ class Discovering:
         self._write_discovery = write
         self._discovery_results = results
         self._expansion = expansion
+        # What takes a ticked album to a shop. A window given none opens the
+        # results with both of its controls disabled.
+        self._shopping = shopping
         # Held so it is not collected the moment it is shown, since a dialog
         # nobody keeps a name for goes away with the call that made it.
         self._results_dialog: ResultsDialog | None = None
@@ -245,7 +250,13 @@ class Discovering:
         if not gaps:
             return
         asking = None if self._expansion is None else ExpansionRunner(self._expansion)
-        dialog = ResultsDialog(gaps, asking=asking, mode=self.theme_mode, parent=self)
+        dialog = ResultsDialog(
+            gaps,
+            asking=asking,
+            shopping=self._shopping,
+            mode=self.theme_mode,
+            parent=self,
+        )
         if asking is not None:
             # Parented to the dialog once there is one, so what asks the
             # questions lives exactly as long as the rows the answers go in.

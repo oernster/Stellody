@@ -31,12 +31,15 @@ from stellody.application.choosing_covers import ChooseCover
 from stellody.application.editing import TagEditing
 from stellody.application.repairs import Repairs
 from stellody.application.scan import ScanReport
+from stellody.application.shopping import Shopping
 from stellody.domain.changes import LibraryChange
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.equalising import Equalisation
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.narrowing import Narrowing
+from stellody.domain.shopping import Shop, WantedAlbum
+from stellody.infrastructure.shop_file import DEFAULT_SHOPS
 from stellody.shared import resources
 from stellody.ui.close_prompt import ClosePrompt
 from stellody.ui.cover_chooser import CoverChooser
@@ -49,6 +52,7 @@ from stellody.ui.health import HealthDialog
 from stellody.ui.repairing import RepairDialog
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.scan_summary import ScanSummaryDialog
+from stellody.ui.shops_dialog import ShopsDialog
 from stellody.ui.tag_editor import TagEditor
 from stellody.ui.theme import Mode
 
@@ -115,6 +119,35 @@ def _found() -> tuple[Gaps, ...]:
     )
 
 
+def _shopping() -> Shopping:
+    """The use case over stand-ins, since no browser opens during a sweep."""
+    return Shopping(shops=_ShopList(), opener=_Nowhere(), clipboard=_Nowhere())
+
+
+def _ticked() -> tuple[WantedAlbum, ...]:
+    """One ticked album, which is all the dialog needs to have something to do."""
+    return (WantedAlbum(artist="Kate Bush", title="Aerial"),)
+
+
+class _ShopList:
+    """The shipped shops, without touching the file they normally come from."""
+
+    def shops(self) -> tuple[Shop, ...]:
+        """Two of them, which is enough for a dialog to have buttons."""
+        return DEFAULT_SHOPS[:2]
+
+
+class _Nowhere:
+    """An opener and a clipboard that do nothing at all."""
+
+    def open(self, address: str) -> bool:
+        """Say it worked without doing anything."""
+        return True
+
+    def put(self, text: str) -> None:
+        """Take it and forget it."""
+
+
 def _repairs() -> Repairs:
     """The real service over a store nobody has accepted anything in yet."""
     return Repairs(MemoryStore())
@@ -141,6 +174,7 @@ BUILDERS = {
     ),
     "RepairDialog": lambda parent: _repair_dialog(parent),
     "ResultsDialog": lambda parent: ResultsDialog(_found(), parent=parent),
+    "ShopsDialog": lambda parent: ShopsDialog(_shopping(), _ticked(), parent=parent),
     "ScanSummaryDialog": lambda parent: ScanSummaryDialog(*_a_scan(), parent),
     "TagEditor": lambda parent: TagEditor(
         TagEditing(MemoryStore()), ALBUM_KEY, album().ordered_tracks(), parent

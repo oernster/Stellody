@@ -25,11 +25,13 @@ from stellody.application.pictures import Pictures
 from stellody.application.repairs import Repairs
 from stellody.application.scan import LoadLibrary, ScanLibrary
 from stellody.application.shapes import TrackShapes
+from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.infrastructure import diary, discovery_file, instance, switch_reset
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
+from stellody.infrastructure.browsing import SystemBrowser, SystemClipboard
 from stellody.infrastructure.catalogue import MusicBrainz
 from stellody.infrastructure.courtesy import Gate
 from stellody.infrastructure.cover_search import ArchiveCovers
@@ -43,6 +45,7 @@ from stellody.infrastructure.paths import (
     shape_cache_dir,
 )
 from stellody.infrastructure.probe import AudioProbe
+from stellody.infrastructure.shop_file import FileShopList
 from stellody.infrastructure.similarity import ListenBrainz
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -140,6 +143,14 @@ def build_window(
         # still going on behind an open dialog.
         discovery_results=discovery_file.FileDiscoveryResults(),
         expansion=Expansion(catalogue=MusicBrainz(Fetcher(gate)), pause=time.sleep),
+        # Taking a ticked album to a shop. Nothing here opens a connection:
+        # the browser is handed an address and does the asking itself, which
+        # is why this needs no entry in the offline test's list.
+        shopping=Shopping(
+            shops=FileShopList(),
+            opener=SystemBrowser(),
+            clipboard=SystemClipboard(),
+        ),
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)
         ),

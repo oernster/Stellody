@@ -30,19 +30,16 @@ artists recur constantly.
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 
 from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure import paths
+from stellody.infrastructure.atomic import written as _written
 
 DISCOVERY_NAME = "discovered.json"
 CACHE_NAME = "artist-genres.json"
-# Written beside the file it replaces, so the move is on one filesystem and
-# cannot half happen.
-PENDING_SUFFIX = ".writing"
 
 
 def discovery_path() -> pathlib.Path:
@@ -53,15 +50,6 @@ def discovery_path() -> pathlib.Path:
 def cache_path() -> pathlib.Path:
     """Where what was learned about candidates is kept between runs."""
     return paths.data_dir() / CACHE_NAME
-
-
-def _written(where: pathlib.Path, content: object) -> None:
-    """Put this where that is, atomically, else leave what is there alone."""
-    pending = where.with_suffix(where.suffix + PENDING_SUFFIX)
-    pending.write_text(
-        json.dumps(content, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    os.replace(pending, where)
 
 
 def _as_written(report: RunReport) -> dict:

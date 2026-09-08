@@ -24,6 +24,7 @@ from stellody.application.scan import (
     LoadLibrary,
 )
 from stellody.application.shapes import TrackShapes
+from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService
 from stellody.domain.health import LibraryIssue
@@ -127,6 +128,7 @@ class MainWindow(
         write_discovery: WriteDiscovery | None = None,
         discovery_results: DiscoveryResults | None = None,
         expansion: Expansion | None = None,
+        shopping: Shopping | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
