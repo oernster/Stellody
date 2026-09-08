@@ -23,6 +23,7 @@ from stellody.domain.discovery import Gaps, SimilarArtist
 from stellody.ui.results_columns import ResultsColumns
 from stellody.ui.results_room import (
     COLUMN_PX,
+    COLUMNS_AT_THE_CEILING,
     DIALOG_HEIGHT_PX,
     DIALOG_WIDTH_PX,
     SCREEN_SHARE,
@@ -74,8 +75,25 @@ class TestHowManyColumns:
     def test_a_dialog_narrower_than_a_column_still_gets_one(self) -> None:
         assert columns_for(COLUMN_PX - 1) == 1
 
-    def test_the_13_inch_ceiling_affords_two(self) -> None:
-        assert columns_for(THIRTEEN_INCH_WIDTH_PX) == 2
+    def test_three_is_the_ruling_rather_than_whatever_the_constant_says(
+        self,
+    ) -> None:
+        """Oliver ruled three on 2026-09-08, having seen a two-column screen.
+
+        Stated as the number rather than against the constant, since a test
+        that reads the constant agrees with every value it could hold.
+        """
+        assert COLUMNS_AT_THE_CEILING == 3
+
+    def test_the_13_inch_ceiling_affords_the_three_that_were_asked_for(
+        self,
+    ) -> None:
+        assert columns_for(THIRTEEN_INCH_WIDTH_PX) == 3
+
+    def test_the_column_width_is_the_ruling_rather_than_a_number(self) -> None:
+        """Three at the ceiling is the decision; the width follows from it."""
+        assert COLUMN_PX * COLUMNS_AT_THE_CEILING <= THIRTEEN_INCH_WIDTH_PX
+        assert (COLUMN_PX + 1) * COLUMNS_AT_THE_CEILING > THIRTEEN_INCH_WIDTH_PX
 
     def test_room_is_measured_in_readable_columns(self) -> None:
         assert columns_for(THREE_COLUMNS_PX) == 3

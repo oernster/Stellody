@@ -1147,7 +1147,8 @@ Priority: Must
 Requirement: The results dialog shall open at nine tenths of the screen it
 opens on, never below 700 by 560 and never above what a 13 inch display can
 show. It shall deal the source artists across as many columns as that width
-affords at one column per 700 pixels, each column being a list read top to
+affords, a column being a third of what a 13 inch display shows, each a list
+read top to
 bottom. Artists shall be dealt to the shortest column at the time, counting an
 artist's height as its own row plus one for each album and each candidate under
 it. A column shall be built only where an artist landed in it; a run that found
@@ -1170,9 +1171,15 @@ albums while the next carries one, so a count-by-count fill leaves one column
 twice the length of another. It is the rule the genre grid already deals its
 groups by, which is why that helper reads as it does.
 
-The column width is the width the whole dialog was built to when it held one
-list, so it is stated once and read twice rather than being a second number
-that can drift from the first. One selection across the columns for the reason
+The column width is not a number of its own: it is the ceiling divided by the
+three columns a 13 inch display is meant to show, so there is one decision to
+argue with rather than two that can disagree. Three is Oliver's ruling of
+2026-09-08 on seeing the first two-column screen. It is supported by measuring
+that screen, which is 1919 pixels for a 1920 pixel dialog: rows draw at between
+5.5 and 6.0 pixels a character, so the longest row this library produces, at 75
+characters, is about 450 pixels against a column of 640. It could not be
+measured in the suite, where the offscreen platform reports no font families at
+all and every size draws the same width. One selection across the columns for the reason
 the album pane shares one across its tracks: a highlight per column says a
 reader is in two places at once. What a press acts on is the ticks, which is
 unchanged.
@@ -1185,7 +1192,7 @@ inch display; given fewer artists than the width affords columns, then no empty
 column is built; given a row chosen in one column, then any selection in the
 others is cleared.
 
-Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_two`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`
+Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_three_is_the_ruling_rather_than_whatever_the_constant_says`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_the_three_that_were_asked_for`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`
 
 ---
 

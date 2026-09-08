@@ -20,9 +20,10 @@ small screen still gets a dialog wide enough for an album title under an
 artist under a heading.
 
 **The columns follow the width rather than being counted out.** How many fit
-is a division: the room divided by what one column has to be to stay readable,
-which is the same measurement the floor is built from. One column is the
-answer at the floor, two at the cap.
+is a division: the room divided by what one column has to be to stay readable.
+That width is not a number of its own; it is the ceiling divided by the number
+of columns a 13 inch display is meant to show, so the two cannot drift apart.
+One column is the answer at the floor, three at the cap.
 """
 
 from __future__ import annotations
@@ -46,10 +47,26 @@ SCREEN_SHARE = 0.9
 # wide monitor is one nobody can vouch for.
 THIRTEEN_INCH_WIDTH_PX = 1920
 THIRTEEN_INCH_HEIGHT_PX = 1080
-# What one column has to be to stay readable, which is the same width the
-# whole dialog was built to when it held a single column. Stated by reference
-# rather than repeated, so the two cannot drift apart.
-COLUMN_PX = DIALOG_WIDTH_PX
+# How many columns a 13 inch display is meant to show. Ruled by Oliver on
+# 2026-09-08, having seen the first two-column screen and asked for three.
+#
+# The width of a column follows from it rather than the other way round, so
+# there is one number to argue with instead of two that can disagree.
+#
+# Measured off that screen shot, which is 1919 pixels wide for a 1920 pixel
+# dialog and so is very nearly one to one: an album row of 47 characters draws
+# 258 pixels and one of 49 characters draws 292, which is between 5.5 and 6.0
+# pixels a character. The longest row this library produces is 75 characters,
+# "Jools Holland & His Rhythm & Blues Orchestra (15 albums, 3 similar
+# artists)", so about 450 pixels drawn. A third of the ceiling is 640, which
+# holds it with room to spare.
+#
+# It could not be measured in the suite: the offscreen platform reports zero
+# font families, so every family at every size resolves to one fallback and
+# draws the same width. A pixel taken from there would be a pixel of nothing,
+# which is why the figures above come from a real screen.
+COLUMNS_AT_THE_CEILING = 3
+COLUMN_PX = THIRTEEN_INCH_WIDTH_PX // COLUMNS_AT_THE_CEILING
 
 
 def _between(room: int, share: float, floor: int, ceiling: int) -> int:
