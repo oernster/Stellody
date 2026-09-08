@@ -11,6 +11,14 @@ use. Never a description in words where a picture is what is on screen; never
 an emoji standing in for artwork. A guide showing something other than the
 icon is worse than no guide, because it teaches the wrong picture.
 
+**The same rule governs the WORDS a control wears.** Every control this names
+by its label or its tooltip reads that string from wherever the control reads
+it, never a copy typed here. Reported on 2026-09-08: the stopping paragraph
+said the button reads "Stop looking" when it reads "Stop discovery". It had
+been copied out of the specification, which was itself stale, so a guide
+written to explain the window was quoting a document instead of the window.
+That is the icon rule again in a different medium.
+
 It is deliberately short. Anything a control says for itself through its own
 tooltip is left to the control; what is here is what hovering cannot tell you.
 """
@@ -26,6 +34,9 @@ from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.dialogs import FirstStopDialog, close_row
+from stellody.ui.discovery_dialog import FIND_LABEL
+from stellody.ui.results_dialog import COPY_LABEL, SHOPS_LABEL
+from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 720
@@ -175,10 +186,10 @@ def _discovery_html() -> str:
         "<h3>Finding music you do not own</h3>"
         "<p>"
         + _img(resources.discover_icon_path())
-        + "Press <b>Discover</b> and tick the genres worth looking in, then "
-        "press <b>Find</b>. The dialog closes: a run takes minutes and is "
-        "watched from the toolbar rather than from a dialog sat over "
-        "everything.</p>"
+        + f"Press the button whose tooltip reads <b>{DISCOVER_TOOLTIP}</b>, tick "
+        f"the genres worth looking in, then press <b>{FIND_LABEL}</b>. The dialog "
+        "closes: a run takes minutes and is watched from the toolbar rather "
+        "than from a dialog sat over everything.</p>"
         "<p><b>While it runs.</b> Two bars appear beside the button, one for "
         "each half of the run: the first asks what the artists you already "
         "hold have released and who resembles them, the second asks what each "
@@ -186,11 +197,11 @@ def _discovery_html() -> str:
         "asked about and how many are left; the right hand end of the bar "
         "says roughly how long remains, as does the line along the foot of "
         "the window. Nothing about you is sent, only artist names.</p>"
-        "<p><b>Stopping.</b> While a run is going the button wears a cross "
-        "and reads <b>Stop looking</b>. One press stops it there and then, "
-        "with nothing to confirm; the request in flight is dropped rather "
-        "than waited out. Nothing gathered so far is kept and the last run's "
-        "results are left exactly as they were.</p>"
+        f"<p><b>Stopping.</b> While a run is going the button wears a cross "
+        f"and its tooltip reads <b>{STOP_DISCOVERY_TOOLTIP}</b>. One press "
+        "stops it there and then, with nothing to confirm; the request in "
+        "flight is dropped rather than waited out. Nothing gathered so far is "
+        "kept and the last run's results are left exactly as they were.</p>"
         "<p><b>What it found.</b> A run that found something opens a list. A "
         "<b>blue</b> name is an artist you hold, with albums by them you do "
         "not underneath. An <b>amber</b> name is an artist you hold nothing "
@@ -198,13 +209,13 @@ def _discovery_html() -> str:
         "seconds, so the strip at the top says who is being asked about. "
         "Every other line is an album title. Nothing in the list is ever a "
         "track.</p>"
-        "<p><b>Getting hold of it.</b> Tick any albums you want, then press "
-        "<b>Find in shops</b> to choose a shop: your browser opens that "
+        f"<p><b>Getting hold of it.</b> Tick any albums you want, then press "
+        f"<b>{SHOPS_LABEL}</b> to choose a shop: your browser opens that "
         "shop's own search for each ticked album, one tab apiece; more than "
         "five asks you first. The shops screen stays open so prices can "
-        "be compared across several. <b>Copy</b> puts the ticked albums on "
-        "the clipboard instead, one line each, for anywhere else you want to "
-        "paste them.</p>"
+        f"be compared across several. <b>{COPY_LABEL}</b> puts the ticked "
+        "albums on the clipboard instead, one line each, for anywhere else "
+        "you want to paste them.</p>"
         f"<p>{NO_SHOP_AFFILIATION}</p>"
     )
 

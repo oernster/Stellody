@@ -65,6 +65,27 @@ def test_the_genres_shown_come_from_the_file_it_is_showing(application) -> None:
     assert "Folk" in dialog.top.looked_in.text()
 
 
+def test_a_second_run_replaces_the_results_rather_than_stacking_them(
+    application,
+) -> None:
+    """Reported on 2026-09-08: two modeless screens over each other.
+
+    Being modeless is what made it possible; it is not what made it wrong. A
+    completed run replaces the discovery file, so the older screen was showing
+    an answer that no longer exists anywhere. One screen, always the current
+    one.
+    """
+    window = make_window(application, results=Results((gaps_with(albums=1),)))
+    window._settled(a_report(albums=1, artists=0))
+    first = window._results_dialog
+    assert first is not None
+    window._settled(a_report(albums=1, artists=0))
+    second = window._results_dialog
+    assert second is not None
+    assert second is not first, "a second run opens its own screen"
+    assert not first.isVisible(), "and the first one is taken down, not buried"
+
+
 def test_a_run_that_found_nothing_shows_no_dialog(application) -> None:
     """An empty dialog says less than the sentence shown in its place. FR-D33."""
     window = make_window(application, results=Results(()))

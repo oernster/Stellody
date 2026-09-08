@@ -15,7 +15,10 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui.discovery_dialog import FIND_LABEL
 from stellody.ui.guide import INLINE_ICON_PX, GuideDialog, guide_html
+from stellody.ui.results_dialog import COPY_LABEL, SHOPS_LABEL
+from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 
 
 def _sources(html: str) -> set[str]:
@@ -97,6 +100,34 @@ class TestWhatItNames:
         if path is None:
             pytest.skip("that icon is not bundled in this checkout")
         assert path.name in _sources(guide_html())
+
+    @pytest.mark.parametrize(
+        "wording",
+        [
+            DISCOVER_TOOLTIP,
+            STOP_DISCOVERY_TOOLTIP,
+            FIND_LABEL,
+            SHOPS_LABEL,
+            COPY_LABEL,
+        ],
+        ids=["discover", "stop", "find", "shops", "copy"],
+    )
+    def test_every_control_it_names_is_named_as_the_window_names_it(
+        self, wording: str
+    ) -> None:
+        """A word the guide quotes is read from the control, never retyped.
+
+        Reported on 2026-09-08: the guide said the discovery button reads
+        "Stop looking" while it reads "Stop discovery". The string had been
+        copied out of the specification, which was stale itself, so the guide
+        was quoting a document rather than the window it exists to explain.
+
+        Checked against the constants the controls use, so a reworded button
+        reaches this screen instead of leaving it quietly wrong. It is the
+        icon rule in a different medium: never a description where the real
+        thing is available.
+        """
+        assert wording in guide_html()
 
     def test_it_states_the_rules_no_screen_can_state(self) -> None:
         """The half that is not an inventory."""

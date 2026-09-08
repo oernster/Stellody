@@ -254,12 +254,21 @@ class Discovering:
         Not modal, for the same reason the run reports to the bar rather than
         to a dialog: the answer arrives minutes after the question, so it is
         put where it can be read rather than in the way.
+
+        **There is only ever one of them.** Reported on 2026-09-08: a second
+        run stacked its results on top of the first, leaving two screens over
+        each other. Being modeless is what made it possible; it is not what
+        made it wrong. A completed run REPLACES the discovery file, so the
+        older screen was showing an answer that no longer exists anywhere; no
+        amount of arranging two windows fixes that. The standing one is
+        therefore taken down rather than left behind.
         """
         if self._discovery_results is None:
             return
         answer = self._discovery_results.last_run()
         if answer.is_empty:
             return
+        self._close_standing_results()
         asking = None if self._expansion is None else ExpansionRunner(self._expansion)
         dialog = ResultsDialog(
             answer.gaps,
@@ -278,6 +287,26 @@ class Discovering:
             asking.setParent(dialog)
         self._results_dialog = dialog
         dialog.show()
+        # Brought forward as well as shown, since a modeless screen opened
+        # minutes after it was asked for can arrive behind the window somebody
+        # has been using in the meantime.
+        dialog.raise_()
+
+    def _close_standing_results(self) -> None:
+        """Take down the results a previous run left on screen, if any.
+
+        Closed rather than merely dropped: the dialog is parented to the
+        window, so letting go of the reference would leave it standing with
+        nothing holding it. `close` routes through the dialog's own `reject`,
+        which is what waits for any question still in flight, so the threads
+        are tidied by the path that already knows how.
+        """
+        standing = self._results_dialog
+        self._results_dialog = None
+        if standing is None:
+            return
+        standing.close()
+        standing.deleteLater()
 
     def _say_about_discovery(self, message: str) -> None:
         """Put the ending in front of whoever asked for the run.

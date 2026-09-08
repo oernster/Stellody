@@ -495,7 +495,7 @@ a run is wedged inside a request that will not answer at all, then the stop
 still returns at once, the window is free to start another and that request is
 dropped rather than left to reach its timeout.
 
-Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`
+Verified by: `tests/application/test_stopping_a_run.py::test_cancel_stops_before_the_next_request`, `tests/application/test_stopping_a_run.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`
 
 ---
 
@@ -626,7 +626,7 @@ Acceptance: Given a run in progress over an existing discovery file, when the
 window is closed, then no further request is issued and the existing file is
 byte for byte what it was.
 
-Verified by: `tests/application/test_discovery.py::test_closing_stops_the_run`
+Verified by: `tests/application/test_stopping_a_run.py::test_closing_stops_the_run`
 
 ---
 
@@ -682,7 +682,7 @@ Priority: Must
 Requirement: When the discovery button is pressed while a run is under way, the
 window shall stop that run at once, without asking anything. While a run is
 under way the button shall wear the negative mark over its picture and shall
-say "Stop looking"; the mark shall come off on EVERY ending, whether the run
+say "Stop discovery"; the mark shall come off on EVERY ending, whether the run
 was stopped, completed, found nothing, could not be reached or failed.
 
 Rationale: Ruled on 2026-09-07, REVERSING the confirmation this requirement
@@ -695,7 +695,7 @@ thing a press has to get past, so the control that says stop did not stop.
 
 What the question was protecting against is now answered by the button saying
 what it is. One control carries both meanings, so it shows which one it is
-carrying: crossed out and reading "Stop looking" while a run is going, plain
+carrying: crossed out and reading "Stop discovery" while a run is going, plain
 and offering to discover while none is. A press on a control that plainly says
 stop is not a press that needs checking; the accident the question guarded
 against was a button that gave no sign of having changed meaning.
@@ -705,10 +705,17 @@ than a second discovery picture, so a change to it reaches every use. Picture
 and words are set together in one place, because a button crossed out while
 offering to start a run is worse than either alone.
 
+Amended on 2026-09-08. The wording was "Stop looking" when written and became
+"Stop discovery" in the shipped button without this being amended with it, so
+the guide was then written from here and told a reader the wrong thing. The
+strings live in `stellody/ui/tray_metrics.py`; the guide reads them from there
+now rather than quoting them, which is what stops this document being able to
+mislead a screen again.
+
 Acceptance: Given a run in progress, when the discovery button is pressed, then
 the run is asked to stop with no question raised, the toolbar bar returns to
 rest at once and reports are ignored until the run ends. Given a run in
-progress, then the button carries the negative mark and says "Stop looking".
+progress, then the button carries the negative mark and says "Stop discovery".
 Given a run that is stopped, one that completes, one that fails and one that
 reaches nothing, then in every case the mark comes off and the button says
 "Discover music the library does not hold" again. Given a new run is asked for
@@ -738,10 +745,31 @@ said it would be built from the file. It is built from the file: one thing stays
 authoritative, so showing a past run's answer again later then costs nothing
 extra on the day that is wanted.
 
-Acceptance: Given a run that found two candidate albums, when it completes, then
-the file is written and a dialog opens naming both.
+**Only one results screen exists at a time.** Amended on 2026-09-08 after two
+were seen stacked over each other. The screen is modeless, which is what made
+that possible; it is not what made it wrong. A completed run REPLACES the
+discovery file, so a screen left standing from an earlier run is showing an
+answer that no longer exists anywhere; no arrangement of two windows fixes
+that. The standing one is closed as the new one opens, through the same path a
+listener closing it takes, so any question still in flight is waited out rather
+than abandoned.
 
-Verified by: `tests/ui/test_results_dialog.py::test_a_completed_run_opens_the_results`
+**Modeless is a decision rather than an omission**, recorded here because it
+had never been written down. The answer arrives minutes after the question, so
+a modal screen would seize the application at a moment nobody chose, in front
+of whatever somebody had moved on to. This is a music player; the natural thing
+to do while reading a list of records worth buying is to play the ones already
+held. The screen is also worked over minutes: candidates are expanded a
+few seconds apiece, albums are ticked and a browser is visited between presses.
+It is raised as it opens, since a modeless window arriving minutes late can
+otherwise arrive behind the one being used.
+
+Acceptance: Given a run that found two candidate albums, when it completes, then
+the file is written and a dialog opens naming both; given a second run that
+completes while the first run's screen is open, then that screen is closed and
+one screen showing the newer answer is left.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_completed_run_opens_the_results`, `tests/ui/test_results_dialog.py::test_a_second_run_replaces_the_results_rather_than_stacking_them`
 
 ---
 
