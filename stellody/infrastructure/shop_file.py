@@ -31,6 +31,11 @@ from stellody.infrastructure.atomic import written
 
 SHOPS_NAME = "shops.json"
 SHOPS_KEY = "shops"
+# What was shipped when the file was written, kept beside what is in use so the
+# two can be compared. It is the whole of how an edit is told from an untouched
+# file: a file that still says what we put in it is one nobody has changed.
+# FR-S16.
+SHIPPED_KEY = "shipped"
 NAME_KEY = "name"
 TEMPLATE_KEY = "template"
 NOTE_KEY = "note"
@@ -101,14 +106,22 @@ def shops_path() -> pathlib.Path:
     return paths.data_dir() / SHOPS_NAME
 
 
+def _rows(shops: tuple[Shop, ...]) -> list[dict]:
+    """The shops as the file carries them, one object a row."""
+    return [
+        {NAME_KEY: shop.name, TEMPLATE_KEY: shop.template, NOTE_KEY: shop.note}
+        for shop in shops
+    ]
+
+
 def _as_written(shops: tuple[Shop, ...]) -> dict:
-    """The shops in the shape the file carries them."""
-    return {
-        SHOPS_KEY: [
-            {NAME_KEY: shop.name, TEMPLATE_KEY: shop.template, NOTE_KEY: shop.note}
-            for shop in shops
-        ]
-    }
+    """The shops in the shape the file carries them, twice.
+
+    The second copy is what was shipped. It is written even though it is
+    identical today, because tomorrow it is the only thing that can say whether
+    the first copy was changed by hand or merely inherited. FR-S16.
+    """
+    return {SHOPS_KEY: _rows(shops), SHIPPED_KEY: _rows(shops)}
 
 
 def _shop(entry: object) -> Shop | None:
@@ -130,6 +143,23 @@ def _shop(entry: object) -> Shop | None:
         return None
 
 
+def _held() -> dict | None:
+    """The file as an object; None where there is nothing usable to read."""
+    try:
+        held = json.loads(shops_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return held if isinstance(held, dict) else None
+
+
+def _listed(held: dict | None, key: str) -> tuple[Shop, ...] | None:
+    """The shops under this key; None where the key holds no usable list."""
+    rows = held.get(key) if isinstance(held, dict) else None
+    if not isinstance(rows, list):
+        return None
+    return tuple(shop for shop in (_shop(row) for row in rows) if shop is not None)
+
+
 def read() -> tuple[Shop, ...]:
     """What the file holds; the shipped defaults where it holds nothing usable.
 
@@ -137,15 +167,51 @@ def read() -> tuple[Shop, ...]:
     somebody is midway through editing would lose their work at the exact
     moment they most want it back.
     """
-    try:
-        held = json.loads(shops_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return DEFAULT_SHOPS
-    rows = held.get(SHOPS_KEY) if isinstance(held, dict) else None
-    if not isinstance(rows, list):
-        return DEFAULT_SHOPS
-    found = tuple(shop for shop in (_shop(row) for row in rows) if shop is not None)
+    found = _listed(_held(), SHOPS_KEY)
     return found or DEFAULT_SHOPS
+
+
+def _untouched(in_use: tuple[Shop, ...], shipped: tuple[Shop, ...] | None) -> bool:
+    """Whether nobody has edited this file.
+
+    Two ways to be sure of it and no third. Either the list still says exactly
+    what the file records having been given; or the file records nothing and
+    the list still says exactly what is shipped today, which is the same
+    statement made by the only other evidence available.
+
+    A file recording nothing whose list differs from the shipped one is the
+    case that cannot be settled: it is either an edit or an older list, with
+    nothing on disk to tell them apart. It is left alone, which is the
+    same judgement FR-S12 makes about a file it cannot read. FR-S16.
+    """
+    return in_use == shipped or in_use == DEFAULT_SHOPS
+
+
+def refresh_if_untouched() -> bool:
+    """Follow the shipped list where nobody has edited the file; did it write.
+
+    FR-S09 keeps the file so an EDIT survives a release, so what has to be
+    answered is whether anybody edited it rather than merely whether it exists.
+    Recording what was shipped is what makes that answerable.
+
+    Two things are put right here and they are one write. A file still carrying
+    an older shipped list takes the current one. A file that carries the current
+    list but records nothing gains the record, without a word of its content
+    changing, so the NEXT correction can reach it; that is the one case a file
+    written before any of this existed falls into. FR-S16.
+    """
+    held = _held()
+    in_use = _listed(held, SHOPS_KEY)
+    shipped = _listed(held, SHIPPED_KEY)
+    if not in_use or not _untouched(in_use, shipped):
+        return False
+    if in_use == DEFAULT_SHOPS and shipped == in_use:
+        return False
+    try:
+        written(shops_path(), _as_written(DEFAULT_SHOPS))
+    except OSError:
+        return False
+    return True
 
 
 def refused(rows: object) -> tuple[str, ...]:
@@ -189,6 +255,12 @@ class FileShopList:
     """
 
     def shops(self) -> tuple[Shop, ...]:
-        """Every shop worth offering, writing the defaults on the first ask."""
+        """Every shop worth offering, tidying the file first where it may be.
+
+        Three jobs rather than one function doing three, so a reader stays a
+        reader: write the file where there is none, follow the shipped list
+        where nobody has edited it, then read whatever is there.
+        """
         write_defaults_if_absent()
+        refresh_if_untouched()
         return read()

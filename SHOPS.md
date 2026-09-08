@@ -396,6 +396,42 @@ Verified by: `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_ar
 
 ---
 
+**FR-S16 A shop file nobody has edited follows the shipped list**
+
+Priority: Must
+
+Requirement: The shop file shall record the shipped list it was written from
+alongside the list in use. Where the two are identical and the shipped list has
+since changed, the shop service shall replace both with the current shipped
+list. Where the file records no shipped list and its list is identical to the
+current shipped list, the shop service shall write the record, leaving the list
+itself unchanged. In every other case the file shall be left exactly as it is.
+
+Rationale: FR-S09 writes the file once and never overwrites it, so a corrected
+address can never reach anybody who has already opened the shops. Found on
+2026-09-08: 7digital's address was corrected and reordered in the application
+while the only file in existence went on offering the old row, which reads as
+the change not having been made. The file is written once to protect an EDIT,
+so what it must actually detect is whether anybody has edited it, rather than
+whether it exists. Recording what was shipped is what makes that answerable
+instead of guessed at: an untouched file is one that still says what we put in
+it. A file carrying no record is settled the same way where it can be: one
+still holding exactly the shipped list is untouched by the only other evidence
+available, so it gains the record and becomes refreshable, which is what every
+file written before this existed needs. One carrying no record AND a different
+list is either an edit or an older list, with nothing on disk to tell them
+apart, so it is left alone: the same judgement FR-S12 makes.
+
+Acceptance: Given a shop file whose list is identical to the shipped list it
+records, with a shipped list that has since changed, when the shops are read,
+then the file holds the current shipped list and those shops are offered. Given
+a shop file whose list differs from the shipped list it records, when the shops
+are read, then the file is unchanged and its own rows are offered.
+
+Verified by: `tests/infrastructure/test_shop_file.py::TestRefreshingAnUntouchedFile`
+
+---
+
 ### 3.2 Non-functional
 
 **NFR-S-PRIV-001 Nothing but the artist and the album leaves the machine**
@@ -530,7 +566,7 @@ Nothing marked open may be built from.
 
 ### B. Prioritisation
 
-Must: FR-S01 to FR-S15 and every NFR.
+Must: FR-S01 to FR-S16 and every NFR.
 Should: nothing this stage.
 Could: OQ-S02's editor screen.
 Won't, this time: payments, prices, stock, shop APIs, affiliate links, physical
