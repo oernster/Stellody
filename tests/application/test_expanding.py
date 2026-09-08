@@ -10,11 +10,7 @@ from __future__ import annotations
 import pytest
 from discovery_support import Waits
 
-from stellody.application.asking import (
-    OPENED_ATTEMPTS,
-    RETRY_ATTEMPTS,
-    RETRY_PAUSE_SECONDS,
-)
+from stellody.application.asking import OPENED_ATTEMPTS, RETRY_PAUSE_SECONDS
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovery_ports import (
     RateRefused,
@@ -105,16 +101,19 @@ def test_a_refusal_is_waited_out_rather_than_reported() -> None:
     assert sum(waits.waited) == pytest.approx(RETRY_PAUSE_SECONDS)
 
 
-def test_it_presses_on_past_what_a_run_gives_one_artist() -> None:
-    """A run has hundreds to get through; somebody who opened one row has one.
+def test_three_refusals_running_do_not_lose_the_artist() -> None:
+    """Measured in Oliver's own run on 2026-09-08: an artist refused three
+    times answered on the fourth ask. Three was the whole of the patience that
+    day, so that artist was the one that came back and the six asked with three
+    were the ones that did not.
 
-    Reported by Oliver on 2026-09-08 against The Rolling Stones, refused while
-    every other artist on the same screen answered.
+    Stated as the count rather than as the constant, since a test reading the
+    constant agrees with every value it could hold, three included.
     """
-    catalogue = Releasing((ReleaseGroup(title="A Record"),), refusals=RETRY_ATTEMPTS)
+    catalogue = Releasing((ReleaseGroup(title="A Record"),), refusals=3)
     expansion, _ = expanding(catalogue)
     assert [group.title for group in expansion.releases_of(WOLF)] == ["A Record"]
-    assert len(catalogue.asked) == RETRY_ATTEMPTS + 1
+    assert len(catalogue.asked) == 4
 
 
 def test_a_source_refusing_every_time_is_that_artist_failing() -> None:

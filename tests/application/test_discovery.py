@@ -183,6 +183,22 @@ def test_rate_refusal_is_retried() -> None:
     assert report.outcome is RunOutcome.COMPLETED
 
 
+def test_a_run_does_not_lose_an_artist_to_three_refusals() -> None:
+    """The defect Oliver reported on 2026-09-08: a run over two genres came
+    back holding one source artist out of seven, the other six each recorded as
+    refused after three asks. Its own record showed 21 refusals in 27 requests,
+    while the one artist asked with more patience answered on its fourth ask.
+
+    Stated as the count rather than as the constant, for the reason the
+    expansion suite states its own.
+    """
+    catalogue = Catalogue(identities={"U2": ("u2-id",)}, refusals=3)
+    run, source, _, _ = make_run(catalogue)
+    report = run.run((make_album("U2", "The Joshua Tree"),), ROCK, nothing, never)
+    assert report.failed == (), "the artist was kept rather than given up on"
+    assert len(source.identified) == 4
+
+
 def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
     """Patience has an end; what happens then is written down."""
     catalogue = Catalogue(refusals=RETRY_ATTEMPTS)

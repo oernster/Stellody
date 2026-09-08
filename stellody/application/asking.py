@@ -34,7 +34,22 @@ Pause = Callable[[float], None]
 # How many times one question is asked before it is given up on; how long to
 # wait between asks. The wait lengthens with each attempt, since a host
 # refusing twice is asking for more room than one refusing once.
-RETRY_ATTEMPTS = 3
+#
+# Five rather than the three it was until 2026-09-08, when a run over two
+# genres came back holding one source artist out of seven and Oliver asked
+# what had happened to the rest. Measured from that run's own record: 27
+# requests to MusicBrainz in 65 seconds, 21 of them refused, every refusal
+# arriving in about 30 milliseconds, which is a rate limiter answering rather
+# than a service struggling. Six artists were lost, each having been asked
+# three times over six seconds.
+#
+# The same run says five is enough to matter: the one artist asked with more
+# patience, an expansion somebody had opened, was refused three times and
+# answered on the fourth. The pacing was not at fault and was checked before
+# this was changed: the gate stamps its clock when a request is let through,
+# so the gaps in that record are exactly what one request every 1.1 seconds
+# produces.
+RETRY_ATTEMPTS = 5
 RETRY_PAUSE_SECONDS = 2.0
 # A wait is taken in slices so that stopping is felt rather than merely
 # obeyed. Waiting out two refusals is six seconds; somebody who has pressed
@@ -48,8 +63,13 @@ WAIT_SLICE_SECONDS = 0.2
 # same day, that artist carries 1474 release groups at MusicBrainz and the
 # request takes 15.6 seconds cold against 0.2 warm, so it is among the first
 # things a busy service sheds. Five asks wait two, four, six then eight
-# seconds, which is twenty seconds of patience: a wait somebody watching one
-# row will sit through; not a wait a run of 327 artists could take.
+# seconds, which is twenty seconds of patience.
+#
+# The same number as a run's today, arrived at from the other end and kept
+# apart from it deliberately: one is what a person watching one row will sit
+# through, the other is what a run of hundreds can afford. The day either
+# answer changes, it should be able to change without dragging the other with
+# it.
 OPENED_ATTEMPTS = 5
 
 

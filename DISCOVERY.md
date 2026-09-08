@@ -1238,7 +1238,7 @@ Requirement: The window shall derive the estimate from the time the run has
 actually taken for each unit of work finished, rather than from the request gap
 NFR-PERF-001 states.
 
-Rationale: A run meets refusals; each costs up to three attempts with a
+Rationale: A run meets refusals; each costs up to five attempts with a
 lengthening wait between them, as FR-D21 requires. An estimate built on the
 configured gap would read as confident while being wrong by minutes on exactly
 the runs where somebody most needs it.
