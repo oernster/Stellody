@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import pathlib
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
@@ -28,7 +28,16 @@ from stellody.shared.version import (
     __version__,
 )
 from stellody.ui.auto_scroller import AutoScroller
+from stellody.ui.bottom_tray import BOTTOM_ICON_PX
+from stellody.ui.icons import plain_icon
 from stellody.ui.widgets import ReadingPane
+
+# Every picture a dialog control wears is drawn at the size the switches along
+# the foot of the window use, read from there rather than stated again, so a
+# picture in a dialog cannot drift from a picture in a tray.
+CONTROL_ICON_PX = BOTTOM_ICON_PX
+# The way out of a dialog, which is Oliver's artwork like the rest.
+CLOSE_ICON = "close.png"
 
 # The stylesheet rule that makes a label a heading. Named once here so the
 # rule and every dialog asking for it cannot come to disagree.
@@ -177,6 +186,22 @@ def title_label(text: str, parent: QWidget) -> QLabel:
     label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     label.setFocusPolicy(Qt.FocusPolicy.NoFocus)
     return label
+
+
+def wearing(button: QPushButton, artwork: pathlib.Path | None) -> QPushButton:
+    """Put a dialog control's picture on it, at the shared size.
+
+    Answers the button so this reads inline where one is built. A control
+    whose picture is missing keeps its words rather than becoming a blank
+    square, which is what an empty icon leaves it with.
+
+    The size is read from the strip along the foot of the window rather than
+    stated again here. Reported on 2026-09-08 against the first control to
+    wear one: left to Qt's own default a picture arrives too small to notice.
+    """
+    button.setIcon(plain_icon(artwork))
+    button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
+    return button
 
 
 def close_row(dialog: QDialog) -> QHBoxLayout:

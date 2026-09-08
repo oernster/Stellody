@@ -15,6 +15,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeyEvent
 
 from stellody.domain.genres import GENRES
+from stellody.ui.dialogs import CONTROL_ICON_PX
 from stellody.ui.discovery_dialog import RESTING, TITLE, DiscoveryDialog
 from stellody.ui.theme import DIALOG_TITLE_FONT_PX, Mode, stylesheet
 
@@ -79,6 +80,21 @@ def test_pressing_find_with_nothing_ticked_does_nothing() -> None:
     # A dialog never shown reads as hidden whatever it did, so what is asked
     # is whether it ACCEPTED: a refused press must not close it.
     assert dialog.result() == 0
+
+
+def test_both_controls_wear_their_artwork_at_the_shared_size() -> None:
+    """The same rule the results controls answer to, for the same reason.
+
+    Find carries the picture the button that opens this dialog wears, so a
+    press here is visibly the thing that button promised. Close carries the
+    way out. Both are asserted at the shared size, since Qt draws an icon far
+    too small to notice unless a button is told otherwise.
+    """
+    dialog, _ = make_dialog()
+    for control in (dialog.find_button, dialog.close_button):
+        assert control.iconSize().width() == CONTROL_ICON_PX, control.text()
+        assert control.iconSize().height() == CONTROL_ICON_PX, control.text()
+        assert not control.icon().isNull(), control.text()
 
 
 def test_it_says_what_to_do_with_it_and_where_the_answer_goes() -> None:

@@ -79,8 +79,8 @@ DEFAULT_SHOPS: tuple[Shop, ...] = (
     ),
     Shop(
         name="7digital",
-        template="https://www.7digital.com/search?q={artist}%20{album}",
-        note="Its search refuses robots, so this address is unconfirmed.",
+        template="https://uk.7digital.com/search?q={artist}%20{album}&fallback=true",
+        note="The UK storefront. Read from a browser: its search walls robots.",
     ),
 )
 

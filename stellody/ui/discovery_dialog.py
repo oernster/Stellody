@@ -27,7 +27,8 @@ from collections.abc import Callable
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.shared import resources
+from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, title_label, wearing
 from stellody.ui.genre_grid import ASKING, GenreGrid
 
 TITLE = "Discover new music"
@@ -78,10 +79,16 @@ class DiscoveryDialog(FirstStopDialog):
         """Away to the left, then the one that does the work."""
         row = QHBoxLayout()
         row.addStretch()
-        self.close_button = QPushButton(CLOSE_LABEL, self)
+        self.close_button = wearing(
+            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
+        )
         self.close_button.clicked.connect(self.reject)
         row.addWidget(self.close_button)
-        self.find_button = QPushButton(FIND_LABEL, self)
+        # The same picture the control that opens this dialog wears, since a
+        # press here is the thing that button promised.
+        self.find_button = wearing(
+            QPushButton(FIND_LABEL, self), resources.discover_icon_path()
+        )
         self.find_button.setDefault(True)
         self.find_button.clicked.connect(self._find)
         row.addWidget(self.find_button)

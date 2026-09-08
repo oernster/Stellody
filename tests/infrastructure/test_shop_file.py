@@ -66,6 +66,18 @@ class TestWhatShips:
         assert "{artist}" in boomkat.template
         assert "{album}" not in boomkat.template
 
+    def test_7digital_keeps_the_host_and_the_fallback_it_was_seen_with(self) -> None:
+        """Read from a browser on 2026-09-08, past the wall that refuses us.
+
+        Two parts of that address look like clutter and are not. The regional
+        host is the one the shop itself served; the fallback is what came back
+        with it. Neither could be reached by us to be checked again, so a tidy
+        up that trimmed either would be trimming the only evidence there is.
+        """
+        seven = next(shop for shop in DEFAULT_SHOPS if shop.name == "7digital")
+        assert seven.template.startswith("https://uk.7digital.com/search?q=")
+        assert seven.template.endswith("&fallback=true")
+
 
 class TestTheFirstTime:
     def test_a_missing_file_is_written_with_the_defaults(self, elsewhere) -> None:

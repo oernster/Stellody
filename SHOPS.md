@@ -106,8 +106,8 @@ is specified rather than assumed away.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-01 | 7digital's search reads a `q` parameter. Not verified live: its search wall refuses an automated visitor. Evidence is an indexed URL of the form `7digital.com/search?q=Deuce`. | Oliver | First use |
-| A-02 | `assets/copy.png` will exist, transparent, square, in the style of the other tray artwork. | Oliver | Before the copy control ships |
+| A-01 | RESOLVED 2026-09-08. Oliver reached the search in a browser, past the wall that refuses us, then read back `uk.7digital.com/search?q=fleetwood%20mac&fallback=true`. The `q` parameter is confirmed; the shipped row now carries the regional host and the fallback with it. What one name cannot show is whether an artist and an album together answer, as Boomkat did not. | Oliver | Answered |
+| A-02 | RESOLVED 2026-09-08. `assets/copy.png` supplied: 1254 square, transparent, matching `shop.png`. | Oliver | Answered |
 | A-03 | Every shipped template still works on the day it ships. Measured 2026-09-07; they rot without notice, which is what FR-S09 exists for. | Oliver | Each release |
 
 ## 3. Requirements
@@ -498,7 +498,7 @@ and reading what came back, except where marked:
 | Presto Music | `https://www.prestomusic.com/search?search_query={artist}%20{album}` | Answered. Mixes physical, digital, books and sheet music. |
 | ProStudioMasters | `https://www.prostudiomasters.com/search?q={artist}%20{album}` | Answered. Hi-res, with FLAC, MQA and DSD tabs on the page. |
 | Beatport | `https://www.beatport.com/search?q={artist}%20{album}` | Exact release found. Electronic; rarely FLAC. |
-| 7digital | `https://www.7digital.com/search?q={artist}%20{album}` | **Not verified.** Its search refuses an automated visitor; the parameter comes from an indexed URL. See A-01. |
+| 7digital | `https://uk.7digital.com/search?q={artist}%20{album}&fallback=true` | Read from a browser on 2026-09-08, since the search refuses an automated visitor. The UK storefront, with the fallback it was seen carrying. See A-01. |
 
 Not shipped, with the reason: Juno Download has closed; Traxsource and eClassical could
 not be read past their bot and consent walls; Volumo's search path answered 404;
