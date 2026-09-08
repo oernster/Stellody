@@ -28,7 +28,13 @@ from stellody.application.shapes import TrackShapes
 from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
-from stellody.infrastructure import diary, discovery_file, instance, switch_reset
+from stellody.infrastructure import (
+    diary,
+    discovery_file,
+    instance,
+    qt_messages,
+    switch_reset,
+)
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.browsing import SystemBrowser, SystemClipboard
@@ -223,6 +229,9 @@ def main(argv: list[str] | None = None) -> int:
 def _start(argv: list[str] | None = None) -> int:
     """Everything main does, with the reporting wrapped around it."""
     arguments = list(sys.argv if argv is None else argv)
+    # Before the application, so a complaint made while it is being built is
+    # written down too. A packaged copy has no console for these to reach.
+    qt_messages.listen()
     diary.note(f"launched with {arguments[1:]}")
     application = QApplication(arguments)
     configure(application)

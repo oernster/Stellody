@@ -23,6 +23,7 @@ from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.expanding import Expansion
 from stellody.application.shopping import Shopping
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
+from stellody.ui import standing_in
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.expansion_worker import ExpansionRunner
@@ -70,6 +71,7 @@ class Discovering:
         results: DiscoveryResults | None = None,
         expansion: Expansion | None = None,
         shopping: Shopping | None = None,
+        note: Callable[[str], None] = standing_in.say_nothing,
     ) -> None:
         """Take the service and the writer, if this window has been given any.
 
@@ -88,6 +90,10 @@ class Discovering:
         # What takes a ticked album to a shop. A window given none opens the
         # results with both of its controls disabled.
         self._shopping = shopping
+        # Where a run says what it is doing. A window given none keeps its own
+        # counsel, which is what every test that is about something else
+        # wants; the running application hands in the diary.
+        self._discovery_note = note
         # Held so it is not collected the moment it is shown, since a dialog
         # nobody keeps a name for goes away with the call that made it.
         self._results_dialog: ResultsDialog | None = None
@@ -153,6 +159,10 @@ class Discovering:
             return
         self._discovery_stopping = False
         self._discovery_estimate.restart()
+        # Written down so a complaint Qt makes later can be placed against the
+        # run rather than merely against the evening. The catalogues are
+        # reached from the run's own thread, which ends when it does.
+        self._discovery_note(f"a discovery run started over {len(ticked)} genres")
         show_discovery_running(self._tray.discover_button, True)
 
     def stop_discovery(self) -> None:
@@ -200,6 +210,7 @@ class Discovering:
         they stopped it, so it says nothing further: the answer to a question
         nobody is waiting for any more.
         """
+        self._discovery_note(f"a discovery run ended: {report.outcome.name}")
         if self._discovery_stopping:
             self._discovery_stopping = False
             return
