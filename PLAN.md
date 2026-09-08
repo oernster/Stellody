@@ -87,8 +87,7 @@ sources and writes a file whose gaps are checked by hand and are real.
 **Stage two, still open: the shipped shop templates, on the day they ship.**
 A-03 in `SHOPS.md` puts that on every release, for the reason the shop list is
 data at all: three of the eight checked on 2026-09-07 had closed, walled or
-moved their search that same afternoon. OQ-S01 sits under it, HDtracks needing
-a human to confirm its search before it can join the defaults.
+moved their search that same afternoon.
 
 Done when: a gap ticked in the results dialog opens that shop's own search for
 it in a browser, having sent nothing about the listener.

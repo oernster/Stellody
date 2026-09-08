@@ -537,9 +537,10 @@ and reading what came back, except where marked:
 | Beatport | `https://www.beatport.com/search?q={artist}%20{album}` | Exact release found. Electronic; rarely FLAC. |
 
 Not shipped, with the reason: Juno Download has closed; Traxsource and eClassical could
-not be read past their bot and consent walls; Volumo's search path answered 404;
-HDtracks reached a search page whose results could not be confirmed. Any of them
-can be added as a row.
+not be read past their bot and consent walls; Volumo's search path answered 404.
+HDtracks reached a search page whose results could not be confirmed and was then
+ruled out by Oliver on 2026-09-08 rather than left pending. Any of them can be
+added as a row.
 
 ## 4. Other requirements
 
@@ -560,7 +561,7 @@ Nothing marked open may be built from.
 
 | # | Question | Owner |
 |---|---|---|
-| OQ-S01 | Does HDtracks return usable results for an artist and an album, so it can join the defaults? Its hash route needs a human to confirm. | Oliver |
+| OQ-S01 | RESOLVED 2026-09-08. Oliver ruled HDtracks out; it does not join the shipped defaults. It stays addable as a row like any other shop, so the question does not reopen by itself. | Answered |
 | OQ-S02 | Is a screen for editing the shop list wanted? Is the file enough? | Oliver |
 | OQ-S03 | Should an album already held be reachable at a shop too, for a better copy? Out of scope this time. | Oliver |
 
