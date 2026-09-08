@@ -22,6 +22,7 @@ from stellody.ui.dialogs import AboutDialog, LicenceDialog
 from stellody.ui.equaliser import EqualiserDialog
 from stellody.ui.guide import GuideDialog
 from stellody.ui.health import HealthDialog
+from stellody.ui.layout_advice import LayoutAdviceDialog
 from stellody.ui.links import open_externally
 from stellody.ui.repairing import RepairDialog
 from stellody.ui.settings_keys import SETTING_ROOT, STATUS_TIMEOUT_MS
@@ -104,7 +105,16 @@ class Menus:
 
     @Slot()
     def choose_folder(self) -> None:
-        """Ask for a music folder, remember it and scan it."""
+        """Ask for a music folder, remember it and scan it.
+
+        Somebody who has never chosen one is shown how a library wants laying
+        out FIRST, so they can go and look at what they have rather than being
+        told afterwards. It is offered once: the test is whether a root has
+        ever been set, so it needs nothing written down and it never appears
+        again to somebody changing folders.
+        """
+        if not self.library_root:
+            self._advise_on_layout()
         chosen = QFileDialog.getExistingDirectory(
             self, "Choose your music folder", self.library_root
         )
@@ -148,6 +158,13 @@ class Menus:
         if self._repairs is None:
             return False
         return bool(self._repairs.acceptable(self._issues) or self._repairs.accepted())
+
+    def _advise_on_layout(self) -> None:
+        """Say how a library wants laying out; open the guide where asked."""
+        note = LayoutAdviceDialog(self)
+        note.exec()
+        if note.wants_guide:
+            self.show_guide()
 
     def show_guide(self) -> None:
         """Open the guide to the window."""

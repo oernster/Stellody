@@ -35,6 +35,7 @@ from stellody.ui.about_credits import NO_SHOP_AFFILIATION
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.discovery_dialog import FIND_LABEL
+from stellody.ui.layout_advice import layout_html
 from stellody.ui.results_dialog import COPY_LABEL, SHOPS_LABEL
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 from stellody.ui.widgets import ReadingPane
@@ -256,6 +257,7 @@ def guide_html() -> str:
         f"{_bottom_tray_html()}<hr>"
         f"{_reading_html()}<hr>"
         f"{_discovery_html()}<hr>"
+        f"{layout_html()}<hr>"
         f"{_rules_html()}"
     )
 

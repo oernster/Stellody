@@ -49,6 +49,7 @@ from stellody.ui.equaliser import EqualiserDialog
 from stellody.ui.filter_dialog import FilterDialog
 from stellody.ui.guide import GuideDialog
 from stellody.ui.health import HealthDialog
+from stellody.ui.layout_advice import LayoutAdviceDialog
 from stellody.ui.repairing import RepairDialog
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.scan_summary import ScanSummaryDialog
@@ -169,6 +170,7 @@ BUILDERS = {
     "FilterDialog": lambda parent: FilterDialog(Narrowing(), parent),
     "GuideDialog": lambda parent: GuideDialog(parent),
     "HealthDialog": lambda parent: HealthDialog(_issues(), parent),
+    "LayoutAdviceDialog": lambda parent: LayoutAdviceDialog(parent),
     "LicenceDialog": lambda parent: LicenceDialog(
         "Model", resources.model_licence_path(), parent
     ),
