@@ -34,7 +34,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
-from stellody.application.asking import Pause, asked
+from stellody.application.asking import Pause, asked, waited
 from stellody.application.discovery_ports import (
     CatalogueSource,
     GenreMemory,
@@ -42,8 +42,10 @@ from stellody.application.discovery_ports import (
     RunCancelled,
     SimilaritySource,
     SourceFailed,
+    SourceRefused,
     SourceUnavailable,
 )
+from stellody.application.passing import PASS_PAUSE_SECONDS, Passes
 from stellody.application.ports import CancelledCheck
 from stellody.application.remembering import (
     CatalogueMemory,
@@ -63,34 +65,30 @@ from stellody.application.values import (
 from stellody.domain.album import Album
 from stellody.domain.discovery import (
     Gaps,
-    SimilarArtist,
     albums_missing,
     artists_missing,
+    held_by_artist,
+    playing_something_ticked,
     source_artists,
-    wanted_by,
+    still_to_ask,
 )
-from stellody.domain.matching import ReleaseMatch, matched
+from stellody.domain.matching import ReleaseMatch
 
 # How many similar artists to ask for. Settled in PLAN.md and confirmed on
 # 2026-09-06: it is a decision about how much to put in front of somebody
 # rather than a fact about anything, so it is named here and nowhere else.
 SIMILAR_WANTED = 10
+# Said against an artist the catalogue would not talk about on any pass. Plain
+# words rather than a status, since it reaches a person: the discovery file
+# treats it as a hole and declines to write, so what somebody sees is the last
+# complete answer plus this name.
+REFUSED_EVERY_PASS = "the catalogue stayed busy through every pass"
+# The two endings that cut a run short, each answered from more than one
+# place, so each is named once.
+CANCELLED = RunReport(outcome=RunOutcome.CANCELLED)
+UNAVAILABLE = RunReport(outcome=RunOutcome.UNAVAILABLE)
 # Handed how far a run has got, so a window can say so.
 ProgressReport = Callable[[DiscoveryProgress], None]
-
-
-def held_by_artist(albums: tuple[Album, ...]) -> dict[str, frozenset[ReleaseMatch]]:
-    """What each album artist is already held to have, ready to compare.
-
-    Built once for a whole run rather than per artist, since an album is read
-    the same way however many times it is asked about.
-    """
-    held: dict[str, set[ReleaseMatch]] = {}
-    for album in albums:
-        held.setdefault(album.identity.album_artist, set()).add(
-            matched(album.identity.title)
-        )
-    return {artist: frozenset(found) for artist, found in held.items()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,46 +182,63 @@ class Discovery:
         ambiguous: list[Ambiguity] = []
         failed: list[SourceFailure] = []
         met: set[str] = set()
-        for done, artist in enumerate(artists):
-            if cancelled():
-                return self._so_far(found, unresolved, ambiguous, failed), RunReport(
-                    outcome=RunOutcome.CANCELLED
+        passes, done = Passes(artists), 0
+        while True:
+            for artist in passes.pending:
+                if cancelled():
+                    return self._so_far(found, unresolved, ambiguous, failed, CANCELLED)
+                report(
+                    DiscoveryProgress(
+                        artist=artist,
+                        done=done,
+                        total=len(artists),
+                        candidates=len(met),
+                    )
                 )
-            report(
-                DiscoveryProgress(
-                    artist=artist,
-                    done=done,
-                    total=len(artists),
-                    candidates=len(met),
-                )
-            )
+                try:
+                    gaps = self._about(
+                        artist,
+                        held.get(artist, frozenset()),
+                        everyone,
+                        ticked,
+                        cancelled,
+                    )
+                except RunCancelled:
+                    return self._so_far(found, unresolved, ambiguous, failed, CANCELLED)
+                except SourceUnavailable:
+                    return self._so_far(
+                        found, unresolved, ambiguous, failed, UNAVAILABLE
+                    )
+                except SourceRefused:
+                    passes.refuse(artist)
+                    continue
+                except SourceFailed as failure:
+                    failed.append(SourceFailure(artist=artist, reason=str(failure)))
+                    done += 1
+                    continue
+                done += 1
+                if gaps is None:
+                    unresolved.append(artist)
+                elif isinstance(gaps, Ambiguity):
+                    ambiguous.append(gaps)
+                else:
+                    found.append(gaps)
+                    met.update(
+                        candidate.identifier
+                        for candidate in gaps.artists
+                        if candidate.identifier and candidate.identifier not in known
+                    )
+            if not passes.again():
+                break
             try:
-                gaps = self._about(
-                    artist, held.get(artist, frozenset()), everyone, ticked, cancelled
-                )
+                waited(PASS_PAUSE_SECONDS, cancelled, self.pause)
             except RunCancelled:
-                return self._so_far(found, unresolved, ambiguous, failed), RunReport(
-                    outcome=RunOutcome.CANCELLED
-                )
-            except SourceUnavailable:
-                return self._so_far(found, unresolved, ambiguous, failed), RunReport(
-                    outcome=RunOutcome.UNAVAILABLE
-                )
-            except SourceFailed as failure:
-                failed.append(SourceFailure(artist=artist, reason=str(failure)))
-                continue
-            if gaps is None:
-                unresolved.append(artist)
-            elif isinstance(gaps, Ambiguity):
-                ambiguous.append(gaps)
-            else:
-                found.append(gaps)
-                met.update(
-                    candidate.identifier
-                    for candidate in gaps.artists
-                    if candidate.identifier and candidate.identifier not in known
-                )
-        return self._so_far(found, unresolved, ambiguous, failed), None
+                return self._so_far(found, unresolved, ambiguous, failed, CANCELLED)
+        failed.extend(
+            SourceFailure(artist=artist, reason=REFUSED_EVERY_PASS)
+            for artist in passes.refused
+        )
+        return self._so_far(found, unresolved, ambiguous, failed)
 
     @staticmethod
     def _so_far(
@@ -231,14 +246,23 @@ class Discovery:
         unresolved: list[str],
         ambiguous: list[Ambiguity],
         failed: list[SourceFailure],
-    ) -> RunReport:
-        """What has been gathered, in the shape a report is written in."""
-        return RunReport(
-            outcome=RunOutcome.COMPLETED,
-            gaps=tuple(found),
-            unresolved=tuple(unresolved),
-            ambiguous=tuple(ambiguous),
-            failed=tuple(failed),
+        ending: RunReport | None = None,
+    ) -> tuple[RunReport, RunReport | None]:
+        """What has been gathered, beside the ending that cut it short.
+
+        The pair rather than the report alone, since every caller wants both
+        and the three that end early would otherwise each build the same tuple
+        by hand.
+        """
+        return (
+            RunReport(
+                outcome=RunOutcome.COMPLETED,
+                gaps=tuple(found),
+                unresolved=tuple(unresolved),
+                ambiguous=tuple(ambiguous),
+                failed=tuple(failed),
+            ),
+            ending,
         )
 
     def _about(
@@ -296,7 +320,7 @@ class Discovery:
         half used to say nothing at all; a listener watching a bar that had
         stopped moving had no way to tell a long wait from a hang.
         """
-        asking = self._to_ask(gathered, known)
+        asking = still_to_ask(gathered, known)
         for done, (identifier, name) in enumerate(asking):
             # No check of its own here. Every candidate is asked about through
             # `_asked`, which consults the cancel before each request, so a
@@ -317,42 +341,8 @@ class Discovery:
                 return None
         self.memory.remember(known)
         return tuple(
-            replace(gaps, artists=self._kept(gaps.artists, known, ticked))
+            replace(gaps, artists=playing_something_ticked(gaps.artists, known, ticked))
             for gaps in gathered
-        )
-
-    @staticmethod
-    def _to_ask(
-        gathered: tuple[Gaps, ...], known: dict[str, tuple[str, ...]]
-    ) -> tuple[tuple[str, str], ...]:
-        """Every candidate still to ask about, each once, in the order met.
-
-        Counted before any of them is asked, so the total a bar is measured
-        against is the truth rather than a guess revised as it goes.
-        """
-        asking: dict[str, str] = {}
-        for gaps in gathered:
-            for candidate in gaps.artists:
-                if candidate.identifier and candidate.identifier not in known:
-                    asking.setdefault(candidate.identifier, candidate.name)
-        return tuple(asking.items())
-
-    @staticmethod
-    def _kept(
-        candidates: tuple[SimilarArtist, ...],
-        known: dict[str, tuple[str, ...]],
-        ticked: tuple[str, ...],
-    ) -> tuple[SimilarArtist, ...]:
-        """Those of these candidates playing something that was ticked.
-
-        A candidate nothing is known about is kept rather than dropped, on the
-        same ground as every other undescribed one: silence from a catalogue
-        is not a statement that somebody plays the wrong thing.
-        """
-        return tuple(
-            candidate
-            for candidate in candidates
-            if wanted_by(known.get(candidate.identifier, ()), ticked)
         )
 
     def _genres_of(self, identifier: str, cancelled: CancelledCheck) -> tuple[str, ...]:

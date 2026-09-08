@@ -43,7 +43,16 @@ Pause = Callable[[float], None]
 # catalogue answers is remembered from then on. It is not paid again on the
 # next run.
 #
-# Five rather than the three it was until 2026-09-08, when a run over two
+# Two, because a run does its waiting elsewhere. Measured on 2026-09-08 over
+# Oliver's whole library: MusicBrainz refused 45 of 82 asks with "the
+# MusicBrainz web server is currently busy". A run that waited each refusal
+# out where it stood spent nine seconds a request against a pace of 1.1, which
+# came to an estimated three hours. It goes round the refused artists again
+# instead, so the waiting is paid once for a whole pass rather than once per
+# artist; see `passing.py`. Two asks rather than one so a single stumble is
+# still absorbed on the spot.
+#
+# Kept from the day it was five, which was measured when a run over two
 # genres came back holding one source artist out of seven and Oliver asked
 # what had happened to the rest. Measured from that run's own record: 27
 # requests to MusicBrainz in 65 seconds, 21 of them refused, every refusal
@@ -57,7 +66,7 @@ Pause = Callable[[float], None]
 # this was changed: the gate stamps its clock when a request is let through,
 # so the gaps in that record are exactly what one request every 1.1 seconds
 # produces.
-RETRY_ATTEMPTS = 6
+RETRY_ATTEMPTS = 2
 RETRY_PAUSE_SECONDS = 2.0
 # A wait is taken in slices so that stopping is felt rather than merely
 # obeyed. Waiting out two refusals is six seconds; somebody who has pressed

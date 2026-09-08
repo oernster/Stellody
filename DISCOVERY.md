@@ -604,17 +604,36 @@ Verified by: `tests/application/test_discovery.py::test_no_network_stops_the_run
 
 Priority: Must
 
-Requirement: If a source answers that the request rate has been exceeded, then
-the discovery service shall wait and retry that request rather than discarding
-the artist, up to a stated number of attempts.
+Requirement: If a source refuses a request, then the discovery service shall
+ask again once on the spot; failing that, it shall put that artist back for a
+later pass rather than discarding them. It shall make further passes over the
+artists still owed an answer until either none is owed, two passes running
+achieve nothing or twelve passes have been made. An artist still owed an answer
+then shall be reported as refused.
 
-Rationale: A rate refusal is the source asking for patience, not reporting that
-the data is absent.
+Rationale: A refusal is the source asking for patience, not reporting that the
+data is absent.
 
-Acceptance: Given a source refusing once then answering, when the run completes,
-then that artist's results are present and exactly one retry was made.
+The patience is spent on a pass rather than on an artist. Measured on
+2026-09-08 over Oliver's whole library: MusicBrainz refused 45 of 82 asks,
+saying in its own words that its web server was busy. A run that waited each
+refusal out where it stood spent nine seconds a request against a pace of
+1.1 seconds. That run reported three hours remaining. Waiting where you stand
+costs a minute an artist; waiting during the next artist's turn costs nothing,
+while each pass is smaller than the one before it.
 
-Verified by: `tests/application/test_discovery.py::test_rate_refusal_is_retried`
+Two passes running that achieve nothing is where it stops, because a service
+that is busy for a spell is worth another pass while one that is down stays
+down. Twelve is a safety net rather than a plan, since passes that are getting
+anywhere shrink geometrically and finish long before it.
+
+Acceptance: Given a source refusing once then answering, when the run
+completes, then that artist's results are present; given a source refusing an
+artist throughout one pass and answering on the next, then that artist's
+results are present; given a source refusing everybody on two passes running,
+then the run stops asking and reports those artists as refused.
+
+Verified by: `tests/application/test_discovery.py::test_rate_refusal_is_retried`, `tests/application/test_discovery.py::test_an_artist_refused_on_one_pass_is_asked_about_on_the_next`, `tests/application/test_discovery.py::test_a_refusal_that_never_relents_becomes_a_failure`, `tests/application/test_passing.py`
 
 ---
 

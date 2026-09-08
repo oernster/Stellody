@@ -12,6 +12,7 @@ from discovery_support import (
     ROCK,
     Catalogue,
     Similarity,
+    Stopping,
     Waits,
     make_album,
     never,
@@ -24,18 +25,26 @@ from stellody.application.asking import (
 )
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovering import (
+    REFUSED_EVERY_PASS,
     SIMILAR_WANTED,
     Discovery,
-    held_by_artist,
 )
 from stellody.application.discovery_ports import SourceFailed, SourceUnavailable
+from stellody.application.passing import PASS_PAUSE_SECONDS, QUIET_PASSES
 from stellody.application.values import DiscoveryProgress, RunOutcome
-from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+from stellody.domain.discovery import ReleaseGroup, SimilarArtist, held_by_artist
 
 # How many times the run is allowed to ask whether it should stop before the
 # answer becomes yes. Two, so the stop lands inside a wait rather than at the
 # boundary before one, which is the case that used to cost seconds.
 SLICES_BEFORE_STOP = 2
+# A catalogue that refuses however often it is asked, so the passes run out
+# rather than the refusals doing so.
+NEVER_RELENTS = 999
+# How many times a run is allowed to ask whether it should stop before the
+# answer becomes yes, chosen so that the yes lands inside the pause between
+# one pass and the next rather than before the first pass has been made.
+STOP_DURING_THE_PAUSE = 20
 
 
 def make_run(
@@ -200,15 +209,46 @@ def test_a_run_does_not_lose_an_artist_to_three_refusals() -> None:
 
 
 def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
-    """Patience has an end; what happens then is written down."""
-    catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
+    """Patience has an end; what happens then is written down.
+
+    A pass that achieves nothing twice running is where it stops. A service
+    that is busy for a spell is worth another pass; one that is down stays
+    down; going round it a dozen times is a dozen times of somebody's evening.
+    """
+    catalogue = Catalogue(refusals=NEVER_RELENTS)
     run, _, _, waits = make_run(catalogue)
     report = run.run((make_album("U2", "A"),), ROCK, nothing, never)
     assert [failure.artist for failure in report.failed] == ["U2"]
-    # The wait doubles rather than growing by a step, so what is owed after
-    # five refusals is two, four, eight, sixteen and thirty-two seconds.
-    owed = RETRY_PAUSE_SECONDS * sum(2**step for step in range(RETRY_ATTEMPTS - 1))
+    assert report.failed[0].reason == REFUSED_EVERY_PASS
+    # Two asks on each of two passes, so one wait between the asks each time,
+    # and one pause between the passes.
+    owed = RETRY_PAUSE_SECONDS * QUIET_PASSES + PASS_PAUSE_SECONDS
     assert sum(waits.waited) == pytest.approx(owed)
+    assert len(catalogue.identified) == RETRY_ATTEMPTS * QUIET_PASSES
+
+
+def test_a_stop_during_the_pause_between_passes_is_felt() -> None:
+    """The pause is taken in slices for the same reason every other wait is:
+    a stop pressed at the start of one must not be acted on at the end of it.
+    """
+    catalogue = Catalogue(refusals=NEVER_RELENTS)
+    run, _, _, _ = make_run(catalogue)
+    stopping = Stopping(after=STOP_DURING_THE_PAUSE)
+    report = run.run((make_album("U2", "A"),), ROCK, nothing, stopping)
+    assert report.outcome is RunOutcome.CANCELLED
+
+
+def test_an_artist_refused_on_one_pass_is_asked_about_on_the_next() -> None:
+    """The point of the passes. Measured on 2026-09-08 over the whole library:
+    MusicBrainz refused 45 of 82 asks saying its web server was busy. A run that
+    waited each refusal out where it stood was three hours of sitting still.
+    Waiting during the next artist's turn costs nothing.
+    """
+    catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
+    run, _, _, _ = make_run(catalogue)
+    report = run.run((make_album("U2", "A"),), ROCK, nothing, never)
+    assert report.failed == ()
+    assert [gaps.artist for gaps in report.gaps] == ["U2"]
 
 
 def test_other_errors_do_not_stop_the_run() -> None:

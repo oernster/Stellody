@@ -149,6 +149,54 @@ def wanted_by(stated: tuple[str, ...], ticked: tuple[str, ...]) -> bool:
     return any(name in named for name in ticked)
 
 
+def held_by_artist(albums: tuple[Album, ...]) -> dict[str, frozenset[ReleaseMatch]]:
+    """What each album artist is already held to have, ready to compare.
+
+    Built once for a whole run rather than per artist, since an album is read
+    the same way however many times it is asked about.
+    """
+    held: dict[str, set[ReleaseMatch]] = {}
+    for album in albums:
+        held.setdefault(album.identity.album_artist, set()).add(
+            matched(album.identity.title)
+        )
+    return {artist: frozenset(found) for artist, found in held.items()}
+
+
+def still_to_ask(
+    gathered: tuple[Gaps, ...], known: dict[str, tuple[str, ...]]
+) -> tuple[tuple[str, str], ...]:
+    """Every candidate still to ask about, each once, in the order met.
+
+    Counted before any of them is asked, so the total a bar is measured
+    against is the truth rather than a guess revised as it goes.
+    """
+    asking: dict[str, str] = {}
+    for gaps in gathered:
+        for candidate in gaps.artists:
+            if candidate.identifier and candidate.identifier not in known:
+                asking.setdefault(candidate.identifier, candidate.name)
+    return tuple(asking.items())
+
+
+def playing_something_ticked(
+    candidates: tuple[SimilarArtist, ...],
+    known: dict[str, tuple[str, ...]],
+    ticked: tuple[str, ...],
+) -> tuple[SimilarArtist, ...]:
+    """Those of these candidates playing something that was ticked.
+
+    A candidate nothing is known about is kept rather than dropped, on the
+    same ground as every other undescribed one: silence from a catalogue is
+    not a statement that somebody plays the wrong thing.
+    """
+    return tuple(
+        candidate
+        for candidate in candidates
+        if wanted_by(known.get(candidate.identifier, ()), ticked)
+    )
+
+
 def source_artists(
     albums: tuple[Album, ...], ticked: tuple[str, ...]
 ) -> tuple[str, ...]:
