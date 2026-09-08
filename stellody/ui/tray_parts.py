@@ -31,6 +31,13 @@ def icon_button(
     """
     button = QPushButton(parent)
     button.setObjectName("TrayButton")
+    # The ring belongs to the keyboard. Qt gives a button StrongFocus, which
+    # takes the focus on a click as well as on Tab, so a pressed button kept
+    # the ring afterwards with the pointer nowhere near it: measured on
+    # 2026-09-08 as hasFocus True with underMouse False. Reported as the icon
+    # wearing a green rectangle it had not earned. Tab focus alone leaves it a
+    # stop on the ring without a press ever painting one.
+    button.setFocusPolicy(Qt.FocusPolicy.TabFocus)
     button.setToolTip(tip)
     button.setFixedSize(button_px, button_px)
     button.setIconSize(QSize(icon_px, icon_px))

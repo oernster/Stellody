@@ -87,6 +87,31 @@ def test_no_pane_appears_in_the_windows_focus_chain(
         ), "a plain container reached the focus chain"
 
 
+def test_no_picture_button_takes_the_focus_on_a_press(
+    application: QApplication, window
+) -> None:
+    """A press must not leave a ring behind it. Reported 2026-09-08.
+
+    Qt gives a button StrongFocus, which takes focus on a click as well as on
+    Tab, so pressing one left the green ring on it with the pointer nowhere
+    near: on an icon button the ring reads as a rectangle laid over the
+    artwork. The ring belongs to the keyboard, so these are Tab stops that a
+    press cannot light.
+
+    Every button in both trays rather than the one that was reported, since
+    they are all built by one function and the next report would be about
+    whichever other one somebody pressed.
+    """
+    buttons = [
+        button
+        for button in window.findChildren(QPushButton)
+        if button.objectName() == "TrayButton"
+    ]
+    assert buttons, "no picture buttons were found to check"
+    for button in buttons:
+        assert button.focusPolicy() == Qt.FocusPolicy.TabFocus, button.toolTip()
+
+
 def test_the_menu_bar_is_the_first_stop(application: QApplication, window) -> None:
     """Somebody reaching for the keyboard should find File before a button.
 

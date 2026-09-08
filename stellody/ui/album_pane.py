@@ -23,7 +23,7 @@ on its first track, which is what the play button at the top then starts.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
+from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -43,6 +43,7 @@ from stellody.ui.models import AlbumTreeModel
 from stellody.ui.row_text import Column
 from stellody.ui.stars import StarRating
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
+from stellody.ui.tray_parts import icon_button
 
 # Said rather than left to be inferred: this rates the ALBUM, while the stars
 # down on the position row rate one track; the two are inches apart.
@@ -69,16 +70,14 @@ TRACK_COLUMNS = 2
 
 
 def _button(parent: QWidget, path, tip: str, on_click) -> QPushButton:
-    """One picture button, sized for this pane's header."""
-    button = QPushButton(parent)
-    button.setObjectName("TrayButton")
-    button.setToolTip(tip)
-    button.setFixedSize(PANE_BUTTON_PX, PANE_BUTTON_PX)
-    button.setIconSize(QSize(PANE_ICON_PX, PANE_ICON_PX))
-    if path is not None:
-        button.setIcon(QIcon(str(path)))
-    button.clicked.connect(on_click)
-    return button
+    """One picture button, sized for this pane's header.
+
+    Built by the trays' own function rather than beside it: these wear the
+    same name in the stylesheet, so they are the same control at a different
+    size and everything true of one is owed to this. Written out separately
+    once, it missed the rule that a press must not leave a ring.
+    """
+    return icon_button(parent, path, tip, on_click, PANE_BUTTON_PX, PANE_ICON_PX)
 
 
 def _spans(rows: int) -> tuple[tuple[int, int], ...]:

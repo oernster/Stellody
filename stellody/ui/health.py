@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
@@ -20,6 +18,7 @@ from stellody.shared.version import APP_NAME
 from stellody.ui.bottom_tray import BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, REPAIR_TOOLTIP
 from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.display import native_path
+from stellody.ui.tray_parts import icon_button
 from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 760
@@ -114,15 +113,14 @@ def _repair_button(
     to accept, else something already accepted that could be taken back. With
     neither, it would open a screen saying nothing.
     """
-    button = QPushButton(parent)
-    button.setObjectName("TrayButton")
-    button.setToolTip(REPAIR_TOOLTIP)
-    button.setFixedSize(BOTTOM_BUTTON_PX, BOTTOM_BUTTON_PX)
-    button.setIconSize(QSize(BOTTOM_ICON_PX, BOTTOM_ICON_PX))
-    path = resources.library_health_icon_path()
-    if path is not None:
-        button.setIcon(QIcon(str(path)))
-    button.clicked.connect(on_click)
+    button = icon_button(
+        parent,
+        resources.library_health_icon_path(),
+        REPAIR_TOOLTIP,
+        on_click,
+        BOTTOM_BUTTON_PX,
+        BOTTOM_ICON_PX,
+    )
     button.setEnabled(enabled)
     return button
 
