@@ -102,7 +102,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt's image codecs, the filesystem. | `domain` and `application`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt's image codecs, Qt's network stack, the filesystem. | `domain` and `application`. |
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain` and `application`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
@@ -918,6 +918,131 @@ with nothing playing it was indistinguishable from empty space. It wears the
 surface both trays wear and each bar keeps a low mark on the floor, so silence
 reads as twenty empty bars rather than as an absence.
 
+## Discovering what the library does not hold
+
+**It is specified before it is described.** `DISCOVERY.md` and `SHOPS.md` hold
+the two specifications this was built from, each requirement naming the test
+that proves it. What follows is the structure those requirements landed in, so
+neither document repeats the other.
+
+**A run is two stages and the second is the longer one.** The first asks, for
+every artist inside the ticked genres, what that artist released and who
+resembles them; the second asks what each of those suggested artists plays, so
+the ticks can be applied to them too. The toolbar therefore carries one bar per
+stage rather than one bar for the run: a single bar back at a tenth is either
+bad news or ordinary progress with nothing to say which, while a full bar above
+a climbing one states where the run is at a glance.
+
+**Genre is what makes the reach outward acceptable, rather than a convenience.**
+A run names the subset of artists somebody ticked, never an inventory of what
+they own. That is the whole of the difference between this and a recommender,
+which is why the ticks scope the ask rather than filter the answer.
+
+**Two services, because neither answers both questions.** MusicBrainz has no
+notion of similarity; ListenBrainz takes MusicBrainz identifiers and answers
+with more of them, so the two compose with nothing to translate between.
+Discogs and Last.fm were excluded for one reason stated in `DISCOVERY.md`: both
+need a credential; a credential compiled into a GPL application is a published
+credential.
+
+**Two services added ONE permitted module, not two.** Neither catalogue client
+holds a socket: `infrastructure/catalogue.py` and `infrastructure/similarity.py`
+hand a question to `infrastructure/fetching.py` and get an answer back. The
+offline structural test's whole value is that its list is short and that
+lengthening it is an edit somebody has to defend, so a feature reaching two
+hosts through one socket is worth writing that way. `infrastructure/courtesy.py`
+holds the user agent and the pacing for all three services asked anything, since
+a gap honoured in one client and forgotten in another is a client that gets the
+whole application refused.
+
+**A request in flight is killed rather than abandoned; that is why it is on
+Qt.** Nothing portable interrupts a thread waiting on a socket and the wait for
+a response happens inside the call that opens it, so a blocking client made the
+timeout the floor on how fast a stop could be felt. Qt's network stack is event
+driven, so the request is asked every quarter second whether anybody still wants
+its answer. Measured on 2026-09-07 against a server that accepts a connection
+then says nothing: the reply ends in under a millisecond, where the blocking
+client sat until its full twenty second timeout.
+
+**A stopped run is abandoned rather than waited for.** Cutting it loose from the
+window is what makes a stop instant rather than eventual; reports arriving after
+the press are dropped, since a run reports right up to the moment it notices.
+What that costs is the abandoned run's share of the pacing, which is bounded by
+the gap the terms ask for now that its last request dies with it.
+
+**The button carries both meanings, so it says which one it is carrying.** A
+confirmation was tried first and measured doing the opposite of its purpose: a
+trace caught the question answering No while the run carried on, which was the
+whole of a defect reported three times as the stop never stopping. A press on a
+control plainly reading "Stop looking" needs no checking; what the question was
+really guarding against was a button that gave no sign of having changed
+meaning.
+
+**The estimate is read off the run rather than off the configured gap.** A run
+meets refusals and each costs up to three attempts with a lengthening wait, so
+an estimate built on the permitted rate would read as confident while being
+wrong by minutes on exactly the runs where somebody needs it. The second stage
+is projected from the candidates the first has turned up, because covering only
+the first stage would understate the wait by the larger half of it. Under two
+finished units it says nothing rather than swinging.
+
+**Colour never carries the meaning alone.** Source artists and candidate artists
+are drawn apart; every row also states its kind in words. That was reported
+rather than reasoned: shown blue names, amber names and plain names, the person
+who commissioned the feature asked which lines were albums and which were
+tracks. Nothing in a run is ever a track, which the key can say outright.
+
+**A candidate artist's albums are fetched when somebody opens them.** One
+catalogue request costs at least the gap the terms require, so asking during the
+run would add a request per surviving candidate and roughly double the longer
+stage. Most are never opened; the ones that are pay for themselves.
+
+**Reaching a shop opens no connection at all.** `infrastructure/browsing.py`
+hands an address to whatever the machine opens pages with, which is the same act
+as clicking a link anywhere else; everything after that happens in the browser,
+under the listener's own cookies. It is not in the offline guard's list for that
+reason. What goes out is the shop's own template with an artist and a title put
+into it, which `tests/domain/test_shop_address.py` asserts rather than assumes.
+
+**The shop list is data because shops move.** Measured across eight shops in one
+afternoon on 2026-09-07: one had closed, one had walled its search and one had
+moved it to a path answering 404. A list compiled into the application is a
+release every time that happens. `shops.json` therefore records the shipped list
+beside the list in use, so a file nobody has edited follows a corrected address
+while an edited one is left exactly as it is; a file that cannot be read falls
+back to the shipped defaults and is not overwritten, because a half-parsed file
+somebody is editing must not be replaced under them.
+
+**Two albums are the same album when they are the same recording, not the same
+pressing.** A remaster is the same album; a live version is not. Both sides
+arrive as a key plus a kind: the library reads its kinds out of the title then
+takes the qualifier off, while the catalogue takes its kinds as stated data and
+drops a trailing word that only repeats one of them. The rule had to be
+symmetric, since the library holds `Secret World (Live)` where the catalogue
+holds that record as `Secret World` with Live stated separately, so the two
+would never have met. `stellody/domain/matching.py` is that rule, built on the
+same `comparison_key` primitive the search uses so the two cannot drift on
+normalisation; `AlbumIdentity` is deliberately untouched, its handle keying the
+artwork cache and every rating.
+
+**The year is deliberately absent from the key.** A remastered album's tag
+carries the remaster's year while the release group carries the original's, so a
+key holding the year makes every remastered album a false gap.
+
+**What a candidate plays is remembered between runs.** The similarity source
+returns identifiers with no genre, so filtering candidates by genre costs one
+lookup each: ten candidates for each of 327 artists is 3,270 requests, which is
+another fifty-four minutes at the permitted rate. An answer already held is
+still judged against the genres ticked, so remembering cannot smuggle a
+candidate past the scope of a run.
+
+**One file, replaced by every completed run.** Not a directory of dated files,
+which becomes a thing to tidy up; not a merge, which would have to rule on a
+candidate offered once and owned since. A run states what is missing at the
+moment it finished, which is the only claim it can honestly make. It is written
+through `infrastructure/atomic.py`, beside the shop list, so a failed write
+leaves the last good copy rather than half of one.
+
 ## The update check
 
 **Three answers, kept apart.** There is a newer version, this is the newest
@@ -973,9 +1098,22 @@ size two icons somebody is trying to tell apart read as one smudge, which is the
 whole task this screen exists for; `INLINE_ICON_PX` states it once.
 
 **A tray that gains a control the guide does not explain is a failure.**
-`tests/ui/test_guide.py` is parametrised over every resource getter, so the
-guard is walked off the real assets rather than off a list somebody maintains,
-for the reason the menu bar is swept.
+`tests/ui/test_guide.py` is parametrised over every resource getter the module
+defines, minus a named set of icons that are not a control of their own, each
+carrying its reason: the application's own mark, the second face of a control
+already named, the chevron a view draws and the cross composed over another
+picture. So a NEW icon is explained by default and has to be argued out of it
+in front of somebody, which is how a module is granted permission to open a
+connection.
+
+That is a correction rather than a description. The parametrised list used to
+be written the other way round, as the getters to check; this document claimed
+it was walked off the real assets the whole time it was not. The
+discovery button then shipped with no line in the guide at all and every gate
+stayed green, which is the failure the sweep exists to prevent: whoever forgets
+a guide entry forgets the list entry with it. Held now by planting the defect
+that shipped, the guide drawing no discovery icon, then reading the case named
+`discover_icon_path` fail.
 
 **Under the furniture sit the rules no single screen can state.** Files are only
 ever read, folders group while tags name, a correction differs from a stated

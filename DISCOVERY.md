@@ -4,8 +4,13 @@ The specification for the first stage of PLAN.md milestone 2. It is written
 before any code, because the milestone was explicitly undesigned and a feature
 generated from a loose description is a feature debugged rather than built.
 
-Nothing here is implemented yet. Where this document and the code disagree once
-work starts, this document is amended rather than quietly diverged from.
+It is built. Where this document and the code disagree, this document is
+amended rather than quietly diverged from; every requirement below names the
+test that holds it, so a claim here is checkable against the suite.
+
+What is not finished is the half no test supplies: a run against the live
+services with its answer read by a person. `PLAN.md` carries that as the open
+work.
 
 ## 1. Introduction
 
@@ -24,10 +29,13 @@ and a dialog showing what that file holds when a run completes.
 Out of scope, stated first so it is a past decision rather than a future
 argument:
 
-- **Buying anything.** Reaching a shop is stage three of the milestone and is
-  not designed.
-- **Buying from the results.** Reaching a shop is stage three and is still not
-  designed. The results dialog names records; it never offers to get them.
+- **Buying anything.** Reaching a shop is stage two of the milestone, specified
+  separately in `SHOPS.md` and built on top of what this stage produces.
+  Nothing here buys, prices or holds an account.
+- **Reaching a shop from these results.** Written as out of scope while this
+  stage stood alone; `SHOPS.md` is what reversed it, adding tick boxes to the
+  results dialog and a shops screen behind them. This stage still names records
+  and never fetches one.
 - **Recommending by anything except what is held.** No listening history, no
   taste model, no ranking beyond what a source itself states.
 - **Writing to a music file.** The invariant the whole project exists for.
@@ -54,7 +62,8 @@ One meaning per term, for the life of the document.
 
 ### 1.4 References
 
-- `PLAN.md` milestone 2, which this stage is the first third of.
+- `PLAN.md` milestone 2, which this stage is the first half of.
+- `SHOPS.md`, the second half, which builds on the results this stage produces.
 - `ARCHITECTURE.md`, whose layering and purity invariants govern every
   requirement here.
 - MusicBrainz API and its rate limiting document.
@@ -64,9 +73,15 @@ One meaning per term, for the life of the document.
 
 ### 2.1 Product perspective
 
-An addition to an existing application, taking the fourth outward-reaching
+An addition to an existing application, taking the third outward-reaching
 module after the cover chooser and the update check. It is a client of the
 application layer exactly as every other dialog is.
+
+Two services are reached through ONE of them: neither catalogue client holds a
+socket, both handing their questions to `infrastructure/fetching.py`. Invariant
+12 names four permitted modules rather than three, the fourth being the local
+channel a second launch speaks to the running copy over, which was found by
+this work rather than added by it.
 
 ### 2.2 The one user class
 
@@ -114,16 +129,23 @@ artist; the largest, Rock, holds 107.
 
 Priority: Must
 
-Requirement: The main window shall place a discovery button in the toolbar after
-the separator and to the left of the theme button.
+Requirement: The main window shall place a discovery button in the toolbar to
+the left of the volume control, with the separator that divides the library
+controls from the sound controls to its right.
 
-Rationale: Discovery is a library action rather than a sound control; the separator is already the line between those two ideas.
+Rationale: Discovery is a library action rather than a sound control, so it
+belongs on the library side of that line. Amended on 2026-09-07, when both
+trays were ruled into groups by what each control acts on: as first written
+this asked for a position to the left of the theme button, which put it among
+the sound controls it is not one of. The separator is the line between the two
+ideas; which side of it this sits on is the requirement. The theme button was
+only ever a landmark for saying so.
 
 Acceptance: Given the main window is open, when the toolbar is read left to
-right, then the buttons after the separator are discovery, theme, help in that
-order.
+right, then the discovery button appears before the separator and before the
+volume control.
 
-Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_before_the_theme_button`
+Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_left_of_the_volume_button`
 
 ---
 
@@ -412,7 +434,7 @@ then the first bar reads one third and the pair names that artist on hover;
 given the run reaches its second stage, then the first bar is left full and the
 second counts against the number of candidates to be asked about.
 
-Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery.py::test_the_second_half_of_a_run_reports_as_it_goes`
+Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery_narrowing.py::test_the_second_half_of_a_run_reports_as_it_goes`
 
 ---
 
@@ -473,7 +495,7 @@ a run is wedged inside a request that will not answer at all, then the stop
 still returns at once, the window is free to start another and that request is
 dropped rather than left to reach its timeout.
 
-Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_wiring.py::test_a_stop_is_acknowledged_before_the_run_has_stopped`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`
+Verified by: `tests/application/test_discovery.py::test_cancel_stops_before_the_next_request`, `tests/application/test_discovery.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`
 
 ---
 
@@ -495,7 +517,7 @@ Acceptance: Given a completed run over one source artist with two candidate
 albums and three candidate artists, when the file is read, then it holds one key
 naming that artist, with two albums and three artists beneath it.
 
-Verified by: `tests/infrastructure/test_discovery_file.py::test_shape_of_the_written_file`
+Verified by: `tests/infrastructure/test_discovery_file.py::test_the_file_is_keyed_by_the_artist_it_was_found_for`
 
 ---
 
@@ -510,7 +532,7 @@ file untouched.
 Acceptance: Given a destination that refuses writes, when a run completes, then
 the failure is reported naming the path and the previous file is unchanged.
 
-Verified by: `tests/infrastructure/test_discovery_file.py::test_failed_write_keeps_the_old_file`
+Verified by: `tests/ui/test_discovery_wiring.py::test_a_file_that_will_not_write_is_reported`, `tests/infrastructure/test_discovery_file.py::test_nothing_is_left_half_written`
 
 ---
 
@@ -585,7 +607,7 @@ Acceptance: Given a run in progress, when the discovery button is pressed, then
 that run is asked to stop and no dialog opens; when no run is under way, then
 the same press opens the dialog.
 
-Verified by: `tests/ui/test_discovery_wiring.py::test_pressing_it_during_a_run_stops_the_run`, `tests/ui/test_discovery_wiring.py::test_the_runner_refuses_a_second_run`
+Verified by: `tests/ui/test_discovery_stopping.py::test_pressing_it_during_a_run_stops_the_run`, `tests/ui/test_discovery_wiring.py::test_the_runner_refuses_a_second_run`
 
 ---
 
@@ -649,7 +671,7 @@ Acceptance: Given a run that asked about two candidates, when a second run meets
 the same two, then no request is issued about either and both are judged against
 that run's own ticks.
 
-Verified by: `tests/application/test_discovery.py::test_what_was_remembered_is_not_asked_about_again`, `tests/ui/test_discovery_composition.py::test_a_run_is_given_somewhere_to_remember_what_it_learns`
+Verified by: `tests/application/test_discovery_narrowing.py::test_what_was_remembered_is_not_asked_about_again`, `tests/ui/test_discovery_composition.py::test_a_run_is_given_somewhere_to_remember_what_it_learns`
 
 ---
 
@@ -868,7 +890,7 @@ names all three kinds of row with a mark in each kind's own colour; when a
 source artist row is read, then it gives both counts; when a candidate row is
 read, then it names itself a similar artist.
 
-Verified by: `tests/ui/test_results_dialog.py::test_the_key_names_all_three_kinds_in_their_own_colours`, `tests/ui/test_results_dialog.py::test_a_source_row_says_how_many_of_each_sit_under_it`, `tests/ui/test_results_dialog.py::test_a_candidate_row_says_that_it_is_an_artist`
+Verified by: `tests/ui/test_results_reading.py::test_the_key_names_all_three_kinds_in_their_own_colours`, `tests/ui/test_results_reading.py::test_a_source_row_says_how_many_of_each_sit_under_it`, `tests/ui/test_results_reading.py::test_a_candidate_row_says_that_it_is_an_artist`
 
 ---
 
@@ -898,7 +920,7 @@ then the indicator names that artist and is busy rather than counted; given two
 in flight, then it names the number; given the last answer arriving, then it
 returns to carrying the instruction.
 
-Verified by: `tests/ui/test_results_dialog.py::test_the_strip_names_who_is_being_asked_about`, `tests/ui/test_results_dialog.py::test_the_strip_counts_them_when_several_are_in_flight`, `tests/ui/test_results_dialog.py::test_the_strip_goes_quiet_when_the_last_answer_lands`
+Verified by: `tests/ui/test_results_reading.py::test_the_strip_names_who_is_being_asked_about`, `tests/ui/test_results_reading.py::test_the_strip_counts_them_when_several_are_in_flight`, `tests/ui/test_results_reading.py::test_the_strip_goes_quiet_when_the_last_answer_lands`
 
 ---
 
@@ -932,7 +954,7 @@ bar is read, then it names a whole number of minutes or says less than a
 minute; when the discovery bar is read, then its right hand end carries the
 same estimate abbreviated, drawn clear of the stage name.
 
-Verified by: `tests/ui/test_run_estimate.py::test_the_status_bar_names_the_time_left`, `tests/ui/test_discovery_bar.py::test_it_writes_how_long_is_left_at_its_right_hand_end`, `tests/ui/test_discovery_bar.py::test_the_time_and_the_stage_are_never_drawn_over_each_other`, `tests/ui/test_discovery_bar.py::test_the_time_is_actually_drawn_on_the_bar`
+Verified by: `tests/ui/test_run_estimate.py::test_the_status_bar_names_the_time_left`, `tests/ui/test_discovery_bar.py::test_it_writes_how_long_is_left_at_the_right_hand_end_of_the_moving_bar`, `tests/ui/test_discovery_bar.py::test_the_time_and_the_stage_are_never_drawn_over_each_other`, `tests/ui/test_discovery_bar.py::test_the_time_is_actually_drawn_on_the_bar`
 
 ---
 

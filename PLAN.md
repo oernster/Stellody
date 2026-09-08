@@ -32,8 +32,12 @@ Cutting one means: the gate is green, the release notes are written in
 owner's to make. A tagged version's notes leave `NOTES.md` on the next pass,
 since the file carries the pending release alone.
 
-Version 1.0 is a separate readiness call for the owner to make; nothing below is
-sized against it.
+Version 1.0 was that readiness call and the owner has made it. What it commits
+to is stated in `README.md` and in `ARCHITECTURE.md` rather than here: the
+invariants are the promise. The two that matter most to somebody's collection,
+that a music file is only ever read and that nothing reaches the network unasked
+beyond the update check, are held by tests rather than by intention. Nothing
+below is sized against the number.
 
 ## 1. Make the sites findable
 
@@ -58,48 +62,33 @@ Everything else here is about music already owned. This is the opposite: which
 artists and albums are worth reaching for next, given what the library already
 says about somebody's taste.
 
-**It is the largest thing on this list by a wide margin.** Two stages rather
-than the three first written here, each usable on its own so the second is never
-a condition of the first.
+**Both stages are BUILT and neither is finished.** The code is written, the
+gate is green over it and both specifications are amended to match. What is
+open is the half no test can supply: neither stage has been run against the
+real services and had its answer checked by a person, which is what each of the
+two milestones below states as done.
 
-**Stage one: what the library is missing. Specified in `DISCOVERY.md`.** A
-button in the toolbar opens a dialog carrying the genre catalogue. Ticking
-genres scopes the run to the artists inside them, so what leaves the machine is
-a subset somebody chose rather than an inventory of everything they own. For
-each of those artists the run collects the albums by them that are not held plus
-the artists like them that are not held, filtered by the same ticks, then writes
-one JSON file keyed by the source artists.
+Stage one is specified in `DISCOVERY.md` and stage two in `SHOPS.md`. Nothing
+from either is repeated here, so the three cannot come to disagree; the
+structure they landed in is described in `ARCHITECTURE.md` under "Discovering
+what the library does not hold".
 
-Genre is a FILTER over a single source rather than a suggestion mechanism of its
-own. That is the change from the three stages first written here; it was made
-because specifying a genre stage alone would have designed a surface the artist
-stage then had to break.
-
-MusicBrainz supplies the catalogue and ListenBrainz the similarity, neither
-needing a credential. The reasoning behind that choice, the rule deciding when
-two albums are the same album and the measurements behind both are in
-`DISCOVERY.md`. Nothing from it is repeated here, so the two cannot disagree.
+**Stage one, still open: a real run, checked by hand.** A run against the live
+catalogues over one of the small genres, with the gaps it reports read through
+by somebody who knows the library. Everything about the matching rule was
+settled against titles as the LIBRARY spells them; it has never been tested
+against titles as MusicBrainz spells them, which is exactly what a live run
+answers and nothing else can. Folk or Reggae is the obvious first run, being
+small enough to read the whole of.
 
 Done when: a run over one of the small genres completes against the real
 sources and writes a file whose gaps are checked by hand and are real.
 
-**Stage two: reach the places that sell it. Specified in `SHOPS.md`.** Designed
-with Oliver on 2026-09-08 and not yet built. Once the gaps are known, this looks
-them up for sale in a browser: ticked albums, a dialog listing the shops, then
-one search opened per album at whichever shop is chosen. The shops are data in a
-file rather than a list inside the application, since three of the eight checked
-on 2026-09-07 had closed, walled or moved their search that same afternoon.
-
-Nothing else from the specification is repeated here, so the two cannot come to
-disagree. What is open is the build itself, inside out, in the order that
-document ends with.
-
-**This is consistent with the network stance rather than an exception to it.**
-The rule in "Not planned" forbids anything outward that carries the library or
-names the listener. It already records that handing an address to a browser is
-not such a call: the address goes out and the browser does the asking. Buying
-music is that same move. What would breach it is sending the library to a
-recommender; the same goes for anything else identifying the listener.
+**Stage two, still open: the shipped shop templates, on the day they ship.**
+A-03 in `SHOPS.md` puts that on every release, for the reason the shop list is
+data at all: three of the eight checked on 2026-09-07 had closed, walled or
+moved their search that same afternoon. OQ-S01 sits under it, HDtracks needing
+a human to confirm its search before it can join the defaults.
 
 Done when: a gap ticked in the results dialog opens that shop's own search for
 it in a browser, having sent nothing about the listener.
@@ -146,11 +135,14 @@ one only after the discussion above.
   deliberate non-goals. The last of them is enforced by a structural test rather
   than by intention.
 - **Anything over the network that carries your library or names you.** No
-  scrobbling, no telemetry, no account, no identifier. Two modules reach
-  outward. The cover chooser reaches only when a listener opens it; the update
-  check asks GitHub about Stellody, sending nothing whatever about the machine
-  asking. Handing the donation link to a browser is not a third: the
-  address goes outward and the browser does the asking.
+  scrobbling, no telemetry, no account, no identifier. Three modules reach
+  outward, each named in invariant 12. The cover chooser reaches only when a
+  listener opens it; the update check asks GitHub about Stellody, sending
+  nothing whatever about the machine asking; a discovery run names the artists
+  inside the genres somebody ticked, which is a subset they chose rather than
+  an inventory of what they own. Handing an address to a browser is not a
+  fourth, whether it goes to the donation page or to a shop: the address goes
+  outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
 - **Repairing the files themselves.** Accepting a correction records it in

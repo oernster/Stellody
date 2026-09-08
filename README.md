@@ -5,8 +5,8 @@
 *Stellar* and *melody*, run together. The icon says the same thing: a note over
 a galaxy, wearing a planet's ring.
 
-No account, no subscription, no adverts and nothing sent anywhere. Point it at
-your music folder and it does the rest.
+No account, no subscription, no adverts and nothing about you sent anywhere.
+Point it at your music folder and it does the rest.
 
 Above all, it never changes a single one of your files.
 
@@ -70,6 +70,14 @@ if it ever stopped being true the build would fail.
 - **Show me only the folk.** Narrow the wall of covers to the genres you ask
   for, including the albums that state none at all, then clear it in one press.
   Every tick widens what is shown, so asking for two genres shows both.
+- **What your collection is missing.** Tick the genres worth looking in and
+  Stellody asks two public music catalogues what those artists made that you do
+  not hold, along with who else sounds like them. It reports as it goes, says
+  roughly how long is left and stops the moment you ask it to. What it finds
+  opens as a list you can read and tick; from there one press takes the ticked
+  albums to a shop, opening that shop's own search for each of them in your
+  browser. Nothing is bought here and nothing is streamed: Stellody hands over
+  a search and stops.
 - **The videos that came with the album.** A bonus video sits in the album it
   belongs to, plays from the same press as any song and draws its picture at
   the size it was made; fill the window when you want it larger.
@@ -106,11 +114,13 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   bit perfect and Stellody says so rather than claiming otherwise.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting
-  them.
-- **It is still young.** It tidies muddled labelling in its own view and lets
-  you keep that, though it will never rewrite the files themselves: that is the
-  whole point rather than a limitation. A control that cannot do anything just
-  now is greyed out rather than left to disappoint you.
+  them. It will point your browser at a shop selling what you are missing; it
+  sells nothing itself, holds no account with any shop and takes nothing from a
+  sale.
+- **It reads; it never repairs.** It tidies muddled labelling in its own view
+  and lets you keep that, though it will never rewrite the files themselves:
+  that is the whole point rather than a limitation. A control that cannot do
+  anything just now is greyed out rather than left to disappoint you.
 
 ## Your privacy
 
@@ -118,13 +128,23 @@ Stellody does not know who you are. No account, no profile, no newsletter and
 no record kept anywhere of what you listen to. Your music plays perfectly well
 with the internet switched off.
 
-Three things reach outside your computer at all, so here are all three:
+Five things reach outside your computer at all, so here are all five:
 
 - **Looking for album art**, only ever when you ask, one album at a time.
 - **Checking for a new version**, once a day. It sends nothing about you or
   your music, not even which version you have: the request names the program
   and asks for one public page. Then it stays quiet unless there is something
   new.
+- **Looking for music you do not own**, only ever when you ask. A discovery run
+  names the artists inside the genres you ticked to two public music
+  catalogues, MusicBrainz and ListenBrainz, then asks what those artists made
+  that you do not hold. Artist names are the whole of what goes out: not your
+  library, not a count of it, not a word about you or your machine. Tick
+  nothing and nothing leaves.
+- **Reaching a shop**, which hands an address to your web browser. Tick albums
+  a run found, choose a shop and Stellody gives the browser one search address
+  per album, each carrying an artist and a title. Stellody connects to no shop,
+  holds no account with one and takes nothing from any sale.
 - **The donation button**, which hands an address to your web browser. Stellody
   itself connects to nothing. It is one button on the bottom strip and the only
   place money is mentioned; its tooltip offers to buy the author a drink, which
@@ -179,7 +199,9 @@ Everything above is the product. What follows is the code.
 `ARCHITECTURE.md` states the invariants first, each linked to the test that
 enforces it. `PLAN.md` holds the open work plus what is deliberately excluded.
 `TECH_DEBT.md` says what is still open internally, what is deliberately left
-and what only looks like debt.
+and what only looks like debt. `DISCOVERY.md` and `SHOPS.md` are the two
+specifications discovery was built from, each requirement naming the test that
+proves it.
 
 ## Running from source
 
