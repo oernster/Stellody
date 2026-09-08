@@ -11,19 +11,39 @@ and `test_discovery_bar.py` for the bar it reports to.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeyEvent
 
 from stellody.domain.genres import GENRES
+from stellody.shared import resources
 from stellody.ui.dialogs import CONTROL_ICON_PX
 from stellody.ui.discovery_dialog import (
     CLEAR_LABEL,
     RESTING,
+    SELECT_ALL_ICON,
     SELECT_ALL_LABEL,
     TITLE,
     DiscoveryDialog,
 )
+from stellody.ui.icons import struck_through
 from stellody.ui.theme import DIALOG_TITLE_FONT_PX, Mode, stylesheet
+
+
+def _drawn(button) -> bytes:
+    """What a control's icon actually paints, as bytes to compare.
+
+    The pixels rather than the QIcon, since two icons built from one file are
+    different objects and an icon composed at run time has no file at all.
+    """
+    image = button.icon().pixmap(CONTROL_ICON_PX, CONTROL_ICON_PX).toImage()
+    return bytes(image.constBits())
+
+
+def _struck() -> bytes:
+    """The sweep's picture with the shared cross over it, built here too."""
+    art = resources.find_asset(SELECT_ALL_ICON)
+    icon = struck_through(art, resources.negative_icon_path(), CONTROL_ICON_PX)
+    return bytes(icon.pixmap(CONTROL_ICON_PX, CONTROL_ICON_PX).toImage().constBits())
 
 
 class Watched:
@@ -95,6 +115,33 @@ def test_the_sweep_is_a_button_rather_than_a_tick_box() -> None:
     dialog, _ = make_dialog()
     assert dialog.select_button not in dialog.grid.boxes.values()
     assert set(dialog.grid.boxes) == set(GENRES)
+
+
+def test_the_sweep_wears_its_own_artwork_at_the_shared_size() -> None:
+    """The picture is the half of a control read at a glance."""
+    dialog, _ = make_dialog()
+    assert not dialog.select_button.icon().isNull()
+    assert dialog.select_button.iconSize() == QSize(CONTROL_ICON_PX, CONTROL_ICON_PX)
+
+
+def test_clearing_wears_the_same_picture_struck_through() -> None:
+    """Not a second drawing: one cross laid over one picture, as every switch."""
+    dialog, _ = make_dialog()
+    plain = _drawn(dialog.select_button)
+    dialog.select_button.click()
+    assert dialog.select_button.text() == CLEAR_LABEL
+    crossed = _drawn(dialog.select_button)
+    assert crossed != plain, "the two states have to be told apart by the picture"
+    assert crossed == _struck(), "the cross is the shared negative artwork"
+
+
+def test_the_picture_goes_back_when_there_is_something_to_tick_again() -> None:
+    """Read off the boxes, exactly as the words are."""
+    dialog, _ = make_dialog()
+    plain = _drawn(dialog.select_button)
+    dialog.select_button.click()
+    dialog.grid.boxes[GENRES[0]].setChecked(False)
+    assert _drawn(dialog.select_button) == plain
 
 
 def test_sweeping_leaves_the_dialog_open() -> None:

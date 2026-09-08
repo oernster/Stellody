@@ -25,11 +25,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from stellody.shared import resources
-from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, title_label, wearing
+from stellody.ui.dialogs import (
+    CLOSE_ICON,
+    CONTROL_ICON_PX,
+    FirstStopDialog,
+    title_label,
+    wearing,
+)
 from stellody.ui.genre_grid import ASKING, GenreGrid
+from stellody.ui.icons import plain_icon, struck_through
 
 TITLE = "Discover new music"
 FIND_LABEL = "Find"
@@ -42,6 +50,10 @@ CLOSE_LABEL = "Close"
 # Clear already has, in the same place.
 SELECT_ALL_LABEL = "Select all"
 CLEAR_LABEL = "Clear"
+# Reached by name rather than through a getter in `resources`, which is how
+# every dialog control's picture is reached: the getters are swept by the guide
+# test, which is about the controls on the two trays.
+SELECT_ALL_ICON = "select-all.png"
 # What the dialog says before anything has been asked of it. It names where the
 # answer will appear, since the dialog will not be there to show it.
 RESTING = (
@@ -64,6 +76,9 @@ class DiscoveryDialog(FirstStopDialog):
     ) -> None:
         super().__init__(parent)
         self._start = start
+        # Resolved once rather than per toggle: a sweep moves 34 boxes and each
+        # of them asks this control to say what it now offers.
+        self._sweep_art = resources.find_asset(SELECT_ALL_ICON)
         self.setWindowTitle(TITLE)
         self.setMinimumWidth(DIALOG_WIDTH_PX)
         outer = QVBoxLayout(self)
@@ -87,6 +102,7 @@ class DiscoveryDialog(FirstStopDialog):
         """The sweep away to the left, then away, then the one that works."""
         row = QHBoxLayout()
         self.select_button = QPushButton(SELECT_ALL_LABEL, self)
+        self.select_button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
         self.select_button.clicked.connect(self._select_or_clear)
         row.addWidget(self.select_button)
         row.addStretch()
@@ -122,8 +138,19 @@ class DiscoveryDialog(FirstStopDialog):
         moves it without touching this.
         """
         self.find_button.setEnabled(bool(self.chosen()))
-        self.select_button.setText(
-            CLEAR_LABEL if self.grid.all_ticked() else SELECT_ALL_LABEL
+        everything = self.grid.all_ticked()
+        self.select_button.setText(CLEAR_LABEL if everything else SELECT_ALL_LABEL)
+        # The picture says the same thing the words do. Clearing is the sweep
+        # struck through rather than a second drawing, which is the rule the
+        # discovery button and every switch at the foot of the window follow:
+        # the cross is one file laid over another, so a change to it reaches
+        # every use at once.
+        self.select_button.setIcon(
+            struck_through(
+                self._sweep_art, resources.negative_icon_path(), CONTROL_ICON_PX
+            )
+            if everything
+            else plain_icon(self._sweep_art)
         )
 
     def _select_or_clear(self) -> None:
