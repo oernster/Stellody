@@ -43,14 +43,39 @@ class Service:
         text: str | None = None,
         delay_s: float = 0.0,
         hangs: bool = False,
+        keeps_alive: bool = False,
     ) -> None:
         self.asked: list[str] = []
         self.agents: list[str] = []
+        # How many connections are open right now. Only a service holding one
+        # open has anything for a client to leave behind, so this is what a
+        # test about closing them reads. Counted under a lock, since the
+        # server answers each connection on a thread of its own.
+        self.open_connections = 0
+        self._counting = threading.Lock()
         self._released = threading.Event()
         service = self
 
         class Handler(BaseHTTPRequestHandler):
             """One ask, answered the way this service was configured."""
+
+            # HTTP/1.0 closes every connection, which is the quiet default and
+            # what almost every test here wants. A service asked to keep one
+            # alive answers as a real one does, so a client that leaves an
+            # idle socket behind can be seen doing it.
+            protocol_version = "HTTP/1.1" if keeps_alive else "HTTP/1.0"
+
+            def setup(self) -> None:
+                """Count this connection in."""
+                super().setup()
+                with service._counting:
+                    service.open_connections += 1
+
+            def finish(self) -> None:
+                """Count it out again, however it ended."""
+                with service._counting:
+                    service.open_connections -= 1
+                super().finish()
 
             def do_GET(self) -> None:
                 """Record the ask, then answer it or deliberately do not."""

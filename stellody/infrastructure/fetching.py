@@ -90,7 +90,36 @@ class Fetcher:
         if self._manager is None or self._manager_thread is not here:
             self._manager = QNetworkAccessManager()
             self._manager_thread = here
+            # Let go of it when its thread ends. See `_let_go`.
+            here.finished.connect(self._let_go)
         return self._manager
+
+    def _let_go(self) -> None:
+        """Close the connections when the thread that owns them ends.
+
+        A run keeps its connections open between requests, which is what the
+        gap the terms ask for makes worth doing. Nothing closed them when the
+        run finished, so two idle sockets were left behind on a thread that
+        had ended; Qt tore them down half a minute later with nobody home.
+
+        Measured on 2026-09-08 from the diary, over two runs of different
+        lengths: `QIODevice::read (QSslSocket): device not open`, twice, at
+        29.914s and 29.877s after the last request, one for each host asked.
+        A delay that steady against runs that differ by a second is a fixed
+        idle timeout rather than anything about the run.
+
+        **Connected to a bare method deliberately, which is the one place in
+        this application that is right.** A signal connected to a callable
+        runs in the SENDER's thread; here the sender is the thread that is
+        ending and the sockets are its own, so its thread is exactly where
+        they have to be closed. Anywhere else would be closing them across a
+        boundary, which is the fault this avoids rather than commits.
+        """
+        manager = self._manager
+        self._manager = None
+        self._manager_thread = None
+        if manager is not None:
+            manager.clearConnectionCache()
 
     def json(
         self, address: str, parameters: dict[str, str], wanted: Wanted = always_wanted
