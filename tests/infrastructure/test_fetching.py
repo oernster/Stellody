@@ -27,7 +27,7 @@ from stellody.application.discovery_ports import (
 )
 from stellody.infrastructure.courtesy import USER_AGENT
 from stellody.infrastructure.fetching import Fetcher
-from tests.infrastructure.fetching_support import Service, nowhere
+from tests.infrastructure.fetching_support import Noting, Service, nowhere
 
 # What "at once" means when a request is abandoned. Generous by an order of
 # magnitude against the measured figure, since the point is that nothing waits
@@ -97,9 +97,16 @@ class Flipping:
         return self._left >= 0
 
 
-def fetching(gate=None, timeout_s: float = NO_TIMEOUT_S, **manager) -> Fetcher:
+def fetching(
+    gate=None, timeout_s: float = NO_TIMEOUT_S, note=None, **manager
+) -> Fetcher:
     """A fetcher that waits for nothing it does not have to."""
-    return Fetcher(gate=gate or OpenGate(), timeout_s=timeout_s, **manager)
+    return Fetcher(
+        gate=gate or OpenGate(),
+        timeout_s=timeout_s,
+        note=note or Noting(),
+        **manager,
+    )
 
 
 class TestAskingAService:

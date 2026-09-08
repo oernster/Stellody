@@ -125,3 +125,19 @@ def nowhere() -> str:
     connection there is refused rather than answered or left hanging.
     """
     return f"http://{LOOPBACK}:9/ask"
+
+
+class Noting:
+    """Somewhere for a fetcher to write down what a request came to.
+
+    Here rather than in one suite, since both the suite about the fetcher and
+    the suite about the notes hand one in; a recorder written twice is two
+    recorders the day one of them is changed.
+    """
+
+    def __init__(self) -> None:
+        self.lines: list[str] = []
+
+    def __call__(self, line: str) -> None:
+        """Keep the line, in the order it was written."""
+        self.lines.append(line)

@@ -26,12 +26,24 @@ Measured on 2026-09-07 against a server that accepts a connection and then says
 nothing: `abort()` ends the reply in under a millisecond, where the blocking
 client sat there until its timeout. Qt was already a dependency and its network
 module already in use, so this costs nothing that was not being paid.
+
+**Every request is written down, which is an instrument rather than logging.**
+Reported on 2026-09-08: `QIODevice::read (QNetworkReplyHttpImpl): device not
+open`, written on the run's own thread; in three runs out of three, within 25
+milliseconds of the run ending. Two explanations were tested and both were
+disproved, which is the point at which an instrument is cheaper than another
+guess. Qt's own messages already reach the diary carrying the thread that
+wrote them; what was missing is which request each one sat beside. So each
+request notes its address, what it came to and how long it took; the next
+sighting can then be read against the line above it.
 """
 
 from __future__ import annotations
 
 import json
+import time
 import urllib.parse
+from collections.abc import Callable
 
 from PySide6.QtCore import QEventLoop, QThread, QTimer, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
@@ -42,6 +54,7 @@ from stellody.application.discovery_ports import (
     SourceFailed,
     SourceUnavailable,
 )
+from stellody.infrastructure import diary
 from stellody.infrastructure.courtesy import (
     REFUSAL_CODES,
     SLEEP_SLICE_S,
@@ -59,6 +72,10 @@ MS_PER_SECOND = 1000
 # answering. Read off the reply's own header, since Qt reports a refusal as a
 # protocol error rather than as an answer.
 STATUS_ATTRIBUTE = QNetworkRequest.Attribute.HttpStatusCodeAttribute
+
+# Handed one line about a request that has just ended. The diary is what fills
+# this in; a test hands in a list instead.
+Note = Callable[[str], None]
 
 
 class Fetcher:
@@ -78,11 +95,13 @@ class Fetcher:
         gate: Gate | None = None,
         timeout_s: float = TIMEOUT_S,
         manager: QNetworkAccessManager | None = None,
+        note: Note = diary.note,
     ) -> None:
         self._gate = gate if gate is not None else Gate()
         self._timeout_s = timeout_s
         self._manager = manager
         self._manager_thread = QThread.currentThread() if manager else None
+        self._note = note
 
     def _asking(self) -> QNetworkAccessManager:
         """An access manager belonging to the thread doing the asking."""
@@ -137,9 +156,27 @@ class Fetcher:
         url = f"{address}?{urllib.parse.urlencode(parameters)}"
         if not self._gate.wait(wanted):
             raise SourceFailed(f"given up on before it was asked: {url}")
+        started = time.monotonic()
         reply = self._sent(url)
         self._waited_on(reply, wanted)
-        return self._read(reply, url)
+        try:
+            answer = self._read(reply, url)
+        except (RateRefused, SourceFailed, SourceUnavailable) as ended:
+            self._noted(url, started, f"{type(ended).__name__}: {ended}")
+            raise
+        self._noted(url, started, "answered")
+        return answer
+
+    def _noted(self, url: str, started: float, outcome: str) -> None:
+        """Write down what one request came to and how long it took.
+
+        The diary already carries Qt's own warnings with the thread that wrote
+        them. This is the other half: a warning arriving between two of these
+        lines can be read against the request it interrupted, which is what no
+        amount of reasoning about the network stack could supply.
+        """
+        took = int((time.monotonic() - started) * MS_PER_SECOND)
+        self._note(f"asked {url}: {outcome} in {took}ms")
 
     def _sent(self, url: str) -> QNetworkReply:
         """Put the question, without waiting for the answer."""
