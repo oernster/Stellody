@@ -745,31 +745,35 @@ said it would be built from the file. It is built from the file: one thing stays
 authoritative, so showing a past run's answer again later then costs nothing
 extra on the day that is wanted.
 
-**Only one results screen exists at a time.** Amended on 2026-09-08 after two
-were seen stacked over each other. The screen is modeless, which is what made
-that possible; it is not what made it wrong. A completed run REPLACES the
-discovery file, so a screen left standing from an earlier run is showing an
-answer that no longer exists anywhere; no arrangement of two windows fixes
-that. The standing one is closed as the new one opens, through the same path a
-listener closing it takes, so any question still in flight is waited out rather
-than abandoned.
+**Only one results screen exists at a time; it is MODAL.** Amended twice on
+2026-09-08. Two screens were first seen stacked over each other, which was
+answered by closing the standing one as a new one opened. That treated the
+symptom: it did not hold in the running application, so Oliver ruled the screen
+modal instead and the closing was deleted with the defect it was patching.
 
-**Modeless is a decision rather than an omission**, recorded here because it
-had never been written down. The answer arrives minutes after the question, so
-a modal screen would seize the application at a moment nobody chose, in front
-of whatever somebody had moved on to. This is a music player; the natural thing
-to do while reading a list of records worth buying is to play the ones already
-held. The screen is also worked over minutes: candidates are expanded a
-few seconds apiece, albums are ticked and a browser is visited between presses.
-It is raised as it opens, since a modeless window arriving minutes late can
-otherwise arrive behind the one being used.
+A completed run REPLACES the discovery file, so a screen left standing from an
+earlier run shows an answer that no longer exists anywhere. Being modal removes
+the state rather than tidying it: one run's answer is read and dismissed before
+another can be started, so there is never a second screen to reconcile.
+
+**Modeless was the earlier decision and is recorded as reversed rather than
+deleted**, so it is not re-proposed on the reasoning that first produced it. The
+answer arrives minutes after the question, so a modal screen does seize the
+application at a moment nobody chose; the screen is also worked over minutes,
+candidates being expanded a few seconds apiece. What outweighed that is what
+runs stacking without limit actually cost: an answer on screen that no longer
+existed anywhere, which is worse than being interrupted.
+
+**A message set behind a modal screen is only seen once that screen closes**, so
+the run's own message is said BEFORE the screen opens rather than after it. The
+settled path returns its message and opens nothing; completion says it, then
+opens.
 
 Acceptance: Given a run that found two candidate albums, when it completes, then
-the file is written and a dialog opens naming both; given a second run that
-completes while the first run's screen is open, then that screen is closed and
-one screen showing the newer answer is left.
+the file is written and a dialog opens naming both, modally; given the run's own
+message, then it is said before the screen opens rather than behind it.
 
-Verified by: `tests/ui/test_results_dialog.py::test_a_completed_run_opens_the_results`, `tests/ui/test_results_dialog.py::test_a_second_run_replaces_the_results_rather_than_stacking_them`
+Verified by: `tests/ui/test_results_dialog.py`, `tests/ui/test_discovery_wiring.py`
 
 ---
 

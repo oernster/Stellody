@@ -92,6 +92,13 @@ if it ever stopped being true the build would fail.
   can state for itself: your files are only ever read, folders group while tags
   name, a correction differs from a stated tag, ratings follow the album rather
   than the file.
+- **How to lay a library out.** Stellody reads a collection the way it finds
+  it, so the same guide states the rules it reads by: one album to a folder,
+  discs of one release side by side, two folders joining where the artist and
+  the title both agree, a cue sheet read only where the folder holds one audio
+  file. The short version is put in front of you before you choose a music
+  folder for the first time, so you can go and look at what you have rather
+  than find out afterwards.
 - **Everything reachable from the keyboard.** It can also wait quietly by the
   clock rather than filling your screen.
 

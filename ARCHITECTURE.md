@@ -261,8 +261,10 @@ your own is a decision rather than a rewrite; nothing in the interface sets one.
 The handle survives a folder rename and a re-rip, which is why artwork and
 ratings already use it; it is stated once as `AlbumIdentity.handle` rather than
 digested again per user, since three spellings of one value is three chances for
-two of them to drift. The path is the tiebreak, so two identical albums in one
-library are still told apart; it also names the file a track-level pin is about.
+two of them to drift. Beside it sits the SOURCE ADDRESS, which is the tiebreak,
+so two identical albums in one library are still told apart; it is also what a
+track-level pin is written against. Why that is an address rather than a path is
+below.
 
 **Two albums that resolve alike are told apart; only those two.** Tags alone
 cannot separate two recordings of one work: a symphony under two conductors
@@ -327,13 +329,32 @@ proposes no value can never be silenced, because it is absent from
 `FIELD_FOR_KIND`; that absence IS the rule, rather than a second list to
 disagree with the first.
 
-**A finding names FILE NAMES while a pin names a full path.** They have to be
-introduced; one name can stand for two tracks, since a multi-disc album
-merged from CD1 and CD2 may hold `01 Intro.flac` in both. Every track wearing
-the name is pinned rather than a guess being made about which was meant; pinning
-a value a track already holds costs nothing. The matching needs a basename, so
-it lives in `stellody/application/repairs.py` rather than in the domain, which
-may not import `os` at all.
+**A finding names the SOURCES it is about, not the names it shows for them.**
+`LibraryIssue.paths` holds display names while `LibraryIssue.addresses` holds
+what a pin is written against; the second is what the accepting and the
+silencing both read.
+
+It was names until a name turned out not to survive the trip. For a cue album
+the name a track is reported under is one the scan made up,
+`05. Salt in the Wounds`, while the file on disk is one FLAC holding the whole
+record; the ordering rules then RENUMBER a colliding track, so by the moment
+somebody accepted the finding the label it was reported under named nothing.
+Nothing matched, no pin was written and the finding came back at every start
+however many times it was accepted. Reported as Accept everything doing nothing
+at all.
+
+Pinning against the path could not have worked either, for the same shape of
+reason from the other end: every track of a cue album shares one file, so one
+pin would have stamped one track's number onto the whole album. Correcting the
+names alone would have corrupted what is displayed, which is worse than the
+fault being corrected.
+
+**So a source is ADDRESSED rather than pathed.** `TrackSource.address` is the
+bare path for a whole file and `path#start_frame` for a slice, which is the one
+value that separates two tracks living in the same file. A whole file addresses
+exactly as it always did, so every pin written before the rule arrived is found
+where it was left and nothing stored changed shape. `overrides.applied` looks a
+pin up by that address, so a pin cannot reach a track it is not about.
 
 **The findings and the accepted set are two lists, not one.** This is forced
 rather than chosen: a finding that has been accepted leaves the report, so it
@@ -394,8 +415,9 @@ are the same act rather than two.
 
 The walker lists folders, the probe reads tags out of one file and the store
 caches a whole folder's result. A rescan compares each file's size and
-modification time against the store; a folder whose files are all unchanged is
-reused without opening a single file. On the reference library a cold scan of
+modification time against the store; a folder whose files are all unchanged AND
+whose stored record was written by the rules currently in force is reused
+without opening a single file. On the reference library a cold scan of
 657 folders holding 6,487 music files takes about three and three quarter
 seconds and a rescan a little under half a second.
 
@@ -417,8 +439,22 @@ stated, so it is the library as a scan finds it: a listener whose own
 corrections fold two folders together sees slightly fewer albums than this.
 
 **The store holds raw tag values, not resolved ones.** Resolution happens on
-load, so improving any rule above takes effect on the next start without
+load, so improving a RESOLUTION rule takes effect on the next start without
 rescanning a library.
+
+**A rule that decides what gets WRITTEN DOWN is the other kind; it needs a
+rescan.** How a file becomes records at all, which is what `records.py` and the
+cue parsing behind it do, runs during the scan and the store then holds its
+answer. Unchanged files were on their own a reason to reuse that answer, so such
+a rule reached only whichever folder somebody happened to touch. Measured: a
+correction letting a file's own tags answer where a cue sheet says only Unknown
+had reached none of the reference library's 659 folders three days after it
+landed, because not one of those files had changed. `records.DERIVATION` names
+the rules in force, a folder record carries the value it was written under and
+`_unchanged` requires the two to agree, so a corrected rule now reaches a whole
+library on the next scan. A record from a database written before the question
+was asked carries nought, which no rule set answers to, so it is always read
+again.
 
 **What the walker skips is named, never guessed.** An earlier version treated a
 leading dot as "hidden" and silently swallowed two real albums, `...And Justice
@@ -1129,6 +1165,19 @@ that shipped, the guide drawing no discovery icon, then reading the case named
 ever read, folders group while tags name, a correction differs from a stated
 tag, ratings follow the album rather than the file. Each is stated elsewhere in
 this document as a structural decision; the guide is where a listener meets it.
+
+**Beside them sits how a library wants laying out.** Stellody reads a collection
+the way it finds it, so the grouping rules decide what somebody ends up looking
+at; they were visible only in this document and in the code.
+`stellody/ui/layout_advice.py` states them once and both surfaces read it: the
+guide shows the whole section, while somebody who has never chosen a music
+folder is shown a short note BEFORE the picker opens rather than after, so they
+can go and look at what they have. It is offered on the strength of there being
+no library root yet, so it needs nothing written down and never troubles
+somebody changing folders. Both its buttons go on to the picker; one opens the
+guide on the way. A test asserts the guide carries that module's words rather
+than a copy of them, since two statements of one rule are two chances for them
+to disagree.
 
 **Its one added line is why the window shed two modules.** `main_window.py`
 reached the 381 to 399 danger band, so it was reduced rather than shaved:
