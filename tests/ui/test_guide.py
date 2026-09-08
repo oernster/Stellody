@@ -26,6 +26,47 @@ def _sources(html: str) -> set[str]:
     }
 
 
+# Every icon the window can draw, so the guide is checked against the app
+# rather than against a list kept beside it.
+_ICON_GETTERS = tuple(
+    getattr(resources, name)
+    for name in dir(resources)
+    if name.endswith("_icon_path") and callable(getattr(resources, name))
+)
+
+# The icons that are NOT a control of their own, each with the reason. An
+# exemption is granted in front of somebody, exactly as a module is granted
+# permission to open a connection: what makes this a guard rather than a list
+# is that a NEW icon is explained by default and has to be argued out of it.
+#
+# This is the correction of a guard that was not one. The set below used to be
+# written the other way round, as a hand-kept list of the getters to check, so
+# the discovery button shipped with no line in the guide at all and every gate
+# stayed green: whoever forgets a guide entry forgets the list entry with it,
+# which is the whole reason the menu bar is swept rather than checked.
+_NOT_A_CONTROL = {
+    # The application's own mark, worn by the window and the About screen.
+    "window_icon_path",
+    "application_icon_path",
+    # The second face of a control already named, rather than a second control.
+    "dark_mode_icon_path",
+    "pause_icon_path",
+    "repeat_one_icon_path",
+    "large_grid_icon_path",
+    "extra_large_grid_icon_path",
+    # The chevron on a heading and on an album row. Drawn by the view rather
+    # than pressed as a button; explained where opening albums is.
+    "expand_icon_path",
+    "collapse_icon_path",
+    # Composed over another picture to cross it out. Never a control alone.
+    "negative_icon_path",
+}
+
+_EXPLAINED_GETTERS = tuple(
+    getter for getter in _ICON_GETTERS if getter.__name__ not in _NOT_A_CONTROL
+)
+
+
 class TestWhatItNames:
     def test_it_leads_with_the_application_by_name(self) -> None:
         """Read from APP_NAME, so a rename reaches the guide too."""
@@ -47,25 +88,7 @@ class TestWhatItNames:
 
     @pytest.mark.parametrize(
         "getter",
-        [
-            resources.choose_folder_icon_path,
-            resources.filter_icon_path,
-            resources.search_icon_path,
-            resources.previous_icon_path,
-            resources.play_icon_path,
-            resources.stop_icon_path,
-            resources.next_icon_path,
-            resources.volume_icon_path,
-            resources.unmute_icon_path,
-            resources.info_icon_path,
-            resources.donate_icon_path,
-            resources.rescan_icon_path,
-            resources.library_health_icon_path,
-            resources.view_icon_path,
-            resources.equaliser_icon_path,
-            resources.shuffle_icon_path,
-            resources.repeat_icon_path,
-        ],
+        _EXPLAINED_GETTERS,
         ids=lambda getter: getter.__name__,
     )
     def test_every_control_on_a_tray_is_named(self, getter) -> None:
@@ -106,12 +129,3 @@ class TestTheDialog:
         assert dialog.pane is not None
         assert dialog.scroller is not None
         dialog.deleteLater()
-
-
-# Every icon the window can draw, so the guide is checked against the app
-# rather than against a list kept beside it.
-_ICON_GETTERS = tuple(
-    getattr(resources, name)
-    for name in dir(resources)
-    if name.endswith("_icon_path") and callable(getattr(resources, name))
-)

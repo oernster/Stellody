@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui.about_credits import NO_SHOP_AFFILIATION
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.widgets import ReadingPane
@@ -89,12 +90,20 @@ def _top_tray_html() -> str:
         + _img(resources.next_icon_path())
         + "The transport sits in the middle. Back goes to the start of the "
         "song first, then to the one before it, the way a CD player does.</p>"
+        + _row(
+            resources.discover_icon_path(),
+            "Discover",
+            "looks for music you do not own yet, in the genres you tick. It "
+            "sits to the left of the volume control, with its progress bars "
+            "beside it while a run is going. The procedure is below.",
+        )
         + "<p>"
         + _img(resources.volume_icon_path())
         + _img(resources.unmute_icon_path())
         + _img(resources.light_mode_icon_path())
         + _img(resources.info_icon_path())
-        + "volume, mute, the light or dark appearance, then Help.</p>"
+        + "volume, mute, the light or dark appearance, then Help. Help opens "
+        "a menu carrying this guide, About and a check for a new version.</p>"
     )
 
 
@@ -154,6 +163,52 @@ def _reading_html() -> str:
     )
 
 
+def _discovery_html() -> str:
+    """The one feature with a procedure rather than a button to press.
+
+    It is the only thing in this window that takes minutes, reaches outside the
+    machine and then hands somebody a second screen to act on, so naming its
+    button explains nothing on its own. What the guide owes here is the ORDER
+    of it, which is what hovering cannot tell anybody.
+    """
+    return (
+        "<h3>Finding music you do not own</h3>"
+        "<p>"
+        + _img(resources.discover_icon_path())
+        + "Press <b>Discover</b> and tick the genres worth looking in, then "
+        "press <b>Find</b>. The dialog closes: a run takes minutes and is "
+        "watched from the toolbar rather than from a dialog sat over "
+        "everything.</p>"
+        "<p><b>While it runs.</b> Two bars appear beside the button, one for "
+        "each half of the run: the first asks what the artists you already "
+        "hold have released and who resembles them, the second asks what each "
+        "of those suggested artists plays. Hover the pair to see who is being "
+        "asked about and how many are left; the right hand end of the bar "
+        "says roughly how long remains, as does the line along the foot of "
+        "the window. Nothing about you is sent, only artist names.</p>"
+        "<p><b>Stopping.</b> While a run is going the button wears a cross "
+        "and reads <b>Stop looking</b>. One press stops it there and then, "
+        "with nothing to confirm; the request in flight is dropped rather "
+        "than waited out. Nothing gathered so far is kept and the last run's "
+        "results are left exactly as they were.</p>"
+        "<p><b>What it found.</b> A run that found something opens a list. A "
+        "<b>blue</b> name is an artist you hold, with albums by them you do "
+        "not underneath. An <b>amber</b> name is an artist you hold nothing "
+        "by; open one and its albums are fetched then, which takes a few "
+        "seconds, so the strip at the top says who is being asked about. "
+        "Every other line is an album title. Nothing in the list is ever a "
+        "track.</p>"
+        "<p><b>Getting hold of it.</b> Tick any albums you want, then press "
+        "<b>Find in shops</b> to choose a shop: your browser opens that "
+        "shop's own search for each ticked album, one tab apiece; more than "
+        "five asks you first. The shops screen stays open so prices can "
+        "be compared across several. <b>Copy</b> puts the ticked albums on "
+        "the clipboard instead, one line each, for anywhere else you want to "
+        "paste them.</p>"
+        f"<p>{NO_SHOP_AFFILIATION}</p>"
+    )
+
+
 def _rules_html() -> str:
     """The rules the screens depend on and cannot state for themselves."""
     return (
@@ -189,6 +244,7 @@ def guide_html() -> str:
         f"{_top_tray_html()}<hr>"
         f"{_bottom_tray_html()}<hr>"
         f"{_reading_html()}<hr>"
+        f"{_discovery_html()}<hr>"
         f"{_rules_html()}"
     )
 

@@ -16,7 +16,8 @@ from stellody.shared.version import (
     COPYRIGHT_YEAR,
 )
 from stellody.ui import dialogs
-from stellody.ui.dialogs import SOURCES, AboutDialog, LicenceDialog, about_html
+from stellody.ui.about_credits import SOURCES
+from stellody.ui.dialogs import AboutDialog, LicenceDialog, about_html
 
 WIDE_SCREEN_PX = 4000
 NARROW_SCREEN_PX = 400

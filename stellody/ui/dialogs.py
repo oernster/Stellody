@@ -27,6 +27,11 @@ from stellody.shared.version import (
     COPYRIGHT_NOTICE,
     __version__,
 )
+from stellody.ui.about_credits import (
+    NO_SHOP_AFFILIATION,
+    credits_html,
+    sources_html,
+)
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.bottom_tray import BOTTOM_ICON_PX
 from stellody.ui.icons import plain_icon
@@ -56,50 +61,6 @@ LICENCE_MAX_WIDTH_PX = 1400
 LICENCE_FALLBACK = (
     "The licence text could not be located beside the application. "
     "It is available in the source repository."
-)
-
-CREDITS = (
-    ("PySide6 (Qt for Python)", "LGPL-3.0", "the user interface"),
-    ("Python", "PSF", "the language and standard library"),
-    ("mutagen", "GPL-2.0-or-later", "reading tags"),
-    ("soundfile and libsndfile", "BSD-3-Clause and LGPL-2.1", "decoding audio"),
-    ("sounddevice and PortAudio", "MIT", "audio output"),
-    ("NumPy", "BSD-3-Clause", "sample buffers"),
-    ("pytest, pytest-cov and pytest-qt", "MIT", "the test suite"),
-    ("black, flake8 and ruff", "MIT", "formatting and linting"),
-    ("Pillow", "HPND", "building the icon set"),
-)
-
-# A different kind of debt from the list above. Those are libraries this
-# application is built out of; these are public services it ASKS things of,
-# run by other people at their own cost, under terms of their own. They are
-# credited separately because the obligation is a different one: a library
-# wants its licence honoured, a service wants its name said and its rate
-# respected.
-#
-# The MusicBrainz terms are quoted from its own data licence page, read on
-# 2026-09-07: core data is CC0, while supplementary data, which is what the
-# genres asked for here are, is CC BY-NC-SA 3.0 and asks for credit by name.
-# That is the whole reason this section exists rather than a line in the list
-# above. No licence is stated for the other two: their pages do not give one
-# plainly, so nothing is claimed. A licence invented for a credits box is
-# worse than no licence at all.
-SOURCES = (
-    (
-        "MusicBrainz",
-        "core data CC0, genres CC BY-NC-SA 3.0",
-        "which artist a name means, what they released and what they play",
-    ),
-    (
-        "ListenBrainz",
-        "a MetaBrainz project",
-        "which artists resemble the ones you already hold",
-    ),
-    (
-        "Cover Art Archive",
-        "a MusicBrainz and Internet Archive project",
-        "album artwork, where you ask for it",
-    ),
 )
 
 
@@ -273,22 +234,6 @@ def _licence_text(path: pathlib.Path | None) -> str:
         return LICENCE_FALLBACK
 
 
-def _credits_html() -> str:
-    """The open source credits as list items."""
-    return "".join(
-        f"<li><b>{name}</b> - {licence} ({purpose}).</li>"
-        for name, licence, purpose in CREDITS
-    )
-
-
-def _sources_html() -> str:
-    """The services asked about things, as list items."""
-    return "".join(
-        f"<li><b>{name}</b> - {terms} ({purpose}).</li>"
-        for name, terms, purpose in SOURCES
-    )
-
-
 def about_html() -> str:
     """The whole body of the About dialog."""
     return (
@@ -307,7 +252,7 @@ def about_html() -> str:
         "and nothing you have collected is ever altered on disk.</p>"
         "<hr>"
         "<h3>Open source credits</h3>"
-        f"<ul>{_credits_html()}</ul>"
+        f"<ul>{credits_html()}</ul>"
         "<p>Built on the Python and Qt ecosystems, with thanks to their "
         "communities.</p>"
         "<hr>"
@@ -317,9 +262,12 @@ def about_html() -> str:
         "find in your own files. "
         "It asks nothing of them otherwise. Nothing about you is sent: only "
         "the name of an artist or a release.</p>"
-        f"<ul>{_sources_html()}</ul>"
+        f"<ul>{sources_html()}</ul>"
         "<p>They are run at somebody else's expense and asked no faster than "
         "their terms allow. Please consider supporting them.</p>"
+        "<hr>"
+        "<h3>The shops</h3>"
+        f"<p>{NO_SHOP_AFFILIATION}</p>"
     )
 
 
