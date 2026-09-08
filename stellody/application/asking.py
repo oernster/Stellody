@@ -32,8 +32,16 @@ from stellody.application.ports import CancelledCheck
 Pause = Callable[[float], None]
 
 # How many times one question is asked before it is given up on; how long to
-# wait between asks. The wait lengthens with each attempt, since a host
-# refusing twice is asking for more room than one refusing once.
+# wait between asks. The wait DOUBLES with each attempt rather than growing by
+# a step, so six asks span two, four, eight, sixteen then thirty-two seconds:
+# a little over a minute of patience rather than the thirty seconds a growing
+# step would give. Measured on 2026-09-08, MusicBrainz refuses in bursts and
+# answers in about 30 milliseconds when it refuses, so what clears a burst is
+# waiting longer rather than asking more often.
+#
+# The whole of that patience is paid once ever for one artist, since what a
+# catalogue answers is remembered from then on. It is not paid again on the
+# next run.
 #
 # Five rather than the three it was until 2026-09-08, when a run over two
 # genres came back holding one source artist out of seven and Oliver asked
@@ -49,7 +57,7 @@ Pause = Callable[[float], None]
 # this was changed: the gate stamps its clock when a request is let through,
 # so the gaps in that record are exactly what one request every 1.1 seconds
 # produces.
-RETRY_ATTEMPTS = 5
+RETRY_ATTEMPTS = 6
 RETRY_PAUSE_SECONDS = 2.0
 # A wait is taken in slices so that stopping is felt rather than merely
 # obeyed. Waiting out two refusals is six seconds; somebody who has pressed
@@ -132,7 +140,7 @@ def asked[Answer](
                 raise SourceRefused(
                     f"the catalogue refused all {patience.attempts} asks"
                 )
-            waited(patience.pause_seconds * attempts, cancelled, pause)
+            waited(patience.pause_seconds * 2 ** (attempts - 1), cancelled, pause)
 
 
 def waited(seconds: float, cancelled: CancelledCheck, pause: Pause) -> None:

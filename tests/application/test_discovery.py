@@ -205,7 +205,9 @@ def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
     run, _, _, waits = make_run(catalogue)
     report = run.run((make_album("U2", "A"),), ROCK, nothing, never)
     assert [failure.artist for failure in report.failed] == ["U2"]
-    owed = RETRY_PAUSE_SECONDS * sum(range(1, RETRY_ATTEMPTS))
+    # The wait doubles rather than growing by a step, so what is owed after
+    # five refusals is two, four, eight, sixteen and thirty-two seconds.
+    owed = RETRY_PAUSE_SECONDS * sum(2**step for step in range(RETRY_ATTEMPTS - 1))
     assert sum(waits.waited) == pytest.approx(owed)
 
 

@@ -1146,10 +1146,13 @@ Priority: Must
 
 Requirement: The discovery service shall keep what each catalogue answered,
 against the question that was asked; it shall ask a catalogue only what is not
-already kept. What is kept shall not expire. A run shall write down what it
-learned however that run ended. Where a run cannot reach a source about an
-artist an earlier run answered for, the discovery file shall keep the earlier
-answer and shall record no failure for that artist.
+already kept or what was kept more than thirty days ago. A run shall write down
+what it learned however that run ended. Where a run cannot reach a source about
+an artist an earlier run answered for, the discovery file shall keep the
+earlier answer and shall record no failure for that artist. Where a run reaches
+its end still owing an answer about an artist nothing was ever known about, the
+discovery file shall not be written at all. The gaps written shall be ordered
+by artist.
 
 Rationale: Reported by Oliver on 2026-09-08, repeatedly and in the strongest
 terms: two runs over the same library gave different answers, sometimes
@@ -1162,11 +1165,24 @@ of the library. Measured that day from one run: 27 requests in 65 seconds, 21
 of them refused, which turned seven source artists into one. More patience
 helps and cannot fix it; it only changes how often the answer differs.
 
-Nothing expires deliberately. An answer with a lifetime is an answer that
-differs before and after that lifetime, which is the fault itself in a slower
-form. The cost is that a record released after an artist was first asked about
-does not appear until the memory is cleared, which belongs to a control
-somebody presses rather than to a clock nobody sees.
+Thirty days is Oliver's own statement of what is wanted, on the same day: the
+same run over the same library should differ over days or weeks, because the
+catalogues themselves change; it should not differ over five minutes, because
+they do not. A month is long enough that a run over a library asks nothing at
+all most of the time, short enough that a record released this year is found
+this year. A refresh that is refused costs nothing, since that artist is then
+carried over from the file exactly as any other failure is.
+
+Nothing is written where a hole remains. A file holding whichever artists a
+service felt like answering about is a different file every time it is
+written, which is the fault stated as a file rather than as a run. Refusing
+wastes nothing: every answer that did arrive during that run is remembered, so
+the next attempt asks only for the rest.
+
+The order is by artist rather than by how the answer was arrived at, since an
+artist carried over would otherwise sit where the carrying put it while the
+same artist answered for directly sits in library order. The same content in
+two orders is two different screens.
 
 Carrying an earlier answer over is the second half, for the artist nothing has
 ever been learned about, whose first answer arrives on the day a service
@@ -1178,10 +1194,12 @@ Acceptance: Given a library run over twice with the same genres, when the
 second run finishes, then it asked the catalogues nothing and answered exactly
 as the first did; given an artist an earlier run answered for and this one
 could not reach, then the file still holds that artist and records no failure
-for it; given an artist nothing has ever been learned about, then a failure is
-recorded as before.
+for it; given an artist nothing has ever been learned about that this run could
+not reach either, then the file is left as it was and the run says which
+artists it could not answer about; given an answer kept more than thirty days
+ago, then it is asked about again.
 
-Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/infrastructure/test_catalogue_memory.py::test_a_file_that_cannot_be_read_is_an_empty_memory`
+Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_not_written_at_all`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_writes_nothing_and_says_so`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`
 
 ---
 
