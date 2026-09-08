@@ -26,27 +26,52 @@ from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps
 
 
+class IncompleteAnswer(ValueError):
+    """A run that could not answer about everything it asked about.
+
+    Its own kind so that whoever asked for the run can say what happened in
+    the right words: nothing went wrong with the writing; the answer that was
+    already there is still the answer. Here rather than beside the file it
+    is raised from, since the interface layer has to name it and may not name
+    infrastructure.
+    """
+
+
 def carried_over(report: RunReport, previous: tuple[Gaps, ...]) -> RunReport:
-    """This run's answer, holding on to what the last one knew.
+    """This run's answer, holding on to what the last one knew, in one order.
 
     An artist that failed and was known before keeps what was known and stops
     being a failure, since there is nothing left to tell anybody about it. One
     that failed and was never known stays a failure, which is what the
     shortfall report is for.
 
-    The carried entries follow this run's own, rather than being threaded back
-    into the order the library gave: where they sit says nothing, while the
-    order being decided by which artists happened to fail would be one more
-    thing that differs between two runs.
+    **Ordered by name rather than by how the answer was arrived at.** An
+    artist carried over would otherwise sit wherever the carrying put it,
+    while the same artist answered for directly would sit in library order:
+    the same content in two orders is two different screens, which is exactly
+    what "the same every time" forbids. Sorting by the artist makes the order
+    a property of what is in the answer rather than of how it was got.
     """
-    if not report.failed:
-        return report
     known = {gaps.artist: gaps for gaps in previous}
     return replace(
         report,
-        gaps=report.gaps
-        + tuple(
-            known[entry.artist] for entry in report.failed if entry.artist in known
+        gaps=tuple(
+            sorted(
+                report.gaps
+                + tuple(
+                    known[entry.artist]
+                    for entry in report.failed
+                    if entry.artist in known
+                ),
+                key=lambda gaps: gaps.artist,
+            )
         ),
-        failed=tuple(entry for entry in report.failed if entry.artist not in known),
+        unresolved=tuple(sorted(report.unresolved)),
+        ambiguous=tuple(sorted(report.ambiguous, key=lambda entry: entry.artist)),
+        failed=tuple(
+            sorted(
+                (entry for entry in report.failed if entry.artist not in known),
+                key=lambda entry: entry.artist,
+            )
+        ),
     )

@@ -32,7 +32,7 @@ from __future__ import annotations
 import json
 import pathlib
 
-from stellody.application.carrying_over import carried_over
+from stellody.application.carrying_over import IncompleteAnswer, carried_over
 from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
@@ -114,12 +114,23 @@ def write(report: RunReport) -> pathlib.Path:
     What the file already holds is read first, so an artist this run could not
     reach keeps the answer the last run got for it. A run may add to what is
     known and may correct it; it may not take an artist away because a service
-    refused to talk about it, which is the fault reported on 2026-09-08.
+    refused to talk about it.
+
+    **An answer with a hole in it is not written at all.** Demanded by Oliver
+    on 2026-09-08 and rightly: a file that holds whichever artists a service
+    felt like answering about is a different file every time it is written.
+    So the file changes only when a run answered about everything it asked
+    about; anything less leaves the last complete answer standing. Nothing is
+    wasted by refusing, since every answer that DID arrive during that run is
+    remembered and costs the next attempt nothing.
     """
     if not report.is_writable:
         raise ValueError("this run has nothing to write")
+    settled = carried_over(report, read().gaps)
+    if settled.failed:
+        raise IncompleteAnswer(", ".join(entry.artist for entry in settled.failed))
     where = discovery_path()
-    _written(where, _as_written(carried_over(report, read().gaps)))
+    _written(where, _as_written(settled))
     return where
 
 

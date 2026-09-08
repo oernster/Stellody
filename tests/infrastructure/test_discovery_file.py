@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import json
 import pathlib
+from dataclasses import replace
 
 import pytest
 
+from stellody.application.carrying_over import IncompleteAnswer
 from stellody.application.values import (
     Ambiguity,
     RunOutcome,
@@ -32,7 +34,13 @@ def somewhere_of_its_own(
 
 
 def a_report() -> RunReport:
-    """A completed run with one of everything in it."""
+    """A completed run with one of everything in it, a failure included.
+
+    A run carrying a failure about an artist nothing was ever known about is
+    not written at all, so this is what the tests about refusing to write are
+    driven with; `an_answer` below is the same run having answered about
+    everybody.
+    """
     return RunReport(
         outcome=RunOutcome.COMPLETED,
         gaps=(
@@ -54,9 +62,14 @@ def a_report() -> RunReport:
     )
 
 
+def an_answer() -> RunReport:
+    """The same run, having answered about everybody it asked about."""
+    return replace(a_report(), failed=())
+
+
 def test_the_file_is_keyed_by_the_artist_it_was_found_for() -> None:
     """What makes it usable as the resource a later stage reads."""
-    where = discovery_file.write(a_report())
+    where = discovery_file.write(an_answer())
     written = json.loads(where.read_text(encoding="utf-8"))
     assert list(written["gaps"]) == ["Peter Gabriel"]
     album = written["gaps"]["Peter Gabriel"]["albums"][0]
@@ -66,16 +79,50 @@ def test_the_file_is_keyed_by_the_artist_it_was_found_for() -> None:
 
 
 def test_what_could_not_be_answered_is_carried_beside_the_answers() -> None:
-    """An artist nobody could look up reads as complete otherwise."""
-    written = json.loads(discovery_file.write(a_report()).read_text(encoding="utf-8"))
+    """A name the catalogue does not know and a name it knows twice are
+    answers rather than failures, so they are written down as such."""
+    written = json.loads(discovery_file.write(an_answer()).read_text(encoding="utf-8"))
     assert written["unresolved"] == ["Smetana"]
     assert written["ambiguous"][0]["identifiers"] == ["us", "uk"]
-    assert written["failed"][0]["reason"] == "the service fell over"
+    assert written["failed"] == [], "a written answer has no holes in it"
+
+
+def test_an_answer_with_a_hole_in_it_is_not_written_at_all() -> None:
+    """Demanded by Oliver on 2026-09-08: a file holding whichever artists a
+    service felt like answering about is a different file every time."""
+    discovery_file.write(an_answer())
+    with pytest.raises(IncompleteAnswer, match="U2"):
+        discovery_file.write(a_report())
+    written = json.loads(discovery_file.discovery_path().read_text(encoding="utf-8"))
+    assert list(written["gaps"]) == ["Peter Gabriel"], "the last one still stands"
+
+
+def test_an_artist_already_answered_for_is_not_a_hole() -> None:
+    """A run that could not reach somebody the last run reached keeps that
+    answer, so the file is written exactly as it was before."""
+    discovery_file.write(an_answer())
+    again = replace(
+        a_report(),
+        gaps=(),
+        failed=(SourceFailure(artist="Peter Gabriel", reason="refused"),),
+    )
+    written = json.loads(discovery_file.write(again).read_text(encoding="utf-8"))
+    assert list(written["gaps"]) == ["Peter Gabriel"]
+
+
+def test_the_artists_are_written_in_one_order_however_they_arrived() -> None:
+    """The same content in two orders is two different screens."""
+    scrambled = replace(
+        an_answer(),
+        gaps=(Gaps(artist="Wire"), Gaps(artist="Aztec Camera"), Gaps(artist="Móż")),
+    )
+    written = json.loads(discovery_file.write(scrambled).read_text(encoding="utf-8"))
+    assert list(written["gaps"]) == sorted(["Wire", "Aztec Camera", "Móż"])
 
 
 def test_a_second_run_replaces_the_first() -> None:
     """Ruled on 2026-09-06: a run states what is missing now."""
-    discovery_file.write(a_report())
+    discovery_file.write(an_answer())
     discovery_file.write(RunReport(outcome=RunOutcome.COMPLETED))
     written = json.loads(discovery_file.discovery_path().read_text(encoding="utf-8"))
     assert written["gaps"] == {}
@@ -95,7 +142,7 @@ def test_a_run_with_nothing_to_say_cannot_replace_one_that_had(
 
 def test_nothing_is_left_half_written() -> None:
     """Written beside the target and moved over it, so a reader sees one or other."""
-    where = discovery_file.write(a_report())
+    where = discovery_file.write(an_answer())
     assert list(where.parent.glob("*.writing")) == []
 
 

@@ -18,6 +18,7 @@ from discovery_wiring_support import (
 )
 from PySide6.QtWidgets import QTextBrowser
 
+from stellody.application.carrying_over import IncompleteAnswer
 from stellody.application.values import (
     DiscoveryProgress,
     RunOutcome,
@@ -29,6 +30,7 @@ from stellody.ui.discovering import (
     COULD_NOT_WRITE,
     FOUND,
     FOUND_NOTHING,
+    INCOMPLETE,
     NOTHING_TO_ASK,
     STOPPED,
     UNREACHABLE,
@@ -225,6 +227,23 @@ def test_a_file_that_will_not_write_is_reported(application) -> None:
     assert said.startswith("The answer could not be written")
     assert COULD_NOT_WRITE.format(reason="no room") == said
     assert not found, "a file that would not write has nothing to show from"
+
+
+def test_a_run_with_a_hole_in_it_writes_nothing_and_says_so(application) -> None:
+    """Demanded by Oliver on 2026-09-08. A file holding whichever artists a
+    service felt like answering about is a different file every time, so the
+    last complete answer stands and the sentence says which artists were
+    missed rather than reading as a broken write."""
+
+    def holed(report):
+        """Stand in for a writer refusing an answer that has a hole in it."""
+        raise IncompleteAnswer("U2, Elbow")
+
+    window = make_window(application, write=holed)
+    said, found, _ = window._settled(a_report())
+    assert said == INCOMPLETE.format(artists="U2, Elbow")
+    assert "U2, Elbow" in said, "it names who was missed"
+    assert not found, "there is nothing new to show"
 
 
 def test_a_window_with_no_writer_keeps_quiet_about_files(application) -> None:
