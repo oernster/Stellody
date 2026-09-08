@@ -9,10 +9,14 @@ the second stage, which is already the longer half of a run. Most of those
 answers are never looked at. So the cost is paid one artist at a time, by
 whoever opens one. FR-D31.
 
-**The same patience as a run.** MusicBrainz refused 6 of 10 asks about the same
-release when measured on 2026-08-31, so a single ask that gave up on the first
-refusal would fail more often than it answered. This waits a refusal out
-through the shared retry rather than through one of its own.
+**More patience than a run, through the same retry.** MusicBrainz refused 6 of
+10 asks about the same release when measured on 2026-08-31, so a single ask
+that gave up on the first refusal would fail more often than it answered. A run
+presses each of hundreds of artists three times; this presses one artist five,
+because the cost of waiting falls on somebody who opened that row and is
+watching it rather than on a run of 327 with the rest still to do. Reported by
+Oliver on 2026-09-08 against The Rolling Stones, whose request is the most
+expensive his library asks and so the first a busy service sheds.
 
 Nothing here opens a connection. It says what to ask and what to keep;
 `fetching.py` is the module that holds the socket.
@@ -22,7 +26,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from stellody.application.asking import Pause, asked
+from stellody.application.asking import (
+    PATIENCE_FOR_ONE_ARTIST,
+    Pause,
+    asked,
+)
 from stellody.application.discovery_ports import CatalogueSource
 from stellody.application.ports import CancelledCheck
 from stellody.domain.discovery import ReleaseGroup, everything_offered
@@ -60,5 +68,11 @@ class Expansion:
         asked rather than for this. FR-D32.
         """
         return everything_offered(
-            asked(self.catalogue.albums_of, cancelled, self.pause, identifier)
+            asked(
+                self.catalogue.albums_of,
+                cancelled,
+                self.pause,
+                identifier,
+                patience=PATIENCE_FOR_ONE_ARTIST,
+            )
         )

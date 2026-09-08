@@ -10,7 +10,11 @@ from __future__ import annotations
 import pytest
 from discovery_support import Waits
 
-from stellody.application.asking import RETRY_ATTEMPTS, RETRY_PAUSE_SECONDS
+from stellody.application.asking import (
+    OPENED_ATTEMPTS,
+    RETRY_ATTEMPTS,
+    RETRY_PAUSE_SECONDS,
+)
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovery_ports import (
     RateRefused,
@@ -101,11 +105,26 @@ def test_a_refusal_is_waited_out_rather_than_reported() -> None:
     assert sum(waits.waited) == pytest.approx(RETRY_PAUSE_SECONDS)
 
 
+def test_it_presses_on_past_what_a_run_gives_one_artist() -> None:
+    """A run has hundreds to get through; somebody who opened one row has one.
+
+    Reported by Oliver on 2026-09-08 against The Rolling Stones, refused while
+    every other artist on the same screen answered.
+    """
+    catalogue = Releasing((ReleaseGroup(title="A Record"),), refusals=RETRY_ATTEMPTS)
+    expansion, _ = expanding(catalogue)
+    assert [group.title for group in expansion.releases_of(WOLF)] == ["A Record"]
+    assert len(catalogue.asked) == RETRY_ATTEMPTS + 1
+
+
 def test_a_source_refusing_every_time_is_that_artist_failing() -> None:
     """FR-D32: the caller is told, rather than the list being lost."""
-    expansion, _ = expanding(Releasing(refusals=RETRY_ATTEMPTS))
-    with pytest.raises(SourceFailed):
+    catalogue = Releasing(refusals=OPENED_ATTEMPTS)
+    expansion, _ = expanding(catalogue)
+    with pytest.raises(SourceFailed) as failure:
         expansion.releases_of(WOLF)
+    assert len(catalogue.asked) == OPENED_ATTEMPTS
+    assert str(OPENED_ATTEMPTS) in str(failure.value), "it says how hard it tried"
 
 
 def test_a_source_that_cannot_be_reached_says_so() -> None:

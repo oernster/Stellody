@@ -968,18 +968,37 @@ Verified by: `tests/ui/test_results_dialog.py::test_expanding_a_candidate_asks_f
 
 Priority: Must
 
-Requirement: If the releases of an expanded candidate artist cannot be fetched,
-then the results dialog shall show what went wrong against that artist, leaving
-every other entry as it was.
+Requirement: The lookup for an expanded candidate artist shall be attempted
+five times, waiting two seconds longer between each attempt than the one
+before, before it is reported as having failed. If it cannot be fetched, then
+the results dialog shall show what went wrong against that artist, shall say
+that closing and opening the row tries again; it shall leave every other entry
+as it was.
 
 Rationale: The unwanted sibling of FR-D31. One artist nobody could look up is
 not a reason to lose the rest of a run that took minutes to make.
 
-Acceptance: Given a candidate artist whose lookup fails, when it is expanded,
-then that artist shows what went wrong; when another is expanded, then it still
-lists its releases.
+Five attempts rather than the three a run gives an artist, reported by Oliver on
+2026-09-08 when The Rolling Stones came back refused while every other artist on
+the same screen answered. Measured the same day, that artist carries 1474
+release groups at MusicBrainz and the request takes 15.6 seconds cold against
+0.2 warm, so it is among the first things a busy service sheds. The two callers
+can afford different amounts of waiting because of who is doing it: twenty
+seconds is a wait somebody who opened one row will sit through, where a run of
+327 artists cannot spend it on each of them.
 
-Verified by: `tests/ui/test_results_dialog.py::test_a_failed_expansion_says_so_and_spares_the_rest`
+The message says how to try again because trying again already worked and
+nothing said so. A row that failed is asked about afresh the next time it is
+opened, which is the behaviour FR-D31 gives it; somebody looking at the failure
+had no way to know that.
+
+Acceptance: Given a candidate artist whose lookup fails, when it is expanded,
+then that artist shows what went wrong and says the row can be closed and
+opened to try again; when another is expanded, then it still lists its releases;
+given a service refusing four times and answering on the fifth, then the
+releases are shown rather than a failure.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_failed_expansion_says_so_and_spares_the_rest`, `tests/ui/test_results_dialog.py::test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened`, `tests/application/test_expanding.py::test_it_presses_on_past_what_a_run_gives_one_artist`, `tests/application/test_expanding.py::test_a_source_refusing_every_time_is_that_artist_failing`
 
 ---
 

@@ -55,7 +55,12 @@ ASKING_MANY = "Asking the catalogue about {count} artists"
 # Said under a candidate whose lookup could not be made. Against that artist
 # rather than in a bar, since every other entry is still usable and a message
 # elsewhere would say nothing about which one failed. FR-D32.
-COULD_NOT_ASK = "Could not be looked up: {reason}"
+#
+# It says how to try again because trying again already works and nothing said
+# so: a row that failed is asked about afresh the next time it is opened, so
+# closing it and opening it is the retry. Reported by Oliver on 2026-09-08,
+# who asked for a way to try again while looking at a screen that had one.
+COULD_NOT_ASK = "Could not be looked up: {reason}. Close and open this row to try again"
 # Said under a candidate the catalogue answered about with nothing worth
 # offering. An entry that opens onto emptiness reads as one still loading.
 NOTHING_OFFERED = "No albums worth offering"

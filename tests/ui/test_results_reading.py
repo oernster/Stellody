@@ -14,7 +14,7 @@ test below is one of those three questions.
 
 from __future__ import annotations
 
-from results_support import Asking, candidate_in, gaps_with, made
+from results_support import Asking, candidate_in, gaps_with, made, rows_under
 
 from stellody.domain.discovery import ReleaseGroup
 from stellody.ui.palette import Mode, palette_for
@@ -162,3 +162,18 @@ def test_the_strip_goes_quiet_when_the_last_answer_lands(application) -> None:
     dialog.show_failure("id-1", "nothing answered at all")
     assert dialog.asking_bar.format() == NOT_ASKING
     assert dialog.asking_bar.maximum() > 0
+
+
+def test_a_failure_says_what_can_be_done_about_it(application) -> None:
+    """Reopening a failed row already asked afresh; nothing said so.
+
+    Oliver asked for a way to try again on 2026-09-08, looking at a screen
+    that had one. FR-D32.
+    """
+    dialog = made((gaps_with(artists=1),), asking=Asking())
+    candidate = candidate_in(dialog)
+    candidate.setExpanded(True)
+    dialog.show_failure("id-0", "the catalogue refused all 5 asks")
+    line = rows_under(candidate)[0]
+    assert "the catalogue refused all 5 asks" in line, "it says what happened"
+    assert "open this row" in line.casefold(), "and what can be done about it"

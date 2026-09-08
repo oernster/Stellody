@@ -18,6 +18,7 @@ Nothing here opens a connection or reads a clock. The waiting is done by a
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from stellody.application.discovery_ports import (
     RateRefused,
@@ -41,6 +42,37 @@ RETRY_PAUSE_SECONDS = 2.0
 # does not work. Small enough to read as immediate, large enough that a run
 # is not spending its time asking whether it should stop.
 WAIT_SLICE_SECONDS = 0.2
+# How many asks one artist is worth when somebody opened that artist and is
+# watching the row. Reported by Oliver on 2026-09-08: The Rolling Stones came
+# back refused while every other artist on the screen answered. Measured the
+# same day, that artist carries 1474 release groups at MusicBrainz and the
+# request takes 15.6 seconds cold against 0.2 warm, so it is among the first
+# things a busy service sheds. Five asks wait two, four, six then eight
+# seconds, which is twenty seconds of patience: a wait somebody watching one
+# row will sit through; not a wait a run of 327 artists could take.
+OPENED_ATTEMPTS = 5
+
+
+@dataclass(frozen=True, slots=True)
+class Patience:
+    """How hard one question is pressed before it is given up on.
+
+    Two callers ask the same catalogue the same way and can afford entirely
+    different amounts of waiting, which is a property of who is waiting rather
+    than of the question. Stating it as a value keeps the retry itself written
+    once.
+    """
+
+    attempts: int
+    pause_seconds: float
+
+
+# What a run can afford for one artist out of hundreds.
+PATIENCE_OF_A_RUN = Patience(attempts=RETRY_ATTEMPTS, pause_seconds=RETRY_PAUSE_SECONDS)
+# What one artist somebody opened on purpose is worth.
+PATIENCE_FOR_ONE_ARTIST = Patience(
+    attempts=OPENED_ATTEMPTS, pause_seconds=RETRY_PAUSE_SECONDS
+)
 
 
 def asked[Answer](
@@ -48,6 +80,7 @@ def asked[Answer](
     cancelled: CancelledCheck,
     pause: Pause,
     *arguments: object,
+    patience: Patience = PATIENCE_OF_A_RUN,
 ) -> Answer:
     """Ask a catalogue, waiting out a refusal rather than giving up on it.
 
@@ -75,9 +108,11 @@ def asked[Answer](
         try:
             return call(*arguments, wanted=wanted)
         except RateRefused:
-            if attempts >= RETRY_ATTEMPTS:
-                raise SourceFailed("refused after every attempt")
-            waited(RETRY_PAUSE_SECONDS * attempts, cancelled, pause)
+            if attempts >= patience.attempts:
+                raise SourceFailed(
+                    f"the catalogue refused all {patience.attempts} asks"
+                )
+            waited(patience.pause_seconds * attempts, cancelled, pause)
 
 
 def waited(seconds: float, cancelled: CancelledCheck, pause: Pause) -> None:
