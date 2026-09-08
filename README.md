@@ -73,7 +73,10 @@ if it ever stopped being true the build would fail.
 - **What your collection is missing.** Tick the genres worth looking in and
   Stellody asks two public music catalogues what those artists made that you do
   not hold, along with who else sounds like them. It reports as it goes, says
-  roughly how long is left and stops the moment you ask it to. What it finds
+  roughly how long is left and stops the moment you ask it to. Where it could
+  not get a usable answer about somebody it says so and counts them, with the
+  names one press away, so an answer short of a third of your library never
+  reads like a complete one. What it finds
   opens as a list you can read and tick; from there one press takes the ticked
   albums to a shop, opening that shop's own search for each of them in your
   browser. Nothing is bought here and nothing is streamed: Stellody hands over
@@ -141,7 +144,8 @@ Five things reach outside your computer at all, so here are all five:
 - **Checking for a new version**, once a day. It sends nothing about you or
   your music, not even which version you have: the request names the program
   and asks for one public page. Then it stays quiet unless there is something
-  new.
+  new. Where there is, pressing Download hands the release page to your
+  browser, exactly as the two entries below hand over an address.
 - **Looking for music you do not own**, only ever when you ask. A discovery run
   names the artists inside the genres you ticked to two public music
   catalogues, MusicBrainz and ListenBrainz, then asks what those artists made

@@ -1249,8 +1249,16 @@ per artist paced at one per second and the similarity request overlapping them.
 Rationale: The arithmetic gives about eleven minutes; twenty is the figure that
 may be asserted without the test becoming a weather report.
 
-Verification: measured once against the real sources before release, recorded
-here with the date.
+**NOT MEASURED. This is the one requirement here that no evidence stands
+behind.** The live run of 2026-09-08 covered Blues and Folk rather than the
+whole library, so it says nothing about a run over all 327 source artists.
+Nothing in the suite can supply it either, since the figure is a property of
+two public services on the day they are asked.
+
+Verification: a run over every genre against the real sources, timed end to
+end, recorded here with the date it was taken. Until that happens the twenty
+minutes is arithmetic rather than a measurement, which is why this is a Should
+rather than a Must.
 
 ---
 
@@ -1465,7 +1473,7 @@ The three tables are data rather than rules buried in code:
 - **Distinguishing words**, one of which anywhere stops a strip: live, remix,
   remixes, remixed, instrumental, instrumentals, karaoke, acoustic, demo, demos,
   mix, mixes, unmixed, dj, session, sessions, mono, radio, edit, single, cover,
-  tribute, score, soundtrack.
+  tribute, score, soundtrack, compilation.
 
 **Amended 2026-09-06, while the domain was being built.** As first written, this
 section compared a release key plus the secondary types and said no more, which

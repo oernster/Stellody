@@ -81,7 +81,7 @@ planting it.
 The count in that test is the point of it. Going from one permitted module to
 two was an edit somebody had to make and defend; a guard written as "the
 network is used sparingly" would have allowed the same change silently. The
-update check is also the only one of the two that speaks without being asked,
+update check is also the only one of the four that speaks without being asked,
 which is why what it sends is worth stating exactly. It carries a fixed URL,
 an Accept header naming the API version plus a user agent that is the product
 name and nothing more. Not the library, not an identifier, not the running
@@ -446,10 +446,11 @@ rescanning a library.
 rescan.** How a file becomes records at all, which is what `records.py` and the
 cue parsing behind it do, runs during the scan and the store then holds its
 answer. Unchanged files were on their own a reason to reuse that answer, so such
-a rule reached only whichever folder somebody happened to touch. Measured: a
-correction letting a file's own tags answer where a cue sheet says only Unknown
-had reached none of the reference library's 659 folders three days after it
-landed, because not one of those files had changed. `records.DERIVATION` names
+a rule reached only whichever folder somebody happened to touch. Measured on its own day, which is
+why the count differs from the reading above: a correction letting a file's own
+tags answer where a cue sheet says only Unknown had reached none of the 659
+folders the walk saw then, three days after it landed, because not one of those
+files had changed. `records.DERIVATION` names
 the rules in force, a folder record carries the value it was written under and
 `_unchanged` requires the two to agree, so a corrected rule now reaches a whole
 library on the next scan. A record from a database written before the question
@@ -1081,6 +1082,23 @@ reading of the pace: a file replaced between two reads would put one run's
 question above another run's answer. Reading the genres from the ticks handed
 over when the run started would be the same fault by a different route, since
 the screen is built from the file rather than from the run.
+
+**An answer says who it could not be given for.** Three questions can end
+without a usable one: the source refuses, the catalogue holds nobody under a
+name or it holds several artists under it. All three were recorded and written
+into the file from the beginning; nothing read them back, so a run that could
+not answer for a third of a library said exactly what a clean one said. That is
+the misreading `RunReport` was written to prevent, in its own words. The counts
+now follow the run's own message and the names sit behind a button beside it,
+which is the split `scan_summary` already makes: a count is the right weight for
+something nobody asked for, the names for an answer somebody pressed for.
+`stellody/ui/shortfall.py` holds the words, the report and the dialog as text
+apart from any widget, plus the mixin that owns the button. The three kinds are
+counted apart rather than totalled, because they are not the same news: one is
+worth running again later, one is a spelling to look at and one cannot be
+settled from a name at all. The button carries its own count, since the status
+bar is shared and playing a track replaces the sentence beside it within
+seconds.
 
 **One file, replaced by every completed run.** Not a directory of dated files,
 which becomes a thing to tidy up; not a merge, which would have to rule on a
