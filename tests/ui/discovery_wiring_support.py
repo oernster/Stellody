@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QMessageBox, QPushButton, QWidget
 
-from stellody.application.values import RunOutcome, RunReport
+from stellody.application.values import RunOutcome, RunReport, SourceFailure
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import Discovering
 from stellody.ui.discovery_progress import DiscoveryBars
@@ -129,8 +129,8 @@ def refused(report: RunReport) -> str:
     raise OSError("no room")
 
 
-def a_report(albums: int = 1, artists: int = 1) -> RunReport:
-    """A completed run holding this much."""
+def a_report(albums: int = 1, artists: int = 1, failed: int = 0) -> RunReport:
+    """A completed run holding this much, over this many failed questions."""
     return RunReport(
         outcome=RunOutcome.COMPLETED,
         gaps=(
@@ -141,6 +141,10 @@ def a_report(albums: int = 1, artists: int = 1) -> RunReport:
                     SimilarArtist(name=f"Artist {n}") for n in range(artists)
                 ),
             ),
+        ),
+        failed=tuple(
+            SourceFailure(artist=f"Nobody {n}", reason="a server error")
+            for n in range(failed)
         ),
     )
 

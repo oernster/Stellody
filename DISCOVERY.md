@@ -591,6 +591,41 @@ Verified by: `tests/application/test_discovery.py::test_other_errors_do_not_stop
 
 ---
 
+**FR-D42 An answer says when it is short of somebody**
+
+Priority: Must
+
+Requirement: When a run completes having failed to ask about one or more
+artists, the message shown at the end of that run shall say how many artists
+could not be asked about, both where the run found something and where it found
+nothing.
+
+Rationale: FR-D22 records the failures and the file has carried them since;
+nothing read them back, so a run that could not ask about a third of a library
+said exactly what a clean one said. That is the misreading `RunReport` was
+written to prevent, in its own words: an artist nobody could look up is the
+artist somebody would otherwise assume had nothing missing. Found 2026-09-08 by
+reading the path rather than by anybody meeting it.
+
+A stopped run and an unreachable one are deliberately left out. Each already
+says its answer is incomplete, so a count there states the same thing twice; the
+endings that mislead are the two that read as finished.
+
+The count alone is shown rather than the names. A run walks hundreds of artists
+and the file holds every failure with its reason, so somebody who wants the
+names has them; a status line that tried to carry them would be unreadable at
+the length that matters.
+
+Acceptance: Given a completed run that found albums and could not ask about four
+artists, when it ends, then the message names the counts found and says four
+artists could not be asked about; given the same run having found nothing, then
+it says nothing was missing and says the same four; given a stopped run holding
+a failure, then it says only that it was stopped.
+
+Verified by: `tests/ui/test_discovery_wiring.py::test_a_run_short_of_one_artist_says_so`, `tests/ui/test_discovery_wiring.py::test_a_run_short_of_several_artists_says_how_many`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_could_not_be_asked`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_does_not_count_its_failures`
+
+---
+
 **FR-D23 One run at a time**
 
 Priority: Must
@@ -1432,7 +1467,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D41 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D42 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.

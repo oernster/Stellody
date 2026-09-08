@@ -36,9 +36,24 @@ from stellody.ui.tray_metrics import show_discovery_running
 WriteDiscovery = Callable[[RunReport], object]
 
 FOUND = (
-    "Found {albums} albums and {artists} artists you do not hold. Written to {where}"
+    "Found {albums} albums and {artists} artists you do not hold. Written to {where}."
 )
 FOUND_NOTHING = "Nothing missing was found in those genres."
+# Said after either of the two endings above, which are the ones that present a
+# completed run's answer. A run may finish having failed to ask about some of
+# the artists it walked (FR-D22 records them); an answer short of those reads
+# exactly like a complete one unless it says so, which is the whole point of
+# these two sentences. FR-D42.
+FAILED_ONE = (
+    "One artist could not be asked about, so anything missing for them is not here."
+)
+FAILED_SOME = (
+    "{count} artists could not be asked about, "
+    "so anything missing for them is not here."
+)
+# Which of the two sentences above a count calls for; named rather than written
+# into the comparison, since it is a fact about the English and not arithmetic.
+ONE_ARTIST = 1
 NOTHING_TO_ASK = (
     "Nothing in the library carries those genres, so there was nobody to ask about."
 )
@@ -52,6 +67,20 @@ COULD_NOT_WRITE = (
     "The answer could not be written: {reason}. Any earlier one is untouched."
 )
 WENT_WRONG = "The run stopped: {reason}"
+
+
+def _short_by(report: RunReport) -> str:
+    """The sentence owed where a run could not ask about every artist.
+
+    Empty where every question was answered, so a run that went cleanly says
+    exactly what it said before this existed rather than carrying a reassurance
+    nobody needs.
+    """
+    if not report.failed:
+        return ""
+    if len(report.failed) == ONE_ARTIST:
+        return f" {FAILED_ONE}"
+    return f" {FAILED_SOME.format(count=len(report.failed))}"
 
 
 def _counted(report: RunReport) -> tuple[int, int]:
@@ -242,11 +271,16 @@ class Discovering:
             return STOPPED, False
         if report.outcome is RunOutcome.UNAVAILABLE:
             return UNREACHABLE, False
+        # Only the two endings that PRESENT AN ANSWER carry the shortfall
+        # sentence. A stopped or unreachable run has already said that its
+        # answer is incomplete, so naming a count there would be saying it
+        # twice; the ones that read as complete are the ones that mislead.
+        short_by = _short_by(report)
         albums, artists = _counted(report)
         if not albums and not artists:
-            return FOUND_NOTHING, False
+            return FOUND_NOTHING + short_by, False
         if self._write_discovery is None:
-            return FOUND_NOTHING, False
+            return FOUND_NOTHING + short_by, False
         try:
             where = self._write_discovery(report)
         except (OSError, ValueError) as trouble:
@@ -254,7 +288,10 @@ class Discovering:
         # Written first, then shown from what was written: the file is what a
         # later day would be shown from too, so showing anything else now
         # would be showing something nothing else can reproduce. FR-D28.
-        return FOUND.format(albums=albums, artists=artists, where=where), True
+        return (
+            FOUND.format(albums=albums, artists=artists, where=where) + short_by,
+            True,
+        )
 
     def show_discovery_results(self) -> None:
         """Open the results on what the discovery file holds.

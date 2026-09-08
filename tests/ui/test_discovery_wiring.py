@@ -15,9 +15,16 @@ from discovery_wiring_support import (
     refused,
 )
 
-from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
+from stellody.application.values import (
+    DiscoveryProgress,
+    RunOutcome,
+    RunReport,
+    SourceFailure,
+)
 from stellody.ui.discovering import (
     COULD_NOT_WRITE,
+    FAILED_ONE,
+    FAILED_SOME,
     FOUND,
     FOUND_NOTHING,
     NOTHING_TO_ASK,
@@ -70,6 +77,40 @@ def test_a_run_that_found_nothing_writes_nothing(application) -> None:
     """An empty answer is not worth replacing a file over."""
     window = make_window(application)
     assert window._settled(a_report(albums=0, artists=0)) == (FOUND_NOTHING, False)
+
+
+def test_a_run_short_of_one_artist_says_so(application) -> None:
+    """An answer that could not ask about somebody reads complete otherwise."""
+    window = make_window(application)
+    said, found = window._settled(a_report(albums=2, artists=3, failed=1))
+    assert said == FOUND.format(albums=2, artists=3, where=WHERE) + f" {FAILED_ONE}"
+    assert found, "the shortfall is a caveat on an answer, not a reason to hide it"
+
+
+def test_a_run_short_of_several_artists_says_how_many(application) -> None:
+    """The count is the whole of what somebody can act on."""
+    window = make_window(application)
+    said, _ = window._settled(a_report(albums=2, artists=3, failed=4))
+    assert said.endswith(FAILED_SOME.format(count=4))
+    assert "4 artists could not be asked about" in said
+
+
+def test_finding_nothing_still_says_what_could_not_be_asked(application) -> None:
+    """The ending this matters most on: nothing found reads as nothing missing."""
+    window = make_window(application)
+    said, found = window._settled(a_report(albums=0, artists=0, failed=2))
+    assert said == FOUND_NOTHING + " " + FAILED_SOME.format(count=2)
+    assert not found, "an empty answer opens nothing, caveat or no caveat"
+
+
+def test_a_stopped_run_does_not_count_its_failures(application) -> None:
+    """It has already said the answer is incomplete; twice is noise."""
+    window = make_window(application)
+    stopped = RunReport(
+        outcome=RunOutcome.CANCELLED,
+        failed=(SourceFailure(artist="Nobody", reason="a server error"),),
+    )
+    assert window._settled(stopped) == (STOPPED, False)
 
 
 def test_a_file_that_will_not_write_is_reported(application) -> None:
