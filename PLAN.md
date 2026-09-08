@@ -39,24 +39,7 @@ that a music file is only ever read and that nothing reaches the network unasked
 beyond the update check, are held by tests rather than by intention. Nothing
 below is sized against the number.
 
-## 1. Make the sites findable
-
-Nothing has been submitted to a search engine, no structured data has been
-validated against a real checker and neither host has been observed in an
-index. What is left happens in a browser rather than in this repository:
-
-- **Register both hosts.** Google Search Console plus Bing Webmaster Tools for
-  `stellody.co.uk`, then submit `sitemap.xml`. Register `stellody.com` as well,
-  where the point is the opposite one: confirm the cross-domain canonical is
-  read, so the mirror is treated as the copy rather than as a rival.
-- **Validate the structured data** in the Rich Results Test rather than by
-  reading it, on each of the four pages.
-
-Done when: both hosts are verified in Search Console with the sitemap submitted
-and no coverage errors, the structured data passes the Rich Results Test and a
-search for the application by name returns the site.
-
-## 2. A music video for a track. Not designed.
+## 1. A music video for a track. Not designed.
 
 Idea recorded 2026-09-06 for later scoping. It is written down so it is not
 lost, not because it is understood: what it costs, whether it can be done at
@@ -87,6 +70,13 @@ one only after the discussion above.
 
 ## Not planned, so that this is not revisited
 
+- **Making the sites findable.** Ruled out by the owner on 2026-09-08, having
+  been raised more than once. Registering the hosts with Search Console and
+  Bing, submitting the sitemap and validating the structured data in the Rich
+  Results Test are all work in a browser rather than in this repository; none
+  of it is wanted. The markup the pages already carry stays as it is; it
+  is simply not chased. This is a decision about reach rather than about the
+  site, so nothing here reopens it.
 - **The formats no decoder here carries.** WMA, Monkey's Audio, WavPack,
   Musepack and DSD stay named in `UNPLAYABLE_SUFFIXES` and reported rather than
   played. Measured over the reference library: of the 126 folders that then held

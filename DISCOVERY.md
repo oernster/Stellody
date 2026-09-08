@@ -113,7 +113,7 @@ HTTPS connection during a run. Everything else the application already assumes.
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Answered |
-| A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint, so OQ-07 keeps the question of whether it needs a fallback. | Answered |
+| A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Answered |
 | A-03 | A listener accepts that a run names their source artists to two public catalogues. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements
@@ -1449,7 +1449,7 @@ Nothing marked open may be built from. Each is Oliver's unless stated.
 | # | Question | Owner |
 |---|---|---|
 | OQ-04 | What does deduplication actually reduce the 3,270 candidate genre lookups to? Measurable only by a real run. | measurement, after first build |
-| OQ-07 | Is the ListenBrainz labs endpoint stable enough to depend on; does the similarity half need a fallback? | Oliver |
+| OQ-07 | RESOLVED 2026-09-08. Oliver ruled that no fallback is needed; the similarity half depends on the labs endpoint as it stands. Read in `application/discovering.py` on the same day: a refusal raises `SourceFailed`, which is caught for the one artist it happened to, recorded against that artist and written into the discovery file, so the rest of the run carries on regardless. | Answered |
 
 ## 6. The build order this implies
 
