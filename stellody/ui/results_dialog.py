@@ -117,6 +117,7 @@ class ResultsDialog(FirstStopDialog):
         asking: object | None = None,
         shopping: Shopping | None = None,
         mode: Mode = Mode.DARK,
+        ticked: tuple[str, ...] = (),
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -146,7 +147,7 @@ class ResultsDialog(FirstStopDialog):
         # The key and the busy strip together, since both explain the screen
         # rather than acting on it. Named here as well so what reads them does
         # not have to know which widget they ended up in.
-        self.top = ResultsTop(self._colour, self)
+        self.top = ResultsTop(self._colour, ticked, self)
         self.key = self.top.key
         self.asking_bar = self.top.bar
         outer.addWidget(self.top)

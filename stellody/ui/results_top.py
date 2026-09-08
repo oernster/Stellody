@@ -30,6 +30,7 @@ from stellody.ui.results_words import (
     LEGEND_SOURCE,
     NOT_ASKING,
     asking_about,
+    looked_in,
 )
 from stellody.ui.theme import Palette
 
@@ -50,12 +51,25 @@ APART_PX = 12
 class ResultsTop(QWidget):
     """What the results dialog says about itself, above the list."""
 
-    def __init__(self, colour: Palette, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        colour: Palette,
+        ticked: tuple[str, ...] = (),
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         column = QVBoxLayout(self)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(KEY_GAP_PX)
+        # Above the key, because it is about the whole screen while the key is
+        # about the rows: what was asked comes before how to read the answer.
+        # Absent rather than empty where the file carries no genres, so a run
+        # written by an older Stellody costs a line rather than showing a blank.
+        self.looked_in = self._looked_in_line(ticked)
+        if self.looked_in is not None:
+            column.addWidget(self.looked_in)
+            column.addSpacing(APART_PX)
         self.key = tuple(
             self._key_line(shade, words)
             for shade, words in (
@@ -70,6 +84,24 @@ class ResultsTop(QWidget):
         self.bar = self._built_bar()
         self.rest()
         column.addWidget(self.bar)
+
+    def _looked_in_line(self, ticked: tuple[str, ...]) -> QLabel | None:
+        """The genres this run was scoped to; None where the file names none.
+
+        The names are drawn in the ordinary text colour rather than in either
+        artist colour, since those two already mean something on this screen
+        and a third use of one of them would be saying that these genres are
+        artists.
+        """
+        words = looked_in(ticked)
+        if not words:
+            return None
+        line = QLabel(words, self)
+        line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        # Wrapped for the reason the key is: eleven genres is an ordinary run
+        # and a list running off the edge is a list nobody can read.
+        line.setWordWrap(True)
+        return line
 
     def _key_line(self, colour: str, words: str) -> QLabel:
         """One line of the key: a filled circle, then what it means."""

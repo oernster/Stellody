@@ -65,6 +65,15 @@ NOTHING_OFFERED = "No albums worth offering"
 NOBODY_TO_ASK = "The catalogue did not say which artist this is"
 ONE = 1
 
+# What the run was scoped to, said above the key. The count is given as well as
+# the names because the names alone read as a heading rather than as the answer
+# to "why these artists": a run over eleven genres is a different thing from a
+# run over one; the number says which at a glance.
+GENRE = "genre"
+GENRES = "genres"
+GENRES_APART = ", "
+LOOKED_IN = "Looked in {count}: {genres}"
+
 
 def counted(count: int, single: str, several: str) -> str:
     """A count with the word for that many of them."""
@@ -97,6 +106,24 @@ def candidate_row(name: str, albums: int | None = None) -> str:
             similar=SIMILAR, albums=counted(albums, ALBUM, ALBUMS)
         )
     return CANDIDATE_ROW.format(artist=name, counts=counts)
+
+
+def looked_in(ticked: tuple[str, ...]) -> str:
+    """What the run was asked to look in; nothing at all where it is unknown.
+
+    The genres are said in the file's own order, which is the order they were
+    handed over, rather than sorted here: two orderings of one list is two
+    things to keep in step for no reader's benefit.
+
+    An empty answer yields an empty string rather than a line saying so. A file
+    written before the genres were recorded is the only way that happens; a line
+    reading "looked in nothing" would be worse than the absence.
+    """
+    if not ticked:
+        return ""
+    return LOOKED_IN.format(
+        count=counted(len(ticked), GENRE, GENRES), genres=GENRES_APART.join(ticked)
+    )
 
 
 def asking_about(names: tuple[str, ...]) -> str:

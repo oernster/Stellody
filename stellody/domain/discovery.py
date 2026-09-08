@@ -96,6 +96,33 @@ class Gaps:
         return not self.albums and not self.artists
 
 
+@dataclass(frozen=True, slots=True)
+class LastRun:
+    """A completed run as the discovery file carries it: what, plus what for.
+
+    The two travel together rather than being read separately. A run's answer
+    means nothing without the genres that scoped it, since those decide which
+    artists were asked about at all: the same library asked about Folk and
+    asked about Rock produces two unlike files; neither says so on its own.
+
+    One reading answers both for the reason the estimate takes one reading of
+    the pace: a file replaced between two reads would put one run's genres
+    above another run's gaps, which is worse than either alone.
+
+    A file written before the genres were recorded carries none, which reads
+    as an empty tuple rather than as a failure. Nothing about the gaps changes;
+    what is absent is only the line saying what was asked for.
+    """
+
+    gaps: tuple[Gaps, ...] = ()
+    ticked: tuple[str, ...] = ()
+
+    @property
+    def is_empty(self) -> bool:
+        """True where there is nothing worth opening a results screen for."""
+        return not self.gaps
+
+
 def catalogue_genres(stated: tuple[str, ...]) -> tuple[str, ...]:
     """What the catalogue's own genre names mean here, in catalogue order.
 

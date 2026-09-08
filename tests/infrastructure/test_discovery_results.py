@@ -49,7 +49,53 @@ def a_report() -> RunReport:
                 artists=(SimilarArtist(name="Howlin' Wolf", identifier="wolf"),),
             ),
         ),
+        ticked=("Blues", "Rock"),
     )
+
+
+class TestWhatTheRunWasAskedFor:
+    """The genres a run was scoped to travel with the answer it produced.
+
+    Without them the file is an answer to a question nobody wrote down: the
+    same library asked about Blues and asked about Rock yields two unlike
+    files and neither says which it is.
+    """
+
+    def test_the_genres_are_written_down_beside_the_gaps(self) -> None:
+        """Written, so the file is self-describing rather than only current."""
+        discovery_file.write(a_report())
+        held = json.loads(discovery_file.discovery_path().read_text(encoding="utf-8"))
+        assert held["ticked"] == ["Blues", "Rock"]
+
+    def test_they_come_back_in_the_order_they_were_handed_over(self) -> None:
+        """The file's own order; nothing sorts them a second time."""
+        discovery_file.write(a_report())
+        assert discovery_file.read().ticked == ("Blues", "Rock")
+
+    def test_one_reading_answers_both(self) -> None:
+        """The gaps and the genres cannot come from two reads of one file."""
+        discovery_file.write(a_report())
+        answer = discovery_file.read()
+        assert answer.ticked == ("Blues", "Rock")
+        assert [gaps.artist for gaps in answer.gaps] == ["Muddy Waters"]
+
+    def test_a_file_written_before_this_existed_reads_as_no_genres(self) -> None:
+        """An older file loses the line, never the results."""
+        put({"gaps": {"Muddy Waters": {"albums": [], "artists": []}}})
+        answer = discovery_file.read()
+        assert answer.ticked == ()
+        assert [gaps.artist for gaps in answer.gaps] == ["Muddy Waters"]
+
+    @pytest.mark.parametrize("carried", ["not a list", 7, {"Blues": True}, None])
+    def test_genres_of_the_wrong_shape_state_nothing(self, carried: object) -> None:
+        """The same forgiveness every other part of this file is read with."""
+        put({"gaps": {}, "ticked": carried})
+        assert discovery_file.read().ticked == ()
+
+    def test_an_empty_genre_name_is_passed_over(self) -> None:
+        """A blank in the list would draw as a stray comma on the screen."""
+        put({"gaps": {}, "ticked": ["Blues", "", "Rock"]})
+        assert discovery_file.read().ticked == ("Blues", "Rock")
 
 
 class TestWhatARunLeftBehind:
@@ -58,7 +104,7 @@ class TestWhatARunLeftBehind:
     def test_a_run_is_read_back_as_it_was_written(self) -> None:
         """FR-D28: the dialog is shown from the file rather than the report."""
         discovery_file.write(a_report())
-        found = discovery_file.read()
+        found = discovery_file.read().gaps
         assert [gaps.artist for gaps in found] == ["Muddy Waters"]
         assert found[0].albums[0].title == "Electric Mud"
         assert found[0].albums[0].kinds == (ReleaseKind.LIVE,)
@@ -81,7 +127,10 @@ class TestWhatARunLeftBehind:
                 }
             }
         )
-        assert [gaps.artist for gaps in discovery_file.read()] == ["Second", "First"]
+        assert [gaps.artist for gaps in discovery_file.read().gaps] == [
+            "Second",
+            "First",
+        ]
 
 
 class TestAFileNobodyCouldRead:
@@ -89,12 +138,12 @@ class TestAFileNobodyCouldRead:
 
     def test_no_file_at_all_is_no_results(self) -> None:
         """The ordinary case before anybody has ever run a discovery."""
-        assert discovery_file.read() == ()
+        assert discovery_file.read().gaps == ()
 
     def test_a_file_that_is_not_json_is_no_results(self) -> None:
         """Something else got written there, which is not worth raising over."""
         discovery_file.discovery_path().write_text("{", encoding="utf-8")
-        assert discovery_file.read() == ()
+        assert discovery_file.read().gaps == ()
 
     @pytest.mark.parametrize(
         "content", [[], "not a mapping", {}, {"gaps": []}, {"gaps": "nope"}]
@@ -102,7 +151,7 @@ class TestAFileNobodyCouldRead:
     def test_a_file_of_the_wrong_shape_is_no_results(self, content: object) -> None:
         """A file from a later Stellody, else from nothing at all."""
         put(content)
-        assert discovery_file.read() == ()
+        assert discovery_file.read().gaps == ()
 
 
 class TestEntriesThatCannotBeRead:
@@ -111,12 +160,12 @@ class TestEntriesThatCannotBeRead:
     def test_an_artist_whose_entry_is_not_a_mapping_is_passed_over(self) -> None:
         """The rest of a run that took eleven minutes is still worth showing."""
         put({"gaps": {"Broken": "nope", "Muddy Waters": {"albums": [], "artists": []}}})
-        assert [gaps.artist for gaps in discovery_file.read()] == ["Muddy Waters"]
+        assert [gaps.artist for gaps in discovery_file.read().gaps] == ["Muddy Waters"]
 
     def test_an_artist_with_no_name_is_passed_over(self) -> None:
         """Nothing can be shown under a name that is not there."""
         put({"gaps": {"  ": {"albums": [], "artists": []}}})
-        assert discovery_file.read() == ()
+        assert discovery_file.read().gaps == ()
 
     def test_an_album_with_no_title_is_passed_over(self) -> None:
         """The domain refuses one; a record nobody can name is not one."""
@@ -130,7 +179,7 @@ class TestEntriesThatCannotBeRead:
                 }
             }
         )
-        found = discovery_file.read()
+        found = discovery_file.read().gaps
         assert [album.title for album in found[0].albums] == ["Electric Mud"]
 
     def test_a_candidate_with_no_name_is_passed_over(self) -> None:
@@ -145,13 +194,13 @@ class TestEntriesThatCannotBeRead:
                 }
             }
         )
-        found = discovery_file.read()
+        found = discovery_file.read().gaps
         assert [artist.name for artist in found[0].artists] == ["Howlin' Wolf"]
 
     def test_lists_that_are_not_lists_state_nothing(self) -> None:
         """A file of the wrong shape inside a right one, entry by entry."""
         put({"gaps": {"Muddy Waters": {"albums": "nope", "artists": 3}}})
-        found = discovery_file.read()
+        found = discovery_file.read().gaps
         assert found[0].albums == ()
         assert found[0].artists == ()
 
@@ -167,6 +216,6 @@ class TestEntriesThatCannotBeRead:
                 }
             }
         )
-        found = discovery_file.read()
+        found = discovery_file.read().gaps
         assert found[0].albums[0].kinds == (ReleaseKind.OTHER,)
         assert not found[0].albums[0].is_offered

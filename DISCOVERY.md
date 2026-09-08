@@ -924,6 +924,43 @@ Verified by: `tests/ui/test_results_reading.py::test_the_strip_names_who_is_bein
 
 ---
 
+**FR-D41 The results say what the run looked in**
+
+Priority: Must
+
+Requirement: The results dialog shall state, above the key, the number of
+genres the run was scoped to and their names. The genres shall be read from the
+discovery file being shown rather than from the ticks handed over when the run
+started. Where the file names no genres the dialog shall show no such line at
+all.
+
+Rationale: Asked for by Oliver on 2026-09-08. A run's answer says nothing about
+the question that produced it: the same library asked about Folk and asked
+about Rock yields two unlike screens that read identically, so a listener
+returning to one has no way to tell which run they are looking at, nor why an
+artist they expected is absent.
+
+From the file rather than from the ticks, for the reason FR-D28 shows the gaps
+from the file: two sources are two things to disagree. Held in one reading with
+the gaps for the reason FR-D35 takes one reading of the pace, since a file
+replaced between two reads would put one run's question above another run's
+answer.
+
+The count is given as well as the names because a run over eleven genres is a
+different thing from a run over one; the number says which before the list is
+read. The line is absent rather than empty where the file names none, which
+only a file written before this existed can be: "looked in nothing" would be
+worse than the absence, while nothing about the gaps changes either way.
+
+Acceptance: Given a run scoped to two genres, when the dialog opens, then a
+line above the key names both and says there were two; given one genre, then
+the line says one genre rather than genres; given a file naming no genres, then
+no such line is drawn and the gaps are shown as before.
+
+Verified by: `tests/ui/test_results_reading.py::test_it_says_which_genres_the_run_looked_in`, `tests/ui/test_results_reading.py::test_one_genre_is_not_called_genres`, `tests/ui/test_results_reading.py::test_a_run_that_names_no_genres_shows_no_line_at_all`, `tests/ui/test_results_reading.py::test_the_genres_sit_above_the_key`, `tests/ui/test_results_dialog.py::test_the_genres_shown_come_from_the_file_it_is_showing`, `tests/application/test_discovery.py::test_a_completed_run_carries_what_it_was_asked_to_look_in`, `tests/infrastructure/test_discovery_results.py::TestWhatTheRunWasAskedFor`
+
+---
+
 **FR-D35 How long the run has left**
 
 Priority: Must
@@ -1255,8 +1292,15 @@ candidate offered once and owned since. A run therefore states what is missing
 at the moment it finished, which is the only claim it can honestly make.
 
 Its exact JSON shape is settled at implementation, constrained by FR-D18 and by
-the three things the file carries beside the results: the artists that could not
-be resolved (FR-D08), the ambiguous ones (FR-D09) and the failures (FR-D22).
+the four things the file carries beside the results: the artists that could not
+be resolved (FR-D08), the ambiguous ones (FR-D09), the failures (FR-D22) and
+the genres the run was scoped to (FR-D41).
+
+The genres were added on 2026-09-08. Until then the file was an answer to a
+question nobody had written down, so a run over Folk and a run over Rock
+produced files that could not be told apart. A file written before that carries
+none, which reads as an empty list rather than as a fault: the reader is
+forgiving here exactly as it is about every other part of the file.
 
 ### 3.5 What makes two albums the same album
 
@@ -1354,7 +1398,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D40 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D41 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.

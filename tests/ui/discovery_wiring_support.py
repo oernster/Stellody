@@ -12,7 +12,7 @@ import pytest
 from PySide6.QtWidgets import QMessageBox, QPushButton, QWidget
 
 from stellody.application.values import RunOutcome, RunReport
-from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import Discovering
 from stellody.ui.discovery_progress import DiscoveryBars
 from stellody.ui.theme import Mode
@@ -147,14 +147,16 @@ def a_report(albums: int = 1, artists: int = 1) -> RunReport:
 class Results:
     """A reader answering with whatever the test wrote down."""
 
-    def __init__(self, gaps: tuple[Gaps, ...] = ()) -> None:
-        self._gaps = gaps
+    def __init__(
+        self, gaps: tuple[Gaps, ...] = (), ticked: tuple[str, ...] = ()
+    ) -> None:
+        self._answer = LastRun(gaps=gaps, ticked=ticked)
         self.reads = 0
 
-    def last_run(self) -> tuple[Gaps, ...]:
-        """What the last run found, as this fake was told."""
+    def last_run(self) -> LastRun:
+        """What the last run found and looked in, as this fake was told."""
         self.reads += 1
-        return self._gaps
+        return self._answer
 
 
 def make_window(

@@ -112,9 +112,13 @@ def rows_under(item: QTreeWidgetItem) -> tuple[str, ...]:
     return tuple(item.child(at).text(0) for at in range(item.childCount()))
 
 
-def made(gaps: tuple[Gaps, ...], asking: object | None = None) -> ResultsDialog:
+def made(
+    gaps: tuple[Gaps, ...],
+    asking: object | None = None,
+    ticked: tuple[str, ...] = (),
+) -> ResultsDialog:
     """The dialog over these gaps, drawn in the dark appearance."""
-    return ResultsDialog(gaps, asking=asking, mode=Mode.DARK)
+    return ResultsDialog(gaps, asking=asking, mode=Mode.DARK, ticked=ticked)
 
 
 def candidate_in(dialog: ResultsDialog, at: int = 0) -> QTreeWidgetItem:

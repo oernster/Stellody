@@ -257,15 +257,19 @@ class Discovering:
         """
         if self._discovery_results is None:
             return
-        gaps = self._discovery_results.last_run()
-        if not gaps:
+        answer = self._discovery_results.last_run()
+        if answer.is_empty:
             return
         asking = None if self._expansion is None else ExpansionRunner(self._expansion)
         dialog = ResultsDialog(
-            gaps,
+            answer.gaps,
             asking=asking,
             shopping=self._shopping,
             mode=self.theme_mode,
+            # From the file rather than from the ticks handed over minutes
+            # earlier, so what the screen says it looked in is what the run it
+            # is showing actually looked in.
+            ticked=answer.ticked,
             parent=self,
         )
         if asking is not None:

@@ -82,6 +82,52 @@ def test_the_key_names_all_three_kinds_in_their_own_colours(application) -> None
         assert line.wordWrap(), "a key that runs off the edge is unreadable"
 
 
+def test_it_says_which_genres_the_run_looked_in(application) -> None:
+    """Asked for on 2026-09-08: a run's answer without its question.
+
+    The screen listed what was found while saying nothing about what had been
+    asked for, so two runs over unlike genres produced two screens that read
+    identically. The count goes with the names because a run over eleven
+    genres is a different thing from a run over one.
+    """
+    dialog = made((gaps_with(albums=1),), ticked=("Blues", "Rock"))
+    assert dialog.top.looked_in is not None
+    said = dialog.top.looked_in.text()
+    assert "2 genres" in said
+    assert "Blues" in said
+    assert "Rock" in said
+    assert dialog.top.looked_in.wordWrap(), "eleven genres would run off the edge"
+
+
+def test_one_genre_is_not_called_genres(application) -> None:
+    """The unwanted sibling of the count above."""
+    dialog = made((gaps_with(albums=1),), ticked=("Folk",))
+    assert "1 genre:" in dialog.top.looked_in.text()
+
+
+def test_a_run_that_names_no_genres_shows_no_line_at_all(application) -> None:
+    """A file written before the genres were recorded is the only such run.
+
+    Absent rather than blank: a line reading "looked in nothing" would be
+    worse than the absence, while the gaps are unaffected either way.
+    """
+    dialog = made((gaps_with(albums=1),))
+    assert dialog.top.looked_in is None
+    assert dialog.tree.topLevelItemCount() == 1
+
+
+def test_the_genres_sit_above_the_key(application) -> None:
+    """What was asked comes before how to read the answer.
+
+    Read off the laid-out column rather than off the order they were built in,
+    since a widget added to a layout is not necessarily where it was made.
+    """
+    dialog = made((gaps_with(albums=1),), ticked=("Blues",))
+    column = dialog.top.layout()
+    placed = [column.itemAt(at).widget() for at in range(column.count())]
+    assert placed.index(dialog.top.looked_in) < placed.index(dialog.top.key[0])
+
+
 def test_the_strip_says_the_instruction_while_nothing_is_being_asked(
     application,
 ) -> None:

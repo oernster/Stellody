@@ -271,6 +271,11 @@ class RunReport:
     unresolved: tuple[str, ...] = ()
     ambiguous: tuple[Ambiguity, ...] = ()
     failed: tuple[SourceFailure, ...] = ()
+    # What the run was asked to look in. Carried on the report rather than
+    # held by whoever started it, because the genres are what make the answer
+    # readable: the file is written from this and the results screen says it
+    # back, so the two cannot come from different places and disagree.
+    ticked: tuple[str, ...] = ()
 
     @property
     def is_writable(self) -> bool:

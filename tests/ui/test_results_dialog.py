@@ -49,6 +49,22 @@ def test_a_completed_run_opens_the_results(application) -> None:
     assert rows_under(dialog.tree.topLevelItem(0)) == ("Album 0", "Album 1")
 
 
+def test_the_genres_shown_come_from_the_file_it_is_showing(application) -> None:
+    """The screen's question and its answer are read in one go.
+
+    The ticks handed over when the run started are not consulted: the dialog
+    is built from the file, so what it says it looked in has to come from
+    there too, else a run started with one set of ticks could be shown above
+    another run's gaps.
+    """
+    found = (gaps_with(albums=1),)
+    window = make_window(application, results=Results(found, ticked=("Folk",)))
+    window._settled(a_report(albums=1, artists=0))
+    dialog = window._results_dialog
+    assert dialog is not None
+    assert "Folk" in dialog.top.looked_in.text()
+
+
 def test_a_run_that_found_nothing_shows_no_dialog(application) -> None:
     """An empty dialog says less than the sentence shown in its place. FR-D33."""
     window = make_window(application, results=Results(()))

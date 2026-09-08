@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.discovery import LastRun, ReleaseGroup, SimilarArtist
 
 
 class DiscoveryError(RuntimeError):
@@ -97,10 +97,14 @@ class DiscoveryResults(Protocol):
     hand when a run ends, which is what the specification said this stage would
     do: one thing stays authoritative, so showing a past run's answer again on
     some later day then costs nothing extra. FR-D28.
+
+    The genres the run was scoped to come back with the gaps rather than from
+    whoever started it, for the same reason: a screen that read its answer from
+    the file and its question from memory would be two sources to disagree.
     """
 
-    def last_run(self) -> tuple[Gaps, ...]:
-        """What the last run found; empty where there is nothing to show."""
+    def last_run(self) -> LastRun:
+        """What the last run found and looked in; empty where there is neither."""
         ...
 
 

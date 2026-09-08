@@ -1036,6 +1036,16 @@ another fifty-four minutes at the permitted rate. An answer already held is
 still judged against the genres ticked, so remembering cannot smuggle a
 candidate past the scope of a run.
 
+**The file records what was asked as well as what was found.** A run's answer
+is meaningless without the genres that scoped it, since those decide which
+artists were asked about at all: the same library asked about Folk and asked
+about Rock produces two unlike files; neither said which it was. The
+results screen reads both in ONE reading, for the reason the estimate takes one
+reading of the pace: a file replaced between two reads would put one run's
+question above another run's answer. Reading the genres from the ticks handed
+over when the run started would be the same fault by a different route, since
+the screen is built from the file rather than from the run.
+
 **One file, replaced by every completed run.** Not a directory of dated files,
 which becomes a thing to tidy up; not a merge, which would have to rule on a
 candidate offered once and owned since. A run states what is missing at the

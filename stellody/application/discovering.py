@@ -118,7 +118,7 @@ class Discovery:
         kept = self._narrowed(gathered.gaps, ticked, report, cancelled, known)
         if kept is None:
             return RunReport(outcome=RunOutcome.CANCELLED)
-        return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept)
+        return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept, ticked=ticked)
 
     def _gathered(
         self,

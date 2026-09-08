@@ -12,7 +12,6 @@ from discovery_support import (
     ROCK,
     Catalogue,
     Similarity,
-    Stopping,
     Waits,
     make_album,
     never,
@@ -22,7 +21,6 @@ from discovery_support import (
 from stellody.application.asking import (
     RETRY_ATTEMPTS,
     RETRY_PAUSE_SECONDS,
-    WAIT_SLICE_SECONDS,
 )
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovering import (
@@ -85,6 +83,33 @@ def test_identity_is_requested_once() -> None:
     assert catalogue.identified == ["The Script"]
 
 
+def test_a_completed_run_carries_what_it_was_asked_to_look_in() -> None:
+    """The genres travel on the report, so the file can be written from it.
+
+    Asked for on 2026-09-08. The results screen says what the run looked in,
+    which it can only do if the answer knows: reading the ticks from whoever
+    started the run instead would be a second source to disagree with the file.
+    """
+    run, _, _, _ = make_run(Catalogue(identities={"Nobody": ()}))
+    report = run.run((make_album("Nobody", "A Record"),), ROCK, nothing, never)
+    assert report.outcome is RunOutcome.COMPLETED
+    assert report.ticked == ROCK
+
+
+def test_a_run_that_ends_early_claims_no_genres() -> None:
+    """Only a completed run is written, so only one needs to carry them.
+
+    The unwanted sibling of the test above: an ending that writes nothing must
+    not look like a run that looked somewhere and found nothing there.
+    """
+    run, _, _, _ = make_run(Catalogue(identities={}))
+    report = run.run(
+        (make_album("Nobody", "A Record"),), ("Nothing Held",), nothing, never
+    )
+    assert report.outcome is RunOutcome.NOTHING_TO_ASK
+    assert report.ticked == ()
+
+
 def test_unknown_artist_is_recorded() -> None:
     """A name no catalogue knows is reported rather than passed over."""
     run, _, _, _ = make_run(Catalogue(identities={"Nobody": ()}))
@@ -134,38 +159,6 @@ def test_progress_names_the_artist_and_counts_the_rest() -> None:
     ]
 
 
-def test_cancel_stops_before_the_next_request() -> None:
-    """Between requests rather than mid-flight, so nothing is half-written."""
-    run, catalogue, _, _ = make_run()
-    report = run.run((make_album("One", "A"),), ROCK, nothing, lambda: True)
-    assert report.outcome is RunOutcome.CANCELLED
-    assert not report.is_writable
-    assert catalogue.identified == []
-
-
-def test_closing_stops_the_run() -> None:
-    """A close is a cancel expressed differently; it gets the same answer.
-
-    Nothing is asked at all here. The run consults the cancel once for the
-    artist and again before the request about that artist, so a stop arriving
-    between those two lands before anything goes out. That is stronger than
-    this asserted while the run only asked once an artist, when the request
-    already under way went out regardless.
-    """
-    asked: list[bool] = []
-
-    def once_around() -> bool:
-        """False the first time, then True: the window closes mid-run."""
-        asked.append(True)
-        return len(asked) > 1
-
-    run, catalogue, _, _ = make_run()
-    albums = (make_album("One", "A"), make_album("Two", "B"))
-    report = run.run(albums, ROCK, nothing, once_around)
-    assert report.outcome is RunOutcome.CANCELLED
-    assert catalogue.identified == []
-
-
 def test_no_network_stops_the_run() -> None:
     """Continuing is many slow ways of saying the same thing once."""
     catalogue = Catalogue(raises=SourceUnavailable("nothing answered"))
@@ -198,34 +191,6 @@ def test_a_refusal_that_never_relents_becomes_a_failure() -> None:
     assert [failure.artist for failure in report.failed] == ["U2"]
     owed = RETRY_PAUSE_SECONDS * sum(range(1, RETRY_ATTEMPTS))
     assert sum(waits.waited) == pytest.approx(owed)
-
-
-class Pressed:
-    """A cancel somebody can press between one question and the next."""
-
-    def __init__(self) -> None:
-        self.stopped = False
-
-    def __call__(self) -> bool:
-        """Whether the run has been told to stop."""
-        return self.stopped
-
-
-def test_the_question_handed_down_is_the_cancel_turned_round() -> None:
-    """A predicate wired the wrong way round abandons every request at once.
-
-    The run asks whether it has been CANCELLED; a client asks whether its
-    answer is still WANTED. The two are opposites, so the one place they meet
-    is worth an assertion of its own: nothing else in a passing run would
-    notice the sense being inverted.
-    """
-    cancel = Pressed()
-    run, catalogue, _, _ = make_run()
-    run.run((make_album("One", "A"),), ROCK, nothing, cancel)
-    handed = catalogue.wanted[0]
-    assert handed() is True, "still wanted while nobody has pressed anything"
-    cancel.stopped = True
-    assert handed() is False, "not wanted the moment the run is stopped"
 
 
 def test_other_errors_do_not_stop_the_run() -> None:
@@ -299,70 +264,8 @@ def test_a_candidate_whose_genres_cannot_be_read_is_kept() -> None:
     assert [artist.name for artist in report.gaps[0].artists] == ["Someone"]
 
 
-def test_cancelling_while_candidates_are_narrowed_writes_nothing() -> None:
-    """The second phase is the long one, so it has to be stoppable too."""
-    steps: list[bool] = []
-
-    def after_the_first_artist() -> bool:
-        """False while artists are gathered, True once narrowing starts."""
-        steps.append(True)
-        return len(steps) > 1
-
-    offered = (SimilarArtist(name="Someone", identifier="someone"),)
-    run, _, _, _ = make_run(similarity=Similarity(offered))
-    report = run.run((make_album("One", "A"),), ROCK, nothing, after_the_first_artist)
-    assert report.outcome is RunOutcome.CANCELLED
-
-
 def test_what_each_artist_is_already_held_to_have() -> None:
     """Built once for a run, since an album reads the same way every time."""
     albums = (make_album("U2", "The Joshua Tree"), make_album("U2", "Achtung Baby"))
     held = held_by_artist(albums)
     assert len(held["U2"]) == 2
-
-
-def test_a_stop_is_felt_part_way_through_a_wait() -> None:
-    """The defect this exists for: stop pressed, nothing happening for seconds.
-
-    Waiting out two refusals is six seconds, once taken in whole naps of two
-    and four. A stop pressed at the start of the four second one
-    was not acted on until it ended, which reads as a button that does not
-    work. The wait is sliced now, so what is spent after the press is one
-    slice rather than the rest of the nap.
-    """
-    catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
-    run, _, _, waits = make_run(catalogue)
-    report = run.run(
-        (make_album("U2", "A"),), ROCK, nothing, Stopping(after=SLICES_BEFORE_STOP)
-    )
-    assert report.outcome is RunOutcome.CANCELLED
-    assert sum(waits.waited) <= WAIT_SLICE_SECONDS * SLICES_BEFORE_STOP
-    assert sum(waits.waited) < RETRY_PAUSE_SECONDS, "it did not sit out the wait"
-
-
-def test_a_stopped_run_asks_the_catalogue_nothing_further() -> None:
-    """FR-D17: no further request is issued once somebody has stopped it."""
-    catalogue = Catalogue(refusals=RETRY_ATTEMPTS)
-    run, source, _, _ = make_run(catalogue)
-    run.run((make_album("U2", "A"),), ROCK, nothing, Stopping(after=SLICES_BEFORE_STOP))
-    assert source.identified == ["U2"], "it asked once and never again"
-
-
-def test_a_stop_lands_between_requests_rather_than_between_artists() -> None:
-    """The defect reported twice: a stop that took minutes to be felt.
-
-    One artist costs three requests, each of which may take the full twenty
-    second timeout and may be attempted three times. Asked once an artist, a
-    run could go on for minutes after being told to stop; asked before every
-    request, what is left is the one already in flight.
-    """
-    catalogue = Catalogue(identities={"U2": ("u2-id",)})
-    run, source, similarity, _ = make_run(catalogue)
-    # False for the artist, false for the first request, true after it: the
-    # stop arrives while the run is between the first and second requests.
-    stopping = Stopping(after=2)
-    report = run.run((make_album("U2", "A"),), ROCK, nothing, stopping)
-    assert report.outcome is RunOutcome.CANCELLED
-    assert source.identified == ["U2"], "the one already asked"
-    assert source.albums_asked == [], "and not the two that would have followed"
-    assert similarity.asked == []

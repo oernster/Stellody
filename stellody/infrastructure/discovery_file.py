@@ -33,7 +33,7 @@ import json
 import pathlib
 
 from stellody.application.values import RunReport
-from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure import paths
 from stellody.infrastructure.atomic import written as _written
@@ -87,6 +87,11 @@ def _as_written(report: RunReport) -> dict:
         "failed": [
             {"artist": entry.artist, "reason": entry.reason} for entry in report.failed
         ],
+        # The genres the run was scoped to, so the file says what it was asked
+        # as well as what it found. Without them a file is an answer to a
+        # question nobody wrote down, which is exactly what the results screen
+        # was reported as failing to say.
+        "ticked": list(report.ticked),
     }
 
 
@@ -150,21 +155,27 @@ def _artist(entry: object) -> SimilarArtist | None:
     return SimilarArtist(name=name, identifier=str(entry.get("identifier") or ""))
 
 
-def read() -> tuple[Gaps, ...]:
-    """What the last run found; empty where there is nothing to show.
+def read() -> LastRun:
+    """What the last run found and what it was asked; empty where neither.
 
     Order is the file's own, which is the order the run met the artists in.
     Anything the file carries that cannot be read as a gap is passed over
     rather than raising: a results screen missing one album is worth more than
     no results screen.
+
+    The genres come back in the same reading as the gaps, so a file replaced
+    between two reads cannot put one run's question above another run's
+    answer. A file written before they were recorded carries none, which is an
+    empty tuple rather than a failure.
     """
     try:
         held = json.loads(discovery_path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return ()
+        return LastRun()
     gaps = held.get("gaps") if isinstance(held, dict) else None
     if not isinstance(gaps, dict):
-        return ()
+        return LastRun()
+    ticked = tuple(str(genre) for genre in _listed(held, "ticked") if str(genre))
     found: list[Gaps] = []
     for artist, entry in gaps.items():
         if not isinstance(entry, dict) or not str(artist).strip():
@@ -184,7 +195,7 @@ def read() -> tuple[Gaps, ...]:
                 ),
             )
         )
-    return tuple(found)
+    return LastRun(gaps=tuple(found), ticked=ticked)
 
 
 class FileDiscoveryResults:
@@ -195,8 +206,8 @@ class FileDiscoveryResults:
     is already that.
     """
 
-    def last_run(self) -> tuple[Gaps, ...]:
-        """What the last run found; empty where there is nothing to show."""
+    def last_run(self) -> LastRun:
+        """What the last run found and looked in; empty where there is neither."""
         return read()
 
 
