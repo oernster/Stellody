@@ -50,7 +50,7 @@ FILTER_TOOLTIP = "Filter the library"
 DISCOVER_TOOLTIP = "Discover music the library does not hold"
 # Said in its place while a run is under way, so one button carries both
 # meanings: the thing wanted of a run in progress is to stop it.
-STOP_DISCOVERY_TOOLTIP = "Stop looking"
+STOP_DISCOVERY_TOOLTIP = "Stop discovery"
 # Said in its place while something is being shown, so what is on screen can
 # be read off the control rather than guessed at from what is missing.
 FILTERED_TOOLTIP = "Showing {what}"
