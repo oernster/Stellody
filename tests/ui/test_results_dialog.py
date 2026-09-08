@@ -13,7 +13,13 @@ actually crosses is exercised rather than assumed.
 from __future__ import annotations
 
 import pytest
-from discovery_wiring_support import Results, a_report, make_window
+from discovery_wiring_support import (
+    Results,
+    a_report,
+    completed,
+    make_window,
+    opened_results,
+)
 from results_support import (
     Asking,
     Catalogue,
@@ -39,17 +45,57 @@ from stellody.ui.results_words import (
 )
 
 
-def test_a_completed_run_opens_the_results(application) -> None:
+def test_a_completed_run_opens_the_results(application, monkeypatch) -> None:
     """The whole of FR-D28: written first, then shown from what was written."""
+    shown = opened_results(monkeypatch)
     found = (gaps_with(albums=2),)
     window = make_window(application, results=Results(found))
-    window._settled(a_report(albums=2, artists=0))
-    dialog = window._results_dialog
-    assert dialog is not None
-    assert rows_under(dialog.tree.topLevelItem(0)) == ("Album 0", "Album 1")
+    completed(window, a_report(albums=2, artists=0))
+    assert len(shown) == 1
+    assert rows_under(shown[0].tree.topLevelItem(0)) == ("Album 0", "Album 1")
 
 
-def test_the_genres_shown_come_from_the_file_it_is_showing(application) -> None:
+def test_the_results_are_modal(application, monkeypatch) -> None:
+    """Ruled by Oliver on 2026-09-08, after runs stacked without limit.
+
+    Asserted as the STRUCTURE rather than as the symptom. Closing a standing
+    screen as a new one opened was tried first and did not hold in the running
+    application; a modal screen cannot stack because the window underneath it
+    cannot start a second run while it is up. So what is held here is that the
+    screen is opened by `exec` and never by `show`.
+    """
+    shown = opened_results(monkeypatch)
+    showed: list[object] = []
+    monkeypatch.setattr(ResultsDialog, "show", lambda dialog: showed.append(dialog))
+    window = make_window(application, results=Results((gaps_with(albums=1),)))
+    completed(window, a_report(albums=1, artists=0))
+    assert len(shown) == 1, "opened with exec, which is what makes it modal"
+    assert showed == [], "never with show, which would make it modeless again"
+
+
+def test_the_ending_is_said_before_the_results_open(application, monkeypatch) -> None:
+    """A message set after a modal screen appears only once it is closed.
+
+    The unwanted sibling of making it modal. The status line and the button
+    are put back by the same call, so saying it afterwards would leave the
+    button crossed out for as long as somebody read their results.
+    """
+    said_when: list[int] = []
+    window = make_window(application, results=Results((gaps_with(albums=1),)))
+
+    def instead(dialog: ResultsDialog) -> int:
+        """Record how much had been said by the time the screen opened."""
+        said_when.append(len(window._status.said))
+        return 0
+
+    monkeypatch.setattr(ResultsDialog, "exec", instead)
+    completed(window, a_report(albums=1, artists=0))
+    assert said_when == [1], "the ending was said before the screen opened"
+
+
+def test_the_genres_shown_come_from_the_file_it_is_showing(
+    application, monkeypatch
+) -> None:
     """The screen's question and its answer are read in one go.
 
     The ticks handed over when the run started are not consulted: the dialog
@@ -57,43 +103,22 @@ def test_the_genres_shown_come_from_the_file_it_is_showing(application) -> None:
     there too, else a run started with one set of ticks could be shown above
     another run's gaps.
     """
+    shown = opened_results(monkeypatch)
     found = (gaps_with(albums=1),)
     window = make_window(application, results=Results(found, ticked=("Folk",)))
-    window._settled(a_report(albums=1, artists=0))
-    dialog = window._results_dialog
-    assert dialog is not None
-    assert "Folk" in dialog.top.looked_in.text()
+    completed(window, a_report(albums=1, artists=0))
+    assert "Folk" in shown[0].top.looked_in.text()
 
 
-def test_a_second_run_replaces_the_results_rather_than_stacking_them(
-    application,
-) -> None:
-    """Reported on 2026-09-08: two modeless screens over each other.
-
-    Being modeless is what made it possible; it is not what made it wrong. A
-    completed run replaces the discovery file, so the older screen was showing
-    an answer that no longer exists anywhere. One screen, always the current
-    one.
-    """
-    window = make_window(application, results=Results((gaps_with(albums=1),)))
-    window._settled(a_report(albums=1, artists=0))
-    first = window._results_dialog
-    assert first is not None
-    window._settled(a_report(albums=1, artists=0))
-    second = window._results_dialog
-    assert second is not None
-    assert second is not first, "a second run opens its own screen"
-    assert not first.isVisible(), "and the first one is taken down, not buried"
-
-
-def test_a_run_that_found_nothing_shows_no_dialog(application) -> None:
+def test_a_run_that_found_nothing_shows_no_dialog(application, monkeypatch) -> None:
     """An empty dialog says less than the sentence shown in its place. FR-D33."""
+    shown = opened_results(monkeypatch)
     window = make_window(application, results=Results(()))
-    window._settled(a_report(albums=0, artists=0))
-    assert window._results_dialog is None
+    completed(window, a_report(albums=0, artists=0))
+    assert shown == []
 
 
-def test_a_file_that_reads_back_empty_opens_nothing(application) -> None:
+def test_a_file_that_reads_back_empty_opens_nothing(application, monkeypatch) -> None:
     """A run can find things and the file still read back as nothing.
 
     A separate case from the one above rather than the same one twice: there
@@ -101,15 +126,16 @@ def test_a_file_that_reads_back_empty_opens_nothing(application) -> None:
     and the reader came back empty, which is a file that could not be read.
     Planting the removal of the guard proved the test above did not cover it.
     """
+    shown = opened_results(monkeypatch)
     reader = Results(())
     window = make_window(application, results=reader)
-    window._settled(a_report(albums=2, artists=1))
+    completed(window, a_report(albums=2, artists=1))
     assert reader.reads == 1
-    assert window._results_dialog is None
+    assert shown == []
 
 
 def test_the_dialog_is_given_something_to_ask_with_where_there_is_one(
-    application,
+    application, monkeypatch
 ) -> None:
     """The wiring a candidate needs: an asker, belonging to the dialog.
 
@@ -118,14 +144,14 @@ def test_the_dialog_is_given_something_to_ask_with_where_there_is_one(
     its dialog would answer into rows Qt had already destroyed.
     """
     found = (gaps_with(artists=1),)
+    shown = opened_results(monkeypatch)
     window = make_window(
         application,
         results=Results(found),
         expansion=expansion(Catalogue()),
     )
-    window._settled(a_report(albums=0, artists=1))
-    dialog = window._results_dialog
-    assert dialog is not None
+    completed(window, a_report(albums=0, artists=1))
+    dialog = shown[0]
     assert dialog._asking is not None
     assert dialog._asking.parent() is dialog
     dialog.reject()

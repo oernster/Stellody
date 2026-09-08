@@ -15,6 +15,7 @@ from stellody.application.values import RunOutcome, RunReport
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import Discovering
 from stellody.ui.discovery_progress import DiscoveryBars
+from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import BUTTON_PX
 
@@ -142,6 +143,39 @@ def a_report(albums: int = 1, artists: int = 1) -> RunReport:
             ),
         ),
     )
+
+
+def opened_results(monkeypatch) -> list[ResultsDialog]:
+    """Every results screen a run opens, with the modal wait stood down.
+
+    The screen is modal, so `exec` would sit in its own event loop and hang
+    the suite; the house answer is the one `ScanSummaryDialog` already uses,
+    which is to replace `exec` for the duration.
+
+    It records the dialog rather than merely returning, because the window
+    lets go of it the moment `exec` comes back: a test asking the window what
+    is open would be asking after the screen had been closed and cleaned up.
+    """
+    seen: list[ResultsDialog] = []
+
+    def instead(dialog: ResultsDialog) -> int:
+        """Stand in for the modal wait, keeping what would have been shown."""
+        seen.append(dialog)
+        return 0
+
+    monkeypatch.setattr(ResultsDialog, "exec", instead)
+    return seen
+
+
+def completed(window: Window, report) -> None:
+    """Drive a run to its end down the path the runner actually takes.
+
+    Through `discovery_completed` rather than through `_settled`, since the
+    order of the two halves is itself a rule: the message is said before the
+    modal screen opens, else it would appear only once somebody had closed the
+    screen it belongs to.
+    """
+    window.discovery_completed(report)
 
 
 class Results:

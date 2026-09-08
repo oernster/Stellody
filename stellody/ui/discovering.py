@@ -214,34 +214,47 @@ class Discovering:
         if self._discovery_stopping:
             self._discovery_stopping = False
             return
-        self._say_about_discovery(self._settled(report))
+        message, found = self._settled(report)
+        # Said BEFORE the results are opened, never after. The results are
+        # modal, so a message set on the far side of them would appear only
+        # once somebody had closed the screen it was meant to accompany; the
+        # button and the bar are put back by the same call.
+        self._say_about_discovery(message)
+        if found:
+            self.show_discovery_results()
 
     def discovery_failed(self, reason: str) -> None:
         """A run that could not finish says so rather than merely stopping."""
         self._say_about_discovery(WENT_WRONG.format(reason=reason))
 
-    def _settled(self, report: RunReport) -> str:
-        """What to tell somebody about a run that reached its end."""
+    def _settled(self, report: RunReport) -> tuple[str, bool]:
+        """What to tell somebody about a run that ended; whether to show it.
+
+        The two are answered together and neither is inferred from the other.
+        Only a run that WROTE a file has results worth opening: a stopped or
+        unreachable run leaves the previous run's file exactly where it was,
+        so showing "the file" after one would put a stale answer on screen as
+        though it were this run's.
+        """
         if report.outcome is RunOutcome.NOTHING_TO_ASK:
-            return NOTHING_TO_ASK
+            return NOTHING_TO_ASK, False
         if report.outcome is RunOutcome.CANCELLED:
-            return STOPPED
+            return STOPPED, False
         if report.outcome is RunOutcome.UNAVAILABLE:
-            return UNREACHABLE
+            return UNREACHABLE, False
         albums, artists = _counted(report)
         if not albums and not artists:
-            return FOUND_NOTHING
+            return FOUND_NOTHING, False
         if self._write_discovery is None:
-            return FOUND_NOTHING
+            return FOUND_NOTHING, False
         try:
             where = self._write_discovery(report)
         except (OSError, ValueError) as trouble:
-            return COULD_NOT_WRITE.format(reason=trouble)
+            return COULD_NOT_WRITE.format(reason=trouble), False
         # Written first, then shown from what was written: the file is what a
         # later day would be shown from too, so showing anything else now
         # would be showing something nothing else can reproduce. FR-D28.
-        self.show_discovery_results()
-        return FOUND.format(albums=albums, artists=artists, where=where)
+        return FOUND.format(albums=albums, artists=artists, where=where), True
 
     def show_discovery_results(self) -> None:
         """Open the results on what the discovery file holds.
@@ -251,24 +264,27 @@ class Discovering:
         place, while still landing in front of whatever somebody had moved on
         to doing. FR-D33.
 
-        Not modal, for the same reason the run reports to the bar rather than
-        to a dialog: the answer arrives minutes after the question, so it is
-        put where it can be read rather than in the way.
+        **Modal, ruled by Oliver on 2026-09-08.** It was modeless first, on the
+        reasoning that an answer arriving minutes after the question should not
+        seize the application. What that cost was worse than what it bought:
+        every completed run opened another screen, so runs stacked without
+        limit. Closing the standing one as a new one opened was tried and did
+        not hold in the running application, which is why the structure is
+        being changed rather than the behaviour patched again. A modal screen
+        cannot stack, because the window underneath it cannot start a second
+        run while it is up. That is a guarantee rather than a repair.
 
-        **There is only ever one of them.** Reported on 2026-09-08: a second
-        run stacked its results on top of the first, leaving two screens over
-        each other. Being modeless is what made it possible; it is not what
-        made it wrong. A completed run REPLACES the discovery file, so the
-        older screen was showing an answer that no longer exists anywhere; no
-        amount of arranging two windows fixes that. The standing one is
-        therefore taken down rather than left behind.
+        Opened from the completion handler, which is safe here and would not
+        be everywhere: the runner quits its thread and WAITS for it before it
+        announces the report, so there is nothing running behind this loop.
+        `discovery_worker.DiscoveryRunner._on_completed` is where that order
+        is set; the scan summary depends on the same property.
         """
         if self._discovery_results is None:
             return
         answer = self._discovery_results.last_run()
         if answer.is_empty:
             return
-        self._close_standing_results()
         asking = None if self._expansion is None else ExpansionRunner(self._expansion)
         dialog = ResultsDialog(
             answer.gaps,
@@ -286,27 +302,14 @@ class Discovering:
             # questions lives exactly as long as the rows the answers go in.
             asking.setParent(dialog)
         self._results_dialog = dialog
-        dialog.show()
-        # Brought forward as well as shown, since a modeless screen opened
-        # minutes after it was asked for can arrive behind the window somebody
-        # has been using in the meantime.
-        dialog.raise_()
-
-    def _close_standing_results(self) -> None:
-        """Take down the results a previous run left on screen, if any.
-
-        Closed rather than merely dropped: the dialog is parented to the
-        window, so letting go of the reference would leave it standing with
-        nothing holding it. `close` routes through the dialog's own `reject`,
-        which is what waits for any question still in flight, so the threads
-        are tidied by the path that already knows how.
-        """
-        standing = self._results_dialog
-        self._results_dialog = None
-        if standing is None:
-            return
-        standing.close()
-        standing.deleteLater()
+        try:
+            dialog.exec()
+        finally:
+            # Let go on the way out however the screen was left, so nothing
+            # holds a dialog somebody has finished with. The same shape the
+            # genre dialog uses.
+            self._results_dialog = None
+            dialog.deleteLater()
 
     def _say_about_discovery(self, message: str) -> None:
         """Put the ending in front of whoever asked for the run.
