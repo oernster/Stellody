@@ -56,34 +56,7 @@ Done when: both hosts are verified in Search Console with the sitemap submitted
 and no coverage errors, the structured data passes the Rich Results Test and a
 search for the application by name returns the site.
 
-## 2. Discover music the library does not hold
-
-Everything else here is about music already owned. This is the opposite: which
-artists and albums are worth reaching for next, given what the library already
-says about somebody's taste.
-
-**It is BUILT and one thing is left.** The code is written, the gate is green
-over it and both specifications are amended to match. What is open is the half
-no test can supply: a run against the real catalogues whose answer a person has
-read.
-
-It is specified in `DISCOVERY.md`, with reaching a shop in `SHOPS.md`. Nothing
-from either is repeated here, so the three cannot come to disagree; the
-structure they landed in is described in `ARCHITECTURE.md` under "Discovering
-what the library does not hold".
-
-**Still open: a real run, checked by hand.** A run against the live catalogues
-over one of the small genres, with the gaps it reports read through by somebody
-who knows the library. Everything about the matching rule was settled against
-titles as the LIBRARY spells them; it has never been tested against titles as
-MusicBrainz spells them, which is exactly what a live run answers and nothing
-else can. Folk or Reggae is the obvious first run, being small enough to read
-the whole of.
-
-Done when: a run over one of the small genres completes against the real
-sources and writes a file whose gaps are checked by hand and are real.
-
-## 3. A music video for a track. Not designed.
+## 2. A music video for a track. Not designed.
 
 Idea recorded 2026-09-06 for later scoping. It is written down so it is not
 lost, not because it is understood: what it costs, whether it can be done at

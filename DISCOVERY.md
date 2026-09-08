@@ -1,16 +1,19 @@
 # Discovering music the library does not hold
 
-The specification for the first stage of PLAN.md milestone 2. It is written
+The specification for the first stage of discovering music the library does
+not hold. It is written
 before any code, because the milestone was explicitly undesigned and a feature
 generated from a loose description is a feature debugged rather than built.
 
-It is built. Where this document and the code disagree, this document is
-amended rather than quietly diverged from; every requirement below names the
-test that holds it, so a claim here is checkable against the suite.
+It is built and it is finished. Where this document and the code disagree, this
+document is amended rather than quietly diverged from; every requirement below
+names the test that holds it, so a claim here is checkable against the suite.
 
-What is not finished is the half no test supplies: a run against the live
-services with its answer read by a person. `PLAN.md` carries that as the open
-work.
+The half no test could supply was a run against the live services with its
+answer read by a person. Oliver ran one over Blues and Folk on 2026-09-08 and
+read the gaps: both catalogues answered without a key, the similarity endpoint
+returned artists and the gaps were real records rather than albums already
+held.
 
 ## 1. Introduction
 
@@ -62,7 +65,6 @@ One meaning per term, for the life of the document.
 
 ### 1.4 References
 
-- `PLAN.md` milestone 2, which this stage is the first half of.
 - `SHOPS.md`, the second half, which builds on the results this stage produces.
 - `ARCHITECTURE.md`, whose layering and purity invariants govern every
   requirement here.
@@ -110,8 +112,8 @@ HTTPS connection during a run. Everything else the application already assumes.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-01 | MusicBrainz and ListenBrainz remain reachable without a key. | Oliver | before release |
-| A-02 | The ListenBrainz similar-artists endpoint, which sits under `labs`, is stable enough to depend on. | Oliver | before release |
+| A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Answered |
+| A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint, so OQ-07 keeps the question of whether it needs a fallback. | Answered |
 | A-03 | A listener accepts that a run names their source artists to two public catalogues. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements

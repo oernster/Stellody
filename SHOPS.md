@@ -1,6 +1,7 @@
 # Reaching the shops that sell what the library is missing
 
-Specification for the second stage of PLAN.md milestone 2. The first stage says
+Specification for the second stage of discovering music the library does not
+hold. The first stage says
 what the library is missing; this says how somebody gets from one of those gaps
 to a place that sells it. It is written before the code, in the house form:
 EARS requirements, each with the failure case beside it, each naming the test
@@ -63,8 +64,7 @@ Nothing here is ever a track. A run deals in artists and albums; so does this.
 ### 1.5 References
 
 - `DISCOVERY.md`, the stage-one specification, which this continues.
-- `PLAN.md` milestone 2, stage two, which recorded the intent and the network
-  stance.
+- `PLAN.md`, which recorded the intent and the network stance.
 - `ARCHITECTURE.md` invariant 12, which names every module allowed to open a
   connection.
 
