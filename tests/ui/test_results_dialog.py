@@ -39,6 +39,7 @@ from stellody.ui.results_words import (
     COULD_NOT_ASK,
     NOBODY_TO_ASK,
     NOTHING_OFFERED,
+    WENT_WRONG,
     asking_about,
     candidate_row,
     source_row,
@@ -370,7 +371,6 @@ def test_a_failure_on_that_thread_arrives_as_a_line_under_the_artist(
     candidate.setExpanded(True)
     assert waited_for(
         application,
-        lambda: rows_under(candidate)
-        == (COULD_NOT_ASK.format(reason="nothing answered at all"),),
+        lambda: rows_under(candidate) == (COULD_NOT_ASK.format(reason=WENT_WRONG),),
     )
     dialog.reject()

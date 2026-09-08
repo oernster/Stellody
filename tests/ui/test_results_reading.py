@@ -16,9 +16,22 @@ from __future__ import annotations
 
 from results_support import Asking, candidate_in, gaps_with, made, rows_under
 
+from stellody.application.discovery_ports import (
+    SourceFailed,
+    SourceRefused,
+    SourceTooSlow,
+    SourceUnavailable,
+)
 from stellody.domain.discovery import ReleaseGroup
 from stellody.ui.palette import Mode, palette_for
-from stellody.ui.results_words import NOT_ASKING
+from stellody.ui.results_words import (
+    BUSY,
+    NOT_ASKING,
+    TOO_SLOW,
+    UNREACHABLE,
+    WENT_WRONG,
+    plainly,
+)
 
 
 def test_a_source_row_says_how_many_of_each_sit_under_it(application) -> None:
@@ -177,3 +190,32 @@ def test_a_failure_says_what_can_be_done_about_it(application) -> None:
     line = rows_under(candidate)[0]
     assert "the catalogue refused all 5 asks" in line, "it says what happened"
     assert "open this row" in line.casefold(), "and what can be done about it"
+
+
+class TestSayingWhyInWords:
+    """Reported by Oliver on 2026-09-08, shown a row reading "given up on part
+    way through" followed by a MusicBrainz address: unreadable to anybody who
+    did not write this; no help in deciding what to do next.
+
+    Read off the KIND of failure rather than off its message, since a message
+    is written for whoever fixes the program.
+    """
+
+    def test_a_service_that_kept_refusing_is_busy(self) -> None:
+        assert plainly(SourceRefused("refused all 5 asks")) == BUSY
+
+    def test_a_service_that_ran_out_of_time_says_so(self) -> None:
+        assert plainly(SourceTooSlow("no answer inside 20 seconds")) == TOO_SLOW
+
+    def test_a_service_nothing_could_reach_says_so(self) -> None:
+        assert plainly(SourceUnavailable("HostNotFoundError")) == UNREACHABLE
+
+    def test_anything_else_points_at_the_log(self) -> None:
+        """The catch-all names no cause, since naming one would be a guess."""
+        assert plainly(SourceFailed("the answer could not be read")) == WENT_WRONG
+        assert plainly(RuntimeError("Qt said no")) == WENT_WRONG
+
+    def test_none_of_them_names_a_url_or_a_class(self) -> None:
+        for said in (BUSY, TOO_SLOW, UNREACHABLE, WENT_WRONG):
+            assert "http" not in said
+            assert "Error" not in said

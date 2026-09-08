@@ -1140,6 +1140,84 @@ Verified by: `tests/ui/test_results_reading.py::test_it_says_which_genres_the_ru
 
 ---
 
+**FR-D46 The same library answers the same way twice**
+
+Priority: Must
+
+Requirement: The discovery service shall keep what each catalogue answered,
+against the question that was asked; it shall ask a catalogue only what is not
+already kept. What is kept shall not expire. A run shall write down what it
+learned however that run ended. Where a run cannot reach a source about an
+artist an earlier run answered for, the discovery file shall keep the earlier
+answer and shall record no failure for that artist.
+
+Rationale: Reported by Oliver on 2026-09-08, repeatedly and in the strongest
+terms: two runs over the same library gave different answers, sometimes
+holding an artist and sometimes not, sometimes able to look an artist up and
+sometimes not.
+
+A run remembered nothing, so it asked MusicBrainz about every artist afresh
+every time and the answer was a property of how that service felt rather than
+of the library. Measured that day from one run: 27 requests in 65 seconds, 21
+of them refused, which turned seven source artists into one. More patience
+helps and cannot fix it; it only changes how often the answer differs.
+
+Nothing expires deliberately. An answer with a lifetime is an answer that
+differs before and after that lifetime, which is the fault itself in a slower
+form. The cost is that a record released after an artist was first asked about
+does not appear until the memory is cleared, which belongs to a control
+somebody presses rather than to a clock nobody sees.
+
+Carrying an earlier answer over is the second half, for the artist nothing has
+ever been learned about, whose first answer arrives on the day a service
+happens to be willing. A run may add to what is known and may correct it; it
+may not take it away because a service said no. Only an artist this run failed
+on is carried over, so an artist no longer in the library still falls away.
+
+Acceptance: Given a library run over twice with the same genres, when the
+second run finishes, then it asked the catalogues nothing and answered exactly
+as the first did; given an artist an earlier run answered for and this one
+could not reach, then the file still holds that artist and records no failure
+for it; given an artist nothing has ever been learned about, then a failure is
+recorded as before.
+
+Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/infrastructure/test_catalogue_memory.py::test_a_file_that_cannot_be_read_is_an_empty_memory`
+
+---
+
+**FR-D47 A failure is said in words somebody can act on**
+
+Priority: Must
+
+Requirement: Where a lookup fails, the results dialog shall say what happened
+in plain words naming no address, no exception class and no status code; the
+technical account shall be written to the diary instead.
+
+Rationale: Reported by Oliver on 2026-09-08, shown a row reading "Could not be
+looked up: given up on part way through" followed by a MusicBrainz address.
+That line is unreadable to anybody who did not write the program; it is also
+the only thing worth having to whoever has to fix it. Both are kept, apart:
+the row says which of a busy service, a slow one, one that could not be
+reached or something else it was; the diary keeps the class, the message and
+the artist it happened to.
+
+The words are read off the KIND of failure rather than off its message, since a
+message is written for whoever is fixing the program. That is why a service
+that refused every ask and a service that ran out of time are now distinct
+kinds: Qt reports an abandoned reply the same way whether the wait ran out or
+somebody stopped wanting it; those are different things to say.
+
+Acceptance: Given a lookup that fails for any reason, when the row is drawn,
+then it names no address and no exception class; given a service that refused
+every attempt, then the row says the catalogue is busy; given a wait that ran
+out, then it says the catalogue did not answer in time; given anything else,
+then it points at the log; and in every case the diary carries the class, the
+message and the artist.
+
+Verified by: `tests/ui/test_results_reading.py::TestSayingWhyInWords`, `tests/ui/test_expansion_worker.py::test_the_row_gets_words_and_the_log_gets_the_machine`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_service_that_never_answers_is_given_up_on_anyway`
+
+---
+
 **FR-D45 The answer is dealt across the width of the screen**
 
 Priority: Must
@@ -1641,7 +1719,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D45 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D47 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.

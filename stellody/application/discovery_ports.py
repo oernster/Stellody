@@ -36,6 +36,26 @@ class SourceFailed(DiscoveryError):
     """One question failed for a reason of its own."""
 
 
+class SourceRefused(SourceFailed):
+    """A source that asked to be asked again, every time it was asked.
+
+    Its own kind rather than a message inside the general one, because what
+    somebody should be told about it is different: a service that is busy is
+    worth trying again in a moment, where a service that answered nonsense is
+    not. Reported by Oliver on 2026-09-08, looking at a failure that named a
+    URL and a Qt error: what he read could not tell him which of those it was.
+    """
+
+
+class SourceTooSlow(SourceFailed):
+    """A source that had not answered by the time the wait ran out.
+
+    Measured on 2026-09-08: the request for one well known artist took 15.6
+    seconds cold and 24.5 on another attempt, against a 20 second wait, so
+    this is an ordinary answer rather than a broken one.
+    """
+
+
 class RunCancelled(DiscoveryError):
     """Somebody stopped the run while it was waiting out a refusal.
 

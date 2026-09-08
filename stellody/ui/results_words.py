@@ -21,6 +21,11 @@ album under an artist; its own children then looked like tracks.
 
 from __future__ import annotations
 
+from stellody.application.discovery_ports import (
+    SourceRefused,
+    SourceTooSlow,
+    SourceUnavailable,
+)
 from stellody.domain.discovery import Gaps
 
 # What each kind of row is called, in the fewest words that still say it. The
@@ -61,6 +66,33 @@ ASKING_MANY = "Asking the catalogue about {count} artists"
 # closing it and opening it is the retry. Reported by Oliver on 2026-09-08,
 # who asked for a way to try again while looking at a screen that had one.
 COULD_NOT_ASK = "Could not be looked up: {reason}. Close and open this row to try again"
+# What each way of failing is called on screen. Plain sentences rather than
+# what the machine said: reported by Oliver on 2026-09-08, who was shown "given
+# up on part way through" followed by a MusicBrainz URL and pointed out that
+# somebody who is not the author has no idea what to do with that. The machine
+# half still exists; it goes to the log, where the person who needs it looks.
+BUSY = "the catalogue is busy just now"
+TOO_SLOW = "the catalogue did not answer in time"
+UNREACHABLE = "the catalogue could not be reached"
+WENT_WRONG = "something went wrong; the log has the detail"
+
+
+def plainly(error: BaseException) -> str:
+    """What to tell somebody about this failure.
+
+    Read off the kind of failure rather than off its message, since a message
+    is written for whoever is fixing the program and this is read by whoever is
+    using it.
+    """
+    if isinstance(error, SourceRefused):
+        return BUSY
+    if isinstance(error, SourceTooSlow):
+        return TOO_SLOW
+    if isinstance(error, SourceUnavailable):
+        return UNREACHABLE
+    return WENT_WRONG
+
+
 # Said under a candidate the catalogue answered about with nothing worth
 # offering. An entry that opens onto emptiness reads as one still loading.
 NOTHING_OFFERED = "No albums worth offering"

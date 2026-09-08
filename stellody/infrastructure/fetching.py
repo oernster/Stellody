@@ -52,6 +52,7 @@ from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovery_ports import (
     RateRefused,
     SourceFailed,
+    SourceTooSlow,
     SourceUnavailable,
 )
 from stellody.infrastructure import diary
@@ -181,7 +182,7 @@ class Fetcher:
         reply = self._sent(url)
         self._waited_on(reply, wanted)
         try:
-            answer = self._read(reply, url)
+            answer = self._read(reply, url, abandoned=not wanted())
         except (RateRefused, SourceFailed, SourceUnavailable) as ended:
             self._noted(url, started, f"{type(ended).__name__}: {ended}")
             raise
@@ -224,13 +225,18 @@ class Fetcher:
             loop.exec()
         giving_up.stop()
 
-    @staticmethod
-    def _read(reply: QNetworkReply, url: str) -> object:
+    def _read(self, reply: QNetworkReply, url: str, abandoned: bool) -> object:
         """What the reply turned out to be: an answer, a refusal or a failure.
 
         The status is read off the reply rather than inferred from the error,
         since a service asking to be asked again arrives as a protocol error
         carrying a 429 or a 503, which is an ordinary answer to this run.
+
+        A reply is abandoned for one of two reasons and Qt reports both the
+        same way: somebody stopped wanting it; the wait ran out. Which it
+        was is answered by asking whether it is still wanted, since only one
+        of those two makes that False. They are different things to tell
+        somebody, so they are different failures here.
         """
         try:
             status = reply.attribute(STATUS_ATTRIBUTE)
@@ -241,7 +247,9 @@ class Fetcher:
         if status in REFUSAL_CODES:
             raise RateRefused(f"{status}, saying: {_said(body)}")
         if trouble is QNetworkReply.NetworkError.OperationCanceledError:
-            raise SourceFailed(f"given up on part way through: {url}")
+            if abandoned:
+                raise SourceFailed(f"given up on part way through: {url}")
+            raise SourceTooSlow(f"no answer inside {self._timeout_s:.0f} seconds")
         if status is not None and trouble is not QNetworkReply.NetworkError.NoError:
             raise SourceFailed(f"the service answered {status}")
         if trouble is not QNetworkReply.NetworkError.NoError:

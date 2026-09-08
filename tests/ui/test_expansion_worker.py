@@ -17,6 +17,7 @@ from results_support import Catalogue, Slow, expansion, heard, waited_for
 
 from stellody.domain.discovery import ReleaseGroup
 from stellody.ui.expansion_worker import ExpansionRunner, ExpansionWorker
+from stellody.ui.results_words import WENT_WRONG
 
 
 def test_a_worker_says_what_the_artist_released(application) -> None:
@@ -33,8 +34,27 @@ def test_a_worker_says_what_went_wrong_rather_than_dying_quietly(application) ->
     worker = ExpansionWorker(expansion(Catalogue(raises=RuntimeError("no"))), "id-x")
     failed, ready = heard(worker.failed), heard(worker.ready)
     worker.run()
-    assert failed == [("id-x", "no")]
+    assert failed == [("id-x", WENT_WRONG)]
     assert ready == []
+
+
+def test_the_row_gets_words_and_the_log_gets_the_machine(application) -> None:
+    """Reported by Oliver on 2026-09-08, shown a row naming a Qt error and a
+    MusicBrainz URL: unreadable to anybody who did not write this; the only
+    thing worth having to whoever has to fix it. So both are kept, apart."""
+    written: list[str] = []
+    worker = ExpansionWorker(
+        expansion(Catalogue(raises=RuntimeError("Qt said no"))),
+        "id-x",
+        written.append,
+    )
+    failed = heard(worker.failed)
+    worker.run()
+    assert failed == [("id-x", WENT_WRONG)], "the row says what to do"
+    assert len(written) == 1
+    assert "RuntimeError" in written[0], "the log says what happened"
+    assert "Qt said no" in written[0]
+    assert "id-x" in written[0], "and which artist it happened to"
 
 
 def test_a_cancelled_worker_carries_the_giving_up_into_the_request(

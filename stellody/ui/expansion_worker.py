@@ -20,9 +20,16 @@ catalogue is kept by the gate the requests share, not by this.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 from stellody.application.expanding import Expansion
+from stellody.ui.results_words import plainly
+from stellody.ui.standing_in import say_nothing
+
+# Handed one line about a failure, for the log rather than for the screen.
+Note = Callable[[str], None]
 
 # Long enough for a request already in flight to notice it is unwanted, short
 # enough that a dialog closing cannot hold the window up. The same reasoning
@@ -36,10 +43,16 @@ class ExpansionWorker(QObject):
     ready = Signal(str, object)
     failed = Signal(str, str)
 
-    def __init__(self, expansion: Expansion, identifier: str) -> None:
+    def __init__(
+        self,
+        expansion: Expansion,
+        identifier: str,
+        note: Note = say_nothing,
+    ) -> None:
         super().__init__()
         self._expansion = expansion
         self._identifier = identifier
+        self._note = note
         self._cancelled = False
 
     def cancel(self) -> None:
@@ -59,7 +72,15 @@ class ExpansionWorker(QObject):
                 self._identifier, lambda: self._cancelled
             )
         except Exception as error:  # noqa: BLE001 - reported, never swallowed
-            self.failed.emit(self._identifier, str(error))
+            # The machine's account goes to the log and the person's account
+            # goes on the row. Both halves are kept: one of them is unreadable
+            # to whoever is using this, the other is useless to whoever is
+            # fixing it.
+            self._note(
+                f"expanding {self._identifier} failed: "
+                f"{type(error).__name__}: {error}"
+            )
+            self.failed.emit(self._identifier, plainly(error))
             return
         self.ready.emit(self._identifier, releases)
 
@@ -70,9 +91,15 @@ class ExpansionRunner(QObject):
     ready = Signal(str, object)
     failed = Signal(str, str)
 
-    def __init__(self, expansion: Expansion, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        expansion: Expansion,
+        parent: QObject | None = None,
+        note: Note = say_nothing,
+    ) -> None:
         super().__init__(parent)
         self._expansion = expansion
+        self._note = note
         self._asking: dict[str, tuple[QThread, ExpansionWorker]] = {}
 
     def asking_about(self, identifier: str) -> bool:
@@ -84,7 +111,7 @@ class ExpansionRunner(QObject):
         if identifier in self._asking:
             return False
         thread = QThread(self)
-        worker = ExpansionWorker(self._expansion, identifier)
+        worker = ExpansionWorker(self._expansion, identifier, self._note)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.ready.connect(self._on_ready)

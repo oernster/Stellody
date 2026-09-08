@@ -29,6 +29,7 @@ from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.expansion_worker import ExpansionRunner
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.run_estimate import RunEstimate
+from stellody.ui.standing_in import say_nothing
 from stellody.ui.tray_metrics import show_discovery_running
 
 # Handed a finished run; answers where it was written. Raises where it could
@@ -62,7 +63,14 @@ def _counted(report: RunReport) -> tuple[int, int]:
 
 
 class Discovering:
-    """Opening the discovery dialog and running what it asks for."""
+    """Opening the discovery dialog and running what it asks for.
+
+    The diary is named here with a default that keeps nothing, so a window
+    built without one still opens a results screen. The window that has one
+    puts it over this in its own constructor.
+    """
+
+    _note: Callable[[str], None] = staticmethod(say_nothing)
 
     def start_discovering(
         self,
@@ -313,7 +321,11 @@ class Discovering:
         answer = self._discovery_results.last_run()
         if answer.is_empty:
             return
-        asking = None if self._expansion is None else ExpansionRunner(self._expansion)
+        asking = (
+            None
+            if self._expansion is None
+            else ExpansionRunner(self._expansion, note=self._note)
+        )
         dialog = ResultsDialog(
             answer.gaps,
             asking=asking,

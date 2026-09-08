@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from stellody.application.discovery_ports import (
     RateRefused,
     RunCancelled,
-    SourceFailed,
+    SourceRefused,
 )
 from stellody.application.ports import CancelledCheck
 
@@ -129,7 +129,7 @@ def asked[Answer](
             return call(*arguments, wanted=wanted)
         except RateRefused:
             if attempts >= patience.attempts:
-                raise SourceFailed(
+                raise SourceRefused(
                     f"the catalogue refused all {patience.attempts} asks"
                 )
             waited(patience.pause_seconds * attempts, cancelled, pause)

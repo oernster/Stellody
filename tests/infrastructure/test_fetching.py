@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QApplication
 from stellody.application.discovery_ports import (
     RateRefused,
     SourceFailed,
+    SourceTooSlow,
     SourceUnavailable,
 )
 from stellody.infrastructure.courtesy import USER_AGENT
@@ -165,9 +166,14 @@ class TestGivingUpOnARequest:
     def test_a_service_that_never_answers_is_given_up_on_anyway(
         self, application: QApplication, service: Service
     ) -> None:
-        """The timeout is still the backstop for a run nobody has stopped."""
+        """The timeout is still the backstop for a run nobody has stopped.
+
+        Its own kind of failure rather than the one a stop raises: Qt reports
+        both as the same cancelled reply, while a service that is too slow and
+        a person who changed their mind are different things to say.
+        """
         started = time.monotonic()
-        with pytest.raises(SourceFailed, match="part way through"):
+        with pytest.raises(SourceTooSlow, match="no answer inside"):
             fetching(timeout_s=BRIEF_TIMEOUT_S).json(service.address, {})
         assert time.monotonic() - started < PROMPTLY_S
 
