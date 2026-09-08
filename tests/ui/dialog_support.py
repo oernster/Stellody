@@ -32,6 +32,12 @@ from stellody.application.editing import TagEditing
 from stellody.application.repairs import Repairs
 from stellody.application.scan import ScanReport
 from stellody.application.shopping import Shopping
+from stellody.application.values import (
+    Ambiguity,
+    RunOutcome,
+    RunReport,
+    SourceFailure,
+)
 from stellody.domain.changes import LibraryChange
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.equalising import Equalisation
@@ -54,6 +60,7 @@ from stellody.ui.repairing import RepairDialog
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.shops_dialog import ShopsDialog
+from stellody.ui.shortfall import ShortfallDialog
 from stellody.ui.tag_editor import TagEditor
 from stellody.ui.theme import Mode
 
@@ -157,6 +164,16 @@ def _repairs() -> Repairs:
 # How to build each dialog, keyed by the class name so the coverage assertion
 # can compare against what the package actually defines. Every builder takes
 # the parent and nothing else, so the sweep does not have to know them apart.
+def _a_shortfall() -> RunReport:
+    """A run that could not answer for somebody, of each kind there is."""
+    return RunReport(
+        outcome=RunOutcome.COMPLETED,
+        failed=(SourceFailure(artist="Nobody", reason="a server error"),),
+        unresolved=("Unknown",),
+        ambiguous=(Ambiguity(artist="Several", identifiers=("a", "b")),),
+    )
+
+
 BUILDERS = {
     "AboutDialog": lambda parent: AboutDialog(parent),
     "ClosePrompt": lambda parent: ClosePrompt(parent),
@@ -178,6 +195,7 @@ BUILDERS = {
     "ResultsDialog": lambda parent: ResultsDialog(_found(), parent=parent),
     "ShopsDialog": lambda parent: ShopsDialog(_shopping(), _ticked(), parent=parent),
     "ScanSummaryDialog": lambda parent: ScanSummaryDialog(*_a_scan(), parent),
+    "ShortfallDialog": lambda parent: ShortfallDialog(_a_shortfall(), parent),
     "TagEditor": lambda parent: TagEditor(
         TagEditing(MemoryStore()), ALBUM_KEY, album().ordered_tracks(), parent
     ),

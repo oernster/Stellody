@@ -11,11 +11,17 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QMessageBox, QPushButton, QWidget
 
-from stellody.application.values import RunOutcome, RunReport, SourceFailure
+from stellody.application.values import (
+    Ambiguity,
+    RunOutcome,
+    RunReport,
+    SourceFailure,
+)
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.ui.discovering import Discovering
 from stellody.ui.discovery_progress import DiscoveryBars
 from stellody.ui.results_dialog import ResultsDialog
+from stellody.ui.shortfall import ShowingShortfall, build_shortfall_button
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import BUTTON_PX
 
@@ -45,7 +51,7 @@ class StatusBar:
         self.said.append(message)
 
 
-class Window(Discovering, QWidget):
+class Window(Discovering, ShowingShortfall, QWidget):
     """The mixin over nothing else, which is all it needs to be driven.
 
     The holder is kept on the window rather than left as a local: a parent
@@ -129,8 +135,14 @@ def refused(report: RunReport) -> str:
     raise OSError("no room")
 
 
-def a_report(albums: int = 1, artists: int = 1, failed: int = 0) -> RunReport:
-    """A completed run holding this much, over this many failed questions."""
+def a_report(
+    albums: int = 1,
+    artists: int = 1,
+    failed: int = 0,
+    unresolved: int = 0,
+    ambiguous: int = 0,
+) -> RunReport:
+    """A completed run holding this much, over this many unanswered questions."""
     return RunReport(
         outcome=RunOutcome.COMPLETED,
         gaps=(
@@ -145,6 +157,11 @@ def a_report(albums: int = 1, artists: int = 1, failed: int = 0) -> RunReport:
         failed=tuple(
             SourceFailure(artist=f"Nobody {n}", reason="a server error")
             for n in range(failed)
+        ),
+        unresolved=tuple(f"Unknown {n}" for n in range(unresolved)),
+        ambiguous=tuple(
+            Ambiguity(artist=f"Several {n}", identifiers=("a", "b"))
+            for n in range(ambiguous)
         ),
     )
 
@@ -208,4 +225,8 @@ def make_window(
         results=results,
         expansion=expansion,
     )
+    # The real button rather than a stand-in; handed over exactly as the
+    # real window hands it over: what a run does to it is the point of the
+    # tests that ask, so a fake here would be testing the fake.
+    window.start_shortfall(build_shortfall_button(window))
     return window

@@ -23,7 +23,7 @@ from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.expanding import Expansion
 from stellody.application.shopping import Shopping
 from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
-from stellody.ui import standing_in
+from stellody.ui import shortfall, standing_in
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.expansion_worker import ExpansionRunner
@@ -39,21 +39,6 @@ FOUND = (
     "Found {albums} albums and {artists} artists you do not hold. Written to {where}."
 )
 FOUND_NOTHING = "Nothing missing was found in those genres."
-# Said after either of the two endings above, which are the ones that present a
-# completed run's answer. A run may finish having failed to ask about some of
-# the artists it walked (FR-D22 records them); an answer short of those reads
-# exactly like a complete one unless it says so, which is the whole point of
-# these two sentences. FR-D42.
-FAILED_ONE = (
-    "One artist could not be asked about, so anything missing for them is not here."
-)
-FAILED_SOME = (
-    "{count} artists could not be asked about, "
-    "so anything missing for them is not here."
-)
-# Which of the two sentences above a count calls for; named rather than written
-# into the comparison, since it is a fact about the English and not arithmetic.
-ONE_ARTIST = 1
 NOTHING_TO_ASK = (
     "Nothing in the library carries those genres, so there was nobody to ask about."
 )
@@ -67,20 +52,6 @@ COULD_NOT_WRITE = (
     "The answer could not be written: {reason}. Any earlier one is untouched."
 )
 WENT_WRONG = "The run stopped: {reason}"
-
-
-def _short_by(report: RunReport) -> str:
-    """The sentence owed where a run could not ask about every artist.
-
-    Empty where every question was answered, so a run that went cleanly says
-    exactly what it said before this existed rather than carrying a reassurance
-    nobody needs.
-    """
-    if not report.failed:
-        return ""
-    if len(report.failed) == ONE_ARTIST:
-        return f" {FAILED_ONE}"
-    return f" {FAILED_SOME.format(count=len(report.failed))}"
 
 
 def _counted(report: RunReport) -> tuple[int, int]:
@@ -187,6 +158,10 @@ class Discovering:
             self.statusBar().showMessage(STILL_STOPPING)
             return
         self._discovery_stopping = False
+        # The last run's shortfall belongs to the last run. A new one starts
+        # with nothing owed, so the button goes before the first question does
+        # rather than being left to be corrected at the end.
+        self.forget_shortfall()
         self._discovery_estimate.restart()
         # Written down so a complaint Qt makes later can be placed against the
         # run rather than merely against the evening. The catalogues are
@@ -243,12 +218,18 @@ class Discovering:
         if self._discovery_stopping:
             self._discovery_stopping = False
             return
-        message, found = self._settled(report)
+        message, found, presented = self._settled(report)
         # Said BEFORE the results are opened, never after. The results are
         # modal, so a message set on the far side of them would appear only
         # once somebody had closed the screen it was meant to accompany; the
         # button and the bar are put back by the same call.
         self._say_about_discovery(message)
+        # Offered for exactly the endings the sentence was said on, which is
+        # why `_settled` answers that rather than this guessing at it a second
+        # time. Set before the results open for the same reason the message
+        # is: the results are modal, so anything done behind them is only met
+        # once they close.
+        self._offer_shortfall(report if presented else None)
         if found:
             self.show_discovery_results()
 
@@ -256,40 +237,50 @@ class Discovering:
         """A run that could not finish says so rather than merely stopping."""
         self._say_about_discovery(WENT_WRONG.format(reason=reason))
 
-    def _settled(self, report: RunReport) -> tuple[str, bool]:
-        """What to tell somebody about a run that ended; whether to show it.
+    def _settled(self, report: RunReport) -> tuple[str, bool, bool]:
+        """What to tell somebody about a run that ended; what to open for it.
 
-        The two are answered together and neither is inferred from the other.
+        Three answers, none inferred from another. The message; whether there
+        are results worth opening; whether this ending PRESENTS AN ANSWER, so
+        the shortfall belongs beside it.
+
         Only a run that WROTE a file has results worth opening: a stopped or
         unreachable run leaves the previous run's file exactly where it was,
         so showing "the file" after one would put a stale answer on screen as
         though it were this run's.
+
+        The third is answered here rather than worked out again by the caller,
+        so the sentence and the button can never disagree about which endings
+        carry a shortfall.
         """
         if report.outcome is RunOutcome.NOTHING_TO_ASK:
-            return NOTHING_TO_ASK, False
+            return NOTHING_TO_ASK, False, False
         if report.outcome is RunOutcome.CANCELLED:
-            return STOPPED, False
+            return STOPPED, False, False
         if report.outcome is RunOutcome.UNAVAILABLE:
-            return UNREACHABLE, False
+            return UNREACHABLE, False, False
         # Only the two endings that PRESENT AN ANSWER carry the shortfall
         # sentence. A stopped or unreachable run has already said that its
         # answer is incomplete, so naming a count there would be saying it
         # twice; the ones that read as complete are the ones that mislead.
-        short_by = _short_by(report)
+        short_by = shortfall.sentence(report)
         albums, artists = _counted(report)
         if not albums and not artists:
-            return FOUND_NOTHING + short_by, False
+            return FOUND_NOTHING + short_by, False, True
         if self._write_discovery is None:
-            return FOUND_NOTHING + short_by, False
+            return FOUND_NOTHING + short_by, False, True
         try:
             where = self._write_discovery(report)
         except (OSError, ValueError) as trouble:
-            return COULD_NOT_WRITE.format(reason=trouble), False
+            # An answer that could not be kept is not an answer presented,
+            # so it carries neither the sentence nor the button.
+            return COULD_NOT_WRITE.format(reason=trouble), False, False
         # Written first, then shown from what was written: the file is what a
         # later day would be shown from too, so showing anything else now
         # would be showing something nothing else can reproduce. FR-D28.
         return (
             FOUND.format(albums=albums, artists=artists, where=where) + short_by,
+            True,
             True,
         )
 

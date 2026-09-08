@@ -20,6 +20,7 @@ from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.display import native_path
 from stellody.ui.tray_parts import icon_button
 from stellody.ui.widgets import ReadingPane
+from stellody.ui.words import escaped
 
 DIALOG_WIDTH_PX = 760
 DIALOG_HEIGHT_PX = 560
@@ -40,17 +41,12 @@ PREAMBLE = (
 )
 
 
-def _escape(value: str) -> str:
-    """Make a filename safe to place inside the report's markup."""
-    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
 def _paths_html(issue: LibraryIssue) -> str:
     """The affected files, truncated with an honest note when there are many."""
     if not issue.paths:
         return ""
     shown = issue.paths[:MAX_PATHS_SHOWN]
-    items = "".join(f"<li>{_escape(native_path(path))}</li>" for path in shown)
+    items = "".join(f"<li>{escaped(native_path(path))}</li>" for path in shown)
     remainder = len(issue.paths) - len(shown)
     if remainder > 0:
         items += f"<li><i>and {remainder} more</i></li>"
@@ -61,7 +57,7 @@ def _summary_html(issues: tuple[LibraryIssue, ...]) -> str:
     """A count of each kind of issue found."""
     counts = issue_counts(issues)
     rows = "".join(
-        f"<tr><td>{_escape(str(kind))}</td><td align='right'>{count}</td></tr>"
+        f"<tr><td>{escaped(str(kind))}</td><td align='right'>{count}</td></tr>"
         for kind, count in sorted(counts.items(), key=lambda item: str(item[0]))
     )
     return (
@@ -73,10 +69,10 @@ def _summary_html(issues: tuple[LibraryIssue, ...]) -> str:
 
 def _issue_html(issue: LibraryIssue) -> str:
     """One issue as a heading, an explanation and its files."""
-    detail = f" ({_escape(issue.detail)})" if issue.detail else ""
+    detail = f" ({escaped(issue.detail)})" if issue.detail else ""
     return (
-        f"<p><b>{_escape(issue.album)}</b>{detail}<br>"
-        f"<i>{_escape(issue.summary)}</i></p>"
+        f"<p><b>{escaped(issue.album)}</b>{detail}<br>"
+        f"<i>{escaped(issue.summary)}</i></p>"
         f"{_paths_html(issue)}"
     )
 

@@ -591,38 +591,86 @@ Verified by: `tests/application/test_discovery.py::test_other_errors_do_not_stop
 
 ---
 
-**FR-D42 An answer says when it is short of somebody**
+**FR-D42 An answer says who it could not answer for**
 
 Priority: Must
 
-Requirement: When a run completes having failed to ask about one or more
-artists, the message shown at the end of that run shall say how many artists
-could not be asked about, both where the run found something and where it found
-nothing.
+Requirement: When a run completes without a usable answer for one or more
+artists, the message shown at the end of that run shall count each kind
+separately: artists that could not be asked about, names the catalogue did not
+recognise and names that matched more than one artist. Only the kinds that
+happened shall be named. This applies both where the run found something and
+where it found nothing.
 
-Rationale: FR-D22 records the failures and the file has carried them since;
-nothing read them back, so a run that could not ask about a third of a library
-said exactly what a clean one said. That is the misreading `RunReport` was
-written to prevent, in its own words: an artist nobody could look up is the
-artist somebody would otherwise assume had nothing missing. Found 2026-09-08 by
-reading the path rather than by anybody meeting it.
+Rationale: FR-D22 records the failures, `_about` records the other two and the
+file has carried all three since; nothing read them back, so a run that could
+not answer for a third of a library said exactly what a clean one said. That is
+the misreading `RunReport` was written to prevent, in its own words: an artist
+nobody could look up is the artist somebody would otherwise assume had nothing
+missing. Found 2026-09-08 by reading the path rather than by anybody meeting it.
+
+**Counted apart because they are not the same news.** A source error is worth
+running again later; a name the catalogue does not hold is a spelling to look
+at; a name several artists share cannot be settled from a name at all. One
+total would hide which of the three somebody is looking at.
 
 A stopped run and an unreachable one are deliberately left out. Each already
 says its answer is incomplete, so a count there states the same thing twice; the
-endings that mislead are the two that read as finished.
+endings that mislead are the two that read as finished. An answer that could not
+be written is left out for the same reason.
 
-The count alone is shown rather than the names. A run walks hundreds of artists
-and the file holds every failure with its reason, so somebody who wants the
-names has them; a status line that tried to carry them would be unreadable at
-the length that matters.
+Acceptance: Given a completed run that found albums, could not ask about four
+artists, did not recognise three names and found two names shared, when it ends,
+then the message names the counts found and says all three of those numbers with
+no comma before the `and`; given a run whose only trouble was three unrecognised
+names, then it says that alone and names neither other kind; given a stopped run
+holding a failure, then it says only that it was stopped.
 
-Acceptance: Given a completed run that found albums and could not ask about four
-artists, when it ends, then the message names the counts found and says four
-artists could not be asked about; given the same run having found nothing, then
-it says nothing was missing and says the same four; given a stopped run holding
-a failure, then it says only that it was stopped.
+Verified by: `tests/ui/test_shortfall.py::TestTheSentence`, `tests/ui/test_discovery_wiring.py::test_a_run_names_all_three_kinds_of_silence`, `tests/ui/test_discovery_wiring.py::test_only_the_groups_that_happened_are_named`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_went_unanswered`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_counts_nothing`
 
-Verified by: `tests/ui/test_discovery_wiring.py::test_a_run_short_of_one_artist_says_so`, `tests/ui/test_discovery_wiring.py::test_a_run_short_of_several_artists_says_how_many`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_could_not_be_asked`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_does_not_count_its_failures`
+---
+
+**FR-D43 The names themselves are one press away**
+
+Priority: Must
+
+Requirement: Where a run ends owing the message in FR-D42, a button shall be
+offered beside that message carrying its own count of the artists gone
+unanswered. Pressing it shall open a modal dialog listing those artists, grouped
+under a heading for each of the three kinds with a plain sentence saying what
+that kind means. The button shall be offered only where something is owed and
+shall be taken away when the next run starts.
+
+Rationale: The same split `scan_summary` already makes. A count is the right
+weight for something nobody asked for; the names are the right weight for an
+answer somebody pressed a button to get. A status line that tried to carry
+several hundred names would be unreadable at the length that matters; the
+names are also the half somebody can act on: a misspelt tag is only fixable once it
+has been seen.
+
+**The button carries its own count rather than leaning on the sentence.** The
+status bar is shared: playing a track replaces the text within seconds, which
+would leave a button reading `Show them` beside a sentence about something else.
+`9 artists unanswered` still says what it is once its sentence has gone. That is
+also why it survives the results screen, which is modal and opens over the
+message the moment a run ends.
+
+**It is taken away when the next run begins**, not when the next message is
+said. A shortfall belongs to the run that had it; a run under way has not
+produced one yet.
+
+The reasons the sources gave are not shown. They are wording written for a
+program, the discovery file already holds every one of them and a column of them
+beside the names would bury the names.
+
+Acceptance: Given a run that could not answer for nine artists, when it ends,
+then a button reading `9 artists unanswered` is offered; given one artist, then
+it reads `1 artist unanswered`; given the button pressed, then a modal dialog
+lists every one of those artists under the heading for its kind; given a run
+that answered for everybody, then no button is offered; given a new run started,
+then the button is taken away.
+
+Verified by: `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`
 
 ---
 
@@ -1467,7 +1515,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D42 and every NFR except
+Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D43 and every NFR except
 NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.

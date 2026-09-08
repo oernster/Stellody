@@ -9,11 +9,14 @@ from __future__ import annotations
 
 from discovery_wiring_support import (
     WHERE,
+    RunnerInProgress,
     Service,
     a_report,
+    completed,
     make_window,
     refused,
 )
+from PySide6.QtWidgets import QTextBrowser
 
 from stellody.application.values import (
     DiscoveryProgress,
@@ -21,10 +24,9 @@ from stellody.application.values import (
     RunReport,
     SourceFailure,
 )
+from stellody.ui import shortfall
 from stellody.ui.discovering import (
     COULD_NOT_WRITE,
-    FAILED_ONE,
-    FAILED_SOME,
     FOUND,
     FOUND_NOTHING,
     NOTHING_TO_ASK,
@@ -33,9 +35,14 @@ from stellody.ui.discovering import (
     WENT_WRONG,
 )
 from stellody.ui.discovery_worker import DiscoveryRunner
+from stellody.ui.shortfall import ShortfallDialog
 from stellody.ui.tray_metrics import (
     DISCOVER_TOOLTIP,
 )
+
+# Assembled rather than written out, so the prose sweep does not read the
+# assertion that the rule holds as a breach of it.
+SERIAL_COMMA = "," + " and"
 
 
 def test_nothing_to_ask_says_so(application) -> None:
@@ -43,6 +50,7 @@ def test_nothing_to_ask_says_so(application) -> None:
     window = make_window(application)
     assert window._settled(RunReport(outcome=RunOutcome.NOTHING_TO_ASK)) == (
         NOTHING_TO_ASK,
+        False,
         False,
     )
 
@@ -53,6 +61,7 @@ def test_a_stopped_run_says_nothing_was_written(application) -> None:
     assert window._settled(RunReport(outcome=RunOutcome.CANCELLED)) == (
         STOPPED,
         False,
+        False,
     ), "a stopped run leaves the earlier file alone, so it opens nothing"
 
 
@@ -62,13 +71,14 @@ def test_nothing_answering_says_to_try_again(application) -> None:
     assert window._settled(RunReport(outcome=RunOutcome.UNAVAILABLE)) == (
         UNREACHABLE,
         False,
+        False,
     ), "nothing was written, so there is nothing of this run's to show"
 
 
 def test_a_run_that_found_things_writes_them_and_counts_them(application) -> None:
     """The counts are what somebody actually wants to know."""
     window = make_window(application)
-    said, found = window._settled(a_report(albums=2, artists=3))
+    said, found, _ = window._settled(a_report(albums=2, artists=3))
     assert said == FOUND.format(albums=2, artists=3, where=WHERE)
     assert found, "a run that wrote a file has something worth opening"
 
@@ -76,47 +86,142 @@ def test_a_run_that_found_things_writes_them_and_counts_them(application) -> Non
 def test_a_run_that_found_nothing_writes_nothing(application) -> None:
     """An empty answer is not worth replacing a file over."""
     window = make_window(application)
-    assert window._settled(a_report(albums=0, artists=0)) == (FOUND_NOTHING, False)
+    assert window._settled(a_report(albums=0, artists=0)) == (
+        FOUND_NOTHING,
+        False,
+        True,
+    )
 
 
 def test_a_run_short_of_one_artist_says_so(application) -> None:
     """An answer that could not ask about somebody reads complete otherwise."""
     window = make_window(application)
-    said, found = window._settled(a_report(albums=2, artists=3, failed=1))
-    assert said == FOUND.format(albums=2, artists=3, where=WHERE) + f" {FAILED_ONE}"
+    said, found, presented = window._settled(a_report(albums=2, artists=3, failed=1))
+    expected = f" {shortfall.COULD_NOT_ASK[0].capitalize()}{shortfall.SO_INCOMPLETE}"
+    assert said == FOUND.format(albums=2, artists=3, where=WHERE) + expected
     assert found, "the shortfall is a caveat on an answer, not a reason to hide it"
+    assert presented, "an ending that presents an answer carries the shortfall"
 
 
-def test_a_run_short_of_several_artists_says_how_many(application) -> None:
-    """The count is the whole of what somebody can act on."""
+def test_a_run_names_all_three_kinds_of_silence(application) -> None:
+    """Each is a different thing to do about it, so each is counted apart."""
     window = make_window(application)
-    said, _ = window._settled(a_report(albums=2, artists=3, failed=4))
-    assert said.endswith(FAILED_SOME.format(count=4))
+    said, _, _ = window._settled(
+        a_report(albums=2, artists=3, failed=4, unresolved=3, ambiguous=2)
+    )
     assert "4 artists could not be asked about" in said
+    assert "3 names were not recognised" in said
+    assert "2 names matched more than one artist" in said
+    assert said.endswith(shortfall.SO_INCOMPLETE)
+    assert SERIAL_COMMA not in said, "the house rule holds in what the screen says"
 
 
-def test_finding_nothing_still_says_what_could_not_be_asked(application) -> None:
+def test_only_the_groups_that_happened_are_named(application) -> None:
+    """A run with one kind of silence says one thing, not three with zeroes."""
+    window = make_window(application)
+    said, _, _ = window._settled(a_report(unresolved=3))
+    assert "3 names were not recognised" in said
+    assert "could not be asked about" not in said
+    assert "matched more than one" not in said
+
+
+def test_finding_nothing_still_says_what_went_unanswered(application) -> None:
     """The ending this matters most on: nothing found reads as nothing missing."""
     window = make_window(application)
-    said, found = window._settled(a_report(albums=0, artists=0, failed=2))
-    assert said == FOUND_NOTHING + " " + FAILED_SOME.format(count=2)
+    said, found, presented = window._settled(a_report(albums=0, artists=0, ambiguous=2))
+    assert said.startswith(FOUND_NOTHING)
+    assert "2 names matched more than one artist" in said
     assert not found, "an empty answer opens nothing, caveat or no caveat"
+    assert presented, "it still presents an answer, so the caveat belongs on it"
 
 
-def test_a_stopped_run_does_not_count_its_failures(application) -> None:
+def test_a_stopped_run_counts_nothing(application) -> None:
     """It has already said the answer is incomplete; twice is noise."""
     window = make_window(application)
     stopped = RunReport(
         outcome=RunOutcome.CANCELLED,
         failed=(SourceFailure(artist="Nobody", reason="a server error"),),
     )
-    assert window._settled(stopped) == (STOPPED, False)
+    assert window._settled(stopped) == (STOPPED, False, False)
+
+
+def test_a_clean_run_says_nothing_extra(application) -> None:
+    """The sentence is owed only where something was actually missed."""
+    window = make_window(application)
+    said, _, _ = window._settled(a_report(albums=2, artists=3))
+    assert said == FOUND.format(albums=2, artists=3, where=WHERE)
+
+
+def test_the_button_appears_carrying_its_own_count(application) -> None:
+    """It outlives its sentence, so it has to say what it is on its own."""
+    window = make_window(application)
+    completed(window, a_report(albums=2, artists=3, failed=4, unresolved=5))
+    assert not window._shortfall_button.isHidden()
+    assert window._shortfall_button.text() == "9 artists unanswered"
+
+
+def test_one_unanswered_artist_reads_as_one(application) -> None:
+    """Nothing on this screen says 1 artists."""
+    window = make_window(application)
+    completed(window, a_report(albums=2, artists=3, ambiguous=1))
+    assert window._shortfall_button.text() == "1 artist unanswered"
+
+
+def test_a_clean_run_offers_no_button(application) -> None:
+    """There is nothing behind it, so there is nothing to press."""
+    window = make_window(application)
+    completed(window, a_report(albums=2, artists=3))
+    assert window._shortfall_button.isHidden()
+
+
+def test_a_new_run_takes_the_last_one_s_button_away(application) -> None:
+    """The shortfall belongs to the run that had it, not to the evening."""
+    window = make_window(application)
+    completed(window, a_report(albums=2, artists=3, failed=4))
+    assert not window._shortfall_button.isHidden()
+    # A runner that takes the run without starting a thread. A real one
+    # would outlive this test and take Qt down with it, which says nothing
+    # about the button.
+    window._discovery_runner = RunnerInProgress()
+    window.begin_discovery(("Rock",))
+    assert window._shortfall_button.isHidden()
+    assert window._shortfall_report is None
+
+
+def test_a_stopped_run_offers_no_button_either(application) -> None:
+    """The same rule the sentence follows, so the two cannot disagree."""
+    window = make_window(application)
+    completed(
+        window,
+        RunReport(
+            outcome=RunOutcome.CANCELLED,
+            failed=(SourceFailure(artist="Nobody", reason="a server error"),),
+        ),
+    )
+    assert window._shortfall_button.isHidden()
+
+
+def test_pressing_it_opens_the_names(application, monkeypatch) -> None:
+    """What the button is for, taken down the path the press actually takes."""
+    window = make_window(application)
+    completed(window, a_report(albums=2, artists=3, failed=1, unresolved=1))
+    opened: list[ShortfallDialog] = []
+    monkeypatch.setattr(ShortfallDialog, "exec", lambda dialog: opened.append(dialog))
+    window._shortfall_button.click()
+    assert len(opened) == 1
+    assert "Nobody 0" in opened[0].findChild(QTextBrowser).toPlainText()
+
+
+def test_pressing_it_with_nothing_behind_it_opens_nothing(application) -> None:
+    """Reachable by keyboard while hidden is not the same as safe; assert it."""
+    window = make_window(application)
+    window.show_shortfall()
 
 
 def test_a_file_that_will_not_write_is_reported(application) -> None:
     """With the reason, plus any earlier answer left where it was."""
     window = make_window(application, write=refused)
-    said, found = window._settled(a_report())
+    said, found, _ = window._settled(a_report())
     assert said.startswith("The answer could not be written")
     assert COULD_NOT_WRITE.format(reason="no room") == said
     assert not found, "a file that would not write has nothing to show from"
@@ -125,7 +230,7 @@ def test_a_file_that_will_not_write_is_reported(application) -> None:
 def test_a_window_with_no_writer_keeps_quiet_about_files(application) -> None:
     """A window given no writer still runs; it has nowhere to put an answer."""
     window = make_window(application, write=None)
-    assert window._settled(a_report()) == (FOUND_NOTHING, False)
+    assert window._settled(a_report()) == (FOUND_NOTHING, False, True)
 
 
 def test_a_run_that_fell_over_says_why(application) -> None:

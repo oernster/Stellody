@@ -58,6 +58,7 @@ from stellody.ui.settings_keys import (
     TRUE,
 )
 from stellody.ui.shape_worker import ShapeRunner
+from stellody.ui.shortfall import ShowingShortfall, build_shortfall_button
 from stellody.ui.showing_shapes import ShowingShapes
 from stellody.ui.showing_spectrum import ShowingSpectrum
 from stellody.ui.toolbar import LibraryTray
@@ -91,6 +92,7 @@ class MainWindow(
     Searching,
     Filtering,
     Discovering,
+    ShowingShortfall,
     Playing,
     TransportMenu,
     Choosing,
@@ -249,6 +251,14 @@ class MainWindow(
         self.start_picturing(pictures)
         self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)
+        # A permanent widget rather than part of the message: `showMessage`
+        # covers ordinary status widgets and leaves permanent ones alone;
+        # this has to outlive its own sentence. Playing a track replaces the
+        # text seconds later; the run that could not answer for nine artists
+        # is still the last run that happened.
+        self._shortfall_button = build_shortfall_button(self)
+        self.statusBar().addPermanentWidget(self._shortfall_button)
+        self.start_shortfall(self._shortfall_button)
         # Before the ring is stated, since the bar is its first stop and Qt
         # has nothing to put in a chain until the menus exist.
         self._build_menus()

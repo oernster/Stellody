@@ -23,6 +23,7 @@ from stellody.domain.changes import LibraryChange
 from stellody.domain.identity import AlbumIdentity
 from stellody.ui.dialogs import FirstStopDialog, close_row, icon_label
 from stellody.ui.widgets import ReadingPane
+from stellody.ui.words import escaped, plural
 
 TEXT_SCALE = 1.5
 # Neither dimension is chosen; both are measured against the report itself.
@@ -56,26 +57,16 @@ MARK_MARGIN_PX = 12
 MAX_ALBUMS_SHOWN = 20
 
 
-def _escape(value: str) -> str:
-    """Make a title safe to place inside the report's markup."""
-    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-def _plural(count: int, one: str, many: str) -> str:
-    """A count with the word that suits it, so nothing reads as 1 albums."""
-    return f"{count} {one if count == 1 else many}"
-
-
 def _album_list(identities: tuple[AlbumIdentity, ...]) -> str:
     """The albums themselves, capped, with the remainder counted rather than cut."""
     shown = identities[:MAX_ALBUMS_SHOWN]
     rows = "".join(
-        f"<li>{_escape(identity.title)} "
-        f"<i>by {_escape(identity.album_artist)}</i></li>"
+        f"<li>{escaped(identity.title)} "
+        f"<i>by {escaped(identity.album_artist)}</i></li>"
         for identity in shown
     )
     rest = len(identities) - len(shown)
-    tail = f"<li><i>and {_plural(rest, 'other', 'others')}</i></li>" if rest else ""
+    tail = f"<li><i>and {plural(rest, 'other', 'others')}</i></li>" if rest else ""
     return f"<ul>{rows}{tail}</ul>"
 
 
@@ -83,20 +74,20 @@ def _headline(change: LibraryChange) -> str:
     """The first thing read, which is the answer to why the button was pressed."""
     if change.is_first_reading:
         return (
-            f"<p>Your library is in: {_plural(change.total_albums, 'album', 'albums')}"
-            f", {_plural(change.total_tracks, 'track', 'tracks')}.</p>"
+            f"<p>Your library is in: {plural(change.total_albums, 'album', 'albums')}"
+            f", {plural(change.total_tracks, 'track', 'tracks')}.</p>"
         )
     if change.nothing_changed:
         return "<p>Nothing has changed since the last scan.</p>"
     parts = []
     if change.new_albums:
-        parts.append(f"{_plural(len(change.new_albums), 'new album', 'new albums')}")
+        parts.append(f"{plural(len(change.new_albums), 'new album', 'new albums')}")
     if change.new_tracks:
-        parts.append(f"{_plural(change.new_tracks, 'new track', 'new tracks')}")
+        parts.append(f"{plural(change.new_tracks, 'new track', 'new tracks')}")
     if change.gone_albums:
-        parts.append(f"{_plural(len(change.gone_albums), 'album', 'albums')} gone")
+        parts.append(f"{plural(len(change.gone_albums), 'album', 'albums')} gone")
     if change.gone_tracks:
-        parts.append(f"{_plural(change.gone_tracks, 'track', 'tracks')} gone")
+        parts.append(f"{plural(change.gone_tracks, 'track', 'tracks')} gone")
     return f"<p>{', '.join(parts)}.</p>"
 
 
@@ -167,7 +158,7 @@ def summary_html(change: LibraryChange, report: ScanReport) -> str:
     body.append(_totals(change, report))
     if report.issues:
         body.append(
-            f"<p>{_plural(len(report.issues), 'labelling issue', 'labelling issues')} "
+            f"<p>{plural(len(report.issues), 'labelling issue', 'labelling issues')} "
             "found. Help then Library health lists them.<br>"
             "Your files are untouched either way.</p>"
         )
