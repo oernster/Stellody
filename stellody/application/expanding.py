@@ -24,7 +24,7 @@ Nothing here opens a connection. It says what to ask and what to keep;
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from stellody.application.asking import (
     PATIENCE_FOR_ONE_ARTIST,
@@ -33,6 +33,11 @@ from stellody.application.asking import (
 )
 from stellody.application.discovery_ports import CatalogueSource
 from stellody.application.ports import CancelledCheck
+from stellody.application.remembering import (
+    CatalogueMemory,
+    NothingKept,
+    RememberingCatalogue,
+)
 from stellody.domain.discovery import ReleaseGroup, everything_offered
 
 
@@ -52,6 +57,7 @@ class Expansion:
 
     catalogue: CatalogueSource
     pause: Pause
+    recall: CatalogueMemory = field(default_factory=NothingKept)
 
     def releases_of(
         self, identifier: str, cancelled: CancelledCheck = never_stopped
@@ -67,12 +73,16 @@ class Expansion:
         caught here, because what to say about one is a decision for whoever
         asked rather than for this. FR-D32.
         """
-        return everything_offered(
-            asked(
-                self.catalogue.albums_of,
-                cancelled,
-                self.pause,
-                identifier,
-                patience=PATIENCE_FOR_ONE_ARTIST,
+        kept = self.recall.remembered()
+        try:
+            return everything_offered(
+                asked(
+                    RememberingCatalogue(self.catalogue, kept).albums_of,
+                    cancelled,
+                    self.pause,
+                    identifier,
+                    patience=PATIENCE_FOR_ONE_ARTIST,
+                )
             )
-        )
+        finally:
+            self.recall.remember(kept)

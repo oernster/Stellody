@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import pathlib
 
+from stellody.application.carrying_over import carried_over
 from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
@@ -52,6 +53,25 @@ def cache_path() -> pathlib.Path:
     return paths.data_dir() / CACHE_NAME
 
 
+def album_as(group: ReleaseGroup) -> dict:
+    """One album in the shape every file here carries it.
+
+    One home for the shape, since the discovery file and the catalogue memory
+    both hold albums and a shape written twice is two shapes the day one is
+    changed.
+    """
+    return {
+        "title": group.title,
+        "kinds": [str(kind) for kind in group.kinds],
+        "genres": list(group.genres),
+    }
+
+
+def artist_as(artist: SimilarArtist) -> dict:
+    """One candidate artist in the shape every file here carries it."""
+    return {"name": artist.name, "identifier": artist.identifier}
+
+
 def _as_written(report: RunReport) -> dict:
     """The report in the shape the file carries it.
 
@@ -64,18 +84,8 @@ def _as_written(report: RunReport) -> dict:
     return {
         "gaps": {
             gaps.artist: {
-                "albums": [
-                    {
-                        "title": group.title,
-                        "kinds": [str(kind) for kind in group.kinds],
-                        "genres": list(group.genres),
-                    }
-                    for group in gaps.albums
-                ],
-                "artists": [
-                    {"name": artist.name, "identifier": artist.identifier}
-                    for artist in gaps.artists
-                ],
+                "albums": [album_as(group) for group in gaps.albums],
+                "artists": [artist_as(artist) for artist in gaps.artists],
             }
             for gaps in report.gaps
         },
@@ -100,11 +110,16 @@ def write(report: RunReport) -> pathlib.Path:
 
     A report with nothing to say is refused rather than written, so a cancelled
     run cannot quietly replace a good file with an empty one.
+
+    What the file already holds is read first, so an artist this run could not
+    reach keeps the answer the last run got for it. A run may add to what is
+    known and may correct it; it may not take an artist away because a service
+    refused to talk about it, which is the fault reported on 2026-09-08.
     """
     if not report.is_writable:
         raise ValueError("this run has nothing to write")
     where = discovery_path()
-    _written(where, _as_written(report))
+    _written(where, _as_written(carried_over(report, read().gaps)))
     return where
 
 
@@ -127,7 +142,7 @@ def _kind_of(name: str) -> ReleaseKind:
         return ReleaseKind.OTHER
 
 
-def _album(entry: object) -> ReleaseGroup | None:
+def album_from(entry: object) -> ReleaseGroup | None:
     """One album as the file carries it; None where it carries nothing usable.
 
     A title is required rather than defaulted, since the domain refuses an
@@ -145,7 +160,7 @@ def _album(entry: object) -> ReleaseGroup | None:
     )
 
 
-def _artist(entry: object) -> SimilarArtist | None:
+def artist_from(entry: object) -> SimilarArtist | None:
     """One candidate artist as the file carries it; None where unusable."""
     if not isinstance(entry, dict):
         return None
@@ -185,12 +200,14 @@ def read() -> LastRun:
                 artist=str(artist),
                 albums=tuple(
                     album
-                    for album in (_album(one) for one in _listed(entry, "albums"))
+                    for album in (album_from(one) for one in _listed(entry, "albums"))
                     if album is not None
                 ),
                 artists=tuple(
                     candidate
-                    for candidate in (_artist(one) for one in _listed(entry, "artists"))
+                    for candidate in (
+                        artist_from(one) for one in _listed(entry, "artists")
+                    )
                     if candidate is not None
                 ),
             )

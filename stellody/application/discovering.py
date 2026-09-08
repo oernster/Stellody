@@ -44,6 +44,12 @@ from stellody.application.discovery_ports import (
     SourceUnavailable,
 )
 from stellody.application.ports import CancelledCheck
+from stellody.application.remembering import (
+    CatalogueMemory,
+    NothingKept,
+    RememberingCatalogue,
+    RememberingSimilarity,
+)
 from stellody.application.values import (
     Ambiguity,
     DiscoveryProgress,
@@ -93,6 +99,7 @@ class Discovery:
     similarity: SimilaritySource
     pause: Pause
     memory: GenreMemory = field(default_factory=NothingRemembered)
+    recall: CatalogueMemory = field(default_factory=NothingKept)
 
     def run(
         self,
@@ -101,7 +108,36 @@ class Discovery:
         report: ProgressReport,
         cancelled: CancelledCheck,
     ) -> RunReport:
-        """Ask about every artist inside the ticked genres; say what was found."""
+        """Ask about every artist inside the ticked genres; say what was found.
+
+        Asked through what is already remembered rather than of the services
+        directly, so a question answered on some earlier day is not asked
+        again. That is what makes two runs over one library agree: a run that
+        asks everything afresh answers with whatever the service felt like
+        that minute, which is the fault reported on 2026-09-08.
+
+        What was learned is written down however the run ends, cancelled runs
+        included: an answer already paid for is worth keeping whether or not
+        the run it arrived during finished.
+        """
+        kept = self.recall.remembered()
+        try:
+            return replace(
+                self,
+                catalogue=RememberingCatalogue(self.catalogue, kept),
+                similarity=RememberingSimilarity(self.similarity, kept),
+            )._asked(albums, ticked, report, cancelled)
+        finally:
+            self.recall.remember(kept)
+
+    def _asked(
+        self,
+        albums: tuple[Album, ...],
+        ticked: tuple[str, ...],
+        report: ProgressReport,
+        cancelled: CancelledCheck,
+    ) -> RunReport:
+        """The run itself, with the memory already standing in front of it."""
         artists = source_artists(albums, ticked)
         if not artists:
             return RunReport(outcome=RunOutcome.NOTHING_TO_ASK)

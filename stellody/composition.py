@@ -29,6 +29,7 @@ from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.infrastructure import (
+    catalogue_memory,
     diary,
     discovery_file,
     instance,
@@ -140,6 +141,11 @@ def build_window(
             # What a candidate plays does not change between runs, while
             # asking costs a second each at the rate the catalogue permits.
             memory=discovery_file.FileGenreMemory(),
+            # What either catalogue has already said, so a second run over the
+            # same library gives the same answer rather than whatever the
+            # service felt like that minute. Shared with the expansion below,
+            # so an artist opened once is known to the next run as well.
+            recall=catalogue_memory.FileCatalogueMemory(),
         ),
         write_discovery=discovery_file.write,
         # What the results dialog is made of: the file read back, plus the one
@@ -148,7 +154,11 @@ def build_window(
         # MusicBrainz twice inside the gap its terms require while a run is
         # still going on behind an open dialog.
         discovery_results=discovery_file.FileDiscoveryResults(),
-        expansion=Expansion(catalogue=MusicBrainz(Fetcher(gate)), pause=time.sleep),
+        expansion=Expansion(
+            catalogue=MusicBrainz(Fetcher(gate)),
+            pause=time.sleep,
+            recall=catalogue_memory.FileCatalogueMemory(),
+        ),
         # Taking a ticked album to a shop. Nothing here opens a connection:
         # the browser is handed an address and does the asking itself, which
         # is why this needs no entry in the offline test's list.
