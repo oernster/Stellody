@@ -108,7 +108,7 @@ is specified rather than assumed away.
 |---|---|---|---|
 | A-01 | RESOLVED 2026-09-08. Oliver reached the search in a browser, past the wall that refuses us, then read back `uk.7digital.com/search?q=fleetwood%20mac&fallback=true`. The `q` parameter is confirmed; the shipped row now carries the regional host and the fallback with it. What one name cannot show is whether an artist and an album together answer, as Boomkat did not. | Oliver | Answered |
 | A-02 | RESOLVED 2026-09-08. `assets/copy.png` supplied: 1254 square, transparent, matching `shop.png`. | Oliver | Answered |
-| A-03 | Every shipped template still works on the day it ships. Measured 2026-09-07; they rot without notice, which is what FR-S09 exists for. | Oliver | Each release |
+| A-03 | Every shipped template still works on the day it ships. Measured 2026-09-07, then confirmed by Oliver on 2026-09-08 against the running application, every shipped shop opening. It stays a per-release check rather than an answered one: they rot without notice, which is what FR-S09 exists for. | Oliver | Each release |
 
 ## 3. Requirements
 

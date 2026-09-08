@@ -62,35 +62,26 @@ Everything else here is about music already owned. This is the opposite: which
 artists and albums are worth reaching for next, given what the library already
 says about somebody's taste.
 
-**Both stages are BUILT and neither is finished.** The code is written, the
-gate is green over it and both specifications are amended to match. What is
-open is the half no test can supply: neither stage has been run against the
-real services and had its answer checked by a person, which is what each of the
-two milestones below states as done.
+**It is BUILT and one thing is left.** The code is written, the gate is green
+over it and both specifications are amended to match. What is open is the half
+no test can supply: a run against the real catalogues whose answer a person has
+read.
 
-Stage one is specified in `DISCOVERY.md` and stage two in `SHOPS.md`. Nothing
+It is specified in `DISCOVERY.md`, with reaching a shop in `SHOPS.md`. Nothing
 from either is repeated here, so the three cannot come to disagree; the
 structure they landed in is described in `ARCHITECTURE.md` under "Discovering
 what the library does not hold".
 
-**Stage one, still open: a real run, checked by hand.** A run against the live
-catalogues over one of the small genres, with the gaps it reports read through
-by somebody who knows the library. Everything about the matching rule was
-settled against titles as the LIBRARY spells them; it has never been tested
-against titles as MusicBrainz spells them, which is exactly what a live run
-answers and nothing else can. Folk or Reggae is the obvious first run, being
-small enough to read the whole of.
+**Still open: a real run, checked by hand.** A run against the live catalogues
+over one of the small genres, with the gaps it reports read through by somebody
+who knows the library. Everything about the matching rule was settled against
+titles as the LIBRARY spells them; it has never been tested against titles as
+MusicBrainz spells them, which is exactly what a live run answers and nothing
+else can. Folk or Reggae is the obvious first run, being small enough to read
+the whole of.
 
 Done when: a run over one of the small genres completes against the real
 sources and writes a file whose gaps are checked by hand and are real.
-
-**Stage two, still open: the shipped shop templates, on the day they ship.**
-A-03 in `SHOPS.md` puts that on every release, for the reason the shop list is
-data at all: three of the eight checked on 2026-09-07 had closed, walled or
-moved their search that same afternoon.
-
-Done when: a gap ticked in the results dialog opens that shop's own search for
-it in a browser, having sent nothing about the listener.
 
 ## 3. A music video for a track. Not designed.
 
