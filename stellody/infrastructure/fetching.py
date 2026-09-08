@@ -72,10 +72,31 @@ MS_PER_SECOND = 1000
 # answering. Read off the reply's own header, since Qt reports a refusal as a
 # protocol error rather than as an answer.
 STATUS_ATTRIBUTE = QNetworkRequest.Attribute.HttpStatusCodeAttribute
+# How much of what a service said about a refusal is worth keeping. Enough for
+# a sentence, since the interesting part is whether it names a rate limit or
+# says it is simply unavailable; a body can otherwise be a whole page.
+SAID_LIMIT = 160
 
 # Handed one line about a request that has just ended. The diary is what fills
 # this in; a test hands in a list instead.
 Note = Callable[[str], None]
+
+
+def _said(body: bytes) -> str:
+    """What the service put in the body, in one line and cut short.
+
+    A refusal usually carries its reason in the service's own words, which is
+    the difference between being asked to slow down and being told the service
+    is not there. Written down on 2026-09-08, when 21 refusals in one run left
+    nothing to say which of the two it was.
+    """
+    try:
+        answer = json.loads(body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        answer = None
+    said = answer.get("error") if isinstance(answer, dict) else None
+    spoken = str(said) if said else body.decode("utf-8", "replace")
+    return " ".join(spoken.split())[:SAID_LIMIT]
 
 
 class Fetcher:
@@ -218,7 +239,7 @@ class Fetcher:
         finally:
             reply.deleteLater()
         if status in REFUSAL_CODES:
-            raise RateRefused(f"the service asked to be asked again: {url}")
+            raise RateRefused(f"{status}, saying: {_said(body)}")
         if trouble is QNetworkReply.NetworkError.OperationCanceledError:
             raise SourceFailed(f"given up on part way through: {url}")
         if status is not None and trouble is not QNetworkReply.NetworkError.NoError:
