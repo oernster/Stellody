@@ -66,6 +66,15 @@ class TestWhatShips:
         assert "{artist}" in boomkat.template
         assert "{album}" not in boomkat.template
 
+    def test_7digital_is_offered_first(self) -> None:
+        """Chosen rather than alphabetical, so a tidy-up cannot resort it.
+
+        Ruled by Oliver on 2026-09-08. The order the list is written in is the
+        order the shops are offered in, which makes it a decision rather than
+        an accident of how the rows were typed.
+        """
+        assert DEFAULT_SHOPS[0].name == "7digital"
+
     def test_7digital_keeps_the_host_and_the_fallback_it_was_seen_with(self) -> None:
         """Read from a browser on 2026-09-08, past the wall that refuses us.
 

@@ -491,6 +491,7 @@ and reading what came back, except where marked:
 
 | Shop | Template | Measured |
 |---|---|---|
+| 7digital | `https://uk.7digital.com/search?q={artist}%20{album}&fallback=true` | Read from a browser on 2026-09-08, since the search refuses an automated visitor. The UK storefront, with the fallback it was seen carrying. See A-01. |
 | Qobuz | `https://www.qobuz.com/gb-en/search?q={artist}%20{album}` | Exact album first hit. Lossless only. |
 | Bandcamp | `https://bandcamp.com/search?q={artist}%20{album}&item_type=a` | Albums only. Independent catalogue, so majors are absent. |
 | Boomkat | `https://boomkat.com/products?q[keywords]={artist}&q[format]=Download` | Digital filter verified. Artist alone, since two terms returned nothing. |
@@ -498,7 +499,6 @@ and reading what came back, except where marked:
 | Presto Music | `https://www.prestomusic.com/search?search_query={artist}%20{album}` | Answered. Mixes physical, digital, books and sheet music. |
 | ProStudioMasters | `https://www.prostudiomasters.com/search?q={artist}%20{album}` | Answered. Hi-res, with FLAC, MQA and DSD tabs on the page. |
 | Beatport | `https://www.beatport.com/search?q={artist}%20{album}` | Exact release found. Electronic; rarely FLAC. |
-| 7digital | `https://uk.7digital.com/search?q={artist}%20{album}&fallback=true` | Read from a browser on 2026-09-08, since the search refuses an automated visitor. The UK storefront, with the fallback it was seen carrying. See A-01. |
 
 Not shipped, with the reason: Juno Download has closed; Traxsource and eClassical could
 not be read past their bot and consent walls; Volumo's search path answered 404;

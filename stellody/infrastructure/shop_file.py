@@ -35,11 +35,27 @@ NAME_KEY = "name"
 TEMPLATE_KEY = "template"
 NOTE_KEY = "note"
 
-# Every template below was loaded on 2026-09-07 and answered, except where the
-# note says otherwise. The note travels with the row, since what a shop stocks
-# is as much a part of choosing it as its name: a Bandcamp search for a major
-# label artist is not a broken search, it is an empty catalogue.
+# Every template below was loaded and answered: seven on 2026-09-07 here; then
+# 7digital on 2026-09-08 in a browser, since its search refuses an automated
+# visitor.
+#
+# A note says what a shop STOCKS, which is as much a part of choosing it as its
+# name: a Bandcamp search for a major label artist is not a broken search, it is
+# an empty catalogue. A note is NOT the place for a caveat about the address.
+# Ruled by Oliver on 2026-09-08, on being shown one: every shop here opens.
+# Whether one particular search finds one particular record is a thing to read
+# on the page rather than a warning to carry around under a button.
+#
+# The ORDER is the order they are offered in; it is chosen rather than
+# alphabetical: 7digital leads, by Oliver's ruling on 2026-09-08. Only a file
+# that does not exist yet is written from this, so somebody who already has one
+# keeps whatever order they have.
 DEFAULT_SHOPS: tuple[Shop, ...] = (
+    Shop(
+        name="7digital",
+        template="https://uk.7digital.com/search?q={artist}%20{album}&fallback=true",
+        note="The UK storefront.",
+    ),
     Shop(
         name="Qobuz",
         template="https://www.qobuz.com/gb-en/search?q={artist}%20{album}",
@@ -76,11 +92,6 @@ DEFAULT_SHOPS: tuple[Shop, ...] = (
         name="Beatport",
         template="https://www.beatport.com/search?q={artist}%20{album}",
         note="Electronic. WAV, AIFF and MP3 rather than FLAC.",
-    ),
-    Shop(
-        name="7digital",
-        template="https://uk.7digital.com/search?q={artist}%20{album}&fallback=true",
-        note="The UK storefront. Read from a browser: its search walls robots.",
     ),
 )
 

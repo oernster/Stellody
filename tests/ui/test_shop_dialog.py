@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from stellody.application.shopping import MOST_WITHOUT_ASKING, Shopping
 from stellody.domain.shopping import Shop, WantedAlbum
+from stellody.ui.dialogs import CONTROL_ICON_PX
 from stellody.ui.palette import Mode
 from stellody.ui.shops_dialog import NO_SHOPS, ShopsDialog
 
@@ -87,6 +88,18 @@ def many(count: int) -> tuple[WantedAlbum, ...]:
     return tuple(
         WantedAlbum(artist="Kate Bush", title=f"Album {n}") for n in range(count)
     )
+
+
+def test_the_way_out_wears_the_same_artwork_as_every_other_one(application) -> None:
+    """The third dialog in this feature, held to the rule the other two are.
+
+    One picture on every Close, at one size, so the three screens somebody
+    walks through do not each look like a different application.
+    """
+    dialog, _opener = made(QOBUZ)
+    assert dialog.close_button.iconSize().width() == CONTROL_ICON_PX
+    assert dialog.close_button.iconSize().height() == CONTROL_ICON_PX
+    assert not dialog.close_button.icon().isNull()
 
 
 def test_it_lists_the_shops_and_counts_the_albums(application) -> None:

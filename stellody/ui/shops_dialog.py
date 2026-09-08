@@ -26,8 +26,9 @@ from PySide6.QtWidgets import (
 
 from stellody.application.shopping import Shopping
 from stellody.domain.shopping import Shop, WantedAlbum
+from stellody.shared import resources
 from stellody.shared.version import APP_NAME
-from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, title_label, wearing
 from stellody.ui.theme import Mode, palette_for
 
 TITLE = "Find these in a shop"
@@ -109,7 +110,9 @@ class ShopsDialog(FirstStopDialog):
         """One way out, away to the right where the house puts it."""
         row = QHBoxLayout()
         row.addStretch()
-        self.close_button = QPushButton(CLOSE_LABEL, self)
+        self.close_button = wearing(
+            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
+        )
         self.close_button.setDefault(True)
         self.close_button.setAutoDefault(True)
         self.close_button.clicked.connect(self.reject)
