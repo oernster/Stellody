@@ -247,7 +247,11 @@ def applied(
         return tracks
     laid: list[Track] = []
     for track in tracks:
-        path = track.source.path
+        # Addressed rather than pathed: every track of a cue album shares one
+        # file, so a pin looked up by path would stamp one track's number onto
+        # all twenty of them. A whole file addresses as its bare path, so a pin
+        # written before this is found exactly where it was left.
+        path = track.source.address
         disc = _as_number(value_for(accepted, album, OverrideField.DISC_NUMBER, path))
         number = _as_number(
             value_for(accepted, album, OverrideField.TRACK_NUMBER, path)

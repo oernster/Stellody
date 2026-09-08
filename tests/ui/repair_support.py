@@ -7,7 +7,8 @@ the behaviour being checked is another.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QPushButton
+import pytest
+from PySide6.QtWidgets import QMessageBox, QPushButton
 
 from stellody.application.repairs import Repairs
 from stellody.application.scan import LibraryView
@@ -136,3 +137,38 @@ def exactly(dialog: RepairDialog, text: str) -> QPushButton:
 def opened(service: Repairs, parent) -> RepairDialog:
     """The dialog over a library with one damaged album."""
     return RepairDialog(service, load(service), parent)
+
+
+@pytest.fixture(autouse=True)
+def never_really_ask(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """No repair test may raise a real modal, which would hang the whole run.
+
+    Answered No by default, so a test that reaches the confirmation without
+    meaning to changes nothing and says so rather than stopping the suite. The
+    one test that means to say yes overrides this.
+    """
+    asked: list[str] = []
+
+    def answer(*args: object, **_kw: object) -> QMessageBox.StandardButton:
+        asked.append(str(args[2]))
+        return QMessageBox.StandardButton.No
+
+    monkeypatch.setattr(QMessageBox, "question", answer)
+    return asked
+
+
+@pytest.fixture(autouse=True)
+def never_really_report(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Nor may one raise the report a press that recorded nothing puts up.
+
+    Stood down for the same reason the confirmation is: it is a real modal and
+    a test reaching it would wait for a press that is never coming. What it
+    said is recorded, so a test can ask whether it appeared.
+    """
+    said: list[str] = []
+
+    def report(*args: object, **_kw: object) -> None:
+        said.append(str(args[2]))
+
+    monkeypatch.setattr(QMessageBox, "information", report)
+    return said

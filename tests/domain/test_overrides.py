@@ -212,3 +212,54 @@ class TestTheThirdLayer:
             )
         )
         assert applied((track,), ALBUM, accepted) == (track,)
+
+
+class TestPinningOneSliceOfAFile:
+    """A cue album is one file, so a pin against the path reaches all of it.
+
+    The reported defect had two halves and this is the second. Even once the
+    right tracks were being found, a pin looked up by path alone would have
+    stamped one track's number onto every track of the album, since they all
+    live in the same file. What separates them is where each one starts.
+    """
+
+    ONE_FILE = "C:/music/Album/Whole.flac"
+    RATE = 44100
+
+    def _slice(self, start: int, number: int) -> Track:
+        """One cue track: a region of the shared file, at its own number."""
+        return Track(
+            source=TrackSource(
+                path=self.ONE_FILE, start_frame=start, end_frame=start + self.RATE
+            ),
+            disc_number=1,
+            track_number=number,
+            title=f"Track {number}",
+            artists=("Somebody",),
+            duration_ms=1000,
+            sample_rate=self.RATE,
+            bit_depth=16,
+        )
+
+    def test_two_slices_of_one_file_are_addressed_apart(self) -> None:
+        first, second = self._slice(0, 1), self._slice(self.RATE, 2)
+        assert first.source.address != second.source.address
+
+    def test_a_pin_moves_the_slice_it_names_and_no_other(self) -> None:
+        tracks = (self._slice(0, 1), self._slice(self.RATE, 2))
+        pinned = index(
+            (
+                Override(
+                    ALBUM,
+                    OverrideField.TRACK_NUMBER,
+                    "7",
+                    f"{self.ONE_FILE}#{self.RATE}",
+                ),
+            )
+        )
+        laid = applied(tracks, ALBUM, pinned)
+        assert [item.track_number for item in laid] == [1, 7]
+
+    def test_a_whole_file_still_addresses_as_its_bare_path(self) -> None:
+        """So every pin written before this arrived is found where it was left."""
+        assert TrackSource(path=FIRST).address == FIRST

@@ -10,7 +10,16 @@ from __future__ import annotations
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox, QPushButton
-from repair_support import COLLIDING, MemoryStore, buttons, exactly, labelled, opened
+from repair_support import (  # noqa: F401  the fixtures register by import
+    COLLIDING,
+    MemoryStore,
+    buttons,
+    exactly,
+    labelled,
+    never_really_ask,
+    never_really_report,
+    opened,
+)
 
 from stellody.application.repairs import AcceptedGroup, Repairs
 from stellody.application.scan import LibraryView
@@ -25,24 +34,6 @@ from stellody.ui.repairing import by_album, group_summary
 def repairs() -> Repairs:
     """A service over a store nobody has accepted anything in yet."""
     return Repairs(MemoryStore())
-
-
-@pytest.fixture(autouse=True)
-def never_really_ask(monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    """No test here may raise a real modal, which would hang the whole run.
-
-    Answered No by default, so a test that reaches the confirmation without
-    meaning to changes nothing and says so rather than stopping the suite. The
-    one test that means to say yes overrides this.
-    """
-    asked: list[str] = []
-
-    def answer(*args: object, **_kw: object) -> QMessageBox.StandardButton:
-        asked.append(str(args[2]))
-        return QMessageBox.StandardButton.No
-
-    monkeypatch.setattr(QMessageBox, "question", answer)
-    return asked
 
 
 class TestWhatTheScreenOffers:
@@ -130,7 +121,7 @@ class TestTakingItBack:
         dialog.deleteLater()
 
     def test_resetting_everything_asks_first(
-        self, application, repairs, never_really_ask
+        self, application, repairs, never_really_ask  # noqa: F811
     ) -> None:
         """It undoes an unbounded amount of somebody's work in one press."""
         asked = never_really_ask
@@ -143,7 +134,7 @@ class TestTakingItBack:
         dialog.deleteLater()
 
     def test_the_question_names_the_count(
-        self, application, repairs, never_really_ask
+        self, application, repairs, never_really_ask  # noqa: F811
     ) -> None:
         asked = never_really_ask
         dialog = opened(repairs, None)

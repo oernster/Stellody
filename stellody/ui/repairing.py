@@ -44,6 +44,17 @@ DIALOG_HEIGHT_PX = 620
 # as a list within a list rather than as one flat run of rows.
 FINDING_INDENT_PX = 24
 
+NOTHING_RECORDED_TITLE = "Nothing was recorded"
+
+# Said rather than shown as a redraw that changes nothing. It states what did
+# not happen and what to do about it, since the one thing a listener can do is
+# the thing that re-reads the files these findings are about.
+NOTHING_RECORDED = (
+    "None of that could be recorded, so nothing has changed. This happens "
+    "where a finding is about files a rescan has not read since the rules "
+    "changed. Rescanning your library and trying again is the thing to do."
+)
+
 HEADING = (
     "<h3>Accept these corrections</h3>"
     f"<p>{APP_NAME} worked each of these out for you and is already showing the "
@@ -185,6 +196,8 @@ class RepairDialog(FirstStopDialog):
         """
         if changed:
             self._view = self._reload()
+        else:
+            self._say_nothing_was_recorded()
         keeping = self._area.verticalScrollBar().value()
         self._clear()
         self._fill()
@@ -192,6 +205,16 @@ class RepairDialog(FirstStopDialog):
         # clamps whatever it is given back to nought.
         self._area.widget().adjustSize()
         self._settle(0 if to_top else keeping)
+
+    def _say_nothing_was_recorded(self) -> None:
+        """Report a press that pinned nothing, rather than redrawing in silence.
+
+        A press that writes no pin used to reload nothing, redraw identically
+        and say nothing at all, which reads exactly like a dead control; it was
+        reported as one. Whatever the reason, somebody who pressed a button is
+        owed the answer that it did not take.
+        """
+        QMessageBox.information(self, NOTHING_RECORDED_TITLE, NOTHING_RECORDED)
 
     def _settle(self, position: int) -> None:
         """Put the reader back, with focus on a control that will not move it.

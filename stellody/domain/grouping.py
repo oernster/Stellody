@@ -125,6 +125,7 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], Group]:
                 genres=[],
                 tagged_artists=0,
                 disc_conflicts=[],
+                disc_addresses=[],
                 bonus_positions=[],
             )
             groups[key] = group
@@ -134,6 +135,7 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], Group]:
             and entry.candidate.tag_disc != folder_disc
         ):
             group.disc_conflicts.append(entry.candidate.file_name)
+            group.disc_addresses.append(entry.candidate.source.address)
         if is_unnumbered_bonus(entry.folder_name):
             group.bonus_positions.append(len(group.candidates))
         group.candidates.append(_apply_folder_disc(entry.candidate, folder_disc))
@@ -147,36 +149,27 @@ def _collect(entries: tuple[SourceEntry, ...]) -> dict[tuple[str, str], Group]:
     return groups
 
 
-def _paths_by_name(group: Group) -> dict[str, tuple[str, ...]]:
-    """Which files a group's file names stand for.
-
-    A finding names the FILE NAMES it is about while an override pins a full
-    path, so the two have to be introduced. One name can stand for more than one
-    file: a multi-disc album merged from CD1 and CD2 may hold "01 Intro.flac" in
-    both, so this maps to every file that wears the name rather than to one.
-    """
-    found: dict[str, list[str]] = {}
-    for candidate in group.candidates:
-        found.setdefault(candidate.file_name, []).append(candidate.source.path)
-    return {name: tuple(paths) for name, paths in found.items()}
-
-
 def _is_answered(
     issue: LibraryIssue,
     album: str,
     accepted: overrides.AcceptedIndex,
-    by_name: dict[str, tuple[str, ...]],
 ) -> bool:
     """Whether this finding has been accepted and so has stopped being one.
 
     A kind that proposes no value can never be answered, so it is reported at
     every start however long it has been read: there is nothing to accept.
+
+    Read off the finding's OWN addresses. They were introduced by name until
+    a name turned out not to survive the trip: the label a cue track is
+    reported under is one the scan made up; the ordering rules then renumber a
+    colliding track, so the finding was looked up under a name nothing wore any
+    more. Nothing matched, so nothing was silenced and the finding came back
+    however many times it had been accepted.
     """
     field = overrides.FIELD_FOR_KIND.get(issue.kind)
     if field is None:
         return False
-    paths = tuple(path for name in issue.paths for path in by_name.get(name, ()))
-    return overrides.covers(accepted, album, field, paths)
+    return overrides.covers(accepted, album, field, issue.addresses)
 
 
 def _drop_lossy_duplicates(group: Group) -> None:
@@ -200,9 +193,13 @@ def _drop_lossy_duplicates(group: Group) -> None:
     group.dates = [group.dates[position] for position in keep]
     group.genres = [group.genres[position] for position in keep]
     group.tagged_artists = sum(1 for artist in group.artists if artist)
-    group.disc_conflicts = [
-        name for name in group.disc_conflicts if name not in dropped
+    kept_conflicts = [
+        position
+        for position, name in enumerate(group.disc_conflicts)
+        if name not in dropped
     ]
+    group.disc_addresses = [group.disc_addresses[at] for at in kept_conflicts]
+    group.disc_conflicts = [group.disc_conflicts[at] for at in kept_conflicts]
 
 
 def _named_apart(
@@ -286,6 +283,7 @@ def assemble_albums(
                     album=label,
                     detail=f"{len(group.disc_conflicts)} file(s)",
                     paths=tuple(group.disc_conflicts),
+                    addresses=tuple(group.disc_addresses),
                     album_key=identity.handle,
                 )
             )
@@ -298,11 +296,8 @@ def assemble_albums(
                     album_key=identity.handle,
                 )
             )
-        by_name = _paths_by_name(group)
         issues.extend(
-            issue
-            for issue in found
-            if not _is_answered(issue, identity.handle, pinned, by_name)
+            issue for issue in found if not _is_answered(issue, identity.handle, pinned)
         )
         # Sorted again after the pins, since one may have moved a track to
         # another number or another disc, which is exactly where it belongs in

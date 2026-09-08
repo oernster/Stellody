@@ -46,6 +46,13 @@ def suffix_of(path: str) -> str:
     return name[dot:].casefold()
 
 
+# What separates a file from the frame a slice of it begins at, where a source
+# has to be named as one string. A hash cannot appear in a Windows path and is
+# accepted in a POSIX one only where nothing else would have parsed it either,
+# so it separates without colliding with anything a real library holds.
+ADDRESS_SEPARATOR = "#"
+
+
 @dataclass(frozen=True, slots=True)
 class TrackSource:
     """A region of an audio file: either the whole of it or one cue-sheet track."""
@@ -66,6 +73,24 @@ class TrackSource:
     def is_slice(self) -> bool:
         """True when this source is part of a file rather than all of it."""
         return self.start_frame > 0 or self.end_frame is not None
+
+    @property
+    def address(self) -> str:
+        """What names THIS source, as anything held against one keys by.
+
+        A path alone names a file; a cue album is twenty tracks inside one
+        file: pinning a track number against the path would stamp it on every
+        track of the album at once. The frame it starts at is what separates
+        them, so a slice is addressed by both.
+
+        A whole file addresses as its bare path, exactly as it always did, so
+        every pin already written is found again rather than orphaned by this
+        arriving. The first track of a cue album starts at frame nought and is
+        still a slice, since it has an end; it is addressed as one.
+        """
+        if not self.is_slice:
+            return self.path
+        return f"{self.path}{ADDRESS_SEPARATOR}{self.start_frame}"
 
     @property
     def carries_picture(self) -> bool:

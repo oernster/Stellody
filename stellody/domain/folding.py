@@ -49,6 +49,8 @@ class Group:
     genres: list[str]
     tagged_artists: int
     disc_conflicts: list[str]
+    # The same files as `disc_conflicts`, addressed rather than named.
+    disc_addresses: list[str]
     # Where in `candidates` a folder calling itself a bonus disc landed without
     # saying which disc it is.
     bonus_positions: list[int]
@@ -91,6 +93,7 @@ def absorb(into: Group, other: Group) -> None:
     into.genres.extend(other.genres)
     into.tagged_artists += other.tagged_artists
     into.disc_conflicts.extend(other.disc_conflicts)
+    into.disc_addresses.extend(other.disc_addresses)
 
 
 def fold_by_tags(

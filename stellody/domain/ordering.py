@@ -102,14 +102,15 @@ def resolve_tracks(
     order = sorted(range(len(candidates)), key=lambda i: candidates[i].file_name)
 
     for key in sorted(colliding):
-        affected = tuple(candidates[i].file_name for i in order if keys.get(i) == key)
+        hit = tuple(i for i in order if keys.get(i) == key)
         issues.append(
             LibraryIssue(
                 kind=IssueKind.DUPLICATE_TRACK_NUMBER,
                 album=album_label,
                 album_key=album_key,
                 detail=f"disc {key[0]}, track {key[1]}",
-                paths=affected,
+                paths=tuple(candidates[i].file_name for i in hit),
+                addresses=tuple(candidates[i].source.address for i in hit),
             )
         )
 
@@ -122,6 +123,7 @@ def resolve_tracks(
             used.setdefault(key[0], set()).add(key[1])
 
     untagged: list[str] = []
+    unnumbered: list[str] = []
     for position in order:
         if position in resolved:
             continue
@@ -132,6 +134,7 @@ def resolve_tracks(
         taken = used.setdefault(disc, set())
         if file_track is None:
             untagged.append(candidate.file_name)
+            unnumbered.append(candidate.source.address)
             track = _next_free(taken)
         elif file_track in taken:
             track = _next_free(taken)
@@ -148,11 +151,13 @@ def resolve_tracks(
                 album_key=album_key,
                 detail=f"{len(untagged)} file(s)",
                 paths=tuple(untagged),
+                addresses=tuple(unnumbered),
             )
         )
 
     tracks: list[Track] = []
     missing_titles: list[str] = []
+    untitled: list[str] = []
     for position in order:
         candidate = candidates[position]
         disc, track = resolved[position]
@@ -160,6 +165,7 @@ def resolve_tracks(
         title, was_missing = _chosen_title(candidate, trusted, duplicates)
         if was_missing:
             missing_titles.append(candidate.file_name)
+            untitled.append(candidate.source.address)
         artists = candidate.artists if candidate.artists else (UNKNOWN_ARTIST,)
         tracks.append(
             Track(
@@ -182,6 +188,7 @@ def resolve_tracks(
                 album_key=album_key,
                 detail=f"{len(missing_titles)} file(s)",
                 paths=tuple(missing_titles),
+                addresses=tuple(untitled),
             )
         )
 

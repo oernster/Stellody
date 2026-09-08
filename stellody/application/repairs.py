@@ -24,7 +24,6 @@ tags were never altered.
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -54,29 +53,27 @@ def _value_of(track: Track, field: OverrideField) -> str:
     return track.title
 
 
-def _tracks_by_name(albums: Iterable[Album]) -> dict[str, tuple[Track, ...]]:
-    """Which tracks each file name in these albums stands for.
+def _tracks_by_address(albums: Iterable[Album]) -> dict[str, Track]:
+    """Which track each address in these albums names.
 
-    A finding names file names while a pin names a full path, so the two have to
-    be introduced. One name can stand for more than one track: a multi-disc
-    album merged from CD1 and CD2 may hold "01 Intro.flac" in both, so every
-    track wearing the name is pinned rather than a guess being made about which
-    was meant. Pinning a value a track already holds costs nothing.
+    A finding carries the addresses it is about and a pin is held against one,
+    so the two meet exactly. It was file NAMES until a name turned out not to
+    survive the trip: for a cue album the name is a label the scan made up,
+    `05. Salt in the Wounds`, while the file on disk is one FLAC holding the
+    whole record. Nothing matched, so accepting wrote no pins at all and the
+    finding was reported again at every start.
+
+    One address names one track, since that is what an address is for. A
+    multi-disc album really can hold "01 Intro.flac" twice, which is why a name
+    had to map to several; two tracks cannot be the same region of one file.
 
     Takes every album wearing the handle rather than one, because two can. The
     handle is a digest of the artist, the title and the year, so two separate
     recordings filed apart under one title share it, which classical music does
     routinely: a Mahler symphony under two conductors is two albums with one
-    identity. Keeping only the last of them in a dictionary silently threw the
-    other away; a finding belonging to the one thrown away then matched no file
-    at all, wrote no pins and was reported again at every start however many
-    times somebody accepted it.
+    identity. Keeping only the last of them silently threw the other away.
     """
-    found: dict[str, list[Track]] = {}
-    for album in albums:
-        for track in album.tracks:
-            found.setdefault(os.path.basename(track.source.path), []).append(track)
-    return {name: tuple(tracks) for name, tracks in found.items()}
+    return {track.source.address: track for album in albums for track in album.tracks}
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,17 +153,19 @@ class Repairs:
                 )
                 continue
             if issue.album_key not in named:
-                named[issue.album_key] = _tracks_by_name(albums)
-            for name in issue.paths:
-                for track in named[issue.album_key].get(name, ()):
-                    pins.append(
-                        Override(
-                            issue.album_key,
-                            field,
-                            _value_of(track, field),
-                            track.source.path,
-                        )
+                named[issue.album_key] = _tracks_by_address(albums)
+            for address in issue.addresses:
+                track = named[issue.album_key].get(address)
+                if track is None:
+                    continue
+                pins.append(
+                    Override(
+                        issue.album_key,
+                        field,
+                        _value_of(track, field),
+                        address,
                     )
+                )
         return tuple(pins)
 
     def accept(self, view: LibraryView, issues: Iterable[LibraryIssue]) -> int:

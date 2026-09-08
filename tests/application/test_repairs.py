@@ -8,96 +8,21 @@ the track the reader was looking at.
 from __future__ import annotations
 
 import pytest
+from repairs_support import (
+    FOLDER,
+    IDENTITY,
+    OTHER,
+    VIEW,
+    RecordingStore,
+    issue,
+    track,
+)
 
 from stellody.application.repairs import Repairs
 from stellody.application.scan import LibraryView
 from stellody.domain.album import Album
-from stellody.domain.health import IssueKind, LibraryIssue
-from stellody.domain.identity import AlbumIdentity
-from stellody.domain.overrides import AlbumEdit, Override, OverrideField
-from stellody.domain.track import Track, TrackSource
-
-FOLDER = "H:/Music/Portishead/Dummy"
-RATE = 44100
-
-
-class RecordingStore:
-    # Whatever anybody has stated about an album, kept as the real store
-    # keeps it: a set that starts empty and grows only when something is said.
-    stated_albums: tuple = ()
-
-    """Just enough store to watch what the service asks of it."""
-
-    def __init__(self) -> None:
-        self.accepted: tuple[Override, ...] = ()
-        self.discarded: tuple[Override, ...] = ()
-
-    def all_overrides(self) -> tuple[Override, ...]:
-        return self.accepted
-
-    def accept_overrides(self, accepted: tuple[Override, ...]) -> None:
-        self.accepted = self.accepted + accepted
-
-    def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
-        self.discarded = self.discarded + unwanted
-        dropped = {(item.album, item.path, item.field) for item in unwanted}
-        self.accepted = tuple(
-            item
-            for item in self.accepted
-            if (item.album, item.path, item.field) not in dropped
-        )
-
-    def all_album_edits(self) -> tuple[AlbumEdit, ...]:
-        return self.stated_albums
-
-    def state_album_edits(self, stated: tuple[AlbumEdit, ...]) -> None:
-        self.stated_albums = self.stated_albums + tuple(stated)
-
-    def discard_album_edits(self, unwanted: tuple[AlbumEdit, ...]) -> None:
-        dropped = {(item.folder, item.field) for item in unwanted}
-        self.stated_albums = tuple(
-            item
-            for item in self.stated_albums
-            if (item.folder, item.field) not in dropped
-        )
-
-
-def track(
-    file_name: str, disc: int = 1, number: int = 1, folder: str = FOLDER
-) -> Track:
-    """One resolved track, as the rules would have left it."""
-    return Track(
-        source=TrackSource(path=f"{folder}/{file_name}"),
-        disc_number=disc,
-        track_number=number,
-        title=f"Title of {file_name}",
-        artists=("Portishead",),
-        duration_ms=1000,
-        sample_rate=RATE,
-        bit_depth=16,
-    )
-
-
-IDENTITY = AlbumIdentity(album_artist="Portishead", title="Dummy", date="1994")
-OTHER = AlbumIdentity(album_artist="Portishead", title="Third", date="2008")
-ALBUM = Album(
-    identity=IDENTITY,
-    tracks=(
-        track("01 Mysterons.flac", number=1),
-        track("02 Sour Times.flac", number=2),
-    ),
-)
-VIEW = LibraryView(albums=(ALBUM,))
-
-
-def issue(kind: IssueKind, paths: tuple[str, ...] = (), key: str = "") -> LibraryIssue:
-    """A finding attributed to the album under test unless told otherwise."""
-    return LibraryIssue(
-        kind=kind,
-        album="Portishead - Dummy",
-        paths=paths,
-        album_key=key or IDENTITY.handle,
-    )
+from stellody.domain.health import IssueKind
+from stellody.domain.overrides import Override, OverrideField
 
 
 class TestWhichFindingsAreOffered:
@@ -191,7 +116,16 @@ class TestWhatAcceptingRecords:
         repairs = Repairs(RecordingStore())
         pins = repairs.pins_for(
             LibraryView(albums=(doubled,)),
-            (issue(IssueKind.DUPLICATE_TRACK_NUMBER, ("01 Intro.flac",)),),
+            (
+                issue(
+                    IssueKind.DUPLICATE_TRACK_NUMBER,
+                    ("01 Intro.flac", "01 Intro.flac"),
+                    addresses=(
+                        f"{FOLDER}/CD1/01 Intro.flac",
+                        f"{FOLDER}/CD2/01 Intro.flac",
+                    ),
+                ),
+            ),
         )
         assert {pin.path for pin in pins} == {
             f"{FOLDER}/CD1/01 Intro.flac",
@@ -336,7 +270,13 @@ class TestTwoAlbumsWearingOneHandle:
         repairs = Repairs(RecordingStore())
         pins = repairs.pins_for(
             self._two_albums(),
-            (issue(IssueKind.MISSING_TITLE, ("01 Andante.flac",)),),
+            (
+                issue(
+                    IssueKind.MISSING_TITLE,
+                    ("01 Andante.flac",),
+                    addresses=(f"{FOLDER}/Other/01 Andante.flac",),
+                ),
+            ),
         )
         assert pins
         assert pins[0].path.endswith("01 Andante.flac")

@@ -81,6 +81,14 @@ class LibraryIssue:
     # carried instead. Empty where the finding belongs to a folder rather than
     # to an assembled album, which is a finding nothing can accept anyway.
     album_key: str = ""
+    # What the finding is about, as the sources themselves rather than as the
+    # names shown for them. `paths` holds display names, which for a cue album
+    # are labels the scan made up; the ordering rules then RENUMBER a colliding
+    # track, so by the time somebody accepts the finding the label it was
+    # reported under names nothing. An address survives that, because it is
+    # where the audio is rather than what it is called. Empty on a finding
+    # nothing can accept, likewise on one raised about a folder, not tracks.
+    addresses: tuple[str, ...] = ()
 
     @property
     def summary(self) -> str:
