@@ -231,15 +231,19 @@ h1 .accent { color: var(--accent); }
 
 /* Stats bar */
 .stats-bar { background: var(--mantle); border-top: 1px solid var(--surface0); border-bottom: 1px solid var(--surface0); }
+/* A grid rather than a wrapping flex row, so the two rows share their columns.
+   Centring each row on its own contents put Seconds 49px to the left of Free
+   above it and Discover 26px to the left of No sign-up, measured, because a
+   row of three widths centres on the total of those widths. Stated tracks make
+   the second row sit under the first whatever the words in it are. */
 .stats-inner {
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
+  align-items: start;
 }
 /* No dividers. A rule between siblings cannot know where a wrapped row begins,
    so the first stat on the second row carried a line with nothing to its left;
@@ -310,7 +314,11 @@ h1 .accent { color: var(--accent); }
 
 /* Split section (text + screenshot) */
 .split-band { background: var(--mantle); border-top: 1px solid var(--surface0); border-bottom: 1px solid var(--surface0); }
-.split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+/* Started at the top rather than centred. The two columns hold different
+   amounts, 700px against 601px measured, so centring dropped the shorter
+   one 50px and its blue label sat below the other's with nothing to
+   explain the step. Two headings side by side are read as a pair. */
+.split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
 .split-grid .split-text p { color: var(--subtext1); font-size: 1rem; line-height: 1.75; margin-bottom: 1.25rem; }
 .split-grid .split-text ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
 .split-grid .split-text li { font-size: 0.925rem; color: var(--subtext1); line-height: 1.55; padding-left: 1.5rem; position: relative; }
@@ -450,6 +458,12 @@ footer { border-top: 1px solid var(--surface0); padding: 3rem 2rem; }
 .shot-caption { text-align: center; font-size: 0.82rem; color: var(--overlay1); margin-top: 0.85rem; }
 
 /* Responsive */
+/* Two columns before one, so a narrow window still pairs them up rather
+   than running six stats down the page. They stay aligned either way. */
+@media (max-width: 900px) {
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 768px) {
   .split-grid, .install-grid, .cli-grid { grid-template-columns: 1fr; gap: 2.5rem; }
 }
@@ -459,7 +473,7 @@ footer { border-top: 1px solid var(--surface0); padding: 3rem 2rem; }
   .hero { padding: 3rem 1.25rem 2rem; }
   .section { padding: 3.5rem 1.25rem; }
   .features-grid { grid-template-columns: 1fr; }
-  .stats-inner { flex-direction: column; gap: 1.25rem; }
+  .stats-inner { grid-template-columns: 1fr; gap: 1.25rem; }
 }
 
 /* Entrance animation */
