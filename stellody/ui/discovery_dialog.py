@@ -36,8 +36,8 @@ CLOSE_LABEL = "Close"
 # What the dialog says before anything has been asked of it. It names where the
 # answer will appear, since the dialog will not be there to show it.
 RESTING = (
-    "Tick the genres to look around, then press Find. "
-    "This closes and the toolbar reports on the looking."
+    "Tick the genres to find similar music in, then press Find. "
+    "This closes; the toolbar reports on the search."
 )
 # Wide enough for the catalogue's three columns without the longest name
 # wrapping; the same measurement the filter dialog is built to.
@@ -46,7 +46,7 @@ APART_PX = 12
 
 
 class DiscoveryDialog(FirstStopDialog):
-    """Collects the genres to look around, then hands them over and closes."""
+    """Collects the genres to search in, then hands them over and closes."""
 
     def __init__(
         self,
