@@ -18,6 +18,21 @@ from stellody.domain.grouping import SourceEntry
 from stellody.domain.text import tag_date
 from stellody.domain.track import MILLISECONDS_PER_SECOND
 
+# Which set of rules currently turns a file into records. A stored folder is
+# reused only while its files are unchanged AND this is the value it was
+# written under, so changing how a record is derived reaches a library that has
+# already been scanned rather than only a folder somebody happens to touch.
+#
+# Bump it whenever anything that derives a record from a file changes: this
+# module, the cue parsing it reads through or the tag handling either uses.
+#
+# Measured, which is why it exists: the rule letting a file's own tags answer
+# where a cue sheet says only "Unknown" landed on 2026-09-05 and had reached
+# none of the reference library's 659 folders three days later, since not one
+# of their files had changed. A date correction hit the same wall earlier and
+# had to be repaired row by row in `infrastructure/stored_dates.py`.
+DERIVATION = 1
+
 
 @dataclass(frozen=True, slots=True)
 class _FolderContext:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from fakes import (
     CD_RATE,
     FakeProbe,
@@ -12,6 +14,7 @@ from fakes import (
     stat,
 )
 
+from stellody.application.records import DERIVATION
 from stellody.application.scan import ScanLibrary, ScanProgress
 from stellody.application.values import FolderListing
 
@@ -285,3 +288,38 @@ def test_a_file_reporting_no_sample_rate_is_reported_as_unreadable() -> None:
     report = scanner.run("H:/Music")
     assert report.albums == ()
     assert report.files_unreadable == 2
+
+
+def test_a_probed_folder_records_the_rules_that_read_it() -> None:
+    scanner, store = build(
+        [two_file_listing()],
+        {
+            ONE: properties(**album_tags("1", "Wavy Gravy")),
+            TWO: properties(**album_tags("2", "Cutting Room")),
+        },
+    )
+    scanner.run("H:/Music")
+    assert store.records[FOLDER].derivation == DERIVATION
+
+
+def test_a_folder_read_by_older_rules_is_reprobed_though_nothing_changed() -> None:
+    """The guard, proved by planting exactly what it exists to catch.
+
+    Every file is identical, so the signature check alone would reuse this
+    folder and the corrected rules would never reach it.
+    """
+    probe_results = {
+        ONE: properties(**album_tags("1", "Wavy Gravy")),
+        TWO: properties(**album_tags("2", "Cutting Room")),
+    }
+    scanner, store = build([two_file_listing()], probe_results)
+    scanner.run("H:/Music")
+
+    stale = replace(store.records[FOLDER], derivation=DERIVATION - 1)
+    store.records[FOLDER] = stale
+    again, _ = build([two_file_listing()], probe_results, store=store)
+    report = again.run("H:/Music")
+
+    assert report.folders_probed == 1
+    assert report.folders_reused == 0
+    assert store.records[FOLDER].derivation == DERIVATION

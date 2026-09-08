@@ -10,11 +10,16 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Mapping
 
-from stellody.application.values import FileStat, FolderRecord, SourceRecord
-from stellody.domain.health import IssueKind, LibraryIssue
+from stellody.application.values import FolderRecord
 from stellody.domain.listening import Listening
 from stellody.domain.overrides import AlbumEdit, Override
-from stellody.infrastructure import album_edit_rows, override_rows, stored_dates
+from stellody.infrastructure import (
+    album_edit_rows,
+    folder_derivation,
+    folder_rows,
+    override_rows,
+    stored_dates,
+)
 
 UNIT_SEPARATOR = "\x1f"
 
@@ -22,7 +27,8 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS folders (
     folder            TEXT PRIMARY KEY,
     art_path          TEXT NOT NULL DEFAULT '',
-    has_embedded_art  INTEGER NOT NULL DEFAULT 0
+    has_embedded_art  INTEGER NOT NULL DEFAULT 0,
+    derivation        INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS files (
     path      TEXT PRIMARY KEY,
@@ -74,22 +80,6 @@ CREATE INDEX IF NOT EXISTS sources_by_folder ON sources (folder);
 CREATE INDEX IF NOT EXISTS issues_by_folder ON issues (folder);
 """
 
-_SOURCE_COLUMNS = (
-    "path, file_name, start_frame, end_frame, duration_ms, sample_rate, "
-    "bit_depth, album, album_artist, artists, title, date, genre, disc, track"
-)
-
-
-def _join(values: tuple[str, ...]) -> str:
-    """Pack a tuple of strings into one column."""
-    return UNIT_SEPARATOR.join(values)
-
-
-def _split(value: str) -> tuple[str, ...]:
-    """Unpack a column written by _join."""
-    return tuple(part for part in value.split(UNIT_SEPARATOR) if part)
-
-
 JOURNAL_MODE = "WAL"
 BUSY_TIMEOUT_MS = 5000
 
@@ -117,8 +107,11 @@ class SqliteLibraryStore:
                 SCHEMA + override_rows.SCHEMA + album_edit_rows.SCHEMA
             )
             self._connection.commit()
+            # Before anything reads a folder row: a database written
+            # earlier has no derivation column at all.
+            folder_derivation.ensure_column(self._connection)
             # A date written before the scan learned to reduce one still
-            # carries its padding, and an incremental scan will not revisit
+            # carries its padding; an incremental scan will not revisit
             # the folder to correct it. Settled here rather than left waiting.
             stored_dates.clean(self._connection)
         except Exception:
@@ -204,16 +197,18 @@ class SqliteLibraryStore:
     def load_folders(self) -> tuple[FolderRecord, ...]:
         """Every folder record currently held."""
         folders = self._connection.execute(
-            "SELECT folder, art_path, has_embedded_art FROM folders ORDER BY folder"
+            "SELECT folder, art_path, has_embedded_art, derivation "
+            "FROM folders ORDER BY folder"
         ).fetchall()
         return tuple(
             FolderRecord(
                 folder=row["folder"],
-                stats=self._stats_of(row["folder"]),
-                sources=self._sources_of(row["folder"]),
+                stats=folder_rows.stats_of(self._connection, row["folder"]),
+                sources=folder_rows.sources_of(self._connection, row["folder"]),
                 art_path=row["art_path"],
                 has_embedded_art=bool(row["has_embedded_art"]),
-                issues=self._issues_of(row["folder"]),
+                issues=folder_rows.issues_of(self._connection, row["folder"]),
+                derivation=row["derivation"],
             )
             for row in folders
         )
@@ -223,9 +218,15 @@ class SqliteLibraryStore:
         with self._connection:
             self._clear_folder(record.folder)
             self._connection.execute(
-                "INSERT INTO folders (folder, art_path, has_embedded_art) "
-                "VALUES (?, ?, ?)",
-                (record.folder, record.art_path, int(record.has_embedded_art)),
+                "INSERT INTO folders "
+                "(folder, art_path, has_embedded_art, derivation) "
+                "VALUES (?, ?, ?, ?)",
+                (
+                    record.folder,
+                    record.art_path,
+                    int(record.has_embedded_art),
+                    record.derivation,
+                ),
             )
             self._connection.executemany(
                 "INSERT INTO files (path, folder, file_name, size, mtime, present) "
@@ -236,9 +237,12 @@ class SqliteLibraryStore:
                 ],
             )
             self._connection.executemany(
-                f"INSERT INTO sources (folder, {_SOURCE_COLUMNS}) VALUES "
+                f"INSERT INTO sources (folder, {folder_rows.SOURCE_COLUMNS}) VALUES "
                 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [_source_row(record.folder, source) for source in record.sources],
+                [
+                    folder_rows.source_row(record.folder, source)
+                    for source in record.sources
+                ],
             )
             self._connection.executemany(
                 "INSERT INTO issues (folder, kind, album, detail, paths) "
@@ -249,7 +253,7 @@ class SqliteLibraryStore:
                         str(issue.kind),
                         issue.album,
                         issue.detail,
-                        _join(issue.paths),
+                        folder_rows.join(issue.paths),
                     )
                     for issue in record.issues
                 ],
@@ -281,87 +285,3 @@ class SqliteLibraryStore:
         """Remove every row belonging to one folder."""
         for table in ("issues", "sources", "files", "folders"):
             self._connection.execute(f"DELETE FROM {table} WHERE folder = ?", (folder,))
-
-    def _stats_of(self, folder: str) -> tuple[FileStat, ...]:
-        """The recorded file statistics for one folder."""
-        rows = self._connection.execute(
-            "SELECT path, file_name, size, mtime FROM files "
-            "WHERE folder = ? ORDER BY file_name",
-            (folder,),
-        )
-        return tuple(
-            FileStat(
-                path=row["path"],
-                file_name=row["file_name"],
-                size=row["size"],
-                mtime=row["mtime"],
-            )
-            for row in rows
-        )
-
-    def _sources_of(self, folder: str) -> tuple[SourceRecord, ...]:
-        """The stored sources for one folder, tags exactly as they were read."""
-        rows = self._connection.execute(
-            f"SELECT {_SOURCE_COLUMNS} FROM sources "
-            "WHERE folder = ? ORDER BY file_name, start_frame",
-            (folder,),
-        )
-        return tuple(
-            SourceRecord(
-                path=row["path"],
-                file_name=row["file_name"],
-                start_frame=row["start_frame"],
-                end_frame=row["end_frame"],
-                duration_ms=row["duration_ms"],
-                sample_rate=row["sample_rate"],
-                bit_depth=row["bit_depth"],
-                album=row["album"],
-                album_artist=row["album_artist"],
-                artists=_split(row["artists"]),
-                title=row["title"],
-                date=row["date"],
-                genre=row["genre"],
-                disc=row["disc"],
-                track=row["track"],
-            )
-            for row in rows
-        )
-
-    def _issues_of(self, folder: str) -> tuple[LibraryIssue, ...]:
-        """The issues recorded against one folder."""
-        rows = self._connection.execute(
-            "SELECT kind, album, detail, paths FROM issues "
-            "WHERE folder = ? ORDER BY id",
-            (folder,),
-        )
-        return tuple(
-            LibraryIssue(
-                kind=IssueKind(row["kind"]),
-                album=row["album"],
-                detail=row["detail"],
-                paths=_split(row["paths"]),
-            )
-            for row in rows
-        )
-
-
-def _source_row(folder: str, source: SourceRecord) -> tuple[object, ...]:
-    """One source as the column tuple the insert expects."""
-    return (
-        folder,
-        source.path,
-        source.file_name,
-        source.start_frame,
-        source.end_frame,
-        source.duration_ms,
-        source.sample_rate,
-        source.bit_depth,
-        source.album,
-        source.album_artist,
-        _join(source.artists),
-        source.title,
-        source.date,
-        source.genre,
-        source.disc,
-        source.track,
-    )

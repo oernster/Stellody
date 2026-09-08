@@ -15,6 +15,7 @@ from stellody.application.ports import (
     TextReader,
 )
 from stellody.application.records import (
+    DERIVATION,
     _grouping_entries,
     _record_from_file,
     _records_from_cue,
@@ -247,7 +248,17 @@ class ScanLibrary:
         known: dict[str, tuple[int, int]],
         cached: FolderRecord,
     ) -> bool:
-        """True when a folder's files are exactly as they were last scan."""
+        """True when this folder is as it was AND was read by the current rules.
+
+        Unchanged files are not on their own a reason to reuse a record. What
+        was written down is a reading of those files, so a reading taken under
+        rules that have since changed is out of date however still the folder
+        has been. Left on the signatures alone, a corrected rule reaches only
+        the folders somebody happens to touch, which for a settled library is
+        none of them.
+        """
+        if cached.derivation != DERIVATION:
+            return False
         current = listing.signatures
         if set(current) != set(cached.signatures):
             return False
@@ -282,6 +293,7 @@ class ScanLibrary:
             art_path=listing.image_paths[0] if listing.image_paths else "",
             has_embedded_art=state.embedded_art,
             issues=tuple(state.issues),
+            derivation=DERIVATION,
         )
 
     @staticmethod

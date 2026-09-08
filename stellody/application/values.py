@@ -129,6 +129,11 @@ class FolderRecord:
     art_path: str = ""
     has_embedded_art: bool = False
     issues: tuple[LibraryIssue, ...] = ()
+    # Which rules derived this record, so a scan can tell a folder that is
+    # merely unchanged from one that is still current. Zero is the value a
+    # database written before the question was asked carries; no rule set
+    # ever answers to it, so such a folder is always read again.
+    derivation: int = 0
 
     @property
     def signatures(self) -> dict[str, tuple[int, int]]:
