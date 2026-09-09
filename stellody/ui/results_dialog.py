@@ -92,7 +92,14 @@ from stellody.ui.results_words import (
 from stellody.ui.shops_dialog import ShopsDialog
 from stellody.ui.theme import Mode, palette_for
 
-TITLE = "What the last run found"
+# One name for the window and for the heading inside it, so the taskbar, the
+# title bar and the screen itself cannot come to say different things.
+#
+# It read "What the last run found" until 2026-09-09, when Oliver asked what
+# run that meant. Stellody has two: a scan of the library and a discovery over
+# the catalogues. The heading names which, since a screen somebody opened
+# minutes after asking for it has to say what it is an answer to.
+TITLE = "What the last discovery run found"
 CLOSE_LABEL = "Close"
 APART_PX = 12
 COPY_LABEL = "Copy"
