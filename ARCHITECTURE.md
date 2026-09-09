@@ -1011,14 +1011,16 @@ the gap the terms ask for now that its last request dies with it.
 confirmation was tried first and measured doing the opposite of its purpose: a
 trace caught the question answering No while the run carried on, which was the
 whole of a defect reported three times as the stop never stopping. A press on a
-control plainly reading "Stop looking" needs no checking; what the question was
-really guarding against was a button that gave no sign of having changed
-meaning.
+control plainly reading "Stop discovery" needs no checking; what the question
+was really guarding against was a button that gave no sign of having changed
+meaning. The wording is read from `ui/tray_metrics.py` by everything that shows
+it; this document quoted "Stop looking" until 2026-09-09, which is the same
+stale phrase the guide was corrected for.
 
 **The estimate is read off the run rather than off the configured gap.** A run
-meets refusals and each costs up to three attempts with a lengthening wait, so
-an estimate built on the permitted rate would read as confident while being
-wrong by minutes on exactly the runs where somebody needs it. The second stage
+meets refusals; each costs a second ask on the spot and then a place in a later
+pass, so an estimate built on the permitted rate would read as confident while
+being wrong by minutes on exactly the runs where somebody needs it. The second stage
 is projected from the candidates the first has turned up, because covering only
 the first stage would understate the wait by the larger half of it. Under two
 finished units it says nothing rather than swinging.

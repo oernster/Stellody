@@ -7,8 +7,10 @@ to a place that sells it. It is written before the code, in the house form:
 EARS requirements, each with the failure case beside it, each naming the test
 that will prove it.
 
-Baseline: 1.0, 2026-09-08. Changes after this arrive as numbered amendments
-with a reason rather than as silent edits.
+Baseline: this specification as first written, 2026-09-08. Changes after that
+arrive as numbered amendments with a reason rather than as silent edits. No
+number of its own: a document version beside a product version at 1.0 is two
+numbers a reader has to tell apart, only one of them the product's.
 
 ## 1. Introduction
 

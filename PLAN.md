@@ -32,8 +32,9 @@ Cutting one means: the gate is green, the release notes are written in
 owner's to make. A tagged version's notes leave `NOTES.md` on the next pass,
 since the file carries the pending release alone.
 
-Version 1.0 was that readiness call and the owner has made it. What it commits
-to is stated in `README.md` and in `ARCHITECTURE.md` rather than here: the
+The readiness call has been made and the owner made it; the number itself lives
+in `VERSION` rather than in any document here, this file included. What it
+commits to is stated in `README.md` and in `ARCHITECTURE.md` rather than here: the
 invariants are the promise. The two that matter most to somebody's collection,
 that a music file is only ever read and that nothing reaches the network unasked
 beyond the update check, are held by tests rather than by intention. Nothing

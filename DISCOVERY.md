@@ -1969,7 +1969,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D49 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D50 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
