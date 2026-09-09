@@ -166,11 +166,13 @@ Five things reach outside your computer at all, so here are all five:
   never press it.
 
 It does not encrypt anything at rest: the store holds notes about your library,
-not secrets. It also keeps a plain-text account of its own comings and goings, named
-`stellody-diary.log` and written wherever your system puts temporary files:
-`%TEMP%` on Windows, `/tmp` on Linux and the per-user temporary directory on
-macOS. It records no music and no personal data, is never sent anywhere and can
-be deleted whenever you like.
+not secrets. It also keeps a plain-text account of its own comings and goings,
+named `stellody-diary.log` and written in Stellody's own data directory beside
+the library database: `%LOCALAPPDATA%\Stellody` on Windows,
+`~/.local/share/stellody` on Linux and `~/Library/Application Support/Stellody`
+on macOS. A Linux flatpak keeps its own copy of that directory under
+`~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no music and no
+personal data, is never sent anywhere and can be deleted whenever you like.
 
 ## Installing
 
