@@ -123,6 +123,17 @@ folders, 327 album artists, of which 326 are reachable by at least one catalogue
 genre. Three folders carry no catalogue genre. The smallest genres hold one
 artist; the largest, Rock, holds 107.
 
+**An album naming no catalogue genre is not source material, whatever is
+ticked.** Ruled by Oliver on 2026-09-09, so it is a past decision rather than a
+future argument. Raised by a run over five albums that answered about three of
+them: the two it passed over were single-file rips whose FLAC carried no GENRE
+field and whose cue sheet carried no `REM GENRE`, so there was nothing to read
+rather than something read wrongly. Ticking every genre still does not reach
+them, since an album that names none is named by no tick. The answer is to
+state a genre against the album, which the tag editor already does without
+touching the file; the run then treats it exactly as a tagged one. Neither a
+"not tagged" tick nor an untagged sweep under select-all is wanted.
+
 ### 3.1 Functional requirements
 
 ---
@@ -605,6 +616,14 @@ met with nothing, while nothing else answers, is. Being sure is cheap: the run
 paces itself at about a second a question, so being wrong five times over
 costs seconds.
 
+One cause of such an answer was the run's own doing and was removed on
+2026-09-09 rather than counted more carefully. Connections are pooled between
+requests; the pause between passes is longer than the host keeps one, so the
+first ask of every pass went down a socket the host had already closed. That
+is the same artist every pass, so a run could go round twelve times and lose
+them each go. A connection idle longer than half the measured timeout is now
+thrown away rather than asked down.
+
 The count is kept for the whole run rather than for either half of it, since
 the connection is one thing. In the second half, a candidate nothing answered
 about is left unknown rather than written down as playing nothing: a question
@@ -618,7 +637,7 @@ words rather than as refused; given five such answers in a row, then the run
 stops there, reports unavailability and writes no file; given an answer
 between two of them, then the count starts again.
 
-Verified by: `tests/application/test_a_dropped_connection.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_a_dropped_connection.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_a_dropped_connection.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_a_dropped_connection.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`
+Verified by: `tests/application/test_a_dropped_connection.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_a_dropped_connection.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_a_dropped_connection.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_a_dropped_connection.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`, `tests/infrastructure/test_a_closed_connection.py`
 
 ---
 
@@ -656,6 +675,45 @@ results are present; given a source refusing everybody on two passes running,
 then the run stops asking and reports those artists as refused.
 
 Verified by: `tests/application/test_discovery.py::test_rate_refusal_is_retried`, `tests/application/test_discovery.py::test_an_artist_refused_on_one_pass_is_asked_about_on_the_next`, `tests/application/test_discovery.py::test_a_refusal_that_never_relents_becomes_a_failure`, `tests/application/test_passing.py`
+
+---
+
+**FR-D50 The source is still thinking when the wait runs out**
+
+Priority: Must
+
+Requirement: Where a request has not been answered by the time the wait runs
+out, the discovery service shall put that artist back for a later pass exactly
+as a refusal does; it shall not count the wait running out towards the run of
+silences FR-D20 ends a run on. It shall report an artist too slow to answer on
+every pass in words distinct from a refused one and from one nothing answered
+about. In the second half, a candidate whose genres were not answered for in
+time shall be left unknown rather than written down as playing nothing.
+
+Rationale: Reported by Oliver on 2026-09-09: a run over an installed copy
+produced no data at all. Measured against MusicBrainz the same day, ten
+identical searches paced at the rate its own terms ask for, the time to the
+first byte was 0.15 seconds seven times, then 3.6, 12.7 and 26.3 seconds. So
+the twenty second wait is exceeded by the service ANSWERING, perhaps one ask
+in five; the second ask about the same artist came back in a tenth of a
+second. That was recorded against the artist as a failure of its own, which
+ends that artist for the whole run. On a library holding three source artists
+it was the difference between an answer and an empty screen.
+
+A slow service is a loaded service, which is what a refusal says in words, so
+it is answered the same way and for the same reason: the waiting is spent on a
+pass rather than on an artist. It is not silence, because the host accepted the
+connection and is talking; counting it as silence would let five slow answers
+in a row claim the network had gone.
+
+Acceptance: Given a request that runs out of time once then answers, when the
+run completes, then that artist's results are present and no failure is
+reported; given five such answers in a row, then the run still completes;
+given an artist too slow on every pass, then it is reported in its own words;
+given a candidate whose genres ran out of time, then nothing is written down
+about them.
+
+Verified by: `tests/application/test_a_slow_answer.py`
 
 ---
 

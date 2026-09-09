@@ -45,6 +45,7 @@ from stellody.application.discovery_ports import (
     SimilaritySource,
     SourceFailed,
     SourceRefused,
+    SourceTooSlow,
     SourceUnavailable,
 )
 from stellody.application.gathering import Gathering, Silence
@@ -226,6 +227,15 @@ class Discovery:
                     silence.ended()
                     gathered.busy(artist)
                     continue
+                except SourceTooSlow:
+                    # A service still thinking when the wait ran out is a
+                    # service under load, which is the same thing a refusal
+                    # says in words. So this artist goes round again rather
+                    # than being written off; see `slow` in `gathering.py`
+                    # for what was measured on the day that changed.
+                    silence.ended()
+                    gathered.slow(artist)
+                    continue
                 except SourceFailed as failure:
                     silence.ended()
                     gathered.broke(artist, str(failure))
@@ -323,6 +333,13 @@ class Discovery:
                 genres = self._genres_of(identifier, cancelled)
             except RunCancelled:
                 return CANCELLED
+            except SourceTooSlow:
+                # Left unknown rather than written down as playing nothing.
+                # What is learned here is kept between runs, so a slow answer
+                # recorded as silence would drop that candidate from every
+                # later run as well as from this one.
+                silence.ended()
+                continue
             except SourceUnavailable:
                 # Nothing answered about this one candidate. It is left
                 # unknown rather than written down as playing nothing, since
@@ -349,8 +366,15 @@ class Discovery:
         It is never asked about a candidate with no identifier: `_to_ask` drops
         those before anything is asked, so an unnamed candidate is never looked
         up and is kept on the same ground as every other undescribed one.
+
+        A slow answer is let past rather than swallowed here: it is the one
+        failure that says nothing about the candidate, so `_narrowed` above
+        leaves them undescribed instead of remembering them as playing
+        nothing.
         """
         try:
             return asked(self.catalogue.genres_of, cancelled, self.pause, identifier)
+        except SourceTooSlow:
+            raise
         except SourceFailed:
             return ()

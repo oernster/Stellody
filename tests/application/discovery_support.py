@@ -9,7 +9,11 @@ happen in rather than anything a network did.
 from __future__ import annotations
 
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.application.discovery_ports import RateRefused, SourceUnavailable
+from stellody.application.discovery_ports import (
+    RateRefused,
+    SourceTooSlow,
+    SourceUnavailable,
+)
 from stellody.application.values import DiscoveryProgress
 from stellody.domain.album import Album
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
@@ -49,6 +53,7 @@ class Catalogue:
         raises: Exception | None = None,
         refusals: int = 0,
         unheard: int = 0,
+        too_slow: int = 0,
         genre_trouble: Exception | None = None,
     ) -> None:
         self._identities = identities or {}
@@ -60,6 +65,10 @@ class Catalogue:
         # about a dropped connection: a count rather than `raises` above,
         # since what those are about is a source that comes back.
         self._unheard = unheard
+        # How many of the first asks are still being thought about when the
+        # wait runs out. A count for the same reason the one above is: what
+        # these tests are about is a service that answers on a later pass.
+        self._too_slow = too_slow
         self._genre_trouble = genre_trouble
         self.identified: list[str] = []
         self.albums_asked: list[str] = []
@@ -78,6 +87,9 @@ class Catalogue:
         if self._unheard:
             self._unheard -= 1
             raise SourceUnavailable("nothing answered at all")
+        if self._too_slow:
+            self._too_slow -= 1
+            raise SourceTooSlow("no answer inside 20 seconds")
         if self._raises is not None:
             raise self._raises
         return self._identities.get(name, (name.lower(),))

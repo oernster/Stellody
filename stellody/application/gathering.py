@@ -17,6 +17,16 @@ milliseconds; measured from the diary of that night, it was the ONLY one in
 7252 lines. Everything the run had gathered went with it. An artist nothing
 answered about now goes round again exactly as a refused one does.
 
+**A slow answer is not a broken one either; it used to be treated as one.**
+Reported by Oliver on 2026-09-09: a run produced no data at all. Measured
+against MusicBrainz the same day, ten identical searches paced at the rate its
+terms ask for, the time to the first byte was 0.15 seconds seven times, 3.6
+once, 12.7 once and 26.3 once. So the twenty second wait is exceeded by the
+service ANSWERING, perhaps one ask in five. That was recorded against the
+artist as a failure nobody would ever ask about again, which on a small
+library is the difference between an answer and an empty screen. It goes round
+again now, exactly as a refusal does.
+
 **What a dead connection actually looks like is a run of them.** So the run
 gives up on the connection only after `SILENCE_MEANS_GONE` questions in a row
 have been met with nothing at all; any answer whatsoever ends that silence, be
@@ -48,6 +58,11 @@ REFUSED_EVERY_PASS = "the catalogue stayed busy through every pass"
 # one are distinct kinds at all: one is worth trying again in a moment, the
 # other is worth looking at the connection over.
 NEVER_ANSWERED = "nothing answered about this artist on any pass"
+# Said against an artist the catalogue was still thinking about when the wait
+# ran out, on every pass. Its own words again: a service that answers slowly
+# is neither busy nor unreachable; the thing to do about it is to ask later
+# rather than to look at the connection.
+TOO_SLOW_EVERY_PASS = "the catalogue was too slow to answer on every pass"
 # How many questions in a row may be met with nothing at all before the run
 # gives up on the connection itself. Five rather than one, since one is what a
 # single dropped socket costs and that is measured to happen: once in 7252
@@ -97,9 +112,11 @@ class Gathering:
     ambiguous: list[Ambiguity] = field(default_factory=list)
     failed: list[SourceFailure] = field(default_factory=list)
     met: set[str] = field(default_factory=set)
-    # Artists whose last go was met with nothing at all, so that whoever is
-    # never reached can be told apart from whoever was refused.
-    silent: set[str] = field(default_factory=set)
+    # What happened to each artist on their last go, in the words they would
+    # be told in if the passes ran out with them still owed an answer. One
+    # place rather than a set per kind, so a third kind cannot be added and
+    # then forgotten in the two the others clear themselves out of.
+    last: dict[str, str] = field(default_factory=dict)
 
     def answered(self, gaps: Gaps) -> None:
         """An artist the catalogue described, with what it named beside them.
@@ -130,25 +147,38 @@ class Gathering:
 
     def busy(self, artist: str) -> None:
         """The catalogue asked to be asked again, so it will be."""
-        self.silent.discard(artist)
+        self.last[artist] = REFUSED_EVERY_PASS
         self.passes.refuse(artist)
 
     def unheard(self, artist: str) -> None:
         """Nothing answered about this artist, so it goes round again too."""
-        self.silent.add(artist)
+        self.last[artist] = NEVER_ANSWERED
+        self.passes.refuse(artist)
+
+    def slow(self, artist: str) -> None:
+        """The catalogue was still thinking when the wait ran out.
+
+        Another pass rather than a failure. A service under load sheds the
+        expensive questions first, which is what a slow answer IS; the artist
+        it happened to is exactly the artist a later pass would get. Written
+        on 2026-09-09, when a run over five albums reported one of its three
+        artists as broken on the strength of one slow search and a second run
+        answered about the same artist in a tenth of a second.
+        """
+        self.last[artist] = TOO_SLOW_EVERY_PASS
         self.passes.refuse(artist)
 
     def owed(self) -> None:
         """Write down everyone still owed an answer once the passes ran out.
 
-        Each in the words of what actually happened to it, which is why the
-        two sets are kept apart: an artist a busy service would not discuss
-        and an artist nothing answered about are different things to be told.
+        Each in the words of what actually happened to it on its last go: a
+        busy service, a service nothing came back from at all and a service
+        that was still thinking are three different things to be told.
         """
         self.failed.extend(
             SourceFailure(
                 artist=artist,
-                reason=NEVER_ANSWERED if artist in self.silent else REFUSED_EVERY_PASS,
+                reason=self.last.get(artist, REFUSED_EVERY_PASS),
             )
             for artist in self.passes.refused
         )

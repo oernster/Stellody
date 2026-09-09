@@ -27,6 +27,13 @@ nothing: `abort()` ends the reply in under a millisecond, where the blocking
 client sat there until its timeout. Qt was already a dependency and its network
 module already in use, so this costs nothing that was not being paid.
 
+**A connection idle long enough to have been closed is never offered again.**
+The sockets are pooled between requests, which the gap the terms ask for makes
+worth doing. A run then pauses thirty seconds between passes, which is longer
+than the host's idle timeout, so the first ask of every pass was made down a
+socket the host had already let go of. See `IDLE_LIMIT_S` for the measurement
+and for what it cost.
+
 **Every request is written down, which is an instrument rather than logging.**
 Reported on 2026-09-08: `QIODevice::read (QNetworkReplyHttpImpl): device not
 open`, written on the run's own thread; in three runs out of three, within 25
@@ -77,6 +84,26 @@ STATUS_ATTRIBUTE = QNetworkRequest.Attribute.HttpStatusCodeAttribute
 # a sentence, since the interesting part is whether it names a rate limit or
 # says it is simply unavailable; a body can otherwise be a whole page.
 SAID_LIMIT = 160
+# How long a pooled connection may sit unused before it is thrown away rather
+# than asked down. Measured twice from the same hosts: the diary of 2026-09-08
+# caught two idle sockets torn down at 29.914 and 29.877 seconds after the last
+# request; on 2026-09-09 the same question asked three times with the run's
+# between-pass pause in between came back instantly with GOAWAY and
+# `RemoteHostClosedError` on the ask after each idle.
+#
+# So the host lets go at about thirty seconds. Half of that is taken rather
+# than a figure near it, since the cost of being early is one connection to
+# open and the cost of being late is a lost request. Lost where it fell, too:
+# the pause is between PASSES, so the dead socket met the first artist of
+# every pass, which is the same artist each time. A run could go round twelve
+# times and lose that one artist on every go, which on a small library is a
+# run that finds nothing. Reported by Oliver on 2026-09-09.
+#
+# Constrained rather than watched for: an ask made down a socket that has gone
+# is reported as a service that would not answer; nothing above here could
+# tell the two apart.
+HOST_LETS_GO_AFTER_S = 30.0
+IDLE_LIMIT_S = HOST_LETS_GO_AFTER_S / 2
 
 # Handed one line about a request that has just ended. The diary is what fills
 # this in; a test hands in a list instead.
@@ -118,12 +145,20 @@ class Fetcher:
         timeout_s: float = TIMEOUT_S,
         manager: QNetworkAccessManager | None = None,
         note: Note = diary.note,
+        idle_limit_s: float = IDLE_LIMIT_S,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._gate = gate if gate is not None else Gate()
         self._timeout_s = timeout_s
         self._manager = manager
         self._manager_thread = QThread.currentThread() if manager else None
         self._note = note
+        self._idle_limit_s = idle_limit_s
+        self._clock = clock
+        # When the last request went out, so the next can tell whether the
+        # connection it would reuse has been sitting there too long. None
+        # until one has, since there is nothing to reuse before that.
+        self._last_ask: float | None = None
 
     def _asking(self) -> QNetworkAccessManager:
         """An access manager belonging to the thread doing the asking."""
@@ -131,6 +166,10 @@ class Fetcher:
         if self._manager is None or self._manager_thread is not here:
             self._manager = QNetworkAccessManager()
             self._manager_thread = here
+            # A manager just built holds no connection, so there is none to
+            # have gone stale; a stamp carried over from the last one would
+            # throw away a cache that was never filled.
+            self._last_ask = None
             # Let go of it when its thread ends. See `_let_go`.
             here.finished.connect(self._let_go)
         return self._manager
@@ -201,10 +240,20 @@ class Fetcher:
         self._note(f"asked {url}: {outcome} in {took}ms")
 
     def _sent(self, url: str) -> QNetworkReply:
-        """Put the question, without waiting for the answer."""
+        """Put the question, without waiting for the answer.
+
+        On a connection this fetcher can still believe in: one left standing
+        longer than `IDLE_LIMIT_S` is thrown away first, since the host will
+        have let go of its end while nothing here was looking.
+        """
+        asking = self._asking()
+        now = self._clock()
+        if self._last_ask is not None and now - self._last_ask > self._idle_limit_s:
+            asking.clearConnectionCache()
+        self._last_ask = now
         request = QNetworkRequest(QUrl(url))
         request.setRawHeader(b"User-Agent", USER_AGENT.encode("utf-8"))
-        return self._asking().get(request)
+        return asking.get(request)
 
     def _waited_on(self, reply: QNetworkReply, wanted: Wanted) -> None:
         """Wait for the reply, giving it up where nobody wants it any more.

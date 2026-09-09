@@ -52,6 +52,10 @@ class Service:
         # test about closing them reads. Counted under a lock, since the
         # server answers each connection on a thread of its own.
         self.open_connections = 0
+        # How many have been opened altogether, which is what a test about a
+        # connection being reused reads: the count above returns to zero
+        # whether the socket was reused or replaced.
+        self.connections = 0
         self._counting = threading.Lock()
         self._released = threading.Event()
         service = self
@@ -70,6 +74,7 @@ class Service:
                 super().setup()
                 with service._counting:
                     service.open_connections += 1
+                    service.connections += 1
 
             def finish(self) -> None:
                 """Count it out again, however it ended."""
