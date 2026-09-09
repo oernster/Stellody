@@ -40,39 +40,13 @@ that a music file is only ever read and that nothing reaches the network unasked
 beyond the update check, are held by tests rather than by intention. Nothing
 below is sized against the number.
 
-## 1. Concerts near you by artists you hold. Not designed.
+## There is no open planned work.
 
-Idea recorded 2026-09-09 for later scoping, at Oliver's request and in his
-words: the ability to explore, over say the next month, the concerts within a
-reasonable range that are on for artists you have albums for. It is written
-down so it is not lost, not because it is understood.
-
-It shares its shape with a discovery run, which is why it is worth recording
-rather than starting: it names artists the library holds to an outside service
-and shows what comes back. What it adds is two things a run has never had.
-
-Three things to settle before anything else, none of them small:
-
-- **It names a PLACE as well as artists.** Everything Stellody reaches out
-  with today says what a listener ticked and nothing about who or where they
-  are. A radius around somewhere is a location; a location beside a taste
-  in music is a different kind of disclosure than either alone. Where that
-  place comes from, whether it is typed in rather than detected and what is
-  sent to get an answer are the first questions, ahead of which service is
-  asked.
-- **The answer goes stale in a way a discovery answer does not.** A record
-  that exists still exists next month; a concert next month does not. The
-  memory that makes a run affordable stands for thirty days on the ground that
-  catalogues barely change over that period, which is precisely untrue here, so
-  what may be remembered and for how long has to be worked out again rather
-  than inherited.
-- **Which service, on what terms.** It decides whether this is a list on a
-  screen or an address handed to a browser; the answer to that shapes
-  everything above it. It is also what ruled the video idea out below, so the
-  answer is worth having before anything is built rather than after.
-
-Done when: cannot be stated. It is an idea rather than a milestone; it becomes
-one only after the discussion above.
+Every milestone this file carried has either shipped or been ruled out, so
+there is nothing here waiting to be built. That is a statement about the plan
+rather than about the product: the section below records what was decided
+against and why, which is the half of a plan that stops the same ground being
+argued twice. A new milestone arrives here when somebody decides on one.
 
 ## Not planned, so that this is not revisited
 
@@ -108,6 +82,22 @@ one only after the discussion above.
   address to the browser exactly as a shop link already is, which is a link
   rather than a feature and does not earn a milestone. Playing a video that is
   already beside the music on disk is unaffected: that is built and stays.
+- **Concerts near you by artists you hold.** Ruled out by the owner on
+  2026-09-09, the same day it was scoped and for a related reason: it was
+  judged to cause more problems than it solves. What the scoping found is kept
+  here so the judgement is not made twice from scratch. Every concert listing
+  service is keyed, which meets C-07's second clause rather than its first: the
+  objection is not that a key would be published, since a key the listener
+  pastes into a file of their own is no more compiled in than a shop row is.
+  It is that everybody wanting the feature would have to go and get one. A
+  listing screen therefore serves whoever has done that and nobody else. The
+  remaining shape that needs no key is handing a gig site's search address to
+  the browser, which is the shops mechanism pointed at other sites and is a
+  link rather than a feature. Two further costs were open when it was dropped:
+  it would send a place as well as artist names, narrowed to a postcode
+  district somebody typed rather than one detected; its answers also go stale
+  in a way a catalogue's do not, so nothing about the thirty day memory could
+  be inherited. It reopens only as a decision about all four together.
 - **Anything over the network that carries your library or names you.** No
   scrobbling, no telemetry, no account, no identifier. Three modules reach
   outward, each named in invariant 12. The cover chooser reaches only when a
