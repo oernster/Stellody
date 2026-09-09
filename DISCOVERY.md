@@ -1212,11 +1212,16 @@ all most of the time, short enough that a record released this year is found
 this year. A refresh that is refused costs nothing, since that artist is then
 carried over from the file exactly as any other failure is.
 
-Nothing is written where a hole remains. A file holding whichever artists a
-service felt like answering about is a different file every time it is
-written, which is the fault stated as a file rather than as a run. Refusing
-wastes nothing: every answer that did arrive during that run is remembered, so
-the next attempt asks only for the rest.
+A hole is written down rather than refused. Until 2026-09-09 an answer with
+any hole in it was not written at all, on the ground that a file holding
+whichever artists a service felt like answering about is a different file
+every time. That reasoning was aimed at a file that stays SILENT about its
+holes; the cost of taking it literally was measured that morning: over two
+whole-library runs Oliver was shown nothing at all, the second time after 54
+minutes, 843 requests and 327 artists, because ONE artist was refused twice
+and then timed out. The answer now carries what could not be answered for
+beside what was, the screen says how many artists are missing and names them;
+the next run fills those in without asking about anybody else.
 
 The order is by artist rather than by how the answer was arrived at, since an
 artist carried over would otherwise sit where the carrying put it while the
@@ -1238,7 +1243,7 @@ not reach either, then the file is left as it was and the run says which
 artists it could not answer about; given an answer kept more than thirty days
 ago, then it is asked about again.
 
-Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_not_written_at_all`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_writes_nothing_and_says_so`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`
+Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`
 
 ---
 

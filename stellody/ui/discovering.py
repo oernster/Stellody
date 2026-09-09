@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from stellody.application.carrying_over import IncompleteAnswer
 from stellody.application.discovering import Discovery
 from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.expanding import Expansion
@@ -52,16 +51,6 @@ STILL_STOPPING = "Still stopping the last run. Try again in a moment."
 UNREACHABLE = "Nothing answered. Check the connection, then try again."
 COULD_NOT_WRITE = (
     "The answer could not be written: {reason}. Any earlier one is untouched."
-)
-# Said where a run reached the end without being able to answer about
-# everything it asked about. Nothing is written in that case: a file holding
-# whichever artists a service felt like answering about is a different file
-# every time, which is what the same library answering differently twice
-# looked like. Demanded by Oliver on 2026-09-08.
-INCOMPLETE = (
-    "Could not answer about {artists}, so nothing was written; what the last "
-    "complete run found still stands. What did answer is remembered, so "
-    "running it again asks only for the rest."
 )
 WENT_WRONG = "The run stopped: {reason}"
 
@@ -238,6 +227,14 @@ class Discovering:
             self._discovery_stopping = False
             return
         message, found, presented = self._settled(report)
+        # Written down as well as said. The sentence goes to the status bar,
+        # which is the right place for it and is also a place nobody watching
+        # an hour long run is looking at: twice in one night a run ended with
+        # its whole account of itself in a strip Oliver never saw, so what
+        # had happened had to be worked out from the request log afterwards.
+        # One line here makes the next one a grep rather than an inference.
+        self._discovery_note(f"the run was reported as: {message}")
+        self._discovery_note(f"a results screen opens: {found}")
         # Said BEFORE the results are opened, never after. The results are
         # modal, so a message set on the far side of them would appear only
         # once somebody had closed the screen it was meant to accompany; the
@@ -290,8 +287,6 @@ class Discovering:
             return FOUND_NOTHING + short_by, False, True
         try:
             where = self._write_discovery(report)
-        except IncompleteAnswer as missing:
-            return INCOMPLETE.format(artists=missing), False, False
         except (OSError, ValueError) as trouble:
             # An answer that could not be kept is not an answer presented,
             # so it carries neither the sentence nor the button.

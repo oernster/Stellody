@@ -32,7 +32,7 @@ from __future__ import annotations
 import json
 import pathlib
 
-from stellody.application.carrying_over import IncompleteAnswer, carried_over
+from stellody.application.carrying_over import carried_over
 from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
@@ -122,19 +122,25 @@ def write(report: RunReport) -> pathlib.Path:
     known and may correct it; it may not take an artist away because a service
     refused to talk about it.
 
-    **An answer with a hole in it is not written at all.** Demanded by Oliver
-    on 2026-09-08 and rightly: a file that holds whichever artists a service
-    felt like answering about is a different file every time it is written.
-    So the file changes only when a run answered about everything it asked
-    about; anything less leaves the last complete answer standing. Nothing is
-    wasted by refusing, since every answer that DID arrive during that run is
-    remembered and costs the next attempt nothing.
+    **An answer with a hole in it is written, with the hole named in it.**
+    This refused to write at all until 2026-09-09, when Oliver ran his whole
+    library twice and was shown nothing both times. Measured from the second
+    run's own diary: 327 artists, 843 requests, 54 minutes, with ONE artist,
+    Opeth, refused twice and then timed out. That one hole threw away the
+    answer for the other 326.
+
+    The rule it replaces was his and it was right about the thing it was
+    aimed at: a file holding whichever artists a service felt like answering
+    about is a different file every time. What has changed is that the file
+    no longer has to be silent about it. What could not be answered for is
+    written down beside what was, the results screen says how much is missing
+    and names who, then a later run fills those artists in without asking
+    about anybody else. An answer that says where its holes are is not
+    the answer that was being guarded against.
     """
     if not report.is_writable:
         raise ValueError("this run has nothing to write")
     settled = carried_over(report, read().gaps)
-    if settled.failed:
-        raise IncompleteAnswer(", ".join(entry.artist for entry in settled.failed))
     where = discovery_path()
     _written(where, _as_written(settled))
     return where

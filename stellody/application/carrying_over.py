@@ -26,17 +26,6 @@ from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps
 
 
-class IncompleteAnswer(ValueError):
-    """A run that could not answer about everything it asked about.
-
-    Its own kind so that whoever asked for the run can say what happened in
-    the right words: nothing went wrong with the writing; the answer that was
-    already there is still the answer. Here rather than beside the file it
-    is raised from, since the interface layer has to name it and may not name
-    infrastructure.
-    """
-
-
 def carried_over(report: RunReport, previous: tuple[Gaps, ...]) -> RunReport:
     """This run's answer, holding on to what the last one knew, in one order.
 

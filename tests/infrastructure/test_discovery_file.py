@@ -13,7 +13,6 @@ from dataclasses import replace
 
 import pytest
 
-from stellody.application.carrying_over import IncompleteAnswer
 from stellody.application.values import (
     Ambiguity,
     RunOutcome,
@@ -37,8 +36,8 @@ def a_report() -> RunReport:
     """A completed run with one of everything in it, a failure included.
 
     A run carrying a failure about an artist nothing was ever known about is
-    not written at all, so this is what the tests about refusing to write are
-    driven with; `an_answer` below is the same run having answered about
+    an answer with a hole in it, so this is what the tests about naming a hole
+    are driven with; `an_answer` below is the same run having answered about
     everybody.
     """
     return RunReport(
@@ -87,14 +86,19 @@ def test_what_could_not_be_answered_is_carried_beside_the_answers() -> None:
     assert written["failed"] == [], "a written answer has no holes in it"
 
 
-def test_an_answer_with_a_hole_in_it_is_not_written_at_all() -> None:
-    """Demanded by Oliver on 2026-09-08: a file holding whichever artists a
-    service felt like answering about is a different file every time."""
+def test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named() -> None:
+    """Reported by Oliver on 2026-09-09, twice in one night.
+
+    This refused to write at all where any artist could not be answered for.
+    Measured from his second whole-library run: 327 artists, 843 requests, 54
+    minutes, with ONE artist refused twice then timed out, which threw away the
+    answer for the other 326. The rule it replaces was aimed at a file that
+    stays silent about its holes; this one names them.
+    """
     discovery_file.write(an_answer())
-    with pytest.raises(IncompleteAnswer, match="U2"):
-        discovery_file.write(a_report())
-    written = json.loads(discovery_file.discovery_path().read_text(encoding="utf-8"))
-    assert list(written["gaps"]) == ["Peter Gabriel"], "the last one still stands"
+    written = json.loads(discovery_file.write(a_report()).read_text(encoding="utf-8"))
+    assert list(written["gaps"]) == ["Peter Gabriel"], "what did answer is here"
+    assert [entry["artist"] for entry in written["failed"]] == ["U2"], "so is the hole"
 
 
 def test_an_artist_already_answered_for_is_not_a_hole() -> None:
