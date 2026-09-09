@@ -1370,7 +1370,7 @@ artists whose heights run from 1 row to 109, with a median of 23 against a
 column of 30. An artist taller than a column is the ordinary case, so the page
 ended almost as soon as it began. Filling every column instead lets a column
 holding a tall artist scroll, which is one artist's worth of scrolling rather
-than the library's; it took that answer from 99 pages to 41 with every one
+than the library's; it took that answer from 99 pages to 42 with every one
 of them but the last carrying three columns.
 
 Every page is built at once rather than on the way to it, because a tick is
@@ -1467,8 +1467,8 @@ of the discovery bar it shall be an abbreviated form of that same estimate.
 Both shall be answered from one reading of the pace.
 
 Rationale: Reported by Oliver on 2026-09-07: a small run took a minute or two
-with nothing on screen saying whether that was normal. NFR-PERF-002 puts a whole
-library at about eleven minutes for the first stage alone. Somebody who cannot
+with nothing on screen saying whether that was normal. The pacing arithmetic
+puts a whole library at about eleven minutes for the first stage alone. Somebody who cannot
 tell a long run from a hang closes the window, which throws the run away.
 
 The second place was added the same day, on his report that the estimate could
@@ -1617,25 +1617,24 @@ artists, asserting no two requests to one host fall inside one second.
 
 **NFR-PERF-002 Run duration**
 
-Priority: Should
+Priority: Won't, ruled 2026-09-09
 
-Requirement: A run over the full library of 327 source artists shall complete
-within twenty minutes on the reference machine, with the two catalogue requests
-per artist paced at one per second and the similarity request overlapping them.
+Withdrawn as a requirement. It asked that a run over the full library of 327
+source artists complete within twenty minutes, the two catalogue requests per
+artist paced at one per second with the similarity request overlapping them.
+The arithmetic behind that gives about eleven minutes and is what FR-D16 and
+FR-D35 cite; it stands as arithmetic and is not a claim about any run.
 
-Rationale: The arithmetic gives about eleven minutes; twenty is the figure that
-may be asserted without the test becoming a weather report.
+**Ruled by Oliver on 2026-09-09: the duration is not to be measured.** It was
+carried as the one requirement no evidence stood behind, on the expectation
+that a timed whole-library run would settle it. There is to be no such run, so
+the honest thing is to stop asking. A requirement nobody will ever verify is
+worse than no requirement, since it reads as held.
 
-**NOT MEASURED. This is the one requirement here that no evidence stands
-behind.** The live run of 2026-09-08 covered Blues and Folk rather than the
-whole library, so it says nothing about a run over all 327 source artists.
-Nothing in the suite can supply it either, since the figure is a property of
-two public services on the day they are asked.
-
-Verification: a run over every genre against the real sources, timed end to
-end, recorded here with the date it was taken. Until that happens the twenty
-minutes is arithmetic rather than a measurement, which is why this is a Should
-rather than a Must.
+Nothing in the suite could have supplied it either: the figure is a property of
+two public services on the day they are asked. The pacing that governs how long
+a run takes is NFR-PERF-001, which IS measured; how long is left is answered
+from the run's own observed pace under FR-D36 rather than from any figure here.
 
 ---
 
@@ -1902,13 +1901,15 @@ is one more reason the smallest genres are run first.
 ## 4. Prioritisation
 
 Must: FR-D01 to FR-D14, FR-D16 to FR-D49 and every NFR except NFR-PERF-002.
-Should: FR-D15, NFR-PERF-002.
+Should: FR-D15.
 Could: nothing this stage.
 
-Won't, this time, recorded so it is not re-proposed: any purchase path; ranking
-candidates by anything beyond what a source states; remembering across runs what
-was offered and rejected; reopening a past run's results from the menu, which
-FR-D28 makes cheap to add later and which nobody has asked for yet.
+Won't, this time, recorded so it is not re-proposed: NFR-PERF-002, withdrawn on
+2026-09-09 because the run it would have been measured against is not one
+anybody is going to time; any purchase path; ranking candidates by anything
+beyond what a source states; remembering across runs what was offered and
+rejected; reopening a past run's results from the menu, which FR-D28 makes cheap
+to add later and which nobody has asked for yet.
 
 ## 5. Open questions
 
