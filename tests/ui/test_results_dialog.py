@@ -111,28 +111,20 @@ def test_the_genres_shown_come_from_the_file_it_is_showing(
     assert "Folk" in shown[0].top.looked_in.text()
 
 
-def test_a_run_that_found_nothing_shows_no_dialog(application, monkeypatch) -> None:
-    """An empty dialog says less than the sentence shown in its place. FR-D33."""
-    shown = opened_results(monkeypatch)
-    window = make_window(application, results=Results(()))
-    completed(window, a_report(albums=0, artists=0))
-    assert shown == []
+def test_a_run_that_found_nothing_still_shows_its_screen(
+    application, monkeypatch
+) -> None:
+    """Ruled by Oliver on 2026-09-09, having twice been shown nothing. FR-D33.
 
-
-def test_a_file_that_reads_back_empty_opens_nothing(application, monkeypatch) -> None:
-    """A run can find things and the file still read back as nothing.
-
-    A separate case from the one above rather than the same one twice: there
-    the run found nothing, so nothing was written; here something was written
-    and the reader came back empty, which is a file that could not be read.
-    Planting the removal of the guard proved the test above did not cover it.
+    An empty screen is a poor screen; an hour of running that reports into a
+    strip nobody is watching is worse. The screen says what was looked in and
+    what could not be answered about, which the sentence alone does not.
     """
     shown = opened_results(monkeypatch)
-    reader = Results(())
-    window = make_window(application, results=reader)
-    completed(window, a_report(albums=2, artists=1))
-    assert reader.reads == 1
-    assert shown == []
+    window = make_window(application, results=Results((), ticked=("Folk",)))
+    completed(window, a_report(albums=0, artists=0))
+    assert len(shown) == 1
+    assert "Folk" in shown[0].top.looked_in.text()
 
 
 def test_the_dialog_is_given_something_to_ask_with_where_there_is_one(

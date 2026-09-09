@@ -83,12 +83,14 @@ def test_a_run_that_found_things_writes_them_and_counts_them(application) -> Non
     assert found, "a run that wrote a file has something worth opening"
 
 
-def test_a_run_that_found_nothing_writes_nothing(application) -> None:
-    """An empty answer is not worth replacing a file over."""
+def test_a_run_that_found_nothing_still_writes_and_opens(application) -> None:
+    """Nothing missing is an answer about the library rather than an absence
+    of one, so it replaces the file and opens like any other. Ruled by Oliver
+    on 2026-09-09."""
     window = make_window(application)
     assert window._settled(a_report(albums=0, artists=0)) == (
         FOUND_NOTHING,
-        False,
+        True,
         True,
     )
 
@@ -131,7 +133,7 @@ def test_finding_nothing_still_says_what_went_unanswered(application) -> None:
     said, found, presented = window._settled(a_report(albums=0, artists=0, ambiguous=2))
     assert said.startswith(FOUND_NOTHING)
     assert "2 names matched more than one artist" in said
-    assert not found, "an empty answer opens nothing, caveat or no caveat"
+    assert found, "an empty answer is still an answer, so it opens"
     assert presented, "it still presents an answer, so the caveat belongs on it"
 
 

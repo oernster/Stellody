@@ -1041,22 +1041,32 @@ Verified by: `tests/ui/test_results_dialog.py::test_a_failed_expansion_says_so_a
 
 ---
 
-**FR-D33 A run that found nothing opens no dialog**
+**FR-D33 Every completed run opens its answer**
 
 Priority: Must
 
-Requirement: If a discovery run completes having found no candidate album and no
-candidate artist, then the window shall not open the results dialog.
+Requirement: If a discovery run completes, then the window shall write its
+answer and open the results screen on what was written, whether or not the run
+found any candidate album or candidate artist.
 
-Rationale: The unwanted sibling of FR-D28. An empty dialog says less than the
-sentence shown in its place, while still landing in front of whatever somebody
-had moved on to doing. What the status bar says in that case is unchanged, so
-this adds no requirement about it; FR-D16 already governs that.
+Rationale: This said the opposite until 2026-09-09, on the reasoning that an
+empty dialog says less than the sentence shown in its place. Ruled the other
+way by Oliver that morning, after two whole-library runs ended in one night
+with nothing in front of him. A run of an hour reporting into the status bar
+reports into a strip nobody is watching; a screen that opens says what the
+run looked in and how many artists it could not answer about, which the
+sentence alone does not carry. An empty screen is a poor screen; an hour of
+work with nothing to show for it is worse.
 
-Acceptance: Given a run that found nothing, when it completes, then no dialog
-opens and the status bar carries the message it carries today.
+Nothing missing IS an answer about the library rather than the absence of one,
+so it replaces the file exactly as any other completed run does. What the
+status bar says is unchanged, so this adds no requirement about it; FR-D16
+already governs that.
 
-Verified by: `tests/ui/test_results_dialog.py::test_a_run_that_found_nothing_shows_no_dialog`
+Acceptance: Given a run that found nothing, when it completes, then its answer
+is written and the results screen opens naming the genres it looked in.
+
+Verified by: `tests/ui/test_results_dialog.py::test_a_run_that_found_nothing_still_shows_its_screen`, `tests/ui/test_discovery_wiring.py::test_a_run_that_found_nothing_still_writes_and_opens`
 
 ---
 

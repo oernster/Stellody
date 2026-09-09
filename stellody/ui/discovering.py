@@ -281,8 +281,6 @@ class Discovering:
         # twice; the ones that read as complete are the ones that mislead.
         short_by = shortfall.sentence(report)
         albums, artists = _counted(report)
-        if not albums and not artists:
-            return FOUND_NOTHING + short_by, False, True
         if self._write_discovery is None:
             return FOUND_NOTHING + short_by, False, True
         try:
@@ -291,6 +289,14 @@ class Discovering:
             # An answer that could not be kept is not an answer presented,
             # so it carries neither the sentence nor the button.
             return COULD_NOT_WRITE.format(reason=trouble), False, False
+        # A run that found nothing missing still opens its screen. Ruled by
+        # Oliver on 2026-09-09, after two whole-library runs in one night
+        # ended with nothing in front of him: an empty screen is a poor
+        # screen, while an hour of work reporting into a strip nobody is
+        # watching is worse. It says what it looked in and what it could not
+        # answer about, which is more than the sentence alone carries.
+        if not albums and not artists:
+            return FOUND_NOTHING + short_by, True, True
         # Written first, then shown from what was written: the file is what a
         # later day would be shown from too, so showing anything else now
         # would be showing something nothing else can reproduce. FR-D28.
@@ -303,10 +309,13 @@ class Discovering:
     def show_discovery_results(self) -> None:
         """Open the results on what the discovery file holds.
 
-        Nothing opens where the file holds nothing, which is a run that found
-        nothing: an empty dialog says less than the sentence shown in its
-        place, while still landing in front of whatever somebody had moved on
-        to doing. FR-D33.
+        **Whatever it holds, including nothing.** A run that found nothing
+        used to open no screen, on the reasoning that an empty dialog says
+        less than a sentence in the status bar. Ruled the other way by Oliver
+        on 2026-09-09, after two whole-library runs ended in one night with
+        nothing in front of him: a run that took an hour reports into a strip
+        nobody is watching; an empty screen at least says what was looked
+        in and what could not be answered about. FR-D33.
 
         **Modal, ruled by Oliver on 2026-09-08.** It was modeless first, on the
         reasoning that an answer arriving minutes after the question should not
@@ -327,8 +336,6 @@ class Discovering:
         if self._discovery_results is None:
             return
         answer = self._discovery_results.last_run()
-        if answer.is_empty:
-            return
         asking = (
             None
             if self._expansion is None

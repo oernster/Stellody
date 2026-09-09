@@ -117,11 +117,6 @@ class LastRun:
     gaps: tuple[Gaps, ...] = ()
     ticked: tuple[str, ...] = ()
 
-    @property
-    def is_empty(self) -> bool:
-        """True where there is nothing worth opening a results screen for."""
-        return not self.gaps
-
 
 def catalogue_genres(stated: tuple[str, ...]) -> tuple[str, ...]:
     """What the catalogue's own genre names mean here, in catalogue order.
