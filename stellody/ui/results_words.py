@@ -163,6 +163,24 @@ def looked_in(ticked: tuple[str, ...]) -> str:
     )
 
 
+# What the pager under the answer says. The position is words rather than a
+# pair of arrows alone: two pictures say a page can be turned while saying
+# nothing about how much of the answer is left, which is the whole complaint
+# against one long list.
+PREVIOUS_PAGE = "Previous"
+NEXT_PAGE = "Next"
+WHERE_IN_THE_ANSWER = "Page {page} of {pages}"
+
+
+def where_in_the_answer(showing: int, pages: int) -> str:
+    """Which page is in front, counted the way a reader counts them.
+
+    From one rather than from nothing: the pages are held in a list and read
+    by a person, where only one of those two counts from zero.
+    """
+    return WHERE_IN_THE_ANSWER.format(page=showing + 1, pages=pages)
+
+
 def asking_about(names: tuple[str, ...]) -> str:
     """What the bar says while these artists are being looked up."""
     if len(names) == ONE:

@@ -68,7 +68,8 @@ from stellody.ui.dialogs import (
     title_label,
     wearing,
 )
-from stellody.ui.results_columns import ResultsColumns
+from stellody.ui.results_pager import ResultsPager
+from stellody.ui.results_pages import ResultsPages
 from stellody.ui.results_room import (
     DIALOG_HEIGHT_PX,
     DIALOG_WIDTH_PX,
@@ -156,17 +157,21 @@ class ResultsDialog(FirstStopDialog):
         self.key = self.top.key
         self.asking_bar = self.top.bar
         outer.addWidget(self.top)
-        # The columns and the note of where every candidate landed arrive
+        # The pages and the note of where every candidate landed arrive
         # together, since one is only useful with the other. How many columns
-        # follows the width the dialog just took, so the answer is spread over
-        # the room there is rather than over a number somebody guessed.
-        self.columns = ResultsColumns(gaps, self._colour, room.width(), self)
-        self._rows = self.columns.rows
-        self.sources = self.columns.sources
-        for tree in self.columns.trees:
+        # and how long a page follow the room the dialog just took, so the
+        # answer is spread over the room there is rather than over numbers
+        # somebody guessed.
+        self.pages = ResultsPages(gaps, self._colour, room, self)
+        self._rows = self.pages.rows
+        self.sources = self.pages.sources
+        for tree in self.pages.trees:
             tree.itemExpanded.connect(self.opened)
             tree.itemChanged.connect(self.ticks_changed)
-        outer.addWidget(self.columns)
+        outer.addWidget(self.pages)
+        self.pager = ResultsPager(len(self.pages.pages), self)
+        self.pager.turned.connect(self.turn_to)
+        outer.addWidget(self.pager)
         outer.addLayout(self._buttons())
         self._listen()
         self._ticks_changed()
@@ -233,6 +238,16 @@ class ResultsDialog(FirstStopDialog):
         button.clicked.connect(pressed)
         return button
 
+    def turn_to(self, at: int) -> None:
+        """Show this page; say from there what can be done next.
+
+        The pager is told rather than left to work it out, so the words and
+        the picture always describe the page actually in front: the two would
+        otherwise be two accounts of where somebody is.
+        """
+        self.pages.show_page(at)
+        self.pager.showing(self.pages.showing)
+
     def ticks_changed(self, _item=None, _column: int = 0) -> None:
         """Qt hands a row and a column; what changed does not matter here."""
         self._ticks_changed()
@@ -244,14 +259,14 @@ class ResultsDialog(FirstStopDialog):
         press that can only report emptiness is a press worth preventing.
         FR-S04.
         """
-        ready = self._shopping is not None and anything_ticked(self.columns.trees)
+        ready = self._shopping is not None and anything_ticked(self.pages.trees)
         self.copy_button.setEnabled(ready)
         self.shops_button.setEnabled(ready)
         self.copy_button.setText(COPY_LABEL)
 
     def ticked(self) -> tuple:
         """The albums somebody has ticked, in the order they are drawn."""
-        return ticked_albums(self.columns.trees)
+        return ticked_albums(self.pages.trees)
 
     def copy_ticked(self) -> None:
         """Put the ticked albums on the clipboard as text. FR-S14."""

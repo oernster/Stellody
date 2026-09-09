@@ -24,6 +24,13 @@ is a division: the room divided by what one column has to be to stay readable.
 That width is not a number of its own; it is the ceiling divided by the number
 of columns a 13 inch display is meant to show, so the two cannot drift apart.
 One column is the answer at the floor, three at the cap.
+
+**The pages follow the height the same way.** Three columns of a whole library
+is three lists nobody reaches the end of, so the answer is dealt a page at a
+time: a page holds as many source artists as its columns can show without
+being scrolled. How many rows that is comes from the height exactly as the
+columns come from the width, so a laptop panel gets a shorter page rather than
+the same page with a scrollbar on it.
 """
 
 from __future__ import annotations
@@ -67,6 +74,24 @@ THIRTEEN_INCH_HEIGHT_PX = 1080
 # which is why the figures above come from a real screen.
 COLUMNS_AT_THE_CEILING = 3
 COLUMN_PX = THIRTEEN_INCH_WIDTH_PX // COLUMNS_AT_THE_CEILING
+# What the dialog spends on everything that is not the list: the title, the
+# genres it looked in, the three line key, the strip that says what is being
+# asked, the pager and the row of controls. It does not grow with the window,
+# so it is taken off the height once rather than scaled.
+#
+# STATED RATHER THAN MEASURED; it cannot be measured here either, since the
+# platform reports zero font families, so every label draws at the height of
+# one fallback face. Being wrong costs a page with room to spare at the foot
+# or a column that scrolls a little, which is what the whole answer did before
+# it was paged at all. It is never an error, so a figure checked on a real
+# screen is the right way to correct it.
+FURNITURE_PX = 300
+# How many rows a column shows at the ceiling. The same shape of decision as
+# the columns above: the number a 13 inch display is meant to hold is stated,
+# and what one row costs follows from it, so there is one number to argue with
+# rather than two that can disagree.
+ROWS_AT_THE_CEILING = 30
+ROW_PX = (THIRTEEN_INCH_HEIGHT_PX - FURNITURE_PX) // ROWS_AT_THE_CEILING
 
 
 def _between(room: int, share: float, floor: int, ceiling: int) -> int:
@@ -103,6 +128,16 @@ def columns_for(width: int) -> int:
     return max(1, width // COLUMN_PX)
 
 
+def rows_for(height: int) -> int:
+    """How many rows a column can show in a dialog this tall.
+
+    Never none, for the reason `columns_for` is never none: a dialog too short
+    to hold a row still has to show its answer, so it shows one and scrolls,
+    which is what every column did before there were pages at all.
+    """
+    return max(1, (height - FURNITURE_PX) // ROW_PX)
+
+
 def height_of(found: Gaps) -> int:
     """How many rows a source artist occupies once it is opened.
 
@@ -132,7 +167,53 @@ def dealt_into_columns(
     dealt: list[list[int]] = [[] for _ in range(columns)]
     heights = [0] * columns
     for at, found in enumerate(gaps):
-        into = heights.index(min(heights))
+        into = _shortest(heights)
         dealt[into].append(at)
         heights[into] += height_of(found)
     return tuple(tuple(column) for column in dealt)
+
+
+def _shortest(heights: list[int]) -> int:
+    """Which column is shortest at the moment, by the earliest where two tie.
+
+    Its own name because two callers make the same choice, one placing an
+    artist inside a page and one asking whether a page still has room. A page
+    decided by one rule and dealt by another would put an artist somewhere the
+    page had not counted on.
+    """
+    return heights.index(min(heights))
+
+
+def paged(
+    gaps: tuple[Gaps, ...], columns: int, rows: int
+) -> tuple[tuple[Gaps, ...], ...]:
+    """The artists split into pages, each page filling its columns once.
+
+    A page takes artists until the column that would receive the next one has
+    no room left for it, then a new page starts. Since the choice of column is
+    the one `dealt_into_columns` will make over the same artists in the same
+    order, the page it fills is the page it counted.
+
+    **An artist taller than a whole column is not left out.** It goes on a page
+    of its own and that column scrolls, which is one artist to scroll rather
+    than the library. Dropping it or splitting it would be answering a
+    different question than the run asked.
+
+    Always at least one page, even an empty one: a run that found nobody must
+    still be a screen rather than nothing.
+    """
+    pages: list[tuple[Gaps, ...]] = []
+    page: list[Gaps] = []
+    heights = [0] * columns
+    for found in gaps:
+        tall = height_of(found)
+        into = _shortest(heights)
+        if page and heights[into] + tall > rows:
+            pages.append(tuple(page))
+            page, heights = [], [0] * columns
+            into = _shortest(heights)
+        page.append(found)
+        heights[into] += tall
+    if page:
+        pages.append(tuple(page))
+    return tuple(pages) or ((),)

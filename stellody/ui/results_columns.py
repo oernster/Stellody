@@ -46,6 +46,7 @@ class ResultsColumns(QWidget):
         colour: Palette,
         width: int,
         parent: QWidget | None = None,
+        rows: CandidateRows | None = None,
     ) -> None:
         super().__init__(parent)
         # A container is never a stop on the keyboard ring; the lists in it
@@ -54,7 +55,12 @@ class ResultsColumns(QWidget):
         # Every candidate artist's rows, filled by all the columns together:
         # the same candidate can sit under two source artists that were dealt
         # into different columns; both rows are owed the same answer.
-        self.rows: CandidateRows = {}
+        #
+        # Handed one where there are pages, since the same candidate turns up
+        # under artists dealt onto different pages and an answer that reached
+        # only the page somebody was looking at would leave the other row
+        # saying nothing for ever.
+        self.rows: CandidateRows = {} if rows is None else rows
         self.trees: tuple[QTreeWidget, ...] = ()
         self._settling = False
         row = QHBoxLayout(self)

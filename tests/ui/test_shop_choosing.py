@@ -220,8 +220,8 @@ def test_the_ticks_and_the_controls_are_stops_on_the_ring(application) -> None:
     for control in (dialog.copy_button, dialog.shops_button, dialog.close_button):
         assert control.focusPolicy() is not control.focusPolicy().NoFocus
     assert (
-        dialog.columns.trees[0].focusPolicy()
-        is not dialog.columns.trees[0].focusPolicy().NoFocus
+        dialog.pages.trees[0].focusPolicy()
+        is not dialog.pages.trees[0].focusPolicy().NoFocus
     )
 
 

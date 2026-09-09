@@ -1313,6 +1313,59 @@ Verified by: `tests/ui/test_results_reading.py::TestSayingWhyInWords`, `tests/ui
 
 ---
 
+**FR-D49 The answer is turned a page at a time**
+
+Priority: Must
+
+Requirement: The results dialog shall deal its source artists into pages, a
+page holding as many as its columns can show without being scrolled, where how
+many rows a column shows follows from the height of the dialog. It shall show
+one page at a time with two controls beneath the answer, one for each
+direction, each wearing its own artwork struck through where that direction
+leads nowhere; between them shall stand words saying which page of how many is
+in front. An artist taller than a whole column shall be given a page rather than
+dropped or divided. Every page shall be built when the dialog opens and kept,
+so that an album ticked on one page is still ticked after another has been
+looked at.
+
+Rationale: Dealing the answer into columns fixed a run over two genres. A run
+over a whole library answers with hundreds of source artists, so three columns
+of it are three lists nobody reaches the end of: a scrollbar says how much is
+left without saying where in the answer somebody is.
+
+The rows a column shows follow the height exactly as the columns follow the
+width, so a laptop panel gets a shorter page rather than the same page with a
+scrollbar on it. The figure for what one row costs is stated rather than
+measured; it cannot be measured here, since the offscreen platform reports no
+font families at all, so every label draws at one fallback height. Being wrong
+costs a page with room to spare at the foot or a column that scrolls a little,
+which is what the whole answer did before it was paged; it is never an error,
+so a figure checked on a real screen is how to correct it.
+
+Every page is built at once rather than on the way to it, because a tick is
+held by the row it is on: a page rebuilt on return would quietly drop whatever
+was ticked on it, where what is ticked is exactly what the shop controls
+beneath are for. Nothing is fetched either way, since a page holds what the run has
+already answered.
+
+The unusable direction is struck through rather than merely greyed, which is
+the rule the sweep in the discovery dialog and every switch along the foot of
+the window follow: a spent control says a press does nothing, while the cross
+says which way is left to go. Both directions are struck through where there
+is one page, so the pager holds its place rather than arriving with a long
+answer and moving everything else on screen.
+
+Acceptance: Given more source artists than a page holds, when the dialog
+opens, then the first page is in front and the way back is struck through;
+given the last page, then the way on is struck through; given an album ticked
+on one page, when another page has been looked at, then it is still ticked and
+still goes to a shop; given an artist taller than a column, then it has a page
+of its own; given a run that found nobody, then there is still one page.
+
+Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_are_stops_on_the_ring`
+
+---
+
 **FR-D45 The answer is dealt across the width of the screen**
 
 Priority: Must
