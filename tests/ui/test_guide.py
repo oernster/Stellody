@@ -8,6 +8,9 @@ the one failure a help screen can have that is worse than not existing.
 
 from __future__ import annotations
 
+import ast
+import inspect
+import pathlib
 import re
 
 import pytest
@@ -69,6 +72,31 @@ _EXPLAINED_GETTERS = tuple(
     getter for getter in _ICON_GETTERS if getter.__name__ not in _NOT_A_CONTROL
 )
 
+# The getters above are only half of the artwork. A dialog reaches its pictures
+# by NAME through `resources.find_asset`, which no getter mentions, so the
+# sweep could not see one: the two page controls, the sweep that ticks every
+# genre, the two shop controls and the Close every dialog wears were all
+# outside it. Reported by Oliver on 2026-09-09, who asked why the guide said
+# nothing about the paging.
+#
+# That is the same failure the getter sweep was written to end, arriving by a
+# route the getter sweep does not cover. So the second half is discovered the
+# same way: every picture NAMED in the interface layer, read out of the source
+# rather than listed here, must be one the guide draws.
+_UI_SOURCE = pathlib.Path(inspect.getfile(GuideDialog)).parent
+
+
+def _named_pictures() -> set[str]:
+    """Every image file the interface layer names for itself."""
+    found: set[str] = set()
+    for module in sorted(_UI_SOURCE.glob("*.py")):
+        tree = ast.parse(module.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            named = isinstance(node, ast.Constant) and isinstance(node.value, str)
+            if named and node.value.endswith(".png"):
+                found.add(node.value)
+    return found
+
 
 class TestWhatItNames:
     def test_it_leads_with_the_application_by_name(self) -> None:
@@ -80,13 +108,15 @@ class TestWhatItNames:
 
         Every source is checked against the resource lookup rather than
         against a list written here, since a list would be one more thing to
-        keep in step.
+        keep in step. The window reaches its artwork two ways, so both are the
+        universe: the getters on `resources` plus the files the interface
+        names for itself.
         """
         drawn = {
             path.name
             for path in (getter() for getter in _ICON_GETTERS)
             if path is not None
-        }
+        } | _named_pictures()
         assert _sources(guide_html()) <= drawn
 
     @pytest.mark.parametrize(
@@ -100,6 +130,23 @@ class TestWhatItNames:
         if path is None:
             pytest.skip("that icon is not bundled in this checkout")
         assert path.name in _sources(guide_html())
+
+    def test_every_picture_the_dialogs_name_is_explained_too(self) -> None:
+        """The other half of the sweep: artwork reached by name, not by getter.
+
+        A dialog asks `find_asset` for a file, so nothing in `resources`
+        mentions it and the getter sweep above cannot see it. The paging
+        controls lived in exactly that gap and the guide said nothing about
+        them until Oliver asked. Read out of the source, so a picture named by
+        a dialog written next year is explained by default.
+        """
+        drawn = _sources(guide_html())
+        missing = sorted(name for name in _named_pictures() if name not in drawn)
+        assert not missing, f"named in the interface, absent from the guide: {missing}"
+
+    def test_the_interface_really_does_name_pictures_this_way(self) -> None:
+        """Guard the guard: a scan finding nothing would pass the test above."""
+        assert len(_named_pictures()) >= 6, "the source scan found nothing to check"
 
     @pytest.mark.parametrize(
         "wording",

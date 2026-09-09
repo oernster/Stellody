@@ -1181,6 +1181,21 @@ a guide entry forgets the list entry with it. Held now by planting the defect
 that shipped, the guide drawing no discovery icon, then reading the case named
 `discover_icon_path` fail.
 
+**The getters are only half the artwork, which cost a second miss.** A dialog
+asks `resources.find_asset` for a file by name, so nothing in `resources`
+mentions it and a sweep over the getters cannot see it. Six pictures lived in
+that gap: the two paging controls, the sweep that ticks every genre, the two
+shop controls and the Close every dialog wears. Reported by Oliver on
+2026-09-09, who asked why the guide said nothing about the paging, which is
+the same defect as the discovery button arriving by a route the first sweep
+does not cover. The second half is therefore discovered the same way rather
+than listed: `_named_pictures` parses every module in `stellody/ui` and
+collects each `.png` the source names, then asserts the guide draws all of
+them. It carries no exemptions at all, every one of the six being a control
+somebody presses. A companion case asserts the scan finds something, since a
+scan returning nothing would satisfy the sweep while checking nothing. Proved
+by taking the paging entry back out of the guide and reading it fail.
+
 **Under the furniture sit the rules no single screen can state.** Files are only
 ever read, folders group while tags name, a correction differs from a stated
 tag, ratings follow the album rather than the file. Each is stated elsewhere in

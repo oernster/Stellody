@@ -33,10 +33,18 @@ from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
 from stellody.ui.auto_scroller import AutoScroller
-from stellody.ui.dialogs import FirstStopDialog, close_row
-from stellody.ui.discovery_dialog import FIND_LABEL
+from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, close_row
+from stellody.ui.discovery_dialog import FIND_LABEL, SELECT_ALL_ICON
 from stellody.ui.layout_advice import layout_html
-from stellody.ui.results_foot import COPY_LABEL, SHOPS_LABEL
+from stellody.ui.results_foot import (
+    COPY_ICON,
+    COPY_LABEL,
+    SHOP_ICON,
+    SHOPS_LABEL,
+)
+from stellody.ui.results_pager import NEXT_ICON as NEXT_PAGE_ICON
+from stellody.ui.results_pager import PREVIOUS_ICON as PREVIOUS_PAGE_ICON
+from stellody.ui.results_words import NEXT_PAGE, PREVIOUS_PAGE
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 from stellody.ui.widgets import ReadingPane
 
@@ -198,25 +206,57 @@ def _discovery_html() -> str:
         "asked about and how many are left; the right hand end of the bar "
         "says roughly how long remains, as does the line along the foot of "
         "the window. Nothing about you is sent, only artist names.</p>"
+        "<p>"
+        + _img(resources.find_asset(SELECT_ALL_ICON))
+        + "The catalogue holds 34 boxes, so the control at the foot of that "
+        "dialog ticks every one of them in a single press. It says which of "
+        "the two things a press would do, offering to clear them all once "
+        "everything is ticked.</p>"
         f"<p><b>Stopping.</b> While a run is going the button wears a cross "
         f"and its tooltip reads <b>{STOP_DISCOVERY_TOOLTIP}</b>. One press "
         "stops it there and then, with nothing to confirm; the request in "
-        "flight is dropped rather than waited out. Nothing gathered so far is "
-        "kept and the last run's results are left exactly as they were.</p>"
-        "<p><b>What it found.</b> A run that found something opens a list. A "
+        "flight is dropped rather than waited out. The last run's results are "
+        "left exactly as they were. What the catalogues had already answered "
+        "is kept rather than thrown away, so starting again asks only for "
+        "what is still missing.</p>"
+        "<p><b>What it found.</b> Every run that finishes opens its answer, "
+        "including one that found nothing: an empty screen still says which "
+        "genres were looked in, which a line along the top names. A "
         "<b>blue</b> name is an artist you hold, with albums by them you do "
         "not underneath. An <b>amber</b> name is an artist you hold nothing "
         "by; open one and its albums are fetched then, which takes a few "
         "seconds, so the strip at the top says who is being asked about. "
         "Every other line is an album title. Nothing in the list is ever a "
         "track.</p>"
-        f"<p><b>Getting hold of it.</b> Tick any albums you want, then press "
+        "<p><b>Where a name could not be answered for</b>, a button beside "
+        "the message at the foot of the window carries the count of those "
+        "artists. Pressing it lists them under what went wrong: the "
+        "catalogue refused; it knew nobody by that name; it knew several and "
+        "none of your tags says which is yours.</p>"
+        "<p>"
+        + _img(resources.find_asset(PREVIOUS_PAGE_ICON))
+        + _img(resources.find_asset(NEXT_PAGE_ICON))
+        + "<b>Turning the answer.</b> A whole library answers with hundreds "
+        "of artists, so the answer is dealt across the width of the screen "
+        f"and turned a page at a time. <b>{PREVIOUS_PAGE}</b> and "
+        f"<b>{NEXT_PAGE}</b> sit under it with the page you are on between "
+        "them; the direction that leads nowhere wears its picture struck "
+        "through. Albums you tick stay ticked as you turn the pages, so a "
+        "whole answer can go to a shop together.</p>"
+        "<p>"
+        + _img(resources.find_asset(SHOP_ICON))
+        + _img(resources.find_asset(COPY_ICON))
+        + f"<b>Getting hold of it.</b> Tick any albums you want, then press "
         f"<b>{SHOPS_LABEL}</b> to choose a shop: your browser opens that "
         "shop's own search for each ticked album, one tab apiece; more than "
         "five asks you first. The shops screen stays open so prices can "
         f"be compared across several. <b>{COPY_LABEL}</b> puts the ticked "
         "albums on the clipboard instead, one line each, for anywhere else "
         "you want to paste them.</p>"
+        "<p>"
+        + _img(resources.find_asset(CLOSE_ICON))
+        + "Every screen here is left by the control wearing that picture, "
+        "which is the same Close on every dialog in the application.</p>"
         f"<p>{NO_SHOP_AFFILIATION}</p>"
     )
 
