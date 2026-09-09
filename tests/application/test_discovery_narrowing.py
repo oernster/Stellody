@@ -99,6 +99,19 @@ def test_what_a_candidate_plays_is_kept_for_the_next_run() -> None:
     assert memory.kept == [{"cray": ("Blues",), "wolf": ("Techno",)}]
 
 
+def test_each_candidate_is_written_down_as_it_is_answered() -> None:
+    """The long half of a run had the most to lose and lost it all at once.
+
+    Reported by Oliver on 2026-09-09: a run of fifty minutes kept everything
+    in hand until it ended. So a candidate's answer is noted the moment it
+    arrives, ahead of the whole cache being kept at the end.
+    """
+    memory = Memory()
+    run, _, report = narrowing_run(memory)
+    run.run(one_blues_artist(), ("Blues",), report, never)
+    assert memory.noted == [("cray", ("Blues",)), ("wolf", ("Techno",))]
+
+
 def test_what_was_remembered_is_not_asked_about_again() -> None:
     """The whole point of keeping it: a second run over the same ground."""
     memory = Memory({"cray": ("Blues",), "wolf": ("Techno",)})

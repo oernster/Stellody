@@ -134,10 +134,15 @@ class Memory:
     def __init__(self, known: dict[str, tuple[str, ...]] | None = None) -> None:
         self.known = known or {}
         self.kept: list[dict[str, tuple[str, ...]]] = []
+        self.noted: list[tuple[str, tuple[str, ...]]] = []
 
     def remembered(self) -> dict[str, tuple[str, ...]]:
         """A copy, so a run cannot edit this fake's own answer under it."""
         return dict(self.known)
+
+    def note(self, identifier: str, genres: tuple[str, ...]) -> None:
+        """Record one candidate's answer as it arrives."""
+        self.noted.append((identifier, genres))
 
     def remember(self, known: dict[str, tuple[str, ...]]) -> None:
         """Record what the run learned."""

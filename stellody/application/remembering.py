@@ -63,6 +63,14 @@ MEMORY_LIFE_S = MEMORY_LIFE_DAYS * SECONDS_A_DAY
 # test can stand a month away from now without waiting one.
 Clock = Callable[[], float]
 
+# The three questions a catalogue is asked, named once. They are the keys the
+# recollection holds its answers under, the prefix each answer's stamp carries
+# and the word a noted answer names itself by, so a file can put an answer back
+# where it came from. Three places that must agree, hence one name each.
+IDENTIFIERS = "identifiers"
+ALBUMS = "albums"
+SIMILAR = "similar"
+
 
 @dataclass(slots=True)
 class Recollection:
@@ -91,13 +99,30 @@ class Recollection:
 class CatalogueMemory(Protocol):
     """Keeps a recollection between one run and the next.
 
-    Read once when a run starts and written once when it ends, which is the
-    shape the genre memory beside it already has: a run that wrote after every
-    answer would write the same file two hundred times.
+    Read once when a run starts and written whole once when it ends, since a
+    run that rewrote the whole file after every answer would write the same
+    file two hundred times. Each answer is ALSO noted on its own as it
+    arrives, which is what makes the whole file's lateness affordable: see
+    `note` below.
     """
 
     def remembered(self) -> Recollection:
         """What is already known; an empty recollection where nothing is."""
+        ...
+
+    def note(self, kind: str, key: str, answer: object, when: float) -> None:
+        """Keep ONE answer now, before whatever learned it can be lost.
+
+        `remember` is enough for a run that ends. A run that dies never
+        reaches it; everything it paid for dies with it: reported by
+        Oliver on 2026-09-09 after an overnight run of fifty minutes. So an
+        answer is written down the moment it arrives as well.
+
+        The kind is one of the three named at the top of this module, so
+        whoever keeps this can put the answer back where it came from.
+        Failing to keep it is not an error, for the reason `remember` is not:
+        what it costs is requests.
+        """
         ...
 
     def remember(self, kept: Recollection) -> None:
@@ -115,6 +140,9 @@ class NothingKept:
     def remembered(self) -> Recollection:
         """Nothing was kept, because nothing is kept."""
         return Recollection()
+
+    def note(self, kind: str, key: str, answer: object, when: float) -> None:
+        """Drop it, deliberately."""
 
     def remember(self, kept: Recollection) -> None:
         """Drop it, deliberately."""
@@ -136,32 +164,43 @@ class RememberingCatalogue:
     catalogue: CatalogueSource
     kept: Recollection
     now: Clock = time.time
+    # Where each answer is noted as it arrives. The same memory the run hands
+    # its recollection to at the end, rather than a second collaborator: one
+    # thing keeps what is learned, whether it is keeping one answer or all of
+    # them. A caller with nowhere to keep anything leaves it alone.
+    keeper: CatalogueMemory = field(default_factory=NothingKept)
 
     def _standing(self, kind: str, key: str, held: dict) -> bool:
         """Whether this answer is both known and still young enough to use."""
         return key in held and self.kept.standing(f"{kind}:{key}", self.now())
 
     def _kept(self, kind: str, key: str, held: dict, found: object) -> None:
-        """Write an answer down, with when it was written."""
+        """Write an answer down, with when it was written.
+
+        In hand and on the disk in the same breath, so a run that dies between
+        this answer and the next keeps this one.
+        """
+        when = self.now()
         held[key] = found
-        self.kept.written_at[f"{kind}:{key}"] = self.now()
+        self.kept.written_at[f"{kind}:{key}"] = when
+        self.keeper.note(kind, key, found, when)
 
     def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
         """Who this name means, from memory where it is already known."""
-        if self._standing("identifiers", name, self.kept.identifiers):
+        if self._standing(IDENTIFIERS, name, self.kept.identifiers):
             return self.kept.identifiers[name]
         found = self.catalogue.identify(name, wanted)
-        self._kept("identifiers", name, self.kept.identifiers, found)
+        self._kept(IDENTIFIERS, name, self.kept.identifiers, found)
         return found
 
     def albums_of(
         self, identifier: str, wanted: Wanted = always_wanted
     ) -> tuple[ReleaseGroup, ...]:
         """What this artist released, from memory where it is already known."""
-        if self._standing("albums", identifier, self.kept.albums):
+        if self._standing(ALBUMS, identifier, self.kept.albums):
             return self.kept.albums[identifier]
         found = self.catalogue.albums_of(identifier, wanted)
-        self._kept("albums", identifier, self.kept.albums, found)
+        self._kept(ALBUMS, identifier, self.kept.albums, found)
         return found
 
     def genres_of(
@@ -183,16 +222,20 @@ class RememberingSimilarity:
     similarity: SimilaritySource
     kept: Recollection
     now: Clock = time.time
+    # Where each answer is noted as it arrives, exactly as above.
+    keeper: CatalogueMemory = field(default_factory=NothingKept)
 
     def similar_to(
         self, identifier: str, most: int, wanted: Wanted = always_wanted
     ) -> tuple[SimilarArtist, ...]:
         """Who resembles this artist, from memory where it is already known."""
         question = similar_key(identifier, most)
-        stamp = f"similar:{question}"
+        stamp = f"{SIMILAR}:{question}"
         if question in self.kept.similar and self.kept.standing(stamp, self.now()):
             return self.kept.similar[question]
         found = self.similarity.similar_to(identifier, most, wanted)
+        when = self.now()
         self.kept.similar[question] = found
-        self.kept.written_at[stamp] = self.now()
+        self.kept.written_at[stamp] = when
+        self.keeper.note(SIMILAR, question, found, when)
         return found

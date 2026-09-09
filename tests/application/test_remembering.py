@@ -63,10 +63,15 @@ class Keeping:
     def __init__(self, kept: Recollection | None = None) -> None:
         self.kept = kept if kept is not None else Recollection()
         self.written = 0
+        self.noted: list[tuple[str, str, object, float]] = []
 
     def remembered(self) -> Recollection:
         """What is known so far."""
         return self.kept
+
+    def note(self, kind: str, key: str, answer: object, when: float) -> None:
+        """Record one answer as it arrives, in the order they arrived."""
+        self.noted.append((kind, key, answer, when))
 
     def remember(self, kept: Recollection) -> None:
         """Hold on to it, counting how often it was handed over."""
@@ -265,3 +270,58 @@ class TestHowLongAnAnswerStands:
         """Stated rather than read back off the constant, since a test that
         reads it agrees with every value it could hold."""
         assert MEMORY_LIFE_S == 30 * 86400
+
+
+class TestAnAnswerIsKeptTheMomentItArrives:
+    """Reported by Oliver on 2026-09-09, after an overnight run.
+
+    Everything above keeps a recollection in hand and hands it over when the
+    run ends. A run whose process dies never ends, so each answer says so as
+    it arrives as well; what happens to it then belongs to whoever is keeping
+    it, which is why these ask only that it was said.
+    """
+
+    def test_an_identity_is_noted_as_it_is_answered(self) -> None:
+        keeper = Keeping()
+        catalogue = Catalogue(identities={"U2": ("u2-id",)})
+        RememberingCatalogue(catalogue, keeper.kept, _now, keeper).identify("U2")
+        assert keeper.noted == [("identifiers", "U2", ("u2-id",), NOW)]
+
+    def test_an_albums_answer_is_noted_as_it_is_answered(self) -> None:
+        keeper = Keeping()
+        held = (ReleaseGroup(title="Moanin'"),)
+        catalogue = Catalogue(albums={WOLF: held})
+        RememberingCatalogue(catalogue, keeper.kept, _now, keeper).albums_of(WOLF)
+        assert keeper.noted == [("albums", WOLF, held, NOW)]
+
+    def test_a_similarity_answer_is_noted_as_it_is_answered(self) -> None:
+        keeper = Keeping()
+        RememberingSimilarity(Similarity(), keeper.kept, _now, keeper).similar_to(
+            WOLF, 5
+        )
+        assert keeper.noted == [("similar", similar_key(WOLF, 5), (), NOW)]
+
+    def test_an_answer_that_came_from_memory_is_not_noted_again(self) -> None:
+        """It is already written down; noting it would say the same thing."""
+        keeper = Keeping(
+            _stamped(Recollection(identifiers={"U2": ("u2-id",)}), "identifiers:U2")
+        )
+        RememberingCatalogue(Catalogue(), keeper.kept, _now, keeper).identify("U2")
+        assert keeper.noted == []
+
+    def test_a_run_notes_every_answer_it_pays_for(self) -> None:
+        """End to end: the run hands its memory down rather than holding it."""
+        keeper = Keeping()
+        catalogue = Catalogue(identities={"U2": ("u2-id",)})
+        _run(keeper, catalogue, Similarity()).run(
+            (make_album("U2", "The Joshua Tree"),), ROCK, nothing, never
+        )
+        assert [kind for kind, _key, _answer, _when in keeper.noted] == [
+            "identifiers",
+            "albums",
+            "similar",
+        ]
+
+    def test_a_run_with_nowhere_to_keep_anything_still_runs(self) -> None:
+        """The null memory answers `note` by dropping it, like the rest."""
+        NothingKept().note("identifiers", "U2", ("u2-id",), NOW)

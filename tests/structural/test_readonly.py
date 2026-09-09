@@ -27,12 +27,23 @@ WRITE_PERMITTED = frozenset(
         "stellody/infrastructure/diary.py",
         "stellody/infrastructure/startup_log.py",
         "stellody/infrastructure/switch_reset.py",
+        # Setting a damaged library database aside and dropping the write
+        # ahead log beside it, so the application still starts. It owns
+        # Stellody's own store as much as store.py does; it was invisible
+        # here until 2026-09-09 only because removing a file was not counted
+        # as writing to disk.
+        "stellody/infrastructure/opening.py",
         "stellody/infrastructure/artwork.py",
         "stellody/infrastructure/waveform.py",
         # What a discovery run found, plus what it learned about candidates so a
         # later run asks about less. Both sit in Stellody's own directory
         # beside the database; neither goes anywhere near the music.
         "stellody/infrastructure/discovery_file.py",
+        # The running record each of those memories keeps: one line appended
+        # as each answer arrives, so a run that dies keeps what it paid for.
+        # It is handed the path it writes to and holds no idea of its own
+        # about where anything lives, exactly as atomic.py below does not.
+        "stellody/infrastructure/journal.py",
         # The write itself: a temporary file beside the target, then a rename
         # over it. It was permitted here as part of discovery_file.py and was
         # lifted out when the shop list came to need the same care, so this
@@ -89,6 +100,10 @@ PATH_WRITE_METHODS = frozenset(
         "rmdir",
         "symlink_to",
         "hardlink_to",
+        # Removing a file is destroying it, which is the one write this set
+        # left out. Noticed on 2026-09-09, when a module that drops a file it
+        # has finished with passed this guard in silence.
+        "unlink",
     }
 )
 
@@ -109,9 +124,21 @@ def _imports_tag_library(tree: ast.Module) -> bool:
     return False
 
 
+def _mode_argument(call: ast.Call) -> ast.expr | None:
+    """Where the mode sits in this call, which the shape of the call decides.
+
+    `open(path, mode)` carries it second; `path.open(mode)` carries it first.
+    Reading only the first shape is how a module that opened a path for
+    appending stayed invisible to this guard until 2026-09-09, when the
+    running record was written and this said nothing about it.
+    """
+    wanted = 1 if isinstance(call.func, ast.Name) else 0
+    return call.args[wanted] if len(call.args) > wanted else None
+
+
 def _open_mode(call: ast.Call) -> str | None:
     """The mode string of an open() style call, when it is a literal."""
-    positional = call.args[1] if len(call.args) >= 2 else None
+    positional = _mode_argument(call)
     if isinstance(positional, ast.Constant) and isinstance(positional.value, str):
         return positional.value
     for keyword in call.keywords:

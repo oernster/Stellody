@@ -1222,6 +1222,44 @@ Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::
 
 ---
 
+**FR-D48 An answer is written down the moment it arrives**
+
+Priority: Must
+
+Requirement: Each answer a catalogue gives and each answer about what a
+candidate plays shall be written to a running record as it arrives and forced
+to the disk. Both memories shall be read as their file plus that record; each
+record shall be dropped only once its own file has been written with what it
+held.
+
+Rationale: Reported by Oliver on 2026-09-09, having left a run going overnight.
+Both memories were read once when a run started and written once when it
+ended, so everything a run had paid for lived in memory until the last
+instant: a run of fifty minutes held 581 answers that a crash, a power cut or
+a closed window would have taken in full. That is a run's whole cost held on a
+single line of code being reached.
+
+The record is appended rather than rewritten, because an append cannot damage
+what is already in the file, so the worst a death mid-write can cost is the
+line it was writing. It is forced to the disk rather than merely written,
+since a buffered write is a record only the living process can see, which is
+the one case this exists for. The whole file is still written at the end,
+which is what keeps the record short; reading the two together is what makes
+the file's lateness cost nothing.
+
+The record is dropped only after its file has been written. Clearing it beside
+a write that failed would throw away the very answers it exists to protect.
+
+Acceptance: Given answers noted by a run that never finished, when a later run
+starts, then it knows every one of them and asks about none of them; given a
+record whose last line is half written, then every line before it is still
+known; given a memory whose file cannot be written, then its record survives;
+given a memory whose file is written, then its record is gone.
+
+Verified by: `tests/infrastructure/test_a_dead_run_keeps_what_it_learned.py`, `tests/infrastructure/test_journal.py`, `tests/application/test_remembering.py::TestAnAnswerIsKeptTheMomentItArrives`, `tests/application/test_discovery_narrowing.py::test_each_candidate_is_written_down_as_it_is_answered`
+
+---
+
 **FR-D47 A failure is said in words somebody can act on**
 
 Priority: Must
@@ -1602,7 +1640,8 @@ client.
 
 Priority: Must
 
-Requirement: The discovery file and the candidate genre cache shall be written
+Requirement: The discovery file, the candidate genre cache, the catalogue
+memory and the running record each of those memories keeps shall be written
 inside Stellody's own data directory and nowhere else.
 
 Verification: a structural test asserting the discovery modules resolve their

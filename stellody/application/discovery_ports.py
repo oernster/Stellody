@@ -140,6 +140,15 @@ class GenreMemory(Protocol):
         """What is already known; empty where nothing is."""
         ...
 
+    def note(self, identifier: str, genres: tuple[str, ...]) -> None:
+        """Keep ONE candidate's answer now, before the run can be lost.
+
+        Asking about candidates is the long half of a run, so it is the half
+        with the most to lose: `remember` below is reached only by a run that
+        ends. Failing to keep it is not an error, for the same reason.
+        """
+        ...
+
     def remember(self, known: dict[str, tuple[str, ...]]) -> None:
         """Keep this for the next run. Failing to keep it is not an error."""
         ...
@@ -155,6 +164,9 @@ class NothingRemembered:
     def remembered(self) -> dict[str, tuple[str, ...]]:
         """Nothing was kept, because nothing is kept."""
         return {}
+
+    def note(self, identifier: str, genres: tuple[str, ...]) -> None:
+        """Drop it, deliberately."""
 
     def remember(self, known: dict[str, tuple[str, ...]]) -> None:
         """Drop it, deliberately."""

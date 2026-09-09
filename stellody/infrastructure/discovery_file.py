@@ -36,11 +36,12 @@ from stellody.application.carrying_over import IncompleteAnswer, carried_over
 from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
-from stellody.infrastructure import paths
+from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
 
 DISCOVERY_NAME = "discovered.json"
 CACHE_NAME = "artist-genres.json"
+CACHE_JOURNAL_NAME = "artist-genres.record"
 
 
 def discovery_path() -> pathlib.Path:
@@ -51,6 +52,11 @@ def discovery_path() -> pathlib.Path:
 def cache_path() -> pathlib.Path:
     """Where what was learned about candidates is kept between runs."""
     return paths.data_dir() / CACHE_NAME
+
+
+def cache_journal_path() -> pathlib.Path:
+    """Where a candidate's answer is noted, until the cache catches up."""
+    return paths.data_dir() / CACHE_JOURNAL_NAME
 
 
 def album_as(group: ReleaseGroup) -> dict:
@@ -239,12 +245,8 @@ class FileDiscoveryResults:
         return read()
 
 
-def remembered() -> dict[str, tuple[str, ...]]:
-    """What earlier runs learned about candidate artists; empty when unusable.
-
-    A cache that cannot be read is a cache that costs a few more requests,
-    which is not worth failing a run over.
-    """
+def _cached() -> dict[str, tuple[str, ...]]:
+    """What the cache file holds; empty where it holds nothing usable."""
     try:
         held = json.loads(cache_path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -258,16 +260,44 @@ def remembered() -> dict[str, tuple[str, ...]]:
     }
 
 
+def remembered() -> dict[str, tuple[str, ...]]:
+    """What earlier runs learned about candidates, the cache plus the record.
+
+    A cache that cannot be read is a cache that costs a few more requests,
+    which is not worth failing a run over.
+
+    The running record is read on top of the cache rather than instead of it.
+    Asking about candidates is the long half of a run, so a run that died
+    inside it had learned a great deal that the cache below never saw.
+    """
+    known = _cached()
+    for entry in journal.replayed(cache_journal_path()):
+        identifier, genres = entry.get("identifier"), entry.get("genres")
+        if isinstance(identifier, str) and isinstance(genres, list):
+            known[identifier] = tuple(str(name) for name in genres)
+    return known
+
+
+def note(identifier: str, genres: tuple[str, ...]) -> None:
+    """Write one candidate's answer down now, so a run that dies keeps it."""
+    journal.note(
+        cache_journal_path(), {"identifier": identifier, "genres": list(genres)}
+    )
+
+
 def remember(known: dict[str, tuple[str, ...]]) -> None:
     """Keep what this run learned, so the next one asks about less.
 
     A cache that cannot be written is not worth reporting either: the next run
-    simply asks again.
+    simply asks again. The running record is dropped only once the cache holds
+    what it held, since a record cleared beside a cache that was never written
+    would throw away the answers it exists to protect.
     """
     try:
         _written(cache_path(), {name: list(genres) for name, genres in known.items()})
     except OSError:
         return
+    journal.cleared(cache_journal_path())
 
 
 class FileGenreMemory:
@@ -281,6 +311,10 @@ class FileGenreMemory:
     def remembered(self) -> dict[str, tuple[str, ...]]:
         """What is already known about candidate artists."""
         return remembered()
+
+    def note(self, identifier: str, genres: tuple[str, ...]) -> None:
+        """Write this one candidate's answer down now."""
+        note(identifier, genres)
 
     def remember(self, known: dict[str, tuple[str, ...]]) -> None:
         """Keep what this run learned for the next one."""

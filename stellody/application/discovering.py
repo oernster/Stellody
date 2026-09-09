@@ -122,13 +122,24 @@ class Discovery:
         What was learned is written down however the run ends, cancelled runs
         included: an answer already paid for is worth keeping whether or not
         the run it arrived during finished.
+
+        **Twice over; the second time is the one that matters.** The whole
+        recollection is kept at the end, as it always was; the memory is also
+        handed to the two wrappers, so each answer is written down as it
+        arrives. A run that ends reaches the line below. A run whose process
+        dies never does; Oliver lost fifty minutes of asking that way on
+        2026-09-09.
         """
         kept = self.recall.remembered()
         try:
             return replace(
                 self,
-                catalogue=RememberingCatalogue(self.catalogue, kept, self.now),
-                similarity=RememberingSimilarity(self.similarity, kept, self.now),
+                catalogue=RememberingCatalogue(
+                    self.catalogue, kept, self.now, self.recall
+                ),
+                similarity=RememberingSimilarity(
+                    self.similarity, kept, self.now, self.recall
+                ),
             )._asked(albums, ticked, report, cancelled)
         finally:
             self.recall.remember(kept)
@@ -336,9 +347,14 @@ class Discovery:
                 )
             )
             try:
-                known[identifier] = self._genres_of(identifier, cancelled)
+                genres = self._genres_of(identifier, cancelled)
             except RunCancelled:
                 return None
+            # Kept in hand and written down in the same breath, for the reason
+            # the first half's answers are: this half is the long one, so a
+            # run that dies inside it has the most to lose.
+            known[identifier] = genres
+            self.memory.note(identifier, genres)
         self.memory.remember(known)
         return tuple(
             replace(gaps, artists=playing_something_ticked(gaps.artists, known, ticked))
