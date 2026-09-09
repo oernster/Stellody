@@ -9,7 +9,7 @@ happen in rather than anything a network did.
 from __future__ import annotations
 
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.application.discovery_ports import RateRefused
+from stellody.application.discovery_ports import RateRefused, SourceUnavailable
 from stellody.application.values import DiscoveryProgress
 from stellody.domain.album import Album
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
@@ -48,12 +48,19 @@ class Catalogue:
         genres: dict[str, tuple[str, ...]] | None = None,
         raises: Exception | None = None,
         refusals: int = 0,
+        unheard: int = 0,
+        genre_trouble: Exception | None = None,
     ) -> None:
         self._identities = identities or {}
         self._albums = albums or {}
         self._genres = genres or {}
         self._raises = raises
         self._refusals = refusals
+        # How many of the first asks answer with nothing at all, for the tests
+        # about a dropped connection: a count rather than `raises` above,
+        # since what those are about is a source that comes back.
+        self._unheard = unheard
+        self._genre_trouble = genre_trouble
         self.identified: list[str] = []
         self.albums_asked: list[str] = []
         self.genres_asked: list[str] = []
@@ -68,6 +75,9 @@ class Catalogue:
         if self._refusals:
             self._refusals -= 1
             raise RateRefused("asked to wait")
+        if self._unheard:
+            self._unheard -= 1
+            raise SourceUnavailable("nothing answered at all")
         if self._raises is not None:
             raise self._raises
         return self._identities.get(name, (name.lower(),))
@@ -86,6 +96,8 @@ class Catalogue:
         """What this artist plays, as this fake was told."""
         self.genres_asked.append(identifier)
         self.wanted.append(wanted)
+        if self._genre_trouble is not None:
+            raise self._genre_trouble
         return self._genres.get(identifier, ())
 
 

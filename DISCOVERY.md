@@ -585,18 +585,38 @@ Verified by: `tests/ui/test_discovery_wiring.py::test_a_file_that_will_not_write
 
 Priority: Must
 
-Requirement: If a request fails because no connection is available, then the
-discovery service shall stop the run, report that the network is unavailable and
-write no file.
+Requirement: Where a request is answered with nothing at all, the discovery
+service shall put that artist back for a later pass exactly as a refusal does;
+it shall report an artist nothing ever answered about in words distinct from a
+refused one. Only where five requests in a row are answered with nothing at
+all, with nothing whatsoever answering in between, shall it stop the run,
+report that the network is unavailable and write no file.
 
 Rationale: Continuing through 327 artists that will each fail is 327 ways of
-saying the same thing slowly.
+saying the same thing slowly, so a connection that has gone still ends a run.
+What changed on 2026-09-09 is what counts as proof that it has: reported by
+Oliver after leaving a run going overnight, a run of fifty minutes ended on
+its first such answer, which was one ListenBrainz request closed after 64
+milliseconds. Measured from that night's diary, it was the only one in 7252
+lines. One dropped socket is not a dead connection; five questions in a row
+met with nothing, while nothing else answers, is. Being sure is cheap: the run
+paces itself at about a second a question, so being wrong five times over
+costs seconds.
 
-Acceptance: Given the first request raises a connection failure, when the run is
-observed, then it stops at that point, reports unavailability and writes no
-file.
+The count is kept for the whole run rather than for either half of it, since
+the connection is one thing. In the second half, a candidate nothing answered
+about is left unknown rather than written down as playing nothing: a question
+that was never answered is not an answer; recording one would drop that
+candidate from every later run without anybody having decided anything.
 
-Verified by: `tests/application/test_discovery.py::test_no_network_stops_the_run`
+Acceptance: Given one request answered with nothing, when the run is observed,
+then that artist is asked about again on a later pass and the run finishes;
+given an artist nothing ever answered about, then it is reported in its own
+words rather than as refused; given five such answers in a row, then the run
+stops there, reports unavailability and writes no file; given an answer
+between two of them, then the count starts again.
+
+Verified by: `tests/application/test_discovery.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_discovery.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_discovery.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_discovery.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`
 
 ---
 

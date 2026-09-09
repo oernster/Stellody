@@ -23,9 +23,11 @@ each is recorded against that artist and the run goes on. An artist nobody
 could look up is exactly the artist somebody would otherwise assume was
 complete.
 
-**One failure does stop everything; only that one.** No connection at all means
-every remaining artist will fail the same way, so continuing is 327 slow ways
-of saying the network is down.
+**A connection that has gone does stop everything; nothing else does.** Where
+nothing answers at all, every remaining artist will fail the same way, so
+continuing is 327 slow ways of saying the network is down. What proves it has
+gone is a RUN of questions met with nothing rather than one of them: `Silence`
+in `gathering.py` beside this holds that rule and why it is written that way.
 """
 
 from __future__ import annotations
@@ -45,6 +47,7 @@ from stellody.application.discovery_ports import (
     SourceRefused,
     SourceUnavailable,
 )
+from stellody.application.gathering import Gathering, Silence
 from stellody.application.passing import PASS_PAUSE_SECONDS, Passes
 from stellody.application.ports import CancelledCheck
 from stellody.application.remembering import (
@@ -60,7 +63,6 @@ from stellody.application.values import (
     DiscoveryStage,
     RunOutcome,
     RunReport,
-    SourceFailure,
 )
 from stellody.domain.album import Album
 from stellody.domain.discovery import (
@@ -78,11 +80,6 @@ from stellody.domain.matching import ReleaseMatch
 # 2026-09-06: it is a decision about how much to put in front of somebody
 # rather than a fact about anything, so it is named here and nowhere else.
 SIMILAR_WANTED = 10
-# Said against an artist the catalogue would not talk about on any pass. Plain
-# words rather than a status, since it reaches a person: the discovery file
-# treats it as a hole and declines to write, so what somebody sees is the last
-# complete answer plus this name.
-REFUSED_EVERY_PASS = "the catalogue stayed busy through every pass"
 # The two endings that cut a run short, each answered from more than one
 # place, so each is named once.
 CANCELLED = RunReport(outcome=RunOutcome.CANCELLED)
@@ -160,14 +157,18 @@ class Discovery:
         # what the second half will have to ask about; reading it twice would
         # let the two halves disagree about what is already known.
         known = self.memory.remembered()
+        # One silence for the whole run rather than one a half, since the
+        # connection is one thing: five questions in a row met with nothing
+        # mean the same whichever stage happened to be asking them.
+        silence = Silence()
         gathered, ending = self._gathered(
-            albums, artists, ticked, report, cancelled, known
+            albums, artists, ticked, report, cancelled, known, silence
         )
         if ending is not None:
             return ending
-        kept = self._narrowed(gathered.gaps, ticked, report, cancelled, known)
-        if kept is None:
-            return RunReport(outcome=RunOutcome.CANCELLED)
+        kept = self._narrowed(gathered.gaps, ticked, report, cancelled, known, silence)
+        if isinstance(kept, RunReport):
+            return kept
         return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept, ticked=ticked)
 
     def _gathered(
@@ -178,32 +179,30 @@ class Discovery:
         report: ProgressReport,
         cancelled: CancelledCheck,
         known: dict[str, tuple[str, ...]],
+        silence: Silence,
     ) -> tuple[RunReport, RunReport | None]:
         """Everything the catalogues said, plus an ending where one cut in.
 
-        It counts the distinct candidates it meets as it goes, so a listener
-        can be told how long the whole run has left rather than how long this
-        half of it has. Only candidates nothing is already known about are
-        counted, since those are the ones the second half will pay for.
+        What comes back is counted by `Gathering` beside this, which also
+        decides how somebody never reached is described. The two endings from
+        in here are a stop and a connection that has gone; a single question
+        nothing answered is neither of those and is asked again on a later
+        pass.
         """
         held = held_by_artist(albums)
         everyone = tuple(held)
-        found: list[Gaps] = []
-        unresolved: list[str] = []
-        ambiguous: list[Ambiguity] = []
-        failed: list[SourceFailure] = []
-        met: set[str] = set()
-        passes, done = Passes(artists), 0
+        gathered = Gathering(passes=Passes(artists), known=known)
+        done = 0
         while True:
-            for artist in passes.pending:
+            for artist in gathered.passes.pending:
                 if cancelled():
-                    return self._so_far(found, unresolved, ambiguous, failed, CANCELLED)
+                    return gathered.report(CANCELLED)
                 report(
                     DiscoveryProgress(
                         artist=artist,
                         done=done,
                         total=len(artists),
-                        candidates=len(met),
+                        candidates=len(gathered.met),
                     )
                 )
                 try:
@@ -215,66 +214,39 @@ class Discovery:
                         cancelled,
                     )
                 except RunCancelled:
-                    return self._so_far(found, unresolved, ambiguous, failed, CANCELLED)
+                    return gathered.report(CANCELLED)
                 except SourceUnavailable:
-                    return self._so_far(
-                        found, unresolved, ambiguous, failed, UNAVAILABLE
-                    )
+                    # One dropped socket is not a dead connection: this artist
+                    # goes round again; only a run of them ends anything.
+                    if silence.deepened():
+                        return gathered.report(UNAVAILABLE)
+                    gathered.unheard(artist)
+                    continue
                 except SourceRefused:
-                    passes.refuse(artist)
+                    silence.ended()
+                    gathered.busy(artist)
                     continue
                 except SourceFailed as failure:
-                    failed.append(SourceFailure(artist=artist, reason=str(failure)))
+                    silence.ended()
+                    gathered.broke(artist, str(failure))
                     done += 1
                     continue
+                silence.ended()
                 done += 1
                 if gaps is None:
-                    unresolved.append(artist)
+                    gathered.unknown(artist)
                 elif isinstance(gaps, Ambiguity):
-                    ambiguous.append(gaps)
+                    gathered.several(gaps)
                 else:
-                    found.append(gaps)
-                    met.update(
-                        candidate.identifier
-                        for candidate in gaps.artists
-                        if candidate.identifier and candidate.identifier not in known
-                    )
-            if not passes.again():
+                    gathered.answered(gaps)
+            if not gathered.passes.again():
                 break
             try:
                 waited(PASS_PAUSE_SECONDS, cancelled, self.pause)
             except RunCancelled:
-                return self._so_far(found, unresolved, ambiguous, failed, CANCELLED)
-        failed.extend(
-            SourceFailure(artist=artist, reason=REFUSED_EVERY_PASS)
-            for artist in passes.refused
-        )
-        return self._so_far(found, unresolved, ambiguous, failed)
-
-    @staticmethod
-    def _so_far(
-        found: list[Gaps],
-        unresolved: list[str],
-        ambiguous: list[Ambiguity],
-        failed: list[SourceFailure],
-        ending: RunReport | None = None,
-    ) -> tuple[RunReport, RunReport | None]:
-        """What has been gathered, beside the ending that cut it short.
-
-        The pair rather than the report alone, since every caller wants both
-        and the three that end early would otherwise each build the same tuple
-        by hand.
-        """
-        return (
-            RunReport(
-                outcome=RunOutcome.COMPLETED,
-                gaps=tuple(found),
-                unresolved=tuple(unresolved),
-                ambiguous=tuple(ambiguous),
-                failed=tuple(failed),
-            ),
-            ending,
-        )
+                return gathered.report(CANCELLED)
+        gathered.owed()
+        return gathered.report()
 
     def _about(
         self,
@@ -319,7 +291,8 @@ class Discovery:
         report: ProgressReport,
         cancelled: CancelledCheck,
         known: dict[str, tuple[str, ...]],
-    ) -> tuple[Gaps, ...] | None:
+        silence: Silence,
+    ) -> tuple[Gaps, ...] | RunReport:
         """The same gaps with candidate artists outside the ticks taken out.
 
         The similarity catalogue names artists without saying what they play,
@@ -349,7 +322,16 @@ class Discovery:
             try:
                 genres = self._genres_of(identifier, cancelled)
             except RunCancelled:
-                return None
+                return CANCELLED
+            except SourceUnavailable:
+                # Nothing answered about this one candidate. It is left
+                # unknown rather than written down as playing nothing, since
+                # a question that was never answered is not an answer; the
+                # run carries on unless the connection itself has gone.
+                if silence.deepened():
+                    return UNAVAILABLE
+                continue
+            silence.ended()
             # Kept in hand and written down in the same breath, for the reason
             # the first half's answers are: this half is the long one, so a
             # run that dies inside it has the most to lose.

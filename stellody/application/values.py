@@ -286,8 +286,13 @@ class RunReport:
     def is_writable(self) -> bool:
         """Whether this run has anything to replace the discovery file with.
 
-        Only a completed run does. A cancelled one discards what it gathered,
-        an unavailable one never gathered anything and a run with nobody to ask
-        about has nothing to say that a file could carry.
+        Only a completed run does. A cancelled one discards what it gathered
+        and a run with nobody to ask about has nothing to say that a file
+        could carry. A run that gave up on the connection may well have
+        gathered a great deal; it is still not written. It stopped part way
+        through a library, so its answer has holes in it exactly as a stopped
+        run's does, which the file refuses. What it learned is
+        kept in the catalogue memory rather than in the file, so running it
+        again once the connection is back asks only for the rest.
         """
         return self.outcome is RunOutcome.COMPLETED

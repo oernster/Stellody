@@ -23,7 +23,8 @@ from discovery_support import (
 from stellody.application.asking import RETRY_PAUSE_SECONDS, WAIT_SLICE_SECONDS
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovering import Discovery
-from stellody.application.discovery_ports import RateRefused
+from stellody.application.discovery_ports import RateRefused, SourceUnavailable
+from stellody.application.gathering import SILENCE_MEANS_GONE
 from stellody.application.values import DiscoveryProgress, DiscoveryStage, RunOutcome
 from stellody.domain.album import Album
 from stellody.domain.discovery import SimilarArtist
@@ -110,6 +111,43 @@ def test_each_candidate_is_written_down_as_it_is_answered() -> None:
     run, _, report = narrowing_run(memory)
     run.run(one_blues_artist(), ("Blues",), report, never)
     assert memory.noted == [("cray", ("Blues",)), ("wolf", ("Techno",))]
+
+
+def _unreachable_genres(candidates: int) -> tuple[Discovery, Memory, Recorder]:
+    """A run whose candidates can be named but never asked about."""
+    catalogue = Catalogue(genre_trouble=SourceUnavailable("nothing answered"))
+    similar = Similarity(
+        tuple(
+            SimilarArtist(name=f"Artist {number}", identifier=f"id-{number}")
+            for number in range(candidates)
+        )
+    )
+    memory = Memory()
+    run = Discovery(
+        catalogue=catalogue, similarity=similar, pause=Waits(), memory=memory
+    )
+    return run, memory, Recorder()
+
+
+def test_a_candidate_nothing_answered_about_is_left_unknown() -> None:
+    """Never written down as playing nothing, which is a different claim.
+
+    A question that was not answered is not an answer. Writing one down would
+    keep that candidate out of every later run's results without anybody
+    having decided anything.
+    """
+    run, memory, report = _unreachable_genres(1)
+    found = run.run(one_blues_artist(), ("Blues",), report, never)
+    assert found.outcome is RunOutcome.COMPLETED, "one silence ends nothing"
+    assert memory.noted == [], "nothing was written down about it"
+    assert memory.kept == [{}], "and nothing was kept about it either"
+
+
+def test_a_connection_lost_in_the_second_half_ends_the_run() -> None:
+    """The same rule as the first half, since the connection is one thing."""
+    run, _, report = _unreachable_genres(SILENCE_MEANS_GONE)
+    found = run.run(one_blues_artist(), ("Blues",), report, never)
+    assert found.outcome is RunOutcome.UNAVAILABLE
 
 
 def test_what_was_remembered_is_not_asked_about_again() -> None:

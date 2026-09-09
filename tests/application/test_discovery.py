@@ -24,12 +24,9 @@ from stellody.application.asking import (
     RETRY_PAUSE_SECONDS,
 )
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.application.discovering import (
-    REFUSED_EVERY_PASS,
-    SIMILAR_WANTED,
-    Discovery,
-)
-from stellody.application.discovery_ports import SourceFailed, SourceUnavailable
+from stellody.application.discovering import SIMILAR_WANTED, Discovery
+from stellody.application.discovery_ports import SourceFailed
+from stellody.application.gathering import REFUSED_EVERY_PASS
 from stellody.application.passing import PASS_PAUSE_SECONDS, QUIET_PASSES
 from stellody.application.values import DiscoveryProgress, RunOutcome
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist, held_by_artist
@@ -166,17 +163,6 @@ def test_progress_names_the_artist_and_counts_the_rest() -> None:
         ("One", 0, 2),
         ("Two", 1, 2),
     ]
-
-
-def test_no_network_stops_the_run() -> None:
-    """Continuing is many slow ways of saying the same thing once."""
-    catalogue = Catalogue(raises=SourceUnavailable("nothing answered"))
-    run, source, _, _ = make_run(catalogue)
-    albums = (make_album("One", "A"), make_album("Two", "B"))
-    report = run.run(albums, ROCK, nothing, never)
-    assert report.outcome is RunOutcome.UNAVAILABLE
-    assert not report.is_writable
-    assert source.identified == ["One"]
 
 
 def test_rate_refusal_is_retried() -> None:
