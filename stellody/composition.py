@@ -179,7 +179,16 @@ def configure(application: QApplication) -> None:
     """Give the application its identity, its icon and its quick tooltips."""
     show_tips_quickly(application)
     application.setApplicationName(APP_NAME)
-    application.setApplicationDisplayName(APP_NAME)
+    # The display name is deliberately NOT set. Reported by Oliver on
+    # 2026-09-09: the results screen wore an em dash in its title bar on Linux
+    # and nowhere else. Qt's Linux platform plugins hand every window title to
+    # `QPlatformWindow::formatWindowTitle`, which joins the title to the
+    # display name with an em dash, so setting it made Qt write a character
+    # this project bans into a title no source file here contains. The Windows
+    # plugin does not append it, which is why it showed on one platform only,
+    # and the main window escaped because Qt skips a title equal to the name.
+    # Nothing else read the display name; the application name still carries
+    # the identity.
     application.setApplicationVersion(__version__)
     application.setOrganizationName(APP_AUTHOR)
     application.setQuitOnLastWindowClosed(False)

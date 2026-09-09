@@ -28,6 +28,7 @@ class _RememberingApplication:
     def __init__(self, style: QStyle) -> None:
         self._style = style
         self.given: QStyle | None = None
+        self.display_name_asked_for: str | None = None
 
     def style(self) -> QStyle:
         return self._style
@@ -39,7 +40,8 @@ class _RememberingApplication:
         """Absorbed: identity is not what this is about."""
 
     def setApplicationDisplayName(self, name: str) -> None:
-        """Absorbed."""
+        """Recorded rather than absorbed; asking for one is the defect."""
+        self.display_name_asked_for = name
 
     def setApplicationVersion(self, version: str) -> None:
         """Absorbed."""
@@ -113,3 +115,17 @@ class TestAtStartup:
         standing_in = _RememberingApplication(_base())
         configure(standing_in)
         assert isinstance(standing_in.given, QuickTips)
+
+    def test_no_display_name_is_ever_asked_for(self) -> None:
+        """Reported by Oliver on 2026-09-09, seen on Linux and nowhere else.
+
+        Qt's Linux platform plugins join a window title to the application's
+        display name with an EM DASH, in `formatWindowTitle`. Setting a display
+        name therefore put a banned character into the results screen's title
+        bar without any source file here containing one; no search of this tree
+        could have found it. Not setting one is the whole fix, so this
+        holds the composition root to it.
+        """
+        standing_in = _RememberingApplication(_base())
+        configure(standing_in)
+        assert standing_in.display_name_asked_for is None
