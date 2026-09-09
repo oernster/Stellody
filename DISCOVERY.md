@@ -488,8 +488,9 @@ Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_
 Priority: Must
 
 Requirement: When the listener cancels a run, the discovery service shall stop
-before issuing its next request, discard everything that run had gathered and
-leave any existing discovery file untouched.
+before issuing its next request, discard the gaps that run had gathered and
+leave any existing discovery file untouched. What the catalogues answered along
+the way is kept rather than discarded, as FR-D48 requires.
 
 Rationale: Stopping between requests rather than mid-flight keeps the source's
 rate accounting honest and leaves nothing half-written. A cancel discards rather
@@ -504,8 +505,8 @@ amended once more when the request in flight stopped being a floor.
 
 The run is asked whether it is still wanted before EVERY request rather than
 once an artist. One artist costs three requests, each of which may take the full
-twenty second timeout and may be attempted three times, so a run consulted once
-an artist could go on for minutes after being told to stop. The waits between
+twenty second timeout and may be attempted twice, so a run consulted once an
+artist could go on for minutes after being told to stop. The waits between
 attempts are sliced as well, so a stop lands inside one rather than at the end
 of it.
 
@@ -531,8 +532,9 @@ by a request that will not answer, because the last request of an abandoned run
 dies with it instead of outliving it.
 
 Acceptance: Given a run in progress over an existing discovery file, when cancel
-is pressed, then no further request is issued, nothing of that run is retained
-and the existing file is byte for byte what it was; given the run is waiting out
+is pressed, then no further request is issued, none of that run's gaps is
+retained, every answer it had already been given is kept and the existing file
+is byte for byte what it was; given the run is waiting out
 a refusal when cancel is pressed, then it stops within one slice of that wait
 rather than at the end of it; given a cancel arrives between two of the three
 requests made about one artist, then the remaining two are never issued; given
@@ -616,7 +618,7 @@ words rather than as refused; given five such answers in a row, then the run
 stops there, reports unavailability and writes no file; given an answer
 between two of them, then the count starts again.
 
-Verified by: `tests/application/test_discovery.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_discovery.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_discovery.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_discovery.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`
+Verified by: `tests/application/test_a_dropped_connection.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_a_dropped_connection.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_a_dropped_connection.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_a_dropped_connection.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`
 
 ---
 
@@ -976,7 +978,7 @@ would cost.
 Acceptance: Given a run that found three candidate artists, when the dialog
 opens, then three names are shown and no album sits under any of them.
 
-Verified by: `tests/ui/test_results_dialog.py::test_a_candidate_artist_starts_collapsed`
+Verified by: `tests/ui/test_opening_a_candidate.py::test_a_candidate_artist_starts_collapsed`
 
 ---
 
@@ -986,8 +988,8 @@ Priority: Must
 
 Requirement: When a candidate artist is expanded in the results dialog, the
 results dialog shall show the releases that artist made which pass the offering
-rule FR-D08 states, fetched at the moment of expanding rather than during the
-run.
+rule section 3.5 states, fetched at the moment of expanding rather than during
+the run.
 
 Rationale: Measured on 2026-09-07: one catalogue request costs at least the 1.1
 second gap NFR-PERF-001 requires. Asking during the run would add a request for
@@ -999,7 +1001,7 @@ Acceptance: Given a collapsed candidate artist, when it is expanded, then that
 artist's offered releases appear beneath it; given the run that produced the
 file, then it issued no request about that artist's releases.
 
-Verified by: `tests/ui/test_results_dialog.py::test_expanding_a_candidate_asks_for_their_albums`
+Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`
 
 ---
 
@@ -1008,8 +1010,8 @@ Verified by: `tests/ui/test_results_dialog.py::test_expanding_a_candidate_asks_f
 Priority: Must
 
 Requirement: The lookup for an expanded candidate artist shall be attempted
-five times, waiting two seconds longer between each attempt than the one
-before, before it is reported as having failed. If it cannot be fetched, then
+five times, the wait between attempts doubling each time, before it is reported
+as having failed. If it cannot be fetched, then
 the results dialog shall show what went wrong against that artist, shall say
 that closing and opening the row tries again; it shall leave every other entry
 as it was.
@@ -1017,14 +1019,15 @@ as it was.
 Rationale: The unwanted sibling of FR-D31. One artist nobody could look up is
 not a reason to lose the rest of a run that took minutes to make.
 
-Five attempts rather than the three a run gives an artist, reported by Oliver on
+Five attempts rather than the two a run gives an artist, reported by Oliver on
 2026-09-08 when The Rolling Stones came back refused while every other artist on
 the same screen answered. Measured the same day, that artist carries 1474
 release groups at MusicBrainz and the request takes 15.6 seconds cold against
 0.2 warm, so it is among the first things a busy service sheds. The two callers
-can afford different amounts of waiting because of who is doing it: twenty
-seconds is a wait somebody who opened one row will sit through, where a run of
-327 artists cannot spend it on each of them.
+can afford different amounts of waiting because of who is doing it: the thirty
+seconds those five attempts span, measured on 2026-09-09 as two, four, eight
+then sixteen, is a wait somebody who opened one row will sit through, where a
+run of 327 artists cannot spend it on each of them.
 
 The message says how to try again because trying again already worked and
 nothing said so. A row that failed is asked about afresh the next time it is
@@ -1037,7 +1040,7 @@ opened to try again; when another is expanded, then it still lists its releases;
 given a service refusing four times and answering on the fifth, then the
 releases are shown rather than a failure.
 
-Verified by: `tests/ui/test_results_dialog.py::test_a_failed_expansion_says_so_and_spares_the_rest`, `tests/ui/test_results_dialog.py::test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened`, `tests/application/test_expanding.py::test_it_presses_on_past_what_a_run_gives_one_artist`, `tests/application/test_expanding.py::test_a_source_refusing_every_time_is_that_artist_failing`
+Verified by: `tests/ui/test_opening_a_candidate.py::test_a_failed_expansion_says_so_and_spares_the_rest`, `tests/ui/test_opening_a_candidate.py::test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened`, `tests/application/test_expanding.py::test_three_refusals_running_do_not_lose_the_artist`, `tests/application/test_expanding.py::test_a_source_refusing_every_time_is_that_artist_failing`
 
 ---
 
@@ -1135,7 +1138,7 @@ do to fetch an artist's albums.
 Rationale: Reported by Oliver on 2026-09-07: opening an amber name left the
 dialog doing nothing visible for several seconds, which reads as stuck. It is
 not stuck. One lookup costs at least the gap NFR-PERF-001 requires and may wait
-out two refusals before answering, so several seconds of quiet is the ordinary
+out four refusals before answering, so several seconds of quiet is the ordinary
 case rather than a fault; what was missing was anything on screen saying so.
 
 Busy rather than counted, since one request has no measurable progress: it
@@ -1200,8 +1203,8 @@ what it learned however that run ended. Where a run cannot reach a source about
 an artist an earlier run answered for, the discovery file shall keep the
 earlier answer and shall record no failure for that artist. Where a run reaches
 its end still owing an answer about an artist nothing was ever known about, the
-discovery file shall not be written at all. The gaps written shall be ordered
-by artist.
+discovery file shall be written with that artist named as unanswered rather
+than withheld. The gaps written shall be ordered by artist.
 
 Rationale: Reported by Oliver on 2026-09-08, repeatedly and in the strongest
 terms: two runs over the same library gave different answers, sometimes
@@ -1249,9 +1252,10 @@ second run finishes, then it asked the catalogues nothing and answered exactly
 as the first did; given an artist an earlier run answered for and this one
 could not reach, then the file still holds that artist and records no failure
 for it; given an artist nothing has ever been learned about that this run could
-not reach either, then the file is left as it was and the run says which
-artists it could not answer about; given an answer kept more than thirty days
-ago, then it is asked about again.
+not reach either, then the file is still written, holding what did answer with
+that artist named among the failures, while the run says which artists it could
+not answer about; given an answer kept more than thirty days ago, then it is
+asked about again.
 
 Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`
 
@@ -1493,8 +1497,8 @@ Requirement: The window shall derive the estimate from the time the run has
 actually taken for each unit of work finished, rather than from the request gap
 NFR-PERF-001 states.
 
-Rationale: A run meets refusals; each costs up to five attempts with a
-lengthening wait between them, as FR-D21 requires. An estimate built on the
+Rationale: A run meets refusals; each costs a second ask on the spot as FR-D21
+requires, then a place in a later pass, so what a refusal costs is not the gap. An estimate built on the
 configured gap would read as confident while being wrong by minutes on exactly
 the runs where somebody most needs it.
 
@@ -1897,8 +1901,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D24, FR-D27 to FR-D47 and every NFR except
-NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D49 and every NFR except NFR-PERF-002.
 Should: FR-D15, NFR-PERF-002.
 Could: nothing this stage.
 

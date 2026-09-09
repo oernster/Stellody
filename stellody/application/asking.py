@@ -79,8 +79,11 @@ WAIT_SLICE_SECONDS = 0.2
 # back refused while every other artist on the screen answered. Measured the
 # same day, that artist carries 1474 release groups at MusicBrainz and the
 # request takes 15.6 seconds cold against 0.2 warm, so it is among the first
-# things a busy service sheds. Five asks wait two, four, six then eight
-# seconds, which is twenty seconds of patience.
+# things a busy service sheds. Five asks wait two, four, eight then sixteen
+# seconds, since the wait doubles, which is thirty seconds of patience.
+# Measured on 2026-09-09 by driving the loop with a refusing catalogue: this
+# said twenty while the loop spent thirty, having been written when the wait
+# grew by a step rather than doubling.
 #
 # The same number as a run's today, arrived at from the other end and kept
 # apart from it deliberately: one is what a person watching one row will sit
