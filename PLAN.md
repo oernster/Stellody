@@ -65,6 +65,27 @@ Three things to settle before anything else, none of them small:
 - **What "the video for this track" even means.** A title and an artist do not
   identify a video; the first result for a track is frequently not the record.
 
+Two ideas recorded by the owner on 2026-09-09, for that discussion rather than
+as decisions:
+
+- **Addresses rather than files.** A YouTube address per track, handed outward
+  the way a shop address already is. That keeps the second question above on
+  the near side of it: an address given to a browser is not a copy kept; it is
+  also the reach this project already makes for shops and for the donation
+  page. What it does not settle is the first question, since asking which
+  video belongs to a track still names that track to a service.
+- **Proving a result is a video at all.** Much of what a service returns for a
+  track is the record with a still picture over it, which is a worse answer
+  than none: somebody asking for the video gets the sound they already have.
+  The test he proposes is to sample several positions, five say, then compare
+  the frames: a still is identical at every position while a video is not. It
+  is a cheap discriminator that needs no understanding of what is in frame.
+  What it would have to be checked against first is the false pass, since a
+  still picture under a moving level meter or a slow pan over one photograph
+  also differs frame to frame; whether those are common enough to matter is a
+  measurement nobody has taken. Sampling frames also means fetching them,
+  which lands back on the network stance above rather than beside it.
+
 Done when: cannot be stated. It is an idea rather than a milestone; it becomes
 one only after the discussion above.
 
