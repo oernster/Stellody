@@ -76,11 +76,13 @@ if it ever stopped being true the build would fail.
   roughly how long is left and stops the moment you ask it to. Where it could
   not get a usable answer about somebody it says so and counts them, with the
   names one press away, so an answer short of a third of your library never
-  reads like a complete one. What it finds
-  opens as a list you can read and tick; from there one press takes the ticked
-  albums to a shop, opening that shop's own search for each of them in your
-  browser. Nothing is bought here and nothing is streamed: Stellody hands over
-  a search and stops.
+  reads like a complete one. Every answer is kept the moment it arrives, so a
+  run stopped or cut short loses nothing it had already paid for and a second
+  attempt asks only for the rest. What it finds opens as a list you can read
+  and tick, dealt across the width of the screen and turned a page at a time;
+  from there one press takes the ticked albums to a shop, opening that shop's
+  own search for each of them in your browser. Nothing is bought here and
+  nothing is streamed: Stellody hands over a search and stops.
 - **The videos that came with the album.** A bonus video sits in the album it
   belongs to, plays from the same press as any song and draws its picture at
   the size it was made; fill the window when you want it larger.
