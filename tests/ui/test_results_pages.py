@@ -13,10 +13,13 @@ reason.
 
 from __future__ import annotations
 
+import pytest
 from PySide6.QtCore import QSize
-from results_support import gaps_with
+from PySide6.QtWidgets import QHBoxLayout, QWidget
+from results_support import gaps_with, made
 
 from stellody.domain.discovery import Gaps
+from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.results_pager import ResultsPager
 from stellody.ui.results_pages import ResultsPages
 from stellody.ui.results_room import (
@@ -38,6 +41,11 @@ CEILING = QSize(THIRTEEN_INCH_WIDTH_PX, THIRTEEN_INCH_HEIGHT_PX)
 # A source artist with nothing under it, so its height is one row and a page
 # holds exactly as many of them as a column holds rows.
 PLAIN = gaps_with()
+# How far apart two controls on one line may sit vertically before they are
+# two lines. Controls of unequal height centre on the same line without their
+# centres landing on the same pixel, so this is a line's worth of slack rather
+# than an exact match.
+ALLOWED_DRIFT_PX = 2
 
 
 def _artists(many: int) -> tuple[Gaps, ...]:
@@ -212,3 +220,58 @@ class TestThePager:
         pager = ResultsPager(3)
         for control in (pager.previous_button, pager.next_button):
             assert control.focusPolicy() is not control.focusPolicy().NoFocus
+
+
+def _row_holding(dialog: ResultsDialog, widget: QWidget) -> QHBoxLayout | None:
+    """The horizontal row inside the dialog that holds this widget."""
+    outer = dialog.layout()
+    for at in range(outer.count()):
+        row = outer.itemAt(at).layout()
+        if row is None:
+            continue
+        for place in range(row.count()):
+            if row.itemAt(place).widget() is widget:
+                return row
+    return None
+
+
+class TestOneRowAtTheFoot:
+    """Everything under the answer stands on ONE line.
+
+    Reported by Oliver on 2026-09-09 against the shipped screen: the pager sat
+    on a row of its own above the row carrying Copy, Find in shops and Close,
+    so the foot of the dialog read as two feet. The way through the answer and
+    the way out of it belong on the same line, immediately under the answer.
+    """
+
+    def test_the_pager_stands_with_the_other_controls(self, application) -> None:
+        held = _row_holding(made((gaps_with(albums=1),)), None)
+        assert held is None, "a widget nothing holds is found nowhere"
+
+    def test_the_pager_and_the_way_out_share_one_row(self, application) -> None:
+        dialog = made((gaps_with(albums=1),))
+        row = _row_holding(dialog, dialog.close_button)
+        assert row is not None, "the close button sits in a row"
+        assert _row_holding(dialog, dialog.pager) is row, "so does the pager"
+        assert _row_holding(dialog, dialog.copy_button) is row
+        assert _row_holding(dialog, dialog.shops_button) is row
+
+    def test_the_pager_is_not_a_row_of_its_own(self, application) -> None:
+        """The defect exactly: the pager added straight to the outer column."""
+        dialog = made((gaps_with(albums=1),))
+        outer = dialog.layout()
+        standing_alone = [
+            at
+            for at in range(outer.count())
+            if outer.itemAt(at).widget() is dialog.pager
+        ]
+        assert standing_alone == [], "the pager is inside the row, not above it"
+
+    def test_they_are_drawn_on_the_same_line(self, application) -> None:
+        """What the eye actually judges: one line, not two."""
+        dialog = made((gaps_with(albums=1),))
+        dialog.layout().activate()
+        for control in (dialog.copy_button, dialog.shops_button):
+            assert control.geometry().center().y() == pytest.approx(
+                dialog.pager.geometry().center().y(), abs=ALLOWED_DRIFT_PX
+            ), "the pager left the line the controls stand on"

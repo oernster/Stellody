@@ -53,7 +53,6 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QPushButton,
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
@@ -61,13 +60,8 @@ from PySide6.QtWidgets import (
 
 from stellody.application.shopping import Shopping
 from stellody.domain.discovery import Gaps
-from stellody.shared import resources
-from stellody.ui.dialogs import (
-    CLOSE_ICON,
-    FirstStopDialog,
-    title_label,
-    wearing,
-)
+from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.ui.results_foot import COPIED, COPY_LABEL, foot_row
 from stellody.ui.results_pager import ResultsPager
 from stellody.ui.results_pages import ResultsPages
 from stellody.ui.results_room import (
@@ -100,18 +94,7 @@ from stellody.ui.theme import Mode, palette_for
 # the catalogues. The heading names which, since a screen somebody opened
 # minutes after asking for it has to say what it is an answer to.
 TITLE = "What the last discovery run found"
-CLOSE_LABEL = "Close"
 APART_PX = 12
-COPY_LABEL = "Copy"
-SHOPS_LABEL = "Find in shops"
-# Said on the copy control once it has been pressed, so a press that changed
-# nothing visible is still a press somebody saw work.
-COPIED = "Copied"
-# What the two controls carry, both Oliver's own artwork and both drawn at the
-# size below. A control whose picture is missing keeps its words rather than
-# becoming a blank square.
-SHOP_ICON = "shop.png"
-COPY_ICON = "copy.png"
 
 
 class ResultsDialog(FirstStopDialog):
@@ -178,7 +161,11 @@ class ResultsDialog(FirstStopDialog):
         outer.addWidget(self.pages)
         self.pager = ResultsPager(len(self.pages.pages), self)
         self.pager.turned.connect(self.turn_to)
-        outer.addWidget(self.pager)
+        # The pager goes INTO the row of controls rather than above it. Ruled
+        # by Oliver on 2026-09-09, looking at the shipped screen: two stacked
+        # rows under the answer put the way through the answer on one line and
+        # the way out of it on another, which reads as two separate feet. One
+        # row, immediately under the answer.
         outer.addLayout(self._buttons())
         self._listen()
         self._ticks_changed()
@@ -218,32 +205,14 @@ class ResultsDialog(FirstStopDialog):
         self.top.say_asking(tuple(self._in_flight.values()))
 
     def _buttons(self) -> QHBoxLayout:
-        """What can be done with the ticked albums, then the way out."""
-        row = QHBoxLayout()
-        self.copy_button = self._control(COPY_LABEL, COPY_ICON, self.copy_ticked)
-        row.addWidget(self.copy_button)
-        self.shops_button = self._control(SHOPS_LABEL, SHOP_ICON, self.open_shops)
-        row.addWidget(self.shops_button)
-        row.addStretch()
-        self.close_button = wearing(
-            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
+        """The one row under the answer, built in `results_foot.py`."""
+        row, copy_button, shops_button, close_button = foot_row(
+            self, self.pager, self.copy_ticked, self.open_shops, self.reject
         )
-        self.close_button.setDefault(True)
-        self.close_button.clicked.connect(self.reject)
-        row.addWidget(self.close_button)
+        self.copy_button = copy_button
+        self.shops_button = shops_button
+        self.close_button = close_button
         return row
-
-    def _control(self, label: str, artwork: str, pressed) -> QPushButton:
-        """One control acting on the ticked albums, wearing its artwork.
-
-        The words stay whatever the artwork does, since a picture-only button
-        here would be two unlabelled squares under a list; the artwork is what
-        makes them findable rather than what says what they do.
-        """
-        button = wearing(QPushButton(label, self), resources.find_asset(artwork))
-        button.setAutoDefault(False)
-        button.clicked.connect(pressed)
-        return button
 
     def turn_to(self, at: int) -> None:
         """Show this page; say from there what can be done next.

@@ -13,7 +13,7 @@ from stellody.application.shopping import Shopping
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.shopping import Shop, WantedAlbum
 from stellody.ui.dialogs import CONTROL_ICON_PX
-from stellody.ui.results_dialog import COPIED, COPY_LABEL
+from stellody.ui.results_foot import COPIED, COPY_LABEL
 from stellody.ui.results_ticks import TICKED, is_tickable
 
 QOBUZ = Shop(name="Qobuz", template="https://q/?q={artist}%20{album}")

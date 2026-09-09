@@ -17,7 +17,7 @@ from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.discovery_dialog import FIND_LABEL
 from stellody.ui.guide import INLINE_ICON_PX, GuideDialog, guide_html
-from stellody.ui.results_dialog import COPY_LABEL, SHOPS_LABEL
+from stellody.ui.results_foot import COPY_LABEL, SHOPS_LABEL
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 
 

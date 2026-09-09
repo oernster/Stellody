@@ -1402,8 +1402,11 @@ than dropped, divided or given a page to itself. It shall show one page at a
 time with two controls beneath the answer, one for each direction, each
 wearing its own artwork struck through where that direction leads nowhere;
 between them shall stand words saying which page of how many is in front.
-Every page shall be built when the dialog opens and kept, so that an album
-ticked on one page is still ticked after another has been looked at.
+Those three shall stand on the SAME row as the controls that act on the ticks
+and the one that closes the screen, immediately beneath the answer, rather
+than on a row of their own above them. Every page shall be built when the
+dialog opens and kept, so that an album ticked on one page is still ticked
+after another has been looked at.
 
 Rationale: Dealing the answer into columns fixed a run over two genres. A run
 over a whole library answers with hundreds of source artists, so three columns
@@ -1436,6 +1439,14 @@ held by the row it is on: a page rebuilt on return would quietly drop whatever
 was ticked on it, where what is ticked is exactly what the shop controls
 beneath are for. Nothing is fetched either way, since a page holds what the run has
 already answered.
+
+One row rather than two is Oliver's ruling of 2026-09-09, made against the
+shipped screen: the pager stood above the row holding Copy, Find in shops and
+Close, so the foot of the dialog read as two feet. The pager carries a stretch
+on each side of itself, so standing it between the controls that act on the
+ticks and the one that leaves is what centres it; no stretch is added beside
+it, since a second would push it off centre. `ui/results_foot.py` builds that
+row, extracted when the dialog reached the danger band.
 
 The unusable direction is struck through rather than merely greyed, which is
 the rule the sweep in the discovery dialog and every switch along the foot of
