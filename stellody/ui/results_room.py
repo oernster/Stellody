@@ -27,10 +27,15 @@ One column is the answer at the floor, three at the cap.
 
 **The pages follow the height the same way.** Three columns of a whole library
 is three lists nobody reaches the end of, so the answer is dealt a page at a
-time: a page holds as many source artists as its columns can show without
-being scrolled. How many rows that is comes from the height exactly as the
-columns come from the width, so a laptop panel gets a shorter page rather than
-the same page with a scrollbar on it.
+time: a page fills every one of its columns to a depth taken from the height,
+exactly as the columns come from the width, so a laptop panel gets a shorter
+page rather than the same page with more in it.
+
+A column holding an artist taller than that depth scrolls. That is not the
+compromise it reads as: measured from Oliver's own library on 2026-09-09, an
+artist runs from 1 row to 109 against a column of 30, so a page that refused
+to overflow a column could not be filled at all and drew one column where it
+should have drawn three.
 """
 
 from __future__ import annotations
@@ -187,17 +192,26 @@ def _shortest(heights: list[int]) -> int:
 def paged(
     gaps: tuple[Gaps, ...], columns: int, rows: int
 ) -> tuple[tuple[Gaps, ...], ...]:
-    """The artists split into pages, each page filling its columns once.
+    """The artists split into pages, each page filling every one of its columns.
 
-    A page takes artists until the column that would receive the next one has
-    no room left for it, then a new page starts. Since the choice of column is
-    the one `dealt_into_columns` will make over the same artists in the same
-    order, the page it fills is the page it counted.
+    A page takes artists until EVERY column has been filled to its depth, then
+    a new page starts. Since the choice of column is the one
+    `dealt_into_columns` will make over the same artists in the same order,
+    the page it fills is the page it counted.
 
-    **An artist taller than a whole column is not left out.** It goes on a page
-    of its own and that column scrolls, which is one artist to scroll rather
-    than the library. Dropping it or splitting it would be answering a
-    different question than the run asked.
+    **Every page carries every column, save the tail of the last one.** Ruled
+    by Oliver on 2026-09-09 against the first paged run over his whole library,
+    where some pages drew three columns and others drew one.
+
+    The cause was the rule this replaces, which ended a page as soon as the
+    next artist would not fit in the shortest column. Measured from that run's
+    own answer: 215 artists whose heights run from 1 row to 109, with a median
+    of 23 against a column of 30. An artist taller than a column is the
+    ORDINARY case in a real library rather than the exception, so a rule that
+    never lets one overflow cannot be satisfied and degenerates into pages of
+    one artist. Filling every column instead means a column holding a tall
+    artist scrolls, which is one artist's worth of scrolling rather than the
+    library's.
 
     Always at least one page, even an empty one: a run that found nobody must
     still be a screen rather than nothing.
@@ -206,14 +220,11 @@ def paged(
     page: list[Gaps] = []
     heights = [0] * columns
     for found in gaps:
-        tall = height_of(found)
-        into = _shortest(heights)
-        if page and heights[into] + tall > rows:
+        if page and heights[_shortest(heights)] >= rows:
             pages.append(tuple(page))
             page, heights = [], [0] * columns
-            into = _shortest(heights)
         page.append(found)
-        heights[into] += tall
+        heights[_shortest(heights)] += height_of(found)
     if page:
         pages.append(tuple(page))
     return tuple(pages) or ((),)

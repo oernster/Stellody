@@ -1,8 +1,8 @@
 """The answer is turned a page at a time rather than scrolled for minutes.
 
 Three columns of a whole library are three lists nobody reaches the end of, so
-a page holds as many source artists as its columns can show without scrolling
-and two controls turn the pages.
+a page fills every one of its columns with source artists and two controls
+turn the pages.
 
 Two things are held here, exactly as the columns suite holds them. The
 arithmetic answers how long a page is and who is on it, which is tested at
@@ -26,7 +26,6 @@ from stellody.ui.results_room import (
     THIRTEEN_INCH_HEIGHT_PX,
     THIRTEEN_INCH_WIDTH_PX,
     dealt_into_columns,
-    height_of,
     paged,
     rows_for,
 )
@@ -76,15 +75,44 @@ class TestWhoIsOnWhichPage:
         lands in a column the page had not reckoned with."""
         tall = (gaps_with(albums=4), gaps_with(albums=1), gaps_with(albums=1))
         page = paged(tall, 2, 6)[0]
-        dealt = dealt_into_columns(page, 2)
-        assert max(sum(height_of(page[at]) for at in column) for column in dealt) <= 6
+        assert all(dealt_into_columns(page, 2)), "both columns were filled"
 
-    def test_an_artist_taller_than_a_column_still_gets_a_page(self) -> None:
-        """Dropping it would answer a different question than the run asked."""
-        giant = gaps_with(albums=ROWS_AT_THE_CEILING * 2)
-        pages = paged((PLAIN, giant), 1, ROWS_AT_THE_CEILING)
-        assert [len(page) for page in pages] == [1, 1]
-        assert pages[1] == (giant,)
+    def test_every_page_but_the_last_carries_every_column(self) -> None:
+        """Ruled by Oliver on 2026-09-09, having seen a paged whole-library
+        run draw three columns on some pages and one on others.
+
+        Driven at the heights a real library has rather than at convenient
+        ones: measured from that run's answer, an artist's height runs from 1
+        row to 109 against a column of 30, so an artist taller than a column
+        is the ordinary case and a page that refuses to overflow one cannot
+        be filled at all.
+        """
+        tall = tuple(
+            gaps_with(albums=height, artist=f"Artist {height}")
+            for height in (109, 40, 23, 1, 61, 30, 12, 3, 44, 25, 2, 18)
+        )
+        pages = paged(tall, COLUMNS_AT_THE_CEILING, ROWS_AT_THE_CEILING)
+        filled = [
+            len(
+                [
+                    column
+                    for column in dealt_into_columns(page, COLUMNS_AT_THE_CEILING)
+                    if column
+                ]
+            )
+            for page in pages
+        ]
+        assert filled[:-1] == [COLUMNS_AT_THE_CEILING] * (len(pages) - 1)
+        assert filled[-1] <= COLUMNS_AT_THE_CEILING, "the tail takes what is left"
+
+    def test_an_artist_taller_than_a_column_shares_its_page(self) -> None:
+        """It fills its column and that column scrolls, which is one artist's
+        worth of scrolling rather than the library's. Dropping it or splitting
+        it would answer a different question than the run asked."""
+        giant = gaps_with(albums=ROWS_AT_THE_CEILING * 2, artist="Giant")
+        pages = paged((giant, PLAIN), 2, ROWS_AT_THE_CEILING)
+        assert [len(page) for page in pages] == [2], "both are on the one page"
+        assert all(dealt_into_columns(pages[0], 2)), "in a column each"
 
     def test_an_answer_holding_nobody_is_still_one_page(self) -> None:
         """A screen saying nothing is still a screen."""

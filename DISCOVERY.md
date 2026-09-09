@@ -1332,30 +1332,42 @@ Verified by: `tests/ui/test_results_reading.py::TestSayingWhyInWords`, `tests/ui
 
 Priority: Must
 
-Requirement: The results dialog shall deal its source artists into pages, a
-page holding as many as its columns can show without being scrolled, where how
-many rows a column shows follows from the height of the dialog. It shall show
-one page at a time with two controls beneath the answer, one for each
-direction, each wearing its own artwork struck through where that direction
-leads nowhere; between them shall stand words saying which page of how many is
-in front. An artist taller than a whole column shall be given a page rather than
-dropped or divided. Every page shall be built when the dialog opens and kept,
-so that an album ticked on one page is still ticked after another has been
-looked at.
+Requirement: The results dialog shall deal its source artists into pages, each
+page filling EVERY one of its columns save the last page, which takes what is
+left, where how deep a column is filled follows from the height of the dialog.
+An artist taller than that depth shall fill its column and be scrolled rather
+than dropped, divided or given a page to itself. It shall show one page at a
+time with two controls beneath the answer, one for each direction, each
+wearing its own artwork struck through where that direction leads nowhere;
+between them shall stand words saying which page of how many is in front.
+Every page shall be built when the dialog opens and kept, so that an album
+ticked on one page is still ticked after another has been looked at.
 
 Rationale: Dealing the answer into columns fixed a run over two genres. A run
 over a whole library answers with hundreds of source artists, so three columns
 of it are three lists nobody reaches the end of: a scrollbar says how much is
 left without saying where in the answer somebody is.
 
-The rows a column shows follow the height exactly as the columns follow the
-width, so a laptop panel gets a shorter page rather than the same page with a
-scrollbar on it. The figure for what one row costs is stated rather than
+How deep a column is filled follows the height exactly as the columns follow
+the width, so a laptop panel gets a shorter page rather than the same page
+with more in it. The figure for what one row costs is stated rather than
 measured; it cannot be measured here, since the offscreen platform reports no
 font families at all, so every label draws at one fallback height. Being wrong
-costs a page with room to spare at the foot or a column that scrolls a little,
-which is what the whole answer did before it was paged; it is never an error,
-so a figure checked on a real screen is how to correct it.
+costs a page with room to spare at the foot or a column that scrolls a little;
+it is never an error, so a figure checked on a real screen is how to correct
+it.
+
+Filling every column is Oliver's ruling of 2026-09-09, made against the first
+paged run over his whole library: some pages drew three columns and others
+drew one. The rule it replaced ended a page as soon as the next artist would
+not fit in the shortest column, which sounds like it prevents scrolling and in
+a real library prevents filling. Measured from that run's own answer: 215
+artists whose heights run from 1 row to 109, with a median of 23 against a
+column of 30. An artist taller than a column is the ordinary case, so the page
+ended almost as soon as it began. Filling every column instead lets a column
+holding a tall artist scroll, which is one artist's worth of scrolling rather
+than the library's; it took that answer from 99 pages to 41 with every one
+of them but the last carrying three columns.
 
 Every page is built at once rather than on the way to it, because a tick is
 held by the row it is on: a page rebuilt on return would quietly drop whatever
@@ -1374,8 +1386,10 @@ Acceptance: Given more source artists than a page holds, when the dialog
 opens, then the first page is in front and the way back is struck through;
 given the last page, then the way on is struck through; given an album ticked
 on one page, when another page has been looked at, then it is still ticked and
-still goes to a shop; given an artist taller than a column, then it has a page
-of its own; given a run that found nobody, then there is still one page.
+still goes to a shop; given artists of any heights whatever, then every page
+but the last carries every column; given an artist taller than a column, then
+it fills one and shares its page; given a run that found nobody, then there is
+still one page.
 
 Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_are_stops_on_the_ring`
 

@@ -6,11 +6,15 @@ answers with hundreds of source artists, so three columns of it are three
 lists nobody reaches the end of: the scrollbar says how much is left and
 nothing says where you are in it.
 
-**A page is what the columns can show without being scrolled.** How many rows
-that is comes from the height of the dialog exactly as the number of columns
-comes from its width, so a laptop panel gets a shorter page rather than the
-same page with a scrollbar on it. The arithmetic is `results_room`'s; this
-puts the pages on screen.
+**A page fills every one of its columns.** How deep a column is filled comes
+from the height of the dialog exactly as the number of columns comes from its
+width, so a laptop panel gets a shorter page rather than the same page with
+more in it. A column holding an artist taller than the screen scrolls, which
+is one artist's worth of scrolling rather than the library's: measured from
+Oliver's own library, an artist runs from 1 row to 109 against a column of 30,
+so a page that refused to overflow a column could not be filled at all and
+drew one column where it should have drawn three. The arithmetic is
+`results_room`'s; this puts the pages on screen.
 
 **Every page is built at once and kept.** Building the page somebody turns to
 would be the obvious economy and it would be the wrong one: a tick is held by
