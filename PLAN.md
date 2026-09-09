@@ -89,6 +89,39 @@ as decisions:
 Done when: cannot be stated. It is an idea rather than a milestone; it becomes
 one only after the discussion above.
 
+## 2. Concerts near you by artists you hold. Not designed.
+
+Idea recorded 2026-09-09 for later scoping, at Oliver's request and in his
+words: the ability to explore, over say the next month, the concerts within a
+reasonable range that are on for artists you have albums for. It is written
+down so it is not lost, not because it is understood.
+
+It shares its shape with a discovery run, which is why it is worth recording
+rather than starting: it names artists the library holds to an outside service
+and shows what comes back. What it adds is two things a run has never had.
+
+Three things to settle before anything else, none of them small:
+
+- **It names a PLACE as well as artists.** Everything Stellody reaches out
+  with today says what a listener ticked and nothing about who or where they
+  are. A radius around somewhere is a location; a location beside a taste
+  in music is a different kind of disclosure than either alone. Where that
+  place comes from, whether it is typed in rather than detected and what is
+  sent to get an answer are the first questions, ahead of which service is
+  asked.
+- **The answer goes stale in a way a discovery answer does not.** A record
+  that exists still exists next month; a concert next month does not. The
+  memory that makes a run affordable stands for thirty days on the ground that
+  catalogues barely change over that period, which is precisely untrue here, so
+  what may be remembered and for how long has to be worked out again rather
+  than inherited.
+- **Which service, on what terms.** The same question the video idea raises.
+  It decides whether this is a list on a screen or an address handed to a
+  browser; the answer to that shapes everything above it.
+
+Done when: cannot be stated. It is an idea rather than a milestone; it becomes
+one only after the discussion above.
+
 ## Not planned, so that this is not revisited
 
 - **Making the sites findable.** Ruled out by the owner on 2026-09-08, having
