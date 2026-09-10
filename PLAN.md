@@ -40,38 +40,18 @@ that a music file is only ever read and that nothing reaches the network unasked
 beyond the update check, are held by tests rather than by intention. Nothing
 below is sized against the number.
 
-## 1. Widen the formats that can be proved.
+## There is no open planned work.
 
-Three suffixes join the library: `.wma`, `.wv` and `.aac`. The specification is
-`FORMATS.md`, written on 2026-09-09 and complete; it holds the requirements,
-the measurements they rest on and the build order, so nothing is restated here
-beyond what the milestone commits to.
+Every milestone this file carried has either shipped or been ruled out, so
+there is nothing here waiting to be built. That is a statement about the plan
+rather than about the product: the section below records what was decided
+against and why, which is the half of a plan that stops the same ground being
+argued twice. A new milestone arrives here when somebody decides on one.
 
-What makes this a milestone rather than a decoder job is the standard it
-changes. The rule in `walker.py` was that a format is claimed to work only
-where it has been seen to work, meaning a real file in the reference library.
-Nothing here has one. The new standard is proof by a fixture the suite
-generates, which is weaker in exactly one named way: it proves what FFmpeg
-writes rather than what a real ripper writes. `FORMATS.md` section 1.3 states
-that as a non-claim; the README gains it too, so nobody reads the support as
-wider than it is.
-
-The three were chosen by what can be encoded rather than by what can be
-decoded. The bundled FFmpeg decodes every candidate format measured and
-mutagen reads tags for all of them, so no decoder was ever going to be written;
-FFmpeg can encode only some of what it decodes, so the rest cannot have a
-fixture at all. Section 1.4 names each exclusion with its reason.
-
-`FORMATS.md` section 6 holds the order: the domain depth rules first, then the
-probe, then the walker and the decoder chooser, then the documents. OQ-F01 is
-open and is the owner's: does somebody holding WMA files want them in the
-library rather than reported? Shipping this changes what such a library looks
-like without anybody being asked.
-
-**Done when:** a generated fixture of each of the three suffixes is walked,
-probed, assembled into an album and decoded back from a test; the full gate is
-green at 100% branch over domain and application; the README states the
-non-claim about fixtures in place of real files.
+One question is open rather than one milestone: OQ-F01 in `FORMATS.md` is the
+owner's to answer. Does somebody holding WMA files want them in the library
+rather than reported? They are in it now, which changes what such a library
+looks like without that person having been asked.
 
 ## Not planned, so that this is not revisited
 
@@ -91,8 +71,8 @@ non-claim about fixtures in place of real files.
   libraries: the FFmpeg already inside PyAV decodes every one of them and
   mutagen already reads their tags, so no decoder was ever going to be written.
   What separates them now is whether a fixture can be generated to prove the
-  path, since FFmpeg can encode only some of what it can decode. Milestone 1
-  takes the three that can be proved. Each of the rest reopens the day a
+  path, since FFmpeg can encode only some of what it can decode. The three
+  that can be proved are taken. Each of the rest reopens the day a
   fixture can be made for it or a real file is measured; `FORMATS.md` section
   1.4 holds the reason for each.
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as

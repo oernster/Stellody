@@ -46,8 +46,8 @@ if it ever stopped being true the build would fail.
   doing. Switched off it adds nothing of its own, handing each block back
   untouched. On Windows, where Stellody can take the sound device exclusively,
   that means what reaches your speakers is bit for bit what is in the file, for
-  the formats that store it exactly: FLAC, WAV, AIFF and the lossless ALAC
-  inside an M4A.
+  the formats that store it exactly: FLAC, WAV, AIFF, WavPack and the lossless
+  ALAC inside an M4A.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
 - **Stars and play counts.** Rate a song, rate the album separately, then read
@@ -111,13 +111,23 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 
 ## Before you download
 
-- **It plays FLAC, MP3, Ogg, Opus, WAV, AIFF and M4A.** Not WMA, Monkey's Audio,
-  WavPack, Musepack or DSD. Anything it cannot decode is now named in the health
-  report rather than passed over, so a missing album says so instead of simply
-  not appearing. An M4A carries either AAC or ALAC and the difference matters:
-  the lossy one is played without ever being called bit perfect, while ALAC
-  states the depth it stores and can be. A bonus video that came with an album
+- **It plays FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A, WMA, WavPack and AAC.** Not
+  Monkey's Audio, Musepack, DSD, TAK, TrueAudio, CAF or an M4B audiobook.
+  Anything it cannot decode is named in the health report rather than passed
+  over, so a missing album says so instead of simply not appearing. An M4A
+  carries either AAC or ALAC and the difference matters: the lossy one is
+  played without ever being called bit perfect, while ALAC states the depth it
+  stores and can be. WMA and AAC are lossy on the same terms; WavPack is
+  lossless and keeps the depth it states. A bonus video that came with an album
   plays as well, from the same MP4 container under a `.m4v` name.
+- **The last three of those are proved differently, so here is what that
+  means.** Every other format on that list was tested against files somebody
+  owns. There were none of WMA, WavPack or AAC to test with, so each is proved
+  against a file the test suite encodes for the purpose. That exercises the
+  whole path, the walk, the tags, the decode and the honesty rules; it does not
+  tell anybody what a Windows Media ripper of 2004 actually wrote. If one of
+  yours is read wrongly, that is a defect worth reporting rather than a format
+  nobody thought about.
 - **Windows, macOS and Linux.** A setup program on Windows, a disk image
   on macOS and a Flatpak on Linux. One difference is worth knowing before you
   choose: on Windows, Stellody can take the sound device exclusively and hand
@@ -206,7 +216,7 @@ Everything above is the product. What follows is the code.
 | Language | Python 3.13 |
 | Interface | PySide6 |
 | Tags | mutagen |
-| Decode | soundfile, plus PyAV for M4A |
+| Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
 | Output | sounddevice, on WASAPI |
 | Buffers | numpy |
 | Store | SQLite |
@@ -346,7 +356,8 @@ shared layers together with `main.py`, the build scripts and the tests, is
 under GPL-3.0. The user interface layer is under LGPL-3.0, to align with Qt.
 See `LICENSE` for the mapping.
 
-A packaged build bundles FFmpeg through PyAV, to decode M4A. The FFmpeg
+A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack and
+AAC. The FFmpeg
 libraries themselves are built LGPL-3.0-or-later, verified from the licence
 string the build reports rather than from its documentation. That build also
 links libx264 and libx265, which are GPL-2.0-or-later, so the packaged

@@ -464,7 +464,7 @@ directories plus macOS AppleDouble stubs; nothing else.
 
 ## Formats and probing
 
-**Three tag shapes cover every format, measured rather than assumed.** FLAC and
+**Five tag shapes cover every format, measured rather than assumed.** FLAC and
 the Ogg family hand back `(name, value)` pairs already spelled the way the
 resolution rules read them, so those pass through whole and nothing a ripper
 wrote is discarded. MP3, WAV and AIFF hand back ID3 frames keyed by a four
@@ -481,6 +481,17 @@ back into that form is what keeps one set of resolution rules for every format.
 Its cover lives in an atom carrying no picture type, so `covers.py` presents
 each as a front cover and the existing ordering reduces to size alone.
 
+WMA is the fourth and WavPack the fifth, both arriving with the formats
+`FORMATS.md` widened the walk to take. `ASF_NAMES` translates Microsoft's own
+attribute names, matched without regard to case: measured on 2026-09-09, one
+file states its title under both `Title` and `title`, so a value already
+collected under a name is not collected twice. WavPack carries APEv2, which is
+a mapping rather than a list of pairs, so iterating one yields its keys and the
+pair path raises on it exactly as it does on MP4; it needs no table beyond that,
+since `application/tags.py` already reads the spellings APEv2 uses. A raw AAC
+is a stream with no tag block at all, so it states nothing and takes its album
+from its folder as any untagged file does.
+
 **A lossy MP4 states a bit depth it does not have; that one had teeth.**
 Measured on a real AAC file: mutagen reports sixteen bits per sample, because
 the MP4 sample entry carries that number whatever the codec does with it. A
@@ -489,6 +500,18 @@ have badged an AAC track as delivered untouched. `_bit_depth` therefore honours
 the number only for a codec that genuinely stores its samples, which in MP4
 means ALAC. The trap itself is pinned by a test, so the suppression cannot be
 deleted as unnecessary without someone noticing that mutagen still sets it.
+
+**Which families those are is the domain's to say**, in
+`stellody/domain/formats.py`, since it is a fact about formats rather than
+about a tag library. `LOSSY_FAMILIES` names the three whose stated depth is not
+a stored one and `stored_depth` is the one rule; the probe's only part is
+naming the family a file belongs to. The rule believes a stated depth unless
+the family is named, which is the deliberate direction: naming the families to
+be trusted instead would mean a lossless format nobody thought of losing a
+bit-perfect stream it had earned, in silence. WMA and AAC are named there even
+though mutagen states no depth for either as measured on 2026-09-09, because
+both are lossy by definition; a tag library that starts reporting their header
+field therefore changes nothing.
 
 **A date tag is read for its year, never sliced.** What a ripper writes there
 has no one shape: a FLAC commonly carries `2003-05-12` while an iTunes rip
@@ -541,10 +564,21 @@ fail.
 
 **The suffix table is decided by what can be read, not by what can be decoded.**
 `AUDIO_SUFFIXES` in the walker holds `.flac .mp3 .ogg .oga .opus .wav .aiff
-.aif .m4a`. CAF is excluded despite libsndfile decoding it, because mutagen
-returns None for a CAF entirely, so such a file would scan into an album with
-no title. WMA, Musepack, Monkey's Audio, WavPack and DSD need a decoder nothing
-here carries.
+.aif .m4a .wma .wv .aac`. CAF is excluded despite libsndfile decoding it,
+because mutagen returns None for a CAF entirely, so such a file would scan into
+an album with no title. Monkey's Audio, Musepack, DSD and TAK are excluded for
+a reason that is about evidence rather than about decoders: the bundled FFmpeg
+decodes all four and can encode none of them, so no fixture can be generated to
+prove the path. TrueAudio encodes and decodes; it is excluded because mutagen
+states no channel count for it, so the probe would have to invent one.
+
+**The last three of that table are proved by a generated fixture**, which is a
+weaker standard than the rest of it and is written down for that reason.
+`FORMATS.md` is the specification; section 1.3 states the non-claim, the README
+states it to a reader and `tests/infrastructure/widened_support.py` encodes the
+fixtures at test time. Nothing of any of the three is committed, which
+`tests/structural/test_no_committed_audio.py` asserts, proved by planting a
+file and reading the failure.
 
 **What the walk takes is that table plus the picture one.** `PLAYABLE_SUFFIXES`
 is `AUDIO_SUFFIXES` united with `PICTURE_SUFFIXES`, which holds `.m4v` and lives
@@ -554,13 +588,19 @@ reads it off the path and a source built anywhere answers the same way. So a
 bonus video is walked, probed and assembled exactly as a song is, which is what
 kept the sound path untouched when it arrived.
 
-M4A is the one entry libsndfile cannot open; it is there because a second
+M4A was the first entry libsndfile cannot open; it is there because a second
 decoder was added for it rather than because the rule bent. What the rule asks
 of it is unchanged: mutagen has to be able to read its tags. It can, as a
 third tag shape the probe was taught. The scope was set by measurement, not by
 appetite: of the 126 folders that then held nothing Stellody could decode, all
 126 were M4A, 1375 files of it; no WMA, APE, WV, MPC or DSD file existed
 anywhere in the library to justify writing more.
+
+WMA, WavPack and AAC arrive on the same footing and cost the packaged build
+nothing, which is what changed the answer: measured on 2026-09-09, the FFmpeg
+already behind `PacketReader` decodes all three, so `PACKET_SUFFIXES` names
+them and no decoder was written. What the reference library holds did not
+change; what a decision about other people's libraries costs did.
 
 **There is a second table; nothing is silently absent.** `UNPLAYABLE_SUFFIXES`
 names the audio this build knows by sight and cannot decode. A folder holding
