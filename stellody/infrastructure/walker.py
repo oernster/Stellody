@@ -21,8 +21,12 @@ from stellody.domain.track import PICTURE_SUFFIXES
 # Its tags still have to be readable by mutagen for the same reason as every
 # other entry. They are, as a third tag shape the probe now understands.
 #
-# WMA, Musepack, Monkey's Audio, WavPack and DSD are absent because nothing
-# here decodes them; see PLAN.md for the decoder that would.
+# WMA, WavPack and AAC arrive on that same footing and on a weaker standard of
+# evidence, which `FORMATS.md` states in full. Every entry above was seen to
+# work against a file somebody owns; those three were proved against a file the
+# suite encodes for the purpose, because the reference library holds none of
+# them. That proves what FFmpeg writes rather than what a real ripper writes,
+# which is the whole of the difference and is why it is written down.
 AUDIO_SUFFIXES = frozenset(
     {
         ".flac",
@@ -34,6 +38,9 @@ AUDIO_SUFFIXES = frozenset(
         ".aiff",
         ".aif",
         ".m4a",
+        ".wma",
+        ".wv",
+        ".aac",
     }
 )
 # Audio this build knows by sight and cannot decode. Named rather than
@@ -42,19 +49,25 @@ AUDIO_SUFFIXES = frozenset(
 # different reason: libsndfile decodes it while mutagen reads nothing out of
 # it, so it would scan into an album with no title.
 #
-# M4B is an audiobook in the same container M4A uses. It is left here rather
-# than moved across with M4A because no file of that kind was measured; a
-# format is claimed to work only where it has been seen to.
+# M4B is an audiobook in the same container M4A uses, measured working and
+# left here anyway: an audiobook is not music and a chaptered one arrives as
+# one enormous track that would read as an album nobody made.
+#
+# The rest are here because no fixture can be made for them: the bundled
+# FFmpeg decodes Monkey's Audio, Musepack, DSD and TAK while encoding none of
+# them, so there is nothing to prove the path with. TrueAudio is the one that
+# decodes and encodes, cut because mutagen states no channel count for it, so
+# the probe would have to invent one. `FORMATS.md` section 1.4 holds each
+# reason; each reopens the day a real file is measured.
 UNPLAYABLE_SUFFIXES = frozenset(
     {
         ".m4b",
-        ".aac",
-        ".wma",
         ".ape",
-        ".wv",
         ".mpc",
         ".dsf",
         ".dff",
+        ".tta",
+        ".tak",
         ".caf",
     }
 )

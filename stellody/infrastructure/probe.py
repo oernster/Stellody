@@ -4,7 +4,7 @@ This module opens music files. It opens them for reading and it can do nothing
 else: a structural test asserts that the mutagen write surface is unreachable
 from any module that imports a tag library.
 
-**Three tag shapes cover every format Stellody decodes**, measured rather than
+**Five tag shapes cover every format Stellody decodes**, measured rather than
 assumed. FLAC and the Ogg family hand back `(name, value)` pairs already
 spelled the way the resolution rules read them, so those pass through whole and
 nothing a ripper wrote is discarded. MP3, WAV and AIFF hand back ID3 frames
@@ -18,6 +18,19 @@ them, it raises. Its numbers arrive already parsed as a pair of integers rather
 than as the "3/12" text every other format writes, so they are put back into
 that form on the way out and the rules downstream stay one set of rules.
 
+WMA is the fourth. Its tags do iterate as pairs, so nothing raises; the names
+are Microsoft's own, so an untranslated one would simply be a tag nobody reads,
+which is the quieter failure of the two. Measured on 2026-09-09, one FFmpeg
+written file states its title under both `Title` and `title`, so the table is
+read without regard to case and a value already collected under a name is not
+collected twice.
+
+WavPack is the fifth and it is APEv2, which is a mapping rather than a list of
+pairs: iterating one yields its KEYS, so the pair path raises there exactly as
+it does for MP4. No table is needed beyond that, since the keys an APEv2 file
+carries are already spelled the way the resolution rules read them, `track` and
+`disc` and `album_artist` included.
+
 **What a format does not state is reported as absent, never invented.** A lossy
 file has no bit depth, so it reports none rather than a plausible sixteen; only
 FLAC states a frame count, so everything else takes its length in seconds
@@ -30,6 +43,10 @@ sample entry carries that number whatever the codec does with it. Believing it
 would make a lossy track claim a stored depth; a claimed depth is what
 `is_bit_perfect` tests, so an AAC file would have been badged bit perfect. The
 depth is therefore taken only from a codec that genuinely stores its samples.
+
+Which families those are is the domain's to say, in `domain/formats.py`. This
+module's only part in it is naming the family a file belongs to, since that is
+the question a tag library can answer and the rule itself is not.
 """
 
 from __future__ import annotations
@@ -37,11 +54,21 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 import mutagen
+from mutagen.aac import AAC
+from mutagen.apev2 import APEv2
+from mutagen.asf import ASF, ASFTags
 from mutagen.id3 import ID3
 from mutagen.mp4 import MP4, MP4Tags
 from mutagen.oggopus import OggOpus
 
 from stellody.application.values import AudioProperties
+from stellody.domain.formats import (
+    FAMILY_AAC,
+    FAMILY_MP4_LOSSY,
+    FAMILY_OTHER,
+    FAMILY_WMA,
+    stored_depth,
+)
 
 APPLEDOUBLE_PREFIX = "._"
 
@@ -78,6 +105,25 @@ MP4_NAMES = {
 MP4_PAIR_NAMES = {"trkn": "TRACKNUMBER", "disk": "DISCNUMBER"}
 
 MP4_ART_ATOM = "covr"
+
+# ASF attribute names, in the same vocabulary. `Author` is the performer and
+# `WM/PartOfSet` is the disc, which are Microsoft's spellings for the two
+# fields whose names carry no clue. Matched without regard to case, because a
+# file measured on 2026-09-09 stated its title under both `Title` and `title`;
+# the date is the one field where the two spellings are not the same name, so
+# both are listed. A name outside this table is left alone rather than guessed
+# at, exactly as an ID3 frame nobody reads is.
+ASF_NAMES = {
+    "title": "TITLE",
+    "author": "ARTIST",
+    "wm/albumtitle": "ALBUM",
+    "wm/albumartist": "ALBUMARTIST",
+    "wm/year": "DATE",
+    "date": "DATE",
+    "wm/genre": "GENRE",
+    "wm/tracknumber": "TRACKNUMBER",
+    "wm/partofset": "DISCNUMBER",
+}
 
 # The one MP4 codec that stores its samples rather than approximating them, so
 # the one whose stated bit depth means anything. mutagen spells a lossy codec
@@ -125,10 +171,25 @@ def _sample_rate(audio: object, info: object) -> int:
 def _bit_depth(audio: object, info: object) -> int:
     """The depth the file stores, which a lossy MP4 states but does not have."""
     stated = int(getattr(info, "bits_per_sample", 0) or 0)
-    if not isinstance(audio, MP4):
-        return stated
-    codec = str(getattr(info, "codec", "") or "")
-    return stated if codec == MP4_LOSSLESS_CODEC else 0
+    return stored_depth(_family(audio, info), stated)
+
+
+def _family(audio: object, info: object) -> str:
+    """Which family the domain's depth rule should judge this file by.
+
+    Only the families that rule names are told apart. An MP4 needs its codec
+    read to be placed at all, since one container holds both a codec that
+    stores its samples and one that approximates them; every other family is
+    one or the other outright.
+    """
+    if isinstance(audio, MP4):
+        codec = str(getattr(info, "codec", "") or "")
+        return FAMILY_OTHER if codec == MP4_LOSSLESS_CODEC else FAMILY_MP4_LOSSY
+    if isinstance(audio, ASF):
+        return FAMILY_WMA
+    if isinstance(audio, AAC):
+        return FAMILY_AAC
+    return FAMILY_OTHER
 
 
 def _frame_count(info: object, rate: int) -> int:
@@ -166,6 +227,10 @@ def _collect(tags: object) -> dict[str, tuple[str, ...]]:
         return _from_frames(tags)
     if isinstance(tags, MP4Tags):
         return _from_atoms(tags)
+    if isinstance(tags, ASFTags):
+        return _from_attributes(tags)
+    if isinstance(tags, APEv2):
+        return _from_keys(tags)
     return _from_pairs(tags)
 
 
@@ -174,6 +239,43 @@ def _from_pairs(tags: Iterable[tuple[str, str]]) -> dict[str, tuple[str, ...]]:
     collected: dict[str, list[str]] = {}
     for key, value in tags:
         collected.setdefault(key.upper(), []).append(value)
+    return {key: tuple(values) for key, values in collected.items()}
+
+
+def _from_attributes(tags: ASFTags) -> dict[str, tuple[str, ...]]:
+    """ASF attributes, translated into the same vocabulary as a Vorbis comment.
+
+    A value already collected under a name is dropped rather than collected
+    twice, which is the one place this differs from the pair path. WMA states
+    a field under two spellings where the others state it once, so keeping
+    both would hand the resolution rules the same title as two artists' worth
+    of values and nothing downstream could tell that apart from a file that
+    genuinely says something twice.
+    """
+    collected: dict[str, list[str]] = {}
+    for key, value in tags:
+        name = ASF_NAMES.get(str(key).lower())
+        if name is None:
+            continue
+        text = str(value).strip()
+        if text and text not in collected.setdefault(name, []):
+            collected[name].append(text)
+    return {key: tuple(values) for key, values in collected.items() if values}
+
+
+def _from_keys(tags: APEv2) -> dict[str, tuple[str, ...]]:
+    """APEv2 items, which are already spelled as the rules read them.
+
+    The mapping is what makes this its own path rather than the pair one:
+    iterating an APEv2 yields keys alone, so the pair path raises on it. The
+    names need no table, since `application/tags.py` already accepts the
+    spellings APEv2 uses.
+    """
+    collected: dict[str, list[str]] = {}
+    for key in tags:
+        text = str(tags[key]).strip()
+        if text:
+            collected.setdefault(str(key).upper(), []).append(text)
     return {key: tuple(values) for key, values in collected.items()}
 
 

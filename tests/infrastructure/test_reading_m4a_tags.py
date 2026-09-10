@@ -171,8 +171,13 @@ class TestTheWalkNowTakesIt:
         assert ".m4a" not in UNPLAYABLE_SUFFIXES
 
     def test_the_formats_nothing_decodes_are_still_named(self) -> None:
-        """Reporting them is what stops an album vanishing without a word."""
-        for suffix in (".wma", ".ape", ".wv", ".mpc", ".dsf", ".dff", ".m4b"):
+        """Reporting them is what stops an album vanishing without a word.
+
+        WMA and WavPack left this list when a fixture could be generated for
+        them; the ones here are the ones no fixture can prove, so widening the
+        taken set must not have narrowed what is reported.
+        """
+        for suffix in (".ape", ".mpc", ".dsf", ".dff", ".tta", ".m4b"):
             assert suffix in UNPLAYABLE_SUFFIXES
 
     def test_no_suffix_is_in_both_sets(self) -> None:

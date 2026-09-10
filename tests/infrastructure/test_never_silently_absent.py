@@ -68,19 +68,23 @@ def _of_kind(report, kind: IssueKind):
 
 
 class TestAFolderHoldingOnlyWhatCannotBePlayed:
-    """A folder of 21 WMA files and nothing else.
+    """A folder of 21 Monkey's Audio files and nothing else.
 
     This was BT's Emotional Technology when it was written, which is 21 M4A
     files. M4A is decoded now, so the example moved to a format that still
     cannot be: what is being guarded is the reporting, not the format; a
     guard whose example has quietly become playable proves nothing at all.
+    That has now happened twice, since the example moved to WMA and WMA is
+    decoded too. Monkey's Audio is the one it cannot happen to again on the
+    present standard: the bundled FFmpeg decodes it and cannot encode it, so
+    no fixture can be generated to prove a path for it.
     """
 
     def _report(self, tmp_path: pathlib.Path):
         root = _library(
             tmp_path / "music",
             "BT/Emotional Technology",
-            [f"{number:02d} Track.wma" for number in range(1, 22)],
+            [f"{number:02d} Track.ape" for number in range(1, 22)],
         )
         return _scan(root, str(tmp_path / "library.db"))
 
@@ -100,7 +104,7 @@ class TestAFolderHoldingOnlyWhatCannotBePlayed:
     def test_it_says_how_many_and_which_format(self, tmp_path: pathlib.Path) -> None:
         found = _of_kind(self._report(tmp_path), IssueKind.UNPLAYABLE_FORMAT)[0]
         assert "21" in found.detail
-        assert ".wma" in found.detail
+        assert ".ape" in found.detail
 
     def test_it_names_the_folder_so_the_album_can_be_found(
         self, tmp_path: pathlib.Path
@@ -123,7 +127,7 @@ class TestAFolderHoldingBoth:
         root = _library(
             tmp_path / "music",
             "BT/Movement in Still Life",
-            ["01 One.flac", "02 Two.flac", "03 Bonus.wma"],
+            ["01 One.flac", "02 Two.flac", "03 Bonus.ape"],
         )
         return _scan(root, str(tmp_path / "library.db"))
 

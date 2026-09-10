@@ -45,7 +45,12 @@ WORKING_DTYPE = "float32"
 # off the reference library unmodified and decoded their sound correctly. The
 # picture is read separately by whatever shows it; nothing on the sound path
 # knows a picture is there.
-PACKET_SUFFIXES = frozenset({".m4a"}) | PICTURE_SUFFIXES
+#
+# WMA, WavPack and AAC join them for the first reason rather than the second:
+# libsndfile opens none of the three, while the FFmpeg already behind the
+# packet reader decodes all three. So they need no decoder of their own and
+# the packaged build does not grow by a byte; they need only to be named here.
+PACKET_SUFFIXES = frozenset({".m4a", ".wma", ".wv", ".aac"}) | PICTURE_SUFFIXES
 
 
 class DecodeError(PlaybackError):
