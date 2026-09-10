@@ -375,9 +375,19 @@ DSD, TAK, CAF, `.m4b` and `.tta`, each for the reason given in section 1.4.
 
 ## 5. Open questions
 
-| # | Question | Owner |
-|---|---|---|
-| OQ-F01 | A-F03: does a listener with WMA files want them in the library rather than reported? The current behaviour is to report them, so shipping this changes what such a library looks like without being asked. | Oliver |
+None. OQ-F01 asked whether a listener holding WMA files wants them in the
+library rather than reported, since taking them changes what such a library
+looks like without that person being asked. Ruled by Oliver on 2026-09-10:
+they belong in the library, which is the behaviour that shipped.
+
+The ruling was made without certainty and is recorded that way, because a
+decision stated more confidently than it was made is the kind that gets
+quietly reversed later by whoever reads it. Nobody here holds a WMA library,
+so nobody here can settle it; what would settle it is somebody who does saying
+how theirs reads. Until then the answer stands and the cost of being wrong is
+known: a listener who wanted those files reported instead sees albums appear
+that used to be named in the health report, which is visible rather than
+silent and is the milder of the two directions to be wrong in.
 
 ## 6. The build order this implies
 

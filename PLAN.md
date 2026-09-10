@@ -48,10 +48,10 @@ rather than about the product: the section below records what was decided
 against and why, which is the half of a plan that stops the same ground being
 argued twice. A new milestone arrives here when somebody decides on one.
 
-One question is open rather than one milestone: OQ-F01 in `FORMATS.md` is the
-owner's to answer. Does somebody holding WMA files want them in the library
-rather than reported? They are in it now, which changes what such a library
-looks like without that person having been asked.
+Nor is any question open. The last one, whether somebody holding WMA files
+wants them in the library rather than reported, was ruled on 2026-09-10: they
+belong in it, which is what shipped. `FORMATS.md` section 5 holds the ruling
+along with the one thing that would revisit it.
 
 ## Not planned, so that this is not revisited
 
