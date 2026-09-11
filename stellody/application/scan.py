@@ -222,9 +222,18 @@ class ScanLibrary:
         absent = self._store.mark_absent(frozenset(seen))
         # Read after the walk rather than before it, so a correction accepted
         # while a scan was running is honoured by the library it produces.
-        albums, issues = assemble_albums(
-            _grouping_entries(records), self._store.all_overrides()
-        )
+        #
+        # Assembled exactly as `LoadLibrary` assembles it, stated album values
+        # first and the accepted corrections over the tracks afterwards. The
+        # two readings have to agree because they are compared: the window
+        # measures a scan against the library on screen, so a scan that read
+        # the same unchanged music another way reported the stated album gone
+        # and its raw-tagged self new, on every rescan for ever, since neither
+        # reading could ever become the other. Reported from a real library on
+        # 2026-09-10 as ten albums arriving and two leaving with no folder
+        # re-read at all.
+        entries = stated_over(_grouping_entries(records), self._store.all_album_edits())
+        albums, issues = assemble_albums(entries, self._store.all_overrides())
         return ScanReport(
             albums=albums,
             issues=tuple(issue for record in records for issue in record.issues)
