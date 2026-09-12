@@ -121,7 +121,7 @@ inside PyAV supplies every decoder named here.
 |---|---|---|---|
 | A-F01 | MEASURED 2026-09-09. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; it encodes wmav2, wavpack and aac. | Answered |
 | A-F02 | MEASURED 2026-09-09. mutagen reads ASF, WavPack and AAC tags; a WMA fixture reports no stated depth, a WavPack fixture written as `s16p` reports 16. | Answered |
-| A-F03 | A listener with WMA files wants them in the library rather than reported. Nobody has been asked; the alternative is the current behaviour, which is to report them. | Oliver | before release |
+| A-F03 | RULED 2026-09-10, without certainty. A listener with WMA files wants them in the library rather than reported; section 5 records the ruling. | Answered |
 
 ## 3. Requirements
 
@@ -352,7 +352,7 @@ and prose rules.
 Priority: Must
 
 Requirement: Every module this change touches shall stay at or below 400 lines,
-shall land at 350 or below where it enters the 381 to 399 band, with the domain
+shall land at 350 or below where it enters the 381 to 400 band, with the domain
 and application layers holding 100% branch coverage.
 
 Verification: `.\gate.ps1`, read by exit code.
@@ -406,3 +406,36 @@ The diagnostic that says the foundation is sound: a fixture of each format must
 be walked, probed, assembled into an album and decoded back from a test, before
 anything about the interface is touched. Nothing here has an interface of its
 own.
+
+## 7. Amendments
+
+Numbered, each with its reason, as the baseline asks.
+
+**Amendment 1, 2026-09-10: OQ-F01 answered.** Section 5 and A-F03 record
+Oliver's ruling that WMA files belong in the library, made without certainty.
+Section 5 was rewritten in place when the ruling was made; this entry is the
+record that should have come with it.
+
+**Amendment 2, 2026-09-12: what the build measured where it differed from the
+text above.** No requirement's intent changed; each point corrects a statement
+the code proved wrong.
+
+- **WMA states no depth at all.** FR-F06 calls WMA the same shape as a lossy
+  MP4, which states sixteen. Measured while building, mutagen states no bits
+  per sample for WMA or for a raw AAC, so both already reported nought.
+  `stellody/domain/formats.py` names both lossy anyway, on what the codec does
+  rather than on what a tag library reports.
+- **There are five tag shapes, not four.** FR-F04, section 1.6 and the build
+  order speak of ASF as the fourth. WavPack carries APEv2, which iterates as
+  keys rather than pairs, so it is a fifth. A raw AAC is an ADTS stream with no
+  tag block, so it states no tags whatever wrote it.
+- **The reported set lost three and gained two.** Section 3.3 says it names
+  three fewer. `.tta` and `.tak` were added, since FR-F08 requires `.tta` named
+  and neither was named before; the set therefore names one fewer.
+- **No AAC-in-MP4 case is named.** FR-F08 refers to cases the walker already
+  names. It names none; an AAC inside an MP4 is an `.m4a` and plays.
+- **The guard scans the working tree.** NFR-F-TEST-001 asks for a test that no
+  fixture audio is tracked. `tests/structural/test_no_committed_audio.py` scans
+  the working tree instead, which also catches a fixture nobody has staged.
+- **The danger band is 381 to 400.** NFR-F-MAINT-001 said 399;
+  `tests/structural/test_loc.py` counts a file at the cap as inside the band.

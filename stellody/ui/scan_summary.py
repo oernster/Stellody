@@ -150,8 +150,8 @@ def summary_html(change: LibraryChange, report: ScanReport) -> str:
     if change.gone_albums:
         body.append("<h3>Albums no longer found</h3>")
         body.append(
-            "<p>These were in your library and are not now. An unplugged drive "
-            "or a folder renamed on disk both read this way; nothing has been "
+            "<p>These were in your library and are not now. A folder renamed, "
+            "moved or removed on disk reads this way; nothing has been "
             "deleted.</p>"
         )
         body.append(_album_list(change.gone_albums))

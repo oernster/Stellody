@@ -200,8 +200,10 @@ flatpak install --user stellody.flatpak
 flatpak run uk.codecrafter.Stellody
 ```
 
-It asks for your home directory READ ONLY, which is the whole of what it needs:
-Stellody never writes to a music file, so on Linux it is not given the means to.
+It can read your home directory and any removable drive but can write to none
+of them: Stellody never writes to a music file, so on Linux it is not given the
+means to. Beyond that it asks for sound, the screen and the network, the last
+for the things listed under Your privacy.
 
 ---
 
@@ -309,8 +311,8 @@ nothing else; pass `--purge-data` to remove your ratings and settings as well.
 
 `docs/` is the site, served by GitHub Pages at
 [stellody.co.uk](https://stellody.co.uk/), which is the canonical host. Version
-tokens in it are stamped from `VERSION` by `stamp_version.py`, which both build
-scripts call, so the site is never hand-versioned.
+tokens in it are stamped from `VERSION` by `stamp_version.py`, which every build
+script calls, so the site is never hand-versioned.
 
 The same pages are also served at `stellody.com`, out of the
 [stellody-website](https://github.com/oernster/stellody-website) repository

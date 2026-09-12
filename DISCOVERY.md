@@ -101,8 +101,9 @@ HTTPS connection during a run. Everything else the application already assumes.
 - **C-02** No music file is ever modified.
 - **C-03** Nothing leaves the machine that names the listener or the machine.
 - **C-04** The domain layer stays pure: no I/O, no framework, no clock.
-- **C-05** Modules stay at or below 400 lines; a file in the 381 to 399 band
-  is reduced to 350 or below.
+- **C-05** Modules stay at or below 400 lines; a file in the 381 to 400 band
+  is reduced to 350 or below. Amended 2026-09-12: this said 399 while
+  `tests/structural/test_loc.py` counts a file at the cap as inside the band.
 - **C-06** Domain and application hold 100% branch coverage.
 - **C-07** No credential of any kind is compiled into the application, so no
   source requiring an API key may be used. This is what rules out Discogs and
@@ -1789,7 +1790,7 @@ Priority: Must
 
 Requirement: Every module added by this work shall sit inside the existing
 coverage gate at 100% branch for the domain and application layers, stay at or
-below 400 lines and land at 350 or below where it enters the 381 to 399 band.
+below 400 lines and land at 350 or below where it enters the 381 to 400 band.
 
 Verification: `.\gate.ps1`, read by exit code.
 

@@ -43,8 +43,9 @@ real library and the Windows shell would either be a number nobody can hold or a
 suite full of mocks standing in for the very things worth testing.
 
 **The build and packaging scripts are long and are exempt from the line cap.**
-`buildexe.py`, `buildinstaller.py`, `stamp_version.py`, `stamp_sitemap.py`,
-`sync_site.py` and `generate_icons.py` are linear recipes read top to bottom.
+`buildexe.py`, `buildinstaller.py`, `builddmg.py`, `dmg_icon.py`,
+`build_utils.py`, `stamp_version.py`, `stamp_sitemap.py`, `sync_site.py` and
+`generate_icons.py` are linear recipes read top to bottom.
 Splitting a sequence of flags across modules costs more than it buys, so the
 structural line-cap test does not scope them.
 
