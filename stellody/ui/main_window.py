@@ -39,6 +39,7 @@ from stellody.ui.expanding import ExpandToggle
 from stellody.ui.filtering import Filtering
 from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
+from stellody.ui.maximising import Maximising
 from stellody.ui.menu_bar import RingedMenuBar
 from stellody.ui.menus import Menus
 from stellody.ui.models import AlbumTreeModel
@@ -100,6 +101,7 @@ class MainWindow(
     Menus,
     Rating,
     Geometry,
+    Maximising,
     Leaving,
     Covering,
     Appearance,
