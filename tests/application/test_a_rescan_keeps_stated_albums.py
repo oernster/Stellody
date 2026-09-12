@@ -24,7 +24,8 @@ import numpy as np
 import soundfile as sf
 
 from stellody.application.editing import folders_of
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.domain.changes import compare_libraries
 from stellody.domain.overrides import AlbumEdit, AlbumField
 from stellody.infrastructure.probe import AudioProbe

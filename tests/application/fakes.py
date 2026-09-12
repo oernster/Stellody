@@ -44,6 +44,7 @@ class FakeWalker:
         self.listings = listings
         self.roots: list[str] = []
         self.counted: list[str] = []
+        self.root_is_there = True
 
     def walk(self, root: str) -> Iterator[FolderListing]:
         """Record the root asked for, then replay the fixed listings."""
@@ -54,6 +55,10 @@ class FakeWalker:
         """Record the root asked about, then say how many are coming."""
         self.counted.append(root)
         return len(self.listings)
+
+    def reachable(self, root: str) -> bool:
+        """Whether the root is there; it is unless a test says otherwise."""
+        return self.root_is_there
 
 
 class FakeProbe:

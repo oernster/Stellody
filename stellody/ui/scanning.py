@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from PySide6.QtCore import Slot
 
-from stellody.application.scan import LibraryView, ScanProgress, ScanReport
+from stellody.application.loading import LibraryView
+from stellody.application.scan import ScanProgress, ScanReport
 from stellody.domain.changes import compare_libraries
 from stellody.ui.display import native_path
 from stellody.ui.health import has_serious_issues

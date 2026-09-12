@@ -21,8 +21,8 @@ from repair_support import (  # noqa: F401  the fixtures register by import
     opened,
 )
 
+from stellody.application.loading import LibraryView
 from stellody.application.repairs import AcceptedGroup, Repairs
-from stellody.application.scan import LibraryView
 from stellody.domain.album import Album
 from stellody.domain.grouping import assemble_albums
 from stellody.domain.health import IssueKind

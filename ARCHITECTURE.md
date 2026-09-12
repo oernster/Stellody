@@ -442,6 +442,32 @@ corrections fold two folders together sees slightly fewer albums than this.
 load, so improving a RESOLUTION rule takes effect on the next start without
 rescanning a library.
 
+**A scan and a load must assemble the same library from the same store.** The
+window measures every scan against the library on screen, which after a
+restart is what `LoadLibrary` in `application/loading.py` assembled, so any
+difference between the two readings is reported as albums arriving and leaving
+on every rescan for ever. Two such differences were found from one real report
+on 2026-09-10, both reproduced before either was fixed. The scan assembled from
+raw tags while the load laid the stated album values over them first, so a
+stated album read as gone and its raw-tagged self as new;
+`tests/application/test_a_rescan_keeps_stated_albums.py` holds that. And the
+load read back folders the last scan had marked absent, so a folder removed
+from disk came back on every start and was named gone on every rescan;
+`load_folders` now leaves out a folder whose every file is absent, held by
+`tests/infrastructure/test_a_vanished_folder_stays_gone.py`. Only whole
+folders need the rule, since a folder the walk still reaches is either reused
+whole or saved afresh.
+
+**A scan whose music folder is not there is refused before it touches
+anything.** Measured on the same day: a root on a disconnected drive walks as
+no folders with no error, so the scan used to mark every file absent, which
+with the rule above would open the next start on an empty library. The walker
+answers `reachable` first and `ScanLibrary` raises `LibraryUnreachableError`
+when it is not, which the worker reports as a failed scan while the library on
+screen stays exactly as it was; `tests/application/test_an_unplugged_drive.py`
+holds it. Both guards were proved by planting the old behaviour back and
+reading the failures.
+
 **A rule that decides what gets WRITTEN DOWN is the other kind; it needs a
 rescan.** How a file becomes records at all, which is what `records.py` and the
 cue parsing behind it do, runs during the scan and the store then holds its

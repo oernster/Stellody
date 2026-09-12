@@ -15,7 +15,7 @@ looking at the moment it happened still learns about it.
 
 from __future__ import annotations
 
-from stellody.application.ports import PlaybackPort
+from stellody.application.playback_ports import PlaybackPort
 from stellody.domain.moving import follower_queue
 from stellody.domain.playback import RepeatMode
 from stellody.domain.queue import Queue

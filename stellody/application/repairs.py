@@ -27,8 +27,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from stellody.application.loading import LibraryView
 from stellody.application.ports import LibraryStore
-from stellody.application.scan import LibraryView
 from stellody.domain.album import Album
 from stellody.domain.health import LibraryIssue
 from stellody.domain.overrides import (

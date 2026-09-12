@@ -22,7 +22,8 @@ import soundfile as sf
 from m4a_support import decoded
 from widened_support import FIXTURE_TAGS, WIDENED_WRITERS, write_wavpack
 
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.domain.health import IssueKind
 from stellody.domain.track import TrackSource
 from stellody.infrastructure.decode import DecodeError, open_source

@@ -26,7 +26,8 @@ from picture_support import (  # noqa: F401
 from playback_support import BareStore
 from PySide6.QtWidgets import QApplication
 
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.picture import Picture
 

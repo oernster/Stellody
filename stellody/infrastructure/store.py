@@ -195,11 +195,37 @@ class SqliteLibraryStore:
         return {row["path"]: (row["size"], row["mtime"]) for row in rows}
 
     def load_folders(self) -> tuple[FolderRecord, ...]:
-        """Every folder record currently held."""
-        folders = self._connection.execute(
-            "SELECT folder, art_path, has_embedded_art, derivation "
-            "FROM folders ORDER BY folder"
-        ).fetchall()
+        """Every folder record the last scan could still find.
+
+        A folder every one of whose files was marked absent is left out. It
+        used to come back: a scan left it off the library it showed while a
+        restart read it straight back out of this table, so the next rescan
+        reported the same album gone again, for ever. Measured on
+        2026-09-10 as two albums and five tracks on start against one album
+        and three tracks after every rescan.
+
+        Whole folders are the only case to handle. A folder the walk reaches
+        is either reused whole or read again and saved afresh, which clears
+        its rows first, so a file inside a reachable folder is never left
+        marked absent; only a folder the walk no longer reaches at all is.
+
+        A folder holding no file rows is kept. That is a folder of audio this
+        build cannot decode, whose record exists to say so.
+        """
+        vanished = {
+            row["folder"]
+            for row in self._connection.execute(
+                "SELECT folder FROM files GROUP BY folder HAVING MAX(present) = 0"
+            )
+        }
+        folders = [
+            row
+            for row in self._connection.execute(
+                "SELECT folder, art_path, has_embedded_art, derivation "
+                "FROM folders ORDER BY folder"
+            ).fetchall()
+            if row["folder"] not in vanished
+        ]
         return tuple(
             FolderRecord(
                 folder=row["folder"],

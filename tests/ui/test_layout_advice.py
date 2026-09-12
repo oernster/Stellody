@@ -17,7 +17,8 @@ from PySide6.QtWidgets import QApplication, QFileDialog
 # than copied: a second one would drift from the first.
 from test_launch import FakeStore
 
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.ui.guide import GuideDialog, guide_html
 from stellody.ui.layout_advice import (

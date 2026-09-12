@@ -12,8 +12,9 @@ from conftest import RecordingPlayer
 from playback_support import BareStore
 from PySide6.QtWidgets import QApplication
 
+from stellody.application.loading import LoadLibrary
 from stellody.application.pictures import Pictures
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity

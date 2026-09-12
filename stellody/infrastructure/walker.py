@@ -153,6 +153,15 @@ class FolderWalker:
             if listing is not None:
                 yield listing
 
+    def reachable(self, root: str) -> bool:
+        """Whether the root is a directory that is there right now.
+
+        `os.walk` swallows the error for a root that does not exist, so a
+        library on an unplugged drive walks as no folders at all. This is the
+        question the walk cannot answer about itself.
+        """
+        return os.path.isdir(root)
+
     def count(self, root: str) -> int:
         """Count the folders holding audio, without stat-ing a single file.
 

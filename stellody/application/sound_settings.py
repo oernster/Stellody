@@ -10,7 +10,7 @@ wrapper object would add a hop and answer nothing new.
 
 from __future__ import annotations
 
-from stellody.application.ports import PlaybackPort
+from stellody.application.playback_ports import PlaybackPort
 from stellody.domain.equalising import Equalisation
 from stellody.domain.playback import Loudness
 

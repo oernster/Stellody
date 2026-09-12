@@ -36,6 +36,21 @@ SINGLE_FILE_ALBUM = 1
 PERCENT = 100
 
 
+class LibraryUnreachableError(RuntimeError):
+    """The music folder is not there to scan, so nothing was changed.
+
+    Raised rather than reported, because the worker already turns any failure
+    into a message and leaves the library on screen exactly as it was: which
+    is the right answer to a drive that is not plugged in.
+    """
+
+    def __init__(self, root: str) -> None:
+        super().__init__(
+            f"the music folder {root} cannot be reached; nothing in the "
+            "library was changed"
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class ScanProgress:
     """How far through a scan is, plus which folder it is reading.
@@ -62,25 +77,6 @@ ProgressCallback = Callable[[ScanProgress], None]
 # Asked between folders, so a scan can be given up without waiting for it. A
 # scan of a large library takes long enough that quitting during one is an
 # ordinary thing to do; Qt cannot interrupt a running one from outside.
-
-
-@dataclass(frozen=True, slots=True)
-class LibraryView:
-    """A library as it stands, with nothing said about how it got here.
-
-    A scan reports counts of what it read; a load has read nothing, so it
-    reports none, rather than zeroes that would read as a scan finding
-    nothing.
-    """
-
-    albums: tuple[Album, ...] = ()
-    issues: tuple[LibraryIssue, ...] = ()
-    art: tuple[AlbumArtSources, ...] = ()
-
-    @property
-    def track_count(self) -> int:
-        """How many tracks the assembled library holds."""
-        return sum(album.track_count for album in self.albums)
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,35 +113,6 @@ class ScanReport:
         scan that did nothing rather than as one that found nothing to do.
         """
         return self.folders_probed + self.folders_reused
-
-
-class LoadLibrary:
-    """Assembles the library the store already holds, reading no music at all.
-
-    Starting the application is not a request to scan. On a library of any
-    size a walk is felt; it reaches for a drive that may be asleep, absent or
-    somebody else's machine over a network. What the store holds is
-    what the last scan found, which is what the user last saw; anything newer
-    arrives when they ask for it by rescanning.
-    """
-
-    def __init__(self, store: LibraryStore) -> None:
-        self._store = store
-
-    def run(self) -> LibraryView:
-        """The remembered library, assembled from stored records."""
-        records = tuple(self._store.load_folders())
-        # Stated album values first, since they decide what an album IS and so
-        # what folds with what; the accepted corrections are laid over the
-        # tracks afterwards, which is where they have always gone.
-        entries = stated_over(_grouping_entries(records), self._store.all_album_edits())
-        albums, issues = assemble_albums(entries, self._store.all_overrides())
-        return LibraryView(
-            albums=albums,
-            issues=tuple(issue for record in records for issue in record.issues)
-            + issues,
-            art=sources_for(albums, records),
-        )
 
 
 @dataclass(slots=True)
@@ -190,7 +157,14 @@ class ScanLibrary:
         Every folder read before it stopped is already saved, so the work is
         kept; what is NOT done is deciding which files have gone, since a scan
         that stopped early has no idea what it did not reach.
+
+        A root that is not there is refused before anything is touched. It
+        would otherwise walk as no folders, which marks every file absent and
+        empties the remembered library; an unplugged drive is not a library
+        somebody deleted.
         """
+        if not self._walker.reachable(root):
+            raise LibraryUnreachableError(root)
         known = dict(self._store.file_signatures())
         cached = {record.folder: record for record in self._store.load_folders()}
         seen: set[str] = set()

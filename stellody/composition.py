@@ -21,9 +21,10 @@ from stellody.application.discovering import Discovery
 from stellody.application.editing import TagEditing
 from stellody.application.expanding import Expansion
 from stellody.application.listening import ListeningLog
+from stellody.application.loading import LoadLibrary
 from stellody.application.pictures import Pictures
 from stellody.application.repairs import Repairs
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.shapes import TrackShapes
 from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport

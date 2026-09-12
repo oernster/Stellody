@@ -18,8 +18,8 @@ from repairs_support import (
     track,
 )
 
+from stellody.application.loading import LibraryView
 from stellody.application.repairs import Repairs
-from stellody.application.scan import LibraryView
 from stellody.domain.album import Album
 from stellody.domain.health import IssueKind
 from stellody.domain.overrides import Override, OverrideField

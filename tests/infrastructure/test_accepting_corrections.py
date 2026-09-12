@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pathlib
 
-from stellody.application.scan import LoadLibrary
+from stellody.application.loading import LoadLibrary
 from stellody.application.values import FolderRecord, SourceRecord
 from stellody.domain.health import IssueKind
 from stellody.domain.overrides import Override, OverrideField

@@ -13,7 +13,8 @@ from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
 from test_playing import BareStore, album, track_index
 
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.playback import PlaybackError
 from stellody.ui.main_window import MainWindow

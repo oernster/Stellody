@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from stellody.application.following import Following
-from stellody.application.ports import PlaybackPort
+from stellody.application.playback_ports import PlaybackPort
 from stellody.application.queue_order import QueueOrder, scattered
 from stellody.application.sound_settings import SoundSettings
 from stellody.domain.album import Album

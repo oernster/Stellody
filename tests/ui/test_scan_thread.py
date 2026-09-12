@@ -38,6 +38,10 @@ class EmptyWalker:
         """One folder."""
         return 1
 
+    def reachable(self, root: str) -> bool:
+        """The root is there."""
+        return True
+
     def walk(self, root: str):
         """That one folder, holding no audio."""
         yield FolderListing(folder=f"{root}/Album", audio=())
@@ -134,6 +138,10 @@ def test_a_scan_that_raises_part_way_is_reported_too(
         def count(self, root: str) -> int:
             """One folder, it claims."""
             return 1
+
+        def reachable(self, root: str) -> bool:
+            """The root is there."""
+            return True
 
         def walk(self, root: str):
             """Fail rather than yield."""

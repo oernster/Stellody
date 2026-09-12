@@ -10,8 +10,8 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QMessageBox, QPushButton
 
+from stellody.application.loading import LibraryView
 from stellody.application.repairs import Repairs
-from stellody.application.scan import LibraryView
 from stellody.domain.grouping import SourceEntry, assemble_albums
 from stellody.domain.ordering import TrackCandidate
 from stellody.domain.overrides import AlbumEdit, Override

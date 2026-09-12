@@ -16,7 +16,8 @@ from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
 
 from stellody import composition
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.application.values import FolderListing, FolderRecord, SourceRecord
 from stellody.domain.overrides import AlbumEdit, Override
@@ -54,6 +55,11 @@ class SpyWalker:
         """Record the ask. Launch must never reach here either."""
         self.calls.append(f"count {root}")
         return 0
+
+    def reachable(self, root: str) -> bool:
+        """Record the ask. Launch must never reach here either."""
+        self.calls.append(f"reachable {root}")
+        return True
 
 
 class FakeStore:
@@ -209,6 +215,10 @@ class SlowWalker:
     def count(self, root: str) -> int:
         """How many are coming."""
         return self.folders
+
+    def reachable(self, root: str) -> bool:
+        """The root is there."""
+        return True
 
     def walk(self, root: str):
         """Yield empty folders, counting how many were asked for."""

@@ -7,7 +7,7 @@ service does not grow its own copy of them.
 
 from __future__ import annotations
 
-from stellody.application.scan import LibraryView
+from stellody.application.loading import LibraryView
 from stellody.domain.album import Album
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.identity import AlbumIdentity

@@ -16,7 +16,8 @@ from __future__ import annotations
 from conftest import RecordingPlayer
 from PySide6.QtGui import QImage
 
-from stellody.application.scan import LoadLibrary, ScanLibrary
+from stellody.application.loading import LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity

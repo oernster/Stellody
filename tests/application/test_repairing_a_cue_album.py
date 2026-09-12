@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from repairs_support import FOLDER, IDENTITY, RATE, RecordingStore, issue
 
+from stellody.application.loading import LibraryView
 from stellody.application.repairs import Repairs
-from stellody.application.scan import LibraryView
 from stellody.domain.album import Album
 from stellody.domain.health import IssueKind, LibraryIssue
 from stellody.domain.track import Track, TrackSource

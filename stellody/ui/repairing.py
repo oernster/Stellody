@@ -32,8 +32,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from stellody.application.loading import LibraryView
 from stellody.application.repairs import AcceptedGroup, Repairs
-from stellody.application.scan import LibraryView
 from stellody.domain.health import LibraryIssue, sorted_issues
 from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import FirstStopDialog, close_row

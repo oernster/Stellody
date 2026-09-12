@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from fakes import FakeProbe, FakeStore, FakeTextReader, FakeWalker, properties, stat
 
-from stellody.application.scan import LibraryView, LoadLibrary, ScanLibrary
+from stellody.application.loading import LibraryView, LoadLibrary
+from stellody.application.scan import ScanLibrary
 from stellody.application.values import FolderListing
 
 FOLDER = "H:/Music/Sasha/Involver"
