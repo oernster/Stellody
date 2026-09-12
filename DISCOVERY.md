@@ -1680,8 +1680,12 @@ Rationale: MusicBrainz declines above one per second per IP; ListenBrainz states
 the same limit. Pacing to the published figure is the difference between a run
 that finishes and an address that gets refused.
 
-Verification: a test driving a fake clock over a fabricated run of twenty
-artists, asserting no two requests to one host fall inside one second.
+Verification: `tests/infrastructure/test_fetching.py::TestAskingAService::test_it_waits_its_turn_and_names_the_application`
+asserts that every request passes through the pacing gate, whose gap is
+`REQUEST_GAP_S`, 1.1 seconds, in `infrastructure/courtesy.py`. Amended
+2026-09-12: this named a test driving a fake clock over a run of twenty
+artists, which does not exist. What is proved is that no request skips the
+gate; the spacing itself rests on that one constant.
 
 ---
 
