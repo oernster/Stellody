@@ -176,9 +176,19 @@ def test_the_rows_under_an_album_do_not_repeat_its_name(application) -> None:
 
 
 def resets_offered(store) -> list[str]:
-    """What each album's reset reads once everything is accepted over a store."""
-    dialog = opened(Repairs(store))
-    labelled(dialog, "Accept everything").click()
+    """What each album's reset reads after one batch naming every pin twice.
+
+    Handed to the store directly rather than through Accept everything, since
+    the service no longer sends a pin twice itself. Without the doubling, a
+    store keeping every copy would read the same counts as one keeping each
+    pin once, which is the difference this is here to see.
+    """
+    repairs = Repairs(store)
+    albums, issues = assemble_albums(LIBRARY, store.all_overrides())
+    view = LibraryView(albums=albums, issues=issues)
+    pins = repairs.pins_for(view, repairs.acceptable(issues))
+    store.accept_overrides(pins + pins)
+    dialog = opened(repairs)
     offered = [button.text() for button in album_resets(dialog)]
     dialog.deleteLater()
     return offered
