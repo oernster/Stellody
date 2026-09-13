@@ -1233,7 +1233,10 @@ key holding the year makes every remastered album a false gap.
 **What a candidate plays is remembered between runs.** The similarity source
 returns identifiers with no genre, so filtering candidates by genre costs one
 lookup each: ten candidates for each of 327 artists is 3,270 requests, which is
-another fifty-four minutes at the permitted rate. An answer already held is
+another fifty-four minutes at the permitted rate. Asking once per artist is what
+keeps it affordable: measured on 2026-09-13 over a whole-library run of 555
+source artists, 5,550 possible lookups came down to 1,350, since the
+well-connected are suggested again and again. An answer already held is
 still judged against the genres ticked, so remembering cannot smuggle a
 candidate past the scope of a run.
 

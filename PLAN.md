@@ -53,9 +53,9 @@ files wants them in the library rather than reported, was ruled on 2026-09-10:
 they belong in it, which is what shipped. `FORMATS.md` section 5 holds the
 ruling along with the one thing that would revisit it.
 
-The specifications keep open questions of their own, none of them blocking
-anything planned: `SHOPS.md` OQ-S03 asks whether an album already held should
-reach a shop too, while `DISCOVERY.md` OQ-04 waits on a real run to measure.
+The specifications hold no open question either. The last two were answered on
+2026-09-13: `SHOPS.md` OQ-S03, ruled no, since an album already held is not
+considered again; `DISCOVERY.md` OQ-04, measured from a whole-library run.
 
 ## Not planned, so that this is not revisited
 

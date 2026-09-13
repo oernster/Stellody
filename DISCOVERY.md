@@ -1917,8 +1917,9 @@ most once per run, however many source artists name that candidate, then retain 
 Rationale: The similarity source returns identifiers with no genre, so filtering
 candidates by genre costs one lookup each. Ten candidates for each of 327
 artists is 3,270 requests, which is another fifty-four minutes at the permitted
-rate. Deduplication is what makes the result-side filter affordable; the true
-saving cannot be stated before a real run and is recorded in OQ-04.
+rate. Deduplication is what makes the result-side filter affordable. Measured
+on 2026-09-13 over a whole-library run, it took 555 source artists' 5,550
+possible lookups down to 1,350; OQ-04 records how.
 
 Verification: `tests/application/test_discovery.py::test_a_candidate_artist_is_asked_about_once`
 gives two source artists one shared candidate and asserts one genre lookup
@@ -2203,7 +2204,7 @@ Nothing marked open may be built from. Each is Oliver's unless stated.
 
 | # | Question | Owner |
 |---|---|---|
-| OQ-04 | What does deduplication actually reduce the 3,270 candidate genre lookups to? Measurable only by a real run. | measurement, after first build |
+| OQ-04 | RESOLVED 2026-09-13, measured from the files a whole-library run wrote: 34 genres with compilations included, asking the catalogues from 12:04 to 13:01. 555 source artists at ten similar artists each could have cost 5,550 genre lookups. The similarity source returned 4,515 names, since 86 artists came back with none; those name 1,678 distinct artists, because 611 are suggested by more than one source (Coldplay by 81). Taking out the ones the library already holds leaves 1,350 lookups, a quarter of the naive figure: about 25 minutes at the permitted pace rather than 102. Every one of the 1,350 has an answer in the candidate genre cache, which is what a later run reads instead of asking. | Answered |
 | OQ-07 | RESOLVED 2026-09-08. Oliver ruled that no fallback is needed; the similarity half depends on the labs endpoint as it stands. Read in `application/discovering.py` on the same day: a refusal raises `SourceFailed`, which is caught for the one artist it happened to, recorded against that artist and written into the discovery file, so the rest of the run carries on regardless. Superseded in part by FR-D21: a refusal now raises `SourceRefused` once its asks run out, which puts that artist back for a later pass rather than recording it as failed. | Answered |
 
 ## 6. The build order this implies

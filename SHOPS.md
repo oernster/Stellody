@@ -50,8 +50,9 @@ than code.
 - Physical media. Digital only, ruled by Oliver on 2026-09-07.
 - Streaming services. This is about owning a copy.
 - Remembering what was bought; marking a gap as dealt with.
-- Reaching a shop from the main library window for an album already held.
-  Recorded in the open questions rather than built.
+- Reaching a shop for an album already held, from the main library window or
+  anywhere else. Ruled out by Oliver on 2026-09-13 (OQ-S03): an album the
+  library holds is not considered again.
 - ~~An editor screen for the shop list.~~ Struck by Amendment 1, which puts
   one on the shops dialog.
 
@@ -590,7 +591,7 @@ Nothing marked open may be built from.
 |---|---|---|
 | OQ-S01 | RESOLVED 2026-09-08. Oliver ruled HDtracks out; it does not join the shipped defaults. It stays addable as a row like any other shop, so the question does not reopen by itself. | Answered |
 | OQ-S02 | RESOLVED 2026-09-13. A screen is wanted: Amendment 1 edits the list on the shops dialog. | Answered |
-| OQ-S03 | Should an album already held be reachable at a shop too, for a better copy? Out of scope this time. | Oliver |
+| OQ-S03 | RESOLVED 2026-09-13. No. Oliver ruled that an album already held is not to be considered again, for a better copy or otherwise, so nothing reaches a shop but an album the library does not hold. | Answered |
 
 ### B. Prioritisation
 
