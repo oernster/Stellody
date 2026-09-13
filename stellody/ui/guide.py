@@ -309,8 +309,9 @@ def _discovery_html() -> str:
         "gained, never one you deleted.</p>"
         "<p>"
         + _img(resources.find_asset(CLOSE_ICON))
-        + "Every screen here is left by the control wearing that picture, "
-        "which is the same Close on every dialog in the application.</p>"
+        + "Close wears that picture on every dialog in the application. In the "
+        "two genre filters Clear wears it too, unticking every box without "
+        "leaving; Cancel beside it wears the filter picture struck through.</p>"
         f"<p>{NO_SHOP_AFFILIATION}</p>"
     )
 

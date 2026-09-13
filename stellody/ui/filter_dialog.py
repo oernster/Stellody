@@ -18,20 +18,17 @@ on offer is closing the dialog and hunting.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from stellody.domain.narrowing import Narrowing
 from stellody.domain.overrides import AlbumField
 from stellody.ui.dialogs import FirstStopDialog
+from stellody.ui.filter_controls import filter_controls
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.ringed_check import RingedCheckBox
 
 TITLE = "Filter by genre"
+SHOW_LABEL = "Show"
 UNSTATED_LABEL = "Albums that state no genre"
 # Wide enough for the catalogue's three columns of boxes without the longest
 # name wrapping, which is the same measurement the album panel is built to.
@@ -65,23 +62,13 @@ class FilterDialog(FirstStopDialog):
         self.unstated_box = RingedCheckBox(UNSTATED_LABEL, self)
         self.unstated_box.setChecked(asked.unstated)
         outer.addWidget(self.unstated_box)
-        outer.addLayout(self._buttons())
-
-    def _buttons(self) -> QHBoxLayout:
-        """Clear away to the left, then out or on with it."""
-        row = QHBoxLayout()
-        self.clear_button = QPushButton("Clear", self)
-        self.clear_button.clicked.connect(self.clear)
-        row.addWidget(self.clear_button)
-        row.addStretch()
-        self.cancel_button = QPushButton("Cancel", self)
-        self.cancel_button.clicked.connect(self.reject)
-        row.addWidget(self.cancel_button)
-        self.show_button = QPushButton("Show", self)
-        self.show_button.setDefault(True)
-        self.show_button.clicked.connect(self.accept)
-        row.addWidget(self.show_button)
-        return row
+        # The same three controls the answer's chooser wears: see
+        # `filter_controls`.
+        controls = filter_controls(self, SHOW_LABEL, self.clear)
+        self.clear_button = controls.clear
+        self.cancel_button = controls.cancel
+        self.show_button = controls.apply
+        outer.addLayout(controls.row)
 
     def clear(self) -> None:
         """Untick everything, leaving the dialog open to be asked again.

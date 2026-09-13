@@ -9,18 +9,20 @@ than offered. Ruled by Oliver on 2026-09-13. FR-D54.
 whole catalogue; hiding what is not on offer keeps one grid with one set of
 rules about how a genre is ticked, where a second grid built from a list of
 its own would be a second place for those rules to live.
+
+Its three controls are the library filter's, pictures and all: see
+`filter_controls`.
 """
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from stellody.ui.dialogs import FirstStopDialog
+from stellody.ui.filter_controls import filter_controls
 from stellody.ui.genre_grid import ASKING, GenreGrid
 
 TITLE = "Filter the answer by genre"
-CLEAR_LABEL = "Clear"
-CANCEL_LABEL = "Cancel"
 FILTER_LABEL = "Filter"
 
 
@@ -45,23 +47,11 @@ class ResultsFilterDialog(FirstStopDialog):
                 box.hide()
             box.setChecked(name in offered and name in picked)
         outer.addWidget(self.grid)
-        outer.addLayout(self._buttons())
-
-    def _buttons(self) -> QHBoxLayout:
-        """Clear away to the left, then out or on with it."""
-        row = QHBoxLayout()
-        self.clear_button = QPushButton(CLEAR_LABEL, self)
-        self.clear_button.clicked.connect(self.clear)
-        row.addWidget(self.clear_button)
-        row.addStretch()
-        self.cancel_button = QPushButton(CANCEL_LABEL, self)
-        self.cancel_button.clicked.connect(self.reject)
-        row.addWidget(self.cancel_button)
-        self.filter_button = QPushButton(FILTER_LABEL, self)
-        self.filter_button.setDefault(True)
-        self.filter_button.clicked.connect(self.accept)
-        row.addWidget(self.filter_button)
-        return row
+        controls = filter_controls(self, FILTER_LABEL, self.clear)
+        self.clear_button = controls.clear
+        self.cancel_button = controls.cancel
+        self.filter_button = controls.apply
+        outer.addLayout(controls.row)
 
     def clear(self) -> None:
         """Untick everything, leaving the chooser open to be asked again."""
