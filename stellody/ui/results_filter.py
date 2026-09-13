@@ -19,7 +19,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from stellody.ui.dialogs import FirstStopDialog
-from stellody.ui.filter_controls import filter_controls
+from stellody.ui.filter_controls import filter_controls, offer_apply
 from stellody.ui.genre_grid import ASKING, GenreGrid
 
 TITLE = "Filter the answer by genre"
@@ -52,6 +52,12 @@ class ResultsFilterDialog(FirstStopDialog):
         self.cancel_button = controls.cancel
         self.filter_button = controls.apply
         outer.addLayout(controls.row)
+        offer_apply(
+            self.filter_button,
+            self.grid.boxes.values(),
+            lambda: bool(self.picked()),
+            filtering_already=bool(self.picked()),
+        )
 
     def clear(self) -> None:
         """Untick everything, leaving the chooser open to be asked again."""

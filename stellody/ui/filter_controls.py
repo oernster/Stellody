@@ -14,11 +14,11 @@ picture.**
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QPushButton, QWidget
 
 from stellody.shared import resources
 from stellody.ui.dialogs import CLOSE_ICON, CONTROL_ICON_PX, wearing
@@ -67,3 +67,30 @@ def filter_controls(
     apply_button.clicked.connect(dialog.accept)
     row.addWidget(apply_button)
     return FilterControls(row, clear_button, cancel_button, apply_button)
+
+
+def offer_apply(
+    apply: QPushButton,
+    boxes: Iterable[QAbstractButton],
+    asking: Callable[[], bool],
+    filtering_already: bool,
+) -> None:
+    """Enable the press that filters only where it would change something.
+
+    Reported by Oliver on 2026-09-13: a chooser opened with nothing ticked
+    offered Filter as though there were something to filter by. With nothing
+    ticked the press can only mean taking a filter off, which changes something
+    where a filter was on and nothing where none was. So it waits for a tick,
+    unless the chooser opened on a filter: emptying one is how a filter is
+    taken off, Cancel being the press that keeps it.
+
+    Read off the boxes at every toggle rather than counted, so Clear, a sweep
+    or a box unticked by hand all move it alike.
+    """
+
+    def refresh(*_toggled: object) -> None:
+        apply.setEnabled(asking() or filtering_already)
+
+    for box in boxes:
+        box.toggled.connect(refresh)
+    refresh()

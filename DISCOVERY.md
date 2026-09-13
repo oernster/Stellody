@@ -1632,6 +1632,28 @@ Verified by: `tests/ui/test_results_filter.py::test_a_withheld_tick_is_left_out_
 
 ---
 
+**FR-D57 The chooser's Filter waits for a tick**
+
+Priority: Must
+
+Requirement: While no genre is ticked in the chooser FR-D54 opens, its Filter
+control shall be disabled, unless the chooser opened with a filter on.
+
+Rationale: Reported by Oliver on 2026-09-13: the chooser offered Filter with
+nothing ticked, as though there were something to filter by. With nothing
+ticked the press can only take a filter off, which is a change where one was on
+and nothing where none was. The exception keeps the only way a filter is taken
+off, since Cancel keeps it.
+
+Acceptance: Given the chooser opened on no filter, when nothing is ticked, then
+Filter is disabled; when a genre is ticked, then it is enabled; when Clear is
+pressed, then it is disabled again. Given the chooser opened on a filter, when
+Clear is pressed, then Filter is still enabled.
+
+Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`, `tests/ui/test_filter_controls.py::test_clearing_every_tick_takes_filtering_away_again`, `tests/ui/test_filter_controls.py::test_a_filter_already_on_can_still_be_taken_off`
+
+---
+
 **FR-D45 The answer is dealt across the width of the screen**
 
 Priority: Must
@@ -2164,7 +2186,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D56 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D57 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

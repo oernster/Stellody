@@ -11,6 +11,7 @@ from __future__ import annotations
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
+from stellody.domain.narrowing import Narrowing
 from stellody.shared import resources
 from stellody.ui.dialogs import CLOSE_ICON, CONTROL_ICON_PX
 from stellody.ui.filter_dialog import FilterDialog
@@ -64,3 +65,50 @@ def test_cancel_stands_beside_the_filter(application) -> None:
             if layout.indexOf(apply) >= 0
         )
         assert row.indexOf(dialog.cancel_button) + 1 == row.indexOf(apply)
+
+
+def _fresh():
+    """Each chooser opened on no filter, its filtering press and one genre box."""
+    library = FilterDialog()
+    answer = ResultsFilterDialog(("House", "Rock"))
+    return (
+        (library, library.show_button, library.grid.boxes["Rock"]),
+        (answer, answer.filter_button, answer.grid.boxes["House"]),
+    )
+
+
+def test_filtering_waits_for_a_tick(application) -> None:
+    """Reported by Oliver on 2026-09-13: offered with nothing ticked."""
+    for _dialog, apply, box in _fresh():
+        assert not apply.isEnabled()
+        box.setChecked(True)
+        assert apply.isEnabled()
+        box.setChecked(False)
+        assert not apply.isEnabled()
+
+
+def test_clearing_every_tick_takes_filtering_away_again(application) -> None:
+    for dialog, apply, box in _fresh():
+        box.setChecked(True)
+        # Enabled first, else a control that never moved passes as disabled.
+        assert apply.isEnabled()
+        dialog.clear_button.click()
+        assert not apply.isEnabled()
+
+
+def test_a_filter_already_on_can_still_be_taken_off(application) -> None:
+    """Emptying a filter that is on is a change; Cancel is what keeps it."""
+    library = FilterDialog(Narrowing(wanted=("Rock",)))
+    answer = ResultsFilterDialog(("House",), ("House",))
+    for dialog, apply in (
+        (library, library.show_button),
+        (answer, answer.filter_button),
+    ):
+        dialog.clear_button.click()
+        assert apply.isEnabled()
+
+
+def test_the_library_filter_counts_its_no_genre_box(application) -> None:
+    library = FilterDialog()
+    library.unstated_box.setChecked(True)
+    assert library.show_button.isEnabled()

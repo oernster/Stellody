@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from stellody.domain.narrowing import Narrowing
 from stellody.domain.overrides import AlbumField
 from stellody.ui.dialogs import FirstStopDialog
-from stellody.ui.filter_controls import filter_controls
+from stellody.ui.filter_controls import filter_controls, offer_apply
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.ringed_check import RingedCheckBox
 
@@ -69,6 +69,12 @@ class FilterDialog(FirstStopDialog):
         self.cancel_button = controls.cancel
         self.show_button = controls.apply
         outer.addLayout(controls.row)
+        offer_apply(
+            self.show_button,
+            (*self.grid.boxes.values(), self.unstated_box),
+            lambda: bool(self.grid.chosen()) or self.unstated_box.isChecked(),
+            filtering_already=bool(asked.wanted) or asked.unstated,
+        )
 
     def clear(self) -> None:
         """Untick everything, leaving the dialog open to be asked again.
