@@ -7,17 +7,19 @@ what came back. Juno Download had closed, announcing it on its own front page.
 answered 404. Three of eight in one afternoon: a list compiled into the
 application is a release every time that happens, while a file is an edit.
 
-So the defaults below are a starting point rather than the truth. The file is
-written once, when it is first wanted; never overwritten afterwards: what
-somebody put there is theirs. FR-S09.
+**The file is changed from the shops dialog now; it is still the record.**
+SHOPS.md Amendment 1. What an edit means and how a release's shops meet the
+list live in `domain/shop_list.py`. This reads the file into those rules and
+writes their answer back, so the file never holds a list the dialog did not
+show. It is written the first time it is wanted (FR-S09) and again whenever
+settling it against this release changes anything (FR-S30 to FR-S36).
 
-**A file that cannot be read falls back and is LEFT ALONE.** The same judgement
-the discovery file makes about its own contents, with one addition: a file
-halfway through being edited must not be replaced under the person editing it.
-FR-S12.
+**A file that cannot be read falls back and is LEFT ALONE.** A file halfway
+through being edited by hand must not be replaced under the person editing it.
+FR-S12. A list holding rows that cannot be searched is not that: it is read row
+by row, each broken row kept in its place with its reason (FR-S42).
 
-Nothing here opens a page. It reads a file and answers with shops; who opens
-what is `browsing.py` and the use case above it.
+Nothing here opens a page. Who opens what is `browsing.py` and the use cases.
 """
 
 from __future__ import annotations
@@ -25,20 +27,32 @@ from __future__ import annotations
 import json
 import pathlib
 
+from stellody.application.shop_editing import ShopListUnwritable
+from stellody.domain.shop_list import (
+    BrokenRow,
+    Row,
+    ShopBook,
+    ShopProblem,
+    merged,
+    row_problem,
+)
 from stellody.domain.shopping import Shop
 from stellody.infrastructure import paths
 from stellody.infrastructure.atomic import written
 
 SHOPS_NAME = "shops.json"
 SHOPS_KEY = "shops"
-# What was shipped when the file was written, kept beside what is in use so the
-# two can be compared. It is the whole of how an edit is told from an untouched
-# file: a file that still says what we put in it is one nobody has changed.
-# FR-S16.
+# The release list the rows were last settled against, which is how an edited
+# shipped shop is told from an untouched one. FR-S32, FR-S33.
 SHIPPED_KEY = "shipped"
+# Shipped shops the listener removed, so no release puts them back. FR-S25.
+DELETED_KEY = "deleted"
+# Shops a release dropped that the dialog has yet to announce. FR-S34.
+RETIRED_KEY = "retired"
 NAME_KEY = "name"
 TEMPLATE_KEY = "template"
 NOTE_KEY = "note"
+KEYS = (SHOPS_KEY, SHIPPED_KEY, DELETED_KEY, RETIRED_KEY)
 
 # Every template below was loaded and answered: seven on 2026-09-07 here; then
 # 7digital on 2026-09-08 in a browser, since its search refuses an automated
@@ -52,9 +66,9 @@ NOTE_KEY = "note"
 # on the page rather than a warning to carry around under a button.
 #
 # The ORDER is the order they are offered in; it is chosen rather than
-# alphabetical: 7digital leads, by Oliver's ruling on 2026-09-08. Only a file
-# that does not exist yet is written from this, so somebody who already has one
-# keeps whatever order they have.
+# alphabetical: 7digital leads, by Oliver's ruling on 2026-09-08. A release
+# adds a new shop at the bottom of a list somebody already has (FR-S30), so
+# their order is theirs.
 DEFAULT_SHOPS: tuple[Shop, ...] = (
     Shop(
         name="7digital",
@@ -106,41 +120,32 @@ def shops_path() -> pathlib.Path:
     return paths.data_dir() / SHOPS_NAME
 
 
-def _rows(shops: tuple[Shop, ...]) -> list[dict]:
-    """The shops as the file carries them, one object a row."""
-    return [
-        {NAME_KEY: shop.name, TEMPLATE_KEY: shop.template, NOTE_KEY: shop.note}
-        for shop in shops
-    ]
+def _row_written(row: Row) -> dict:
+    """One row as the file carries it, broken or not."""
+    return {NAME_KEY: row.name, TEMPLATE_KEY: row.template, NOTE_KEY: row.note}
 
 
-def _as_written(shops: tuple[Shop, ...]) -> dict:
-    """The shops in the shape the file carries them, twice.
+def _as_written(book: ShopBook) -> dict:
+    """The whole list in the shape the file carries it."""
+    return {
+        SHOPS_KEY: [_row_written(row) for row in book.rows],
+        SHIPPED_KEY: [_row_written(shop) for shop in book.shipped],
+        DELETED_KEY: list(book.deleted),
+        RETIRED_KEY: list(book.retired),
+    }
 
-    The second copy is what was shipped. It is written even though it is
-    identical today, because tomorrow it is the only thing that can say whether
-    the first copy was changed by hand or merely inherited. FR-S16.
-    """
-    return {SHOPS_KEY: _rows(shops), SHIPPED_KEY: _rows(shops)}
 
-
-def _shop(entry: object) -> Shop | None:
-    """One row as the file carries it; None where it carries nothing usable.
-
-    A row missing a name, missing an address or naming no placeholder is passed
-    over rather than raising: a list missing one shop is worth more than no
-    list at all, which is the same judgement the discovery reader makes.
-    """
+def _row(entry: object) -> Row:
+    """One entry of the file: a shop, else a broken row saying why not."""
     if not isinstance(entry, dict):
-        return None
-    try:
-        return Shop(
-            name=str(entry.get(NAME_KEY) or ""),
-            template=str(entry.get(TEMPLATE_KEY) or ""),
-            note=str(entry.get(NOTE_KEY) or ""),
-        )
-    except ValueError:
-        return None
+        return BrokenRow("", "", "", ShopProblem.NOT_A_ROW)
+    name = str(entry.get(NAME_KEY) or "")
+    template = str(entry.get(TEMPLATE_KEY) or "")
+    note = str(entry.get(NOTE_KEY) or "")
+    problem = row_problem(name, template)
+    if problem is not None:
+        return BrokenRow(name, template, note, problem)
+    return Shop(name=name, template=template, note=note)
 
 
 def _held() -> dict | None:
@@ -152,115 +157,84 @@ def _held() -> dict | None:
     return held if isinstance(held, dict) else None
 
 
-def _listed(held: dict | None, key: str) -> tuple[Shop, ...] | None:
-    """The shops under this key; None where the key holds no usable list."""
-    rows = held.get(key) if isinstance(held, dict) else None
+def _record(held: dict) -> tuple[Shop, ...] | None:
+    """The recorded release list; None where the file carries none."""
+    rows = held.get(SHIPPED_KEY)
     if not isinstance(rows, list):
         return None
-    return tuple(shop for shop in (_shop(row) for row in rows) if shop is not None)
+    return tuple(row for row in map(_row, rows) if isinstance(row, Shop))
 
 
-def read() -> tuple[Shop, ...]:
-    """What the file holds; the shipped defaults where it holds nothing usable.
+def _names(held: dict, key: str) -> tuple[str, ...] | None:
+    """A list of names under `key`; None where the file carries no such list."""
+    names = held.get(key)
+    if not isinstance(names, list):
+        return None
+    return tuple(name for name in names if isinstance(name, str))
 
-    The file is not touched here. Writing a default list over something
-    somebody is midway through editing would lose their work at the exact
-    moment they most want it back.
+
+def _defaults() -> ShopBook:
+    """The shipped list, as a first run holds it."""
+    return ShopBook(rows=DEFAULT_SHOPS, shipped=DEFAULT_SHOPS)
+
+
+def _write_quietly(book: ShopBook) -> None:
+    """Keep this list where possible; a directory that refuses costs the file.
+
+    Only for writes nobody asked for. A change somebody made goes through
+    `FileShopBook.save`, which says so when it fails.
     """
-    found = _listed(_held(), SHOPS_KEY)
-    return found or DEFAULT_SHOPS
+    try:
+        written(shops_path(), _as_written(book))
+    except OSError:
+        pass
 
 
-def _untouched(in_use: tuple[Shop, ...], shipped: tuple[Shop, ...] | None) -> bool:
-    """Whether nobody has edited this file.
+def read_book() -> ShopBook:
+    """The list, settled against this release; written back where that changed it.
 
-    Two ways to be sure of it and no third. Either the list still says exactly
-    what the file records having been given; or the file records nothing and
-    the list still says exactly what is shipped today, which is the same
-    statement made by the only other evidence available.
-
-    A file recording nothing whose list differs from the shipped one is the
-    case that cannot be settled: it is either an edit or an older list, with
-    nothing on disk to tell them apart. It is left alone, which is the
-    same judgement FR-S12 makes about a file it cannot read. FR-S16.
+    A missing file is written with the defaults. A file that cannot be read is
+    answered with the defaults and left alone; so is one whose shops are not a
+    list.
     """
-    return in_use == shipped or in_use == DEFAULT_SHOPS
-
-
-def refresh_if_untouched() -> bool:
-    """Follow the shipped list where nobody has edited the file; did it write.
-
-    FR-S09 keeps the file so an EDIT survives a release, so what has to be
-    answered is whether anybody edited it rather than merely whether it exists.
-    Recording what was shipped is what makes that answerable.
-
-    Two things are put right here and they are one write. A file still carrying
-    an older shipped list takes the current one. A file that carries the current
-    list but records nothing gains the record, without a word of its content
-    changing, so the NEXT correction can reach it; that is the one case a file
-    written before any of this existed falls into. FR-S16.
-    """
+    if not shops_path().exists():
+        book = _defaults()
+        _write_quietly(book)
+        return book
     held = _held()
-    in_use = _listed(held, SHOPS_KEY)
-    shipped = _listed(held, SHIPPED_KEY)
-    if not in_use or not _untouched(in_use, shipped):
-        return False
-    if in_use == DEFAULT_SHOPS and shipped == in_use:
-        return False
-    try:
-        written(shops_path(), _as_written(DEFAULT_SHOPS))
-    except OSError:
-        return False
-    return True
-
-
-def refused(rows: object) -> tuple[str, ...]:
-    """Which rows of a list were passed over, by name where they have one.
-
-    Answered separately from `read` so the reader stays one job: this is what
-    a screen says about a file somebody has edited, rather than something the
-    list itself has to carry. FR-S11.
-    """
-    if not isinstance(rows, list):
-        return ()
-    return tuple(
-        str(row.get(NAME_KEY) or "") if isinstance(row, dict) else ""
-        for row in rows
-        if _shop(row) is None
+    rows = held.get(SHOPS_KEY) if held is not None else None
+    if held is None or not isinstance(rows, list):
+        return _defaults()
+    book = merged(
+        rows=tuple(_row(entry) for entry in rows),
+        recorded=_record(held),
+        deleted=_names(held, DELETED_KEY),
+        retired=_names(held, RETIRED_KEY) or (),
+        current=DEFAULT_SHOPS,
     )
+    if _as_written(book) != {key: held.get(key) for key in KEYS}:
+        _write_quietly(book)
+    return book
 
 
-def write_defaults_if_absent() -> bool:
-    """Put the shipped list where it belongs; True where this wrote it.
+class FileShopBook:
+    """The shop file as the editor's store."""
 
-    Once, on the first day somebody opens the shops. A file that already
-    exists is left exactly as it is, including one that cannot be parsed.
-    """
-    where = shops_path()
-    if where.exists():
-        return False
-    try:
-        written(where, _as_written(DEFAULT_SHOPS))
-    except OSError:
-        return False
-    return True
+    def book(self) -> ShopBook:
+        """The list as it stands, settled against this release."""
+        return read_book()
+
+    def save(self, book: ShopBook) -> None:
+        """Keep this list, saying so where the file will not take it. FR-S29."""
+        try:
+            written(shops_path(), _as_written(book))
+        except OSError as error:
+            raise ShopListUnwritable(str(error)) from error
 
 
 class FileShopList:
-    """The shops as the file holds them, with the defaults behind it.
-
-    A thin object over the two functions above, for the same reason the
-    discovery reader is one: what the use case needs is somewhere to read
-    from; the file is already that.
-    """
+    """The shops that can be searched, for the use case that searches them."""
 
     def shops(self) -> tuple[Shop, ...]:
-        """Every shop worth offering, tidying the file first where it may be.
-
-        Three jobs rather than one function doing three, so a reader stays a
-        reader: write the file where there is none, follow the shipped list
-        where nobody has edited it, then read whatever is there.
-        """
-        write_defaults_if_absent()
-        refresh_if_untouched()
-        return read()
+        """Every searchable shop, in the list's order."""
+        return read_book().shops

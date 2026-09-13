@@ -26,6 +26,7 @@ from stellody.application.pictures import Pictures
 from stellody.application.repairs import Repairs
 from stellody.application.scan import ScanLibrary
 from stellody.application.shapes import TrackShapes
+from stellody.application.shop_editing import ShopEditing
 from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
@@ -53,7 +54,7 @@ from stellody.infrastructure.paths import (
     shape_cache_dir,
 )
 from stellody.infrastructure.probe import AudioProbe
-from stellody.infrastructure.shop_file import FileShopList
+from stellody.infrastructure.shop_file import FileShopBook, FileShopList
 from stellody.infrastructure.similarity import ListenBrainz
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -167,6 +168,7 @@ def build_window(
             shops=FileShopList(),
             opener=SystemBrowser(),
             clipboard=SystemClipboard(),
+            editing=ShopEditing(store=FileShopBook(), opener=SystemBrowser()),
         ),
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)

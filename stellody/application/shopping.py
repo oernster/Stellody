@@ -18,9 +18,12 @@ so the number sits beside the use case and the dialog reads it.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from stellody.domain.shopping import Shop, WantedAlbum, addresses_at, copied_text
+
+if TYPE_CHECKING:
+    from stellody.application.shop_editing import ShopEditing
 
 # How many albums may be looked up before somebody is asked. One album is one
 # browser tab: thirty ticked albums is thirty tabs arriving over whatever was
@@ -60,11 +63,17 @@ class PutOnClipboard(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class Shopping:
-    """Everything stage two does, over three things handed in."""
+    """Everything stage two does, over three things handed in.
+
+    `editing` is the shop list editor of SHOPS.md Amendment 1. It travels with
+    this rather than beside it, since everywhere the shops are offered is
+    somewhere they can be changed; None leaves the dialog without the editor.
+    """
 
     shops: ShopList
     opener: OpenAddress
     clipboard: PutOnClipboard
+    editing: ShopEditing | None = None
 
     def offered(self) -> tuple[Shop, ...]:
         """The shops to put in front of somebody."""

@@ -45,6 +45,14 @@ from stellody.ui.results_foot import (
 from stellody.ui.results_pager import NEXT_ICON as NEXT_PAGE_ICON
 from stellody.ui.results_pager import PREVIOUS_ICON as PREVIOUS_PAGE_ICON
 from stellody.ui.results_words import NEXT_PAGE, PREVIOUS_PAGE
+from stellody.ui.shop_rows import (
+    ADD_ICON,
+    ADD_LABEL,
+    DELETE_ICON,
+    DRAG_ICON,
+    EDIT_ICON,
+    PUT_BACK_LABEL,
+)
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 from stellody.ui.widgets import ReadingPane
 
@@ -253,6 +261,21 @@ def _discovery_html() -> str:
         f"be compared across several. <b>{COPY_LABEL}</b> puts the ticked "
         "albums on the clipboard instead, one line each, for anywhere else "
         "you want to paste them.</p>"
+        "<p>"
+        + _img(resources.find_asset(ADD_ICON))
+        + _img(resources.find_asset(EDIT_ICON))
+        + _img(resources.find_asset(DELETE_ICON))
+        + _img(resources.find_asset(DRAG_ICON))
+        + f"<b>Changing the shops.</b> <b>{ADD_LABEL}</b> puts a shop of your "
+        "own at the bottom of the list. The edit picture beside a shop opens it "
+        "in a form; the delete picture removes it once you have said yes. Drag "
+        "the grip beside a shop to move it; Ctrl+Up and Ctrl+Down do the same. "
+        "<b>Try</b> in the form opens its search for the first album you "
+        "ticked, so you can see it works before saving. A line that cannot "
+        "search is shown greyed out with the reason, ready to mend. "
+        f"<b>{PUT_BACK_LABEL}</b> restores the shops {APP_NAME} came with while "
+        f"keeping your own. A new version of {APP_NAME} adds any shop it has "
+        "gained, never one you deleted.</p>"
         "<p>"
         + _img(resources.find_asset(CLOSE_ICON))
         + "Every screen here is left by the control wearing that picture, "

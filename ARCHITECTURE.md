@@ -1129,10 +1129,24 @@ into it, which `tests/domain/test_shop_address.py` asserts rather than assumes.
 afternoon on 2026-09-07: one had closed, one had walled its search and one had
 moved it to a path answering 404. A list compiled into the application is a
 release every time that happens. `shops.json` therefore records the shipped list
-beside the list in use, so a file nobody has edited follows a corrected address
-while an edited one is left exactly as it is; a file that cannot be read falls
-back to the shipped defaults and is not overwritten, because a half-parsed file
-somebody is editing must not be replaced under them.
+beside the list in use, then `stellody/domain/shop_list.py` settles the two shop
+by shop rather than file by file. A rule over the whole file was right while the
+file could only be changed by hand; once the shops dialog could edit it, nearly
+every file would count as edited somewhere and none would take a correction again.
+
+**A shop is recognised by its name, ignoring case**, since a release carries
+nothing else to know it by. An untouched shipped shop follows the release; an
+edited one keeps the edit; a new shipped shop is added at the bottom. A shipped
+shop somebody deleted is named in the file's `deleted` record, which is what
+stops the next release putting it back; renaming one records the old name there
+for the same reason. A shop the release dropped goes only if it was untouched,
+named in `retired` so the dialog can say so once. A file from before deleting was
+recorded gains no shipped shop it lacks, since it may have lost one by hand with
+nothing written down. A file that cannot be read still falls back to the shipped
+defaults and is not overwritten, because a half-parsed file somebody is editing
+must not be replaced under them. `stellody/application/shop_editing.py` writes
+every change before the dialog shows it, so what is on screen is what the file
+holds.
 
 **Two albums are the same album when they are the same recording, not the same
 pressing.** A remaster is the same album; a live version is not. Both sides
@@ -1460,6 +1474,7 @@ online check and it will not launch for somebody offline.
 | Where the library was looking survives a reload that changes nothing about where it should be looking | Stating a genre replaces the whole library: the store is read again, every album comes back as a new object and the model is rebuilt from the top. That is right for what the rows SAY and wrong for where somebody is, since a listener who scrolled two thirds of the way down to correct one album should still be two thirds of the way down once it is corrected. A place cannot be a row number, because the library after an edit is not the library before it: albums fold together and an edit to an artist moves one somewhere else alphabetically. So `stellody/ui/placing.py` names the album by identity with the offset in pixels beside it and works the row out again on the other side. Where possible and no further: an album that is gone after the edit takes its own restoring with it while the offset still goes back, since somebody looking at the middle of the library is still looking at the middle of it. Nothing here scrolls to something that was not on screen to begin with. |
 | The focus rule names the arrivals that ARE a choice, rather than the ones that are not | Qt invents a current index on a focus arrival where there is none, which is correct for Tab and wrong for every other way in. Coming back from a menu or a dialog is not a choice of sleeve, yet it landed the place on the top of the library with the pane opening an album nobody had picked. Measured on 2026-09-05, an empty grid went to row 0 on a focus in carrying Popup, ActiveWindow or Other, which are a menu closing, a dialog closing and everything else respectively. Listing those would be a list to keep in step with Qt's, so `ASKING_FOR_A_PLACE` in `stellody/ui/gliding.py` names the two reasons that DO ask, Tab and Backtab; everything else is left alone by default. A reason nobody has thought about therefore changes nothing, which is the safe direction for the rule to fail in. |
 | One notch of the wheel moves one row | A list view counts a wheel in its own units, which over a grid of sleeves is not the row a listener expects. The detent is Qt's own number rather than one chosen here, an eighth of a degree times 120; what has been turned without a row having moved yet is carried, so a wheel or a trackpad that reports in fractions still moves a row per notch instead of losing the remainder. |
+| A broken shop row is shown for mending, never dropped in silence | Reported by Oliver on 2026-09-13: a row broken by hand-editing `shops.json` vanished from the list without a word. A message naming it was judged the wrong repair while leaving the silence was judged worse; what was chosen removes the need to hand-edit at all. The shops dialog adds, edits, deletes and moves shops, refusing a form that would not make a working shop, so the dialog cannot write a broken row in the first place. One written by hand is still read as a `BrokenRow` carrying its reason, listed greyed in its own place with edit and delete beside it; a release never merges into one, since it is nobody's but the listener's. The rules are `domain/shop_list.py`, held by `tests/domain/test_shop_list.py`; the dialog is held by `tests/ui/test_shop_editing.py`. |
 
 ## Coverage
 
