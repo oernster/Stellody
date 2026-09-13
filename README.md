@@ -14,6 +14,13 @@ Above all, it never changes a single one of your files.
 &middot;
 [stellody.co.uk](https://stellody.co.uk/)
 
+> **Commercial licences available.** Stellody is free and open source under
+> GPL-3.0, with its interface layer under LGPL-3.0. If those terms do not suit
+> what you are building, such as a closed-source product, a commercial licence
+> can be bought from me separately. It covers my own code; PySide6 and the
+> bundled FFmpeg build keep their own licences. See
+> [commercial licensing](https://ernster.dev/commercial-licensing.html).
+
 ## Why it exists
 
 Someone spent years turning a shelf of CDs into files: ripping each one,
@@ -213,6 +220,14 @@ of them: Stellody never writes to a music file, so on Linux it is not given the
 means to. Beyond that it asks for sound, the screen and the network, the last
 for the things listed under Your privacy.
 
+## Supporting the project
+
+Stellody is free and stays free. There is no paid tier, no licence key and no
+feature held back behind a donation. If it has replaced something you were
+paying for, a donation supports its maintenance and continued development.
+
+<a href="https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"><img src="assets/donate.png" alt="Donate to Stellody" width="120"></a>
+
 ---
 
 # For developers
@@ -376,3 +391,7 @@ string the build reports rather than from its documentation. That build also
 links libx264 and libx265, which are GPL-2.0-or-later, so the packaged
 application as a whole is distributed as a GPL-3.0 work. Nothing here encodes
 video; those two arrive as dependencies of the shared FFmpeg build.
+
+A commercial licence for my own code is also available, separately from the
+open-source licences: see
+[commercial licensing](https://ernster.dev/commercial-licensing.html).
