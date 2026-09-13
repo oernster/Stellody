@@ -1799,14 +1799,11 @@ library or names the listener. Genre scoping is what makes this satisfiable: a
 run names the subset the listener chose rather than an inventory of everything
 they own.
 
-**Not yet held by a test.** No test in the suite inspects what a request
-carries; what goes out is read from `infrastructure/catalogue.py` and
-`infrastructure/similarity.py` instead. The verification below is the test
-still to be written.
-
-Verification: inspection of every request the fake source records in
-`tests/application/test_discovery.py`, asserting the request bodies and query
-strings hold nothing beyond names and identifiers.
+Verification: `tests/infrastructure/test_what_leaves_the_machine.py::test_a_field_holds_the_name_the_identifier_or_a_constant`
+puts every question both catalogue clients can ask through a recording fetcher
+and asserts each field holds the artist name, the identifier or a constant the
+client states for itself. Proved to bite on 2026-09-13 by planting an extra
+field in `infrastructure/catalogue.py`.
 
 ---
 
@@ -1820,10 +1817,12 @@ no machine name, no file path and no library statistic.
 Rationale: The application has no account and no telemetry; this must not be
 the feature that introduces one by accident.
 
-**Not yet held by a test**, for the reason NFR-PRIV-001 gives.
-
-Verification: as NFR-PRIV-001, asserted against a fixed allowed set of request
-fields, so a field added later fails the test rather than passing unnoticed.
+Verification: `tests/infrastructure/test_what_leaves_the_machine.py::test_every_field_sent_is_one_its_address_is_allowed`
+with `::test_every_address_asked_is_one_the_allowed_set_names` hold every
+request against a fixed allowed set of addresses and fields, so a field added
+later fails rather than passing unnoticed.
+`::test_nothing_sent_names_the_listener_or_the_machine` reads each request
+against this machine's name, the user name and the home directory.
 
 ---
 
@@ -1834,12 +1833,12 @@ Priority: Must
 Requirement: The catalogue source shall send a User-Agent naming Stellody, its
 version and a project contact address, as MusicBrainz requires, with nothing about the listener.
 
-**Not yet held by a structural test.** The fake service in
-`tests/infrastructure/fetching_support.py` records the agent each request
-carries; nothing asserts how that agent is built.
-
-Verification: a structural test asserting the User-Agent is built from the
-version module and a fixed contact string, with no other interpolation.
+Verification: `tests/structural/test_user_agent.py` asserts from the source
+that `USER_AGENT` in `infrastructure/courtesy.py` is built from `APP_NAME` and
+`__version__` out of the version module plus a literal `CONTACT`, with no call
+and no other name in it. It also asserts the fetcher's one User-Agent header is
+that constant. Proved to bite on 2026-09-13 by planting the user name into the
+agent.
 
 ---
 
@@ -1984,14 +1983,16 @@ through an application-layer interface with a hand-written fake behind it.
 Rationale: The house rule against mock libraries; also the practical one that a
 suite depending on a third party fails on their bad day rather than on yours.
 
-**Not held as written.** No structural test scans the test tree:
-`tests/structural/test_offline.py` scans the package alone. The fetcher's own
-tests also run a real HTTP server on the loopback address, in
+**Held with named exceptions, which the wording above does not yet allow.**
+The fetcher's own tests run a real HTTP server on the loopback address, in
 `tests/infrastructure/fetching_support.py`, so those tests do make requests;
-none of them leaves the machine.
+none of them leaves the machine. Six test modules are permitted the machinery,
+each with its reason, in `TESTS_PERMITTED`.
 
-Verification: a structural test scanning the test tree for imports of any HTTP
-client.
+Verification: `tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network`
+scans the whole test tree with the reader the package scan uses.
+`::test_every_permitted_test_module_exists_and_still_needs_it` keeps the
+permitted set from outliving its reasons. Both proved to bite on 2026-09-13.
 
 ---
 
@@ -2003,11 +2004,13 @@ Requirement: The discovery file, the candidate genre cache, the catalogue
 memory and the running record each of those memories keeps shall be written
 inside Stellody's own data directory and nowhere else.
 
-**Not yet held by a structural test.** No test asserts how the discovery
-modules resolve their paths.
-
-Verification: a structural test asserting the discovery modules resolve their
-paths through `infrastructure/paths.py` alone.
+Verification: `tests/structural/test_discovery_paths.py` asserts from the
+source that every place `infrastructure/discovery_file.py` and
+`infrastructure/catalogue_memory.py` name is `paths.data_dir()` with a named
+file under it, that neither names a directory of its own and that every read
+or write is handed one of those places. Proved to bite on 2026-09-13 by
+planting a path under the home directory, then a writer handed a place of its
+own.
 
 ---
 

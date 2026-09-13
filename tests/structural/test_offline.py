@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import ast
 
-from conftest import package_modules, parsed, relative
+from conftest import REPO_ROOT, package_modules, parsed, relative
 
 # The modules permitted to open a connection, each with what it is for. The
 # composition root names them in order to build them; it holds the wiring and
@@ -174,3 +174,64 @@ def test_the_search_is_reached_only_through_its_port() -> None:
                 offenders.append(where)
                 break
     assert not offenders, f"these reach past the port to the client: {offenders}"
+
+
+# The test tree, which the package scan above never reads. NFR-MAINT-002.
+TEST_ROOT = REPO_ROOT / "tests"
+
+# The test modules permitted to hold networking machinery, each with why none of
+# them reaches past this machine. Every other test stands in front of a port
+# with a hand-written fake, so it needs none of it.
+TESTS_PERMITTED = frozenset(
+    {
+        # A real HTTP service bound to the loopback address on a port the system
+        # picks, because what the fetcher makes of a status and a silence is
+        # Qt's, which a fake reply would only imitate.
+        "tests/infrastructure/fetching_support.py",
+        # The fetcher's own suite, asking that loopback service through Qt.
+        "tests/infrastructure/test_fetching.py",
+        # The single-instance channel, a named pipe or a socket file the system
+        # owns, which is addressed by name and goes nowhere off the machine.
+        "tests/infrastructure/test_instance.py",
+        # The error types the cover search's opener raises, raised by a fake
+        # opener. Nothing is opened.
+        "tests/infrastructure/test_cover_search.py",
+        "tests/infrastructure/test_giving_up_a_lookup.py",
+        # Reading the host out of each client's address constants, so About can
+        # be checked to credit every service asked. Nothing is opened.
+        "tests/ui/test_dialogs.py",
+    }
+)
+
+
+def _test_tree_modules() -> list:
+    """Every Python module in the test tree."""
+    return sorted(TEST_ROOT.rglob("*.py"))
+
+
+def test_no_test_holds_the_machinery_to_reach_the_network() -> None:
+    """NFR-MAINT-002: a suite that asks a third party fails on their bad day.
+
+    Read with the same reader as the package, so an import the package scan
+    would catch is caught here too, spelled any of the three ways.
+    """
+    offenders = {}
+    for path in _test_tree_modules():
+        where = relative(path)
+        if where in TESTS_PERMITTED:
+            continue
+        reached = _network_imports(parsed(path))
+        if reached:
+            offenders[where] = sorted(reached)
+    assert not offenders, (
+        f"these tests hold networking machinery: {offenders}. A test reaches a "
+        "service through its port with a hand-written fake behind it."
+    )
+
+
+def test_every_permitted_test_module_exists_and_still_needs_it() -> None:
+    """A permission nobody uses any more is a gap waiting for somebody to fill."""
+    for where in sorted(TESTS_PERMITTED):
+        path = REPO_ROOT / where
+        assert path.exists(), f"{where} is permitted but does not exist"
+        assert _network_imports(parsed(path)), f"{where} no longer needs permitting"
