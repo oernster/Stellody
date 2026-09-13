@@ -52,3 +52,4 @@ class Appearance:
         self._visualiser.show_appearance(mode)
         self.show_cover_appearance(mode)
         self.show_tile_appearance(mode)
+        self.show_mark_appearance(mode)

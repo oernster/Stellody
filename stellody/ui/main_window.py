@@ -44,6 +44,7 @@ from stellody.ui.maximising import Maximising
 from stellody.ui.menu_bar import RingedMenuBar
 from stellody.ui.menus import Menus
 from stellody.ui.models import AlbumTreeModel
+from stellody.ui.now_playing import NowPlaying
 from stellody.ui.picturing import Picturing
 from stellody.ui.placing import KeepingPlace
 from stellody.ui.playing import TRANSPORT_POLL_MS, Playing
@@ -61,6 +62,7 @@ from stellody.ui.shape_worker import ShapeRunner
 from stellody.ui.shortfall import ShowingShortfall, build_shortfall_button
 from stellody.ui.showing_shapes import ShowingShapes
 from stellody.ui.showing_spectrum import ShowingSpectrum
+from stellody.ui.switches import Switches
 from stellody.ui.toolbar import LibraryTray
 from stellody.ui.transport_menu import TransportMenu
 from stellody.ui.update_check import UpdateCheckController
@@ -94,6 +96,8 @@ class MainWindow(
     Discovering,
     ShowingShortfall,
     Playing,
+    Switches,
+    NowPlaying,
     TransportMenu,
     Choosing,
     EditingTags,
@@ -264,6 +268,10 @@ class MainWindow(
         self._shortfall_button = build_shortfall_button(self)
         self.statusBar().addPermanentWidget(self._shortfall_button)
         self.start_shortfall(self._shortfall_button)
+        # Before the appearance is applied, since that is what gives the mark
+        # its colour; beside the others, since what is playing outlives any
+        # sentence along the foot just as the shortfall does.
+        self.start_now_playing()
         # Before the ring is stated, since the bar is its first stop and Qt
         # has nothing to put in a chain until the menus exist.
         self._build_menus()

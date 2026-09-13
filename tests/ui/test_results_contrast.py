@@ -82,6 +82,27 @@ def test_the_dialog_writes_in_nothing_that_was_not_measured() -> None:
     is chosen where it is named: a role used by a line nobody wrote a test for
     is still a role the dialog paints with.
     """
-    source = pathlib.Path(inspect.getfile(ResultsDialog))
-    used = set(re.findall(r"_colour\.([a-z_]+)", source.read_text(encoding="utf-8")))
+    used: set[str] = set()
+    for source in _dialog_modules():
+        text = source.read_text(encoding="utf-8")
+        used |= set(re.findall(r"_colour\.([a-z_]+)", text))
     assert used <= set(WRITING)
+
+
+def _dialog_modules() -> set[pathlib.Path]:
+    """Every results module the dialog is built from, its mixins included.
+
+    Read off the class itself rather than listed: asking about a candidate
+    moved into a mixin of its own on 2026-09-13, taking a colour with it out
+    of the one file this used to read.
+    """
+    return {
+        pathlib.Path(inspect.getfile(klass))
+        for klass in ResultsDialog.__mro__
+        if klass.__module__.startswith(RESULTS_MODULES)
+    }
+
+
+# Where the dialog and its mixins live, so Qt's own classes and the shared
+# dialog base in the MRO are left out.
+RESULTS_MODULES = "stellody.ui.results"

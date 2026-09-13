@@ -69,6 +69,7 @@ class AlbumTreeModel(QAbstractItemModel):
         self._covers: dict[str, QPixmap | None] = {}
         self._placeholder: QPixmap | None = None
         self._flash = None
+        self._mark = None
         self._cover_px = GRID_COVER_PX
 
     @property
@@ -146,6 +147,21 @@ class AlbumTreeModel(QAbstractItemModel):
         paint and never when, so it holds no clock of its own.
         """
         self._flash = flash
+
+    def set_mark(self, mark) -> None:
+        """Take whatever marks the track in hand; `playing_mark.py` holds it."""
+        self._mark = mark
+
+    def _background(self, index: QModelIndex, node: Node):
+        """A flash while one pulses on this row, else the playing mark.
+
+        The flash wins because it lasts two pulses and is the answer to
+        something just asked; the mark comes straight back when it ends.
+        """
+        flashed = None if self._flash is None else self._flash.brush(index)
+        if flashed is not None or self._mark is None:
+            return flashed
+        return self._mark.brush(node.track)
 
     def redraw_row(self, where: QModelIndex) -> None:
         """Ask the view to draw one whole row again."""
@@ -320,8 +336,8 @@ class AlbumTreeModel(QAbstractItemModel):
             and node.album is not None
         ):
             return self._cover(node)
-        if role == Qt.ItemDataRole.BackgroundRole and self._flash is not None:
-            return self._flash.brush(index)
+        if role == Qt.ItemDataRole.BackgroundRole:
+            return self._background(index, node)
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (
             Column.LENGTH,
         ):

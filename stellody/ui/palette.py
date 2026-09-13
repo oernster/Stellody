@@ -44,6 +44,16 @@ class Palette:
     # to 1, while the dark appearance needs a deep amber to carry its light
     # writing, measured at 5.10 to 1.
     found: str
+    # What marks the row of the track in hand, in the list and in the album open
+    # under the sleeves alike. A role of its own for the reason `found` is one:
+    # the playing row is usually the selected row too, so a mark in the
+    # selection colour would vanish exactly where it is wanted. Pink, ruled by
+    # Oliver on 2026-09-13, told from the selection by hue since the two sit
+    # within 1.07 to 1 of each other in lightness. Measured on 2026-09-13, in
+    # order light then dark: the appearance's text on it 13.88 and 10.04 to 1;
+    # 107 and 99 degrees of hue from `selection`, 84 and 82 from `found`, 164
+    # from `ring` in both.
+    playing: str
     # A star that has been given, against the panel the rating sits in. Its own
     # role, because a shape this small needs a colour that carries at twenty
     # pixels rather than a wash meant to fill a whole button.
@@ -120,6 +130,7 @@ LIGHT = Palette(
     accent="#1b5fd0",
     accent_hover="#1750b3",
     found="#ffe135",
+    playing="#ffdcef",
     star="#b45309",
     progress_groove="#ffffff",
     progress_fill="#5c93de",
@@ -149,6 +160,7 @@ DARK = Palette(
     accent="#4c8dff",
     accent_hover="#69a1ff",
     found="#7a5f14",
+    playing="#5a2346",
     star="#fbbf24",
     progress_groove="#0d1220",
     progress_fill="#24478f",

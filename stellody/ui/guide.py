@@ -191,8 +191,12 @@ def _reading_html() -> str:
         "selected rather than whatever is playing, so you can rate something "
         "without listening to it first. Press the star a rating already sits "
         "on to clear it.</p>"
-        "<p>The <b>status line</b> says how much was found; it also says plainly "
-        "when a song will not play and why.</p>"
+        "<p>The row of the track <b>playing</b> is painted pink, in the list "
+        "and in an album open under the sleeves, whichever row you have "
+        "selected.</p>"
+        "<p>The <b>status line</b> names the track playing at its right hand "
+        "end until it is stopped; it also says how much was found and says "
+        "plainly when a song will not play and why.</p>"
     )
 
 

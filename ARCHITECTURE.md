@@ -894,6 +894,22 @@ all, which is the whole of what a rating is for: nothing has to be heard to be
 judged. The two agree throughout ordinary listening anyway, since the
 highlight follows playback from track to track.
 
+**What is playing is marked in the model and named along the foot.** Reported on
+2026-09-13: once another track was clicked while one played, nothing on screen
+said which was playing, in either view. The list and the album open under the
+sleeves draw from the one `AlbumTreeModel` through the one `RowCover` delegate,
+so the mark is the model's background for that row and reaches both at once.
+`stellody/ui/playing_mark.py` holds the track by identity, since a search or a
+sort rebuilds the rows. A search flash wins while it pulses; the mark returns
+after it. The delegate fills the brush ahead of the selection, which is why the
+mark is a pink of its own told from the selection by hue. The status bar used to
+say what was playing only after a double click, for six seconds.
+`stellody/ui/now_playing.py` now writes a permanent label from the transport in
+`_show_transport`, which every command, every failure and every poll passes
+through, so no route that changes the track can leave the mark or the name
+behind. A stop clears both; a pause keeps them. The switches moved to
+`stellody/ui/switches.py` to make the room in `playing.py`.
+
 ## Gapless transitions
 
 **The seam is crossed inside the engine, by the feeder thread.** At the
