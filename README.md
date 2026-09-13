@@ -76,10 +76,9 @@ if it ever stopped being true the build would fail.
   not hold, along with who else sounds like them. Tick the box for compilations
   and it asks about the artists on their tracks too, saying first roughly how
   many minutes that adds. It reports as it goes, says roughly how long is left
-  and stops the moment you ask it to. Where it could
-  not get a usable answer about somebody it says so and counts them, with the
-  names one press away, so an answer short of a third of your library never
-  reads like a complete one. Every answer is kept the moment it arrives, so a
+  and stops the moment you ask it to. Where it could not get a usable answer
+  about somebody it says so and counts them, with the names one press away, so
+  an answer short of a third of your library never reads like a complete one. Every answer is kept the moment it arrives, so a
   run stopped or cut short loses nothing it had already paid for and a second
   attempt asks only for the rest. What it finds opens as a list you can read
   and tick, dealt across the width of the screen and turned a page at a time,
@@ -251,9 +250,9 @@ python main.py
 versions, because a build of one commit has to be the same build whenever it is
 made. `requirements-dev.txt` reads it before adding the tools, black, flake8,
 ruff, pytest and Nuitka among them, which keep their floors, since a linter
-moving forward changes the checks rather than what is shipped. Upgrading a pinned package therefore fails
-the suite until the pin is moved to match, naming the package and both versions;
-that is the guard working rather than a fault.
+moving forward changes the checks rather than what is shipped. Upgrading a
+pinned package therefore fails the suite until the pin is moved to match, naming
+the package and both versions; that is the guard working rather than a fault.
 
 ## Tests
 

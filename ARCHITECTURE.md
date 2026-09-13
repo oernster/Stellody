@@ -1335,11 +1335,17 @@ window that drifts from it the moment a button changes. `stellody/ui/guide.py`
 resolves every icon through `stellody.shared.resources`, which is the lookup the
 trays themselves use, so a button that gains a new picture gains it here too.
 An icon that cannot be found yields no picture rather than an exception, since a
-missing asset must not be the thing that stops the guide opening.
+missing asset must not be the thing that stops the guide opening. The guide is
+three modules: `guide.py` holds the trays, the dialogs and the rules;
+`stellody/ui/guide_discovery.py` holds the discovery and shops procedure;
+`stellody/ui/guide_pictures.py` holds the helpers both draw their pictures with.
+The discovery section moved out whole on 2026-09-13, when the lines it gained
+would have put `guide.py` in the 381 to 400 band.
 
 **The pictures are half again the size of the words around them.** At body-text
 size two icons somebody is trying to tell apart read as one smudge, which is the
-whole task this screen exists for; `INLINE_ICON_PX` states it once.
+whole task this screen exists for; `INLINE_ICON_PX` in `guide_pictures.py`
+states it once.
 
 **A tray that gains a control the guide does not explain is a failure.**
 `tests/ui/test_guide.py` is parametrised over every resource getter the module
