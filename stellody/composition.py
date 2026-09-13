@@ -165,6 +165,10 @@ def build_window(
         # MusicBrainz twice inside the gap its terms require while a run is
         # still going on behind an open dialog.
         discovery_results=discovery_file.FileDiscoveryResults(),
+        # What the results screen's genre filter judges a candidate by: the
+        # same file the run keeps its answers in, read afresh each time the
+        # screen opens. FR-D54.
+        genre_memory=discovery_file.FileGenreMemory(),
         expansion=Expansion(
             catalogue=MusicBrainz(Fetcher(gate)),
             pause=time.sleep,

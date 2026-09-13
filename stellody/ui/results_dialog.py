@@ -16,7 +16,7 @@ wording. FR-D29, FR-D30, FR-D34.
 request costs at least the gap the terms ask for, so asking during the run
 about every candidate that survived the genre filter would roughly double a
 second stage that is already the longer half. It is paid one artist at a time,
-by whoever wants the answer. FR-D31.
+by whoever wants the answer. FR-D31. The asking itself is `results_asking`'s.
 
 **It holds no catalogue and reaches no network.** Asking is handed in, so the
 whole dialog can be driven with nothing behind it; where nothing is handed in,
@@ -38,6 +38,11 @@ the list act on whatever is ticked. Nothing here opens anything: the use case
 handed in does that, over ports, so this whole dialog still runs with no
 browser and no shop file.
 
+**The answer can be narrowed to some of the genres the run looked in.** A
+whole-library answer ran to hundreds of pages. The Filter control at the foot
+deals the pages again from what the picked genres leave; how is
+`results_filtering`'s. FR-D54 to FR-D56.
+
 **A strip at the top says when the catalogue is being asked.** One expansion
 costs at least the gap the terms require and may wait out two refusals, so
 several seconds of nothing happening is the ordinary case rather than a fault.
@@ -51,16 +56,14 @@ from __future__ import annotations
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QTreeWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from stellody.application.shopping import Shopping
-from stellody.domain.discovery import Gaps
+from stellody.domain.album import Album
+from stellody.domain.discovery import Gaps, ReleaseGroup
 from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.ui.results_asking import AskingResults
+from stellody.ui.results_filtering import FilteringResults
 from stellody.ui.results_foot import COPIED, COPY_LABEL, foot_row
 from stellody.ui.results_pager import ResultsPager
 from stellody.ui.results_pages import ResultsPages
@@ -71,18 +74,6 @@ from stellody.ui.results_room import (
 )
 from stellody.ui.results_ticks import anything_ticked, ticked_albums
 from stellody.ui.results_top import ResultsTop
-from stellody.ui.results_tree import (
-    IDENTIFIER_ROLE,
-    NAME_ROLE,
-    album_item,
-    coloured,
-)
-from stellody.ui.results_words import (
-    COULD_NOT_ASK,
-    NOBODY_TO_ASK,
-    NOTHING_OFFERED,
-    candidate_row,
-)
 from stellody.ui.shops_dialog import ShopsDialog
 from stellody.ui.theme import Mode, palette_for
 
@@ -97,7 +88,7 @@ TITLE = "What the last discovery run found"
 APART_PX = 12
 
 
-class ResultsDialog(FirstStopDialog):
+class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
     """The run's answer: source artists with their albums, candidates to open.
 
     Non-modal by intention, which is the caller's business rather than this
@@ -112,6 +103,8 @@ class ResultsDialog(FirstStopDialog):
         shopping: Shopping | None = None,
         mode: Mode = Mode.DARK,
         ticked: tuple[str, ...] = (),
+        library: tuple[Album, ...] = (),
+        remembered: dict[str, tuple[str, ...]] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -128,10 +121,14 @@ class ResultsDialog(FirstStopDialog):
         # The candidates already asked about, so opening one twice does not
         # ask twice and closing then reopening one shows what came back.
         self._answered: set[str] = set()
+        # What each of them answered, kept for the rows a filter deals.
+        self._released: dict[str, tuple[ReleaseGroup, ...]] = {}
+        self._start_filtering(gaps, ticked, library, remembered)
         self.setWindowTitle(TITLE)
         self.setMinimumSize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
-        room = self._opening_size()
-        self.resize(room)
+        # Held, since a filter deals its pages into the same room.
+        self._room = self._opening_size()
+        self.resize(self._room)
         # Who is being asked about right now, by identifier. What the strip
         # at the top reads; also why it can say a name rather than a number
         # when there is only one.
@@ -152,12 +149,8 @@ class ResultsDialog(FirstStopDialog):
         # and how long a page follow the room the dialog just took, so the
         # answer is spread over the room there is rather than over numbers
         # somebody guessed.
-        self.pages = ResultsPages(gaps, self._colour, room, self)
-        self._rows = self.pages.rows
-        self.sources = self.pages.sources
-        for tree in self.pages.trees:
-            tree.itemExpanded.connect(self.opened)
-            tree.itemChanged.connect(self.ticks_changed)
+        self.pages = ResultsPages(gaps, self._colour, self._room, self)
+        self._take_pages()
         outer.addWidget(self.pages)
         self.pager = ResultsPager(len(self.pages.pages), self)
         self.pager.turned.connect(self.turn_to)
@@ -167,6 +160,7 @@ class ResultsDialog(FirstStopDialog):
         # the way out of it on another, which reads as two separate feet. One
         # row, immediately under the answer.
         outer.addLayout(self._buttons())
+        self._offer_filter()
         self._listen()
         self._ticks_changed()
 
@@ -187,6 +181,18 @@ class ResultsDialog(FirstStopDialog):
             return QSize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
         return opening_size(screen.availableGeometry().size())
 
+    def _take_pages(self) -> None:
+        """Read the rows off the pages just dealt; listen to their lists.
+
+        Called when the dialog is built and again whenever a filter deals the
+        answer afresh, so the two cannot come to wire the lists differently.
+        """
+        self._rows = self.pages.rows
+        self.sources = self.pages.sources
+        for tree in self.pages.trees:
+            tree.itemExpanded.connect(self.opened)
+            tree.itemChanged.connect(self.ticks_changed)
+
     def _listen(self) -> None:
         """Take the answers the asker brings back, where there is one.
 
@@ -200,15 +206,17 @@ class ResultsDialog(FirstStopDialog):
         self._asking.ready.connect(self.show_releases)
         self._asking.failed.connect(self.show_failure)
 
-    def _say_what_is_being_asked(self) -> None:
-        """Put whoever is being looked up on the strip above the list."""
-        self.top.say_asking(tuple(self._in_flight.values()))
-
     def _buttons(self) -> QHBoxLayout:
         """The one row under the answer, built in `results_foot.py`."""
-        row, copy_button, shops_button, close_button = foot_row(
-            self, self.pager, self.copy_ticked, self.open_shops, self.reject
+        row, filter_button, copy_button, shops_button, close_button = foot_row(
+            self,
+            self.pager,
+            self.open_filter,
+            self.copy_ticked,
+            self.open_shops,
+            self.reject,
         )
+        self.filter_button = filter_button
         self.copy_button = copy_button
         self.shops_button = shops_button
         self.close_button = close_button
@@ -241,7 +249,11 @@ class ResultsDialog(FirstStopDialog):
         self.copy_button.setText(COPY_LABEL)
 
     def ticked(self) -> tuple:
-        """The albums somebody has ticked, in the order they are drawn."""
+        """The albums ticked on screen, in the order they are drawn.
+
+        On screen only: a tick a filter is holding back is kept for when the
+        filter clears, never sent anywhere while out of sight. FR-D56.
+        """
         return ticked_albums(self.pages.trees)
 
     def copy_ticked(self) -> None:
@@ -261,68 +273,6 @@ class ResultsDialog(FirstStopDialog):
             return
         self.shops = ShopsDialog(self._shopping, self.ticked(), self._mode, self)
         self.shops.show()
-
-    def opened(self, item: QTreeWidgetItem) -> None:
-        """Ask about a candidate artist the first time somebody opens it.
-
-        A source artist opening is nothing to do: what it holds was found by
-        the run. A candidate opened a second time is nothing to do either,
-        since the answer to that question is already under it.
-        """
-        identifier = item.data(0, IDENTIFIER_ROLE)
-        if identifier is None:
-            return
-        if not identifier:
-            self._said_under(item, NOBODY_TO_ASK)
-            return
-        if identifier in self._answered or self._asking is None:
-            return
-        if self._asking.ask(identifier):
-            self._answered.add(identifier)
-            self._in_flight[identifier] = item.data(0, NAME_ROLE)
-            self._say_what_is_being_asked()
-
-    def show_releases(self, identifier: str, releases: object) -> None:
-        """Put what an artist released under every row that artist occupies.
-
-        The row itself gains the count, which answers how many lines sit
-        beneath it; the key above answers what they are.
-        """
-        albums = tuple(releases)
-        self._in_flight.pop(identifier, None)
-        self._say_what_is_being_asked()
-        for item in self._rows.get(identifier, ()):
-            self._emptied(item)
-            name = item.data(0, NAME_ROLE)
-            item.setText(0, candidate_row(name, len(albums)))
-            for album in albums:
-                item.addChild(album_item(album, name, self._colour))
-            if not albums:
-                self._said_under(item, NOTHING_OFFERED)
-
-    def show_failure(self, identifier: str, reason: str) -> None:
-        """Say what went wrong against the artist it went wrong about.
-
-        The rest of the answer is left exactly as it was: one artist nobody
-        could look up is not a reason to lose a run that took minutes to
-        make. Asked again the next time it is opened, since a service that
-        refused once may well answer next time. FR-D32.
-        """
-        self._answered.discard(identifier)
-        self._in_flight.pop(identifier, None)
-        self._say_what_is_being_asked()
-        for item in self._rows.get(identifier, ()):
-            self._said_under(item, COULD_NOT_ASK.format(reason=reason))
-
-    def _said_under(self, item: QTreeWidgetItem, message: str) -> None:
-        """Put one line under a row, replacing whatever was under it."""
-        self._emptied(item)
-        item.addChild(coloured(QTreeWidgetItem([message]), self._colour.text_muted))
-
-    @staticmethod
-    def _emptied(item: QTreeWidgetItem) -> None:
-        """Take everything out from under a row."""
-        item.takeChildren()
 
     def reject(self) -> None:
         """Close, letting go of any question still in flight.

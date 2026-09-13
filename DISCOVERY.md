@@ -1564,6 +1564,74 @@ Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_shop_choosing.py::
 
 ---
 
+**FR-D54 The answer can be narrowed to some of the genres the run looked in**
+
+Priority: Must
+
+Requirement: The results dialog shall carry a Filter control wearing the
+library's filter artwork, offering only the genres the run looked in. While any
+is picked, it shall show a source artist's albums only where that artist holds
+an album whose resolved genre names a picked genre. It shall show a candidate
+artist only where the catalogue memory records a genre for them naming a picked
+genre. A source artist with nothing left to show shall not be shown. The control
+shall stay pressed in while a filter is on; the pages shall be dealt again from
+what is shown. The filter shall not be remembered between openings.
+
+Rationale: Ruled by Oliver on 2026-09-13, after a whole-library answer ran to
+5279 albums over hundreds of pages. His choice between two readings: a source
+artist is judged by the genres he stated on his own albums, since FR-D05 means
+every source artist holds one, so nobody he holds is ever withheld for want of a
+genre. Judging each missing album by the catalogue's genre instead would have
+withheld 2128 of those 5279, measured from his answer that day. A candidate is
+not in the library, so the catalogue memory is all there is to judge them by.
+
+Acceptance: Given an answer holding a House source artist and a Rock one, when
+House alone is picked, then only the House artist is shown and the pages are
+dealt from them; when the filter is cleared, both are shown again.
+
+Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_everything`, `tests/domain/test_discovery_filter.py::test_a_source_artist_shows_by_the_genres_held`, `tests/domain/test_discovery_filter.py::test_a_candidate_shows_by_its_remembered_genres`, `tests/domain/test_discovery_filter.py::test_an_artist_with_nothing_left_is_not_shown`, `tests/ui/test_results_filter.py::test_only_the_genres_looked_in_are_offered`, `tests/ui/test_results_filter.py::test_the_filter_stays_pressed_in_while_on`, `tests/ui/test_results_filter.py::test_the_pages_are_dealt_from_what_is_shown`
+
+---
+
+**FR-D55 What a filter withholds is said**
+
+Priority: Must
+
+Requirement: While a filter is on, the results dialog shall state how many
+candidate artists are withheld because the catalogue memory records no genre for
+them.
+
+Rationale: Measured on 2026-09-13: 260 of 1112 candidates in Oliver's answer
+have no remembered genre. A filter cannot judge them; rows that vanish without a
+word read as rows that were never found.
+
+Acceptance: Given two candidates with no remembered genre, when any genre is
+picked, then the dialog says two are withheld; when the filter is cleared, then
+it says nothing about withholding.
+
+Verified by: `tests/domain/test_discovery_filter.py::test_candidates_with_no_genre_are_counted_as_withheld`, `tests/ui/test_results_filter.py::test_the_withheld_count_is_said_while_filtering`
+
+---
+
+**FR-D56 A filter never takes a tick away**
+
+Priority: Must
+
+Requirement: Changing the filter shall keep every tick, including a tick on a
+row the filter withholds. Copy and Find in shops shall act only on ticked albums
+currently shown.
+
+Rationale: Ruled by Oliver on 2026-09-13. A tick is somebody's decision; a
+filter is only where they are looking. Acting on rows out of sight would send
+albums to a shop without anybody seeing they were going.
+
+Acceptance: Given an album ticked, when a filter withholds it, then Copy leaves
+it out; when the filter is cleared, then it is still ticked.
+
+Verified by: `tests/ui/test_results_filter.py::test_a_withheld_tick_is_left_out_of_copy`, `tests/ui/test_results_filter.py::test_a_tick_survives_the_filter_being_cleared`
+
+---
+
 **FR-D45 The answer is dealt across the width of the screen**
 
 Priority: Must
@@ -2089,7 +2157,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D53 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D56 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

@@ -43,6 +43,7 @@ from stellody.ui.layout_advice import layout_html
 from stellody.ui.results_foot import (
     COPY_ICON,
     COPY_LABEL,
+    FILTER_LABEL,
     SHOP_ICON,
     SHOPS_LABEL,
 )
@@ -260,6 +261,17 @@ def _discovery_html() -> str:
         "them; the direction that leads nowhere wears its picture struck "
         "through. Albums you tick stay ticked as you turn the pages, so a "
         "whole answer can go to a shop together.</p>"
+        "<p>"
+        + _img(resources.filter_icon_path())
+        + f"<b>Narrowing the answer.</b> <b>{FILTER_LABEL}</b>, at the left "
+        "of the row beneath the answer, offers the genres that run looked in. "
+        "Tick some to see only the artists you hold with an album of your own "
+        "filed under one of them, plus the similar artists an earlier run "
+        "found playing one; the button stays pressed in while it is on. A "
+        "similar artist whose genre was never found is left out, with a line "
+        "at the top saying how many. Ticks are kept through it all, while "
+        f"Copy and <b>{SHOPS_LABEL}</b> act only on ticked albums you can "
+        "see.</p>"
         "<p>"
         + _img(resources.find_asset(SHOP_ICON))
         + _img(resources.find_asset(COPY_ICON))

@@ -83,6 +83,11 @@ class ResultsPager(QWidget):
         button.clicked.connect(pressed)
         return button
 
+    def set_pages(self, pages: int) -> None:
+        """Take a new count of pages, as a filter deals them; the first in front."""
+        self._pages = pages
+        self.showing(0)
+
     def showing(self, at: int) -> None:
         """Say which page is in front; say what can be done from here."""
         self._showing = at

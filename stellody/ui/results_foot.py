@@ -1,4 +1,4 @@
-"""The single row beneath the answer: the ticks, the pages, then the way out.
+"""The single row beneath the answer: the filter, the ticks, the pages, the way out.
 
 **One row rather than two.** Reported by Oliver on 2026-09-09 against the
 shipped screen: the pager stood on a row of its own above the row carrying
@@ -8,6 +8,10 @@ way through the answer and the way out of it belong on the same line.
 The pager carries a stretch on each side of itself, so dropping it between the
 controls that act on the ticks and the one that leaves is what centres it. No
 stretch is added beside it here; a second one would push it off centre.
+
+**The Filter control leads the row.** Ruled by Oliver on 2026-09-13: it wears
+the artwork the library's own filter wears; it is held down while a filter is
+on, the way that one is. FR-D54.
 
 This builds the row and hands back the controls in it. It is a builder rather
 than a widget of its own on purpose: a widget would put the buttons one layout
@@ -27,6 +31,7 @@ from stellody.ui.dialogs import CLOSE_ICON, wearing
 CLOSE_LABEL = "Close"
 COPY_LABEL = "Copy"
 SHOPS_LABEL = "Find in shops"
+FILTER_LABEL = "Filter"
 # Said on the copy control once it has been pressed, so a press that changed
 # nothing visible is still a press somebody saw work.
 COPIED = "Copied"
@@ -51,15 +56,31 @@ def control(
     return button
 
 
+def filter_control(parent: QWidget, pressed: Callable[[], None]) -> QPushButton:
+    """The Filter control, checkable so a filter that is on holds it down.
+
+    Clicked rather than toggled, since a press opens a chooser: whether the
+    control ends up down is settled once that closes, by what was picked.
+    """
+    button = wearing(QPushButton(FILTER_LABEL, parent), resources.filter_icon_path())
+    button.setCheckable(True)
+    button.setAutoDefault(False)
+    button.clicked.connect(pressed)
+    return button
+
+
 def foot_row(
     parent: QWidget,
     pager: QWidget,
+    open_filter: Callable[[], None],
     copy_ticked: Callable[[], None],
     open_shops: Callable[[], None],
     leave: Callable[[], None],
-) -> tuple[QHBoxLayout, QPushButton, QPushButton, QPushButton]:
-    """The row itself, with the three controls standing in it."""
+) -> tuple[QHBoxLayout, QPushButton, QPushButton, QPushButton, QPushButton]:
+    """The row itself, with the four controls standing in it."""
     row = QHBoxLayout()
+    filter_button = filter_control(parent, open_filter)
+    row.addWidget(filter_button)
     copy_button = control(COPY_LABEL, COPY_ICON, copy_ticked, parent)
     row.addWidget(copy_button)
     shops_button = control(SHOPS_LABEL, SHOP_ICON, open_shops, parent)
@@ -71,4 +92,4 @@ def foot_row(
     close_button.setDefault(True)
     close_button.clicked.connect(leave)
     row.addWidget(close_button)
-    return row, copy_button, shops_button, close_button
+    return row, filter_button, copy_button, shops_button, close_button

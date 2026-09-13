@@ -19,7 +19,7 @@ opposite of finding what is missing.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from stellody.domain.album import Album
 from stellody.domain.genres import chosen_in
@@ -228,6 +228,49 @@ def source_artists(
             if artist not in found and not is_various_artists(artist):
                 found.append(artist)
     return tuple(found)
+
+
+@dataclass(frozen=True, slots=True)
+class FilteredAnswer:
+    """What a genre filter leaves of an answer; how many it could not judge."""
+
+    gaps: tuple[Gaps, ...]
+    unjudged: int = 0
+
+
+def filtered_answer(
+    gaps: tuple[Gaps, ...],
+    library: tuple[Album, ...],
+    remembered: dict[str, tuple[str, ...]],
+    picked: tuple[str, ...],
+) -> FilteredAnswer:
+    """The answer as a genre filter leaves it. FR-D54, FR-D55.
+
+    A source artist is judged by the library, through the same rule that made
+    them a source artist: whoever a run over the picked genres would ask about
+    keeps their albums. Ruled by Oliver on 2026-09-13, so nobody he holds is
+    ever withheld for want of a catalogue genre. A candidate is judged by what
+    the catalogue memory records, since they are not in the library at all; one
+    it records nothing for cannot be judged, so it is withheld and counted once.
+    """
+    if not picked:
+        return FilteredAnswer(gaps=gaps)
+    wanted = set(picked)
+    holding = set(source_artists(library, picked, compilations=True))
+    unjudged: set[str] = set()
+    kept: list[Gaps] = []
+    for gap in gaps:
+        artists: list[SimilarArtist] = []
+        for candidate in gap.artists:
+            named = set(catalogue_genres(remembered.get(candidate.identifier, ())))
+            if not named:
+                unjudged.add(candidate.identifier or candidate.name)
+            elif named & wanted:
+                artists.append(candidate)
+        albums = gap.albums if gap.artist in holding else ()
+        if albums or artists:
+            kept.append(replace(gap, albums=albums, artists=tuple(artists)))
+    return FilteredAnswer(gaps=tuple(kept), unjudged=len(unjudged))
 
 
 def held_matches(albums: tuple[Album, ...]) -> frozenset[ReleaseMatch]:

@@ -181,6 +181,17 @@ def where_in_the_answer(showing: int, pages: int) -> str:
     return WHERE_IN_THE_ANSWER.format(page=showing + 1, pages=pages)
 
 
+# Said while a filter is on, about the candidates it could not judge. Counted
+# rather than listed: 260 of 1112 in Oliver's answer on 2026-09-13, which is a
+# number worth knowing where the names would be a list nobody reads. FR-D55.
+WITHHELD = "Withheld by the filter: {count} whose genre is not known"
+
+
+def withheld(count: int) -> str:
+    """How many similar artists a filter held back for want of a genre."""
+    return WITHHELD.format(count=counted(count, SIMILAR, f"{SIMILAR}s"))
+
+
 def asking_about(names: tuple[str, ...]) -> str:
     """What the bar says while these artists are being looked up."""
     if len(names) == ONE:

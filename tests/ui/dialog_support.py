@@ -60,6 +60,7 @@ from stellody.ui.health import HealthDialog
 from stellody.ui.layout_advice import LayoutAdviceDialog
 from stellody.ui.repairing import RepairDialog
 from stellody.ui.results_dialog import ResultsDialog
+from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.scan_summary import ScanSummaryDialog
 from stellody.ui.shop_form import ShopForm
 from stellody.ui.shops_dialog import ShopsDialog
@@ -222,6 +223,9 @@ BUILDERS = {
     ),
     "RepairDialog": lambda parent: _repair_dialog(parent),
     "ResultsDialog": lambda parent: ResultsDialog(_found(), parent=parent),
+    "ResultsFilterDialog": lambda parent: ResultsFilterDialog(
+        ("House",), parent=parent
+    ),
     "ShopsDialog": lambda parent: ShopsDialog(_shopping(), _ticked(), parent=parent),
     "ShopForm": lambda parent: ShopForm(_editing(), _ticked()[0], parent=parent),
     "ScanSummaryDialog": lambda parent: ScanSummaryDialog(*_a_scan(), parent),

@@ -1192,6 +1192,22 @@ another fifty-four minutes at the permitted rate. An answer already held is
 still judged against the genres ticked, so remembering cannot smuggle a
 candidate past the scope of a run.
 
+**The results can be narrowed by genre, judged differently at each end.**
+FR-D54 to FR-D56, ruled by Oliver on 2026-09-13 after a whole-library answer ran
+to 5279 albums. A source artist keeps their albums where a run over the picked
+genres would ask about them, which is `source_artists` asked again of the
+library: judged by the genres on the listener's own albums, so nobody the
+library holds is withheld for want of a catalogue genre. A candidate is not in
+the library, so the memory above is all there is to judge them by; one it
+records nothing for is withheld and counted rather than guessed at.
+`filtered_answer` in `domain/discovery.py` is that rule. `ui/results_filtering.py`
+deals the pages again from what it leaves rather than hiding rows, since pages
+are dealt by height and hidden rows would leave columns half empty. Dealing
+again throws the rows away, so the ticks and every candidate's fetched albums
+are held by the dialog then written back after each deal; Copy and Find in shops
+still read only the rows on screen. `ui/results_asking.py` was split out of
+`results_dialog.py` by this change to make the room.
+
 **The file records what was asked as well as what was found.** A run's answer
 is meaningless without the genres that scoped it, since those decide which
 artists were asked about at all: the same library asked about Folk and asked

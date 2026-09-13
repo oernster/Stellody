@@ -20,7 +20,7 @@ from collections.abc import Callable
 
 from stellody.application.compilation_cost import CompilationCost
 from stellody.application.discovering import Discovery
-from stellody.application.discovery_ports import DiscoveryResults
+from stellody.application.discovery_ports import DiscoveryResults, GenreMemory
 from stellody.application.expanding import Expansion
 from stellody.application.shopping import Shopping
 from stellody.application.values import DiscoveryProgress, RunReport
@@ -61,6 +61,7 @@ class Discovering(SettlingDiscovery):
         shopping: Shopping | None = None,
         note: Callable[[str], None] = standing_in.say_nothing,
         compilation_cost: CompilationCost | None = None,
+        genre_memory: GenreMemory | None = None,
     ) -> None:
         """Take the service and the writer, if this window has been given any.
 
@@ -86,6 +87,9 @@ class Discovering(SettlingDiscovery):
         # What including compilations would add to a run, priced when the
         # dialog opens. A window given none shows the box with no price.
         self._compilation_cost = compilation_cost
+        # What the results screen's filter judges a candidate by. A window
+        # given none opens the results with the Filter control disabled.
+        self._genre_memory = genre_memory
         # Held so it is not collected the moment it is shown, since a dialog
         # nobody keeps a name for goes away with the call that made it.
         self._results_dialog: ResultsDialog | None = None
@@ -304,6 +308,12 @@ class Discovering(SettlingDiscovery):
             # earlier, so what the screen says it looked in is what the run it
             # is showing actually looked in.
             ticked=answer.ticked,
+            # What the Filter control judges by: the library as it stands and
+            # what earlier runs learned candidates play. FR-D54.
+            library=self._all_albums,
+            remembered=(
+                None if self._genre_memory is None else self._genre_memory.remembered()
+            ),
             parent=self,
         )
         if asking is not None:

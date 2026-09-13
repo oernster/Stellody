@@ -231,7 +231,12 @@ class Results:
 
 
 def make_window(
-    application, write=wrote, service=None, results=None, expansion=None
+    application,
+    write=wrote,
+    service=None,
+    results=None,
+    expansion=None,
+    genre_memory=None,
 ) -> Window:
     """A window mixin wired to a service, a writer and maybe a reader."""
     window = Window()
@@ -240,6 +245,7 @@ def make_window(
         write=write,
         results=results,
         expansion=expansion,
+        genre_memory=genre_memory,
     )
     # The real button rather than a stand-in; handed over exactly as the
     # real window hands it over: what a run does to it is the point of the

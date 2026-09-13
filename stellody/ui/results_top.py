@@ -16,6 +16,11 @@ wait out two refusals, so several seconds of quiet is ordinary rather than a
 fault. It holds its place while nothing is happening, carrying the instruction
 instead: a strip that appeared would push the list down at the moment somebody
 clicked an arrow in it. FR-D40.
+
+**What a filter withholds.** A line under the genres looked in, present only
+while a filter holds candidates back for want of a genre. It may appear where
+the strip may not, since it arrives with a press that deals every page again
+rather than under somebody's pointer. FR-D55.
 """
 
 from __future__ import annotations
@@ -31,6 +36,7 @@ from stellody.ui.results_words import (
     NOT_ASKING,
     asking_about,
     looked_in,
+    withheld,
 )
 from stellody.ui.theme import Palette
 
@@ -67,8 +73,14 @@ class ResultsTop(QWidget):
         # Absent rather than empty where the file carries no genres, so a run
         # written by an older Stellody costs a line rather than showing a blank.
         self.looked_in = self._looked_in_line(ticked)
+        self.withheld = self._wrapped("")
+        self.withheld.hide()
         if self.looked_in is not None:
             column.addWidget(self.looked_in)
+            # Beneath the genres, which is what it qualifies. Only a run that
+            # names its genres can be filtered, so without that line there is
+            # never anything withheld to say.
+            column.addWidget(self.withheld)
             column.addSpacing(APART_PX)
         self.key = tuple(
             self._key_line(shade, words)
@@ -85,23 +97,26 @@ class ResultsTop(QWidget):
         self.rest()
         column.addWidget(self.bar)
 
+    def _wrapped(self, words: str) -> QLabel:
+        """A line of plain words that wraps rather than running off the edge."""
+        line = QLabel(words, self)
+        line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        line.setWordWrap(True)
+        return line
+
     def _looked_in_line(self, ticked: tuple[str, ...]) -> QLabel | None:
         """The genres this run was scoped to; None where the file names none.
 
         The names are drawn in the ordinary text colour rather than in either
         artist colour, since those two already mean something on this screen
         and a third use of one of them would be saying that these genres are
-        artists.
+        artists. Wrapped for the reason the key is: eleven genres is an
+        ordinary run and a list running off the edge is a list nobody can read.
         """
         words = looked_in(ticked)
         if not words:
             return None
-        line = QLabel(words, self)
-        line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        # Wrapped for the reason the key is: eleven genres is an ordinary run
-        # and a list running off the edge is a list nobody can read.
-        line.setWordWrap(True)
-        return line
+        return self._wrapped(words)
 
     def _key_line(self, colour: str, words: str) -> QLabel:
         """One line of the key: a filled circle, then what it means."""
@@ -145,3 +160,8 @@ class ResultsTop(QWidget):
             return
         self.bar.setRange(0, 0)
         self.bar.setFormat(asking_about(names))
+
+    def say_withheld(self, count: int) -> None:
+        """Say how many candidates a filter could not judge; nothing at none."""
+        self.withheld.setText(withheld(count) if count else "")
+        self.withheld.setHidden(not count)

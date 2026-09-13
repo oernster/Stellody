@@ -26,6 +26,7 @@ from results_support import (
     made,
     rows_under,
 )
+from tray_support import album
 
 from stellody.ui.palette import Mode, palette_for
 from stellody.ui.results_dialog import TITLE, ResultsDialog
@@ -134,6 +135,38 @@ def test_the_dialog_is_given_something_to_ask_with_where_there_is_one(
     assert dialog._asking is not None
     assert dialog._asking.parent() is dialog
     dialog.reject()
+
+
+# What the stand-in memory below knows: one candidate and what it plays.
+KNOWN = {"id-0": ("folk",)}
+
+
+class Memory:
+    """A catalogue memory that knows what one candidate plays."""
+
+    def remembered(self) -> dict[str, tuple[str, ...]]:
+        """What it was told to know, as a copy nobody can change it through."""
+        return dict(KNOWN)
+
+
+def test_the_filter_is_handed_what_it_judges_by(application, monkeypatch) -> None:
+    """The library as it stands and the memory's record, from the window. FR-D54."""
+    shown = opened_results(monkeypatch)
+    window = make_window(
+        application, results=Results((gaps_with(albums=1),)), genre_memory=Memory()
+    )
+    window._all_albums = (album(),)
+    completed(window, a_report(albums=1, artists=0))
+    assert shown[0]._library == (album(),)
+    assert shown[0]._remembered == KNOWN
+
+
+def test_a_window_with_no_memory_hands_none(application, monkeypatch) -> None:
+    """None rather than an empty record, which would judge every candidate."""
+    shown = opened_results(monkeypatch)
+    window = make_window(application, results=Results((gaps_with(albums=1),)))
+    completed(window, a_report(albums=1, artists=0))
+    assert shown[0]._remembered is None
 
 
 def test_a_source_artist_carries_its_albums(application) -> None:
