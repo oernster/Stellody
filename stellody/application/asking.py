@@ -33,11 +33,10 @@ Pause = Callable[[float], None]
 
 # How many times one question is asked before it is given up on; how long to
 # wait between asks. The wait DOUBLES with each attempt rather than growing by
-# a step, so six asks span two, four, eight, sixteen then thirty-two seconds:
-# a little over a minute of patience rather than the thirty seconds a growing
-# step would give. Measured on 2026-09-08, MusicBrainz refuses in bursts and
-# answers in about 30 milliseconds when it refuses, so what clears a burst is
-# waiting longer rather than asking more often.
+# a step: the first wait is the pause below, each after it twice the one
+# before. Measured on 2026-09-08, MusicBrainz refuses in bursts and answers in
+# about 30 milliseconds when it refuses, so what clears a burst is waiting
+# longer rather than asking more often.
 #
 # The whole of that patience is paid once ever for one artist, since what a
 # catalogue answers is remembered from then on. It is not paid again on the
@@ -69,9 +68,9 @@ Pause = Callable[[float], None]
 RETRY_ATTEMPTS = 2
 RETRY_PAUSE_SECONDS = 2.0
 # A wait is taken in slices so that stopping is felt rather than merely
-# obeyed. Waiting out two refusals is six seconds; somebody who has pressed
-# stop and watched nothing happen for six seconds has been told the button
-# does not work. Small enough to read as immediate, large enough that a run
+# obeyed. An opened artist waits out two refusals in six seconds; somebody who
+# has pressed stop and watched nothing happen for six seconds has been told the
+# button does not work. Small enough to read as immediate, large enough that a run
 # is not spending its time asking whether it should stop.
 WAIT_SLICE_SECONDS = 0.2
 # How many asks one artist is worth when somebody opened that artist and is

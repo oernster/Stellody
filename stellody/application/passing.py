@@ -18,10 +18,11 @@ left, while each pass is smaller than the one before it.
 
 **A pass that achieves nothing twice running is where it stops.** A service
 that is down stays down; going round a hundred times to learn that is a
-hundred times of somebody's evening. What is left then is reported as refused,
-which the discovery file treats as a hole and so declines to write; every
-answer that DID arrive is remembered either way, so running it again asks only
-for what is missing.
+hundred times of somebody's evening. What is left then is reported as refused.
+The discovery file is still written, naming those artists as the holes in it,
+which `discovery_file.write` has done since 2026-09-09. Every answer that DID
+arrive is remembered either way, so running it again asks only for what is
+missing.
 
 Nothing here asks anything or waits for anything. It is the bookkeeping of
 which artists still owe an answer and whether another go is worth making.

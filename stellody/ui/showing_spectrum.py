@@ -6,9 +6,9 @@ centimetres of a strip they already have. Something that small and that cheap
 should simply be there; a setting for it is a question nobody wanted asked.
 
 What is left is the one question that has an answer worth having: whether there
-is anything to draw. The timer runs while the music does and stops when it
-stops, taking the measurement upstream with it, so an idle window does no
-arithmetic for a display of nothing.
+is anything to draw. The repaint timer runs while the music does and stops when
+it stops, so an idle window does no painting for a display of nothing. The
+measuring upstream is switched on once in `start_watching` and left on.
 """
 
 from __future__ import annotations
