@@ -26,7 +26,7 @@ from stellody.domain.genres import chosen_in
 from stellody.domain.matching import ReleaseKind, ReleaseMatch, matched
 from stellody.domain.narrowing import Narrowing, narrowed_to
 from stellody.domain.overrides import AlbumField
-from stellody.domain.text import comparison_key
+from stellody.domain.text import comparison_key, is_various_artists
 
 # The kinds worth offering. A plain album states none of them, so an empty set
 # is the ordinary case. A record whose kinds are not all in here is left alone:
@@ -193,9 +193,16 @@ def playing_something_ticked(
 
 
 def source_artists(
-    albums: tuple[Album, ...], ticked: tuple[str, ...]
+    albums: tuple[Album, ...], ticked: tuple[str, ...], compilations: bool = False
 ) -> tuple[str, ...]:
-    """The album artists a run will ask about, in the library's own order.
+    """The artists a run will ask about, in the library's own order.
+
+    **A compilation is asked about by its track credits or not at all.** Its
+    album artist names nobody in particular, so asking about that was one
+    request telling nobody anything while every artist on its tracks went
+    unasked: reported by Oliver on 2026-09-13, measured as 24 credits on one
+    album. Whether they are asked about is the listener's choice. FR-D05,
+    FR-D51.
 
     Narrowing already answers "which albums name any of these genres", using
     the resolved genre the listener sees rather than the tag underneath it, so
@@ -211,9 +218,15 @@ def source_artists(
     narrowing = Narrowing(field=AlbumField.GENRE, wanted=ticked)
     found: list[str] = []
     for album in narrowed_to(albums, narrowing):
-        artist = album.identity.album_artist
-        if artist not in found:
-            found.append(artist)
+        if not album.identity.is_compilation:
+            named: tuple[str, ...] = (album.identity.album_artist,)
+        elif compilations:
+            named = album.artists
+        else:
+            named = ()
+        for artist in named:
+            if artist not in found and not is_various_artists(artist):
+                found.append(artist)
     return tuple(found)
 
 

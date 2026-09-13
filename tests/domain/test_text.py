@@ -164,3 +164,36 @@ def test_tag_date_is_idempotent() -> None:
     for raw in ("2007-10-09T12:00:00Z", "2001 05 15", "1989-04", "Spring 1990"):
         once = text.tag_date(raw)
         assert text.tag_date(once) == once
+
+
+@pytest.mark.parametrize(
+    ("credit", "expected"),
+    [
+        ("ODESZA & Bettye LaVette", ("ODESZA", "Bettye LaVette")),
+        ("Darlyn Vlys & AFFKT", ("Darlyn Vlys", "AFFKT")),
+        (
+            "Ewan Hoo's Army, Dave Seaman, Quivver, Leo Wood, & Trilucid",
+            ("Ewan Hoo's Army", "Dave Seaman", "Quivver", "Leo Wood", "Trilucid"),
+        ),
+        ("John Digweed, Various Artists,", ("John Digweed", "Various Artists")),
+    ],
+)
+def test_a_credit_naming_several_artists_comes_apart(
+    credit: str, expected: tuple[str, ...]
+) -> None:
+    """FR-D53: what a credit the catalogue does not know is asked about instead.
+
+    Every credit here is written as it stood in Oliver's library on 2026-09-13,
+    the last one with the trailing comma a hand-typed tag left on it.
+    """
+    assert text.credit_parts(credit) == expected
+
+
+@pytest.mark.parametrize("credit", ["Tinlicker", "Rodriguez Jr.", "", "  &  "])
+def test_a_credit_naming_one_artist_has_no_parts(credit: str) -> None:
+    """Nothing to fall back to.
+
+    A lone name stays unrecognised rather than being asked about a second time
+    as itself.
+    """
+    assert text.credit_parts(credit) == ()

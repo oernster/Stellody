@@ -18,51 +18,31 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from stellody.application.compilation_cost import CompilationCost
 from stellody.application.discovering import Discovery
 from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.expanding import Expansion
 from stellody.application.shopping import Shopping
-from stellody.application.values import DiscoveryProgress, RunOutcome, RunReport
-from stellody.ui import shortfall, standing_in
+from stellody.application.values import DiscoveryProgress, RunReport
+from stellody.ui import standing_in
 from stellody.ui.discovery_dialog import DiscoveryDialog
+from stellody.ui.discovery_endings import STOPPED, SettlingDiscovery, WriteDiscovery
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.expansion_worker import ExpansionRunner
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.run_estimate import RunEstimate
+from stellody.ui.settings_keys import FALSE, SETTING_DISCOVER_COMPILATIONS, TRUE
 from stellody.ui.standing_in import say_nothing
 from stellody.ui.tray_metrics import show_discovery_running
 
-# Handed a finished run; answers where it was written. Raises where it could
-# not be, which is reported rather than swallowed.
-WriteDiscovery = Callable[[RunReport], object]
-
-FOUND = (
-    "Found {albums} albums and {artists} artists you do not hold. Written to {where}."
-)
-FOUND_NOTHING = "Nothing missing was found in those genres."
-NOTHING_TO_ASK = (
-    "Nothing in the library carries those genres, so there was nobody to ask about."
-)
-STOPPED = "Stopped. Nothing was written; any earlier answer is untouched."
 # Said where a new run is asked for while the last one is still winding down.
 # A request already in flight cannot be called back, so there is a moment
 # after a stop when the thread is not free yet.
 STILL_STOPPING = "Still stopping the last run. Try again in a moment."
-UNREACHABLE = "Nothing answered. Check the connection, then try again."
-COULD_NOT_WRITE = (
-    "The answer could not be written: {reason}. Any earlier one is untouched."
-)
 WENT_WRONG = "The run stopped: {reason}"
 
 
-def _counted(report: RunReport) -> tuple[int, int]:
-    """How many albums and how many artists a run turned up."""
-    albums = sum(len(gaps.albums) for gaps in report.gaps)
-    artists = sum(len(gaps.artists) for gaps in report.gaps)
-    return albums, artists
-
-
-class Discovering:
+class Discovering(SettlingDiscovery):
     """Opening the discovery dialog and running what it asks for.
 
     The diary is named here with a default that keeps nothing, so a window
@@ -80,6 +60,7 @@ class Discovering:
         expansion: Expansion | None = None,
         shopping: Shopping | None = None,
         note: Callable[[str], None] = standing_in.say_nothing,
+        compilation_cost: CompilationCost | None = None,
     ) -> None:
         """Take the service and the writer, if this window has been given any.
 
@@ -102,6 +83,9 @@ class Discovering:
         # counsel, which is what every test that is about something else
         # wants; the running application hands in the diary.
         self._discovery_note = note
+        # What including compilations would add to a run, priced when the
+        # dialog opens. A window given none shows the box with no price.
+        self._compilation_cost = compilation_cost
         # Held so it is not collected the moment it is shown, since a dialog
         # nobody keeps a name for goes away with the call that made it.
         self._results_dialog: ResultsDialog | None = None
@@ -145,14 +129,26 @@ class Discovering:
         if self._discovery_runner.running:
             self.stop_discovery()
             return
-        dialog = DiscoveryDialog(start=self.begin_discovery, parent=self)
+        included = (
+            self._settings.get_setting(SETTING_DISCOVER_COMPILATIONS, FALSE) == TRUE
+        )
+        priced = self._compilation_cost
+        dialog = DiscoveryDialog(
+            start=self.begin_discovery,
+            parent=self,
+            compilations=included,
+            cost=None if priced is None else priced.pricing(self._all_albums).of,
+            remember=self._remember_compilations,
+        )
         self._discovery_dialog = dialog
         try:
             dialog.exec()
         finally:
             self._discovery_dialog = None
 
-    def begin_discovery(self, ticked: tuple[str, ...]) -> None:
+    def begin_discovery(
+        self, ticked: tuple[str, ...], compilations: bool = False
+    ) -> None:
         """Start a run over the artists inside these genres.
 
         A stopped run is abandoned rather than waited for, so there is room
@@ -162,7 +158,9 @@ class Discovering:
         """
         if self._discovery is None:
             return
-        if not self._discovery_runner.start(self._discovery, self._all_albums, ticked):
+        if not self._discovery_runner.start(
+            self._discovery, self._all_albums, ticked, compilations
+        ):
             self.statusBar().showMessage(STILL_STOPPING)
             return
         self._discovery_stopping = False
@@ -174,8 +172,17 @@ class Discovering:
         # Written down so a complaint Qt makes later can be placed against the
         # run rather than merely against the evening. The catalogues are
         # reached from the run's own thread, which ends when it does.
-        self._discovery_note(f"a discovery run started over {len(ticked)} genres")
+        widened = ", compilations included" if compilations else ""
+        self._discovery_note(
+            f"a discovery run started over {len(ticked)} genres{widened}"
+        )
         show_discovery_running(self._tray.discover_button, True)
+
+    def _remember_compilations(self, included: bool) -> None:
+        """Keep the box as it was left, so the dialog opens that way. FR-D51."""
+        self._settings.set_setting(
+            SETTING_DISCOVER_COMPILATIONS, TRUE if included else FALSE
+        )
 
     def stop_discovery(self) -> None:
         """Ask a running discovery to give up at its next boundary.
@@ -252,59 +259,6 @@ class Discovering:
     def discovery_failed(self, reason: str) -> None:
         """A run that could not finish says so rather than merely stopping."""
         self._say_about_discovery(WENT_WRONG.format(reason=reason))
-
-    def _settled(self, report: RunReport) -> tuple[str, bool, bool]:
-        """What to tell somebody about a run that ended; what to open for it.
-
-        Three answers, none inferred from another. The message; whether there
-        are results worth opening; whether this ending PRESENTS AN ANSWER, so
-        the shortfall belongs beside it.
-
-        Only a run that WROTE a file has results worth opening: a stopped or
-        unreachable run leaves the previous run's file exactly where it was,
-        so showing "the file" after one would put a stale answer on screen as
-        though it were this run's.
-
-        The third is answered here rather than worked out again by the caller,
-        so the sentence and the button can never disagree about which endings
-        carry a shortfall.
-        """
-        if report.outcome is RunOutcome.NOTHING_TO_ASK:
-            return NOTHING_TO_ASK, False, False
-        if report.outcome is RunOutcome.CANCELLED:
-            return STOPPED, False, False
-        if report.outcome is RunOutcome.UNAVAILABLE:
-            return UNREACHABLE, False, False
-        # Only the two endings that PRESENT AN ANSWER carry the shortfall
-        # sentence. A stopped or unreachable run has already said that its
-        # answer is incomplete, so naming a count there would be saying it
-        # twice; the ones that read as complete are the ones that mislead.
-        short_by = shortfall.sentence(report)
-        albums, artists = _counted(report)
-        if self._write_discovery is None:
-            return FOUND_NOTHING + short_by, False, True
-        try:
-            where = self._write_discovery(report)
-        except (OSError, ValueError) as trouble:
-            # An answer that could not be kept is not an answer presented,
-            # so it carries neither the sentence nor the button.
-            return COULD_NOT_WRITE.format(reason=trouble), False, False
-        # A run that found nothing missing still opens its screen. Ruled by
-        # Oliver on 2026-09-09, after two whole-library runs in one night
-        # ended with nothing in front of him: an empty screen is a poor
-        # screen, while an hour of work reporting into a strip nobody is
-        # watching is worse. It says what it looked in and what it could not
-        # answer about, which is more than the sentence alone carries.
-        if not albums and not artists:
-            return FOUND_NOTHING + short_by, True, True
-        # Written first, then shown from what was written: the file is what a
-        # later day would be shown from too, so showing anything else now
-        # would be showing something nothing else can reproduce. FR-D28.
-        return (
-            FOUND.format(albums=albums, artists=artists, where=where) + short_by,
-            True,
-            True,
-        )
 
     def show_discovery_results(self) -> None:
         """Open the results on what the discovery file holds.

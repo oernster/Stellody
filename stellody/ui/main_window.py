@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.compilation_cost import CompilationCost
 from stellody.application.discovering import Discovery
 from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.editing import TagEditing
@@ -131,6 +132,7 @@ class MainWindow(
         discovery_results: DiscoveryResults | None = None,
         expansion: Expansion | None = None,
         shopping: Shopping | None = None,
+        compilation_cost: CompilationCost | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
@@ -199,6 +201,7 @@ class MainWindow(
             expansion,
             shopping,
             self._note,
+            compilation_cost=compilation_cost,
         )
         self.start_keeping_place()
         self._tray = LibraryTray(

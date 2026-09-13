@@ -95,6 +95,14 @@ class Recollection:
         """Whether the answer to this question is still worth reusing."""
         return now - self.written_at.get(question, 0.0) < MEMORY_LIFE_S
 
+    def holds(self, kind: str, key: str, held: dict, now: float) -> bool:
+        """Whether this answer is both known and still young enough to use.
+
+        One home for the rule, since two readers need it: a run deciding
+        whether to ask; the price of a run deciding whether it will.
+        """
+        return key in held and self.standing(f"{kind}:{key}", now)
+
 
 class CatalogueMemory(Protocol):
     """Keeps a recollection between one run and the next.
@@ -172,7 +180,7 @@ class RememberingCatalogue:
 
     def _standing(self, kind: str, key: str, held: dict) -> bool:
         """Whether this answer is both known and still young enough to use."""
-        return key in held and self.kept.standing(f"{kind}:{key}", self.now())
+        return self.kept.holds(kind, key, held, self.now())
 
     def _kept(self, kind: str, key: str, held: dict, found: object) -> None:
         """Write an answer down, with when it was written.

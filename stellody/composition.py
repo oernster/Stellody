@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.artwork import AlbumArt
 from stellody.application.choosing_covers import ChooseCover
+from stellody.application.compilation_cost import CompilationCost
 from stellody.application.discovering import Discovery
 from stellody.application.editing import TagEditing
 from stellody.application.expanding import Expansion
@@ -42,7 +43,7 @@ from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.browsing import SystemBrowser, SystemClipboard
 from stellody.infrastructure.catalogue import MusicBrainz
-from stellody.infrastructure.courtesy import Gate
+from stellody.infrastructure.courtesy import REQUEST_GAP_S, Gate
 from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
 from stellody.infrastructure.fetching import Fetcher
@@ -150,6 +151,14 @@ def build_window(
             recall=catalogue_memory.FileCatalogueMemory(),
         ),
         write_discovery=discovery_file.write,
+        # What including compilations would add to a run, priced before it is
+        # asked for. Read from the same memory the run reads, at the same gap
+        # the catalogue's client is paced to, so the price and the run cannot
+        # disagree about either. FR-D52.
+        compilation_cost=CompilationCost(
+            recall=catalogue_memory.FileCatalogueMemory(),
+            request_gap_s=REQUEST_GAP_S,
+        ),
         # What the results dialog is made of: the file read back, plus the one
         # question a candidate artist is worth asking. The expansion is given
         # its own client over the SAME gate, so the two cannot come to ask

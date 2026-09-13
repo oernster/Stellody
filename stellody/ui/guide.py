@@ -34,7 +34,11 @@ from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, close_row
-from stellody.ui.discovery_dialog import FIND_LABEL, SELECT_ALL_ICON
+from stellody.ui.discovery_dialog import (
+    FIND_LABEL,
+    INCLUDE_COMPILATIONS_LABEL,
+    SELECT_ALL_ICON,
+)
 from stellody.ui.layout_advice import layout_html
 from stellody.ui.results_foot import (
     COPY_ICON,
@@ -207,6 +211,11 @@ def _discovery_html() -> str:
         f"the genres worth looking in, then press <b>{FIND_LABEL}</b>. The dialog "
         "closes: a run takes minutes and is watched from the toolbar rather "
         "than from a dialog sat over everything.</p>"
+        "<p><b>Compilations.</b> An album filed under Various Artists is left "
+        f"out unless <b>{INCLUDE_COMPILATIONS_LABEL}</b> is ticked, when the "
+        "artists on its tracks are asked about instead. The line beneath the "
+        "box says how many of them have not been looked up before and roughly "
+        "what that adds; the first time, it can be many minutes.</p>"
         "<p><b>While it runs.</b> Two bars appear beside the button, one for "
         "each half of the run: the first asks what the artists you already "
         "hold have released and who resembles them, the second asks what each "

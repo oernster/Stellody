@@ -133,8 +133,16 @@ class Gathering:
             if candidate.identifier and candidate.identifier not in self.known
         )
 
-    def unknown(self, artist: str) -> None:
-        """A name the catalogue reached nobody under."""
+    def unknown(self, artist: str, parts: tuple[str, ...] = ()) -> None:
+        """A name the catalogue reached nobody under, else the artists it joins.
+
+        A compilation credit nobody is found under is asked about by its parts
+        in this same pass; the credit is then not unrecognised, since each
+        artist it names is still asked about. FR-D53.
+        """
+        if parts:
+            self.passes.add(parts)
+            return
         self.unresolved.append(artist)
 
     def several(self, ambiguity: Ambiguity) -> None:

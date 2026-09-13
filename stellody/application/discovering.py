@@ -33,10 +33,15 @@ in `gathering.py` beside this holds that rule and why it is written that way.
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
 from stellody.application.asking import Pause, asked, waited
+from stellody.application.candidate_genres import (
+    CANCELLED,
+    UNAVAILABLE,
+    CandidateGenres,
+    ProgressReport,
+)
 from stellody.application.discovery_ports import (
     CatalogueSource,
     GenreMemory,
@@ -61,7 +66,6 @@ from stellody.application.remembering import (
 from stellody.application.values import (
     Ambiguity,
     DiscoveryProgress,
-    DiscoveryStage,
     RunOutcome,
     RunReport,
 )
@@ -71,22 +75,15 @@ from stellody.domain.discovery import (
     albums_missing,
     artists_missing,
     held_by_artist,
-    playing_something_ticked,
     source_artists,
-    still_to_ask,
 )
 from stellody.domain.matching import ReleaseMatch
+from stellody.domain.text import credit_parts, is_various_artists
 
 # How many similar artists to ask for. Settled in PLAN.md and confirmed on
 # 2026-09-06: it is a decision about how much to put in front of somebody
 # rather than a fact about anything, so it is named here and nowhere else.
 SIMILAR_WANTED = 10
-# The two endings that cut a run short, each answered from more than one
-# place, so each is named once.
-CANCELLED = RunReport(outcome=RunOutcome.CANCELLED)
-UNAVAILABLE = RunReport(outcome=RunOutcome.UNAVAILABLE)
-# Handed how far a run has got, so a window can say so.
-ProgressReport = Callable[[DiscoveryProgress], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,8 +105,12 @@ class Discovery:
         ticked: tuple[str, ...],
         report: ProgressReport,
         cancelled: CancelledCheck,
+        compilations: bool = False,
     ) -> RunReport:
         """Ask about every artist inside the ticked genres; say what was found.
+
+        With `compilations`, the artists credited on compilations inside those
+        genres are asked about too. FR-D05, FR-D51.
 
         Asked through what is already remembered rather than of the services
         directly, so a question answered on some earlier day is not asked
@@ -138,7 +139,7 @@ class Discovery:
                 similarity=RememberingSimilarity(
                     self.similarity, kept, self.now, self.recall
                 ),
-            )._asked(albums, ticked, report, cancelled)
+            )._asked(albums, ticked, report, cancelled, compilations)
         finally:
             self.recall.remember(kept)
 
@@ -148,11 +149,16 @@ class Discovery:
         ticked: tuple[str, ...],
         report: ProgressReport,
         cancelled: CancelledCheck,
+        compilations: bool = False,
     ) -> RunReport:
         """The run itself, with the memory already standing in front of it."""
-        artists = source_artists(albums, ticked)
+        artists = source_artists(albums, ticked, compilations)
         if not artists:
             return RunReport(outcome=RunOutcome.NOTHING_TO_ASK)
+        # The names only a compilation put in front of the run: the one kind of
+        # name that may be taken apart when nobody is found under the whole of
+        # it. An album artist is the listener's own filing and stays whole.
+        credits = frozenset(artists) - frozenset(source_artists(albums, ticked))
         # Read once and handed to both halves. The first half counts the
         # candidates it meets that are NOT in here, since those are exactly
         # what the second half will have to ask about; reading it twice would
@@ -163,11 +169,13 @@ class Discovery:
         # mean the same whichever stage happened to be asking them.
         silence = Silence()
         gathered, ending = self._gathered(
-            albums, artists, ticked, report, cancelled, known, silence
+            albums, artists, credits, ticked, report, cancelled, known, silence
         )
         if ending is not None:
             return ending
-        kept = self._narrowed(gathered.gaps, ticked, report, cancelled, known, silence)
+        kept = CandidateGenres(self.catalogue, self.pause, self.memory).narrowed(
+            gathered.gaps, ticked, report, cancelled, known, silence
+        )
         if isinstance(kept, RunReport):
             return kept
         return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept, ticked=ticked)
@@ -176,6 +184,7 @@ class Discovery:
         self,
         albums: tuple[Album, ...],
         artists: tuple[str, ...],
+        credits: frozenset[str],
         ticked: tuple[str, ...],
         report: ProgressReport,
         cancelled: CancelledCheck,
@@ -195,14 +204,19 @@ class Discovery:
         gathered = Gathering(passes=Passes(artists), known=known)
         done = 0
         while True:
-            for artist in gathered.passes.pending:
+            # Read afresh at every step rather than walked as it stood, since a
+            # credit taken apart adds its artists to this same pass. FR-D53.
+            at = 0
+            while at < len(gathered.passes.pending):
+                artist = gathered.passes.pending[at]
+                at += 1
                 if cancelled():
                     return gathered.report(CANCELLED)
                 report(
                     DiscoveryProgress(
                         artist=artist,
                         done=done,
-                        total=len(artists),
+                        total=len(gathered.passes.everyone),
                         candidates=len(gathered.met),
                     )
                 )
@@ -244,7 +258,10 @@ class Discovery:
                 silence.ended()
                 done += 1
                 if gaps is None:
-                    gathered.unknown(artist)
+                    parts = credit_parts(artist) if artist in credits else ()
+                    gathered.unknown(
+                        artist, tuple(p for p in parts if not is_various_artists(p))
+                    )
                 elif isinstance(gaps, Ambiguity):
                     gathered.several(gaps)
                 else:
@@ -293,88 +310,3 @@ class Discovery:
             albums=albums_missing(held, offered, ticked),
             artists=artists_missing(everyone, similar),
         )
-
-    def _narrowed(
-        self,
-        gathered: tuple[Gaps, ...],
-        ticked: tuple[str, ...],
-        report: ProgressReport,
-        cancelled: CancelledCheck,
-        known: dict[str, tuple[str, ...]],
-        silence: Silence,
-    ) -> tuple[Gaps, ...] | RunReport:
-        """The same gaps with candidate artists outside the ticks taken out.
-
-        The similarity catalogue names artists without saying what they play,
-        so each has to be asked about separately. That is the expensive part of
-        a run, which is why an artist is asked about ONCE however many times
-        the run met them: the well-connected recur constantly.
-
-        It reports as it goes for the same reason the first half does. This
-        half used to say nothing at all; a listener watching a bar that had
-        stopped moving had no way to tell a long wait from a hang.
-        """
-        asking = still_to_ask(gathered, known)
-        for done, (identifier, name) in enumerate(asking):
-            # No check of its own here. Every candidate is asked about through
-            # `_asked`, which consults the cancel before each request, so a
-            # check at the top of this loop only asked the same question a
-            # progress report earlier and gave a stop two places to be
-            # noticed rather than one.
-            report(
-                DiscoveryProgress(
-                    artist=name,
-                    done=done,
-                    total=len(asking),
-                    stage=DiscoveryStage.NARROWING,
-                )
-            )
-            try:
-                genres = self._genres_of(identifier, cancelled)
-            except RunCancelled:
-                return CANCELLED
-            except SourceTooSlow:
-                # Left unknown rather than written down as playing nothing.
-                # What is learned here is kept between runs, so a slow answer
-                # recorded as silence would drop that candidate from every
-                # later run as well as from this one.
-                silence.ended()
-                continue
-            except SourceUnavailable:
-                # Nothing answered about this one candidate. It is left
-                # unknown rather than written down as playing nothing, since
-                # a question that was never answered is not an answer; the
-                # run carries on unless the connection itself has gone.
-                if silence.deepened():
-                    return UNAVAILABLE
-                continue
-            silence.ended()
-            # Kept in hand and written down in the same breath, for the reason
-            # the first half's answers are: this half is the long one, so a
-            # run that dies inside it has the most to lose.
-            known[identifier] = genres
-            self.memory.note(identifier, genres)
-        self.memory.remember(known)
-        return tuple(
-            replace(gaps, artists=playing_something_ticked(gaps.artists, known, ticked))
-            for gaps in gathered
-        )
-
-    def _genres_of(self, identifier: str, cancelled: CancelledCheck) -> tuple[str, ...]:
-        """What a candidate plays; nothing where the catalogue would not say.
-
-        It is never asked about a candidate with no identifier: `_to_ask` drops
-        those before anything is asked, so an unnamed candidate is never looked
-        up and is kept on the same ground as every other undescribed one.
-
-        A slow answer is let past rather than swallowed here: it is the one
-        failure that says nothing about the candidate, so `_narrowed` above
-        leaves them undescribed instead of remembering them as playing
-        nothing.
-        """
-        try:
-            return asked(self.catalogue.genres_of, cancelled, self.pause, identifier)
-        except SourceTooSlow:
-            raise
-        except SourceFailed:
-            return ()

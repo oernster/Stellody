@@ -33,8 +33,10 @@ MINIMUM_SAMPLES = 2
 #
 # Approximate by design: an artist no catalogue could identify costs one request
 # rather than two. That is exactly the kind of drift a measured pace absorbs,
-# which is why these two numbers are used only as a RATIO between the stages
-# and never as a cost in seconds.
+# which is why the estimate of a run in progress uses these two numbers only as
+# a RATIO between the stages and never as a cost in seconds. The price quoted
+# before a run (FR-D52) does multiply by the gap, as arithmetic the dialog
+# states is a floor.
 REQUESTS_PER_SOURCE_ARTIST = 2
 REQUESTS_PER_CANDIDATE = 1
 SECONDS_PER_MINUTE = 60

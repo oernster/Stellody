@@ -43,11 +43,13 @@ class DiscoveryWorker(QObject):
         discovery: Discovery,
         albums: tuple[Album, ...],
         ticked: tuple[str, ...],
+        compilations: bool = False,
     ) -> None:
         super().__init__()
         self._discovery = discovery
         self._albums = albums
         self._ticked = ticked
+        self._compilations = compilations
         self._cancelled = False
 
     def cancel(self) -> None:
@@ -68,6 +70,7 @@ class DiscoveryWorker(QObject):
                 self._ticked,
                 self.progressed.emit,
                 lambda: self._cancelled,
+                compilations=self._compilations,
             )
         except Exception as error:  # noqa: BLE001 - reported, never swallowed
             self.failed.emit(str(error))
@@ -101,12 +104,13 @@ class DiscoveryRunner(QObject):
         discovery: Discovery,
         albums: tuple[Album, ...],
         ticked: tuple[str, ...],
+        compilations: bool = False,
     ) -> bool:
         """Begin a run; False when one is already going."""
         if self._thread is not None:
             return False
         thread = QThread(self)
-        worker = DiscoveryWorker(discovery, albums, ticked)
+        worker = DiscoveryWorker(discovery, albums, ticked, compilations)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.progressed.connect(self._on_progress)

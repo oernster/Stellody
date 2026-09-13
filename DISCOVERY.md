@@ -56,7 +56,9 @@ One meaning per term, for the life of the document.
 | **Catalogue genre** | A name in `stellody.domain.genres.GENRES`, main or style. |
 | **Resolved genre** | An album's genre as the library shows it: the probed tag with any album edit laid over it. Never the raw `sources.genre` column. |
 | **Ticked genres** | The catalogue genres selected in the discovery dialog. |
-| **Source artist** | An album artist of at least one held album whose resolved genre names at least one ticked genre. |
+| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while compilations are included, each track credit on it instead. Never "Various Artists" itself. |
+| **Compilation** | A held album whose album artist names various artists rather than a person, as `AlbumIdentity.is_compilation` decides. |
+| **Track credit** | One of a track's artists, split exactly as the library splits them for playback. |
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
 | **Candidate artist** | An artist a source gives as similar to a source artist, whom the library does not hold. |
 | **Release key** | The value two albums are judged the same album on, defined in section 3.5. The title alone, normalised, with edition qualifiers removed and the year deliberately absent. |
@@ -264,8 +266,11 @@ Verified by: `tests/ui/test_discovery_dialog.py::test_the_sweep_ticks_every_genr
 Priority: Must
 
 Requirement: When a run starts, the discovery service shall take as its source
-artists the album artists of every held album whose resolved genre names at
-least one ticked genre.
+artists the album artists of every held album that is not a compilation and whose
+resolved genre names at least one ticked genre. Where compilations are included
+(FR-D51), it shall also take every track credit of each compilation whose
+resolved genre names at least one ticked genre. It shall never take "Various
+Artists" as a source artist.
 
 Rationale: The resolved genre is what the listener sees and what they spent
 their time stating. Reading the probed tag instead reports the library as it was
@@ -273,11 +278,101 @@ before any of that work, which was demonstrated on 2026-09-06 by a measurement
 that did exactly this and reported 179 albums as untagged when the true figure
 was three.
 
+Amended on 2026-09-13, reported by Oliver: adding Global Underground: Adapt #6
+changed nothing a run did, which he refused to believe and was right to. Measured
+the same day: the rule read only the album artist, so the album contributed
+"Various Artists" in place of the 24 credits on its tracks. That name was already
+answered from memory, so four runs over four days each finished in a quarter of a
+second with the same report. A name meaning nobody in particular is never worth a
+request, so it is dropped whether or not compilations are included.
+
 Acceptance: Given an album whose probed tag names nothing and whose album edit
 states Reggae, when Reggae alone is ticked, then that album's artist is a source
-artist.
+artist. Given a compilation in Reggae whose tracks credit Dilby and Tinlicker,
+when Reggae is ticked with compilations included, then Dilby and Tinlicker are
+source artists while Various Artists is not; with compilations left out, none of
+the three is.
 
-Verified by: `tests/application/test_discovery.py::test_sources_read_the_resolved_genre`
+Verified by: `tests/application/test_discovery.py::test_sources_read_the_resolved_genre`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_is_asked_about_by_its_track_credits`, `tests/domain/test_discovery_gaps.py::test_a_compilation_left_out_asks_about_nobody`, `tests/domain/test_discovery_gaps.py::test_various_artists_is_never_a_source_artist`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_outside_the_ticks_is_not_asked_about`
+
+---
+
+**FR-D51 Compilations are included only when asked for**
+
+Priority: Must
+
+Requirement: The discovery dialog shall carry a tick box reading "Include
+compilations (Various Artists)" between the genres and its buttons. It shall be
+unticked the first time the dialog opens. After that it shall open as it was last
+left; its state shall be handed to the run with the ticked genres.
+
+Rationale: Ruled by Oliver on 2026-09-13. Measured from the tags of his library
+that day: 21 compilations carry 348 distinct track credits, 314 of them never
+looked up. Asking about them is a choice about how long somebody is prepared to
+wait rather than a default, so it is offered and remembered rather than imposed.
+It is still scoped by the ticked genres, also his ruling, since the ticks are
+what keep a run naming a subset somebody chose.
+
+Acceptance: Given the dialog opened for the first time, then the box is
+unticked. Given it ticked, when Find is pressed, then the run is handed the
+ticked genres with compilations included. Given the dialog left with the box
+ticked, when it is opened again, then the box is ticked.
+
+Verified by: `tests/ui/test_discovery_compilations.py::test_compilations_start_left_out`, `tests/ui/test_discovery_compilations.py::test_the_run_is_told_whether_compilations_are_included`, `tests/ui/test_discovery_compilations.py::test_the_choice_is_remembered_between_openings`, `tests/ui/test_discovery_compilations.py::test_the_box_is_a_stop_between_the_genres_and_the_buttons`
+
+---
+
+**FR-D52 The cost of including compilations is stated before a run**
+
+Priority: Must
+
+Requirement: Beneath the tick box of FR-D51, the discovery dialog shall state how
+many track credits on compilations inside the ticked genres a run would newly
+look up, with the minutes that adds at the request pace NFR-PERF-001 permits. It
+shall restate both whenever a genre is ticked or unticked. A credit counts as
+newly looked up unless a run leaving compilations out would already ask about it
+or the catalogue memory holds a standing answer for it.
+
+Rationale: Ruled by Oliver on 2026-09-13: a tick box whose consequence is not
+stated invites a run of unknown length. The minutes are arithmetic rather than a
+prediction, which is what NFR-PERF-002 leaves standing: two paced requests to
+identify an artist then read its releases, at 1.1 seconds each. A busy catalogue,
+the candidates a run then narrows and the artists FR-D53 adds all make a real run
+longer, so the words say so.
+
+Acceptance: Given compilations in a ticked genre crediting three artists nobody
+has looked up, when the dialog shows, then it states three artists with the
+minutes asking about them adds; given all three already looked up, then it
+states that nothing new would be asked.
+
+Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_yet_looked_up_are_counted`, `tests/application/test_compilation_cost.py::test_an_answer_past_its_life_is_counted_again`, `tests/application/test_compilation_cost.py::test_a_credit_a_run_would_ask_about_anyway_costs_nothing`, `tests/application/test_compilation_cost.py::test_the_time_is_priced_at_the_permitted_pace`, `tests/ui/test_discovery_compilations.py::test_the_cost_follows_the_ticks`, `tests/ui/test_discovery_compilations.py::test_nothing_new_to_ask_says_so`
+
+---
+
+**FR-D53 A credit nobody is found under is asked about by its parts**
+
+Priority: Must
+
+Requirement: Where a track credit taken from a compilation reaches nobody in the
+catalogue and names several artists joined by an ampersand or a comma, the
+discovery service shall take each of those artists as a source artist in the
+same run. That credit shall not then be reported as unrecognised; a part that
+reaches nobody shall be. A part that is already a source artist shall not be
+asked about twice.
+
+Rationale: Ruled by Oliver on 2026-09-13. The whole credit is asked first because
+an ampersand does not always join two people: Eli & Fur is one duo, which split
+would be two names meaning nobody. It falls back to the parts because a credit
+such as ODESZA & Bettye LaVette may reach nobody whole while naming two artists
+a catalogue can each be asked about. An album artist is left whole, since the
+name somebody filed an album under is theirs to decide.
+
+Acceptance: Given a compilation credit "ODESZA & Bettye LaVette" the catalogue
+does not know while it knows both artists, when the run asks, then ODESZA and
+Bettye LaVette are each asked about and the credit is not reported as
+unrecognised. Given "Eli & Fur" known whole, then no part of it is asked about.
+
+Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_comes_apart`, `tests/domain/test_text.py::test_a_credit_naming_one_artist_has_no_parts`, `tests/application/test_discovering_compilations.py::test_an_unrecognised_credit_is_asked_about_by_its_parts`, `tests/application/test_discovering_compilations.py::test_a_recognised_credit_is_not_split`, `tests/application/test_discovering_compilations.py::test_a_part_nobody_knows_is_reported_unrecognised`, `tests/application/test_discovering_compilations.py::test_a_part_already_asked_about_is_not_asked_again`, `tests/application/test_discovering_compilations.py::test_an_album_artist_nobody_knows_is_not_split`
 
 ---
 
@@ -1994,7 +2089,7 @@ is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D50 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D53 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

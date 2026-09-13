@@ -42,6 +42,27 @@ def make_album(artist: str, title: str, genre: str = "Rock") -> Album:
     )
 
 
+def make_compilation(genre: str, *credits: str) -> Album:
+    """A held compilation, one track for each credit it carries."""
+    return Album(
+        identity=AlbumIdentity(album_artist="Various Artists", title="Adapt #6"),
+        tracks=tuple(
+            Track(
+                source=TrackSource(path=f"{number}.flac"),
+                disc_number=1,
+                track_number=number,
+                title=f"Track {number}",
+                artists=(credit,),
+                duration_ms=1000,
+                sample_rate=CD_SAMPLE_RATE,
+                bit_depth=16,
+            )
+            for number, credit in enumerate(credits, start=1)
+        ),
+        genre=genre,
+    )
+
+
 class Catalogue:
     """A catalogue that answers from what it was handed, counting the asks."""
 

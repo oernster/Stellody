@@ -55,6 +55,22 @@ class Passes:
     refused: list[str] = field(default_factory=list)
     made: int = 1
     quiet: int = 0
+    # Every artist this run has put in the queue, on whichever pass. What a
+    # credit taken apart adds is checked against it, so an artist already
+    # asked about is never asked about twice. FR-D53.
+    everyone: set[str] = field(default_factory=set)
+
+    def __post_init__(self) -> None:
+        """Everyone owed an answer at the start has been queued."""
+        self.everyone.update(self.pending)
+
+    def add(self, artists: tuple[str, ...]) -> None:
+        """Ask about these in this pass too, leaving out anybody already queued."""
+        fresh = tuple(
+            artist for artist in dict.fromkeys(artists) if artist not in self.everyone
+        )
+        self.pending = (*self.pending, *fresh)
+        self.everyone.update(fresh)
 
     def refuse(self, artist: str) -> None:
         """Put this artist back in the queue for another pass."""

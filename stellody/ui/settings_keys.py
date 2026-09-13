@@ -37,6 +37,10 @@ SETTING_REPEAT = "repeat"
 # does not lose what they set up to compare.
 SETTING_EQ_GAINS = "equaliser_gains_db"
 SETTING_EQ_ENABLED = "equaliser_enabled"
+# Whether a discovery run includes compilations, as the dialog's box was last
+# left. Remembered because it is a decision about how long to wait, which a
+# listener makes once rather than every time. FR-D51.
+SETTING_DISCOVER_COMPILATIONS = "discover_compilations"
 
 # The release tag a listener asked not to be told about again. The exact tag
 # string, since both sides of the comparison come from the same endpoint.

@@ -52,7 +52,7 @@ class Watched:
     def __init__(self) -> None:
         self.started: list[tuple[str, ...]] = []
 
-    def start(self, genres: tuple[str, ...]) -> None:
+    def start(self, genres: tuple[str, ...], compilations: bool = False) -> None:
         """Record what a run was asked to cover."""
         self.started.append(genres)
 

@@ -17,6 +17,12 @@ that started it becomes the one that stops it. So this dialog knows nothing
 about a run: it cannot report on one, cannot cancel one and does not know
 whether one is under way.
 
+**It asks whether to widen the run to compilations, with the price beside it.**
+Ruled by Oliver on 2026-09-13: the artists on compilations are only asked about
+when somebody ticks for them, since doing so can add minutes. The price arrives
+already worked out, so this still holds no memory and no pace of its own.
+FR-D51, FR-D52.
+
 **It holds no service and reaches no network.** Starting is handed in, so the
 whole dialog can be driven with nothing behind it.
 """
@@ -28,6 +34,8 @@ from collections.abc import Callable
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from stellody.application.compilation_cost import Cost
+from stellody.domain.estimating import SECONDS_PER_MINUTE, rounded_minutes
 from stellody.shared import resources
 from stellody.ui.dialogs import (
     CLOSE_ICON,
@@ -38,6 +46,7 @@ from stellody.ui.dialogs import (
 )
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.icons import plain_icon, struck_through
+from stellody.ui.ringed_check import RingedCheckBox
 
 TITLE = "Discover new music"
 FIND_LABEL = "Find"
@@ -64,6 +73,49 @@ RESTING = (
 # wrapping; the same measurement the filter dialog is built to.
 DIALOG_WIDTH_PX = 700
 APART_PX = 12
+# The box that widens a run to the artists on compilations. FR-D51. Named for
+# what such albums are filed under, since that is what somebody will look for.
+INCLUDE_COMPILATIONS_LABEL = "Include compilations (Various Artists)"
+# What ticking the box would cost, said beneath it. FR-D52. The minutes are
+# arithmetic at the pace the catalogue permits, so the sentence names what makes
+# a real run longer rather than passing a floor off as a forecast.
+NOTHING_NEW = (
+    "Every artist on compilations in these genres has been looked up already, "
+    "so including them asks nothing new."
+)
+ONE_NAME = "One artist on compilations in these genres has not been looked up yet"
+SOME_NAMES = (
+    "{names} artists on compilations in these genres have not been looked up yet"
+)
+UNDER_A_MINUTE = "under a minute more"
+ABOUT_A_MINUTE = "about a minute more"
+ABOUT_MINUTES = "about {minutes} minutes more"
+COST = "{names}: {time} at the pace MusicBrainz allows, longer when it is busy."
+# A single name or a single minute reads as "one" rather than "1 artists".
+ONE = 1
+
+
+def cost_sentence(cost: Cost) -> str:
+    """What including compilations would add, in the words beneath the box."""
+    if not cost.names:
+        return NOTHING_NEW
+    names = ONE_NAME if cost.names == ONE else SOME_NAMES.format(names=cost.names)
+    minutes = rounded_minutes(cost.seconds)
+    if cost.seconds < SECONDS_PER_MINUTE:
+        said = UNDER_A_MINUTE
+    elif minutes == ONE:
+        said = ABOUT_A_MINUTE
+    else:
+        said = ABOUT_MINUTES.format(minutes=minutes)
+    return COST.format(names=names, time=said)
+
+
+def _start_nothing(_genres: tuple[str, ...], _compilations: bool) -> None:
+    """A dialog handed no run to start starts nothing."""
+
+
+def _keep_nothing(_included: bool) -> None:
+    """A dialog handed nowhere to remember the box remembers nothing."""
 
 
 class DiscoveryDialog(FirstStopDialog):
@@ -71,11 +123,18 @@ class DiscoveryDialog(FirstStopDialog):
 
     def __init__(
         self,
-        start: Callable[[tuple[str, ...]], None] = lambda _genres: None,
+        start: Callable[[tuple[str, ...], bool], None] = _start_nothing,
         parent: QWidget | None = None,
+        compilations: bool = False,
+        cost: Callable[[tuple[str, ...]], Cost] | None = None,
+        remember: Callable[[bool], None] = _keep_nothing,
     ) -> None:
         super().__init__(parent)
         self._start = start
+        # What including compilations would add for a set of ticks; None where
+        # the window has no memory to price it from, so no line is shown
+        # rather than a guess. FR-D52.
+        self._cost = cost
         # Resolved once rather than per toggle: a sweep moves 34 boxes and each
         # of them asks this control to say what it now offers.
         self._sweep_art = resources.find_asset(SELECT_ALL_ICON)
@@ -91,6 +150,17 @@ class DiscoveryDialog(FirstStopDialog):
         for box in self.grid.boxes.values():
             box.toggled.connect(self._ticks_changed)
         outer.addWidget(self.grid)
+        outer.addSpacing(APART_PX)
+        # Built after the genres and before the buttons, which is also where
+        # Tab reaches it: what to look in, whether to widen it, then go.
+        self.compilations = RingedCheckBox(INCLUDE_COMPILATIONS_LABEL, self)
+        self.compilations.setChecked(compilations)
+        self.compilations.toggled.connect(remember)
+        outer.addWidget(self.compilations)
+        self.cost_line = QLabel("", self)
+        self.cost_line.setWordWrap(True)
+        self.cost_line.setHidden(cost is None)
+        outer.addWidget(self.cost_line)
         outer.addSpacing(APART_PX)
         self.message = QLabel(RESTING, self)
         self.message.setWordWrap(True)
@@ -152,6 +222,18 @@ class DiscoveryDialog(FirstStopDialog):
             if everything
             else plain_icon(self._sweep_art)
         )
+        self._price()
+
+    def _price(self) -> None:
+        """Say what including compilations would add for the genres now ticked.
+
+        Nothing is said with nothing ticked, since a run over no genres adds
+        nobody whether or not the box is ticked.
+        """
+        if self._cost is None:
+            return
+        ticked = self.chosen()
+        self.cost_line.setText(cost_sentence(self._cost(ticked)) if ticked else "")
 
     def _select_or_clear(self) -> None:
         """Tick everything, else clear it where there is nothing left to tick.
@@ -171,5 +253,5 @@ class DiscoveryDialog(FirstStopDialog):
         """
         if not self.chosen():
             return
-        self._start(self.chosen())
+        self._start(self.chosen(), self.compilations.isChecked())
         self.accept()

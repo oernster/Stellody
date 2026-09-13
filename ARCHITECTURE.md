@@ -1118,6 +1118,27 @@ catalogue request costs at least the gap the terms require, so asking during the
 run would add a request per surviving candidate and roughly double the longer
 stage. Most are never opened; the ones that are pay for themselves.
 
+**A compilation is asked about by the artists on its tracks, only when somebody
+ticks for it.** Reported by Oliver on 2026-09-13: adding a Global Underground mix
+changed nothing a run did. Measured the same day, the run read only album
+artists, so a compilation contributed "Various Artists" in place of its 24 track
+credits; that one name was already answered from memory, so four runs over four
+days finished in a quarter of a second with an identical report.
+`source_artists` in `domain/discovery.py` now reads a compilation's track
+credits when the dialog's box is ticked and nothing of it otherwise, never
+"Various Artists" itself. The box is off by default because 21 compilations
+carry 314 credits never looked up, which at the permitted pace is minutes of
+asking. `application/compilation_cost.py` prices exactly that before a run, from
+the same memory and at the same gap the run uses, so the price is arithmetic
+rather than a forecast; FR-D36 still owns every estimate made during a run. A
+credit nobody is found under is taken apart at its ampersands and commas in the
+same pass, because "Eli & Fur" is one duo while "ODESZA & Bettye LaVette" is two
+artists; `Passes.everyone` is what stops a part already queued being asked about
+twice. An album artist is never taken apart, since how somebody filed an album
+is theirs. `application/candidate_genres.py` and `ui/discovery_endings.py` were
+split out of the two `discovering.py` modules by this change, each of which
+stood one line short of the danger band.
+
 **Reaching a shop opens no connection at all.** `infrastructure/browsing.py`
 hands an address to whatever the machine opens pages with, which is the same act
 as clicking a link anywhere else; everything after that happens in the browser,

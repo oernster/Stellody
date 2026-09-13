@@ -51,6 +51,21 @@ class StatusBar:
         self.said.append(message)
 
 
+class Settings:
+    """Settings kept in a dict, the way the real store keeps them in a table."""
+
+    def __init__(self) -> None:
+        self.values: dict[str, str] = {}
+
+    def get_setting(self, key: str, default: str = "") -> str:
+        """One stored setting."""
+        return self.values.get(key, default)
+
+    def set_setting(self, key: str, value: str) -> None:
+        """Store one setting."""
+        self.values[key] = value
+
+
 class Window(Discovering, ShowingShortfall, QWidget):
     """The mixin over nothing else, which is all it needs to be driven.
 
@@ -69,6 +84,7 @@ class Window(Discovering, ShowingShortfall, QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._all_albums = ()
+        self._settings = Settings()
         self._holder = QWidget()
         self._tray = Tray(self._holder)
         self._status = StatusBar()
@@ -120,7 +136,7 @@ class RunnerInProgress:
 class Service:
     """A discovery service that is never actually asked anything."""
 
-    def run(self, albums, ticked, report, cancelled):
+    def run(self, albums, ticked, report, cancelled, compilations=False):
         """Stand in for a run; the wiring tests never reach this."""
         return RunReport(outcome=RunOutcome.COMPLETED)
 

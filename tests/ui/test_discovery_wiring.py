@@ -25,14 +25,14 @@ from stellody.application.values import (
     SourceFailure,
 )
 from stellody.ui import shortfall
-from stellody.ui.discovering import (
+from stellody.ui.discovering import WENT_WRONG
+from stellody.ui.discovery_endings import (
     COULD_NOT_WRITE,
     FOUND,
     FOUND_NOTHING,
     NOTHING_TO_ASK,
     STOPPED,
     UNREACHABLE,
-    WENT_WRONG,
 )
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.shortfall import ShortfallDialog
@@ -317,7 +317,7 @@ def test_a_run_that_raises_is_reported_rather_than_silent(application) -> None:
     class Falling:
         """A service that cannot get through a run."""
 
-        def run(self, albums, ticked, report, cancelled):
+        def run(self, albums, ticked, report, cancelled, compilations=False):
             """Fail the way an unanticipated fault would."""
             raise RuntimeError("the roof fell in")
 

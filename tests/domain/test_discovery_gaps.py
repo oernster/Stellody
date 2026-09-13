@@ -24,6 +24,7 @@ from stellody.domain.discovery import (
 )
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.matching import ReleaseKind
+from stellody.domain.track import TrackSource
 
 
 def make_album(artist: str, title: str, genre: str = "Rock") -> Album:
@@ -97,6 +98,61 @@ def test_an_artist_is_asked_about_once() -> None:
         make_album("The Script", "Science & Faith"),
     )
     assert source_artists(albums, ("Rock",)) == ("The Script",)
+
+
+def make_compilation(genre: str, *credits: str) -> Album:
+    """A held compilation, one track for each credit it carries."""
+    return Album(
+        identity=AlbumIdentity(album_artist="Various Artists", title="Adapt #6"),
+        tracks=tuple(
+            make_track(
+                source=TrackSource(path=f"{number}.flac"),
+                track_number=number,
+                artists=(credit,),
+            )
+            for number, credit in enumerate(credits, start=1)
+        ),
+        genre=genre,
+    )
+
+
+def test_an_included_compilation_is_asked_about_by_its_track_credits() -> None:
+    """FR-D05: the artists on its tracks, never the name it is filed under."""
+    held = (make_compilation("Reggae", "Dilby", "Tinlicker"),)
+    assert source_artists(held, ("Reggae",), compilations=True) == (
+        "Dilby",
+        "Tinlicker",
+    )
+
+
+def test_a_compilation_left_out_asks_about_nobody() -> None:
+    """Left out means left out: not even the name it is filed under."""
+    held = (make_compilation("Reggae", "Dilby", "Tinlicker"),)
+    assert source_artists(held, ("Reggae",)) == ()
+
+
+def test_various_artists_is_never_a_source_artist() -> None:
+    """A name meaning nobody in particular is never worth a request."""
+    held = (make_compilation("Reggae", "Various Artists", "Dilby"),)
+    assert source_artists(held, ("Reggae",), compilations=True) == ("Dilby",)
+
+
+def test_an_included_compilation_outside_the_ticks_is_not_asked_about() -> None:
+    """Ruled on 2026-09-13: including compilations does not widen the genres."""
+    held = (make_compilation("Reggae", "Dilby"),)
+    assert source_artists(held, ("Rock",), compilations=True) == ()
+
+
+def test_a_credit_already_an_album_artist_is_asked_about_once() -> None:
+    """One artist is one question, whichever shelf they were found on."""
+    held = (
+        make_album("Tinlicker", "This Is Not Our Universe", "Reggae"),
+        make_compilation("Reggae", "Tinlicker", "Dilby"),
+    )
+    assert source_artists(held, ("Reggae",), compilations=True) == (
+        "Tinlicker",
+        "Dilby",
+    )
 
 
 def test_held_albums_are_dropped() -> None:

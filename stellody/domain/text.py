@@ -24,6 +24,9 @@ _APOSTROPHES = str.maketrans(
 _WHITESPACE = re.compile(r"\s+")
 _LEADING_ARTICLE = re.compile(r"^(?:the|a|an)\s+", re.IGNORECASE)
 _ARTIST_SEPARATORS = re.compile(r"\s*(?:;|/|\b(?:feat|ft|vs)\b\.?)\s*", re.IGNORECASE)
+# What joins the artists inside one credit. FR-D53. A comma before the last
+# ampersand is typed by hand in some tags, so ", &" is one join rather than two.
+_CREDIT_JOINS = re.compile(r"\s*(?:,\s*&|,|&)\s*")
 _FILENAME_ORDINAL = re.compile(
     r"^\s*(?:(?P<disc>\d{1,2})\s*[-_.]\s*)?(?P<track>\d{1,3})\s*[-_.\s]"
 )
@@ -66,6 +69,18 @@ def split_artists(value: str) -> tuple[str, ...]:
     """Split a single artist field that packs several names into one string."""
     parts = (normalise(part) for part in _ARTIST_SEPARATORS.split(value))
     return tuple(part for part in parts if part)
+
+
+def credit_parts(credit: str) -> tuple[str, ...]:
+    """The artists a credit joins with an ampersand or a comma; none for one.
+
+    Kept apart from `split_artists`, which is what playback shows. An ampersand
+    can belong to a name, as it does in Eli & Fur, so a credit is only taken
+    apart once a catalogue has known nobody under the whole of it. FR-D53.
+    """
+    named = (normalise(part) for part in _CREDIT_JOINS.split(credit))
+    parts = tuple(part for part in named if part)
+    return parts if len(parts) > 1 else ()
 
 
 def filename_ordinal(file_name: str) -> tuple[int | None, int | None]:
