@@ -9,8 +9,9 @@ import pytest
 
 from installer import actions, registry
 from installer.plan import InstallPlan
-from stellody.infrastructure import paths, switch_reset
+from stellody.infrastructure import paths, switch_reset, window_reset
 from stellody.infrastructure.store import SqliteLibraryStore
+from stellody.infrastructure.window_reset import WindowNote
 from stellody.ui.settings_keys import (
     SETTING_REPEAT,
     SETTING_SHUFFLE,
@@ -195,7 +196,10 @@ def _stored(database: pathlib.Path, settings: dict[str, str]) -> pathlib.Path:
 
 
 def _quiet_install(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, anew: bool
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    anew: bool,
+    where: WindowNote | None = None,
 ) -> None:
     """Run a real install with only the parts that touch Windows stood in for."""
     archive = _archive(tmp_path / "payload.zip", {"Stellody.exe": "binary"})
@@ -208,7 +212,7 @@ def _quiet_install(
         desktop_shortcut=False,
         start_menu_shortcut=False,
     )
-    actions.install(plan, archive, anew=anew)
+    actions.install(plan, archive, anew=anew, where=where)
 
 
 def test_installing_anew_asks_for_the_switches_to_start_off(
@@ -255,3 +259,35 @@ def test_an_update_leaves_the_switches_exactly_as_they_were(
     monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
     _quiet_install(tmp_path, monkeypatch, anew=False)
     assert not switch_reset.marker_path(tmp_path).exists()
+
+
+WHERE = WindowNote(name="LG ULTRAGEAR", origin=(0, 0))
+
+
+def test_installing_anew_names_the_screen_setup_is_on(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fresh install and a reinstall open maximised where setup was."""
+    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
+    _quiet_install(tmp_path, monkeypatch, anew=True, where=WHERE)
+    assert window_reset.take(tmp_path) == WHERE
+
+
+def test_a_first_install_creates_the_directory_for_that_note_alone(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nothing to clear there, yet still a screen to name; no switch note."""
+    absent = tmp_path / "never-used"
+    monkeypatch.setattr(actions, "data_location", lambda: absent)
+    _quiet_install(tmp_path, monkeypatch, anew=True, where=WHERE)
+    assert window_reset.take(absent) == WHERE
+    assert not switch_reset.marker_path(absent).exists()
+
+
+def test_an_update_leaves_the_window_as_it_was_left(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Told the screen or not, an update is the same install carrying on."""
+    monkeypatch.setattr(actions, "data_location", lambda: tmp_path)
+    _quiet_install(tmp_path, monkeypatch, anew=False, where=WHERE)
+    assert not window_reset.marker_path(tmp_path).exists()

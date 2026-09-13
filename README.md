@@ -196,7 +196,8 @@ personal data, is never sent anywhere and can be deleted whenever you like.
 
 **Windows.** Download the setup program and run it. It installs just for you, so
 Windows will not ask for an administrator password. Running it again later is
-how you update, repair or remove it.
+how you update, repair or remove it. After an install, a repair or a reinstall
+Stellody opens maximised on the screen the setup program was on.
 
 **macOS.** Download the disk image, open it and drag Stellody to Applications.
 It is signed and notarized, so it opens without argument.

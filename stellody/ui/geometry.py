@@ -17,6 +17,12 @@ somebody then had to maximise before doing anything with a library. It applies
 to the first run alone, since every run after it has a choice to honour: a
 window deliberately left at half the screen comes back at half the screen.
 
+A fresh install, a repair and a reinstall open the same way on the screen setup
+was on, ruled on 2026-09-13. Setup leaves a note naming that screen; the
+composition root forgets the size on reading it, then `open_on` lays the window
+in that screen's room before it is shown. An update leaves no note, so a size
+left at the last run still comes back.
+
 What comes back is checked rather than trusted. A size is clamped to the screen
 now attached, because a window sized for a monitor that is no longer there
 opens with its controls past the edge. That clamp is necessary and not
@@ -32,6 +38,7 @@ from __future__ import annotations
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QGuiApplication
 
+from stellody.ui.maximising import screen_at
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_WINDOW_HEIGHT,
@@ -39,6 +46,34 @@ from stellody.ui.settings_keys import (
     SETTING_WINDOW_WIDTH,
     TRUE,
 )
+
+# What remembering the window writes down; forgetting it clears the same three.
+WINDOW_KEYS = (SETTING_WINDOW_WIDTH, SETTING_WINDOW_HEIGHT, SETTING_WINDOW_MAXIMISED)
+# How a key nobody has stated reads, so a forgotten one reads the same way.
+UNSTATED = ""
+
+
+def forget_window(settings) -> None:
+    """Forget the size the window was left at, so the next one opens maximised.
+
+    What setup asks for after a fresh install, a repair or a reinstall.
+    """
+    for key in WINDOW_KEYS:
+        settings.set_setting(key, UNSTATED)
+
+
+def screen_named(name: str, origin: tuple[int, int] | None, screens):
+    """The screen setup named: by its corner, else by its name; None if neither.
+
+    The corner first, since on Windows Qt places every screen at its native
+    origin; a name is the fallback for a screen whose corner has moved.
+    """
+    screens = tuple(screens)
+    if origin is not None:
+        found = screen_at(origin, screens)
+        if found is not None:
+            return found
+    return next((screen for screen in screens if name and screen.name() == name), None)
 
 
 class Geometry:
@@ -67,14 +102,31 @@ class Geometry:
         written by an older version is read as remembering something rather
         than as a fresh install to be maximised over the top of.
         """
-        return not any(
-            self._settings.get_setting(key, "")
-            for key in (
-                SETTING_WINDOW_WIDTH,
-                SETTING_WINDOW_HEIGHT,
-                SETTING_WINDOW_MAXIMISED,
-            )
-        )
+        return not any(self._settings.get_setting(key, UNSTATED) for key in WINDOW_KEYS)
+
+    def open_on(self, name: str, origin: tuple[int, int] | None) -> bool:
+        """Lay the window in the room of the screen setup was on, maximised there.
+
+        Called before the window is shown. Measured on the real platform on
+        2026-09-13 across four monitors of mixed scaling: laid in a screen's
+        room first, then marked maximised, the window landed maximised on that
+        screen every time. False where no attached screen answers to the note,
+        which leaves the window wherever Qt put it.
+        """
+        target = screen_named(name, origin, self._screens())
+        if target is None:
+            return False
+        room = target.availableGeometry()
+        maximised = Qt.WindowState.WindowMaximized
+        self.setWindowState(self.windowState() & ~maximised)
+        self.resize(self.size().boundedTo(room.size()))
+        self.move(room.topLeft())
+        self.setWindowState(self.windowState() | maximised)
+        return True
+
+    def _screens(self):
+        """Every attached screen; its own method so a test can stand some in."""
+        return QGuiApplication.screens()
 
     def fit_on_screen(self) -> None:
         """Maximise where the content restored to will not fit the screen.

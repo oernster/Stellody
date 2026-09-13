@@ -145,6 +145,19 @@ fresh install has to clear the switches it leaves a marker file for the
 application to act on instead. `stellody/infrastructure/switch_reset.py` is
 both halves of that handover.
 
+**A fresh install, a repair and a reinstall open the window maximised on the
+screen setup was on.** The same kind of handover: `stellody/infrastructure/window_reset.py`
+is a note naming that screen by its name and its top left corner, left by
+`installer/performing.py` through `actions.install` and `actions.repair`.
+Unlike the switches' note it is left on a machine with no directory yet, since
+a screen still has to be named there. The composition root takes it, forgets
+the remembered size through `forget_window` then asks `open_on` in
+`stellody/ui/geometry.py` to lay the window in that screen's room before it is
+shown. An update and a downgrade leave no note, so a size left at the last run
+still comes back. Measured on 2026-09-13 across four monitors of mixed scaling:
+a window laid in a screen's room before it is shown, then marked maximised,
+lands maximised on that screen.
+
 ## The central abstraction
 
 **A track is a slice of a file, not a file.**

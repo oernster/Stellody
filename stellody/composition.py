@@ -38,6 +38,7 @@ from stellody.infrastructure import (
     instance,
     qt_messages,
     switch_reset,
+    window_reset,
 )
 from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
@@ -68,6 +69,7 @@ from stellody.shared import resources
 from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
 from stellody.ui.close_prompt import CloseAction
+from stellody.ui.geometry import forget_window
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
     FALSE,
@@ -287,7 +289,15 @@ def _start(argv: list[str] | None = None) -> int:
         # given once that outlives the install it was given to. A reinstall
         # that came back still acting on it would offer no way to notice.
         store.set_setting(SETTING_CLOSE, CloseAction.ASK.value)
+    # Setup names the screen it was on after a fresh install, a repair or a
+    # reinstall; the window opens maximised there, whatever size was left.
+    afresh = window_reset.take(data_location())
+    if afresh is not None:
+        forget_window(store)
     window = build_window(store, application.quit, diary.note)
+    if afresh is not None:
+        placed = window.open_on(afresh.name, afresh.origin)
+        diary.note(f"opened afresh where setup was, screen found: {placed}")
     # Starting hidden is only honoured while there is a tray to restore from,
     # else the user would be left with nothing on screen at all.
     asked_to_hide = starts_hidden(arguments)

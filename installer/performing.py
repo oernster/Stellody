@@ -23,6 +23,7 @@ from installer import actions, launching, running, screens, wording
 from installer.footer import PRIMARY, Action
 from installer.plan import InstallPlan
 from installer.route import Route
+from stellody.infrastructure.window_reset import WindowNote
 
 TICK = "✓"
 ALERT = "⚠"
@@ -121,6 +122,14 @@ class Performing:
             start_on_sign_in=self._sign_in.isChecked(),
         )
 
+    def _where(self) -> WindowNote:
+        """The screen this window is on, for the application to open maximised on."""
+        screen = self.screen()
+        if screen is None:
+            return WindowNote()
+        corner = screen.geometry().topLeft()
+        return WindowNote(name=screen.name(), origin=(corner.x(), corner.y()))
+
     def _archive(self) -> pathlib.Path:
         """The bundled application payload; absent means setup is incomplete."""
         archive = actions.payload_zip()
@@ -146,6 +155,7 @@ class Performing:
                 self._archive(),
                 self._report,
                 anew=anew,
+                where=self._where(),
             )
         except (OSError, ValueError, RuntimeError) as error:
             self._failed(error)
@@ -169,7 +179,9 @@ class Performing:
         """Put the files back, leaving every other choice as it stands."""
         self._working(f"Repairing {actions.APP_NAME}")
         try:
-            executable = actions.repair(self._target(), self._archive(), self._report)
+            executable = actions.repair(
+                self._target(), self._archive(), self._report, where=self._where()
+            )
         except (OSError, ValueError, RuntimeError) as error:
             self._failed(error)
             return

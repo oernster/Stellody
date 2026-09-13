@@ -35,7 +35,7 @@ def _anew_passed(
     """What the window asked the install for, with the install itself stood in."""
     asked: list[bool] = []
 
-    def record(plan, archive, progress=None, anew=False):
+    def record(plan, archive, progress=None, anew=False, where=None):
         asked.append(anew)
         return plan.target / actions.EXE_NAME
 

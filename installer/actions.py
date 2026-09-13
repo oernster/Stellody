@@ -23,8 +23,9 @@ from installer.registry import (
     set_sign_in_entry,
     unregister,
 )
-from stellody.infrastructure import switch_reset
+from stellody.infrastructure import switch_reset, window_reset
 from stellody.infrastructure.paths import data_location
+from stellody.infrastructure.window_reset import WindowNote
 from stellody.shared.version import APP_NAME
 
 EXE_NAME = f"{APP_NAME}.exe"
@@ -238,21 +239,35 @@ def forget_switches() -> None:
     switch_reset.leave(data_location())
 
 
+def forget_window(where: WindowNote) -> None:
+    """Ask the application to open maximised on the screen setup is on.
+
+    A note like the switches' one, for the same reason. It is left even on a
+    machine with no directory yet: nothing is remembered there to clear, while
+    the screen still has to be named.
+    """
+    window_reset.leave(data_location(), where)
+
+
 def install(
     plan: InstallPlan,
     archive: pathlib.Path,
     progress: ProgressCallback = silent,
     anew: bool = False,
+    where: WindowNote | None = None,
 ) -> pathlib.Path:
     """Deploy the application, register it and place its shortcuts.
 
     Installing anew, which is a first install or a reinstall, starts the
-    switches off. An update and a downgrade are the same install carrying on,
-    so they leave everything the user chose exactly where it was.
+    switches off and opens the window maximised on `where`, the screen setup
+    is on. An update and a downgrade are the same install carrying on, so they
+    leave everything the user chose exactly where it was.
     """
     if anew:
         progress(PCT_START, "Clearing the remembered switches...")
         forget_switches()
+        if where is not None:
+            forget_window(where)
     progress(PCT_START, "Preparing the install folder...")
     if plan.target.exists():
         shutil.rmtree(plan.target, ignore_errors=True)
@@ -288,14 +303,18 @@ def repair(
     target: pathlib.Path,
     archive: pathlib.Path,
     progress: ProgressCallback = silent,
+    where: WindowNote | None = None,
 ) -> pathlib.Path:
     """Write the application files back over the install, changing nothing else.
 
     The shortcuts, the Apps list entry and the sign-in choice are all left
     exactly as they are: that is the whole of the difference between a repair
-    and a reinstall; it is also why a repair asks no questions.
+    and a reinstall; it is also why a repair asks no questions. The window is
+    the one exception, opened maximised on `where` as a fresh install's is.
     """
     progress(PCT_START, "Checking the install folder...")
+    if where is not None:
+        forget_window(where)
     progress(PCT_START, "Writing the files back...")
     extract_payload(archive, target)
     progress(PCT_DONE, "Done.")

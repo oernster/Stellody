@@ -13,6 +13,8 @@ import zipfile
 import pytest
 
 from installer import actions
+from stellody.infrastructure import switch_reset, window_reset
+from stellody.infrastructure.window_reset import WindowNote
 
 
 def _archive(path: pathlib.Path, entries: dict[str, str]) -> pathlib.Path:
@@ -52,6 +54,19 @@ def test_a_repair_reports_its_steps(tmp_path: pathlib.Path) -> None:
     actions.repair(tmp_path / "install", archive, lambda pct, msg: seen.append(pct))
     assert seen[0] == actions.PCT_START
     assert seen[-1] == actions.PCT_DONE
+
+
+def test_a_repair_names_the_screen_setup_is_on(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A repair opens the window afresh too; the switches it leaves alone."""
+    data = tmp_path / "data"
+    monkeypatch.setattr(actions, "data_location", lambda: data)
+    archive = _archive(tmp_path / "payload.zip", {"Stellody.exe": "good"})
+    where = WindowNote(name="U13ZA (1)", origin=(3617, 1423))
+    actions.repair(tmp_path / "install", archive, where=where)
+    assert window_reset.take(data) == where
+    assert not switch_reset.marker_path(data).exists()
 
 
 def test_ticking_a_shortcut_box_writes_it_and_unticking_removes_it(

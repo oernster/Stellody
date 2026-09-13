@@ -27,6 +27,11 @@ WRITE_PERMITTED = frozenset(
         "stellody/infrastructure/diary.py",
         "stellody/infrastructure/startup_log.py",
         "stellody/infrastructure/switch_reset.py",
+        # The note asking a freshly installed, repaired or reinstalled window to
+        # open maximised on the screen setup was on. It sits beside the
+        # switches' note in Stellody's own directory, creating that directory
+        # on a machine with none yet; it goes nowhere near the music.
+        "stellody/infrastructure/window_reset.py",
         # Setting a damaged library database aside and dropping the write
         # ahead log beside it, so the application still starts. It owns
         # Stellody's own store as much as store.py does; it was invisible
