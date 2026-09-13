@@ -37,6 +37,9 @@ ADDRESS_LABEL = "Search address"
 NOTE_LABEL = "Note"
 TRY_LABEL = "Try"
 SAVE_LABEL = "Save"
+# Oliver's artwork, supplied on 2026-09-13.
+TRY_ICON = "try.png"
+SAVE_ICON = "save.png"
 CANCEL_LABEL = "Cancel"
 ADDRESS_HINT = "https://example.com/search?q={artist}%20{album}"
 # Said after a try, where it worked and where it did not. FR-S22, FR-S23.
@@ -103,13 +106,17 @@ class ShopForm(FirstStopDialog):
     def _buttons(self) -> QHBoxLayout:
         """Try on the left, the two ways out on the right."""
         row = QHBoxLayout()
-        self.try_button = QPushButton(TRY_LABEL, self)
+        self.try_button = wearing(
+            QPushButton(TRY_LABEL, self), resources.find_asset(TRY_ICON)
+        )
         self.try_button.setAutoDefault(False)
         self.try_button.setEnabled(self._album is not None)
         self.try_button.clicked.connect(self.try_it)
         row.addWidget(self.try_button)
         row.addStretch()
-        self.save_button = QPushButton(SAVE_LABEL, self)
+        self.save_button = wearing(
+            QPushButton(SAVE_LABEL, self), resources.find_asset(SAVE_ICON)
+        )
         self.save_button.setDefault(True)
         self.save_button.clicked.connect(self.save)
         row.addWidget(self.save_button)

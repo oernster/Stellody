@@ -38,13 +38,16 @@ from stellody.domain.shopping import Shop, WantedAlbum
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, title_label, wearing
+from stellody.ui.shop_dragging import RowDrag
 from stellody.ui.shop_form import ShopForm
 from stellody.ui.shop_rows import (
     ADD_ICON,
     ADD_LABEL,
     COULD_NOT_SAVE,
+    PUT_BACK_ICON,
     PUT_BACK_LABEL,
     UNNAMED,
+    Grip,
     RowControls,
     row_controls,
 )
@@ -109,6 +112,7 @@ class ShopsDialog(FirstStopDialog):
         self._rows = QVBoxLayout(self.rows_holder)
         self._rows.setContentsMargins(0, 0, 0, 0)
         outer.addWidget(self.rows_holder)
+        self.drag = RowDrag(self._rows, self._landed, self._settled, self)
         outer.addSpacing(APART_PX)
         self.said = QLabel("", self)
         self.said.setWordWrap(True)
@@ -151,7 +155,9 @@ class ShopsDialog(FirstStopDialog):
             self.add_button.setAutoDefault(False)
             self.add_button.clicked.connect(self.add)
             row.addWidget(self.add_button)
-            self.put_back_button = QPushButton(PUT_BACK_LABEL, self)
+            self.put_back_button = wearing(
+                QPushButton(PUT_BACK_LABEL, self), resources.find_asset(PUT_BACK_ICON)
+            )
             self.put_back_button.setAutoDefault(False)
             self.put_back_button.clicked.connect(self.put_back)
             row.addWidget(self.put_back_button)
@@ -181,11 +187,10 @@ class ShopsDialog(FirstStopDialog):
         for index, row in enumerate(rows):
             changes = None
             if self._editing is not None:
-                changes = (
-                    partial(self.edit, index),
-                    partial(self.delete, index),
-                    partial(self.drop, index),
+                grip = Grip(
+                    partial(self._take, index), self.drag.follow, self.drag.let_go
                 )
+                changes = (partial(self.edit, index), partial(self.delete, index), grip)
             made = row_controls(row, self.rows_holder, self.chose, changes)
             self._rows.addWidget(made.holder)
             self.controls.append(made)
@@ -204,7 +209,7 @@ class ShopsDialog(FirstStopDialog):
         for before, after in pairwise(stops):
             QWidget.setTabOrder(before, after)
 
-    def _saving(self, change: Callable[[], object]) -> bool:
+    def _saving(self, change: Callable[[], object], redraw: bool = True) -> bool:
         """Make a change, then redraw; say so where it could not be kept."""
         try:
             change()
@@ -212,7 +217,8 @@ class ShopsDialog(FirstStopDialog):
             self.said.setText(COULD_NOT_SAVE)
             self.said.setStyleSheet(f"color: {self._colour.warning}")
             return False
-        self._fill()
+        if redraw:
+            self._fill()
         return True
 
     def _asked(self, title: str, text: str) -> bool:
@@ -253,22 +259,23 @@ class ShopsDialog(FirstStopDialog):
         if self._asked(PUT_BACK_TITLE, PUT_BACK_ASK):
             self._saving(self._editing.put_back)
 
-    def drop(self, index: int, where: QPoint) -> None:
-        """Place the row at `index` where a drag let go of it. FR-S27.
+    def _take(self, index: int, at: QPoint) -> None:
+        """A drag has taken hold of the row at `index`. FR-S27."""
+        self.drag.take([made.holder for made in self.controls], index, at)
 
-        Its new place is the number of other rows whose middle lies above the
-        point it was dropped at.
-        """
-        above = sum(
-            1
-            for at, made in enumerate(self.controls)
-            if at != index
-            and made.holder.mapToGlobal(made.holder.rect().center()).y() < where.y()
-        )
-        self._saving(partial(self._editing.move_to, index, above))
+    def _landed(self, index: int, target: int) -> bool:
+        """Write where a drag let go, leaving the drawing until it lands."""
+        return self._saving(partial(self._editing.move_to, index, target), redraw=False)
+
+    def _settled(self, kept: bool) -> None:
+        """The dragged row has arrived; draw the list as the file now holds it."""
+        if kept:
+            self._fill()
 
     def move_focused(self, offset: int) -> None:
         """Move the shop whose control holds focus, keeping focus on it. FR-S28."""
+        if self.drag.busy:
+            return
         focus = self.focusWidget()
         for index, made in enumerate(self.controls):
             stops = made.stops()

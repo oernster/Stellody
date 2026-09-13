@@ -9,9 +9,9 @@ still offering edit and delete so it can be mended or removed.
 equivalent is Ctrl+Up and Ctrl+Down, so a stop on it would be a press that does
 nothing (FR-S40).
 
-**Dragging is a press and a release rather than Qt's drag loop.** The row is
-placed where the release lands, which is all a reorder needs; it also keeps the
-move drivable by an offscreen test, which a blocking drag loop is not.
+**The handle reports; it does not move anything.** A press, every movement with
+the button held then the release each go to its `Grip`, which is how the row
+follows the pointer: see `shop_dragging.py`.
 """
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ ADD_ICON = "add.png"
 EDIT_ICON = "edit.png"
 DELETE_ICON = "delete.png"
 DRAG_ICON = "drag-up-down.png"
+PUT_BACK_ICON = "revert-shops.png"
 
 ADD_LABEL = "Add a shop"
 PUT_BACK_LABEL = "Put the original shops back"
@@ -54,29 +55,45 @@ PROBLEM_WORDS = {
 }
 
 
-class Handle(QLabel):
-    """The grip a row is dragged by; the drop is reported where it lands."""
+@dataclass(frozen=True, slots=True)
+class Grip:
+    """Where a handle reports being taken, moved and let go, in screen points."""
 
-    def __init__(self, dropped: Callable[[QPoint], None], parent: QWidget) -> None:
+    take: Callable[[QPoint], None]
+    follow: Callable[[QPoint], None]
+    let_go: Callable[[QPoint], None]
+
+
+class Handle(QLabel):
+    """The grip a row is dragged by."""
+
+    def __init__(self, grip: Grip, parent: QWidget) -> None:
         super().__init__(parent)
         size = QSize(CONTROL_ICON_PX, CONTROL_ICON_PX)
         self.setPixmap(plain_icon(resources.find_asset(DRAG_ICON)).pixmap(size))
         self.setToolTip(DRAG_TOOLTIP)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
-        self._dropped = dropped
+        self._grip = grip
 
     def mousePressEvent(self, event) -> None:
-        """Take hold, so the release comes back here wherever it lands."""
+        """Take hold, so every movement until the release comes back here."""
         if event.button() == Qt.MouseButton.LeftButton:
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            self._grip.take(event.globalPosition().toPoint())
+            event.accept()
+
+    def mouseMoveEvent(self, event) -> None:
+        """Carry the row with the pointer while the button is held."""
+        if event.buttons() & Qt.MouseButton.LeftButton:
+            self._grip.follow(event.globalPosition().toPoint())
             event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
         """Let go, reporting where on the screen that happened."""
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         if event.button() == Qt.MouseButton.LeftButton:
-            self._dropped(event.globalPosition().toPoint())
+            self._grip.let_go(event.globalPosition().toPoint())
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,11 +124,9 @@ def row_controls(
     row: Row,
     parent: QWidget,
     chose: Callable[[Shop], None],
-    changes: (
-        tuple[Callable[[], None], Callable[[], None], Callable[[QPoint], None]] | None
-    ),
+    changes: tuple[Callable[[], None], Callable[[], None], Grip] | None,
 ) -> RowControls:
-    """One row; `changes` is edit, delete and drop, None where nothing may change."""
+    """One row; `changes` is edit, delete and grip, None where nothing may change."""
     holder = QWidget(parent)
     line = QHBoxLayout(holder)
     line.setContentsMargins(0, 0, 0, 0)
@@ -130,8 +145,8 @@ def row_controls(
     if changes is None:
         line.addWidget(button)
         return RowControls(holder, button, None, None)
-    edit, delete, dropped = changes
-    line.addWidget(Handle(dropped, holder))
+    edit, delete, grip = changes
+    line.addWidget(Handle(grip, holder))
     line.addWidget(button, 1)
     edit_button = _picture_button(EDIT_ICON, EDIT_TOOLTIP.format(shop=name), holder)
     edit_button.clicked.connect(edit)

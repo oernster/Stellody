@@ -50,12 +50,14 @@ from stellody.ui.results_foot import (
 from stellody.ui.results_pager import NEXT_ICON as NEXT_PAGE_ICON
 from stellody.ui.results_pager import PREVIOUS_ICON as PREVIOUS_PAGE_ICON
 from stellody.ui.results_words import NEXT_PAGE, PREVIOUS_PAGE
+from stellody.ui.shop_form import SAVE_ICON, SAVE_LABEL, TRY_ICON, TRY_LABEL
 from stellody.ui.shop_rows import (
     ADD_ICON,
     ADD_LABEL,
     DELETE_ICON,
     DRAG_ICON,
     EDIT_ICON,
+    PUT_BACK_ICON,
     PUT_BACK_LABEL,
 )
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
@@ -291,12 +293,16 @@ def _discovery_html() -> str:
         + _img(resources.find_asset(EDIT_ICON))
         + _img(resources.find_asset(DELETE_ICON))
         + _img(resources.find_asset(DRAG_ICON))
+        + _img(resources.find_asset(TRY_ICON))
+        + _img(resources.find_asset(SAVE_ICON))
+        + _img(resources.find_asset(PUT_BACK_ICON))
         + f"<b>Changing the shops.</b> <b>{ADD_LABEL}</b> puts a shop of your "
         "own at the bottom of the list. The edit picture beside a shop opens it "
         "in a form; the delete picture removes it once you have said yes. Drag "
-        "the grip beside a shop to move it; Ctrl+Up and Ctrl+Down do the same. "
-        "<b>Try</b> in the form opens its search for the first album you "
-        "ticked, so you can see it works before saving. A line that cannot "
+        "the grip beside a shop to move it and the others make room as it goes; "
+        f"Ctrl+Up and Ctrl+Down do the same. <b>{TRY_LABEL}</b> in the form "
+        "opens its search for the first album you ticked, so you can see it "
+        f"works before <b>{SAVE_LABEL}</b> keeps it. A line that cannot "
         "search is shown greyed out with the reason, ready to mend. "
         f"<b>{PUT_BACK_LABEL}</b> restores the shops {APP_NAME} came with while "
         f"keeping your own. A new version of {APP_NAME} adds any shop it has "

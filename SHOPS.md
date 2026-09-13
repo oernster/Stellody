@@ -594,7 +594,8 @@ Nothing marked open may be built from.
 
 ### B. Prioritisation
 
-Must: FR-S01 to FR-S15, every NFR, then FR-S17 to FR-S42 from Amendment 1.
+Must: FR-S01 to FR-S15, every NFR, then FR-S17 to FR-S42 from Amendment 1,
+then FR-S43 from Amendment 2.
 Should: nothing this stage.
 Could: nothing this stage.
 Won't, this time: payments, prices, stock, shop APIs, affiliate links, physical
@@ -851,13 +852,16 @@ Verified by: `tests/application/test_editing_the_shop_list.py::test_renaming_a_s
 
 Priority: Must
 
+**Amended by Amendment 2** (6.10), which carries the row with the pointer and
+lets the others make room. The text below is the baseline.
+
 Requirement: When a shop's handle is dragged to another place in the list, the
 shop service shall write the list in the new order.
 
 Acceptance: Given Beatport eighth, when its handle is dropped above 7digital,
 then Beatport is first in the dialog and in the file.
 
-Verified by: `tests/ui/test_shop_editing.py::test_dragging_the_handle_moves_the_shop`
+Verified by: `tests/ui/test_shop_dragging.py::test_dragging_the_handle_moves_the_shop`
 
 ---
 
@@ -1145,7 +1149,7 @@ the deleted record, so they fall under the 100 percent branch gate.
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-04 | RESOLVED 2026-09-13. Oliver supplied `assets/drag-up-down.png` for the handle, so it is artwork rather than drawn in code. | Oliver | Answered |
-| A-05 | Dragging a row within the shops dialog is feasible in PySide6 at the dialog's current shape. Nothing in Stellody drags today (searched on 2026-09-13), so it is proved by a probe before FR-S27 is built rather than assumed. PARTLY ANSWERED 2026-09-13: the drop is measured offscreen by `tests/ui/test_shop_editing.py::test_dragging_the_handle_moves_the_shop`; how a drag feels with a real mouse is still to be checked by hand. | Oliver | First run of the build |
+| A-05 | Dragging a row within the shops dialog is feasible in PySide6 at the dialog's current shape. Nothing in Stellody drags today (searched on 2026-09-13), so it is proved by a probe before FR-S27 is built rather than assumed. PARTLY ANSWERED 2026-09-13: the drop is measured offscreen by `tests/ui/test_shop_dragging.py::test_dragging_the_handle_moves_the_shop`, the carrying of Amendment 2 by the rest of that file; how a drag feels with a real mouse is still to be checked by hand. | Oliver | First run of the build |
 
 ### 6.8 Open questions
 
@@ -1166,3 +1170,63 @@ the deleted record, so they fall under the 100 percent branch gate.
 
 Every action above must be drivable from a test with no screen before the
 dialog changes.
+
+**Amendment 2, 2026-09-13: a dragged shop is carried; three controls wear
+artwork.** Taken on Oliver's word the same day.
+
+### 6.10 Why
+
+Reported by Oliver against the built application: a shop could be dragged by
+its grip, yet nothing moved until the button was let go, when the row jumped to
+its new place. He judged that jarring. The handle answered a press and a release
+and nothing between them, so there was nothing for the row to follow. He also
+supplied `assets/try.png`, `assets/save.png` and `assets/revert-shops.png`.
+
+### 6.11 Requirements
+
+---
+
+**FR-S27, as amended**
+
+Requirement: While a shop's handle is held, the shops dialog shall carry that
+row with the pointer and glide every other row to the place it would take were
+the held row let go there. When the handle is let go, the shop service shall
+write the list in the new order, then the row shall glide into its place. If the
+list cannot be written, then the row shall glide back to where it started.
+
+Rationale: A row that stays put while the pointer moves gives no sign of where
+it will go; one that jumps on release has to be found again by eye. Where the
+row would land is read off where the rows started, so the answer does not move
+while the others glide. The write comes before the glide home, which keeps
+FR-S29's rule that what is shown is what the file holds.
+
+Acceptance: Given Juno third, when its handle is carried level with the first
+row, then Juno's row has moved with the pointer, Qobuz and Bleep have each moved
+down one place and nothing is written; when it is let go, then the file holds
+Juno first and the rows stand where the three rows started. Given a file that
+refuses writes, then nothing is written and the rows stand in their old order.
+
+Verified by: `tests/ui/test_shop_dragging.py::test_the_held_row_follows_the_pointer`,
+`tests/ui/test_shop_dragging.py::test_the_other_rows_make_room_before_it_is_let_go`,
+`tests/ui/test_shop_dragging.py::test_dragging_the_handle_moves_the_shop`,
+`tests/ui/test_shop_dragging.py::test_a_move_the_file_refuses_glides_back`,
+`tests/ui/test_shop_dragging.py::test_letting_go_where_it_was_taken_writes_nothing`,
+`tests/ui/test_shop_dragging.py::test_the_keyboard_waits_while_a_row_is_held`
+
+---
+
+**FR-S43 Try, Save and put back wear artwork**
+
+Priority: Must
+
+Requirement: The shop form shall show `try.png` on Try and `save.png` on Save;
+the shops dialog shall show `revert-shops.png` on its put-back control. The guide
+shall show all three beside what each does.
+
+Rationale: Every other control on both screens already wears Oliver's artwork,
+so three bare words read as unfinished.
+
+Verified by: `tests/ui/test_shop_editing.py::test_try_save_and_put_back_wear_their_artwork`,
+`tests/ui/test_guide.py`
+
+---

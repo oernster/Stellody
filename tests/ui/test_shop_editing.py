@@ -187,14 +187,13 @@ def test_a_refused_delete_keeps_the_shop(application, monkeypatch) -> None:
     assert store.held.rows == (QOBUZ, BLEEP)
 
 
-def test_dragging_the_handle_moves_the_shop(application) -> None:
-    """FR-S27: dropped above the first row, the third becomes first."""
-    dialog, store, *_rest = dialog_over(QOBUZ, BLEEP, JUNO)
-    application.processEvents()
-    top = dialog.controls[0].holder
-    above_it = top.mapToGlobal(top.rect().topLeft())
-    dialog.drop(2, above_it)
-    assert store.held.rows == (JUNO, QOBUZ, BLEEP)
+def test_try_save_and_put_back_wear_their_artwork(application) -> None:
+    """Amendment 2: Oliver's pictures on the form's actions and on put back."""
+    dialog, _store, _opener, editing = dialog_over(QOBUZ)
+    form = ShopForm(editing, HOUNDS)
+    assert not form.try_button.icon().isNull()
+    assert not form.save_button.icon().isNull()
+    assert not dialog.put_back_button.icon().isNull()
 
 
 def test_ctrl_arrows_move_the_focused_shop(application) -> None:
