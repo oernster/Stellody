@@ -70,6 +70,7 @@ from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
 from stellody.ui.close_prompt import CloseAction
 from stellody.ui.geometry import forget_window
+from stellody.ui.interface_scale import use_interface_scale
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
     FALSE,
@@ -270,6 +271,8 @@ def _start(argv: list[str] | None = None) -> int:
     # written down too. A packaged copy has no console for these to reach.
     qt_messages.listen()
     diary.note(f"launched with {arguments[1:]}")
+    # Before the application, since Qt reads the scale as it is built.
+    use_interface_scale(os.environ)
     application = QApplication(arguments)
     configure(application)
     only = instance.SingleInstance()

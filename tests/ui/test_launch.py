@@ -293,9 +293,23 @@ class RefusedClaim:
 def test_a_second_copy_asks_and_leaves_rather_than_opening_a_window(
     application: QApplication, monkeypatch
 ) -> None:
-    """It gets no store, no window and no event loop of its own."""
+    """It gets no store, no window and no event loop of its own.
+
+    The interface scale is still asked for first, before the application is
+    built: Qt reads it then and never again. Recorded rather than applied, so
+    this test leaves the environment of the run as it found it.
+    """
     refused = RefusedClaim()
-    monkeypatch.setattr(composition, "QApplication", lambda argv: application)
+    order: list[str] = []
+
+    def built(_argv: list[str]) -> QApplication:
+        order.append("application")
+        return application
+
+    monkeypatch.setattr(composition, "QApplication", built)
+    monkeypatch.setattr(
+        composition, "use_interface_scale", lambda _environment: order.append("scale")
+    )
     monkeypatch.setattr(composition.instance, "SingleInstance", lambda: refused)
 
     def never(*_: object, **__: object) -> None:
@@ -304,6 +318,7 @@ def test_a_second_copy_asks_and_leaves_rather_than_opening_a_window(
     monkeypatch.setattr(composition, "open_store", never)
     assert composition._start([]) == composition.ALREADY_RUNNING
     assert refused.asked is True, "it asked the running copy to come forward"
+    assert order == ["scale", "application"], "the scale is asked for first"
 
 
 class _Straggler:
