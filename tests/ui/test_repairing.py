@@ -27,7 +27,7 @@ from stellody.domain.album import Album
 from stellody.domain.grouping import assemble_albums
 from stellody.domain.health import IssueKind
 from stellody.domain.overrides import Override, OverrideField
-from stellody.ui.repairing import by_album, group_summary
+from stellody.ui.repairing import by_album, field_summary
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ class TestTheWordsOnTheScreen:
                 ),
             ),
         )
-        assert words in group_summary(group, "An Album")
+        assert words in field_summary(group)
 
     def test_a_group_of_several_says_how_many(self) -> None:
 
@@ -209,7 +209,7 @@ class TestTheWordsOnTheScreen:
                 Override("handle", OverrideField.TITLE, "b", "two"),
             ),
         )
-        assert "2 files" in group_summary(group, "An Album")
+        assert "2 files" in field_summary(group)
 
 
 def test_a_kind_that_proposes_nothing_is_never_offered(application, repairs) -> None:

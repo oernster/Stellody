@@ -12,6 +12,12 @@ point at to take it back. The second list is the accepted set itself, grouped by
 album and field as it was accepted, which is the same unit read from the other
 side.
 
+**What was accepted is taken back by the album too.** Added on 2026-09-13: a
+rule that guessed wrong is wrong about a record, so each album heads its own
+groups with a reset that takes the whole record back. It does not ask first,
+for the reason a group's reset does not: it is bounded to one record. Only the
+lot asks.
+
 **Nothing here is a stop that says nothing.** The scroll area holds real
 controls, so it never takes focus itself and the buttons inside it are the ring
 stops, which is the rule every pane in the application already follows.
@@ -20,6 +26,7 @@ stops, which is the rule every pane in the application already follows.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+from itertools import groupby
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -41,7 +48,8 @@ from stellody.ui.dialogs import FirstStopDialog, close_row
 DIALOG_WIDTH_PX = 760
 DIALOG_HEIGHT_PX = 620
 # The indent a finding sits at under the album it belongs to, so the two read
-# as a list within a list rather than as one flat run of rows.
+# as a list within a list rather than as one flat run of rows. The same indent
+# puts an accepted group under its album.
 FINDING_INDENT_PX = 24
 
 NOTHING_RECORDED_TITLE = "Nothing was recorded"
@@ -126,12 +134,16 @@ def _scrolling_column(parent: QWidget) -> tuple[QScrollArea, QVBoxLayout]:
     return area, column
 
 
-def group_summary(group: AcceptedGroup, label: str) -> str:
-    """What one accepted group says about itself, in a reader's words."""
+def field_summary(group: AcceptedGroup) -> str:
+    """What one accepted group changed, in a reader's words.
+
+    The album is not named: the group sits under the row that names it, so
+    saying it again on every line only repeats the heading.
+    """
     words = FIELD_WORDS.get(str(group.field), str(group.field))
     if group.count == 1:
-        return f"<b>{label}</b><br>{words}"
-    return f"<b>{label}</b><br>{words}, {group.count} files"
+        return words
+    return f"{words}, {group.count} files"
 
 
 def by_album(
@@ -266,7 +278,11 @@ class RepairDialog(FirstStopDialog):
                 )
 
     def _fill_accepted(self) -> None:
-        """What has been accepted, each group with the button that undoes it."""
+        """What has been accepted, album by album, each with what undoes it.
+
+        The groups arrive ordered by album then field, which is what lets them
+        be run together under the album they belong to.
+        """
         groups = self._repairs.accepted()
         self._column.addWidget(_caption("<h3>Already accepted</h3>", self))
         if not groups:
@@ -280,15 +296,26 @@ class RepairDialog(FirstStopDialog):
         labels = {
             album.identity.handle: album.identity.label for album in self._view.albums
         }
-        for group in groups:
+        for album, run in groupby(groups, key=lambda group: group.album):
+            in_album = tuple(run)
             self._column.addWidget(
                 _acting_row(
                     self,
-                    group_summary(group, labels.get(group.album, group.album)),
-                    "Reset",
-                    self._resetting(group),
+                    f"<b>{labels.get(album, album)}</b>",
+                    f"Reset album ({sum(group.count for group in in_album)})",
+                    self._resetting_album(album),
                 )
             )
+            for group in in_album:
+                self._column.addWidget(
+                    _acting_row(
+                        self,
+                        field_summary(group),
+                        "Reset",
+                        self._resetting(group),
+                        indent=FINDING_INDENT_PX,
+                    )
+                )
 
     def _accepting(self, findings: tuple[LibraryIssue, ...]) -> Callable[[], None]:
         """The handler that accepts one run of findings."""
@@ -303,6 +330,14 @@ class RepairDialog(FirstStopDialog):
 
         def reset() -> None:
             self._after(self._repairs.reset((group,)))
+
+        return reset
+
+    def _resetting_album(self, album: str) -> Callable[[], None]:
+        """The handler that takes back everything accepted in one album."""
+
+        def reset() -> None:
+            self._after(self._repairs.reset_album(album))
 
         return reset
 

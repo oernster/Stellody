@@ -1977,17 +1977,20 @@ Verification: `.\gate.ps1`, read by exit code.
 
 Priority: Must
 
-Requirement: No test shall make a network request. Every source is reached
-through an application-layer interface with a hand-written fake behind it.
+Requirement: No test shall make a request that leaves the machine. Every
+source is reached through an application-layer interface with a hand-written
+fake behind it.
 
 Rationale: The house rule against mock libraries; also the practical one that a
 suite depending on a third party fails on their bad day rather than on yours.
 
-**Held with named exceptions, which the wording above does not yet allow.**
-The fetcher's own tests run a real HTTP server on the loopback address, in
-`tests/infrastructure/fetching_support.py`, so those tests do make requests;
-none of them leaves the machine. Six test modules are permitted the machinery,
-each with its reason, in `TESTS_PERMITTED`.
+**Reworded on 2026-09-13, ruled by Oliver.** It read "no test shall make a
+network request", which the suite never met: the fetcher's own tests run a real
+HTTP server on the loopback address, in `tests/infrastructure/fetching_support.py`,
+because what Qt makes of a status and a silence is what they exist to test. A
+fake reply would only test the fake. None of those requests leaves the machine,
+which is the property the rationale is about. Six test modules are permitted
+the machinery, each with its reason, in `TESTS_PERMITTED`.
 
 Verification: `tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network`
 scans the whole test tree with the reader the package scan uses.

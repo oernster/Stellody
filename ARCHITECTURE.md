@@ -371,9 +371,12 @@ pin up by that address, so a pin cannot reach a track it is not about.
 rather than chosen: a finding that has been accepted leaves the report, so it
 cannot also be the thing pointed at to take it back. What the screen offers
 instead is the accepted set grouped by album and field, which is the same unit
-read from the other side. Reset takes a group or the lot; the lot asks
-first and names the count, being the one gesture that undoes an unbounded amount
-of work in a single press.
+read from the other side, now listed under each album. Reset takes a group, an
+album or the lot. An album is taken back in one press because a rule that
+guessed wrong is wrong about a record, which is the unit a listener thinks in;
+added on 2026-09-13. Only the lot asks first and names the count, being the one
+gesture that undoes an unbounded amount of work in a single press: a group and
+an album are both bounded to one record.
 
 **A store that cannot be read must not cost the library its assembly.** A row
 naming a field this version does not know is skipped; a pinned number that is
