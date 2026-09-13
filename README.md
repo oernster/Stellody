@@ -75,8 +75,8 @@ if it ever stopped being true the build would fail.
   Stellody asks two public music catalogues what those artists made that you do
   not hold, along with who else sounds like them. Tick the box for compilations
   and it asks about the artists on their tracks too, saying first roughly how
-  many minutes that adds. It reports as it goes, says
-  roughly how long is left and stops the moment you ask it to. Where it could
+  many minutes that adds. It reports as it goes, says roughly how long is left
+  and stops the moment you ask it to. Where it could
   not get a usable answer about somebody it says so and counts them, with the
   names one press away, so an answer short of a third of your library never
   reads like a complete one. Every answer is kept the moment it arrives, so a
@@ -228,7 +228,7 @@ Everything above is the product. What follows is the code.
 | Interface | PySide6 |
 | Tags | mutagen |
 | Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
-| Output | sounddevice, on WASAPI |
+| Output | sounddevice over PortAudio, taking WASAPI on Windows |
 | Buffers | numpy |
 | Store | SQLite |
 
@@ -236,7 +236,8 @@ Everything above is the product. What follows is the code.
 enforces it. `PLAN.md` holds the open work plus what is deliberately excluded.
 `TECH_DEBT.md` says what is still open internally, what is deliberately left
 and what only looks like debt. `DISCOVERY.md` and `SHOPS.md` are the two
-specifications discovery was built from, each requirement naming the test that
+specifications discovery was built from; `FORMATS.md` specifies the three
+formats proved by a generated fixture. Each requirement names the test that
 proves it.
 
 ## Running from source
@@ -249,8 +250,8 @@ python main.py
 **The runtime is pinned; the tools are not.** `requirements.txt` names exact
 versions, because a build of one commit has to be the same build whenever it is
 made. `requirements-dev.txt` reads it before adding the tools, black, flake8,
-ruff, pytest and Nuitka among them, which keep their floors, since a linter moving forward changes the
-checks rather than what is shipped. Upgrading a pinned package therefore fails
+ruff, pytest and Nuitka among them, which keep their floors, since a linter
+moving forward changes the checks rather than what is shipped. Upgrading a pinned package therefore fails
 the suite until the pin is moved to match, naming the package and both versions;
 that is the guard working rather than a fault.
 

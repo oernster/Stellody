@@ -514,6 +514,10 @@ anything back.
 
 ### 3.4 Data requirements
 
+**Amended by 6.6**, which adds the `deleted` and `retired` keys and keeps a
+broken row rather than skipping it (FR-S42). The bullets below state the
+baseline.
+
 The shop file lives beside the discovery file in Stellody's own directory and
 is named `shops.json`. Its shape:
 
@@ -537,7 +541,8 @@ is named `shops.json`. Its shape:
 ```
 
 - `shops` is the list in use; `shipped` records the list the file was written
-  from, which is how FR-S16 tells a file nobody edited from one somebody did.
+  from, which is how FR-S32 and FR-S33 tell an untouched shipped shop from an
+  edited one.
 - `name` and `template` are required; a row missing either is skipped.
 - `note` is optional and is shown beside the shop.
 - Order in the file is the order in the dialog.

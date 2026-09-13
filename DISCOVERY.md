@@ -1898,8 +1898,9 @@ artists is 3,270 requests, which is another fifty-four minutes at the permitted
 rate. Deduplication is what makes the result-side filter affordable; the true
 saving cannot be stated before a real run and is recorded in OQ-04.
 
-Verification: a test with two source artists sharing a candidate, asserting one
-genre lookup rather than two.
+Verification: `tests/application/test_discovery.py::test_a_candidate_artist_is_asked_about_once`
+gives two source artists one shared candidate and asserts one genre lookup
+rather than two.
 
 ---
 
