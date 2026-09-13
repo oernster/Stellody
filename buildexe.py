@@ -9,6 +9,7 @@ Run:  python buildexe.py
 
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.util
 import itertools
 import os
@@ -57,6 +58,10 @@ CONSOLE_MODE_DEBUG = "attach"
 DEBUG_ENV = "STELLODY_DEBUG"
 STANDALONE_FLAG = "--standalone"
 BYTES_PER_MIB = 1024 * 1024
+# The Nuitka this build is written against, migrated to on 2026-09-13. An
+# older one left in the environment stops the build here, rather than a
+# release nobody chose compiling what ships.
+NUITKA_MINIMUM = (4, 2, 1)
 
 
 def require(module: str, package: str) -> None:
@@ -68,6 +73,24 @@ def require(module: str, package: str) -> None:
     if importlib.util.find_spec(module) is None:
         print(
             f"{package} is not installed. It is a build dependency:\n"
+            "    python -m pip install -r requirements-dev.txt",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+
+def require_nuitka() -> None:
+    """Stop where the environment holds a Nuitka older than this build expects."""
+    require("nuitka", "Nuitka")
+    installed = importlib.metadata.version("nuitka")
+    numbers = tuple(
+        int("".join(itertools.takewhile(str.isdigit, part)) or 0)
+        for part in installed.split(".")
+    )
+    if numbers < NUITKA_MINIMUM:
+        wanted = ".".join(str(number) for number in NUITKA_MINIMUM)
+        print(
+            f"Nuitka {installed} is installed; this build needs {wanted} or later:\n"
             "    python -m pip install -r requirements-dev.txt",
             file=sys.stderr,
         )
@@ -185,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     """Build the application and report where it landed."""
     arguments = sys.argv[1:] if argv is None else argv
     onefile = STANDALONE_FLAG not in arguments
-    require("nuitka", "Nuitka")
+    require_nuitka()
     stamp_version.main()
     stamp_sitemap.main()
     version = read_version()
