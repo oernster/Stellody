@@ -55,8 +55,7 @@ ruling along with the one thing that would revisit it.
 
 The specifications keep open questions of their own, none of them blocking
 anything planned: `SHOPS.md` OQ-S03 asks whether an album already held should
-reach a shop too, A-05 there waits on a drag being tried with a real mouse and
-`DISCOVERY.md` OQ-04 waits on a real run to measure.
+reach a shop too, while `DISCOVERY.md` OQ-04 waits on a real run to measure.
 
 ## Not planned, so that this is not revisited
 

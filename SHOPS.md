@@ -1149,7 +1149,7 @@ the deleted record, so they fall under the 100 percent branch gate.
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-04 | RESOLVED 2026-09-13. Oliver supplied `assets/drag-up-down.png` for the handle, so it is artwork rather than drawn in code. | Oliver | Answered |
-| A-05 | Dragging a row within the shops dialog is feasible in PySide6 at the dialog's current shape. Nothing in Stellody drags today (searched on 2026-09-13), so it is proved by a probe before FR-S27 is built rather than assumed. PARTLY ANSWERED 2026-09-13: the drop is measured offscreen by `tests/ui/test_shop_dragging.py::test_dragging_the_handle_moves_the_shop`, the carrying of Amendment 2 by the rest of that file; how a drag feels with a real mouse is still to be checked by hand. | Oliver | First run of the build |
+| A-05 | RESOLVED 2026-09-13. Dragging a row within the shops dialog is feasible in PySide6 at the dialog's current shape. The drop is measured offscreen by `tests/ui/test_shop_dragging.py::test_dragging_the_handle_moves_the_shop`, the carrying of Amendment 2 by the rest of that file. Oliver tested the drag by hand in the built application: the two faults it turned up, a row that jumped on release and a drag that stopped one place short of the last, are both fixed and held by that file. | Oliver | Answered |
 
 ### 6.8 Open questions
 
