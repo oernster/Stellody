@@ -35,7 +35,8 @@ if it ever stopped being true the build would fail.
 - **A wall of album covers**, else a plain list, whichever suits you. Click a
   cover and the album opens underneath without losing your place. Switching
   between the two lands where you were, so whatever is playing is picked out
-  either way. In the list, one press on the Title heading opens every album at
+  either way: its row is marked in both views and its name sits along the foot
+  of the window. In the list, one press on the Title heading opens every album at
   once; another closes them.
 - **Search that narrows as you type**, however many thousands of songs you
   have. The album stays whole around whatever you were looking for.
@@ -72,17 +73,21 @@ if it ever stopped being true the build would fail.
   Every tick widens what is shown, so asking for two genres shows both.
 - **What your collection is missing.** Tick the genres worth looking in and
   Stellody asks two public music catalogues what those artists made that you do
-  not hold, along with who else sounds like them. It reports as it goes, says
+  not hold, along with who else sounds like them. Tick the box for compilations
+  and it asks about the artists on their tracks too, saying first roughly how
+  many minutes that adds. It reports as it goes, says
   roughly how long is left and stops the moment you ask it to. Where it could
   not get a usable answer about somebody it says so and counts them, with the
   names one press away, so an answer short of a third of your library never
   reads like a complete one. Every answer is kept the moment it arrives, so a
   run stopped or cut short loses nothing it had already paid for and a second
   attempt asks only for the rest. What it finds opens as a list you can read
-  and tick, dealt across the width of the screen and turned a page at a time;
-  from there one press takes the ticked albums to a shop, opening that shop's
-  own search for each of them in your browser. Nothing is bought here and
-  nothing is streamed: Stellody hands over a search and stops.
+  and tick, dealt across the width of the screen and turned a page at a time,
+  then narrowed to some of the genres it looked in when the answer runs long.
+  From there one press takes the ticked albums to a shop, opening that shop's
+  own search for each of them in your browser. The shops on offer are yours to
+  add, edit, delete and reorder from that same screen. Nothing is bought here
+  and nothing is streamed: Stellody hands over a search and stops.
 - **The videos that came with the album.** A bonus video sits in the album it
   belongs to, plays from the same press as any song and draws its picture at
   the size it was made; fill the window when you want it larger.
@@ -90,7 +95,8 @@ if it ever stopped being true the build would fail.
   works out what it should be and shows you the tidy version. Now you can tell
   it to keep that answer, all of it at once or one album at a time, so the same
   list of problems stops greeting you at every start. Changed your mind? One
-  press puts it back. Your files are untouched either way.
+  press puts it back, for one group of files, one album or the lot. Your files
+  are untouched either way.
 - **A guide to the window itself.** Help then Guide names every button on both
   trays beside the picture the window actually draws, so nothing has to be
   recognised from a description. Under that sit the four rules no single screen
@@ -241,8 +247,8 @@ python main.py
 
 **The runtime is pinned; the tools are not.** `requirements.txt` names exact
 versions, because a build of one commit has to be the same build whenever it is
-made. `requirements-dev.txt` reads it before adding black, flake8, ruff, pytest
-and Nuitka, which keep their floors, since a linter moving forward changes the
+made. `requirements-dev.txt` reads it before adding the tools, black, flake8,
+ruff, pytest and Nuitka among them, which keep their floors, since a linter moving forward changes the
 checks rather than what is shipped. Upgrading a pinned package therefore fails
 the suite until the pin is moved to match, naming the package and both versions;
 that is the guard working rather than a fault.

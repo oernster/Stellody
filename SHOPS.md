@@ -12,9 +12,9 @@ arrive as numbered amendments with a reason rather than as silent edits. No
 number of its own: a document version beside a product version is two numbers
 a reader has to tell apart, only one of them the product's.
 
-It is built. Every requirement below names the test that holds it; FR-S11 says
-plainly where the build stops short of its requirement. Amendment 1, in section
-6, is built.
+It is built. Every requirement below names the test that holds it. FR-S11
+stopped short of its requirement until FR-S42 in Amendment 1 completed it; that
+amendment, in section 6, is built too.
 
 ## 1. Introduction
 
