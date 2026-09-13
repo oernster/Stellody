@@ -123,6 +123,35 @@ def test_files_with_no_ordinal_at_all_are_numbered_and_reported() -> None:
     assert issues[0].detail == "2 file(s)"
 
 
+def test_a_colliding_file_with_no_ordinal_is_reported_once() -> None:
+    """Its tag named a number that collided; the number was set aside, not missing.
+
+    Reporting it again as having no track number said something untrue about the
+    tags. It also doubled what accepting the album pinned.
+    """
+    candidates = (
+        candidate("First.flac", tag_track=1, tag_title="First"),
+        candidate("Second.flac", tag_track=1, tag_title="Second"),
+    )
+    tracks, issues = resolve_tracks(candidates, ALBUM)
+    assert [(t.track_number, t.title) for t in tracks] == [(1, "First"), (2, "Second")]
+    assert [issue.kind for issue in issues] == [IssueKind.DUPLICATE_TRACK_NUMBER]
+
+
+def test_an_untagged_file_beside_a_collision_is_still_reported_missing() -> None:
+    """Only the file whose tags carry no number is said to have none."""
+    candidates = (
+        candidate("Alpha.flac", tag_track=1, tag_title="Alpha"),
+        candidate("Beta.flac", tag_track=1, tag_title="Beta"),
+        candidate("Gamma.flac", tag_title="Gamma"),
+    )
+    _, issues = resolve_tracks(candidates, ALBUM)
+    missing = [
+        issue for issue in issues if issue.kind is IssueKind.MISSING_TRACK_NUMBER
+    ]
+    assert [issue.paths for issue in missing] == [("Gamma.flac",)]
+
+
 def test_a_missing_title_falls_back_to_the_file_name() -> None:
     candidates = (candidate("05. Lacrimosa.flac", tag_track=5),)
     tracks, issues = resolve_tracks(candidates, ALBUM)

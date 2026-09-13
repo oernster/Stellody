@@ -133,8 +133,12 @@ def resolve_tracks(
         disc = file_disc if file_disc is not None else tagged_disc
         taken = used.setdefault(disc, set())
         if file_track is None:
-            untagged.append(candidate.file_name)
-            unnumbered.append(candidate.source.address)
+            # Said to have no number only where its tags carried none. A file
+            # whose tagged number collided is already reported as a duplicate;
+            # its number was set aside, never missing.
+            if position not in keys:
+                untagged.append(candidate.file_name)
+                unnumbered.append(candidate.source.address)
             track = _next_free(taken)
         elif file_track in taken:
             track = _next_free(taken)

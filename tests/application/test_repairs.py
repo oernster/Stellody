@@ -160,6 +160,19 @@ class TestAcceptingAndResetting:
         assert written == 2
         assert len(store.accepted) == 2
 
+    def test_two_findings_naming_one_file_for_one_field_pin_it_once(self) -> None:
+        """A file holds one value for a field, so it is one pin, counted once."""
+        store = RecordingStore()
+        written = Repairs(store).accept(
+            VIEW,
+            (
+                issue(IssueKind.DUPLICATE_TRACK_NUMBER, ("01 Mysterons.flac",)),
+                issue(IssueKind.MISSING_TRACK_NUMBER, ("01 Mysterons.flac",)),
+            ),
+        )
+        assert written == 1
+        assert len(store.accepted) == 1
+
     def test_nothing_accepted_groups_into_nothing(self) -> None:
         assert Repairs(RecordingStore()).accepted() == ()
 

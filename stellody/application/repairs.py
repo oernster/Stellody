@@ -166,7 +166,11 @@ class Repairs:
                         address,
                     )
                 )
-        return tuple(pins)
+        # One pin per album, file and field, which is what the store holds. Two
+        # findings naming one file's field would otherwise pin it twice, which
+        # `accept` would then count as two files.
+        unique = {(pin.album, pin.path, pin.field): pin for pin in pins}
+        return tuple(unique.values())
 
     def accept(self, view: LibraryView, issues: Iterable[LibraryIssue]) -> int:
         """Accept these findings; how many files were pinned."""
