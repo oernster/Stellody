@@ -8,7 +8,6 @@ Run:  python buildinstaller.py
 
 from __future__ import annotations
 
-import importlib.util
 import itertools
 import os
 import pathlib
@@ -19,6 +18,10 @@ import time
 
 import stamp_sitemap
 import stamp_version
+
+# The Nuitka minimum is stated once, beside the application build, so the two
+# executables cannot come to be compiled against different releases.
+from buildexe import require_nuitka
 
 # The copyright notice comes from the package rather than being written
 # here as well: the exe's file properties and the About box have to say
@@ -55,17 +58,6 @@ CONSOLE_MODE = "disable"
 UNLINK_RETRIES = 40
 UNLINK_DELAY_SECONDS = 0.25
 BYTES_PER_MIB = 1024 * 1024
-
-
-def require(module: str, package: str) -> None:
-    """Stop with a useful message when a build tool is not installed."""
-    if importlib.util.find_spec(module) is None:
-        print(
-            f"{package} is not installed. It is a build dependency:\n"
-            "    python -m pip install -r requirements-dev.txt",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
 
 
 def read_version() -> str:
@@ -175,7 +167,7 @@ def move_into_place(built: pathlib.Path, final: pathlib.Path) -> bool:
 
 def main() -> int:
     """Stage the payload, build the setup program and place it."""
-    require("nuitka", "Nuitka")
+    require_nuitka()
     stamp_version.main()
     stamp_sitemap.main()
     version = read_version()
