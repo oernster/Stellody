@@ -11,11 +11,18 @@ where the drag says. The held row stays under the pointer exactly where it was
 taken hold of. Every other row glides to the place it would take were the held
 row dropped there, so the gap it would fill is always in sight.
 
-**Where it would land is read off where the rows started**, which is the rule
-the drop always used: the number of other rows whose middle lay above the middle
-of the held row. Reading it off where the others have glided to instead would
-move the answer as they move, so a row held still over a boundary would never
-settle.
+**Where it would land is the place whose top is nearest the held row's top**,
+read off where the rows started. Reading it off where the others have glided to
+instead would move the answer as they move, so a row held still over a boundary
+would never settle.
+
+It used to count the other rows whose middle lay above the held row's middle.
+Reported by Oliver on 2026-09-13, then measured over the eight shipped shops:
+no row could reach the last place. The held row stops at the last row's top,
+which puts its middle exactly level with the last row's; level is not above,
+so every drag landed one place short. The top of the list was reachable
+only because nothing has to be passed to get there. The nearest top has no such
+edge: at the lowest point it IS the last place.
 
 **Letting go writes first, then lands.** The move is written the moment the
 button is released, as every change here is written before it is drawn (FR-S29).
@@ -33,7 +40,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
 
-from PySide6.QtCore import QEasingCurve, QObject, QPoint, QRect, QVariantAnimation
+from PySide6.QtCore import QEasingCurve, QObject, QPoint, QVariantAnimation
 from PySide6.QtWidgets import QLayout, QWidget
 
 # How long the other rows take to make room, then how long the held row takes to
@@ -108,11 +115,8 @@ class RowDrag(QObject):
         wanted = held.parentWidget().mapFromGlobal(at).y() - self._grab
         top = min(max(wanted, self._tops[0]), self._tops[-1])
         held.move(held.x(), top)
-        middle = self._middle(held, top)
-        target = sum(
-            1
-            for place, row in enumerate(self._rows)
-            if place != self._held and self._middle(row, self._tops[place]) < middle
+        target = min(
+            range(len(self._tops)), key=lambda slot: abs(self._tops[slot] - top)
         )
         if target != self._target:
             self._target = target
@@ -184,8 +188,3 @@ class RowDrag(QObject):
         so a row landing on arithmetic jumped when the layout took it back.
         """
         return {place: self._tops[slot] for slot, place in enumerate(order)}
-
-    @staticmethod
-    def _middle(row: QWidget, top: int) -> int:
-        """The height of a row's middle, were its top at `top`."""
-        return QRect(row.x(), top, row.width(), row.height()).center().y()

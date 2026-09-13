@@ -1205,12 +1205,14 @@ row, then Juno's row has moved with the pointer, Qobuz and Bleep have each moved
 down one place and nothing is written; when it is let go, then the file holds
 Juno first and the rows stand where the three rows started. Given a file that
 refuses writes, then nothing is written and the rows stand in their old order.
+Given any shop of eight carried below the last row, then it lands last.
 
 Verified by: `tests/ui/test_shop_dragging.py::test_the_held_row_follows_the_pointer`,
 `tests/ui/test_shop_dragging.py::test_the_other_rows_make_room_before_it_is_let_go`,
 `tests/ui/test_shop_dragging.py::test_dragging_the_handle_moves_the_shop`,
 `tests/ui/test_shop_dragging.py::test_a_move_the_file_refuses_glides_back`,
 `tests/ui/test_shop_dragging.py::test_letting_go_where_it_was_taken_writes_nothing`,
+`tests/ui/test_shop_dragging.py::test_every_shop_can_be_dragged_to_the_bottom`,
 `tests/ui/test_shop_dragging.py::test_the_keyboard_waits_while_a_row_is_held`
 
 ---

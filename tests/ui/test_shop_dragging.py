@@ -12,6 +12,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from test_shop_editing import BLEEP, JUNO, QOBUZ, dialog_over
 
+from stellody.infrastructure.shop_file import DEFAULT_SHOPS
 from stellody.ui.shop_dragging import LAND_MS, ROOM_MS
 from stellody.ui.shop_rows import Handle
 
@@ -140,6 +141,30 @@ def test_letting_go_where_it_was_taken_writes_nothing(application) -> None:
     assert dialog.said.text() == ""
     assert _tops(dialog) == tops
     assert not dialog.drag.busy
+
+
+def test_every_shop_can_be_dragged_to_the_bottom(application) -> None:
+    """Reported by Oliver on 2026-09-13: the last place could not be reached.
+
+    Over the eight shipped shops, as a real list holds them. Measured before
+    the fix: all seven rows stopped one place short, because a row held at
+    the lowest point has its middle exactly level with the last row's, which a
+    three row list with one taller row did not show.
+    """
+    last = len(DEFAULT_SHOPS) - 1
+    for index in range(last):
+        dialog, store, *_rest = dialog_over(*DEFAULT_SHOPS)
+        application.processEvents()
+        handle = _handle(dialog, index)
+        start = _middle(handle)
+        far_below = start + QPoint(0, _tops(dialog)[last] * len(DEFAULT_SHOPS))
+        _press(handle, start)
+        _move(handle, far_below)
+        assert dialog.drag.target == last, DEFAULT_SHOPS[index].name
+        _release(handle, far_below)
+        assert store.held.rows[-1] == DEFAULT_SHOPS[index]
+        QTest.qWait(SETTLE_MS)
+        dialog.close()
 
 
 def test_the_keyboard_waits_while_a_row_is_held(application) -> None:
