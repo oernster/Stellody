@@ -11,6 +11,8 @@ Two damaged albums rather than the one the repair suite is built on, since
 
 from __future__ import annotations
 
+import pathlib
+
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget
 from repair_support import (  # noqa: F401  the fixtures register by import
     RATE,
@@ -26,6 +28,7 @@ from stellody.application.repairs import Repairs
 from stellody.domain.grouping import SourceEntry, assemble_albums
 from stellody.domain.ordering import TrackCandidate
 from stellody.domain.track import TrackSource
+from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.repairing import RepairDialog
 
 MUSIC = "H:/Music"
@@ -170,3 +173,30 @@ def test_the_rows_under_an_album_do_not_repeat_its_name(application) -> None:
         ]
         assert len(naming) == 1, (label, naming)
     dialog.deleteLater()
+
+
+def resets_offered(store) -> list[str]:
+    """What each album's reset reads once everything is accepted over a store."""
+    dialog = opened(Repairs(store))
+    labelled(dialog, "Accept everything").click()
+    offered = [button.text() for button in album_resets(dialog)]
+    dialog.deleteLater()
+    return offered
+
+
+def test_each_count_is_the_one_the_real_store_would_give(
+    application, tmp_path: pathlib.Path
+) -> None:
+    """The count check above reads its expectation off the store it runs over.
+
+    So a stand-in keeping every copy of a pin named twice in one batch passed it
+    with the wrong number. This one asks the real store instead.
+    """
+    real = SqliteLibraryStore(str(tmp_path / "library.db"))
+    try:
+        expected = resets_offered(real)
+    finally:
+        real.close()
+    # Guards the fixture: equal over nothing offered would prove nothing.
+    assert expected
+    assert resets_offered(MemoryStore()) == expected

@@ -67,15 +67,14 @@ class MemoryStore:
         return self.held
 
     def accept_overrides(self, accepted: tuple[Override, ...]) -> None:
-        keys = {(item.album, item.path, item.field) for item in accepted}
-        self.held = (
-            tuple(
-                item
-                for item in self.held
-                if (item.album, item.path, item.field) not in keys
-            )
-            + accepted
-        )
+        # Keyed as the real table is: a pin named twice in one batch is held
+        # once with the later value, which is what the real upsert leaves.
+        latest = {(item.album, item.path, item.field): item for item in accepted}
+        self.held = tuple(
+            item
+            for item in self.held
+            if (item.album, item.path, item.field) not in latest
+        ) + tuple(latest.values())
 
     def discard_overrides(self, unwanted: tuple[Override, ...]) -> None:
         keys = {(item.album, item.path, item.field) for item in unwanted}
