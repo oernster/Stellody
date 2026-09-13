@@ -110,14 +110,16 @@ along with the one thing that would revisit it.
   in a way a catalogue's do not, so nothing about the thirty day memory could
   be inherited. It reopens only as a decision about all four together.
 - **Anything over the network that carries your library or names you.** No
-  scrobbling, no telemetry, no account, no identifier. Three modules reach
-  outward, each named in invariant 12. The cover chooser reaches only when a
-  listener opens it; the update check asks GitHub about Stellody, sending
-  nothing whatever about the machine asking; a discovery run names the artists
-  inside the genres somebody ticked, which is a subset they chose rather than
-  an inventory of what they own. Handing an address to a browser is not a
-  fourth, whether it goes to the donation page or to a shop: the address goes
-  outward and the browser does the asking.
+  scrobbling, no telemetry, no account, no identifier. Four modules may hold
+  the machinery to connect, each named in invariant 12; three of them leave the
+  machine, since the fourth is the channel a second launch speaks to the copy
+  already running over. The cover chooser reaches only when a listener opens
+  it; the update check asks GitHub about Stellody, sending nothing whatever
+  about the machine asking; a discovery run names the artists inside the genres
+  somebody ticked, which is a subset they chose rather than an inventory of
+  what they own. Handing an address to a browser is not another, whether it
+  goes to the donation page or to a shop: the address goes outward and the
+  browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
 - **Repairing the files themselves.** Accepting a correction records it in

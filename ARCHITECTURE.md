@@ -9,7 +9,7 @@ has never been seen to fail is not yet a guard.
 | # | Invariant | Enforced by |
 |---|---|---|
 | 1 | Stellody never writes tags back into a music file. The mutagen write surface is unreachable from any module that can read tags. | `tests/structural/test_readonly.py::test_tag_writing_is_unreachable_from_every_tag_reading_module` |
-| 2 | Only the modules that own Stellody's own state may write to disk. Nothing in the scanning or probing path writes at all. | `tests/structural/test_readonly.py::test_only_state_owning_modules_write_to_disk` |
+| 2 | Only the modules that own Stellody's own state may write to disk. No module on the scanning or probing path writes; what a scan learns is written through the store that owns that state. | `tests/structural/test_readonly.py::test_only_state_owning_modules_write_to_disk` |
 | 3 | Layers never import upward. UI and Infrastructure both depend inward, never on each other. | `tests/structural/test_layers.py::test_layers_never_import_upward` |
 | 4 | No Qt, no tag library and no audio library appears below the infrastructure layer. | `tests/structural/test_layers.py::test_domain_and_application_are_framework_free` |
 | 5 | The domain layer touches no filesystem, no network and no scheduler. | `tests/structural/test_layers.py::test_domain_has_no_side_effects` |
@@ -19,7 +19,7 @@ has never been seen to fail is not yet a guard.
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
 | 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py` |
 | 11 | A read-only page is never focused by a click and is never what a dialog opens on; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py`, `tests/ui/test_dialog_first_stop.py` |
-| 12 | Exactly four modules may hold the machinery to open a connection, each named with what it is for; only the composition root may name them. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
+| 12 | Exactly four modules may hold the machinery to open a connection, each named with what it is for; the cover search is reached only through its port, which the composition root alone builds. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
 | 14 | The setup program is a client of the application, never a layer of it: `installer/` reads what it needs from `stellody`, while nothing under `stellody/` imports `installer`. | `tests/structural/test_layers.py::test_the_application_never_imports_the_setup_program` |
 | 15 | The product name is written in one place, for the application and for the setup program alike. No string a reader or the operating system meets spells it out again; every other surface builds it from `APP_NAME`. | `tests/structural/test_one_name.py::test_the_product_name_is_written_in_one_place` |
@@ -65,8 +65,12 @@ GitHub whether a newer Stellody has been published;
 its two catalogues through; it is also how an expanded candidate artist is
 looked up afterwards; `stellody/infrastructure/instance.py` is the
 channel a second launch tells the running copy to show itself over, which is a
-pipe on this machine rather than a way off it. The composition root is the only thing that may name any of them,
-so the reach outward stays a few named things rather than a capability spread
+pipe on this machine rather than a way off it. The composition root builds all
+four. The only other modules naming one are the two catalogue clients,
+`catalogue.py` and `similarity.py`, which hold no socket of their own: each is
+handed the fetcher, building a default one only when none is given. The cover
+search is held to its port by `test_the_search_is_reached_only_through_its_port`.
+So the reach outward stays a few named things rather than a capability spread
 through the application.
 
 The last of the four was found rather than added. The guard matched a package
@@ -102,8 +106,8 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt's image codecs, Qt's network stack, the filesystem. | `domain` and `application`. |
-| `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain` and `application`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt's image codecs, Qt's network stack, the filesystem. | `domain`, `application` and `shared`. |
+| `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain`, `application` and `shared`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
 `stellody/composition.py` is the only composition root; `main.py` is a
@@ -127,11 +131,13 @@ already at this version is offered repair or reinstall. `installer/actions.py`
 and `installer/registry.py` own everything written, which is per user
 throughout: the files under `%LOCALAPPDATA%\Programs`, the uninstall record and
 the sign-in entry under `HKCU`, so Windows never asks for administrator rights.
+The one other thing setup writes is its own step log, `stellody-setup.log` in
+the temporary directory, which `installer/steplog.py` owns.
 `installer/performing.py` drives them a step at a time and reports how it went,
-owning the sequence rather than the writing. `installer/screens.py`,
-`installer/shell.py`,
-`installer/wording.py` and `installer/theme.py` hold the interface, one screen
-to a step. `tests/installer/` covers it.
+owning the sequence rather than the writing. `installer/app.py` assembles the
+interface; `installer/screens.py`, `installer/shell.py`, `installer/footer.py`,
+`installer/wording.py`, `installer/theme.py` and `installer/appearance.py` hold
+it, one screen to a step. `tests/installer/` covers it.
 
 **Setup never opens the library database.** It runs at the one moment that file
 is least safe to touch, having just ended the application by force, so where a
@@ -196,10 +202,14 @@ clean and an explicit flush of its buffers does not clear it; at the start of a
 track there is no pre-roll to hide that, so it would have reached the speakers.
 Reopening costs under a millisecond against a read block worth ninety.
 
-**PyAV is imported inside `open_source`, not at module scope.** Importing it
-loads a shared FFmpeg build of some sixty megabytes. A library holding nothing
-that reader takes never pays for it and one holding a few pays only when a
-track from them is opened. That is the single reason for a function-level import in this codebase.
+**PyAV is imported only once a track needs it.** `open_source` imports
+`packet_decode.py`, which imports PyAV, inside the function rather than at the
+top of `decode.py`; `video.py` imports PyAV inside `VideoReader` for the same
+reason. Importing it loads a shared FFmpeg build of some sixty megabytes. A
+library holding nothing that reader takes never pays for it and one holding a
+few pays only when a track from them is opened. The other two imports deferred
+into a function are different: `output.py` reaches `wasapi` only on Windows,
+while `stellody/__init__.py` defers the composition root into `main`.
 
 ## Grouping: folders group, tags name
 
@@ -361,7 +371,7 @@ pin up by that address, so a pin cannot reach a track it is not about.
 rather than chosen: a finding that has been accepted leaves the report, so it
 cannot also be the thing pointed at to take it back. What the screen offers
 instead is the accepted set grouped by album and field, which is the same unit
-read from the other side. Reset takes a group, an album or the lot; the lot asks
+read from the other side. Reset takes a group or the lot; the lot asks
 first and names the count, being the one gesture that undoes an unbounded amount
 of work in a single press.
 
@@ -1013,10 +1023,11 @@ on, so the same request means the same size on any display.
 
 **Nothing runs while nothing plays.** The one question left with an answer worth
 having is whether there is anything to draw. The timer runs while the music
-does and stops when it stops, taking the measurement upstream with it, so an
-idle window does no arithmetic for a display of nothing. No analyser exists
-while nothing is being measured; that absence IS the switch, so there is no
-flag to disagree with it.
+does and stops when it stops. Upstream, the feeder measures a block only once it
+has written it, so a paused or stopped player does no arithmetic for a display
+of nothing. An analyser is still built for each track loaded and the sound
+settings still carry a visualising flag, which the window sets once and nothing
+clears; neither costs anything while no block is being written.
 
 **It shows that it is there before it has anything to show.** It had no ground
 of its own at first, which measured as one flat colour, the window's: turned on
@@ -1057,7 +1068,9 @@ hand a question to `infrastructure/fetching.py` and get an answer back. The
 offline structural test's whole value is that its list is short and that
 lengthening it is an edit somebody has to defend, so a feature reaching two
 hosts through one socket is worth writing that way. `infrastructure/courtesy.py`
-holds the user agent and the pacing for all three services asked anything, since
+holds the user agent and the pacing for every service reached through
+`cover_search.py` or `fetching.py`, the update check stating its own agent in
+`update_source.py`, since
 a gap honoured in one client and forgotten in another is a client that gets the
 whole application refused.
 
@@ -1407,7 +1420,7 @@ online check and it will not launch for somebody offline.
 | A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. |
 | Every switch says what a press would do, on both strips | One convention for the whole application, arrived at in two steps. The tray always worked this way: the appearance toggle shows the appearance it would move to, the view toggle names the view it would move to and the mute switch is struck through while the sound is on, because that press is the one that silences it. The bottom strip reported its own state instead, on the reasoning that a strip of settings is not a strip of actions. That failed in use: a crossed wheel on a switch doing nothing reads as a refusal rather than as an offer; two strips inches apart also disagreed about what a picture meant. The strip now follows the tray, which is what its own tooltips had always said in words. Repeat's tooltip is the one exception and names the control instead: a two-state switch is fully described by its next press, while three states named one at a time read as a switch stuck the wrong way round. Its picture still names the press, which is the half of the rule that is read at a glance rather than on a hover. |
 | The album pane's play button doubles the tray's, so it toggles with it | Two play buttons on one screen that disagree about what a press does are worse than one. It offered to start the open album whatever was already playing; it wears the pause face while something plays now and pauses on a press, which is the rule the tray's button has always followed. It is told what is playing from the one place that already tells the tray, so the two faces cannot drift apart. The faces agreeing was not enough: the presses still disagreed, which is how a paused track appeared to start again. Pausing was handled here while everything else fell through to starting the open album from its first track, so pressing play on a paused track reloaded rather than resumed; on the first track of an album that is indistinguishable from the track beginning again, which is what was reported. Anything with a track loaded is handed to `toggle_playback` now, the one method that decides what a play press means. Starting the open album is what is left, which is the only thing this button can mean with nothing loaded and the one place it may still differ, the tray having no album to be attached to. `tests/ui/test_both_play_buttons_agree.py` asserts the two answer a press identically, proved by planting the old branch. |
-| The About button became a Help button with a menu under it | A picture button is named by its tooltip alone, so a button that opens several things cannot be named after one of them. Its tooltip is Help and the menu says what each entry does. It leads with the guide, then About and the update check; the menu bar's Help menu carries the same three in the same order, since a menu bar is where somebody looks for About before they look at a strip of pictures. The order is stated in each place rather than shared, which `tests/ui/test_update_check.py` pins on the tray side and `tests/ui/test_menu_sweep.py` on the bar side. |
+| The About button became a Help button with a menu under it | A picture button is named by its tooltip alone, so a button that opens several things cannot be named after one of them. Its tooltip is Help and the menu says what each entry does. It leads with the guide, then About and the update check; the menu bar's Help menu carries the same three in the same order, with Library health and the two licences between the guide and About, since a menu bar is where somebody looks for About before they look at a strip of pictures. The order is stated in each place rather than shared, which `tests/ui/test_update_check.py` pins on the tray side and `tests/ui/test_menu_sweep.py` on the bar side. |
 | A reading dialog never opens on its own page | A dialog opens focused on its first stop, which puts somebody where they can act rather than costing them a press that tells them nothing. A page that overflows is a genuine stop, so it WAS the first stop of every reading dialog: the guide, About, the licences and the health report each opened with the ring drawn round the whole page before anybody had done anything, outlining everything while offering nothing to act on. Reported against the guide and measured across the four, so it was never one dialog's fault. `first_stop` passes over a scrolling region now; the pane keeps its stop, so a long page is still readable from the keyboard; where a pane is all there is, the dialog opens on nothing rather than on it. Held by a sweep over every dialog the package defines, discovered from the source rather than listed, since a list is exactly what let the guide arrive ringed with the suite green. Proved by taking the check back out and watching four of them fail. |
 | A prompt waved away decides nothing | The close prompt set its answer to the offered default the moment it was built, so being dismissed reported exactly what choosing Minimise to tray reported and the caller could not tell them apart: the cross on it minimised the window, while with the remember box ticked it wrote that non-answer down as the standing behaviour. The answer now starts at ASK, which is the word the settings already use for nobody has said; only a button moves it off that. A non-answer takes the whole press back: the window neither leaves nor hides, nothing is written. |
 | The waiting after a refusal is spent on a pass, never on one artist | Measured on 2026-09-08 over the whole library: MusicBrainz refused 45 of 82 asks with "the MusicBrainz web server is currently busy", which is its load rather than our rate, so pacing more slowly would not have helped. A run that waited each refusal out where it stood spent nine seconds a request against a pace of 1.1 and reported three hours remaining. It asks once more on the spot and then puts that artist back for a later pass, so the waiting happens during the next artist's turn and costs nothing; each pass is smaller than the one before. `application/passing.py` is the bookkeeping and asks nothing itself, which is what makes when to stop testable on its own. |
@@ -1454,16 +1467,18 @@ The gate is 100% branch coverage over `stellody.domain` and
 `stellody.application`: the layers reachable with no filesystem, no clock and no
 audio device, where anything short of complete is a decision nobody made.
 
-Infrastructure and UI are measured but sit outside the gate rather than dragging
-it down to a number that means nothing. Infrastructure needs a real audio
-device, a real library and the Windows shell.
+Infrastructure and UI sit outside the gate rather than dragging it down to a
+number that means nothing, which also leaves them outside what the suite
+measures: coverage is collected over the two gated layers alone. Asked for over
+the whole package with `--cov=stellody`, it measured 95% on 2026-09-13. Much of
+infrastructure needs a real audio device, a real library or the Windows shell.
 
 **No test may start the application.** Four tests once stood in for the install
 but not for the launch that follows it, so every run of the suite started the
 copy of Stellody installed on the machine, on the owner's own desktop, while a
-window arriving unbidden was being hunted. `tests/conftest.py` refuses to start
-anything named like the application, whatever a test believes it has stood in
-for. It also points the diary at a directory of the test's own, so a run of
+window arriving unbidden was being hunted. `tests/conftest.py` refuses any
+`subprocess.Popen` command naming `stellody.exe`, whatever a test believes it
+has stood in for. It also points the diary at a directory of the test's own, so a run of
 the suite cannot write into the account of real ones. That matters more since
 the diary moved into the data directory: the file the suite must not touch now
 sits beside the library database rather than among temporary files.

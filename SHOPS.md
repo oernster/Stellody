@@ -9,16 +9,19 @@ that will prove it.
 
 Baseline: this specification as first written, 2026-09-08. Changes after that
 arrive as numbered amendments with a reason rather than as silent edits. No
-number of its own: a document version beside a product version at 1.0 is two
-numbers a reader has to tell apart, only one of them the product's.
+number of its own: a document version beside a product version is two numbers
+a reader has to tell apart, only one of them the product's.
+
+It is built. Every requirement below names the test that holds it; FR-S11 says
+plainly where the build stops short of its requirement.
 
 ## 1. Introduction
 
 ### 1.1 Purpose
 
-A discovery run ends with a list of albums the library does not hold. Today
-that list is somewhere to look at rather than somewhere to act, so buying one of
-them means retyping an artist and a title into a shop by hand. This closes that
+A discovery run ends with a list of albums the library does not hold. Before
+this stage that list was somewhere to look at rather than somewhere to act, so
+buying one of them meant retyping an artist and a title into a shop by hand. This closes that
 gap: from a ticked album, one press reaches a shop's own search results for it.
 
 ### 1.2 Intended audience
@@ -279,7 +282,7 @@ release every time that happens; a file is an edit.
 Acceptance: Given no shop file, when the shops dialog is opened, then the file
 is written holding the shipped defaults and those shops are listed.
 
-Verified by: `tests/infrastructure/test_shop_file.py::test_a_missing_file_is_written_with_the_defaults`
+Verified by: `tests/infrastructure/test_shop_file.py::TestTheFirstTime::test_a_missing_file_is_written_with_the_defaults`
 
 ---
 
@@ -301,13 +304,18 @@ Acceptance: Given the template `https://example.com/s?q={artist}%20{album}` and
 the album "Hounds of Love" by "Kate Bush", when the address is built, then it is
 `https://example.com/s?q=Kate%20Bush%20Hounds%20of%20Love`.
 
-Verified by: `tests/domain/test_shop_address.py::test_both_placeholders_are_filled_and_encoded`
+Verified by: `tests/domain/test_shop_address.py::TestTheAddress::test_both_placeholders_are_filled_and_encoded`
 
 ---
 
 **FR-S11 A template that names neither is refused**
 
 Priority: Must
+
+**Built in part.** The shop is left out of the list. No screen names a
+refused row yet: `shop_file.refused` answers which rows were passed over and
+nothing in the window asks it. Naming the row needs the shops dialog to call it
+and show the answer.
 
 Requirement: If a shop's template holds neither `{artist}` nor `{album}`, then
 the shop service shall leave that shop out of the list and shall say which row
@@ -320,7 +328,7 @@ a mistyped row.
 Acceptance: Given a shop file holding a row whose template has no placeholder,
 when the list is read, then that shop is absent and the reason names it.
 
-Verified by: `tests/infrastructure/test_shop_file.py::test_a_template_with_no_placeholder_is_refused`
+Verified by: `tests/infrastructure/test_shop_file.py::TestWhatIsRefused::test_a_template_with_no_placeholder_is_refused`
 
 ---
 
@@ -340,7 +348,7 @@ because a half-parsed file somebody is editing must not be replaced under them.
 Acceptance: Given a shop file holding malformed JSON, when the list is read,
 then the shipped defaults are offered and the file on disk is unchanged.
 
-Verified by: `tests/infrastructure/test_shop_file.py::test_an_unreadable_file_falls_back_and_is_left_alone`
+Verified by: `tests/infrastructure/test_shop_file.py::TestWhatCannotBeRead::test_an_unreadable_file_falls_back_and_is_left_alone`
 
 ---
 
@@ -349,7 +357,8 @@ Verified by: `tests/infrastructure/test_shop_file.py::test_an_unreadable_file_fa
 Priority: Must
 
 Requirement: If the operating system cannot open an address, then the shops
-dialog shall say so against that shop and shall leave the dialog open.
+dialog shall say so in the dialog, naming that shop, while leaving the dialog
+open.
 
 Rationale: The unwanted sibling of FR-S06. Nothing happening at all is the one
 outcome indistinguishable from the application being broken, which is the
@@ -405,9 +414,9 @@ Priority: Must
 Requirement: The shop file shall record the shipped list it was written from
 alongside the list in use. Where the two are identical and the shipped list has
 since changed, the shop service shall replace both with the current shipped
-list. Where the file records no shipped list and its list is identical to the
-current shipped list, the shop service shall write the record, leaving the list
-itself unchanged. In every other case the file shall be left exactly as it is.
+list. Where its list is identical to the current shipped list but the file
+records no shipped list or an older one, the shop service shall write the
+current record, leaving the list itself unchanged. In every other case the file shall be left exactly as it is.
 
 Rationale: FR-S09 writes the file once and never overwrites it, so a corrected
 address can never reach anybody who has already opened the shops. Found on
@@ -452,7 +461,7 @@ else.
 Acceptance: Given any shipped shop and any album, when the address is built,
 then the only text in it beyond the template is the artist and the title.
 
-Verified by: `tests/domain/test_shop_address.py::test_an_address_carries_nothing_but_the_album`
+Verified by: `tests/domain/test_shop_address.py::TestTheAddress::test_an_address_carries_nothing_but_the_album`
 
 ---
 
@@ -512,12 +521,21 @@ is named `shops.json`. Its shape:
     {
       "name": "Qobuz",
       "template": "https://www.qobuz.com/gb-en/search?q={artist}%20{album}",
-      "note": "Lossless downloads only, so no format filter is needed."
+      "note": "Lossless and hi-res downloads only."
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Qobuz",
+      "template": "https://www.qobuz.com/gb-en/search?q={artist}%20{album}",
+      "note": "Lossless and hi-res downloads only."
     }
   ]
 }
 ```
 
+- `shops` is the list in use; `shipped` records the list the file was written
+  from, which is how FR-S16 tells a file nobody edited from one somebody did.
 - `name` and `template` are required; a row missing either is skipped.
 - `note` is optional and is shown beside the shop.
 - Order in the file is the order in the dialog.

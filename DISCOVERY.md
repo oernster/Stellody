@@ -285,15 +285,15 @@ Verified by: `tests/application/test_discovery.py::test_sources_read_the_resolve
 
 Priority: Must
 
-Requirement: If the ticked genres yield no source artists, then the discovery
-dialog shall say so, make no request and write no file.
+Requirement: If the ticked genres yield no source artists, then the window
+shall say so in its status bar, make no request and write no file.
 
 Rationale: Ticking a genre nothing in the library carries is an ordinary thing to do; the library holds a worked example: one artist, Smetana, is reachable
 by no genre at all.
 
 Acceptance: Given a genre no held album names, when the action button is
-pressed, then the dialog reports that nothing in the library matches, no request
-is made and no file is written.
+pressed, then the status bar reports that nothing in the library matches, no
+request is made and no file is written.
 
 Verified by: `tests/application/test_discovery.py::test_no_sources_makes_no_request`
 
@@ -589,7 +589,7 @@ report the failure in its status bar with the reason, while leaving any previous
 file untouched.
 
 Acceptance: Given a destination that refuses writes, when a run completes, then
-the failure is reported naming the path and the previous file is unchanged.
+the failure is reported with the reason and the previous file is unchanged.
 
 Verified by: `tests/ui/test_discovery_wiring.py::test_a_file_that_will_not_write_is_reported`, `tests/infrastructure/test_discovery_file.py::test_nothing_is_left_half_written`
 
@@ -1096,8 +1096,8 @@ had no way to know that.
 Acceptance: Given a candidate artist whose lookup fails, when it is expanded,
 then that artist shows what went wrong and says the row can be closed and
 opened to try again; when another is expanded, then it still lists its releases;
-given a service refusing four times and answering on the fifth, then the
-releases are shown rather than a failure.
+given a service refusing three times running and answering on the fourth, then
+the releases are shown rather than a failure.
 
 Verified by: `tests/ui/test_opening_a_candidate.py::test_a_failed_expansion_says_so_and_spares_the_rest`, `tests/ui/test_opening_a_candidate.py::test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened`, `tests/application/test_expanding.py::test_three_refusals_running_do_not_lose_the_artist`, `tests/application/test_expanding.py::test_a_source_refusing_every_time_is_that_artist_failing`
 
@@ -1555,7 +1555,7 @@ bar is read, then it names a whole number of minutes or says less than a
 minute; when the discovery bar is read, then its right hand end carries the
 same estimate abbreviated, drawn clear of the stage name.
 
-Verified by: `tests/ui/test_run_estimate.py::test_the_status_bar_names_the_time_left`, `tests/ui/test_discovery_bar.py::test_it_writes_how_long_is_left_at_the_right_hand_end_of_the_moving_bar`, `tests/ui/test_discovery_bar.py::test_the_time_and_the_stage_are_never_drawn_over_each_other`, `tests/ui/test_discovery_bar.py::test_the_time_is_actually_drawn_on_the_bar`
+Verified by: `tests/ui/test_run_estimate.py::TestNamingTheTimeLeft::test_the_status_bar_names_the_time_left`, `tests/ui/test_discovery_bar.py::test_it_writes_how_long_is_left_at_the_right_hand_end_of_the_moving_bar`, `tests/ui/test_discovery_bar.py::test_the_time_and_the_stage_are_never_drawn_over_each_other`, `tests/ui/test_discovery_bar.py::test_the_time_is_actually_drawn_on_the_bar`
 
 ---
 
@@ -1576,7 +1576,7 @@ Acceptance: Given a run whose finished units took twice the gap apiece, when the
 estimate is computed, then it follows the observed pace rather than the
 configured one.
 
-Verified by: `tests/domain/test_estimating.py::test_the_pace_comes_from_what_happened`
+Verified by: `tests/domain/test_estimating.py::TestThePace::test_the_pace_comes_from_what_happened`
 
 ---
 
@@ -1597,7 +1597,7 @@ Acceptance: Given a run that has finished two of ten source artists and turned u
 twelve distinct candidates, when the estimate is computed, then it covers a
 projected sixty candidates alongside the eight source artists left.
 
-Verified by: `tests/domain/test_estimating.py::test_the_second_stage_is_projected_from_the_first`
+Verified by: `tests/domain/test_estimating.py::TestProjectingTheSecondStage::test_the_second_stage_is_projected_from_the_first`
 
 ---
 
@@ -1615,7 +1615,7 @@ swings is trusted less than an honest silence.
 Acceptance: Given a run that has finished one source artist, when the status bar
 is read, then it says the run is under way and names no time.
 
-Verified by: `tests/domain/test_estimating.py::test_one_sample_is_not_enough_to_estimate`
+Verified by: `tests/domain/test_estimating.py::TestThePace::test_one_sample_is_not_enough_to_estimate`
 
 ---
 
@@ -1636,6 +1636,11 @@ library or names the listener. Genre scoping is what makes this satisfiable: a
 run names the subset the listener chose rather than an inventory of everything
 they own.
 
+**Not yet held by a test.** No test in the suite inspects what a request
+carries; what goes out is read from `infrastructure/catalogue.py` and
+`infrastructure/similarity.py` instead. The verification below is the test
+still to be written.
+
 Verification: inspection of every request the fake source records in
 `tests/application/test_discovery.py`, asserting the request bodies and query
 strings hold nothing beyond names and identifiers.
@@ -1652,6 +1657,8 @@ no machine name, no file path and no library statistic.
 Rationale: The application has no account and no telemetry; this must not be
 the feature that introduces one by accident.
 
+**Not yet held by a test**, for the reason NFR-PRIV-001 gives.
+
 Verification: as NFR-PRIV-001, asserted against a fixed allowed set of request
 fields, so a field added later fails the test rather than passing unnoticed.
 
@@ -1663,6 +1670,10 @@ Priority: Must
 
 Requirement: The catalogue source shall send a User-Agent naming Stellody, its
 version and a project contact address, as MusicBrainz requires, with nothing about the listener.
+
+**Not yet held by a structural test.** The fake service in
+`tests/infrastructure/fetching_support.py` records the agent each request
+carries; nothing asserts how that agent is built.
 
 Verification: a structural test asserting the User-Agent is built from the
 version module and a fixed contact string, with no other interpolation.
@@ -1810,6 +1821,12 @@ through an application-layer interface with a hand-written fake behind it.
 Rationale: The house rule against mock libraries; also the practical one that a
 suite depending on a third party fails on their bad day rather than on yours.
 
+**Not held as written.** No structural test scans the test tree:
+`tests/structural/test_offline.py` scans the package alone. The fetcher's own
+tests also run a real HTTP server on the loopback address, in
+`tests/infrastructure/fetching_support.py`, so those tests do make requests;
+none of them leaves the machine.
+
 Verification: a structural test scanning the test tree for imports of any HTTP
 client.
 
@@ -1822,6 +1839,9 @@ Priority: Must
 Requirement: The discovery file, the candidate genre cache, the catalogue
 memory and the running record each of those memories keeps shall be written
 inside Stellody's own data directory and nowhere else.
+
+**Not yet held by a structural test.** No test asserts how the discovery
+modules resolve their paths.
 
 Verification: a structural test asserting the discovery modules resolve their
 paths through `infrastructure/paths.py` alone.
@@ -1943,7 +1963,7 @@ and secondary types, which are stated data rather than a string parsed by us. A
 release group's identity for matching is its release key together with its
 secondary types, so a live album never suppresses the studio album of the same
 name and is never suppressed by it. Offered: primary type Album and EP, plus the secondary types Live, Remix and Demo, which are genuinely different records.
-Excluded: Compilation and DJ-mix, since a hits package of an artist already held
+Excluded: every other secondary type, Compilation and DJ-mix among them, since a hits package of an artist already held
 is noise rather than a discovery.
 
 **What the library measured, which is why each table looks as it does.**
@@ -1992,7 +2012,7 @@ Nothing marked open may be built from. Each is Oliver's unless stated.
 | # | Question | Owner |
 |---|---|---|
 | OQ-04 | What does deduplication actually reduce the 3,270 candidate genre lookups to? Measurable only by a real run. | measurement, after first build |
-| OQ-07 | RESOLVED 2026-09-08. Oliver ruled that no fallback is needed; the similarity half depends on the labs endpoint as it stands. Read in `application/discovering.py` on the same day: a refusal raises `SourceFailed`, which is caught for the one artist it happened to, recorded against that artist and written into the discovery file, so the rest of the run carries on regardless. | Answered |
+| OQ-07 | RESOLVED 2026-09-08. Oliver ruled that no fallback is needed; the similarity half depends on the labs endpoint as it stands. Read in `application/discovering.py` on the same day: a refusal raises `SourceFailed`, which is caught for the one artist it happened to, recorded against that artist and written into the discovery file, so the rest of the run carries on regardless. Superseded in part by FR-D21: a refusal now raises `SourceRefused` once its asks run out, which puts that artist back for a later pass rather than recording it as failed. | Answered |
 
 ## 6. The build order this implies
 

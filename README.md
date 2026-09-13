@@ -161,9 +161,11 @@ Five things reach outside your computer at all, so here are all five:
 - **Looking for music you do not own**, only ever when you ask. A discovery run
   names the artists inside the genres you ticked to two public music
   catalogues, MusicBrainz and ListenBrainz, then asks what those artists made
-  that you do not hold. Artist names are the whole of what goes out: not your
-  library, not a count of it, not a word about you or your machine. Tick
-  nothing and nothing leaves.
+  that you do not hold. What goes out is those artist names, the MusicBrainz
+  identifiers the catalogue gives back for them plus a user agent naming
+  Stellody, its version and the project's contact address: not your library,
+  not a count of it, not a word about you or your machine. Tick nothing and
+  nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
   a run found, choose a shop and Stellody gives the browser one search address
   per album, each carrying an artist and a title. Stellody connects to no shop,
@@ -311,8 +313,10 @@ nothing else; pass `--purge-data` to remove your ratings and settings as well.
 
 `docs/` is the site, served by GitHub Pages at
 [stellody.co.uk](https://stellody.co.uk/), which is the canonical host. Version
-tokens in it are stamped from `VERSION` by `stamp_version.py`, which every build
-script calls, so the site is never hand-versioned.
+tokens in it are stamped from `VERSION` by `stamp_version.py`, which the Windows
+and macOS build scripts call, so the site is never hand-versioned. The Flatpak
+build does not stamp the site; run the script directly after a bump made
+without building on either of the other two.
 
 The same pages are also served at `stellody.com`, out of the
 [stellody-website](https://github.com/oernster/stellody-website) repository

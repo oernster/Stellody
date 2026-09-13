@@ -11,7 +11,8 @@ arrive as numbered amendments with a reason rather than as silent edits.
 
 ### 1.1 Purpose
 
-Stellody decodes nine suffixes and names nine more it can see but not play.
+When this was written, Stellody decoded nine suffixes and named nine more it
+could see but not play.
 Three of those nine turn out to need no new decoder at all: the FFmpeg build
 already shipped inside PyAV decodes them, mutagen already reads their tags and
 the existing packet reader already addresses them by frame. What kept them out
@@ -24,7 +25,9 @@ recorded here.
 
 ### 1.3 The rule this amends, stated first
 
-`walker.py` gives the reason `.m4b` sits among the unplayable suffixes:
+`walker.py` gave this reason for `.m4b` sitting among the unplayable suffixes
+when this was written. It now gives a different one, that an audiobook is not
+music, which section 1.4 holds:
 
 > M4B is an audiobook in the same container M4A uses. It is left here rather
 > than moved across with M4A because no file of that kind was measured; a
@@ -54,7 +57,7 @@ bit-depth honesty rule extended to cover them; fixtures generated in the suite.
 - **Monkey's Audio, Musepack, DSD and TAK.** Measured 2026-09-09: the bundled
   FFmpeg decodes all four and mutagen reads tags for all four; it can encode
   none of them, so no fixture can be generated and the new standard cannot be
-  met. They stay named among the unplayable suffixes, where they are reported
+  met. They are named among the unplayable suffixes, where they are reported
   rather than silently absent. Each reopens the day a fixture can be made for
   it or a real file is measured.
 - **CAF.** Excluded for a different reason that still holds: libsndfile decodes
