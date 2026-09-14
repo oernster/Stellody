@@ -126,6 +126,23 @@ def test_a_source_refusing_every_time_is_that_artist_failing() -> None:
     assert str(OPENED_ATTEMPTS) in str(failure.value), "it says how hard it tried"
 
 
+# Stated as numbers rather than read off the constants, for the reason the test
+# above gives: five asks with a doubling wait sit two, four, eight then sixteen
+# seconds apart, where a wait growing by a step would total twenty.
+OPENED_ASKS = 5
+DOUBLING_WAIT_S = 30.0
+
+
+def test_the_wait_between_asks_doubles() -> None:
+    """FR-D32: the thirty seconds somebody who opened one row will sit through."""
+    catalogue = Releasing(refusals=OPENED_ASKS)
+    expansion, waits = expanding(catalogue)
+    with pytest.raises(SourceFailed):
+        expansion.releases_of(WOLF)
+    assert len(catalogue.asked) == OPENED_ASKS
+    assert sum(waits.waited) == pytest.approx(DOUBLING_WAIT_S)
+
+
 def test_a_source_that_cannot_be_reached_says_so() -> None:
     """Not caught here: what to say about it belongs to whoever asked."""
     expansion, _ = expanding(Releasing(raises=SourceUnavailable("no route")))

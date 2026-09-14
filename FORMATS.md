@@ -191,7 +191,7 @@ Acceptance: Given a file named `.wma` whose content is not WMA at all, when it
 is played, then a playback error is raised naming the file and the window
 reports it.
 
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_widened_suffix_that_will_not_decode_says_so`
+Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_widened_suffix_that_will_not_decode_says_so`, `tests/ui/test_saying_a_track_will_not_open.py`
 
 ---
 
@@ -257,7 +257,7 @@ the stated depth is nought; when an output request is built for either in
 exclusive mode, then it is refused with the reason naming the file rather than
 the device, with `is_bit_perfect` false.
 
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_lossy_widened_format_states_no_depth`, `tests/domain/test_output_request.py::test_a_widened_lossy_source_is_never_bit_perfect`
+Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_lossy_widened_format_states_no_depth`, `tests/domain/test_output_request.py::test_a_widened_lossy_source_is_never_bit_perfect`, `tests/infrastructure/test_exclusive_refusal.py::test_a_lossy_source_is_refused_exclusive_for_the_file`
 
 ---
 

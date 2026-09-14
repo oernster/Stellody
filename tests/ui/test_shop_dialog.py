@@ -186,6 +186,7 @@ def test_a_browser_that_will_not_open_says_so(application) -> None:
     dialog, _opener = made(QOBUZ, refuse=True)
     dialog.chose(QOBUZ)
     assert "could not be opened" in dialog.said.text()
+    assert QOBUZ.name in dialog.said.text(), "naming the shop that would not open"
 
 
 def test_a_refusal_leaves_the_dialog_standing(application) -> None:

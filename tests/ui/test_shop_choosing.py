@@ -16,6 +16,7 @@ from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.shopping import Shop, WantedAlbum
 from stellody.ui.dialogs import CONTROL_ICON_PX
 from stellody.ui.results_foot import COPIED, COPY_LABEL
+from stellody.ui.results_room import COLUMNS_AT_THE_CEILING, ROWS_AT_THE_CEILING
 from stellody.ui.results_ticks import TICKED, is_tickable
 
 QOBUZ = Shop(name="Qobuz", template="https://q/?q={artist}%20{album}")
@@ -117,6 +118,36 @@ def test_fetched_albums_can_be_ticked_too(application) -> None:
     dialog.show_releases("id-0", (ReleaseGroup(title="Firewood"),))
     assert rows_under(candidate) == ("Firewood",)
     assert is_tickable(candidate.child(0))
+
+
+def test_every_fetched_album_arrives_unticked(application) -> None:
+    """FR-S03: nothing is chosen for anybody, however many albums arrive."""
+    dialog, _opener, _clipboard = with_shopping(
+        (gaps_with(artists=1),), asking=Asking()
+    )
+    candidate = candidate_in(dialog)
+    candidate.setExpanded(True)
+    titles = ("Firewood", "Kindling", "Ash")
+    dialog.show_releases("id-0", tuple(ReleaseGroup(title=t) for t in titles))
+    rows = [candidate.child(at) for at in range(candidate.childCount())]
+    assert rows_under(candidate) == titles
+    assert all(is_tickable(row) for row in rows)
+    assert not any(row.checkState(0) is TICKED for row in rows)
+
+
+def test_a_tick_holds_across_pages_and_still_reaches_a_shop(application) -> None:
+    """FR-D49: every page is built once, so turning away does not untick."""
+    many = COLUMNS_AT_THE_CEILING * ROWS_AT_THE_CEILING + 1
+    answer = tuple(gaps_with(albums=1, artist=f"Artist {n}") for n in range(many))
+    dialog, _opener, _clipboard = with_shopping(answer)
+    assert len(dialog.pages.pages) > 1, "the answer runs to more than one page"
+    dialog.sources[0].child(0).setCheckState(0, TICKED)
+    dialog.turn_to(1)
+    dialog.turn_to(0)
+    assert dialog.sources[0].child(0).checkState(0) is TICKED
+    dialog.open_shops()
+    assert [album.artist for album in dialog.shops._wanted] == ["Artist 0"]
+    dialog.shops.reject()
 
 
 def test_the_shops_control_waits_for_a_tick(application) -> None:

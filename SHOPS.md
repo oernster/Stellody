@@ -172,7 +172,8 @@ the case a tick box added only at build time would miss.
 Acceptance: Given a candidate artist expanded and answered with three albums,
 when its rows are read, then each carries an unticked box.
 
-Verified by: `tests/ui/test_shop_choosing.py::test_fetched_albums_can_be_ticked_too`
+Verified by: `tests/ui/test_shop_choosing.py::test_fetched_albums_can_be_ticked_too`,
+`tests/ui/test_shop_choosing.py::test_every_fetched_album_arrives_unticked`
 
 ---
 
@@ -367,7 +368,8 @@ report that produced FR-D40 a day earlier.
 Acceptance: Given an opener that refuses, when a shop is chosen, then the dialog
 says the address could not be opened and remains open.
 
-Verified by: `tests/ui/test_shop_dialog.py::test_a_browser_that_will_not_open_says_so`
+Verified by: `tests/ui/test_shop_dialog.py::test_a_browser_that_will_not_open_says_so`,
+`tests/ui/test_shop_dialog.py::test_a_refusal_leaves_the_dialog_standing`
 
 ---
 
@@ -1127,6 +1129,7 @@ address names neither placeholder; its edit control opens the form holding that
 address; its delete control removes the row after asking.
 
 Verified by: `tests/ui/test_shop_editing.py::test_a_broken_row_is_listed_greyed_with_its_reason`,
+`tests/ui/test_shop_editing.py::test_a_broken_row_is_deleted_after_asking`,
 `tests/infrastructure/test_shop_file.py::TestWhatIsRefused::test_a_broken_row_is_read_with_its_reason`
 
 ---

@@ -283,3 +283,13 @@ def test_a_broken_row_is_listed_greyed_with_its_reason(application, forms) -> No
     assert "Odd" not in dialog.shop_buttons
     broken.edit.click()
     assert forms[0].address.text() == "https://odd/"
+
+
+def test_a_broken_row_is_deleted_after_asking(application, monkeypatch) -> None:
+    """FR-S42: a row nobody can search is still removed the way any shop is."""
+    asked: list[str] = []
+    answering(monkeypatch, True, asked)
+    dialog, store, *_rest = dialog_over(BROKEN, QOBUZ)
+    dialog.controls[0].delete.click()
+    assert asked and BROKEN.name in asked[0], "it asked first, naming the row"
+    assert store.held.rows == (QOBUZ,)

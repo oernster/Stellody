@@ -67,6 +67,14 @@ def narrowing_run(
     return run, catalogue, Recorder()
 
 
+def test_a_run_never_asks_what_a_candidate_released() -> None:
+    """FR-D31: a candidate's releases wait until somebody opens that candidate."""
+    run, catalogue, report = narrowing_run()
+    run.run(one_blues_artist(), ("Blues",), report, never)
+    assert catalogue.genres_asked, "the run did reach the candidates"
+    assert not {"cray", "wolf"} & set(catalogue.albums_asked)
+
+
 def test_the_second_half_of_a_run_reports_as_it_goes() -> None:
     """It used to say nothing, which is indistinguishable from a hang.
 

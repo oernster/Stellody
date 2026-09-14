@@ -1173,10 +1173,7 @@ Acceptance: Given a collapsed candidate artist, when it is expanded, then that
 artist's offered releases appear beneath it; given the run that produced the
 file, then it issued no request about that artist's releases.
 
-Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`, `tests/application/test_expanding.py::test_everything_that_artist_made_is_offered`, `tests/application/test_expanding.py::test_a_hits_package_is_still_noise`
-
-**Not held by a test:** the last clause of the acceptance, that the run issued no
-request about that artist's releases.
+Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`, `tests/application/test_expanding.py::test_everything_that_artist_made_is_offered`, `tests/application/test_expanding.py::test_a_hits_package_is_still_noise`, `tests/application/test_discovery_narrowing.py::test_a_run_never_asks_what_a_candidate_released`
 
 ---
 
@@ -1215,7 +1212,7 @@ opened to try again; when another is expanded, then it still lists its releases;
 given a service refusing three times running and answering on the fourth, then
 the releases are shown rather than a failure.
 
-Verified by: `tests/ui/test_opening_a_candidate.py::test_a_failed_expansion_says_so_and_spares_the_rest`, `tests/ui/test_opening_a_candidate.py::test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened`, `tests/application/test_expanding.py::test_three_refusals_running_do_not_lose_the_artist`, `tests/application/test_expanding.py::test_a_source_refusing_every_time_is_that_artist_failing`
+Verified by: `tests/ui/test_opening_a_candidate.py::test_a_failed_expansion_says_so_and_spares_the_rest`, `tests/ui/test_opening_a_candidate.py::test_an_artist_that_failed_is_asked_again_the_next_time_it_is_opened`, `tests/application/test_expanding.py::test_three_refusals_running_do_not_lose_the_artist`, `tests/application/test_expanding.py::test_a_source_refusing_every_time_is_that_artist_failing`, `tests/application/test_expanding.py::test_the_wait_between_asks_doubles`
 
 ---
 
@@ -1589,12 +1586,7 @@ but the last carries every column; given an artist taller than a column, then
 it fills one and shares its page; given a run that found nobody, then there is
 still one page.
 
-Verified by: `tests/ui/test_results_pages.py`
-
-**Held by construction rather than by a test:** no test ticks an album on one
-page, turns to another, then checks that the tick holds and still reaches a
-shop. Every page is built once when the dialog opens and kept, so a tick is never
-rebuilt away.
+Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_shop_choosing.py::test_a_tick_holds_across_pages_and_still_reaches_a_shop`
 
 ---
 
