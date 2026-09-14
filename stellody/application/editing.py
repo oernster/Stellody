@@ -216,7 +216,9 @@ class TagEditing:
                     continue
                 if text == _current(track, field):
                     continue
-                edits.append(Override(album, field, text, track.source.path))
+                # The address rather than the path, because that is what a pin
+                # is looked up by: every track of a cue album shares one path.
+                edits.append(Override(album, field, text, track.source.address))
         return tuple(edits)
 
     def state(
