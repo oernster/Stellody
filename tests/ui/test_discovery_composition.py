@@ -42,6 +42,18 @@ def window(application):
     store.close()
 
 
+def test_everything_asking_musicbrainz_waits_at_one_gate(window) -> None:
+    """A gap owed to MusicBrainz is owed by everything that asks it anything.
+
+    The run and an expansion were given one gate while the cover search built
+    its own, so a cover looked up during a run could ask the same host twice
+    inside the gap its terms require.
+    """
+    run_gate = window._discovery.catalogue._fetch._gate
+    assert window._expansion.catalogue._fetch._gate is run_gate
+    assert window._chooser._search._gate is run_gate, "the cover search's too"
+
+
 def test_a_run_is_given_somewhere_to_remember_what_it_learns(window) -> None:
     """The wiring the cache spent a release without, in silence."""
     memory = window._discovery.memory

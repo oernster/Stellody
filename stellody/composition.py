@@ -114,12 +114,13 @@ def build_window(
     cache nothing consults.
 
     This is the only module that may name the search client or the update
-    source, which are the only two things in Stellody that can open a
-    connection; a structural test says so rather than a comment.
+    source. Those two, the fetcher the catalogues ask through and the channel a
+    second launch speaks over are the four modules able to open a connection;
+    `tests/structural/test_offline.py` says so rather than a comment.
     """
     # One gate per host rather than per client: a gap owed to MusicBrainz is
-    # owed by everything that asks it anything, so the run and an expansion
-    # share this one.
+    # owed by everything that asks it anything, so the run, an expansion and
+    # the cover search share this one.
     gate = Gate()
     catalogue = MusicBrainz(Fetcher(gate))
     artwork = FileArtwork(art_cache_dir(), EmbeddedPictures())
@@ -133,7 +134,7 @@ def build_window(
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
         listening=listening,
         art=AlbumArt(artwork),
-        chooser=ChooseCover(ArchiveCovers(), artwork),
+        chooser=ChooseCover(ArchiveCovers(gate), artwork),
         repairs=Repairs(store),
         tag_editing=TagEditing(store),
         pictures=Pictures(VideoReader),
