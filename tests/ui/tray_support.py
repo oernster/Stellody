@@ -13,8 +13,8 @@ sides of any comparison are the same picture asked for the same way.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from PySide6.QtGui import QImage
+from recording_player import RecordingPlayer
 
 from stellody.application.loading import LoadLibrary
 from stellody.application.scan import ScanLibrary

@@ -18,9 +18,9 @@ for shuffle together, because it is one rule reaching across both strips.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, picture, rendered
 
 from stellody.domain.playback import SILENT_VOLUME, RepeatMode

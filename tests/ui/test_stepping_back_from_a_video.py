@@ -16,9 +16,9 @@ picture, because that one has been started and is waiting to go on.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from picture_support import make_window, reached, track_index
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 
 
 @pytest.fixture

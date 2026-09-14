@@ -8,11 +8,11 @@ appearing to test one. The same reason `discovery_wiring_support` exists.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QEvent, QModelIndex, Qt
 from PySide6.QtGui import QFocusEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, track
 
 from stellody.domain.album import Album

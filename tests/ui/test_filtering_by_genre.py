@@ -8,8 +8,8 @@ says whether anything is being asked for at all.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication, QDialog
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, track
 
 from stellody.application.artwork import AlbumArtSources

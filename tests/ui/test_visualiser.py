@@ -12,8 +12,8 @@ measurement taken for a hidden strip is work done for nobody.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication, QMenu
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.equalising import BAND_COUNT

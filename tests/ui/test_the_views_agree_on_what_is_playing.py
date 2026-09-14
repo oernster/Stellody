@@ -14,8 +14,8 @@ neither view still arrives at the music.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from playback_support import album_index, player, track_index, window
+from recording_player import RecordingPlayer
 
 from stellody.ui.main_window import MainWindow
 

@@ -18,8 +18,8 @@ from __future__ import annotations
 import threading
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.application.values import RunOutcome, RunReport

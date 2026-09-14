@@ -1490,6 +1490,23 @@ is the answer a Windows device refusing exclusive mode already gets. Nothing
 claims to be bit perfect that is not, which is the half that matters: the
 promise the README leads with is held by reporting rather than by hoping.
 
+**A move of the system's output pauses the music; play opens it again there.**
+Measured on 2026-09-14 with headphones connected after launch: PortAudio takes
+its device list once, so a process left running went on naming the old default
+however often it asked, while Qt's `QMediaDevices.audioOutputsChanged` fired
+within a second of every switch (twice per switch; also for list changes that
+move nothing). `infrastructure/output_devices.py` therefore reports a move only
+when the default's identity differs from the last one seen, then takes
+PortAudio's list again on the way into the next stream, the one moment the
+engine holds none. The composition root opens every stream through it. What a
+move DOES is the application's: `application/output_following.py` pauses a
+playing track, then the press that resumes opens it again from what was last
+heard, while a pause the listener made resumes on the stream already open. The
+window turns both play buttons back to play at once and says why along the
+foot. `tests/application/test_following_the_output.py`,
+`tests/infrastructure/test_output_devices.py` and
+`tests/ui/test_pausing_when_the_output_moves.py` hold the three halves.
+
 `tests/infrastructure/test_portaudio_output.py` asserts the ASKING, which is
 what a machine with no audio hardware can still measure: that no host API
 settings object is passed at all, since one belongs to a single host API and

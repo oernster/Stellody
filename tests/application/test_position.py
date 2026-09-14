@@ -13,7 +13,8 @@ what the milestone asked for.
 from __future__ import annotations
 
 import pytest
-from transport_support import FakePlayer, album_of, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import PlaybackPosition
@@ -25,9 +26,9 @@ TRACK_FRAMES = 200_000
 
 
 @pytest.fixture
-def playing() -> tuple[Transport, FakePlayer]:
+def playing() -> tuple[Transport, RecordingPlayer]:
     """A transport over a device that reports whatever a test puts there."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     first, second = track(1), track(2)
     transport.play_album(album_of(first, second), second)

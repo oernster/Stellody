@@ -7,7 +7,7 @@ the device is the only thing that can act on it.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer
+from recording_player import RecordingPlayer
 
 from stellody.application.transport import Transport
 from stellody.domain.equalising import Equalisation
@@ -17,14 +17,14 @@ LIFT_DB = 4.0
 
 def test_a_new_transport_shapes_nothing() -> None:
     """A fresh install plays the file as it is until somebody says otherwise."""
-    transport = Transport(FakePlayer())
+    transport = Transport(RecordingPlayer())
     assert transport.equalisation == Equalisation()
     assert transport.equalisation.flat is True
 
 
 def test_the_curve_reaches_the_device() -> None:
     """The device is the only thing that can act on it."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     curve = Equalisation(enabled=True).with_band(3, LIFT_DB)
 
@@ -36,7 +36,7 @@ def test_the_curve_reaches_the_device() -> None:
 
 def test_a_curve_chosen_before_anything_is_loaded_is_still_held() -> None:
     """Which is what lets it apply to whatever is opened next."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     curve = Equalisation(enabled=True).with_band(0, LIFT_DB)
     transport.set_equalisation(curve)

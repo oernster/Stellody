@@ -15,16 +15,17 @@ confused them would stop the music at every track boundary instead.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer, album_of, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, track
 
 from stellody.application.transport import Transport
 from stellody.domain.moving import RepeatMode
 from stellody.domain.playback import PlaybackState
 
 
-def _paused_on_the_first_of_three() -> tuple[Transport, FakePlayer]:
+def _paused_on_the_first_of_three() -> tuple[Transport, RecordingPlayer]:
     """An album playing, then paused on its first track."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     one, two, three = track(1), track(2), track(3)
     transport.play_album(album_of(one, two, three), one)
@@ -73,7 +74,7 @@ class TestSkippingWhilePaused:
 class TestSkippingWhilePlaying:
     def test_next_keeps_playing(self) -> None:
         """The other half of the rule, which must not have been traded away."""
-        player = FakePlayer()
+        player = RecordingPlayer()
         transport = Transport(player)
         one, two = track(1), track(2)
         transport.play_album(album_of(one, two), one)
@@ -87,8 +88,8 @@ class TestSkippingWhilePlaying:
 class TestATrackEndingOfItsOwnAccord:
     """The same door, the other question. An ending plays on regardless."""
 
-    def _finished_on_the_first_of_two(self) -> tuple[Transport, FakePlayer]:
-        player = FakePlayer()
+    def _finished_on_the_first_of_two(self) -> tuple[Transport, RecordingPlayer]:
+        player = RecordingPlayer()
         transport = Transport(player)
         one, two = track(1), track(2)
         transport.play_album(album_of(one, two), one)

@@ -9,11 +9,11 @@ as gentle is not something a headless run can judge.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from library_support import PLANETS, SIMPLE, library_window, titles, track
 from PySide6.QtCore import QModelIndex, QRect, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QStyle, QStyleOptionViewItem
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.album import Album

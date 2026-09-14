@@ -13,7 +13,8 @@ The device is the hand written stand-in the other transport tests use. Its
 
 from __future__ import annotations
 
-from transport_support import FakePlayer, album_of, reversed_order, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, reversed_order, track
 
 from stellody.application.transport import Transport
 from stellody.domain.album import Album
@@ -21,9 +22,9 @@ from stellody.domain.playback import RepeatMode
 from stellody.domain.track import Track
 
 
-def _playing(*tracks: Track) -> tuple[Transport, FakePlayer, Album]:
+def _playing(*tracks: Track) -> tuple[Transport, RecordingPlayer, Album]:
     """A transport playing the first of these tracks, plus its device."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player, ordering=reversed_order)
     album = album_of(*tracks)
     transport.play_album(album, tracks[0])

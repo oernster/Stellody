@@ -9,9 +9,9 @@ the foot of one column and the head of the next.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, track
 
 from stellody.domain.album import Album

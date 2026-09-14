@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from stellody.application.following import Following
+from stellody.application.output_following import OutputFollowing
 from stellody.application.playback_ports import PlaybackPort
 from stellody.application.queue_order import QueueOrder, scattered
 from stellody.application.sound_settings import SoundSettings
@@ -42,7 +43,7 @@ from stellody.domain.track import Track
 PlayedOut = Callable[[Album, Track], None]
 
 
-class Transport(SoundSettings, QueueOrder):
+class Transport(SoundSettings, QueueOrder, OutputFollowing):
     """The transport the window drives: a queue, plus a device to play it on."""
 
     def __init__(
@@ -71,6 +72,9 @@ class Transport(SoundSettings, QueueOrder):
         # clears the same flag for both, so the difference is remembered here
         # by the layer that knows which of the two was asked for.
         self._held = False
+        # Whether the system moved its output while a track was open, so the
+        # next resume opens it again there rather than on the device left.
+        self._output_moved = False
         self._queue = Queue()
         self._album: Album | None = None
         self._album_order: tuple[Track, ...] = ()
@@ -152,6 +156,9 @@ class Transport(SoundSettings, QueueOrder):
             self._player.pause()
             return
         if self._player.state is PlaybackState.PAUSED:
+            if self._output_moved:
+                self._reopen_where_paused()
+                return
             self._held = False
             self._player.play()
             return
@@ -345,6 +352,8 @@ class Transport(SoundSettings, QueueOrder):
         and buried the one message saying it was not, with the device still
         held open behind a track that had never started.
         """
+        # Every open is made where the output is now, so no move is left over.
+        self._output_moved = False
         track = self._queue.current
         if track is None:
             return

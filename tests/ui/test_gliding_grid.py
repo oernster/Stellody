@@ -14,11 +14,11 @@ arriving at the far end in one step.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from library_support import track
 from PySide6.QtCore import QAbstractAnimation, QPoint, QPointF, Qt
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QAbstractItemView, QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.album import Album

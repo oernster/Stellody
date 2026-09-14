@@ -8,7 +8,7 @@ since a measurement that is one frame old is already the wrong one.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer
+from recording_player import RecordingPlayer
 
 from stellody.application.transport import Transport
 from stellody.domain.equalising import BAND_COUNT
@@ -19,14 +19,14 @@ LOUD = (FULL,) * BAND_COUNT
 
 def test_a_new_transport_is_watching_nothing() -> None:
     """Off costs nothing, so off is what a fresh install measures."""
-    transport = Transport(FakePlayer())
+    transport = Transport(RecordingPlayer())
     assert transport.visualising is False
     assert transport.levels == SILENT_BANDS
 
 
 def test_saying_somebody_is_watching_reaches_the_device() -> None:
     """The device is the only thing that can decide not to measure."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
 
     transport.set_visualising(True)
@@ -37,7 +37,7 @@ def test_saying_somebody_is_watching_reaches_the_device() -> None:
 
 def test_saying_nobody_is_watching_reaches_it_too() -> None:
     """Turning it back off is the half that keeps the bargain."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.set_visualising(True)
 
@@ -49,7 +49,7 @@ def test_saying_nobody_is_watching_reaches_it_too() -> None:
 
 def test_the_measurement_is_read_through_rather_than_kept() -> None:
     """Held anywhere it would be stale by the time anything drew it."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     player.measured = LOUD
 

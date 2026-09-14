@@ -13,9 +13,9 @@ album it is attached to, which is the only thing it could sensibly mean there.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.playback import PlaybackState

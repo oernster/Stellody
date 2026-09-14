@@ -13,7 +13,8 @@ on to the next track while the listener was still sitting on this one.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer, album_of, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import PlaybackState
@@ -21,7 +22,7 @@ from stellody.domain.playback import PlaybackState
 
 def _paused_on(*tracks):
     """A transport playing the first of these, then paused by the listener."""
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(*tracks), tracks[0])
     player.state = PlaybackState.PLAYING
@@ -60,7 +61,7 @@ class TestWhileTheListenerIsHolding:
 class TestATrackThatReallyEnds:
     def test_it_still_moves_on(self) -> None:
         """The hold must not swallow an ending nobody asked for."""
-        player = FakePlayer()
+        player = RecordingPlayer()
         transport = Transport(player)
         one, two = track(1), track(2)
         transport.play_album(album_of(one, two), one)

@@ -12,7 +12,8 @@ join is the one repeat nobody means by it.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer, album_of, reversed_order, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, reversed_order, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import RepeatMode
@@ -21,7 +22,7 @@ from stellody.domain.playback import RepeatMode
 LONG_ALBUM = 8
 
 
-def played_out(transport: Transport, player: FakePlayer, steps: int) -> list[int]:
+def played_out(transport: Transport, player: RecordingPlayer, steps: int) -> list[int]:
     """The track numbers heard as one track after another plays to its end."""
     heard = [transport.current.track_number]
     for _ in range(steps):
@@ -33,7 +34,7 @@ def played_out(transport: Transport, player: FakePlayer, steps: int) -> list[int
 
 def test_an_album_that_ends_starts_again_rather_than_stopping() -> None:
     one, two, three = track(1), track(2), track(3)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two, three), one)
     transport.set_repeat(RepeatMode.ALBUM)
@@ -43,7 +44,7 @@ def test_an_album_that_ends_starts_again_rather_than_stopping() -> None:
 def test_repeat_never_settles_on_one_track_of_an_album() -> None:
     """The whole album until it is turned off, not the track it ended on."""
     tracks = tuple(track(number) for number in range(1, 4))
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(*tracks), tracks[2])
     transport.set_repeat(RepeatMode.ALBUM)
@@ -59,7 +60,7 @@ def test_a_repeating_album_is_scattered_afresh_each_time_round() -> None:
     """
     tracks = tuple(track(number) for number in range(1, LONG_ALBUM + 1))
     orders = iter((tuple(reversed(tracks)), tracks))
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player, ordering=lambda _: next(orders))
     transport.play_album(album_of(*tracks), tracks[0])
     transport.set_shuffled(True)
@@ -78,7 +79,7 @@ def test_a_fresh_run_does_not_open_on_the_track_that_just_ended() -> None:
     happens not to do it, this passed while the rule did nothing.
     """
     tracks = tuple(track(number) for number in range(1, LONG_ALBUM + 1))
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
 
     def opening_on_what_just_played(given: tuple) -> tuple:
@@ -98,7 +99,7 @@ def test_a_fresh_run_does_not_open_on_the_track_that_just_ended() -> None:
 def test_one_track_repeating_is_that_track_again() -> None:
     """There is nothing to scatter and no join to avoid."""
     only = track(1)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player, ordering=reversed_order)
     transport.play_album(album_of(only), only)
     transport.set_shuffled(True)
@@ -115,7 +116,7 @@ def test_the_scatter_is_asked_for_once_per_time_round(monkeypatch) -> None:
         asked.append(len(given))
         return tuple(reversed(given))
 
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player, ordering=counted)
     transport.play_album(album_of(*tracks), tracks[0])
     transport.set_shuffled(True)
@@ -129,7 +130,7 @@ def test_the_scatter_is_asked_for_once_per_time_round(monkeypatch) -> None:
 def test_a_track_held_on_repeat_plays_again_instead_of_advancing() -> None:
     """The whole of what holding one track means, from its own end."""
     one, two, three = track(1), track(2), track(3)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two, three), one)
     transport.set_repeat(RepeatMode.ONE)
@@ -139,7 +140,7 @@ def test_a_track_held_on_repeat_plays_again_instead_of_advancing() -> None:
 def test_holding_a_track_holds_the_one_playing_wherever_it_sits() -> None:
     """Not the first track of the album: the one the listener is on."""
     tracks = tuple(track(number) for number in range(1, 5))
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(*tracks), tracks[2])
     transport.set_repeat(RepeatMode.ONE)
@@ -149,7 +150,7 @@ def test_holding_a_track_holds_the_one_playing_wherever_it_sits() -> None:
 def test_the_last_track_held_on_repeat_does_not_stop_the_player() -> None:
     """Stopping at the end is what OFF does; holding it is what ONE does."""
     one, two = track(1), track(2)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two), two)
     transport.set_repeat(RepeatMode.ONE)
@@ -167,7 +168,7 @@ def test_asking_for_the_next_track_overrules_a_held_one() -> None:
     a button that does nothing with no way off the track but the switch.
     """
     one, two, three = track(1), track(2), track(3)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two, three), one)
     transport.set_repeat(RepeatMode.ONE)
@@ -180,7 +181,7 @@ def test_asking_for_the_next_track_overrules_a_held_one() -> None:
 def test_a_held_track_at_the_end_still_wraps_when_next_is_asked_for() -> None:
     """Holding one track never leaves Next with nowhere to go."""
     one, two = track(1), track(2)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player)
     transport.play_album(album_of(one, two), two)
     transport.set_repeat(RepeatMode.ONE)

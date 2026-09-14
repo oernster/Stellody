@@ -19,8 +19,8 @@ by mocking Qt or by opening a browser in the middle of a test run.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, picture, strip_plain, strip_struck
 
 from stellody.domain.playback import RepeatMode

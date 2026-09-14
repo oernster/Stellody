@@ -10,8 +10,8 @@ advice and becomes an obstacle.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication, QFileDialog
+from recording_player import RecordingPlayer
 
 # The window's own store fake, taken from where it already lives rather
 # than copied: a second one would drift from the first.

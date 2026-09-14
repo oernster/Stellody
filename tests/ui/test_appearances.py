@@ -13,8 +13,8 @@ back and leave the interesting half unsaid.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication, QSystemTrayIcon
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 

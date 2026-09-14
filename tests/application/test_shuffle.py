@@ -11,7 +11,8 @@ reachable. The rest were stranded behind the playhead.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer, album_of, reversed_order, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, reversed_order, track
 
 from stellody.application.transport import Transport, scattered
 
@@ -22,7 +23,7 @@ LONG_ALBUM = 12
 
 def test_shuffling_reorders_the_queue_and_keeps_playing_what_was_playing() -> None:
     one, two, three = track(1), track(2), track(3)
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player, ordering=reversed_order)
     transport.play_album(album_of(one, two, three), two)
     player.calls.clear()
@@ -36,7 +37,7 @@ def test_shuffling_reorders_the_queue_and_keeps_playing_what_was_playing() -> No
 def test_shuffling_leaves_the_whole_of_the_rest_of_the_album_ahead() -> None:
     """The defect this rule exists for: next had nowhere to go."""
     tracks = tuple(track(number) for number in range(1, LONG_ALBUM + 1))
-    transport = Transport(FakePlayer(), ordering=reversed_order)
+    transport = Transport(RecordingPlayer(), ordering=reversed_order)
     transport.play_album(album_of(*tracks), tracks[0])
     transport.set_shuffled(True)
     reached = [transport.current]
@@ -51,7 +52,7 @@ def test_shuffling_leaves_the_whole_of_the_rest_of_the_album_ahead() -> None:
 def test_next_follows_the_shuffled_order_rather_than_the_album_order() -> None:
     """Shuffle is about what comes next; anything else is just a reordering."""
     one, two, three, four = track(1), track(2), track(3), track(4)
-    transport = Transport(FakePlayer(), ordering=reversed_order)
+    transport = Transport(RecordingPlayer(), ordering=reversed_order)
     transport.play_album(album_of(one, two, three, four), one)
     transport.set_shuffled(True)
     transport.next()
@@ -60,7 +61,7 @@ def test_next_follows_the_shuffled_order_rather_than_the_album_order() -> None:
 
 def test_unshuffling_puts_the_album_back_into_its_own_order() -> None:
     one, two, three = track(1), track(2), track(3)
-    transport = Transport(FakePlayer(), ordering=reversed_order)
+    transport = Transport(RecordingPlayer(), ordering=reversed_order)
     transport.play_album(album_of(one, two, three), one)
     transport.set_shuffled(True)
     transport.set_shuffled(False)
@@ -71,7 +72,7 @@ def test_unshuffling_puts_the_album_back_into_its_own_order() -> None:
 def test_shuffle_chosen_before_anything_plays_applies_to_the_next_album() -> None:
     """The switch is remembered, so it does not have to be pressed twice."""
     one, two, three = track(1), track(2), track(3)
-    transport = Transport(FakePlayer(), ordering=reversed_order)
+    transport = Transport(RecordingPlayer(), ordering=reversed_order)
     transport.set_shuffled(True)
     assert transport.queue.tracks == ()
     transport.play_album(album_of(one, two, three), two)
@@ -82,7 +83,7 @@ def test_shuffle_chosen_before_anything_plays_applies_to_the_next_album() -> Non
 def test_the_default_shuffle_keeps_every_track_and_loses_none() -> None:
     """The real one is random, so what is asserted is what it preserves."""
     tracks = tuple(track(number) for number in range(1, 6))
-    transport = Transport(FakePlayer())
+    transport = Transport(RecordingPlayer())
     transport.play_album(album_of(*tracks), tracks[0])
     transport.set_shuffled(True)
     assert set(transport.queue.tracks) == set(tracks)

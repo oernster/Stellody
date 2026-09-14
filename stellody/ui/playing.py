@@ -18,11 +18,12 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Slot
 
-from stellody.ui.settings_keys import UNPLAYABLE_MESSAGE_MS
+from stellody.ui.settings_keys import STATUS_TIMEOUT_MS, UNPLAYABLE_MESSAGE_MS
 
 # Often enough that the button never lies for long, rarely enough that an idle
 # window is not doing arithmetic sixty times a second.
 TRANSPORT_POLL_MS = 250
+OUTPUT_MOVED_MESSAGE = "Paused: the sound output changed. Press play to carry on."
 
 
 class Playing:
@@ -139,6 +140,17 @@ class Playing:
     def next_track(self) -> None:
         """Play the track after this one."""
         self._drive(self._transport.next)
+
+    @Slot()
+    def output_moved(self) -> None:
+        """Pause for a move of the system's sound output, saying so at once.
+
+        The play buttons are pointed at the new state here rather than at the
+        next poll, so their faces change as the music stops.
+        """
+        if self._transport.output_moved():
+            self.statusBar().showMessage(OUTPUT_MOVED_MESSAGE, STATUS_TIMEOUT_MS)
+        self._show_transport()
 
     @Slot()
     def _poll_transport(self) -> None:

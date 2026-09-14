@@ -8,9 +8,9 @@ in its own fixtures.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from playback_support import BareStore
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 
 from stellody.application.loading import LoadLibrary
 from stellody.application.pictures import Pictures

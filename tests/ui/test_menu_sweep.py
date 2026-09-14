@@ -20,8 +20,8 @@ sleeves. What sorting or playing is going on changes nothing here.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.ui.settings_keys import SETTING_ROOT

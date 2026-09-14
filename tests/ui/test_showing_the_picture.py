@@ -13,7 +13,6 @@ where the picture goes and when it leaves.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from picture_support import (  # noqa: F401
     HEIGHT,
     WIDTH,
@@ -25,6 +24,7 @@ from picture_support import (  # noqa: F401
 )
 from playback_support import BareStore
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 
 from stellody.application.loading import LoadLibrary
 from stellody.application.scan import ScanLibrary

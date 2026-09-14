@@ -9,8 +9,8 @@ check what it asks for; the landing itself rests on that measurement.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from PySide6.QtCore import QRect, Qt
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.ui.geometry import forget_window

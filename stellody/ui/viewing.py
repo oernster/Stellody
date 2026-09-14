@@ -23,7 +23,12 @@ from PySide6.QtWidgets import QWidget
 from stellody.domain.album import Album
 from stellody.domain.track import Track
 from stellody.ui.album_pane import AlbumPane
-from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize, next_cover_size
+from stellody.ui.covering import (
+    DEFAULT_COVER_SIZE,
+    CoverSize,
+    next_cover_size,
+    stored_cover_size,
+)
 from stellody.ui.covers_page import CoversPage
 from stellody.ui.settings_keys import (
     FALSE,
@@ -162,18 +167,13 @@ class Viewing:
         self.show_cover_size_choice(next_cover_size(self._cover_size))
 
     def restore_cover_size(self) -> None:
-        """Start at the size last chosen, the middle one when none has been.
+        """Start at the size last chosen, the smallest when none has been.
 
-        A stored value that is not one of the sizes on offer falls back to the
-        default rather than to whatever it says, since a grid drawn at a number
-        nobody chose is worse than a grid drawn at the size a first run uses.
+        What a stored value means, including one written before the sizes
+        shrank, is `covering.stored_cover_size`'s to say.
         """
         stored = self._settings.get_setting(SETTING_COVER_SIZE, "")
-        try:
-            size = CoverSize(int(stored))
-        except ValueError:
-            size = DEFAULT_COVER_SIZE
-        self.show_cover_size_choice(size)
+        self.show_cover_size_choice(stored_cover_size(stored))
 
     def show_cover_size_choice(self, size: CoverSize) -> None:
         """Draw the sleeves at this size, show what is next and remember it."""
@@ -184,7 +184,7 @@ class Viewing:
         self._covers_page.fit_pane()
         self.show_cover_size(size)
         self._bottom_tray.set_next_cover_size(next_cover_size(size))
-        self._settings.set_setting(SETTING_COVER_SIZE, str(int(size)))
+        self._settings.set_setting(SETTING_COVER_SIZE, size.name)
 
     @property
     def shown_index(self) -> QModelIndex:

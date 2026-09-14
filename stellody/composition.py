@@ -49,6 +49,7 @@ from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
 from stellody.infrastructure.fetching import Fetcher
 from stellody.infrastructure.opening import open_store
+from stellody.infrastructure.output_devices import OutputDevices
 from stellody.infrastructure.paths import (
     art_cache_dir,
     data_location,
@@ -126,10 +127,13 @@ def build_window(
     artwork = FileArtwork(art_cache_dir(), EmbeddedPictures())
     listening = ListeningLog(store)
     listening.load()
-    return MainWindow(
+    # Every stream is opened through this, so one that follows a move of the
+    # system's output is opened where the output went.
+    devices = OutputDevices()
+    window = MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
-        transport=Transport(WasapiPlayback()),
+        transport=Transport(WasapiPlayback(opener=devices.open_output)),
         settings=store,
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
         listening=listening,
@@ -193,6 +197,11 @@ def build_window(
         leave=leave,
         note=note,
     )
+    # Owned by the window, so it lives exactly as long as there is music to
+    # pause; a move of the output pauses it and says so.
+    devices.setParent(window)
+    devices.changed.connect(window.output_moved)
+    return window
 
 
 def configure(application: QApplication) -> None:

@@ -8,9 +8,9 @@ about the same library rather than two that could quietly diverge.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.application.artwork import AlbumArtSources

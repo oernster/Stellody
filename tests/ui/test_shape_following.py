@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import time
 
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, album, build
 
 from stellody.domain.track import TrackSource

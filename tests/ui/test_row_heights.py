@@ -13,9 +13,9 @@ held to one height, since only an album row carries a picture.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication, QStyledItemDelegate
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.ui.covering import GRID_COVER_PX, ROW_COVER_PX

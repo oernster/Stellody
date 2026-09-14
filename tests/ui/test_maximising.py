@@ -13,8 +13,8 @@ import ctypes
 import sys
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QByteArray, QRect, QSize
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.ui.geometry import Geometry

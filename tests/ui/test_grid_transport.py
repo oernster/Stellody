@@ -10,9 +10,9 @@ list is not what somebody looking at the sleeves is pointing at.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, picture
 
 from stellody.ui.album_pane import PAUSE_TOOLTIP, PLAY_TOOLTIP

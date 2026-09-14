@@ -14,11 +14,11 @@ from __future__ import annotations
 import threading
 import time
 
-from conftest import RecordingPlayer
 from cover_support import BACK, FRONT, FakeArtwork, FakeSearch
 from PySide6.QtCore import QBuffer, QIODevice, QModelIndex, QThread, QTimer
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, album, build
 
 from stellody.application.choosing_covers import ChooseCover

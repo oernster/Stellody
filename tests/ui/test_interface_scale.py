@@ -13,8 +13,8 @@ check and the drawing cannot come to disagree about how big a point is.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.ui.interface_scale import (

@@ -46,8 +46,11 @@ def default_device() -> int | None:
     info" (PaErrorCode -9984). Every route into playback died there. This module
     speaks WASAPI, so it has to ask WASAPI which device it means.
 
-    Resolved per stream rather than once at startup, so headphones plugged in
-    after the application opened are the ones it plays through.
+    Resolved per stream rather than once at startup. That alone does not
+    follow headphones plugged in after the application opened: measured on
+    2026-09-14, PortAudio's own list is taken once, so this kept naming the
+    device that was the default at launch. `output_devices.OutputDevices` has
+    the list taken again after a move, before the stream that asks here.
     """
     try:
         apis = sounddevice.query_hostapis()

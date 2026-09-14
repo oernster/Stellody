@@ -12,9 +12,9 @@ from __future__ import annotations
 import threading
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.application.updates import UpdateService, platform_key_for

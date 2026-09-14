@@ -9,10 +9,10 @@ window goes. Qt is never mocked; only the device is.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 
 from stellody.application.loading import LoadLibrary
 from stellody.application.scan import ScanLibrary

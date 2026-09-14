@@ -8,11 +8,11 @@ stars in a rectangle read as a rating rather than as decoration needs eyes.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from library_support import ART, PLANETS, SIMPLE
 from mouse_support import press_at
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.listening import (

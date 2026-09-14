@@ -231,7 +231,7 @@ class TestWhenTheControlsAreOffered:
     """A control that cannot act is disabled, as every other one here is."""
 
     def _window(self, repairs=None):
-        from conftest import RecordingPlayer
+        from recording_player import RecordingPlayer
         from tray_support import RememberingStore, build
 
         return build(RememberingStore(), RecordingPlayer(), repairs=repairs)

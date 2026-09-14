@@ -14,8 +14,8 @@ size a first run opens at when the stored value is not a number.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QRect, Qt
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.ui.geometry import Geometry

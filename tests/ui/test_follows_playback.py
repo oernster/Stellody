@@ -11,7 +11,6 @@ The same rule inside the grid's open album lives in
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from playback_support import (
     POLLS,
     TRACK_COUNT,
@@ -24,6 +23,7 @@ from playback_support import (
     window,
 )
 from PySide6.QtCore import QModelIndex, QPoint
+from recording_player import RecordingPlayer
 
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity

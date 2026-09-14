@@ -13,9 +13,9 @@ chosen size asks for. The second read comes out of Stellody's own store.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.shared import resources
@@ -27,6 +27,9 @@ from stellody.ui.covering import (
 )
 from stellody.ui.settings_keys import SETTING_COVER_SIZE
 from stellody.ui.tiles import tile_size
+
+# Ruled by Oliver on 2026-09-14: every size taken down to three quarters.
+SHRUNK_SIZES_PX = (120, 180, 240)
 
 
 @pytest.fixture
@@ -44,6 +47,9 @@ class TestTheSizesThemselves:
             CoverSize.LARGE,
             CoverSize.EXTRA_LARGE,
         )
+
+    def test_each_is_three_quarters_of_what_it_was(self) -> None:
+        assert tuple(int(size) for size in COVER_SIZES) == SHRUNK_SIZES_PX
 
     def test_each_is_larger_than_the_one_before(self) -> None:
         assert list(COVER_SIZES) == sorted(COVER_SIZES)
@@ -95,15 +101,32 @@ class TestSteppingThroughThem:
         window.show_cover_size_choice(CoverSize.LARGE)
         assert "extra large" in window._bottom_tray.showing.size_button.toolTip()
 
-    def test_the_choice_is_written_down(self, window) -> None:
+    def test_the_choice_is_written_down_by_name(self, window) -> None:
+        """A number stopped meaning one size once the sizes shrank."""
         window.show_cover_size_choice(CoverSize.EXTRA_LARGE)
         stored = window._settings.settings[SETTING_COVER_SIZE]
-        assert stored == str(int(CoverSize.EXTRA_LARGE))
+        assert stored == CoverSize.EXTRA_LARGE.name
 
     def test_the_choice_survives_a_restart(self, application: QApplication) -> None:
-        remembered = RememberingStore({SETTING_COVER_SIZE: str(int(CoverSize.LARGE))})
+        remembered = RememberingStore({SETTING_COVER_SIZE: CoverSize.LARGE.name})
         made = build(remembered, RecordingPlayer())
         assert made._cover_size is CoverSize.LARGE
+        made.close()
+
+    @pytest.mark.parametrize(
+        ("written", "meant"),
+        [
+            ("160", CoverSize.MEDIUM),
+            ("240", CoverSize.LARGE),
+            ("320", CoverSize.EXTRA_LARGE),
+        ],
+    )
+    def test_a_choice_written_before_the_shrink_keeps_its_meaning(
+        self, application: QApplication, written: str, meant: CoverSize
+    ) -> None:
+        """240 was large when it was written, whatever it would read as now."""
+        made = build(RememberingStore({SETTING_COVER_SIZE: written}), RecordingPlayer())
+        assert made._cover_size is meant
         made.close()
 
     def test_a_stored_size_nobody_offers_falls_back(

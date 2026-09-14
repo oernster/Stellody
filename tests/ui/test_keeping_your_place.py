@@ -9,9 +9,9 @@ the place is taken before and put back after.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build, track
 
 from stellody.application.artwork import AlbumArtSources
@@ -20,8 +20,12 @@ from stellody.domain.identity import AlbumIdentity
 from stellody.ui.row_text import Column
 from stellody.ui.tag_editor import TagEditor
 
-# Enough sleeves that there is somewhere to be other than the top.
-ALBUMS = 60
+# Enough sleeves that there is somewhere to be other than the top. Measured in
+# this window on 2026-09-14, once the sleeves shrank to three quarters: 60 let
+# the grid scroll only 1054px, so DEEP_PX was quietly clamped; 90 reaches 1838px
+# even with the looked-at album removed and the pane shut. Kept under 100, since
+# a three digit title sorts between two digit ones and moves LOOKED_AT.
+ALBUMS = 90
 # A place well down the library, in pixels rather than rows: what the grid
 # scrolls in since it started counting its scrollbar that way.
 DEEP_PX = 1500

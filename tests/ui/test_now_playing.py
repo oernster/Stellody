@@ -12,11 +12,11 @@ one delegate; the foot names the track on every change, however it came about.
 
 from __future__ import annotations
 
-from conftest import RecordingPlayer
 from playback_support import album_index, player, track_index, window
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QStyle, QStyleOptionViewItem
+from recording_player import RecordingPlayer
 
 from stellody.ui.main_window import MainWindow
 from stellody.ui.theme import palette_for

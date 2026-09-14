@@ -29,15 +29,27 @@ class CoverSize(IntEnum):
     name and a table mapping it to a number. None of them passes the 512 the
     store keeps a cover at, because scaling one up past what was kept invents
     detail the file never held.
+
+    Each was taken down to three quarters of what it had been, as Oliver
+    asked on 2026-09-14. A choice is written down by NAME since then: see
+    `stored_cover_size` for why a number could no longer be trusted.
     """
 
-    MEDIUM = 160
-    LARGE = 240
-    EXTRA_LARGE = 320
+    MEDIUM = 120
+    LARGE = 180
+    EXTRA_LARGE = 240
 
 
 COVER_SIZES = tuple(CoverSize)
 DEFAULT_COVER_SIZE = CoverSize.MEDIUM
+# What 1.2.2 and earlier wrote down: each size's own pixels, before the sizes
+# were taken down to three quarters. A record of what was written, so it stays
+# as written whatever the sizes become.
+EARLIER_STORED_PIXELS = {
+    "160": CoverSize.MEDIUM,
+    "240": CoverSize.LARGE,
+    "320": CoverSize.EXTRA_LARGE,
+}
 # One pixmap serves both views. It is kept at the size the grid draws it and
 # Qt scales it down for a row, so switching views costs no second reading.
 # Changing the grid size therefore reads again, from Stellody's own store
@@ -52,6 +64,20 @@ ROW_COVER_PX = 40
 def next_cover_size(size: CoverSize) -> CoverSize:
     """The size a press would move to, wrapping round at the largest."""
     return COVER_SIZES[(COVER_SIZES.index(size) + 1) % len(COVER_SIZES)]
+
+
+def stored_cover_size(stored: str) -> CoverSize:
+    """The size a written-down choice names; the default when it names none.
+
+    A choice used to be written as its pixels. Once the sizes shrank, 240 would
+    have read as extra large where it had been written as large, so the name is
+    written instead and the earlier numbers are read as what they meant then.
+    A value that is neither falls back to the default: a grid drawn at a size
+    nobody chose is worse than the one a first run uses.
+    """
+    if stored in CoverSize.__members__:
+        return CoverSize[stored]
+    return EARLIER_STORED_PIXELS.get(stored, DEFAULT_COVER_SIZE)
 
 
 class RowCover(QStyledItemDelegate):

@@ -20,7 +20,8 @@ device back is the one that hears about it.
 from __future__ import annotations
 
 import pytest
-from transport_support import FakePlayer, album_of, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import PlaybackError
@@ -28,7 +29,7 @@ from stellody.domain.playback import PlaybackError
 REASON = "the decoder for this format is not installed"
 
 
-class RefusingPlayer(FakePlayer):
+class RefusingPlayer(RecordingPlayer):
     """A device that will not open the track it is given."""
 
     def load(self, source, request):
@@ -73,7 +74,7 @@ class TestATrackThatWillNotOpen:
 class TestATrackThatOpensNormally:
     def test_the_quiet_path_stays_quiet(self) -> None:
         """Nothing raises and the device is asked to play."""
-        player = FakePlayer()
+        player = RecordingPlayer()
         transport = Transport(player)
         first = track(1)
         transport.play_album(album_of(first), first)

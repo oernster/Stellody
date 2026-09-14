@@ -9,8 +9,8 @@ left open behind a track that never started.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 from test_playing import BareStore, album, track_index
 
 from stellody.application.loading import LoadLibrary

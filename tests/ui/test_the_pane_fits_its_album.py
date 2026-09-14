@@ -15,9 +15,9 @@ more room than the page has, which is where either half could come apart.
 from __future__ import annotations
 
 import pytest
-from conftest import RecordingPlayer
 from playback_support import BareStore, track
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 
 from stellody.application.loading import LoadLibrary
 from stellody.application.scan import ScanLibrary

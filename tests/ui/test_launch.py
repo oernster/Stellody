@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import time
 
-from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
+from recording_player import RecordingPlayer
 
 from stellody import composition
 from stellody.application.loading import LoadLibrary

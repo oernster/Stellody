@@ -19,7 +19,8 @@ behind the playhead is not the one they would be asking for.
 
 from __future__ import annotations
 
-from transport_support import FakePlayer, album_of, reversed_order, track
+from recording_player import RecordingPlayer
+from transport_support import album_of, reversed_order, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import RepeatMode
@@ -28,7 +29,7 @@ from stellody.domain.playback import RepeatMode
 def playing_the_middle_track():
     """A transport playing the middle track of three."""
     tracks = (track(1), track(2), track(3))
-    player = FakePlayer()
+    player = RecordingPlayer()
     transport = Transport(player, ordering=reversed_order)
     transport.play_album(album_of(*tracks), tracks[1])
     player.calls.clear()
