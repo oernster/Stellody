@@ -112,7 +112,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt's image codecs, Qt's network stack, the filesystem. | `domain`, `application` and `shared`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt Multimedia's list of output devices, Qt's image codecs, Qt's network stack, the filesystem. | `domain`, `application` and `shared`. |
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain`, `application` and `shared`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 

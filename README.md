@@ -58,6 +58,11 @@ checks run; if it ever stopped being true the suite would fail.
   that means what reaches your speakers is bit for bit what is in the file, for
   the formats that store it exactly: FLAC, WAV, AIFF, WavPack and the lossless
   ALAC inside an M4A.
+- **Headphones in, music paused.** When your computer's sound output changes,
+  say because headphones connected, Stellody pauses rather than carrying on
+  through the old one. Both play buttons show play and the foot of the window
+  says why; press play and it carries on through the new output from where you
+  last heard it.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
 - **Stars and play counts.** Rate a song, rate the album separately, then read
@@ -250,7 +255,7 @@ Everything above is the product. What follows is the code.
 | Interface | PySide6 |
 | Tags | mutagen |
 | Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
-| Output | sounddevice over PortAudio, taking WASAPI on Windows |
+| Output | sounddevice over PortAudio, taking WASAPI on Windows; Qt Multimedia notices the output device changing |
 | Buffers | numpy |
 | Store | SQLite |
 
