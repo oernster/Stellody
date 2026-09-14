@@ -15,13 +15,22 @@ happen without the test run quitting itself.
 
 from __future__ import annotations
 
+import threading
+
 import pytest
 from conftest import RecordingPlayer
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore, build
 
+from stellody.application.values import RunOutcome, RunReport
 from stellody.ui.close_prompt import CloseAction, ClosePrompt
 from stellody.ui.settings_keys import SETTING_CLOSE
+
+# How often the held run asks whether it is still wanted. Short, so a stop is
+# noticed well inside the runner's own wait on the way out.
+ASK_SLICE_S = 0.05
+# How long to wait for the run's thread to get as far as asking anything.
+BEGIN_LIMIT_S = 5.0
 
 
 @pytest.fixture
@@ -74,6 +83,56 @@ def test_with_no_notification_area_the_cross_ends_the_application(
     store.set_setting(SETTING_CLOSE, CloseAction.TRAY.value)
     made.close()
     assert departures == ["left"], "else the process outlives its own window"
+
+
+class HeldRun:
+    """A discovery run that stays under way until it is stopped or released.
+
+    It stands for a run part way through a library, which is the state a
+    close has to deal with. It notices a stop exactly where the real run does,
+    by asking before its next request, then records that it did.
+    """
+
+    def __init__(self) -> None:
+        self.began = threading.Event()
+        self.released = threading.Event()
+        self.stopped = threading.Event()
+
+    def run(self, albums, ticked, report, cancelled, compilations=False) -> RunReport:
+        """Hold until somebody stops the run or the test lets go of it."""
+        self.began.set()
+        while not self.released.wait(ASK_SLICE_S):
+            if cancelled():
+                self.stopped.set()
+                break
+        return RunReport(outcome=RunOutcome.CANCELLED)
+
+
+def test_quitting_mid_run_stops_the_discovery_run(application, departures) -> None:
+    """FR-D24: a close is a cancel the listener expressed differently.
+
+    Through the tray's Quit, which is the path the application takes when it
+    really ends. By the time the departure is called the run has to have been
+    told to stop; a run still asking once the window has gone is a thread Qt
+    tears down under it.
+    """
+    held = HeldRun()
+    made = build(
+        RememberingStore(),
+        RecordingPlayer(),
+        leave=lambda: departures.append("left"),
+        discovery=held,
+    )
+    try:
+        made.begin_discovery(("Rock",))
+        assert held.began.wait(BEGIN_LIMIT_S), "the run never got under way"
+        made.quit_application()
+        assert departures == ["left"]
+        assert held.stopped.is_set(), "the run was still asking after the quit"
+    finally:
+        held.released.set()
+        made._discovery_runner.wait()
+        made.deleteLater()
 
 
 class TestDismissingThePromptDecidesNothing:

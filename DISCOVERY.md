@@ -950,12 +950,6 @@ Verified by: `tests/ui/test_discovery_stopping.py::test_pressing_it_during_a_run
 
 Priority: Must
 
-**Not currently met:** closing the window does not stop a run under way.
-`_leave_for_good` in `stellody/ui/leaving.py` waits for the scan runner only;
-nothing on the way out cancels or waits for the discovery runner. Meeting this
-needs `_leave_for_good` to cancel the discovery run. The test named below
-drives the run's cancel check directly rather than closing a window.
-
 Requirement: If the application is asked to close while a run is under way, then
 the discovery service shall stop before its next request and leave any existing
 discovery file untouched.
@@ -967,7 +961,7 @@ Acceptance: Given a run in progress over an existing discovery file, when the
 window is closed, then no further request is issued and the existing file is
 byte for byte what it was.
 
-Verified by: `tests/application/test_stopping_a_run.py::test_closing_stops_the_run`
+Verified by: `tests/ui/test_quitting.py::test_quitting_mid_run_stops_the_discovery_run`
 
 ---
 

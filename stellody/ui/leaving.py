@@ -83,6 +83,12 @@ class Leaving:
         self._transport.stop()
         self._note("waiting for the scan runner")
         self._runner.wait()
+        # A close is a cancel expressed differently, so a discovery run is told
+        # to stop before its next request, then waited for. Left alone it went
+        # on asking after the window had gone, on a thread Qt was about to tear
+        # down under it. FR-D24.
+        self._note("stopping any discovery run and waiting for it")
+        self._discovery_runner.wait()
         self._note("letting go of any measurement in flight")
         self.stop_shapes()
         self._note("letting go of any cover being read")
