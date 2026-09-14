@@ -106,8 +106,8 @@ is specified rather than assumed away.
   compiled into the application is a list that needs a release every time a
   shop moves.
 - The house rules hold: clean-architecture layering, 400-line modules, 100
-  percent branch coverage over domain and application, no magic values, PySide6
-  in the UI layer only.
+  percent branch coverage over domain and application, no magic values, no Qt
+  below the infrastructure layer.
 
 ### 2.5 Assumptions and dependencies
 
@@ -394,14 +394,17 @@ Verified by: `tests/ui/test_shop_choosing.py::test_copy_puts_the_ticked_albums_o
 
 Priority: Must
 
-Requirement: The results dialog shall place its tick boxes and both controls in
-the keyboard ring, in reading order.
+Requirement: The results dialog shall place each list of albums and both
+controls in the keyboard ring, in reading order. Within a list, every tick box
+shall be reachable by the arrow keys and tickable from the keyboard.
 
 Rationale: The house keyboard model. A control reachable only with a mouse is
-half a control.
+half a control. A tick box is a row of its list rather than a widget of its
+own, so the ring stops on the list and the arrow keys move within it.
 
-Acceptance: Given the dialog open, when Tab is pressed repeatedly, then every
-tick box and both controls are reached in the order they are drawn.
+Acceptance: Given the dialog open, when Tab is pressed repeatedly, then each
+list and both controls are reached in the order they are drawn; within a list,
+the arrow keys reach every tick box and a key ticks it.
 
 Verified by: `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_are_stops_on_the_ring`
 
@@ -506,10 +509,13 @@ Verified by: the existing `tests/structural` suite plus the coverage gate.
 
 ### 3.3 External interfaces
 
-**The browser.** One outbound call to the operating system's default handler
-for an `https` address, through a port the application layer declares and the
-infrastructure layer implements. Nothing waits for it and nothing reads
-anything back.
+**The browser.** One call per address to the operating system's default
+handler, through a port the application layer declares and the infrastructure
+layer implements. The shop form saves only an `https` address (FR-S20); a
+hand-edited row is not held to that, so its address is handed over as it
+stands. Nothing waits for the page to load. The call answers only whether the
+machine took the address, which the application layer reads to report an
+address that would not open (FR-S13).
 
 **The clipboard.** Plain text only, through the same arrangement.
 
@@ -1053,8 +1059,8 @@ Priority: Must
 Requirement: While the list holds no shops, the shops dialog shall show the add
 control and a line saying there are no shops yet.
 
-Rationale: Today that line tells somebody to edit `shops.json` by hand, which is
-the thing this amendment exists to end.
+Rationale: Before this amendment that line told somebody to edit `shops.json`
+by hand, which is the thing this amendment exists to end.
 
 Acceptance: Given every shop deleted, when the dialog is read, then it shows the
 add control and does not mention `shops.json`.
@@ -1122,9 +1128,11 @@ Verified by: `tests/ui/test_shop_editing.py::test_a_broken_row_is_listed_greyed_
 ### 6.5 Non-functional
 
 NFR-S-USE-001 and NFR-S-MAIN-001 apply to everything added here, unchanged. The
-merge rules FR-S30 to FR-S34 and FR-S37 sit in the domain as one pure function
-over the list in use, the recorded shipped list, the current shipped list and
-the deleted record, so they fall under the 100 percent branch gate.
+merge rules FR-S30 to FR-S34 and FR-S36 sit in the domain as one pure function,
+`merged`, over the list in use, the recorded shipped list, the deleted record,
+the retired record and the current shipped list. Putting back (FR-S37) is a
+pure method, `ShopBook.put_back`, on the list that function answers. Both fall
+under the 100 percent branch gate.
 
 ### 6.6 Data
 
@@ -1141,8 +1149,8 @@ the deleted record, so they fall under the 100 percent branch gate.
 - `retired` names shops removed because a release stopped shipping them, until
   the dialog has said so (FR-S34, FR-S35).
 - An older Stellody ignores both, since unknown keys are already ignored.
-- FR-S12's "does not hold a usable list" now means a file that cannot be parsed
-  or whose `shops` is not a list. A list whose rows are broken is read with
+- FR-S12's "does not hold a usable list" now means a file that cannot be parsed,
+  one whose top level is not a JSON object or one whose `shops` is not a list. A list whose rows are broken is read with
   each row kept and named (FR-S42); an empty list stays empty (FR-S39).
 
 ### 6.7 Assumptions

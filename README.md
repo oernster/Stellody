@@ -34,8 +34,8 @@ opened to be read and never to be changed. Where it finds something muddled in
 the way an album is labelled, it tells you plainly then leaves the file exactly
 as it found it.
 
-That is not a promise on a page. It is checked every time the program is built;
-if it ever stopped being true the build would fail.
+That is not a promise on a page. It is checked by the test suite every time the
+checks run; if it ever stopped being true the suite would fail.
 
 ## What you get
 
@@ -85,7 +85,7 @@ if it ever stopped being true the build would fail.
   many minutes that adds. It reports as it goes, says roughly how long is left
   and stops the moment you ask it to. Where it could not get a usable answer
   about somebody it says so and counts them, with the names one press away, so
-  an answer short of a third of your library never reads like a complete one. Every answer is kept the moment it arrives, so a
+  an answer with gaps in it never reads like a complete one. Every answer is kept the moment it arrives, so a
   run stopped or cut short loses nothing it had already paid for and a second
   attempt asks only for the rest. What it finds opens as a list you can read
   and tick, dealt across the width of the screen and turned a page at a time,
@@ -172,19 +172,22 @@ Five things reach outside your computer at all, so here are all five:
 - **Checking for a new version**, once a day. It sends nothing about you or
   your music, not even which version you have: the request names the program
   and asks for one public page. Then it stays quiet unless there is something
-  new. Where there is, pressing Download hands the release page to your
-  browser, exactly as the two entries below hand over an address.
+  new. Where there is, pressing Download hands your browser the file for your
+  platform, else the release page when the release carries none, exactly as the
+  two entries below hand over an address.
 - **Looking for music you do not own**, only ever when you ask. A discovery run
   names the artists inside the genres you ticked to two public music
   catalogues, MusicBrainz and ListenBrainz, then asks what those artists made
   that you do not hold. What goes out is those artist names, the MusicBrainz
-  identifiers the catalogue gives back for them plus a user agent naming
+  identifiers the catalogues give back for them and for the similar artists
+  they find, plus a user agent naming
   Stellody, its version and the project's contact address: not your library,
   not a count of it, not a word about you or your machine. Tick nothing and
   nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
   a run found, choose a shop and Stellody gives the browser one search address
-  per album, each carrying an artist and a title. Stellody connects to no shop,
+  per album, carrying the artist, the title or both as that shop's address asks.
+  Stellody connects to no shop,
   holds no account with one and takes nothing from any sale.
 - **The donation button**, which hands an address to your web browser. Stellody
   itself connects to nothing. It is one button on the bottom strip and the only
@@ -332,8 +335,9 @@ without it, for local testing only.
 The wheels are fetched to the host first, so the build itself reaches the
 network for nothing. PortAudio is compiled from source into the bundle, because
 the sounddevice wheel carries a library for Windows and macOS only and the
-freedesktop runtime ships none. The cleaner removes the Flatpak artefacts and
-nothing else; pass `--purge-data` to remove your ratings and settings as well.
+freedesktop runtime ships none. The cleaner uninstalls Stellody then removes
+what the build wrote and nothing else; pass `--purge-data` to remove your
+ratings and settings as well.
 
 ## The website
 
@@ -377,9 +381,10 @@ neither copied over nor deleted there. The mirrored pages keep their
 `canonical`, `og:url` and `og:image` pointing here, which is what stops the two
 hosts competing for the same pages.
 
-The workflow needs one secret, `MIRROR_TOKEN`: a fine-grained personal access
+The workflow reads two secrets. `MIRROR_TOKEN` is a fine-grained personal access
 token scoped to `oernster/stellody-website` alone, with Contents set to read
-and write.
+and write; without it the run stops at once. `RENDER_DEPLOY_HOOK` is the deploy
+hook described above.
 
 ## Licence
 

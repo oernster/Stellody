@@ -16,7 +16,8 @@ module. Where the code and the shorthand disagree, the code wins.
   so finishing it is a measurement rather than an opinion.
 - **The invariants are not repeated here.** They live in `ARCHITECTURE.md` and
   in the structural tests; they constrain every milestone below: the library
-  is never written to, nothing reaches the network, the domain stays pure,
+  is never written to, nothing reaches the network outside the four modules
+  invariant 12 names, the domain stays pure,
   modules stay under the cap, domain and application hold 100% branch coverage.
 - **The order is a recommendation, not a contract.** The dependencies named in
   each milestone are real; everything else can be taken in any order.
