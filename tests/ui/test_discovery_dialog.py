@@ -147,9 +147,14 @@ def test_the_picture_goes_back_when_there_is_something_to_tick_again() -> None:
 def test_sweeping_leaves_the_dialog_open() -> None:
     """Somebody who swept by accident has lost nothing."""
     dialog, watched = make_dialog()
-    dialog.select_button.click()
-    assert dialog.isVisible() is False or dialog.result() == 0
-    assert watched.started == [], "a sweep asks for nothing"
+    dialog.show()
+    try:
+        dialog.select_button.click()
+        assert dialog.isVisible(), "the sweep did not close the dialog"
+        assert dialog.result() == 0, "nor did it answer the dialog"
+        assert watched.started == [], "a sweep asks for nothing"
+    finally:
+        dialog.reject()
 
 
 def test_the_ticks_are_what_a_run_is_given() -> None:

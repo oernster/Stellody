@@ -21,7 +21,7 @@ from stellody.application.values import (
 )
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
-from stellody.infrastructure import discovery_file, paths
+from stellody.infrastructure import atomic, discovery_file, paths
 
 
 @pytest.fixture(autouse=True)
@@ -148,6 +148,22 @@ def test_nothing_is_left_half_written() -> None:
     """Written beside the target and moved over it, so a reader sees one or other."""
     where = discovery_file.write(an_answer())
     assert list(where.parent.glob("*.writing")) == []
+
+
+def test_a_write_that_fails_leaves_the_last_answer_as_it_was(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """FR-D19: the move over the old file is the step a full disk refuses."""
+    where = discovery_file.write(an_answer())
+    before = where.read_bytes()
+
+    def refused(_source, _target) -> None:
+        raise PermissionError("no room")
+
+    monkeypatch.setattr(atomic.os, "replace", refused)
+    with pytest.raises(PermissionError):
+        discovery_file.write(RunReport(outcome=RunOutcome.COMPLETED))
+    assert where.read_bytes() == before, "the earlier answer is untouched"
 
 
 def test_a_run_remembers_what_it_learned() -> None:

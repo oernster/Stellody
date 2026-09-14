@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from stellody.domain.discovery import source_artists
 from stellody.domain.entries import SourceEntry, folder_of, stated_over
 from stellody.domain.grouping import assemble_albums
 from stellody.domain.ordering import TrackCandidate
@@ -144,3 +145,14 @@ class TestFolding:
             entry("Invol_3r_bonus", "01.flac", "Bonus Disc", "Sasha"),
         )
         assert len(assemble_albums(stated_over(entries, ()))[0]) == 2
+
+
+class TestWhoADiscoveryAsksAbout:
+    def test_a_genre_stated_over_an_untagged_album_decides(self) -> None:
+        """FR-D05: the genre somebody stated, never the empty tag underneath it."""
+        entries = (entry("Involver", "01.flac", "Involver", "Sasha"),)
+        before, _ = assemble_albums(entries)
+        assert source_artists(before, ("Reggae",)) == ()
+        stated = (an_edit("Involver", AlbumField.GENRE, "Reggae"),)
+        after, _ = assemble_albums(stated_over(entries, stated))
+        assert source_artists(after, ("Reggae",)) == ("Sasha",)

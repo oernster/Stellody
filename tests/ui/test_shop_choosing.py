@@ -7,6 +7,8 @@ boxes, the two controls and what they are given.
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from results_support import Asking, candidate_in, gaps_with, made, rows_under
 
 from stellody.application.shopping import Shopping
@@ -215,14 +217,39 @@ def test_the_shops_dialog_is_given_exactly_what_was_ticked(application) -> None:
 
 
 def test_the_ticks_and_the_controls_are_stops_on_the_ring(application) -> None:
-    """FR-S15: a control reachable only with a mouse is half a control."""
+    """FR-S15: a control reachable only with a mouse is half a control.
+
+    The ring is walked rather than each control's policy read, since a control
+    that takes focus out of the order it is drawn in is still hard to reach.
+    """
     dialog, _opener, _clipboard = with_shopping((gaps_with(albums=1),))
-    for control in (dialog.copy_button, dialog.shops_button, dialog.close_button):
-        assert control.focusPolicy() is not control.focusPolicy().NoFocus
-    assert (
-        dialog.pages.trees[0].focusPolicy()
-        is not dialog.pages.trees[0].focusPolicy().NoFocus
+    stops, widget = [], dialog.nextInFocusChain()
+    while widget is not dialog:
+        if widget.focusPolicy() & Qt.FocusPolicy.TabFocus:
+            stops.append(widget)
+        widget = widget.nextInFocusChain()
+    drawn = (
+        dialog.pages.trees[0],
+        dialog.copy_button,
+        dialog.shops_button,
+        dialog.close_button,
     )
+    reached = [stops.index(stop) for stop in drawn]
+    assert reached == sorted(reached), "each is reached in the order it is drawn"
+
+
+def test_a_tick_box_is_reached_and_ticked_from_the_keyboard(application) -> None:
+    """FR-S15: the arrow keys move within a list and a key ticks the row."""
+    dialog, _opener, _clipboard = with_shopping((gaps_with(albums=2),))
+    tree = dialog.pages.trees[0]
+    tree.setCurrentItem(dialog.sources[0])
+    QTest.keyClick(tree, Qt.Key.Key_Down)
+    QTest.keyClick(tree, Qt.Key.Key_Down)
+    QTest.keyClick(tree, Qt.Key.Key_Space)
+    boxes = albums_in(dialog)
+    assert tree.currentItem() is boxes[1], "the arrows reached the second album"
+    assert boxes[1].checkState(0) is TICKED, "and a key ticked it"
+    assert boxes[0].checkState(0) is not TICKED
 
 
 def test_the_controls_wear_their_artwork_at_the_size_the_trays_use(
