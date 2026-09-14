@@ -18,7 +18,6 @@ from stellody.application.discovery_ports import (
     GenreMemory,
     RunCancelled,
     SourceFailed,
-    SourceTooSlow,
     SourceUnavailable,
 )
 from stellody.application.gathering import Silence
@@ -86,11 +85,13 @@ class CandidateGenres:
                 genres = self._genres_of(identifier, cancelled)
             except RunCancelled:
                 return CANCELLED
-            except SourceTooSlow:
+            except SourceFailed:
                 # Left unknown rather than written down as playing nothing.
-                # What is learned here is kept between runs, so a slow answer
-                # recorded as silence would drop that candidate from every
-                # later run as well as from this one.
+                # What is learned here is kept between runs without a limit,
+                # so a slow answer, a refusal that outlasted the asks, an error
+                # or a request a stop abandoned recorded as silence would drop
+                # that candidate from every later run as well as from this one.
+                # Something did answer, so the run of silences ends here.
                 silence.ended()
                 continue
             except SourceUnavailable:
@@ -114,20 +115,15 @@ class CandidateGenres:
         )
 
     def _genres_of(self, identifier: str, cancelled: CancelledCheck) -> tuple[str, ...]:
-        """What a candidate plays; nothing where the catalogue would not say.
+        """What a candidate plays, as the catalogue answered it.
 
         It is never asked about a candidate with no identifier: `_to_ask` drops
         those before anything is asked, so an unnamed candidate is never looked
         up and is kept on the same ground as every other undescribed one.
 
-        A slow answer is let past rather than swallowed here: it is the one
-        failure that says nothing about the candidate, so `narrowed` above
-        leaves them undescribed instead of remembering them as playing
-        nothing.
+        Every failure is let past rather than turned into no genres here. None
+        of them says anything about the candidate, so `narrowed` above leaves
+        them undescribed instead of remembering them as playing nothing. An
+        empty answer the catalogue actually gave is still an answer.
         """
-        try:
-            return asked(self.catalogue.genres_of, cancelled, self.pause, identifier)
-        except SourceTooSlow:
-            raise
-        except SourceFailed:
-            return ()
+        return asked(self.catalogue.genres_of, cancelled, self.pause, identifier)

@@ -8,6 +8,7 @@ anything between runs.
 
 from __future__ import annotations
 
+import pytest
 from discovery_support import (
     Catalogue,
     Memory,
@@ -23,7 +24,12 @@ from discovery_support import (
 from stellody.application.asking import RETRY_PAUSE_SECONDS, WAIT_SLICE_SECONDS
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.application.discovering import Discovery
-from stellody.application.discovery_ports import RateRefused, SourceUnavailable
+from stellody.application.discovery_ports import (
+    RateRefused,
+    SourceFailed,
+    SourceRefused,
+    SourceUnavailable,
+)
 from stellody.application.gathering import SILENCE_MEANS_GONE
 from stellody.application.values import DiscoveryProgress, DiscoveryStage, RunOutcome
 from stellody.domain.album import Album
@@ -141,6 +147,47 @@ def test_a_candidate_nothing_answered_about_is_left_unknown() -> None:
     assert found.outcome is RunOutcome.COMPLETED, "one silence ends nothing"
     assert memory.noted == [], "nothing was written down about it"
     assert memory.kept == [{}], "and nothing was kept about it either"
+
+
+@pytest.mark.parametrize(
+    "trouble",
+    [
+        SourceRefused("the catalogue refused all 2 asks"),
+        SourceFailed("the service answered 500"),
+        SourceFailed("given up on part way through: a stopped request"),
+    ],
+    ids=["refused", "an error", "abandoned by a stop"],
+)
+def test_a_candidate_that_did_not_answer_is_not_remembered(
+    trouble: Exception,
+) -> None:
+    """FR-D17, FR-D20: a non-answer is never kept as playing nothing.
+
+    What a candidate plays is kept without a limit and a candidate already
+    known about is never asked about again, so a refusal, an error or a
+    request a stop abandoned written down as no genres would stand for good.
+    """
+    catalogue = Catalogue(genre_trouble=trouble)
+    similar = Similarity((SimilarArtist(name="Robert Cray", identifier="cray"),))
+    memory = Memory()
+    run = Discovery(
+        catalogue=catalogue, similarity=similar, pause=Waits(), memory=memory
+    )
+    run.run(one_blues_artist(), ("Blues",), nothing, never)
+    assert memory.noted == [], "nothing was written down about it"
+    assert memory.kept == [{}], "and nothing was kept about it either"
+
+
+def test_a_candidate_that_answered_with_no_genres_is_remembered() -> None:
+    """The other side of the line: saying nothing is said is an answer."""
+    catalogue = Catalogue(genres={})
+    similar = Similarity((SimilarArtist(name="Robert Cray", identifier="cray"),))
+    memory = Memory()
+    run = Discovery(
+        catalogue=catalogue, similarity=similar, pause=Waits(), memory=memory
+    )
+    run.run(one_blues_artist(), ("Blues",), nothing, never)
+    assert memory.noted == [("cray", ())]
 
 
 def test_a_connection_lost_in_the_second_half_ends_the_run() -> None:
