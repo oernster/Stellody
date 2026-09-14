@@ -165,18 +165,6 @@ def fit_grid(grid: QListView) -> None:
     grid.doItemsLayout()
 
 
-def build_covers_page(window: QMainWindow, grid: QWidget, pane: QWidget) -> QWidget:
-    """The grid with the album pane under it, which starts closed."""
-    page = QWidget(window)
-    page.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    column = QVBoxLayout(page)
-    column.setContentsMargins(0, 0, 0, 0)
-    column.setSpacing(0)
-    column.addWidget(grid, 1)
-    column.addWidget(pane)
-    return page
-
-
 def build_library(window: QMainWindow, tree: QWidget, grid: QWidget) -> QStackedWidget:
     """The two library views, one showing at a time.
 

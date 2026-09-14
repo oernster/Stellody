@@ -23,14 +23,12 @@ on its first track, which is what the play button at the top then starts.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QModelIndex, Qt, Signal
+from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QPushButton,
-    QTreeView,
     QVBoxLayout,
     QWidget,
 )
@@ -38,12 +36,12 @@ from PySide6.QtWidgets import (
 from stellody.domain.album import Album
 from stellody.domain.text import year_of
 from stellody.shared import resources
-from stellody.ui.covering import RowCover
 from stellody.ui.dialogs import CLOSE_ICON
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.row_text import Column
 from stellody.ui.stars import StarRating
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
+from stellody.ui.track_column import track_column
 from stellody.ui.tray_parts import icon_button
 
 # Said rather than left to be inferred: this rates the ALBUM, while the stars
@@ -94,27 +92,6 @@ def _spans(rows: int) -> tuple[tuple[int, int], ...]:
     )
 
 
-def _track_column(parent: QWidget, model: AlbumTreeModel) -> QTreeView:
-    """One column of an album's tracks, on the library's own model."""
-    view = QTreeView(parent)
-    view.setItemDelegate(RowCover(view))
-    view.setModel(model)
-    view.setUniformRowHeights(True)
-    view.setAllColumnsShowFocus(True)
-    view.setRootIsDecorated(False)
-    view.setHeaderHidden(True)
-    view.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
-    view.setColumnHidden(Column.ARTIST, True)
-    # The detail cell is shown here, unlike the artist's, because it is where
-    # a track says what it has been played. It is empty until one has, so it
-    # costs an album nobody has listened to nothing at all.
-    header = view.header()
-    header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Stretch)
-    header.setSectionResizeMode(Column.DETAIL, QHeaderView.ResizeMode.ResizeToContents)
-    header.setSectionResizeMode(Column.LENGTH, QHeaderView.ResizeMode.ResizeToContents)
-    return view
-
-
 class AlbumPane(QWidget):
     """One album opened under the grid, with its tracks listed."""
 
@@ -128,6 +105,8 @@ class AlbumPane(QWidget):
         # A holder, never a stop: the ring belongs to the controls inside it.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._mode = Mode.DARK
+        # No limit until the page it opens on states one.
+        self._room: int | None = None
         self.cover = QLabel(self)
         self.cover.setFixedSize(PANE_COVER_PX, PANE_COVER_PX)
         self.cover.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -158,7 +137,7 @@ class AlbumPane(QWidget):
             self.closed.emit,
         )
         self._model = model
-        self.columns = tuple(_track_column(self, model) for _ in range(TRACK_COLUMNS))
+        self.columns = tuple(track_column(self, model) for _ in range(TRACK_COLUMNS))
         for column in self.columns:
             column.activated.connect(self.track_activated)
         # One selection across all of them, so the highlight is in the album
@@ -205,6 +184,22 @@ class AlbumPane(QWidget):
         body.setSpacing(PANE_GAP_PX)
         body.addLayout(header)
         body.addLayout(listing, 1)
+
+    def limit_height(self, room: int) -> None:
+        """Never ask for more height than this, however long the album is.
+
+        The page states the room rather than the pane working it out, because
+        the page is what knows how much the grid above has to keep.
+        """
+        self._room = room
+        self.updateGeometry()
+
+    def sizeHint(self) -> QSize:
+        """As tall as the album open in it, up to the room it has been given."""
+        hint = super().sizeHint()
+        if self._room is None:
+            return hint
+        return QSize(hint.width(), min(hint.height(), self._room))
 
     def set_playing(self, playing: bool) -> None:
         """Wear the pause face while something plays, as the tray's does.
@@ -290,6 +285,18 @@ class AlbumPane(QWidget):
                 column.setRowHidden(row, where, row < start or row >= stop)
             column.expandAll()
             column.setVisible(start < stop)
+            # Its rows changed, so its height did; this drops the size its
+            # layout remembers for it, which nothing else clears.
+            column.updateGeometry()
+        # The pane's height has to be right before the grid chooses where to
+        # scroll, not a turn of the event loop later. Traced rather than
+        # assumed, each half alone left it answering with the last album's
+        # height: a column's own word does not reach the layout nested round
+        # the columns, while activating re-measures the layouts but never asks
+        # a column whose remembered size was not dropped first.
+        self.layout().invalidate()
+        self.layout().activate()
+        self.updateGeometry()
         self.columns[0].setCurrentIndex(self._first_track(where))
 
     def _first_track(self, where: QModelIndex) -> QModelIndex:

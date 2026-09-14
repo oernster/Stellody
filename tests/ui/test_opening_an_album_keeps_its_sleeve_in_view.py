@@ -34,14 +34,11 @@ from stellody.ui.main_window import MainWindow
 # Enough albums that one late in the library is well off screen.
 ALBUMS = 60
 PICKED = 45
-# The offscreen screen is 800 by 800 and the window maximises to fit whatever
-# screen it is on, so there is no asking for a taller one here. At that height
-# the pane's own 300 pixels leave 218 for the grid, which is less than the 224
-# a sleeve occupies at the smallest cover size: nothing could be fully visible
-# and every test below would pass by being impossible to fail. Capping the pane
-# leaves it taking real room, just less of it, which is the whole of what these
-# tests are about.
-PANE_HEIGHT = 140
+# The offscreen screen is 800 by 800 and the window maximises to fit it. These
+# tests used to cap the pane at 140 pixels by hand, because it took 300 whatever
+# the album and left the grid less than a sleeve. The pane now fits its album up
+# to what leaves the grid a whole row of sleeves, measured at 128 pixels for
+# these two-track albums, so there is nothing left to cap.
 
 
 def albums() -> tuple[Album, ...]:
@@ -72,7 +69,6 @@ def window(application: QApplication) -> MainWindow:
         settings=store,
     )
     made.show()
-    made._album_pane.setMaximumHeight(PANE_HEIGHT)
     application.processEvents()
     made._model.set_albums(albums())
     application.processEvents()

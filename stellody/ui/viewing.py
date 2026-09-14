@@ -24,6 +24,7 @@ from stellody.domain.album import Album
 from stellody.domain.track import Track
 from stellody.ui.album_pane import AlbumPane
 from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize, next_cover_size
+from stellody.ui.covers_page import CoversPage
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_COVER_SIZE,
@@ -33,12 +34,7 @@ from stellody.ui.settings_keys import (
 )
 from stellody.ui.sleeving import SleeveToggle
 from stellody.ui.tiles import NO_ROW
-from stellody.ui.window_parts import (
-    build_covers_page,
-    build_grid,
-    build_library,
-    fit_grid,
-)
+from stellody.ui.window_parts import build_grid, build_library, fit_grid
 
 DECORATION = Qt.ItemDataRole.DecorationRole
 
@@ -75,7 +71,7 @@ class Viewing:
         self._shown_album = None
         self._shown_index = QModelIndex()
         self._cover_size = DEFAULT_COVER_SIZE
-        self._covers_page = build_covers_page(self, self._grid, self._album_pane)
+        self._covers_page = CoversPage(self, self._grid, self._album_pane)
         self._library = build_library(self, self._tree, self._covers_page)
         return self._library
 
@@ -184,6 +180,8 @@ class Viewing:
         self._cover_size = size
         self._tiles.show_cover_size(size)
         fit_grid(self._grid)
+        # A row of sleeves at the new size leaves the pane a different amount.
+        self._covers_page.fit_pane()
         self.show_cover_size(size)
         self._bottom_tray.set_next_cover_size(next_cover_size(size))
         self._settings.set_setting(SETTING_COVER_SIZE, str(int(size)))
