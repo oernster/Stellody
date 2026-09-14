@@ -35,9 +35,9 @@ from stellody.ui.settings_keys import FALSE, SETTING_DISCOVER_COMPILATIONS, TRUE
 from stellody.ui.standing_in import say_nothing
 from stellody.ui.tray_metrics import show_discovery_running
 
-# Said where a new run is asked for while the last one is still winding down.
-# A request already in flight cannot be called back, so there is a moment
-# after a stop when the thread is not free yet.
+# Said where the runner will not take a new run, which it refuses only while it
+# still holds one. A stop lets go of the last run's thread at once, so this is a
+# guard rather than an ordinary step.
 STILL_STOPPING = "Still stopping the last run. Try again in a moment."
 WENT_WRONG = "The run stopped: {reason}"
 

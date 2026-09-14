@@ -91,7 +91,7 @@ def _kinds_of(entry: dict) -> tuple[ReleaseKind, ...]:
 
 
 class MusicBrainz:
-    """The catalogue, asked the two questions a discovery run has for it."""
+    """The catalogue, asked the three questions a discovery run has for it."""
 
     def __init__(self, fetcher: Fetcher | None = None) -> None:
         self._fetch = fetcher if fetcher is not None else Fetcher()

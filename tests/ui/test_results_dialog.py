@@ -142,7 +142,7 @@ KNOWN = {"id-0": ("folk",)}
 
 
 class Memory:
-    """A catalogue memory that knows what one candidate plays."""
+    """A candidate genre cache that knows what one candidate plays."""
 
     def remembered(self) -> dict[str, tuple[str, ...]]:
         """What it was told to know, as a copy nobody can change it through."""

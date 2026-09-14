@@ -74,7 +74,7 @@ def test_no_module_exceeds_the_line_cap() -> None:
 
 
 def test_no_module_sits_in_the_danger_band() -> None:
-    """A module between 381 and 399 lines is reduced to 350 or below."""
+    """A module between 381 and 400 lines is reduced to 350 or below."""
     inside = [
         f"{relative(path)} ({_line_count(path)})"
         for path in _measured()

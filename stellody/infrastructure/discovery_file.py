@@ -196,7 +196,7 @@ def artist_from(entry: object) -> SimilarArtist | None:
 def read() -> LastRun:
     """What the last run found and what it was asked; empty where neither.
 
-    Order is the file's own, which is the order the run met the artists in.
+    Order is the file's own, which is artist order since `write` sorts by it.
     Anything the file carries that cannot be read as a gap is passed over
     rather than raising: a results screen missing one album is worth more than
     no results screen.

@@ -117,7 +117,7 @@ class CandidateGenres:
     def _genres_of(self, identifier: str, cancelled: CancelledCheck) -> tuple[str, ...]:
         """What a candidate plays, as the catalogue answered it.
 
-        It is never asked about a candidate with no identifier: `_to_ask` drops
+        It is never asked about a candidate with no identifier: `still_to_ask` drops
         those before anything is asked, so an unnamed candidate is never looked
         up and is kept on the same ground as every other undescribed one.
 

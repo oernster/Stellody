@@ -22,7 +22,7 @@ Reported by Oliver on 2026-09-09: a run produced no data at all. Measured
 against MusicBrainz the same day, ten identical searches paced at the rate its
 terms ask for, the time to the first byte was 0.15 seconds seven times, 3.6
 once, 12.7 once and 26.3 once. So the twenty second wait is exceeded by the
-service ANSWERING, perhaps one ask in five. That was recorded against the
+service ANSWERING, one ask in ten in that sample. That was recorded against the
 artist as a failure nobody would ever ask about again, which on a small
 library is the difference between an answer and an empty screen. It goes round
 again now, exactly as a refusal does.

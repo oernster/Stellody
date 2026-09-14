@@ -12,7 +12,7 @@ screenshot, for a reader who cannot separate the two hues and for anybody who
 has simply not been told. FR-D39.
 
 **The busy strip.** One lookup costs at least the gap the terms require and may
-wait out two refusals, so several seconds of quiet is ordinary rather than a
+wait out four refusals, so several seconds of quiet is ordinary rather than a
 fault. It holds its place while nothing is happening, carrying the instruction
 instead: a strip that appeared would push the list down at the moment somebody
 clicked an arrow in it. FR-D40.

@@ -140,7 +140,7 @@ def test_a_stop_lands_between_requests_rather_than_between_artists() -> None:
     """The defect reported twice: a stop that took minutes to be felt.
 
     One artist costs three requests, each of which may take the full twenty
-    second timeout and may be attempted three times. Asked once an artist, a
+    second timeout and may be attempted twice. Asked once an artist, a
     run could go on for minutes after being told to stop; asked before every
     request, what is left is the one already in flight.
     """

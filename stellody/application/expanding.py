@@ -12,7 +12,7 @@ whoever opens one. FR-D31.
 **More patience than a run, through the same retry.** MusicBrainz refused 6 of
 10 asks about the same release when measured on 2026-08-31, so a single ask
 that gave up on the first refusal would fail more often than it answered. A run
-presses each of hundreds of artists three times; this presses one artist five,
+presses each of hundreds of artists twice; this presses one artist five times,
 because the cost of waiting falls on somebody who opened that row and is
 watching it rather than on a run of 327 with the rest still to do. Reported by
 Oliver on 2026-09-08 against The Rolling Stones, whose request is the most

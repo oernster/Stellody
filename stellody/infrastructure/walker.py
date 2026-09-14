@@ -58,7 +58,7 @@ AUDIO_SUFFIXES = frozenset(
 # them, so there is nothing to prove the path with. TrueAudio is the one that
 # decodes and encodes, cut because mutagen states no channel count for it, so
 # the probe would have to invent one. `FORMATS.md` section 1.4 holds each
-# reason; each reopens the day a real file is measured.
+# reason and what would reopen it.
 UNPLAYABLE_SUFFIXES = frozenset(
     {
         ".m4b",

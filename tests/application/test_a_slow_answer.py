@@ -5,7 +5,7 @@ produced no data at all. Measured against MusicBrainz the same day, ten
 identical searches paced at the rate its own terms ask for, the time to the
 first byte was 0.15 seconds seven times, then 3.6, 12.7 and 26.3. So the
 twenty second wait is exceeded by the service ANSWERING rather than by
-anything being wrong, perhaps one ask in five.
+anything being wrong, one ask in ten in that sample.
 
 A slow answer was recorded against the artist as a failure of its own, which
 ends that artist for the run: no later pass ever asks about them again. On a

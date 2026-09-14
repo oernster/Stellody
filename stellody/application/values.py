@@ -213,7 +213,7 @@ class DiscoveryStage(StrEnum):
 class DiscoveryProgress:
     """How far a run has got, named rather than merely counted.
 
-    A run over a whole library takes about eleven minutes at the rate the
+    A run over a whole library has taken 54 minutes at the rate the
     catalogues permit, so a bar with no name against it is indistinguishable
     from a hang.
     """

@@ -227,11 +227,11 @@ class RunnerThatWillNotStart:
 
 
 def test_a_new_run_asked_for_too_soon_says_so(application) -> None:
-    """The trap the reset opened, closed before anybody could fall into it.
+    """A runner that will not take a run says so.
 
-    Letting go of a stopped run at once means the button is offering to start
-    another while the thread is still winding down. The runner refuses that;
-    a refusal nobody is told about is a press that does nothing, which is the
+    A stop lets go of the run's thread at once, so the real runner is free for
+    another straight away; the refusal is kept for a runner still holding one.
+    A refusal nobody is told about is a press that does nothing, which is the
     defect this whole area was reported for.
     """
     window = make_window(application)

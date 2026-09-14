@@ -1,8 +1,8 @@
 """How long a discovery run has left, taken from the pace it has kept.
 
 **The pace is measured, never assumed.** The gap the terms ask for says what a
-request costs at best; a run meets refusals, each costing up to three attempts
-with a lengthening wait between them. An estimate built on the configured gap
+request costs at best; a run meets refusals, each costing a second ask on the
+spot and then a place in a later pass. An estimate built on the configured gap
 would read as confident while being wrong by minutes on exactly the runs where
 somebody most needs it. So nothing here knows what a request is supposed to
 cost: it is handed what has happened and divides. FR-D36.

@@ -44,7 +44,7 @@ deals the pages again from what the picked genres leave; how is
 `results_filtering`'s. FR-D54 to FR-D56.
 
 **A strip at the top says when the catalogue is being asked.** One expansion
-costs at least the gap the terms require and may wait out two refusals, so
+costs at least the gap the terms require and may wait out four refusals, so
 several seconds of nothing happening is the ordinary case rather than a fault.
 Reported the same day as looking stuck. The space is reserved rather than shown
 only while something is in flight: a strip that appeared would push the whole

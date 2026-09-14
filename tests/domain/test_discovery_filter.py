@@ -1,7 +1,7 @@
 """FR-D54 and FR-D55: narrowing an answer to some of the genres it looked in.
 
 Values in and values out: an answer, the library as it stands and what the
-catalogue memory records, with no dialog and no file.
+candidate genre cache records, with no dialog and no file.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from stellody.domain.discovery import (
 from stellody.domain.identity import AlbumIdentity
 
 HOUSE = ("House",)
-# What the catalogue memory holds for a candidate: the catalogue's own words.
+# What the candidate genre cache holds for one: the catalogue's own words.
 REMEMBERED = {"a-house-act": ("house",), "a-rock-act": ("rock",)}
 
 

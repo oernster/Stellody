@@ -1,7 +1,7 @@
 """Running a discovery off the interface thread.
 
-A run over a whole library takes about eleven minutes at the rate the
-catalogues permit, so it cannot happen on the thread that draws the window.
+A run over a whole library has taken 54 minutes at the rate the catalogues
+permit, so it cannot happen on the thread that draws the window.
 
 The same shape as the scan runner beside it, for the same reasons: progress and
 results cross back as Qt signals, with every receiver a bound method of a
@@ -128,13 +128,11 @@ class DiscoveryRunner(QObject):
         stop means stop, so everything a listener can see has to happen now
         rather than when the run gets round to noticing.
 
-        A request already issued cannot be called back. Nothing portable
-        interrupts a thread blocked waiting for a socket, while the wait for
-        a response happens inside `urlopen` before there is anything to close,
-        so the honest choice is between making somebody wait for it and
-        letting go of it. This lets go: the thread is moved aside with its
-        signals cut, so it reports to nobody and blocks nothing. It ends on
-        its own at its next check or when its socket times out.
+        The fetcher drops a request nobody wants any more within a slice of a
+        second; the run still has to reach its own next check before its
+        thread ends, so waiting for it would make a stop only as quick as that.
+        This lets go instead: the thread is moved aside with its signals cut,
+        so it reports to nobody and blocks nothing. It ends on its own.
 
         The thread is kept rather than dropped. A QThread destroyed while it
         is still running takes the process down with it, so the reference is

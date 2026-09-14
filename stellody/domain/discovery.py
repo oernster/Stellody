@@ -250,8 +250,8 @@ def filtered_answer(
     them a source artist: whoever a run over the picked genres would ask about
     keeps their albums. Ruled by Oliver on 2026-09-13, so nobody he holds is
     ever withheld for want of a catalogue genre. A candidate is judged by what
-    the catalogue memory records, since they are not in the library at all; one
-    it records nothing for cannot be judged, so it is withheld and counted once.
+    the candidate genre cache records, since they are not in the library at all;
+    one it records nothing for cannot be judged, so it is withheld and counted once.
     """
     if not picked:
         return FilteredAnswer(gaps=gaps)

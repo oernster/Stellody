@@ -4,9 +4,9 @@ A local-first player that quietly talks to the internet is not local-first,
 whatever its README says. Exactly four modules may hold the machinery to open a
 connection and each is named here with what it is for: cover art when a
 listener asks for a picture, the update check asking GitHub whether a newer
-Stellody has been published, the one fetcher a discovery run asks two
+Stellody has been published, the fetching module a discovery run asks two
 catalogues through, then the channel a second launch speaks to the copy already
-running over, which leaves the machine at all. Nothing on the scan path, the
+running over, which never leaves the machine. Nothing on the scan path, the
 draw path or the playback path may hold that machinery.
 
 Each addition is a change worth reading as such. The update check was added
@@ -127,7 +127,7 @@ def _network_imports(tree: ast.AST) -> set[str]:
     return found
 
 
-def test_only_the_cover_search_can_reach_the_network() -> None:
+def test_only_the_permitted_modules_can_reach_the_network() -> None:
     """Every other module is unable to open a connection, not merely unwilling."""
     offenders = {}
     for path in package_modules():

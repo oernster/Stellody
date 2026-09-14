@@ -27,7 +27,7 @@ from stellody.ui.results_words import where_in_the_answer, withheld
 LOOKED_IN = ("House", "Rock")
 HOUSE = ("House",)
 HOUSE_ACT = SimilarArtist(name="Lane 8", identifier="a-house-act")
-# Two candidates the catalogue memory knows nothing about, under one artist.
+# Two candidates the genre cache knows nothing about, under one artist.
 QUIET = SimilarArtist(name="Nobody Knows", identifier="unremembered")
 SILENT = SimilarArtist(name="Nor Them", identifier="also-unremembered")
 UNJUDGED = 2

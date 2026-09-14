@@ -125,7 +125,7 @@ def asked[Answer](
 
     Asked whether it is still wanted before EVERY request rather than once per
     artist. Measured on 2026-09-07: a request may take the full timeout and may
-    be attempted three times, so a run consulted once an artist could go on for
+    be attempted twice, so a run consulted once an artist could go on for
     minutes after being told to stop.
 
     The same question goes down WITH the request, phrased the way a client
