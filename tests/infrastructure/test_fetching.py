@@ -342,8 +342,7 @@ class TestWhereTheManagerLives:
         assert thread.wait(THREAD_LIMIT_MS), "the thread finished"
         application.processEvents()
         assert thread.answer is not None, "it did build one over there"
-        assert fetcher._manager is None, "and let go of it when that ended"
-        assert fetcher._manager_thread is None
+        assert fetcher._held == {}, "and let go of it when that ended"
 
     def test_a_connection_left_open_is_closed_when_that_thread_ends(
         self, application: QApplication

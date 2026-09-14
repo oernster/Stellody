@@ -48,9 +48,11 @@ sighting can then be read against the line above it.
 from __future__ import annotations
 
 import json
+import threading
 import time
 import urllib.parse
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from PySide6.QtCore import QEventLoop, QThread, QTimer, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
@@ -127,16 +129,40 @@ def _said(body: bytes) -> str:
     return " ".join(spoken.split())[:SAID_LIMIT]
 
 
+@dataclass
+class _Held:
+    """One asking thread's access manager, with when it last asked.
+
+    The stamp lives with the manager because the connections it judges are
+    that manager's own: a manager just built holds none to have gone stale.
+    """
+
+    manager: QNetworkAccessManager
+    # When the last request went out, so the next can tell whether the
+    # connection it would reuse has been sitting there too long. None until
+    # one has, since there is nothing to reuse before that.
+    last_ask: float | None = None
+
+
 class Fetcher:
     """Asks one service for JSON, at the rate its terms allow.
 
     One fetcher stands in front of one service, because it carries that
     service's gate and a gap owed to one says nothing about another.
 
-    The access manager is built on the thread that first asks; rebuilt where
-    a later run asks from a different one. Qt objects belong to the thread that
-    made them, while a discovery runs on a thread of its own, so the manager
-    has to live where the requests are made rather than where the fetcher was.
+    Each thread that asks gets an access manager of its own, kept until that
+    thread ends. Qt objects belong to the thread that made them, while a
+    discovery runs on a thread of its own, so a manager has to live where the
+    requests are made rather than where the fetcher was.
+
+    **One manager per thread rather than one for whichever asked last.** A
+    stopped run is abandoned rather than waited for, so the next run can be
+    asking through this same fetcher before the old thread has ended. Measured
+    on 2026-09-14 against loopback services with one manager held: the new run
+    asking replaced the old run's manager and deleted its reply under it, so
+    the old thread never ended. The old thread ending let go of the new run's
+    manager mid-request, which lost that request or took the process down with
+    an access violation.
     """
 
     def __init__(
@@ -150,32 +176,41 @@ class Fetcher:
     ) -> None:
         self._gate = gate if gate is not None else Gate()
         self._timeout_s = timeout_s
-        self._manager = manager
-        self._manager_thread = QThread.currentThread() if manager else None
+        # Each asking thread's manager. Reached from every thread that asks
+        # and from the loop that hears one of them end, so it is only ever
+        # touched under the lock.
+        self._held: dict[QThread, _Held] = {}
+        self._holding = threading.Lock()
+        if manager is not None:
+            self._held[QThread.currentThread()] = _Held(manager)
         self._note = note
         self._idle_limit_s = idle_limit_s
         self._clock = clock
-        # When the last request went out, so the next can tell whether the
-        # connection it would reuse has been sitting there too long. None
-        # until one has, since there is nothing to reuse before that.
-        self._last_ask: float | None = None
+
+    def _here(self) -> _Held:
+        """What belongs to the thread doing the asking; made where it is missing.
+
+        A manager just built holds no connection, so it starts with no stamp:
+        one carried over from another manager would throw away a cache that
+        was never filled.
+        """
+        here = QThread.currentThread()
+        with self._holding:
+            held = self._held.get(here)
+            if held is None:
+                held = _Held(QNetworkAccessManager())
+                self._held[here] = held
+                # Let go of it when its thread ends, naming that thread. See
+                # `_let_go` for why it has to be told.
+                here.finished.connect(lambda: self._let_go(here))
+        return held
 
     def _asking(self) -> QNetworkAccessManager:
         """An access manager belonging to the thread doing the asking."""
-        here = QThread.currentThread()
-        if self._manager is None or self._manager_thread is not here:
-            self._manager = QNetworkAccessManager()
-            self._manager_thread = here
-            # A manager just built holds no connection, so there is none to
-            # have gone stale; a stamp carried over from the last one would
-            # throw away a cache that was never filled.
-            self._last_ask = None
-            # Let go of it when its thread ends. See `_let_go`.
-            here.finished.connect(self._let_go)
-        return self._manager
+        return self._here().manager
 
-    def _let_go(self) -> None:
-        """Close the connections when the thread that owns them ends.
+    def _let_go(self, thread: QThread) -> None:
+        """Close one thread's connections once that thread has ended.
 
         A run keeps its connections open between requests, which is what the
         gap the terms ask for makes worth doing. Nothing closed them when the
@@ -188,18 +223,17 @@ class Fetcher:
         A delay that steady against runs that differ by a second is a fixed
         idle timeout rather than anything about the run.
 
-        **Connected to a bare method deliberately, which is the one place in
-        this application that is right.** A signal connected to a callable
-        runs in the SENDER's thread; here the sender is the thread that is
-        ending and the sockets are its own, so its thread is exactly where
-        they have to be closed. Anywhere else would be closing them across a
-        boundary, which is the fault this avoids rather than commits.
+        **Told which thread ended rather than working it out.** This is heard
+        on the interface thread through its loop, not on the thread that
+        ended: measured on 2026-09-14 for a bound method and for a closure
+        alike, which is the opposite of what was written here before. It used
+        to let go of whatever manager was held at the moment it was heard,
+        which by then could belong to the next run.
         """
-        manager = self._manager
-        self._manager = None
-        self._manager_thread = None
-        if manager is not None:
-            manager.clearConnectionCache()
+        with self._holding:
+            held = self._held.pop(thread, None)
+        if held is not None:
+            held.manager.clearConnectionCache()
 
     def json(
         self, address: str, parameters: dict[str, str], wanted: Wanted = always_wanted
@@ -246,14 +280,14 @@ class Fetcher:
         longer than `IDLE_LIMIT_S` is thrown away first, since the host will
         have let go of its end while nothing here was looking.
         """
-        asking = self._asking()
+        held = self._here()
         now = self._clock()
-        if self._last_ask is not None and now - self._last_ask > self._idle_limit_s:
-            asking.clearConnectionCache()
-        self._last_ask = now
+        if held.last_ask is not None and now - held.last_ask > self._idle_limit_s:
+            held.manager.clearConnectionCache()
+        held.last_ask = now
         request = QNetworkRequest(QUrl(url))
         request.setRawHeader(b"User-Agent", USER_AGENT.encode("utf-8"))
-        return asking.get(request)
+        return held.manager.get(request)
 
     def _waited_on(self, reply: QNetworkReply, wanted: Wanted) -> None:
         """Wait for the reply, giving it up where nobody wants it any more.
