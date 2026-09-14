@@ -237,7 +237,11 @@ class Discovering(SettlingDiscovery):
         if self._discovery_stopping:
             self._discovery_stopping = False
             return
-        message, found, presented = self._settled(report)
+        # Settled against the file before anything is said, so an artist whose
+        # earlier answer is carried over is not called unanswered beside a
+        # screen showing that answer. FR-D42, FR-D46.
+        settled = self._carried(report)
+        message, found, presented = self._settled(settled)
         # Written down as well as said. The sentence goes to the status bar,
         # which is the right place for it and is also a place nobody watching
         # an hour long run is looking at: twice in one night a run ended with
@@ -256,7 +260,7 @@ class Discovering(SettlingDiscovery):
         # time. Set before the results open for the same reason the message
         # is: the results are modal, so anything done behind them is only met
         # once they close.
-        self._offer_shortfall(report if presented else None)
+        self._offer_shortfall(settled if presented else None)
         if found:
             self.show_discovery_results()
 

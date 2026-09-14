@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from stellody.application.carrying_over import carried_over
+from stellody.application.discovery_ports import DiscoveryResults
 from stellody.application.values import RunOutcome, RunReport
 from stellody.ui import shortfall
 
@@ -43,6 +45,27 @@ class SettlingDiscovery:
     """Deciding what a finished run is said to have been."""
 
     _write_discovery: WriteDiscovery | None
+    _discovery_results: DiscoveryResults | None
+
+    def _carried(self, report: RunReport) -> RunReport:
+        """The report as the file will hold it, once earlier answers carry over.
+
+        The writer keeps an earlier answer for an artist this run could not
+        reach and records no failure for that artist. FR-D46. The counts and
+        the shortfall are read from the same thing, since otherwise the
+        sentence and the button name artists the results screen shows an
+        answer for. FR-D42, FR-D43.
+
+        A run that will not be written is said as it stands. So is one whose
+        file cannot be read back, since there is nothing to carry from.
+        """
+        if (
+            not report.is_writable
+            or self._write_discovery is None
+            or self._discovery_results is None
+        ):
+            return report
+        return carried_over(report, self._discovery_results.last_run().gaps)
 
     def _settled(self, report: RunReport) -> tuple[str, bool, bool]:
         """What to tell somebody about a run that ended; what to open for it.
