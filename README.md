@@ -146,6 +146,10 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   it the file's own samples untouched. macOS and Linux reach the device through
   the system mixer instead, which converts on the way, so playback there is not
   bit perfect and Stellody says so rather than claiming otherwise.
+- **Sized to fit a laptop screen.** Everything is drawn at nine tenths of the
+  size it is built at, so the whole window fits a 13 inch 4K screen at 300%
+  scaling. To choose a different size, set the `QT_SCALE_FACTOR` environment
+  variable before starting Stellody; it uses yours rather than its own.
 - **It is a player, nothing more.** It does not stream, does not copy your CDs,
   does not sync to a phone and will not reorganise your files by rewriting
   them. It will point your browser at a shop selling what you are missing; it
@@ -226,7 +230,7 @@ Stellody is free and stays free. There is no paid tier, no licence key and no
 feature held back behind a donation. If it has replaced something you were
 paying for, a donation supports its maintenance and continued development.
 
-<a href="https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"><img src="assets/donate.png" alt="Donate to Stellody" width="120"></a>
+<a href="https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"><img src="docs/donate.png" alt="Donate to Stellody" width="120"></a>
 
 ---
 
