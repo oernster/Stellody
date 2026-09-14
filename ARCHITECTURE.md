@@ -23,6 +23,12 @@ has never been seen to fail is not yet a guard.
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
 | 14 | The setup program is a client of the application, never a layer of it: `installer/` reads what it needs from `stellody`, while nothing under `stellody/` imports `installer`. | `tests/structural/test_layers.py::test_the_application_never_imports_the_setup_program` |
 | 15 | The product name is written in one place, for the application and for the setup program alike. No string a reader or the operating system meets spells it out again; every other surface builds it from `APP_NAME`. | `tests/structural/test_one_name.py::test_the_product_name_is_written_in_one_place` |
+| 16 | No file the repository ships or writes carries a dash-like character; the hyphen-minus is the one allowed. | `tests/structural/test_no_dashes.py::test_no_file_carries_a_dash_like_character` |
+| 17 | The user agent the discovery fetcher sends is built from the product name, the version and one fixed contact address alone; the fetcher sets that one header from that constant. | `tests/structural/test_user_agent.py` |
+| 18 | Everything discovery keeps is written under Stellody's own data directory, each place named through `paths.py`. | `tests/structural/test_discovery_paths.py` |
+| 19 | No test holds the machinery to reach the network, except the named few that open nothing beyond this machine. | `tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network` |
+| 20 | Every runtime pin in `requirements.txt` is the version installed in the environment the suite runs in. | `tests/structural/test_environment.py` |
+| 21 | No audio file of a format proved by a generated fixture sits in the tree. | `tests/structural/test_no_committed_audio.py` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
@@ -1128,7 +1134,10 @@ holds the user agent and the pacing for every service reached through
 `cover_search.py` or `fetching.py`, the update check stating its own agent in
 `update_source.py`, since
 a gap honoured in one client and forgotten in another is a client that gets the
-whole application refused.
+whole application refused. For the same reason the composition root hands the
+run, an expansion and the cover search one gate for MusicBrainz, which
+`tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`
+holds.
 
 **A request in flight is killed rather than abandoned; that is why it is on
 Qt.** Nothing portable interrupts a thread waiting on a socket and the wait for

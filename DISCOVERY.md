@@ -293,7 +293,7 @@ when Reggae is ticked with compilations included, then Dilby and Tinlicker are
 source artists while Various Artists is not; with compilations left out, none of
 the three is.
 
-Verified by: `tests/application/test_discovery.py::test_sources_read_the_resolved_genre`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_is_asked_about_by_its_track_credits`, `tests/domain/test_discovery_gaps.py::test_a_compilation_left_out_asks_about_nobody`, `tests/domain/test_discovery_gaps.py::test_various_artists_is_never_a_source_artist`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_outside_the_ticks_is_not_asked_about`
+Verified by: `tests/application/test_discovery.py::test_sources_read_the_resolved_genre`, `tests/domain/test_stating_an_album.py::TestWhoADiscoveryAsksAbout::test_a_genre_stated_over_an_untagged_album_decides`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_is_asked_about_by_its_track_credits`, `tests/domain/test_discovery_gaps.py::test_a_compilation_left_out_asks_about_nobody`, `tests/domain/test_discovery_gaps.py::test_various_artists_is_never_a_source_artist`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_outside_the_ticks_is_not_asked_about`
 
 ---
 
@@ -693,7 +693,7 @@ file untouched.
 Acceptance: Given a destination that refuses writes, when a run completes, then
 the failure is reported with the reason and the previous file is unchanged.
 
-Verified by: `tests/ui/test_discovery_wiring.py::test_a_file_that_will_not_write_is_reported`, `tests/infrastructure/test_discovery_file.py::test_nothing_is_left_half_written`
+Verified by: `tests/ui/test_discovery_wiring.py::test_a_file_that_will_not_write_is_reported`, `tests/infrastructure/test_discovery_file.py::test_nothing_is_left_half_written`, `tests/infrastructure/test_discovery_file.py::test_a_write_that_fails_leaves_the_last_answer_as_it_was`
 
 ---
 
@@ -1920,7 +1920,11 @@ asserts that every request passes through the pacing gate, whose gap is
 `REQUEST_GAP_S`, 1.1 seconds, in `infrastructure/courtesy.py`. Amended
 2026-09-12: this named a test driving a fake clock over a run of twenty
 artists, which does not exist. What is proved is that no request skips the
-gate; the spacing itself rests on that one constant.
+gate; the spacing itself rests on that one constant. A second client asking the
+same host through a gate of its own would undo that spacing, so every client
+asking MusicBrainz is given the one gate: the run, an expansion and the cover
+search. Held by
+`tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`.
 
 ---
 
