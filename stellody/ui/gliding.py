@@ -183,7 +183,11 @@ class GlidingGrid(QListView):
         294 pixels below the bottom of what was left, so the album the listener
         had just picked was not on screen at all.
 
-        Forcing the layout through first is what makes the destination right.
+        Scrolling again once the pane is showing is what makes the destination
+        right. Showing the pane lays the page out by itself, measured on
+        2026-09-14 as the viewport going from 514 pixels to 386 inside that
+        call. A pane already open that grows for a longer album does not, so
+        the layout is forced through here for that case.
         Asking within the same turn is what keeps it to one movement: the glide
         has put the scrollbar back to where it started and not yet travelled,
         so re-aiming it is invisible.

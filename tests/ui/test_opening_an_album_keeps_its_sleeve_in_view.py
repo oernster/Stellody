@@ -13,6 +13,15 @@ the sleeve came to rest 294 pixels below the bottom of what was left. Nothing
 was wrong with Qt's answer: it was the right answer to a question asked one
 moment too early.
 
+Measured again on 2026-09-14, after the pane learned to fit its album: showing
+the pane lays the page out at once, the grid's viewport going from 514 pixels
+to 386 inside the call that shows it. So on a first open the grid already has
+its real room by the time it scrolls again. The layout is forced through for
+the other case: a pane already open that grows because the album picked is
+longer than the one it held. Every album here used to be two tracks long, so
+that case never arose and taking the forcing out failed nothing. The picked
+album is now a long one; one test opens it over a short album already showing.
+
 These tests are about WHERE the grid comes to rest, so the glide is set to no
 duration; how it travels is held in `test_gliding_grid`.
 """
@@ -37,8 +46,15 @@ PICKED = 45
 # The offscreen screen is 800 by 800 and the window maximises to fit it. These
 # tests used to cap the pane at 140 pixels by hand, because it took 300 whatever
 # the album and left the grid less than a sleeve. The pane now fits its album up
-# to what leaves the grid a whole row of sleeves, measured at 128 pixels for
-# these two-track albums, so there is nothing left to cap.
+# to what leaves the grid a whole row of sleeves: measured at 128 pixels for a
+# two-track album and 272 for the long one picked, so there is nothing to cap.
+SHORT_TRACKS = 2
+LONG_TRACKS = 20
+# The album left open before the picked one is chosen. Measured with the
+# forcing taken out, the three albums just before the picked one still left
+# its sleeve whole, while the fourth to the eighth did not; six before sits in
+# the middle of that band rather than at its edge.
+OPEN_FIRST = PICKED - 6
 
 
 def albums() -> tuple[Album, ...]:
@@ -48,7 +64,10 @@ def albums() -> tuple[Album, ...]:
             identity=AlbumIdentity(
                 album_artist=f"Artist {number:02d}", title=f"Album {number:02d}"
             ),
-            tracks=(track(1), track(2)),
+            tracks=tuple(
+                track(n + 1)
+                for n in range(LONG_TRACKS if number == PICKED else SHORT_TRACKS)
+            ),
         )
         for number in range(ALBUMS)
     )
@@ -107,6 +126,24 @@ def test_picking_an_album_leaves_its_sleeve_fully_visible(
     assert sleeve_is_whole(window)
 
 
+def test_picking_a_longer_album_over_an_open_one_leaves_its_sleeve_whole(
+    window: MainWindow, application: QApplication
+) -> None:
+    """The pane is already showing, so it grows rather than appears.
+
+    Showing a pane lays the page out; growing one that already shows does not,
+    measured, so this is the case the grid forces the layout through for.
+    """
+    window.toggle_view()
+    application.processEvents()
+    window._grid.setCurrentIndex(window._model.index(OPEN_FIRST, 0))
+    application.processEvents()
+    assert window._album_pane.isVisible()
+    window._grid.setCurrentIndex(window._model.index(PICKED, 0))
+    application.processEvents()
+    assert sleeve_is_whole(window)
+
+
 def test_switching_to_the_sleeves_leaves_the_carried_album_fully_visible(
     window: MainWindow, application: QApplication
 ) -> None:
@@ -123,7 +160,11 @@ def test_switching_to_the_sleeves_leaves_the_carried_album_fully_visible(
 def test_switching_back_and_forth_still_lands_on_the_sleeve(
     window: MainWindow, application: QApplication
 ) -> None:
-    """With the pane already open, so its appearance cannot be what saves it."""
+    """After the pane has been open once, by the list's route back to it.
+
+    Switching to the list shuts the pane, measured, so the switch back opens
+    it afresh; a pane already open is the longer-album test's case.
+    """
     window.toggle_view()
     window._grid.setCurrentIndex(window._model.index(0, 0))
     application.processEvents()
