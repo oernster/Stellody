@@ -37,8 +37,7 @@ made a stray text file read as a missing album once already.
 **Infrastructure and the interface sit outside the coverage gate.** The gate is
 100% branch over `stellody.domain` and `stellody.application`, the layers
 reachable with no filesystem, no clock and no audio device. The rest is not
-gated and the suite does not measure it by default; measured over the whole
-package with `--cov=stellody` on 2026-09-13, it stood at 95%. That is a decision
+gated and the suite does not measure it by default. That is a decision
 recorded in
 `ARCHITECTURE.md`, not an omission: a gate over code needing a real device, a
 real library and the Windows shell would either be a number nobody can hold or a
@@ -64,7 +63,4 @@ by the time it is reached, the store closed and the claim released.
 application rather than a layer of it. Nothing under `stellody/` imports back,
 which is now invariant 14, enforced by
 `test_the_application_never_imports_the_setup_program` in
-`tests/structural/test_layers.py`. This file claimed for a while that a layering
-test enforced that direction while no test mentioned the setup program at all,
-so the assertion was written and made to fail on a planted import before it was
-believed. One identity, one theme and one licence viewer is the point of it.
+`tests/structural/test_layers.py`. One identity, one theme and one licence viewer is the point of it.

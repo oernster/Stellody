@@ -61,7 +61,7 @@ guarantee is held by a test rather than by a promise. It permits four modules
 and no others. `stellody/infrastructure/cover_search.py` is reached when
 somebody asks for a cover; `stellody/infrastructure/update_source.py` asks
 GitHub whether a newer Stellody has been published;
-`stellody/infrastructure/fetching.py` is the one socket a discovery run asks
+`stellody/infrastructure/fetching.py` is the one module a discovery run asks
 its two catalogues through; it is also how an expanded candidate artist is
 looked up afterwards; `stellody/infrastructure/instance.py` is the
 channel a second launch tells the running copy to show itself over, which is a
@@ -394,7 +394,11 @@ bare path for a whole file and `path#start_frame` for a slice, which is the one
 value that separates two tracks living in the same file. A whole file addresses
 exactly as it always did, so every pin written before the rule arrived is found
 where it was left and nothing stored changed shape. `overrides.applied` looks a
-pin up by that address, so a pin cannot reach a track it is not about.
+pin up by that address, so a pin cannot reach a track it is not about. The tag
+editor writes against the same value: `edits_for` in
+`stellody/application/editing.py` records `track.source.address`, so a number
+stated for one slice of a cue album reaches that slice alone, as
+`tests/application/test_editing_a_cue_album.py` holds.
 
 **The findings and the accepted set are two lists, not one.** This is forced
 rather than chosen: a finding that has been accepted leaves the report, so it
@@ -940,8 +944,8 @@ sort rebuilds the rows. A search flash wins while it pulses; the mark returns
 after it. The delegate fills the brush ahead of the selection, which is why the
 mark is a pink of its own told from the selection by hue. The status bar used to
 say what was playing only after a double click, for six seconds.
-`stellody/ui/now_playing.py` now writes a permanent label from the transport in
-`_show_transport`, which every command, every failure and every poll passes
+`stellody/ui/now_playing.py` now writes a permanent label, asked for by
+`_show_transport` in `stellody/ui/playing.py`, which every command, every failure and every poll passes
 through, so no route that changes the track can leave the mark or the name
 behind. A stop clears both; a pause keeps them. The switches moved to
 `stellody/ui/switches.py` to make the room in `playing.py`.
@@ -1119,7 +1123,7 @@ holds a socket: `infrastructure/catalogue.py` and `infrastructure/similarity.py`
 hand a question to `infrastructure/fetching.py` and get an answer back. The
 offline structural test's whole value is that its list is short and that
 lengthening it is an edit somebody has to defend, so a feature reaching two
-hosts through one socket is worth writing that way. `infrastructure/courtesy.py`
+hosts through one module is worth writing that way. `infrastructure/courtesy.py`
 holds the user agent and the pacing for every service reached through
 `cover_search.py` or `fetching.py`, the update check stating its own agent in
 `update_source.py`, since
@@ -1135,11 +1139,32 @@ its answer. Measured on 2026-09-07 against a server that accepts a connection
 then says nothing: the reply ends in under a millisecond, where the blocking
 client sat until its full twenty second timeout.
 
+**Each asking thread holds its own access manager.** Qt objects belong to the
+thread that made them, so `Fetcher` keeps one `QNetworkAccessManager` per asking
+thread, in a dictionary touched only under a lock. One manager for whichever
+thread asked last was not enough: a stopped run is abandoned rather than waited
+for, so the next run can be asking through the same fetcher before the old
+thread has ended. Each could then pull the manager from under the other, which
+lost a request or left the old thread never ending. A manager is released when
+its thread's `finished` is heard; that is delivered on the interface thread
+through its event loop rather than on the thread that ended, so the handler is
+told which thread ended instead of letting go of whatever manager is current.
+Held by `tests/infrastructure/test_a_fetcher_shared_between_runs.py`, which
+drives two runs in a fresh process because the fault can take the process with
+it.
+
 **A stopped run is abandoned rather than waited for.** Cutting it loose from the
 window is what makes a stop instant rather than eventual; reports arriving after
 the press are dropped, since a run reports right up to the moment it notices.
 What that costs is the abandoned run's share of the pacing, which is bounded by
 the gap the terms ask for now that its last request dies with it.
+
+Quitting is the one place a run is waited for. `_leave_for_good` in
+`stellody/ui/leaving.py` calls the discovery runner's `wait`, which cancels the
+run in hand then waits on its thread and on every abandoned one. Left alone, a
+run went on asking after the window had gone, on a thread Qt was about to tear
+down. FR-D24, held by
+`tests/ui/test_quitting.py::test_quitting_mid_run_stops_the_discovery_run`.
 
 **The button carries both meanings, so it says which one it is carrying.** A
 confirmation was tried first and measured doing the opposite of its purpose: a
@@ -1246,6 +1271,14 @@ source artists, 5,550 possible lookups came down to 1,350, since the
 well-connected are suggested again and again. An answer already held is
 still judged against the genres ticked, so remembering cannot smuggle a
 candidate past the scope of a run.
+
+Only an answer is remembered. A lookup that fails in any way, whether too slow,
+refused past its asks, answered with an error or abandoned by a stop, leaves
+that candidate unknown rather than written down as playing nothing, since what
+is remembered here is kept without a limit; an empty answer the catalogue
+actually gave is still remembered. `CandidateGenres.narrowed` in
+`application/candidate_genres.py` is that rule, held by
+`tests/application/test_discovery_narrowing.py`.
 
 **The results can be narrowed by genre, judged differently at each end.**
 FR-D54 to FR-D56, ruled by Oliver on 2026-09-13 after a whole-library answer ran
@@ -1542,7 +1575,7 @@ online check and it will not launch for somebody offline.
 | One dropped connection no longer ends a run; a run of them still does | Reported by Oliver on 2026-09-09. A run of fifty minutes over his whole library ended on its first answer of nothing at all, which was a single ListenBrainz request closed after 64 milliseconds: measured from that night's diary, the only one in 7252 lines. The judgement that continuing with no network is many slow ways of saying so was right; the proof it was reading was one sample. An artist nothing answered about now goes round again exactly as a refused one does; the run gives up on the connection only after five questions in a row have been met with nothing, with anything at all answering in between starting that count again. The count is one for the whole run rather than one a half, since the connection is one thing; `Silence` in `application/gathering.py` holds it. Being sure is cheap here: the run paces itself at about a second a question. |
 | Every answer is written down as it arrives, not only when a run ends | Reported by Oliver on 2026-09-09, having left a run going overnight. Both memories were read once at the start of a run and written once at the end, so a run of fifty minutes held 581 answers on a single line of code being reached: a crash, a power cut or a closed window took the lot. So each answer is now appended to a running record the moment it arrives and forced to the disk; each memory is read as its file plus that record; a record is dropped only once its own file holds what it held. `infrastructure/journal.py` owns the appending and no path of its own, exactly as `atomic.py` owns the replacing; `catalogue_memory.py` and `discovery_file.py` each name their own record. An append is chosen over rewriting the whole file because it cannot damage what is already there, so the worst a death mid-write costs is the line being written; the whole file is still written at the end, which is what keeps the record short. |
 | An answer with a hole in it is written, with the hole named in it | It was refused outright until 2026-09-09, on the ground that a file holding whichever artists a service felt like answering about is a different file every time. That reasoning was aimed at a file that stays SILENT about its holes; taking it literally cost Oliver two whole-library runs in one night with nothing shown for either, the second after 54 minutes and 843 requests, because ONE artist was refused twice then timed out. What could not be answered for is now written beside what was, the screen carries the shortfall sentence and the button that names those artists; the next run fills them in without asking about anybody else. The gaps are written in artist order, since an artist carried over would otherwise sit where the carrying put it while the same artist answered for directly sits in library order. |
-| A run may correct what is known but may not take it away | The second half of the same fault. An artist a run cannot reach keeps the answer an earlier run got for it, rather than the file being replaced by a worse one; only an artist THIS run failed on is carried over, so an artist no longer in the library still falls away. `application/carrying_over.py` is the whole rule and is pure, which is what lets the file writer stay about files. |
+| A run may correct what is known but may not take it away | The second half of the same fault. An artist a run cannot reach keeps the answer an earlier run got for it, rather than the file being replaced by a worse one; only an artist THIS run failed on is carried over, so an artist no longer in the library still falls away. `application/carrying_over.py` is the whole rule and is pure, which is what lets the file writer stay about files. The window reads the same rule before it speaks: `_carried` in `ui/discovery_endings.py` passes a finished run's report through `carried_over`, so the sentence and the shortfall button never call an artist unanswered beside a results screen showing that artist's answer. |
 | What a failure says on screen is read off its kind, never off its message | A row reading "given up on part way through" followed by a MusicBrainz address is unreadable to whoever is using this and is the only thing worth having to whoever is fixing it, so both are kept apart: the row gets a sentence, the diary gets the class, the message and the artist. It is why a refusal and a timeout are now distinct kinds of failure rather than two messages inside one: Qt reports an abandoned reply the same way whether the wait ran out or somebody stopped wanting it. |
 | The results screen is dealt into columns and stops at a 13 inch display | The answer opened as one tall list at a fixed 700 by 560, so a run over two genres already ran off the foot of the screen while the room to show it sat empty either side. It takes a share of the screen now, dealt across as many columns as that width affords, a column being a third of what a 13 inch display shows, each a list read top to bottom the way the album pane reads an album's tracks. The share is capped at what a 13 inch display can show, ruled by Oliver on 2026-09-08: a dialog 3096 pixels wide is one nobody reads across in one go and one that cannot be checked on the machines this has to run on. The arithmetic is `results_room.py`, which reads a room and answers a size, a count of columns and which artist lands where; it holds no widget, so the interesting widths can be read on a platform reporting an 800 square screen. `results_columns.py` puts the two together and is the only place that knows both. |
 | A control that closes something wears the close picture, not the negative mark | The album pane's close button wore `negative.png`, which is the mark every switch wears LAID OVER its own picture to say it is off. Alone on a control it says nothing about what a press would do; it is also the one picture in the set that means "not this" rather than naming an action. The pane closes, so it now wears what every other Close wears. The mark goes back to being only ever composed over something else, which is what its exemption from the guide sweep already claims of it. |

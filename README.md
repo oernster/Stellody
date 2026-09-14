@@ -17,8 +17,9 @@ Above all, it never changes a single one of your files.
 > **Commercial licences available.** Stellody is free and open source under
 > GPL-3.0, with its interface layer under LGPL-3.0. If those terms do not suit
 > what you are building, such as a closed-source product, a commercial licence
-> can be bought from me separately. It covers my own code; PySide6 and the
-> bundled FFmpeg build keep their own licences. See
+> can be bought from me separately. It covers my own code; PySide6 (LGPL-3.0)
+> and the bundled FFmpeg build (LGPL-3.0-or-later, linking libx264 and libx265
+> under GPL-2.0-or-later) keep their own terms. See
 > [commercial licensing](https://ernster.dev/commercial-licensing.html).
 
 ## Why it exists
@@ -27,7 +28,8 @@ Someone spent years turning a shelf of CDs into files: ripping each one,
 checking the track names, fixing the artist on the compilations, finding the
 right cover art. Then a well known music player reached into those files and
 rewrote the information stored inside them. It damaged 33 albums. The music
-still played; the careful work around it was gone.
+still played. Every one of those albums was put right in the end; a music player
+should never have touched them.
 
 Stellody is built on one rule that everything else follows from: your files are
 opened to be read and never to be changed. Where it finds something muddled in
@@ -43,8 +45,8 @@ checks run; if it ever stopped being true the suite would fail.
   cover and the album opens underneath without losing your place. Switching
   between the two lands where you were, so whatever is playing is picked out
   either way: its row is marked in both views and its name sits along the foot
-  of the window. In the list, one press on the Title heading opens every album at
-  once; another closes them.
+  of the window. In the list, one press on the arrow at the left of the Title
+  heading opens every album at once; another closes them.
 - **Search that narrows as you type**, however many thousands of songs you
   have. The album stays whole around whatever you were looking for.
 - **Albums that flow.** Records made to run straight through play that way,
@@ -71,8 +73,10 @@ checks run; if it ever stopped being true the suite would fail.
   new albums by name, the new tracks counted and your library's totals, rather
   than a line that disappears while you are looking elsewhere.
 - **Say what an album really is.** Where a tag is wrong rather than merely
-  muddled, state the artist, the title, the year or the genre yourself and
-  Stellody remembers it. Genres come from a settled list of eighteen headings
+  muddled, state the artist, the title, the date or the genre yourself and
+  Stellody remembers it. A single song takes its own title, artist, disc number
+  and track number the same way, even one song of an album saved as one long
+  file. Genres come from a settled list of eighteen headings
   with their styles under them, so the same music cannot end up under three
   spellings of one word. Your files are read for this and never written.
 - **Show me only the folk.** Narrow the wall of covers to the genres you ask
@@ -83,10 +87,11 @@ checks run; if it ever stopped being true the suite would fail.
   not hold, along with who else sounds like them. Tick the box for compilations
   and it asks about the artists on their tracks too, saying first roughly how
   many minutes that adds. It reports as it goes, says roughly how long is left
-  and stops the moment you ask it to. Where it could not get a usable answer
-  about somebody it says so and counts them, with the names one press away, so
-  an answer with gaps in it never reads like a complete one. Every answer is kept the moment it arrives, so a
-  run stopped or cut short loses nothing it had already paid for and a second
+  and stops the moment you ask it to or quit Stellody. Where it could not get a
+  usable answer about somebody and holds none from an earlier run, it says so
+  and counts them, with the names one press away, so an answer with gaps in it
+  never reads like a complete one. Every answer is kept the moment it arrives,
+  so a run stopped or cut short loses nothing it had already paid for and a second
   attempt asks only for the rest. What it finds opens as a list you can read
   and tick, dealt across the width of the screen and turned a page at a time,
   then narrowed to some of the genres it looked in when the answer runs long.
@@ -180,8 +185,9 @@ Five things reach outside your computer at all, so here are all five:
   catalogues, MusicBrainz and ListenBrainz, then asks what those artists made
   that you do not hold. What goes out is those artist names, the MusicBrainz
   identifiers the catalogues give back for them and for the similar artists
-  they find, plus a user agent naming
-  Stellody, its version and the project's contact address: not your library,
+  they find, the fixed settings each request states for itself (the answer's
+  format and how many results to return) plus a user agent naming Stellody, its
+  version and the project's contact address: not your library,
   not a count of it, not a word about you or your machine. Tick nothing and
   nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
@@ -202,8 +208,11 @@ named `stellody-diary.log` and written in Stellody's own data directory beside
 the library database: `%LOCALAPPDATA%\Stellody` on Windows,
 `~/.local/share/stellody` on Linux and `~/Library/Application Support/Stellody`
 on macOS. A Linux flatpak keeps its own copy of that directory under
-`~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no music and no
-personal data, is never sent anywhere and can be deleted whenever you like.
+`~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no audio and
+nothing about you; during a discovery run it notes each address asked, which
+carries the artist names sent. Beside it, `stellody-startup.log` holds the
+reason when Stellody could not start. Neither is ever sent anywhere; either can
+be deleted whenever you like.
 
 ## Installing
 
@@ -226,14 +235,6 @@ It can read your home directory and any removable drive but can write to none
 of them: Stellody never writes to a music file, so on Linux it is not given the
 means to. Beyond that it asks for sound, the screen and the network, the last
 for the things listed under Your privacy.
-
-## Supporting the project
-
-Stellody is free and stays free. There is no paid tier, no licence key and no
-feature held back behind a donation. If it has replaced something you were
-paying for, a donation supports its maintenance and continued development.
-
-<a href="https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"><img src="docs/donate.png" alt="Donate to Stellody" width="120"></a>
 
 ---
 
@@ -289,7 +290,7 @@ test refuses the run otherwise: the checks passing in one environment while
 the application runs in another is a fault this project has actually had.
 
 The suite gates at 100% branch coverage over the domain and application
-layers; it fails the build below that. It also runs black, flake8 and ruff as
+layers; below that the run fails. It also runs black, flake8 and ruff as
 assertions, so a formatting or linting regression is a test failure.
 
 ## Building
@@ -332,10 +333,11 @@ without it, for local testing only.
 ./clean_flatpak.sh
 ```
 
-The wheels are fetched to the host first, so the build itself reaches the
-network for nothing. PortAudio is compiled from source into the bundle, because
-the sounddevice wheel carries a library for Windows and macOS only and the
-freedesktop runtime ships none. The cleaner uninstalls Stellody then removes
+The wheels and the source archives are fetched to the host first, so the build
+itself reaches the network for nothing. PortAudio is compiled from source into
+the bundle, because the sounddevice wheel carries a library for Windows and
+macOS only while the freedesktop runtime ships none. So is the Kerberos client
+library, which Qt's network module links while the runtime carries none. The cleaner uninstalls Stellody then removes
 what the build wrote and nothing else; pass `--purge-data` to remove your
 ratings and settings as well.
 
@@ -356,9 +358,8 @@ which carries it across, pushes it then asks Render to deploy it. Commit here
 and both hosts follow.
 
 **The deploy is asked for rather than inferred, deliberately.** Render's own
-Auto-Deploy is set to On Commit and has been throughout, yet every deploy since
-July was triggered by hand or by a settings change: the link stopped delivering
-push events months ago with nothing anywhere saying so. The workflow already
+Auto-Deploy is set to On Commit, yet it stopped hearing pushes with nothing
+anywhere saying so; deploys went out only when somebody pressed for one. The workflow already
 knows a deploy is wanted, so it says so outright, through a deploy hook held as
 `RENDER_DEPLOY_HOOK`. Without that secret the mirror still updates while
 stellody.com waits; the run then logs a warning saying exactly that.
@@ -385,6 +386,14 @@ The workflow reads two secrets. `MIRROR_TOKEN` is a fine-grained personal access
 token scoped to `oernster/stellody-website` alone, with Contents set to read
 and write; without it the run stops at once. `RENDER_DEPLOY_HOOK` is the deploy
 hook described above.
+
+## Supporting the project
+
+Stellody is free and stays free. There is no paid tier, no licence key and no
+feature held back behind a donation. If it has replaced something you were
+paying for, a donation supports its maintenance and continued development.
+
+<a href="https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"><img src="docs/donate.png" alt="Donate to Stellody" width="120"></a>
 
 ## Licence
 

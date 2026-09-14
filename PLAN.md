@@ -49,15 +49,6 @@ rather than about the product: the section below records what was decided
 against and why, which is the half of a plan that stops the same ground being
 argued twice. A new milestone arrives here when somebody decides on one.
 
-No question here is open either. The last one, whether somebody holding WMA
-files wants them in the library rather than reported, was ruled on 2026-09-10:
-they belong in it, which is what shipped. `FORMATS.md` section 5 holds the
-ruling along with the one thing that would revisit it.
-
-The specifications hold no open question either. The last two were answered on
-2026-09-13: `SHOPS.md` OQ-S03, ruled no, since an album already held is not
-considered again; `DISCOVERY.md` OQ-04, measured from a whole-library run.
-
 ## Not planned, so that this is not revisited
 
 - **Making the sites findable.** Ruled out by the owner on 2026-09-08, having
@@ -67,7 +58,7 @@ considered again; `DISCOVERY.md` OQ-04, measured from a whole-library run.
   of it is wanted. The markup the pages already carry stays as it is; it
   is simply not chased. This is a decision about reach rather than about the
   site, so nothing here reopens it.
-- **The formats no fixture can prove.** Monkey's Audio, Musepack, DSD and TAK
+- **The formats still reported rather than played.** Monkey's Audio, Musepack, DSD and TAK
   stay named in `UNPLAYABLE_SUFFIXES` and reported rather than played, along
   with CAF, `.m4b` and `.tta`. This entry once covered WMA and WavPack too, on
   the ground that not one file of any of them existed in the reference library,
@@ -77,9 +68,11 @@ considered again; `DISCOVERY.md` OQ-04, measured from a whole-library run.
   mutagen already reads their tags, so no decoder was ever going to be written.
   What separates them now is whether a fixture can be generated to prove the
   path, since FFmpeg can encode only some of what it can decode. The three
-  that can be proved are taken. Each of the rest reopens the day a
-  fixture can be made for it or a real file is measured; `FORMATS.md` section
-  1.4 holds the reason for each.
+  that can be proved are taken. Monkey's Audio, Musepack, DSD and TAK each
+  reopen the day a fixture can be made for one or a real file is measured. CAF,
+  `.m4b` and `.tta` are out on grounds a fixture does not answer: CAF yields no
+  tags, an audiobook is not music and TrueAudio states no channel count.
+  `FORMATS.md` section 1.4 holds the reason for each.
 - **Streaming, ripping, device syncing and tag writing.** Named in the README as
   deliberate non-goals. The last of them is enforced by a structural test rather
   than by intention.

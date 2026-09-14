@@ -91,7 +91,8 @@ bit-depth honesty rule extended to cover them; fixtures generated in the suite.
 ### 1.6 References
 
 - `ARCHITECTURE.md`, whose invariants govern every requirement here and whose
-  "Formats and probing" section states the three tag shapes this adds to.
+  "Formats and probing" section states the tag shapes the probe reads, five of
+  them since Amendment 2.
 - `DISCOVERY.md` and `SHOPS.md`, the two specifications this follows in form.
 
 ## 2. Overall description

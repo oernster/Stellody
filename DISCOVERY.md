@@ -391,7 +391,7 @@ Acceptance: Given a genre no held album names, when the action button is
 pressed, then the status bar reports that nothing in the library matches, no
 request is made and no file is written.
 
-Verified by: `tests/application/test_discovery.py::test_no_sources_makes_no_request`
+Verified by: `tests/application/test_discovery.py::test_no_sources_makes_no_request`, `tests/ui/test_discovery_wiring.py::test_nothing_to_ask_says_so`
 
 ---
 
@@ -446,7 +446,7 @@ match the source artist's name exactly on its normalised comparison key, when
 the run completes, then that artist is reported ambiguous with both identifiers
 named and no album request was made for them.
 
-Verified by: `tests/application/test_discovery.py::test_ambiguous_name_is_reported`
+Verified by: `tests/application/test_discovery.py::test_ambiguous_name_is_reported`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_two_exact_matches_are_both_returned`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_a_ranked_near_miss_is_not_the_artist`
 
 ---
 
@@ -570,9 +570,8 @@ pair shall name the stage and the artist currently being asked about, with that
 artist's place in the stage (one more than the number completed) and the
 stage's total.
 
-Rationale: A run over the whole library takes about eleven minutes at the rate
-the sources permit. A spinner over eleven minutes is indistinguishable from a
-hang. Amended on 2026-09-07 after a measured failure: the dialog reported the
+Rationale: A run over the whole library has taken 54 minutes at the rate the
+sources permit. A spinner over that long is indistinguishable from a hang. Amended on 2026-09-07 after a measured failure: the dialog reported the
 first half of a run only, so a run over Blues sat at 75% and silent for the
 whole of the second half, which is the longer one. Both halves now report; they
 report to the toolbar rather than to a dialog, since the dialog closes when the
@@ -647,7 +646,7 @@ dies with it instead of outliving it.
 Acceptance: Given a run in progress over an existing discovery file, when cancel
 is pressed, then no further request is issued, none of that run's gaps is
 retained, every answer it had already been given is kept and the existing file
-is byte for byte what it was; given the run is waiting out
+cannot be replaced by that run's report; given the run is waiting out
 a refusal when cancel is pressed, then it stops within one slice of that wait
 rather than at the end of it; given a cancel arrives between two of the three
 requests made about one artist, then the remaining two are never issued; given
@@ -655,7 +654,7 @@ a run is wedged inside a request that will not answer at all, then the stop
 still returns at once, the window is free to start another and that request is
 dropped rather than left to reach its timeout.
 
-Verified by: `tests/application/test_stopping_a_run.py::test_cancel_stops_before_the_next_request`, `tests/application/test_stopping_a_run.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`
+Verified by: `tests/application/test_stopping_a_run.py::test_cancel_stops_before_the_next_request`, `tests/application/test_stopping_a_run.py::test_a_stop_is_felt_part_way_through_a_wait`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/infrastructure/test_fetching.py::TestGivingUpOnARequest::test_a_request_nobody_wants_any_more_is_dropped_at_once`, `tests/infrastructure/test_discovery_sources.py::TestHandingTheQuestionDown::test_every_question_carries_whether_it_is_still_wanted`, `tests/application/test_stopping_a_run.py::test_a_stop_lands_between_requests_rather_than_between_artists`, `tests/ui/test_discovery_stopping.py::test_a_stop_is_instant_even_while_a_request_is_wedged`, `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_what_was_learned_is_kept_however_the_run_ended`, `tests/infrastructure/test_discovery_file.py::test_a_run_with_nothing_to_say_cannot_replace_one_that_had`
 
 ---
 
@@ -725,14 +724,17 @@ One cause of such an answer was the run's own doing and was removed on
 requests; the pause between passes is longer than the host keeps one, so the
 first ask of every pass went down a socket the host had already closed. That
 is the same artist every pass, so a run could go round twelve times and lose
-them each go. A connection idle longer than half the measured timeout is now
-thrown away rather than asked down.
+them each go. A connection idle longer than half the host's measured idle
+timeout is now thrown away rather than asked down.
 
 The count is kept for the whole run rather than for either half of it, since
-the connection is one thing. In the second half, a candidate nothing answered
-about is left unknown rather than written down as playing nothing: a question
-that was never answered is not an answer; recording one would drop that
-candidate from every later run without anybody having decided anything.
+the connection is one thing. In the second half, a candidate the catalogue gave
+no answer about is left unknown rather than written down as playing nothing,
+whether nothing answered, a refusal outlasted the asks, the service answered
+with an error or a stop abandoned the request: a question that was never
+answered is not an answer; recording one would drop that candidate from every
+later run without anybody having decided anything. An empty list of genres the
+catalogue did give is an answer and is kept.
 
 Acceptance: Given one request answered with nothing, when the run is observed,
 then that artist is asked about again on a later pass and the run finishes;
@@ -741,7 +743,7 @@ words rather than as refused; given five such answers in a row, then the run
 stops there, reports unavailability and writes no file; given an answer
 between two of them, then the count starts again.
 
-Verified by: `tests/application/test_a_dropped_connection.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_a_dropped_connection.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_a_dropped_connection.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_a_dropped_connection.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`, `tests/infrastructure/test_a_closed_connection.py`
+Verified by: `tests/application/test_a_dropped_connection.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_a_dropped_connection.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_a_dropped_connection.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_a_dropped_connection.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_candidate_that_did_not_answer_is_not_remembered`, `tests/application/test_discovery_narrowing.py::test_a_candidate_that_answered_with_no_genres_is_remembered`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`, `tests/infrastructure/test_a_closed_connection.py`
 
 ---
 
@@ -800,8 +802,8 @@ Rationale: Reported by Oliver on 2026-09-09: a run over an installed copy
 produced no data at all. Measured against MusicBrainz the same day, ten
 identical searches paced at the rate its own terms ask for, the time to the
 first byte was 0.15 seconds seven times, then 3.6, 12.7 and 26.3 seconds. So
-the twenty second wait is exceeded by the service ANSWERING, perhaps one ask
-in five; the second ask about the same artist came back in a tenth of a
+the twenty second wait is exceeded by the service ANSWERING, one ask in ten
+in that sample; the second ask about the same artist came back in a tenth of a
 second. That was recorded against the artist as a failure of its own, which
 ends that artist for the whole run. On a library holding three source artists
 it was the difference between an answer and an empty screen.
@@ -850,7 +852,8 @@ artists, the message shown at the end of that run shall count each kind
 separately: artists that could not be asked about, names the catalogue did not
 recognise and names that matched more than one artist. Only the kinds that
 happened shall be named. This applies both where the run found something and
-where it found nothing.
+where it found nothing. An artist whose earlier answer the discovery file
+carries over (FR-D46) has a usable answer and is not counted.
 
 Rationale: FR-D22 records the failures, `_about` records the other two and the
 file has carried all three since; nothing read them back, so a run that could
@@ -874,9 +877,11 @@ artists, did not recognise three names and found two names shared, when it ends,
 then the message names the counts found and says all three of those numbers with
 no comma before the `and`; given a run whose only trouble was three unrecognised
 names, then it says that alone and names neither other kind; given a stopped run
-holding a failure, then it says only that it was stopped.
+holding a failure, then it says only that it was stopped; given a completed run
+whose only failure is an artist the file already held an answer for, then the
+message names no shortfall and no button is offered.
 
-Verified by: `tests/ui/test_shortfall.py::TestTheSentence`, `tests/ui/test_discovery_wiring.py::test_a_run_names_all_three_kinds_of_silence`, `tests/ui/test_discovery_wiring.py::test_only_the_groups_that_happened_are_named`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_went_unanswered`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_counts_nothing`
+Verified by: `tests/ui/test_shortfall.py::TestTheSentence`, `tests/ui/test_discovery_wiring.py::test_a_run_names_all_three_kinds_of_silence`, `tests/ui/test_discovery_wiring.py::test_only_the_groups_that_happened_are_named`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_went_unanswered`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_counts_nothing`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 ---
 
@@ -920,7 +925,7 @@ lists every one of those artists under the heading for its kind; given a run
 that answered for everybody, then no button is offered; given a new run started,
 then the button is taken away.
 
-Verified by: `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`
+Verified by: `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 ---
 
@@ -950,18 +955,19 @@ Verified by: `tests/ui/test_discovery_stopping.py::test_pressing_it_during_a_run
 
 Priority: Must
 
-Requirement: If the application is asked to close while a run is under way, then
-the discovery service shall stop before its next request and leave any existing
+Requirement: If the application is asked to quit while a run is under way, then
+the window shall tell the run to stop before its next request and wait for it to
+end before the application ends; the stopped run shall leave any existing
 discovery file untouched.
 
 Rationale: The same ruling as a cancel, since a close is a cancel the listener
 expressed differently. Found by the silence check.
 
-Acceptance: Given a run in progress over an existing discovery file, when the
-window is closed, then no further request is issued and the existing file is
-byte for byte what it was.
+Acceptance: Given a run in progress, when the application is quit, then the run
+has been told to stop by the time the application's departure is called; given a
+stopped run's report, then the discovery file refuses to be replaced by it.
 
-Verified by: `tests/ui/test_quitting.py::test_quitting_mid_run_stops_the_discovery_run`
+Verified by: `tests/ui/test_quitting.py::test_quitting_mid_run_stops_the_discovery_run`, `tests/application/test_stopping_a_run.py::test_closing_stops_the_run`, `tests/infrastructure/test_discovery_file.py::test_a_run_with_nothing_to_say_cannot_replace_one_that_had`
 
 ---
 
@@ -1063,7 +1069,7 @@ reporting a run somebody had finished with. Reports arriving afterwards are
 dropped for the same reason. They are not hypothetical: the run reports right
 up to the moment it notices.
 
-Verified by: `tests/ui/test_discovery_stopping.py::test_a_press_stops_at_once_without_asking_anything`, `tests/ui/test_discovery_stopping.py::test_the_button_wears_the_cross_while_a_run_is_under_way`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_is_stopped`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_finishes_on_its_own`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_fails`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/ui/test_discovery_stopping.py::test_a_new_run_asked_for_too_soon_says_so`
+Verified by: `tests/ui/test_discovery_stopping.py::test_a_press_stops_at_once_without_asking_anything`, `tests/ui/test_discovery_stopping.py::test_the_button_wears_the_cross_while_a_run_is_under_way`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_is_stopped`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_finishes_on_its_own`, `tests/ui/test_discovery_stopping.py::test_the_cross_comes_off_when_a_run_fails`, `tests/ui/test_discovery_stopping.py::test_a_stop_lets_go_of_the_run_at_once`, `tests/ui/test_discovery_stopping.py::test_a_stop_is_instant_even_while_a_request_is_wedged`, `tests/ui/test_discovery_stopping.py::test_progress_reported_after_a_stop_does_not_revive_the_bar`
 
 ---
 
@@ -1167,7 +1173,10 @@ Acceptance: Given a collapsed candidate artist, when it is expanded, then that
 artist's offered releases appear beneath it; given the run that produced the
 file, then it issued no request about that artist's releases.
 
-Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`
+Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`, `tests/application/test_expanding.py::test_everything_that_artist_made_is_offered`, `tests/application/test_expanding.py::test_a_hits_package_is_still_noise`
+
+**Not held by a test:** the last clause of the acceptance, that the run issued no
+request about that artist's releases.
 
 ---
 
@@ -1285,7 +1294,8 @@ mean in words beside them.
 
 Acceptance: Given a dialog holding both kinds, when the key is read, then it
 names all three kinds of row with a mark in each kind's own colour; when a
-source artist row is read, then it gives both counts; when a candidate row is
+source artist row with similar artists beneath it is read, then it gives both
+counts; when a candidate row is
 read, then it names itself a similar artist.
 
 Verified by: `tests/ui/test_results_reading.py::test_the_key_names_all_three_kinds_in_their_own_colours`, `tests/ui/test_results_reading.py::test_a_source_row_says_how_many_of_each_sit_under_it`, `tests/ui/test_results_reading.py::test_a_candidate_row_says_that_it_is_an_artist`
@@ -1369,7 +1379,9 @@ identity, releases or similar artists only where that answer is not kept or was
 kept more than thirty days ago; what a candidate plays is kept without a limit. A run shall write down
 what it learned however that run ended. Where a run cannot reach a source about
 an artist an earlier run answered for, the discovery file shall keep the
-earlier answer and shall record no failure for that artist. Where a run reaches
+earlier answer and shall record no failure for that artist; the run's closing
+message and its count of unanswered artists shall be read from the answer as the
+file will hold it, so neither names that artist. Where a run reaches
 its end still owing an answer about an artist nothing was ever known about, the
 discovery file shall be written with that artist named as unanswered rather
 than withheld. The gaps written shall be ordered by artist.
@@ -1419,13 +1431,14 @@ Acceptance: Given a library run over twice with the same genres, when the
 second run finishes, then it asked the catalogues nothing and answered exactly
 as the first did; given an artist an earlier run answered for and this one
 could not reach, then the file still holds that artist and records no failure
-for it; given an artist nothing has ever been learned about that this run could
+for it, while the run's message counts nobody unanswered and no shortfall button
+is shown; given an artist nothing has ever been learned about that this run could
 not reach either, then the file is still written, holding what did answer with
 that artist named among the failures, while the run says which artists it could
 not answer about; given an answer kept more than thirty days ago, then it is
 asked about again.
 
-Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`
+Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 ---
 
@@ -1576,7 +1589,12 @@ but the last carries every column; given an artist taller than a column, then
 it fills one and shares its page; given a run that found nobody, then there is
 still one page.
 
-Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_are_stops_on_the_ring`
+Verified by: `tests/ui/test_results_pages.py`
+
+**Held by construction rather than by a test:** no test ticks an album on one
+page, turns to another, then checks that the tick holds and still reaches a
+shop. Every page is built once when the dialog opens and kept, so a tick is never
+rebuilt away.
 
 ---
 
@@ -1589,7 +1607,7 @@ library's filter artwork, offering only the genres the run looked in. While any
 is picked, it shall show a source artist's albums only where the library holds
 an album in a picked genre filed under that artist or crediting them on a
 compilation. It shall show a candidate
-artist only where the catalogue memory records a genre for them naming a picked
+artist only where the candidate genre cache records a genre for them naming a picked
 genre. A source artist with nothing left to show shall not be shown. The control
 shall stay pressed in while a filter is on; the pages shall be dealt again from
 what is shown. The filter shall not be remembered between openings.
@@ -1600,7 +1618,8 @@ artist is judged by the genres he stated on his own albums, since FR-D05 means
 every source artist holds one, so nobody he holds is ever withheld for want of a
 genre. Judging each missing album by the catalogue's genre instead would have
 withheld 2128 of those 5279, measured from his answer that day. A candidate is
-not in the library, so the catalogue memory is all there is to judge them by.
+not in the library, so the candidate genre cache (`artist-genres.json`) is all
+there is to judge them by.
 
 Acceptance: Given an answer holding a House source artist and a Rock one, when
 House alone is picked, then only the House artist is shown and the pages are
@@ -1615,8 +1634,8 @@ Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_e
 Priority: Must
 
 Requirement: While a filter is on, the results dialog shall state how many
-candidate artists are withheld because the catalogue memory records no genre for
-them that names a genre in the catalogue.
+candidate artists are withheld because the candidate genre cache records no genre
+for them that Stellody's genre catalogue recognises.
 
 Rationale: Measured on 2026-09-13: 260 of 1112 candidates in Oliver's answer
 have no remembered genre. A filter cannot judge them; rows that vanish without a
@@ -1818,7 +1837,7 @@ swings is trusted less than an honest silence.
 Acceptance: Given a run that has finished one source artist, when the status bar
 is read, then it says the run is under way and names no time.
 
-Verified by: `tests/domain/test_estimating.py::TestThePace::test_one_sample_is_not_enough_to_estimate`
+Verified by: `tests/domain/test_estimating.py::TestThePace::test_one_sample_is_not_enough_to_estimate`, `tests/ui/test_run_estimate.py::TestWhenItWillNotSay::test_one_sample_is_not_enough_to_estimate`
 
 ---
 
@@ -1912,8 +1931,7 @@ Priority: Won't, ruled 2026-09-09
 Withdrawn as a requirement. It asked that a run over the full library of 327
 source artists complete within twenty minutes, the two catalogue requests per
 artist paced at one per second with the similarity request overlapping them.
-The arithmetic behind that gives about eleven minutes and is what FR-D16 and
-FR-D35 cite; it stands as arithmetic and is not a claim about any run.
+The arithmetic behind that gives about eleven minutes and is what FR-D35 cites; it stands as arithmetic and is not a claim about any run.
 
 **Ruled by Oliver on 2026-09-09: the duration is not to be measured.** It was
 carried as the one requirement no evidence stood behind, on the expectation
@@ -2245,16 +2263,16 @@ Inside out; no user-visible action waits on a screen to be exercisable.
 2. **Application**: the discovery service and the two source interfaces, driven
    in tests by hand-written fakes with error injection for every `If` sibling
    above.
-3. **Infrastructure**: the two catalogue clients over the one fetcher that
-   holds the socket, the pacing, the JSON writer and the candidate genre cache.
+3. **Infrastructure**: the two catalogue clients over the one fetching module
+   that holds the sockets, the pacing, the JSON writer and the candidate genre cache.
    The retry belongs to the application layer (`application/asking.py`), where
    a run and the expanding of a candidate share it.
 4. **UI**: the toolbar button, the dialog and the progress reporting, last.
 
 **Not currently met:** no test drives a whole run into the discovery file. The
 application tests assert the run's report; `tests/infrastructure/test_discovery_file.py`
-writes reports built by hand; the window's wiring tests use a fake service with
-a fake writer. Meeting this needs one test that runs the discovery service over
+writes reports built by hand; the window's wiring tests use a fake service, with
+either a fake writer or the real writer handed a report built by hand. Meeting this needs one test that runs the discovery service over
 a fabricated library and fake sources, writes through the real writer and
 asserts the file.
 

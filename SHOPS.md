@@ -13,8 +13,8 @@ number of its own: a document version beside a product version is two numbers
 a reader has to tell apart, only one of them the product's.
 
 It is built. Every requirement below names the test that holds it. FR-S11
-stopped short of its requirement until FR-S42 in Amendment 1 completed it; that
-amendment, in section 6, is built too.
+stopped short of its requirement until FR-S42 in Amendment 1 completed it; both
+amendments, in section 6, are built too.
 
 ## 1. Introduction
 
@@ -62,7 +62,7 @@ than code.
 |---|---|
 | Gap | An album the library does not hold, as a discovery run reported it. |
 | Shop | A digital music retailer, named by a row in the shop list. |
-| Template | A shop's search address holding `{artist}` and `{album}` placeholders. |
+| Template | A shop's search address holding an `{artist}` placeholder, an `{album}` placeholder or both. |
 | Ticked | An album whose tick box in the results dialog is checked. |
 | Opening | Handing an address to the operating system's default browser. |
 
@@ -495,7 +495,7 @@ Priority: Must
 
 Requirement: The domain and application modules added by this specification
 shall hold 100 percent branch coverage, shall import nothing from
-infrastructure or UI, then shall each stay within the 400-line module cap.
+infrastructure or UI and shall each stay within the 400-line module cap.
 
 Rationale: The house invariants, restated here because a new area is where they
 get forgotten first.
@@ -547,8 +547,8 @@ is named `shops.json`. Its shape:
 }
 ```
 
-- `shops` is the list in use; `shipped` records the list the file was written
-  from, which is how FR-S32 and FR-S33 tell an untouched shipped shop from an
+- `shops` is the list in use; `shipped` records the release list the rows were
+  last settled against, which is how FR-S32 and FR-S33 tell an untouched shipped shop from an
   edited one.
 - `name` and `template` are required; a row missing either is skipped.
 - `note` is optional and is shown beside the shop.
@@ -615,8 +615,8 @@ Inside out. No user-visible action waits on a screen to be exercisable.
 1. **Domain**: the address rule. A shop as a value object, the placeholder
    substitution and the encoding, pure and unit tested.
 2. **Application**: the use case that turns ticked albums plus a chosen shop
-   into addresses, over two declared ports: where the shop list comes from and
-   how an address is opened.
+   into addresses, over three declared ports: where the shop list comes from,
+   how an address is opened and where copied text is put.
 3. **Infrastructure**: the shop file reader and writer, plus the opener that
    hands an address to the operating system.
 4. **UI**: the tick boxes, the two controls and the shops dialog, last.
@@ -637,7 +637,7 @@ and section 3.4 gains the `deleted` and `retired` keys described in 6.6.
 ### 6.1 Why
 
 Reported by Oliver on 2026-09-13. A shop row broken by hand-editing
-`shops.json` vanished from the list without a word (FR-S11 is built in part).
+`shops.json` vanished from the list without a word (FR-S11 was then built in part).
 Two repairs were put to him: a message naming the broken row, which he judged
 the wrong fix; leaving the silence, which he judged worse. What he chose is
 removing the need to hand-edit at all: the list is changed from inside the
@@ -671,7 +671,7 @@ to add and remove shops.
 - Checking automatically that a shop's search finds anything. Try opens the
   page; judging it is the listener's.
 - Hand-editing `shops.json` stays possible; it is no longer the way the list is
-  meant to change. What a hand-broken row does is OQ-S04.
+  meant to change. What a hand-broken row does is FR-S42, which resolved OQ-S04.
 
 ### 6.3 Definitions added
 
@@ -729,7 +729,8 @@ when Save is pressed, then the file holds nine shops with Juno last and the
 dialog lists nine.
 
 Verified by: `tests/application/test_editing_the_shop_list.py::test_an_added_shop_goes_last`,
-`tests/application/test_editing_the_shop_list.py::test_an_edited_shop_keeps_its_place`
+`tests/application/test_editing_the_shop_list.py::test_an_edited_shop_keeps_its_place`,
+`tests/ui/test_shop_editing.py::test_a_saved_form_puts_the_shop_last`
 
 ---
 
@@ -767,7 +768,8 @@ two of one name would make FR-S30 to FR-S33 guess.
 Acceptance: Given Qobuz listed, when a new shop named "qobuz" is saved, then
 nothing is written and the name field says it is taken.
 
-Verified by: `tests/domain/test_shop_list.py::TestTheForm::test_a_name_already_used_is_refused`
+Verified by: `tests/domain/test_shop_list.py::TestTheForm::test_a_name_already_used_is_refused`,
+`tests/ui/test_shop_editing.py::test_a_shop_that_cannot_search_is_not_saved`
 
 ---
 
@@ -896,12 +898,15 @@ Verified by: `tests/ui/test_shop_editing.py::test_ctrl_arrows_move_the_focused_s
 Priority: Must
 
 Requirement: If an add, edit, delete or move cannot be written to the shop file,
-then the shops dialog shall say so and shall go on showing the list as it was.
+then the screen the change was made on shall say so (the shop form for an add or
+an edit, the shops dialog for a delete or a move) while the shops dialog goes on
+showing the list as it was.
 
 Acceptance: Given a shop file that refuses writes, when a shop is deleted, then
 the dialog says the change could not be saved and still lists that shop.
 
-Verified by: `tests/ui/test_shop_editing.py::test_a_change_that_cannot_be_saved_is_not_shown`
+Verified by: `tests/ui/test_shop_editing.py::test_a_change_that_cannot_be_saved_is_not_shown`,
+`tests/ui/test_shop_editing.py::test_a_form_that_cannot_be_kept_says_so`
 
 ---
 
@@ -1150,8 +1155,11 @@ under the 100 percent branch gate.
   the dialog has said so (FR-S34, FR-S35).
 - An older Stellody ignores both, since unknown keys are already ignored.
 - FR-S12's "does not hold a usable list" now means a file that cannot be parsed,
-  one whose top level is not a JSON object or one whose `shops` is not a list. A list whose rows are broken is read with
-  each row kept and named (FR-S42); an empty list stays empty (FR-S39).
+  one whose top level is not a JSON object or one whose `shops` is not a list.
+  A list whose rows are broken is read with each row kept and named (FR-S42).
+  An empty list is a list rather than an unusable file: emptied from the dialog
+  it stays empty (FR-S39), since every shipped name is then in the `deleted`
+  record, while FR-S30 still adds any shipped shop that record does not name.
 
 ### 6.7 Assumptions
 
@@ -1234,8 +1242,9 @@ Requirement: The shop form shall show `try.png` on Try and `save.png` on Save;
 the shops dialog shall show `revert-shops.png` on its put-back control. The guide
 shall show all three beside what each does.
 
-Rationale: Every other control on both screens already wears Oliver's artwork,
-so three bare words read as unfinished.
+Rationale: Apart from the buttons carrying a shop's own name, the other controls
+on both screens already wear Oliver's artwork, so three bare words beside them
+read as unfinished.
 
 Verified by: `tests/ui/test_shop_editing.py::test_try_save_and_put_back_wear_their_artwork`,
 `tests/ui/test_guide.py`
