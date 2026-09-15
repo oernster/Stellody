@@ -41,9 +41,9 @@ that a music file is only ever read and that nothing reaches the network unasked
 beyond the update check, are held by tests rather than by intention. Nothing
 below is sized against the number.
 
-## There is no open planned work.
+## Open work
 
-Every milestone this file carried has either shipped or been ruled out, so
+There is no open planned work. Every milestone this file carried has either shipped or been ruled out, so
 there is nothing here waiting to be built. That is a statement about the plan
 rather than about the product: the section below records what was decided
 against and why, which is the half of a plan that stops the same ground being

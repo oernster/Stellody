@@ -232,18 +232,25 @@ few pays only when a track from them is opened. The other two imports deferred
 into a function are different: `output.py` reaches `wasapi` only on Windows,
 while `stellody/__init__.py` defers the composition root into `main`.
 
-## Grouping: folders group, tags name
+## Grouping: folders group, tags name and join
 
-**A folder is one album.** Sibling folders whose names differ only by a disc
-marker, `CD1` and `CD2` or `(Disc 1)` and `(Disc 2)`, merge into one multi-disc
-album. The tags then supply that album's title, artist, date and genre, each
-taken as the most common value its tracks carry.
+**A folder is where an album starts, not where it ends.** Sibling folders whose
+names differ only by a disc marker, `CD1` and `CD2` or `(Disc 1)` and
+`(Disc 2)`, merge into one multi-disc album. Folders anywhere in the library
+whose most common album and album artist tags agree are then folded into one
+album by `fold_by_tags` in `stellody/domain/folding.py`, since the reference
+library keeps an album's audio in one folder and its bonus videos in another.
+The date is left out of that comparison because an album's audio and its
+videos routinely disagree about it. A folder whose tags name no album or no
+album artist is never folded. The tags then supply the album's title, artist,
+date and genre, each taken as the most common value its tracks carry.
 
 Grouping by tags was tried first and measured against the reference library. It
 failed: classical rips frequently carry the composer in the `ALBUM` tag and a
 different `DATE` on every track, which fragmented one Mozart folder into five
 albums, two of them holding a single track. A folder boundary is what a ripper
-actually records, so that is what is trusted.
+actually records, so that is what is trusted. Folding is the narrower use of
+tags that survived: it never splits a folder, it only joins folders that agree.
 
 ## Resolving damaged metadata
 
@@ -283,7 +290,8 @@ and
 both seen to fail before the change.
 
 `stellody/domain/ordering.py` holds the track rules, `stellody/domain/grouping.py`
-the album rules and `stellody/domain/health.py` the reporting vocabulary.
+the album rules, `stellody/domain/folding.py` the rule joining folders that name
+one album and `stellody/domain/health.py` the reporting vocabulary.
 
 ## Accepting a correction
 
@@ -307,29 +315,29 @@ through the same table.
 The handle survives a folder rename and a re-rip, which is why artwork and
 ratings already use it; it is stated once as `AlbumIdentity.handle` rather than
 digested again per user, since three spellings of one value is three chances for
-two of them to drift. Beside it sits the SOURCE ADDRESS, which is the tiebreak,
-so two identical albums in one library are still told apart; it is also what a
-track-level pin is written against. Why that is an address rather than a path is
-below.
+two of them to drift. Beside it sits the SOURCE ADDRESS, which names the one
+file a track-level pin is about, so two files folded into one album are never
+mistaken for each other. Why that is an address rather than a path is below.
 
-**Two albums that resolve alike are told apart; only those two.** Tags alone
-cannot separate two recordings of one work: a symphony under two conductors
-carries one composer, one title and often one year, so both answered to one
-handle. They then shared a cached cover, an album rating and every track rating
-under it; a correction accepted on one was looked up against the other,
-matched no file and recorded nothing, so it was reported again at every start
-however many times somebody accepted it. That was found in a real library, not
-reasoned about.
+**Two albums that resolve alike are one album; that is a price, stated.** Tags
+alone cannot separate two recordings of one work: a symphony under two
+conductors carries one composer, one title and often one year. They were once
+told apart by the place each was found. Since 2026-09-05 folders naming the
+same album and album artist are folded together instead, because the same rule
+is what joins an album's audio to bonus videos a library keeps in another
+folder, which is the common case. The two recordings therefore share a cover,
+an album rating and any accepted correction, while both files stay in the
+album. `tests/domain/test_identity_collisions.py` holds that cost as tests, so
+whoever reverses the decision sees what they are buying back.
 
-Assembly now compares the identities it has built and gives each of any that
-collide the place it was found, which is the one thing that differs. The
-separation is appended to what the handle is digested from rather than joined in
-as an empty part, so an album nothing collides with digests exactly the run of
-text it always did: its cover and its ratings are found again rather than
-orphaned by the rule arriving. A test pins that digest to its literal value,
-because a refactor that quietly moved it would empty every library's ratings
-with every gate still green. The two are told apart in the records alone; both
-still read the same on screen.
+Telling apart by place survives only where albums collide without folding,
+which needs a folder whose tags name no album or no album artist.
+`_named_apart` in `stellody/domain/grouping.py` gives each of those the place it
+was found. The separation is appended to what the handle is digested from
+rather than joined in as an empty part, so an album nothing collides with
+digests exactly the run of text it always did. A test pins that digest to its
+literal value, because a refactor that quietly moved it would empty every
+library's ratings with every gate still green.
 
 **A lossy copy of an album already held lossless is not a second recording.**
 That distinction was not needed while M4A could not be decoded; the moment it
@@ -340,9 +348,10 @@ rating and every track rating under it orphaned by the arrival of a worse copy.
 Three albums in the reference library went that way; the first anyone knew
 of it was a report saying they were no longer found.
 
-`stellody/domain/duplicates.py` answers it in two places; the exception is
-narrow on purpose. Inside one folder a lossy file is dropped only where a
-lossless file claims the same disc and track number AND runs the same length:
+`stellody/domain/duplicates.py` answers it; the exception is narrow on purpose.
+Within one album, once folding has brought its folders together, a lossy file
+is dropped only where a lossless file claims the same disc and track number AND
+runs the same length:
 The Dance held 17 FLAC and 17 M4A of one performance and listed all 34.
 
 The length is not belt and braces; it is the evidence. The first version of
@@ -353,13 +362,12 @@ exactly the shape that should stop anybody. Measured, all seventeen pairs
 agreed to within 0.7 seconds and most to within 0.1, which is a lossy encoder's
 padding rather than a different performance. A pair whose lengths disagree is
 two recordings and both are kept, because dropping a file is the one
-irreversible thing the rule does. Across folders the lossless copy
-keeps the plain handle and only the copies are told apart, ONLY where
-exactly one of the colliding albums is lossless. None lossless or several
-leaves every one of them told apart exactly as before, which is what keeps the
-four genuine collisions already in the reference library, all classical, all
-lossless on both sides, behaving as they always have. Widening it would have
-orphaned those four to fix three.
+irreversible thing the rule does. Two folders holding one album, one rip
+lossless and one lossy, fold into one album where this same rule drops the
+lossy copies, so the lossless album keeps the handle it had alone. Two lossless
+recordings tagged alike, the case the telling apart was written for, now fold
+into one album holding both, as `TestWhatMustNotChange` in
+`tests/domain/test_lossy_duplicates.py` holds.
 
 **A stated bit depth is what separates the two kinds, not a list of suffixes.**
 The probe reports no depth for a format that states none, so the distinction is
@@ -613,9 +621,10 @@ property of the format rather than a number chosen here.
 **Nought means unstated, which is what keeps bit perfect honest.** `OutputRequest`
 refuses only a negative depth; `states_depth` distinguishes nought from a real
 value, `depth_is_native` requires it and `is_bit_perfect` is therefore False for
-any lossy source in any mode. `open_output` refuses exclusive mode up front with
-`NO_STATED_DEPTH` rather than letting the format search fail, so the reason names
-the file instead of blaming the device. All three rules were proved by planting
+any lossy source in any mode. `open_output` in `wasapi.py` declines exclusive
+mode up front, opening the shared path with `NO_STATED_DEPTH` as its reason
+rather than letting the format search fail, so the reason names the file instead
+of blaming the device. All three rules were proved by planting
 violations: claiming bit perfect for a lossy source, giving a lossy file an
 invented depth of sixteen, leaving ID3 frames untranslated.
 
@@ -638,8 +647,8 @@ inside the walk and the library is assembled after it: one MP3 put rows in the
 store that `LoadLibrary` then choked on, so every later start failed too. That
 test therefore uses the real walker, the real probe and the real store on real
 files of every format, asserting through to albums and back out of a reopened
-store. It was proved by planting the old rule and watching all six of its cases
-fail.
+store. It was proved by planting the old rule and watching all six of the cases
+it held then fail; the cases the widened formats added came later.
 
 **The suffix table is decided by what can be read, not by what can be decoded.**
 M4B is the one exception: it reads and decodes, yet stays out because an
@@ -797,9 +806,8 @@ runs a scan to its end has to do the same.
 
 **No index, measured rather than assumed.** A full-text table was the first
 plan and the measurement refused it. A pass over the whole library, 617 albums
-of 8,450 tracks, costs about one and a third milliseconds once the text is
-normalised,
-against the hundred and twenty milliseconds a typed character allows. An index
+of 8,450 tracks, costs a small fraction of the time a typed character allows
+once the text is normalised. An index
 would also hold the WRONG text, since the store keeps raw tags while the
 library shows resolved ones, so a title the resolver corrected would be
 unfindable. It would be empty besides: rows are written only where a folder is
@@ -807,10 +815,10 @@ probed and a rescan reuses every folder that has not changed, so an existing
 library would search nothing until it was scanned cold. SQLite's FTS5 is
 available here and is deliberately unused.
 
-Normalising is the part that costs. `comparison_key` over 8,450 titles takes
-10.2 milliseconds against 0.30 for a plain fold; the answer cannot change
-between keystrokes, so it is done once each time a load or a scan hands the
-window its library.
+Normalising is the part that costs, tens of times what the filtering pass does,
+while the answer cannot change between keystrokes; `show_library` in
+`stellody/ui/searching.py` therefore does it once each time a load or a scan
+hands the window its library, with the measurement beside it.
 `stellody/domain/searching.py` is the filter and is pure;
 `stellody/ui/searching.py` holds what a load or a scan produced and puts the
 answer in front of somebody.
@@ -830,9 +838,11 @@ than reasoned about:
   that album. Untouched it re-roots on the invisible root and lists the whole
   library down both columns, so what was open is put back by opening it again
   rather than by leaving it alone.
-- A selected row ignores `BackgroundRole` while honouring `ForegroundRole`, so
-  the flash on a row the search has just selected is painted by the delegate
-  rather than returned by the model. The writing is never repainted, which is
+- Qt draws a selected row's background from the selection colour and never asks
+  for `BackgroundRole`, so the model's flash brush alone painted nothing on the
+  row a search had just selected. The delegate in `stellody/ui/covering.py`
+  therefore reads that brush, fills the row with it and draws the row as
+  unselected. The writing is never repainted, which is
   why each appearance carries its own colour: banana yellow at 13.33 to 1 in
   the light one, a deep amber at 5.10 to 1 in the dark one.
 - `scrollTo` is what opens every level above a row, which a multi-disc album
@@ -1008,21 +1018,23 @@ up there to act on.
 **A lift is given room before it is applied.** Reported by Oliver on
 2026-09-15 as static at the same moments on every play of loud records, gone
 the moment the equalizer was switched off. Measured through the engine's own
-code: a curve lifting 31 Hz by eight decibels and 62 Hz by six took Bicep's
-Saku, limited to a sample peak of 0.966, to 2.3 times full scale; 898,897
-frames of it were clipped at the ceiling. Turning the volume down could not
+code: the curve on the screen, lifting 31 Hz by eight decibels, 62 Hz by six
+and the top two bands by seven, took Bicep's Saku, limited to a sample peak of
+0.966, to 2.3 times full scale; 898,897 frames of it were clipped at the
+ceiling. Turning the volume down could not
 help, because volume is applied after the filter. `cascade` now searches the
 combined response for the most it lifts any frequency and folds that much
 attenuation into the first section, so the curve keeps its shape while the
-record keeps its level. Two neighbouring lifts pile up above either alone:
-that curve peaks at 9.3 dB where the largest slider says 8, which is why the
+record keeps its level. Neighbouring lifts pile up above any one alone: that
+curve peaks at 9.3 dB where the largest slider says 8, which is why the
 response is searched rather than the sliders read. A curve that only cuts is
 left exactly as designed. The visualiser measures after the filter, so its
 bars sit lower by the same amount while a lifting curve is on; that is what is
-being sent. `tests/domain/test_equalising.py` holds the reported curve under
-the ceiling at four rates against a search ten times finer;
-`tests/infrastructure/test_filtering.py` puts a tone at the reported peak
-through the largest lift and counts clipped samples.
+being sent. `tests/domain/test_equalising.py` holds the reported curve to no
+more than 0.05 dB above the ceiling at four rates, judged by a search ten times
+finer than the one that made the room; `tests/infrastructure/test_filtering.py`
+puts a 1 kHz tone at the record's 0.966 peak through the largest lift the
+sliders offer and counts clipped samples.
 
 **One pass over the samples, not one per band.** Measured on a block of 4096
 frames, which is 92.9 milliseconds of audio: ten bands cost 25.4 milliseconds
@@ -1034,7 +1046,9 @@ first. A flat equalizer costs nothing measurable at all.
 **The curve is kept where the volume is kept.** Coefficients depend on the
 sample rate, so they cannot be worked out until a stream is open; the curve
 is held by the engine so one chosen before anything is loaded still applies
-to whatever is loaded next; it is redesigned at every load.
+to whatever is loaded next. It is redesigned at every load and again whenever
+the curve changes while a stream is open, which starts the filter's memory
+afresh.
 
 ## The visualiser
 
@@ -1085,8 +1099,8 @@ A lock there would be the feeder waiting on a painter, which is the one thing
 it must never do. A strip that cannot keep up misses measurements rather than
 delaying the sound.
 
-**Two clocks, because the rates differ.** A block carries about 93 milliseconds
-of audio, so measurements land some eleven times a second, which is slow enough
+**Two clocks, because the rates differ.** At 44.1 kHz a block carries about 93
+milliseconds of audio, so measurements land some eleven times a second, which is slow enough
 to read as steps. The strip repaints thirty times a second and lets the domain
 decide where a bar has fallen to in between, so the motion is continuous while
 every peak in it was really measured. Bars rise instantly and fall at a fixed
@@ -1150,10 +1164,9 @@ offline structural test's whole value is that its list is short and that
 lengthening it is an edit somebody has to defend, so a feature reaching two
 hosts through one module is worth writing that way. `infrastructure/courtesy.py`
 holds the user agent and the pacing for every service reached through
-`cover_search.py` or `fetching.py`, the update check stating its own agent in
-`update_source.py`, since
-a gap honoured in one client and forgotten in another is a client that gets the
-whole application refused. For the same reason the composition root hands the
+`cover_search.py` or `fetching.py`, since a gap honoured in one client and
+forgotten in another is a client that gets the whole application refused. The
+update check states its own agent in `update_source.py`. For the same reason the composition root hands the
 run, an expansion and the cover search one gate for MusicBrainz, which
 `tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`
 holds.
@@ -1280,7 +1293,7 @@ arrive as a key plus a kind: the library reads its kinds out of the title then
 takes the qualifier off, while the catalogue takes its kinds as stated data and
 drops a trailing word that only repeats one of them. The rule had to be
 symmetric, since the library holds `Secret World (Live)` where the catalogue
-holds that record as `Secret World` with Live stated separately, so the two
+holds that record as `Secret World Live` with Live also stated as its kind, so the two
 would never have met. `stellody/domain/matching.py` is that rule, built on the
 same `comparison_key` primitive the search uses so the two cannot drift on
 normalisation; `AlbumIdentity` is deliberately untouched, its handle keying the
@@ -1293,7 +1306,7 @@ key holding the year makes every remastered album a false gap.
 **What a candidate plays is remembered between runs.** The similarity source
 returns identifiers with no genre, so filtering candidates by genre costs one
 lookup each: ten candidates for each of 327 artists is 3,270 requests, which is
-another fifty-four minutes at the permitted rate. Asking once per artist is what
+about another hour at the permitted rate. Asking once per artist is what
 keeps it affordable: measured on 2026-09-13 over a whole-library run of 555
 source artists, 5,550 possible lookups came down to 1,350, since the
 well-connected are suggested again and again. An answer already held is
@@ -1354,7 +1367,8 @@ seconds.
 **One file, replaced by every completed run.** Not a directory of dated files,
 which becomes a thing to tidy up; not a merge, which would have to rule on a
 candidate offered once and owned since. A run states what is missing at the
-moment it finished, which is the only claim it can honestly make. It is written
+moment it finished, carrying over an earlier answer only for an artist this run
+failed to reach, which `application/carrying_over.py` rules on. It is written
 through `infrastructure/atomic.py`, beside the shop list, so a failed write
 leaves the last good copy rather than half of one.
 
@@ -1497,6 +1511,13 @@ fail in: a platform nobody has thought about plays through its mixer rather
 than not at all. The Windows module is imported inside the call rather than at
 module scope, so a Mac never loads a module naming a host API it does not have.
 
+**Nothing asks for exclusive mode yet.** The transport opens every track with
+the default shared request (`stellody/application/transport.py`), so the
+exclusive path described next is built and tested but does not run, while the
+report of what an open stream delivers is read by nothing on screen. Making it
+run needs the transport to ask for exclusive mode and something to show the
+report.
+
 **Exclusive mode is Windows only; that is a statement about the route
 rather than about the machines.** A system mixer owns the device on macOS and
 on Linux exactly as one does on Windows; reaching past it means CoreAudio's own
@@ -1506,8 +1527,7 @@ with here. Inside a Flatpak the sandbox hands over a sound socket rather than a
 device at all, so there is nothing to take exclusively. A request for exclusive
 mode is therefore answered with the mixer path and a reason naming why, which
 is the answer a Windows device refusing exclusive mode already gets. Nothing
-claims to be bit perfect that is not, which is the half that matters: the
-promise the README leads with is held by reporting rather than by hoping.
+claims to be bit perfect that is not.
 
 **A move of the system's output pauses the music; play opens it again there.**
 Measured on 2026-09-14 with headphones connected after launch: PortAudio takes
@@ -1577,7 +1597,7 @@ online check and it will not launch for somebody offline.
 | `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also offers no equalizer of its own, so the one described below could not have been built on it. |
 | PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice: `PacketReader` counts packet timestamps back into frame positions and answers the same `AudioSource` as the existing reader, so the equalizer, the visualiser and gapless were not touched. Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. |
 | The bundled FFmpeg is LGPL, verified rather than assumed | The libraries report "LGPL version 3 or later" from the licence string the build itself computes, read out of the shipped binary. The same build links libx264 and libx265, which are GPL-2.0-or-later and which `avcodec` imports outright, so they cannot be dropped from a package. The decoder lives in `infrastructure`, which is the GPL-3.0 half, so the combination is compatible and the packaged application is distributed as a GPL-3.0 work. Nothing here encodes video; those two arrive as dependencies of a shared build. |
-| A lossy duplicate never displaces what is already there | An album's handle is what its cover and every rating are looked up by, so a handle that moves is data lost. Telling both copies apart moved the incumbent's, which is how making M4A visible reported three long-standing albums as no longer found. The lossless copy is the one a listener means, so it keeps the handle; only the copies are told apart. This applies only where exactly one copy is lossless, leaving the genuine two-recording collisions untouched. |
+| A lossy duplicate never displaces what is already there | An album's handle is what its cover and every rating are looked up by, so a handle that moves is data lost. Telling both copies apart moved the incumbent's, which is how making M4A visible reported three long-standing albums as no longer found. The lossless copy is the one a listener means, so it keeps the handle: two folders holding one album fold together, where the lossy copies are dropped as the duplicates they are. Two lossless recordings tagged alike fold into one album holding both, a price the section on accepting a correction states. |
 | A track that will not open is reported, never left as silence | Found on a real machine: a checkout whose requirements were not installed had no decoder for M4A, the exception left the transport entirely and the window did nothing at all. A listener cannot tell that from a press that missed. `PlaybackError` is named in the domain so the application can catch a failure without importing the layer that raised it; `DecodeError` and `OutputUnavailableError` are both that error. It is raised rather than reported: the transport lets it out and the window catches it in one place, which is the only place that can give the device back, put the buttons right and say what happened. Reporting it through a callback was tried and was worse, because the press then read as a success: the window said the track was playing over the top of the message saying it would not, with the device still held open behind a track that never started. An unplugged drive and a device another program holds arrive the same way. |
 | A pause is not an ending; it is caught in both layers | Reported against a real library: pausing a track then pressing play started it from its beginning. `pause` clears the resume and then stops the stream, so a feeder already past its wait writes into a stream that has just been stopped and PortAudio refuses that write. The failure landed in the branch that means "the track ran out", so a pause set `finished`. Everything downstream then followed correctly from a false premise: `play` declines to start a finished session, so the press did nothing; the poll a quarter of a second later took the ending as real; on the last track of a queue it gave the device back, which is what left the press after it reloading the track from nothing. The write is fixed where it goes wrong: a failure while the resume is already clear is a pause landing on the feeder, so the block in hand is dropped and the loop goes back to waiting. The transport carries the second half, because a device cannot tell a hold from an ending under any circumstances: `_held` is set when a listener pauses, cleared when they resume and taken from `playing` at every load, since a track opened without playing is one somebody is sitting on; `advance_if_finished` does nothing while it is set. Both halves were proved by planting their removal, each against a stream that refuses the write its stop landed in the middle of. |
 | Skipping while paused stays paused | Pressing Next while paused started playing, which nobody had asked for. The awkward part is that a track ending arrives through the same method, where playing on is right, while a device that has run out reports itself PAUSED exactly as a paused one does. Whether the move plays is therefore handed in by the caller rather than read off the device: a listener keeps the state they were in, while an ending carries on. Arriving by skipping is also not counted as waiting at a beginning, which is what pressing Back means, so Back after a skip still returns to the start of the track in hand. |
@@ -1630,7 +1650,7 @@ online check and it will not launch for somebody offline.
 | The colours are kept apart from the stylesheet that applies them | What a colour IS and where it is APPLIED are two questions that change for different reasons. `stellody/ui/palette.py` holds every colour value and nothing else; `stellody/ui/theme.py` builds the stylesheet and re-exports both names, so no caller had to learn about the split. The file holding both had reached the line cap, which is what said so out loud. |
 | Where a queue move lands is decided apart from the device | `domain/moving.py` holds what Next, Back and an ending mean under repeat and shuffle, as pure functions of a queue and the two switches. The transport applies the answers rather than working them out, which is what lets the same rule decide both a button press and a seam the engine will cross unattended. Randomness enters as an argument, exactly as time does. |
 | The equalizer switch is kept apart from its sliders | Somebody comparing on against off is asking one question; losing the curve they set up to compare with would answer a different one. The two are stored as two settings for the same reason. |
-| A boost is clipped at the format's ceiling, as the last resort | The curve arrives with room made for its own lift, so a record under the ceiling stays under it; see the equalizer section. What can still reach the ceiling is a sample that arrived over it, which a lossy decoder hands back on a loud master, plus the little a filter overshoots by. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
+| A boost is clipped at the format's ceiling, as the last resort | The curve arrives with room made for its own lift, so a record under the ceiling stays under it; see the equalizer section. What can still reach the ceiling is a sample that arrived over it, which a lossy decoder hands back on a loud master, plus the little a filter overshoots by and the few hundredths of a decibel the peak search can fall short by. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
 | What the library is shown as is one group on the bottom strip | The view toggle, the sleeve size and the equalizer sit together on the bottom strip in `stellody/ui/showing_controls.py`: one child group rather than three loose buttons, so their order is stated once and the strip delegates to it. |
 | Opening the whole library is a toggle on its heading | Expand all and Collapse all were on the View menu alone, so this is reach rather than capability: the gesture belongs beside the column of albums it acts on. It is one chevron at the left of the Title heading, this application's own artwork so that the toggle is drawn in the same hand as every other control here. A typed triangle was never on offer, since the font a heading lands in is not decided here while a glyph it lacks shows as a box; measured offscreen, the fallback font carries none of the four triangles. Where the artwork cannot be found the style's own arrow is drawn instead, so a checkout missing its assets shows a toggle rather than a gap. Room for it is kept by `QHeaderView::section:first` in the stylesheet, padded by a width DERIVED in `expanding.py` from the picture plus the space either side of it: written as one number it reserved exactly the picture, which left the chevron touching the word beside it. The picture is fitted once per size rather than per paint, the source being over a thousand pixels square against a heading that repaints on every hover. What a press would do is read off the rows rather than remembered, since a listener opening albums by hand moves the tree without touching this; partly open counts as shut, so one press always finishes the job it looks like it would. Replacing a tree's heading also throws away what the tree configured on the one it built, measured as three differences: headings centred rather than left, sections that cannot be dragged and a last section that stretches, so all three are taken from the heading being replaced. The heading is not a keyboard stop and does not become one, the menu being the keyboard route. Proved by planting the press away and by freezing the arrow, each failing its own case. |
 | A change that moves every row is answered once, never per row | What the heading's chevron should say is read off the albums, so every signal saying a row moved costs a walk of all of them. That is right for one album opened by hand and ruinous for a change that opens the lot: `expandAll` reports every row it opens, measured at 8792 signals on a library of 628 albums holding 8164 tracks; answering each of them took 3.72 seconds with the interface thread held throughout, against 0.03 seconds for the same call with nothing listening. The answer is therefore silent for the duration of such a change and asked once at the end, measured after at 0.04 seconds. The View menu goes through the same object for the same reason, so the menu cannot leave the chevron offering to do what it has just done. An earlier note here said `expandAll` emits nothing at all, inferred from a probe against an EMPTY library rather than measured; the freeze that shipped is what a claim taken from the wrong fixture costs. The rule is held by COUNTING the questions rather than by timing them, since a timing that fails on a slow machine is one people learn to ignore. |

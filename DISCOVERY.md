@@ -1,8 +1,8 @@
 # Discovering music the library does not hold
 
 The specification for the first stage of discovering music the library does
-not hold. It is written
-before any code, because the milestone was explicitly undesigned and a feature
+not hold. It was written before any code, because the milestone was explicitly
+undesigned and a feature
 generated from a loose description is a feature debugged rather than built.
 
 It is built and it is finished. Where this document and the code disagree, this
@@ -62,7 +62,7 @@ One meaning per term, for the life of the document.
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
 | **Candidate artist** | An artist a source gives as similar to a source artist, whom the library does not hold. |
 | **Release key** | The value two albums are judged the same album on, defined in section 3.5. The title alone, normalised, with edition qualifiers removed and the year deliberately absent. |
-| **Discovery run** | One press of the action button, from first request to file written or cancellation. |
+| **Discovery run** | One press of the action button, from first request to whichever of its four endings it reaches: completed, nothing to ask, stopped or unavailable. |
 | **Discovery file** | The JSON written by a run. |
 
 ### 1.4 References
@@ -81,7 +81,7 @@ An addition to an existing application, taking the third outward-reaching
 module after the cover chooser and the update check. It is a client of the
 application layer exactly as every other dialog is.
 
-Two services are reached through ONE of them: neither catalogue client holds a
+Two services are reached through ONE permitted module: neither catalogue client holds a
 socket, both handing their questions to `infrastructure/fetching.py`. Invariant
 12 names four permitted modules rather than three, the fourth being the local
 channel a second launch speaks to the running copy over, which was found by
@@ -115,8 +115,8 @@ HTTPS connection during a run. Everything else the application already assumes.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Answered |
-| A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Answered |
+| A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Oliver | Answered |
+| A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Oliver | Answered |
 | A-03 | A listener accepts that a run names their source artists to two public catalogues. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements
@@ -544,14 +544,15 @@ Priority: Should
 
 Requirement: Where a candidate states no genre that Stellody's genre catalogue
 recognises, whether it states none at all or only names that catalogue does not
-know, the discovery service shall keep it and mark it as of unstated genre.
+know, the discovery service shall keep it; `ReleaseGroup.states_no_genre` then
+reads true for it.
 
 Rationale: Dropping what a source failed to describe would silently narrow the
 result to the well-catalogued, which is the opposite of finding what is missing.
 Marking it lets a later stage decide.
 
 Acceptance: Given a candidate album carrying no genres, when the run completes,
-then it appears with its genre recorded as unstated.
+then it appears and reads as stating no genre.
 
 Verified by: `tests/domain/test_discovery_gaps.py::test_unstated_genre_is_kept_and_marked`
 
@@ -956,8 +957,9 @@ Verified by: `tests/ui/test_discovery_stopping.py::test_pressing_it_during_a_run
 Priority: Must
 
 Requirement: If the application is asked to quit while a run is under way, then
-the window shall tell the run to stop before its next request and wait for it to
-end before the application ends; the stopped run shall leave any existing
+the window shall tell the run to stop before its next request, then wait for it
+and for every run abandoned earlier to end, allowing each at most thirty
+seconds, before the application ends; the stopped run shall leave any existing
 discovery file untouched.
 
 Rationale: The same ruling as a cancel, since a close is a cancel the listener
@@ -1752,7 +1754,7 @@ Both shall be answered from one reading of the pace.
 
 Rationale: Reported by Oliver on 2026-09-07: a small run took a minute or two
 with nothing on screen saying whether that was normal. The pacing arithmetic
-puts a whole library at about eleven minutes for the first stage alone. Somebody who cannot
+puts a whole library at about twelve minutes for the first stage alone. Somebody who cannot
 tell a long run from a hang closes the window, which throws the run away.
 
 The second place was added the same day, on his report that the estimate could
@@ -1927,7 +1929,7 @@ Priority: Won't, ruled 2026-09-09
 Withdrawn as a requirement. It asked that a run over the full library of 327
 source artists complete within twenty minutes, the two catalogue requests per
 artist paced at one per second with the similarity request overlapping them.
-The arithmetic behind that gives about eleven minutes and is what FR-D35 cites; it stands as arithmetic and is not a claim about any run.
+At the 1.1 second gap NFR-PERF-001 sets, that arithmetic gives about twelve minutes; it is what FR-D35 cites and it stands as arithmetic rather than a claim about any run.
 
 **Ruled by Oliver on 2026-09-09: the duration is not to be measured.** It was
 carried as the one requirement no evidence stood behind, on the expectation
@@ -2120,7 +2122,7 @@ which becomes a thing to tidy up; not a merge, which would have to rule on a
 candidate offered once and owned since. A run therefore states what is missing
 at the moment it finished, which is the only claim it can honestly make.
 
-Its exact JSON shape is settled at implementation, constrained by FR-D18 and by
+Its JSON shape, written by `infrastructure/discovery_file.py`, is constrained by FR-D18 and by
 the four things the file carries beside the results: the artists that could not
 be resolved (FR-D08), the ambiguous ones (FR-D09), the failures (FR-D22) and
 the genres the run was scoped to (FR-D41).

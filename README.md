@@ -53,11 +53,11 @@ checks run; if it ever stopped being true the suite would fail.
   with no silence dropped in where the artist never put one.
 - **An equalizer, plus little bars that dance.** Ten sliders from deep bass to
   high treble, with twenty bars along the bottom showing what the music is
-  doing. Switched off it adds nothing of its own, handing each block back
-  untouched. On Windows, where Stellody can take the sound device exclusively,
-  that means what reaches your speakers is bit for bit what is in the file, for
-  the formats that store it exactly: FLAC, WAV, AIFF, WavPack and the lossless
-  ALAC inside an M4A.
+  doing. A curve that lifts any part of the sound first lowers the whole record
+  by as much as it lifts, so a loud record never clips; music plays quieter
+  with such a curve on, while a curve that only cuts keeps its level. Switched
+  off it adds nothing of its own, handing each block back untouched; at full
+  volume nothing else in Stellody touches the samples either.
 - **Headphones in, music paused.** When your computer's sound output changes,
   say because headphones connected, Stellody pauses rather than carrying on
   through the old one. Both play buttons show play and the foot of the window
@@ -137,9 +137,8 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   Monkey's Audio, Musepack, DSD, TAK, TrueAudio, CAF or an M4B audiobook.
   Anything it cannot decode is named in the health report rather than passed
   over, so a missing album says so instead of simply not appearing. An M4A
-  carries either AAC or ALAC and the difference matters: the lossy one is
-  played without ever being called bit perfect, while ALAC states the depth it
-  stores and can be. WMA and AAC are lossy on the same terms; WavPack is
+  carries either AAC or ALAC and Stellody tells them apart: ALAC states the
+  depth it stores, while AAC is lossy and states none. WMA and AAC are lossy on the same terms; WavPack is
   lossless and keeps the depth it states. A bonus video that came with an album
   plays as well, from the same MP4 container under a `.m4v` name.
 - **The last three of those are proved differently, so here is what that
@@ -151,11 +150,9 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   yours is read wrongly, that is a defect worth reporting rather than a format
   nobody thought about.
 - **Windows, macOS and Linux.** A setup program on Windows, a disk image
-  on macOS and a Flatpak on Linux. One difference is worth knowing before you
-  choose: on Windows, Stellody can take the sound device exclusively and hand
-  it the file's own samples untouched. macOS and Linux reach the device through
-  the system mixer instead, which converts on the way, so playback there is not
-  bit perfect and Stellody says so rather than claiming otherwise.
+  on macOS and a Flatpak on Linux. On all three the sound reaches the device
+  through the system mixer, which converts on the way, so playback is not bit
+  perfect on any of them.
 - **Sized to fit a laptop screen.** Everything is drawn at nine tenths of the
   size it is built at, so the whole window fits a 13 inch 4K screen at 300%
   scaling. To choose a different size, set the `QT_SCALE_FACTOR` environment
@@ -179,7 +176,8 @@ with the internet switched off.
 Five things reach outside your computer at all, so here are all five:
 
 - **Looking for album art**, only ever when you ask, one album at a time.
-- **Checking for a new version**, once a day. It sends nothing about you or
+- **Checking for a new version**, a few seconds after Stellody starts and once
+  a day while it runs. It sends nothing about you or
   your music, not even which version you have: the request names the program
   and asks for one public page. Then it stays quiet unless there is something
   new. Where there is, pressing Download hands your browser the file for your
@@ -191,7 +189,9 @@ Five things reach outside your computer at all, so here are all five:
   that you do not hold. What goes out is those artist names, the MusicBrainz
   identifiers the catalogues give back for them and for the similar artists
   they find, the fixed settings each request states for itself (the answer's
-  format and how many results to return) plus a user agent naming Stellody, its
+  format, how many results to return, which release types to list, which
+  details to include and which similarity algorithm to use) plus a user agent
+  naming Stellody, its
   version and the project's contact address: not your library,
   not a count of it, not a word about you or your machine. Tick nothing and
   nothing leaves.
@@ -290,8 +290,8 @@ the package and both versions; that is the guard working rather than a fault.
 
 That runs the formatter, both linters and the suite against the project's own
 virtual environment, reading each exit code rather than its output. Running
-`python -m pytest` directly works too, provided it is the venv's Python: a
-test refuses the run otherwise: the checks passing in one environment while
+`python -m pytest` directly works too, provided it is the venv's Python;
+otherwise a test fails the run, since the checks passing in one environment while
 the application runs in another is a fault this project has actually had.
 
 The suite gates at 100% branch coverage over the domain and application

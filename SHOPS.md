@@ -1,8 +1,7 @@
 # Reaching the shops that sell what the library is missing
 
 Specification for the second stage of discovering music the library does not
-hold. The first stage says
-what the library is missing; this says how somebody gets from one of those gaps
+hold. The first stage says what the library is missing; this says how somebody gets from one of those gaps
 to a place that sells it. It is written before the code, in the house form:
 EARS requirements, each with the failure case beside it, each naming the test
 that will prove it.
@@ -102,7 +101,7 @@ is specified rather than assumed away.
   travels through the browser rather than from Stellody.
 - The shop list is data. Measured on 2026-09-07: Juno Download had closed,
   7digital had put a bot wall in front of its search and Volumo's search path
-  had become a 404, all within one afternoon of checking eight shops. A list
+  had become a 404, all within one afternoon of checking shops. A list
   compiled into the application is a list that needs a release every time a
   shop moves.
 - The house rules hold: clean-architecture layering, 400-line modules, 100
@@ -182,13 +181,13 @@ Verified by: `tests/ui/test_shop_choosing.py::test_fetched_albums_can_be_ticked_
 Priority: Must
 
 Requirement: While no album is ticked, the results dialog shall disable the
-control that opens the shops.
+control that opens the shops and the copy control.
 
 Rationale: A press that can only report emptiness is a press worth preventing.
 The same rule the discovery dialog applies to its own Find button.
 
-Acceptance: Given a dialog with nothing ticked, when the control is read, then
-it is disabled; when one album is ticked, then it is enabled.
+Acceptance: Given a dialog with nothing ticked, when the controls are read, then
+both are disabled; when one album is ticked, then both are enabled.
 
 Verified by: `tests/ui/test_shop_choosing.py::test_the_shops_control_waits_for_a_tick`
 
@@ -278,8 +277,8 @@ Requirement: The shop service shall read the shop list from a file in
 Stellody's own directory, writing the shipped defaults there where no file
 exists.
 
-Rationale: Measured on 2026-09-07 across eight shops: one had closed, one had
-walled its search and one had moved it. A shop list inside the application is a
+Rationale: Measured on 2026-09-07: of the shops checked that afternoon, one had
+closed, one had walled its search and one had moved it. A shop list inside the application is a
 release every time that happens; a file is an edit.
 
 Acceptance: Given no shop file, when the shops dialog is opened, then the file
@@ -303,9 +302,9 @@ searches badly on two terms is given one. Two placeholders let each row say
 what that shop can actually take. `%20` rather than `+` because HDtracks shows
 a literal plus sign, while every other shop measured accepted `%20`.
 
-Acceptance: Given the template `https://example.com/s?q={artist}%20{album}` and
-the album "Hounds of Love" by "Kate Bush", when the address is built, then it is
-`https://example.com/s?q=Kate%20Bush%20Hounds%20of%20Love`.
+Acceptance: Given the template `https://www.qobuz.com/gb-en/search?q={artist}%20{album}`
+and the album "Hounds of Love" by "Kate Bush", when the address is built, then it
+is `https://www.qobuz.com/gb-en/search?q=Kate%20Bush%20Hounds%20of%20Love`.
 
 Verified by: `tests/domain/test_shop_address.py::TestTheAddress::test_both_placeholders_are_filled_and_encoded`
 
@@ -458,8 +457,8 @@ Verified by: retired with this requirement; its successors name their own tests.
 
 Priority: Must
 
-Requirement: Every address Stellody opens shall contain only the shop's own
-template text, the artist name and the album title. It shall contain no
+Requirement: Every shop search address Stellody opens shall contain only the
+shop's own template text, the artist name and the album title. It shall contain no
 identifier for the listener, the machine or the library, nor any other album.
 
 Rationale: The stance PLAN.md records, stated as something testable rather than
@@ -467,8 +466,9 @@ as an intention. Handing an address to a browser is not an outward call that
 carries the library; that stays true only while the address carries nothing
 else.
 
-Acceptance: Given any shipped shop and any album, when the address is built,
-then the only text in it beyond the template is the artist and the title.
+Acceptance: Given a shop template and an album, when the address is built, then
+it equals that template with the encoded artist and the encoded title put in
+place of the two placeholders.
 
 Verified by: `tests/domain/test_shop_address.py::TestTheAddress::test_an_address_carries_nothing_but_the_album`
 
@@ -488,7 +488,9 @@ cannot be the one that quietly falls short.
 Acceptance: Given either appearance, when each text colour is measured against
 its surface, then every ratio reaches 4.5.
 
-Verified by: `tests/ui/test_shop_contrast.py`
+Verified by: `tests/ui/test_shop_contrast.py`, which measures every colour
+`shops_dialog.py` names. The shop form names only `warning`, one of those
+colours, though no test reads its source.
 
 ---
 
@@ -553,11 +555,12 @@ is named `shops.json`. Its shape:
 - `shops` is the list in use; `shipped` records the release list the rows were
   last settled against, which is how FR-S32 and FR-S33 tell an untouched shipped shop from an
   edited one.
-- `name` and `template` are required; a row missing either is skipped.
+- ~~`name` and `template` are required; a row missing either is skipped.~~
+  Amended by 6.6: such a row is kept in its place with its reason (FR-S42).
 - `note` is optional and is shown beside the shop.
 - Order in the file is the order in the dialog.
 - Unknown keys are ignored, so a file written by a later Stellody is read by an
-  earlier one.
+  earlier one. They are not kept: every write holds only the keys named here.
 
 **The shipped defaults**, every template measured on 2026-09-07 by loading it
 and reading what came back, except where marked:
@@ -609,7 +612,8 @@ then FR-S43 from Amendment 2.
 Should: nothing this stage.
 Could: nothing this stage.
 Won't, this time: payments, prices, stock, shop APIs, affiliate links, physical
-media, streaming, remembering what was bought.
+media, streaming, remembering what was bought, reaching a shop for an album
+already held.
 
 ### C. The build order this implies
 
@@ -727,9 +731,8 @@ the shop service shall write the list to the shop file with an added shop at the
 bottom or an edited shop in its own place, then the shops dialog shall show the
 list as written.
 
-Acceptance: Given eight shops and a form holding "Juno" with a valid address,
-when Save is pressed, then the file holds nine shops with Juno last and the
-dialog lists nine.
+Acceptance: Given Qobuz listed and a form holding "Juno" with a valid address,
+when Save is pressed, then the list holds Qobuz then Juno and the form closes.
 
 Verified by: `tests/application/test_editing_the_shop_list.py::test_an_added_shop_goes_last`,
 `tests/application/test_editing_the_shop_list.py::test_an_edited_shop_keeps_its_place`,
@@ -1157,13 +1160,17 @@ under the 100 percent branch gate.
 - `deleted` names shipped shops the listener removed (FR-S25, FR-S26).
 - `retired` names shops removed because a release stopped shipping them, until
   the dialog has said so (FR-S34, FR-S35).
-- An older Stellody ignores both, since unknown keys are already ignored.
+- An older Stellody reads past both, since unknown keys are already ignored.
+  One from before this amendment that rewrites an untouched file writes only
+  `shops` and `shipped`, dropping both.
 - FR-S12's "does not hold a usable list" now means a file that cannot be parsed,
   one whose top level is not a JSON object or one whose `shops` is not a list.
   A list whose rows are broken is read with each row kept and named (FR-S42).
   An empty list is a list rather than an unusable file: emptied from the dialog
   it stays empty (FR-S39), since every shipped name is then in the `deleted`
   record, while FR-S30 still adds any shipped shop that record does not name.
+- A file whose `shipped` record is missing or is not a list is read as settled
+  against this release, so none of its rows is taken for out of date.
 
 ### 6.7 Assumptions
 
@@ -1182,8 +1189,9 @@ under the 100 percent branch gate.
 
 1. **Domain**: the shop list rules. Name matching, the edited test, the merge of
    FR-S30 to FR-S34, putting back, moving; pure and unit tested.
-2. **Application**: add, edit, delete, move, put back and try, as one use case
-   each over the existing ports plus a writing port.
+2. **Application**: add, edit, delete, move, put back and try, as methods of
+   one use case, `ShopEditing`, over a store port that reads and writes the list
+   plus the existing opener port.
 3. **Infrastructure**: the shop file reading and writing `deleted` and
    `retired`, retiring FR-S16's logic.
 4. **UI**: the row controls, the handle, the shop form, the put-back control,
@@ -1214,6 +1222,8 @@ row with the pointer and glide every other row to the place it would take were
 the held row let go there. When the handle is let go, the shop service shall
 write the list in the new order, then the row shall glide into its place. If the
 list cannot be written, then the row shall glide back to where it started.
+Letting go where the row was taken shall write nothing. While a row is held or
+still landing, Ctrl+Up and Ctrl+Down shall move nothing.
 
 Rationale: A row that stays put while the pointer moves gives no sign of where
 it will go; one that jumps on release has to be found again by eye. Where the

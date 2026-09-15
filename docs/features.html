@@ -96,7 +96,8 @@
     </div>
     <div class="feat">
       <h3>Nothing goes missing quietly</h3>
-      <p>Stellody skips a short, fixed list of folders that Windows and macOS create for themselves. It
+      <p>Stellody skips a short, fixed list of folders that operating systems, network drives and version
+      control tools create for themselves. It
       never guesses that something looks unimportant, because an early version guessed and swallowed two
       real albums.</p>
     </div>
@@ -105,13 +106,13 @@
       <p>A collection built over years is rarely all one format, so Stellody reads the common ones and
       treats them alike: a folder of MP3s becomes an album exactly as a folder of FLACs does, with the
       same titles, artists, dates and track numbers read out of whatever each file happens to carry.
-      Cover art stored inside a file is read from all of them too, including the cover an M4A keeps in its
-      own Apple atom. What is left, Monkey's Audio and a handful of rarer formats, is named in the health
+      Cover art stored inside a FLAC, MP3, WAV, AIFF or M4A file is read too, including the cover an M4A
+      keeps in its own Apple atom. What is left, Monkey's Audio and a handful of rarer formats, is named in the health
       report rather than quietly skipped.</p>
       <p>WMA, WavPack and AAC arrive on a weaker footing than the rest and it is worth saying which. Every
       other format here was tested against files somebody owns; there were none of those three, so each is
-      proved against a file the test suite encodes for the purpose. WMA and AAC are lossy, so neither is
-      ever called bit perfect; WavPack is lossless and keeps the depth it states.</p>
+      proved against a file the test suite encodes for the purpose. WMA and AAC are lossy, so neither
+      states a bit depth; WavPack is lossless and keeps the depth it states.</p>
     </div>
     <div class="feat">
       <h3>The bonus video comes in too</h3>
@@ -277,7 +278,8 @@
       <h3>You choose what it looks at</h3>
       <p>The genres you tick decide which of your artists are named, so what goes out is a subset you
       chose rather than an inventory of everything you own. What goes out is those artist names, the
-      identifiers the catalogue gives back for them plus a user agent naming Stellody: no collection,
+      identifiers the catalogue gives back for them plus a user agent naming Stellody, its version and the
+      project's contact address: no collection,
       no counts, nothing about you or your machine.</p>
     </div>
     <div class="feat">
@@ -431,7 +433,8 @@
       <h3>See the shape of the song</h3>
       <p>A picture of the whole track runs along the bottom, showing the quiet parts and the loud ones at
       a glance, with a line marking where you are and the time either side of it. Click anywhere on it to
-      jump there. It appears the instant you press play rather than making you wait.</p>
+      jump there. A track played before draws its shape at once; a new one is measured the moment it is
+      highlighted, before you press play.</p>
     </div>
   </div>
 </section>
@@ -442,33 +445,29 @@
   <div class="features-grid">
     <div class="feat">
       <h3>Ten sliders, from deep bass to high treble</h3>
-      <p>Open it from the button at the top or the Sound menu. Take the bass up, bring the harshness down, then hear the change as you
-      move each slider. There is a separate on and off switch, so you can
+      <p>Open it from the button along the bottom of the window or from the Sound menu. Take the bass up,
+      bring the harshness down, then hear the change as you move each slider. A lift is given room rather
+      than clipped: the whole curve is brought down by the most it raises any part of the sound, so a
+      record already mastered loud never distorts. That is why music plays quieter with a lift switched
+      on; a curve that only cuts keeps its own level. There is a separate on and off switch, so you can
       compare it against the untouched sound without losing the settings you spent time on.</p>
     </div>
     <div class="feat">
       <h3>Switched off means genuinely untouched</h3>
       <p>Plenty of players still push your music through their sound processing even with everything set
       to zero. Stellody adds nothing of its own: turned off, the equalizer hands the block back untouched
-      rather than multiplying it by one. On Windows it can go further and take the sound device
-      exclusively, so what reaches your speakers is bit for bit what is in the file. If you have good
-      equipment, that is the difference you paid for. It holds for FLAC, WAV and AIFF, which store the
-      sound exactly; it holds for an M4A carrying ALAC, which stores it exactly too.
-      MP3 and Ogg threw part of it away when they were made, so what reaches your speakers there is the
-      decoder's output rather than the file itself. An M4A holding AAC is in that second group and is
-      never called bit perfect: the file says which of the two it carries, so Stellody reads that rather
-      than assuming either way.</p>
-      <p>On macOS and Linux the sound goes through the system mixer, which converts on the way, so nothing
-      there is bit perfect. Stellody reports that rather than claiming otherwise: exclusive access to a
-      device is a Windows interface, while reaching past a mixer on the other two means something
-      different on each.</p>
+      rather than multiplying it by one. Left at full, the volume does the same.</p>
+      <p>What leaves Stellody then goes through your system's sound mixer on Windows, macOS and Linux
+      alike, which converts on the way, so playback is not bit perfect on any of them. Stellody does not
+      take a sound device for itself.</p>
     </div>
     <div class="feat">
       <h3>Little bars that dance</h3>
       <p>Twenty bars along the bottom of the window move with whatever is playing. They line up with the
       ten sliders, two bars to a slider, so you can see exactly which control owns the part of the sound
       you are listening to. Turning the volume down does not shrink them, because they are showing you the
-      music rather than the volume.</p>
+      music rather than the volume. They measure the sound after the equalizer, so with a lift switched on
+      they mostly read lower than the same record with it off.</p>
     </div>
     <div class="feat">
       <h3>It cannot change what you hear</h3>
@@ -556,7 +555,7 @@
     <div class="feat">
       <h3>It fits a laptop screen</h3>
       <p>Everything is drawn at nine tenths of its full size on every screen, so the whole window fits a
-      13 inch laptop running at 300% scaling with nothing cut off at the edge. If you would rather have
+      13 inch 4K laptop screen running at 300% scaling with nothing cut off at the edge. If you would rather have
       it larger or smaller, set <code>QT_SCALE_FACTOR</code> before starting it and Stellody uses your
       size instead of its own.</p>
     </div>
@@ -613,7 +612,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.3.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.4.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>
