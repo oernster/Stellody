@@ -12,6 +12,11 @@ approximation: it is the same answer for none of the cost. That is what lets a
 flat equalizer cost nothing whatever in the signal path rather than merely
 little, which is what the milestone asked for.
 
+**A lift is given room before it is applied.** A record mastered to the
+ceiling has nowhere to go when a band raises it, so the whole curve is brought
+down by the most it lifts any frequency. The shape is what somebody set; the
+level is what the record already had.
+
 The arithmetic is the Audio EQ Cookbook's, hand rolled rather than taken from
 scipy: it is a dozen lines that belong in the domain and can be tested without
 an audio device, against tens of megabytes added to the packaged build.
@@ -19,6 +24,7 @@ an audio device, against tens of megabytes added to the packaged build.
 
 from __future__ import annotations
 
+import cmath
 import math
 from dataclasses import dataclass
 
@@ -39,6 +45,19 @@ MINIMUM_GAIN_DB = -MAXIMUM_GAIN_DB
 # dropped rather than designed: the arithmetic divides by nothing there.
 NYQUIST_DIVISOR = 2
 
+UNITY_GAIN = 1.0
+OCTAVE_RATIO = 2.0
+
+# How finely the combined response is searched for its highest lift. Measured
+# on 2026-09-15 against a search a hundred times finer, over 300 random curves
+# at 44.1 to 192 kHz: this grid never fell short of the true peak by more than
+# 0.024 dB, while one search costs about two milliseconds. The engine's ceiling
+# answers for that remainder.
+SEARCH_STEPS_PER_OCTAVE = 48
+# Where the search stops below the lowest band. Over those same curves the
+# highest lift never sat below 27.6 Hz; two octaves down is under 8 Hz.
+SEARCH_OCTAVES_BELOW = 2
+
 _DECIBEL_ROOT = 40.0
 _SEPARATOR = ","
 
@@ -57,6 +76,20 @@ class Biquad:
     b2: float
     a1: float
     a2: float
+
+    def scaled(self, gain: float) -> Biquad:
+        """This section followed by a fixed gain, folded into its numerator.
+
+        A gain after a linear filter is the same filter with every numerator
+        term multiplied by it, so the engine needs no stage of its own for one.
+        """
+        return Biquad(
+            b0=self.b0 * gain,
+            b1=self.b1 * gain,
+            b2=self.b2 * gain,
+            a1=self.a1,
+            a2=self.a2,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,21 +157,66 @@ def peaking(
     )
 
 
+def response(sections: tuple[Biquad, ...], frequency: float, sample_rate: int) -> float:
+    """How much the sections together multiply `frequency` by.
+
+    The transfer function evaluated on the unit circle, which is the only
+    honest way to ask what a set of coefficients actually does.
+    """
+    z = cmath.exp(-1j * 2.0 * math.pi * frequency / sample_rate)
+    gain = UNITY_GAIN
+    for section in sections:
+        numerator = section.b0 + section.b1 * z + section.b2 * z * z
+        denominator = UNITY_GAIN + section.a1 * z + section.a2 * z * z
+        gain *= abs(numerator / denominator)
+    return gain
+
+
+def peak_lift(sections: tuple[Biquad, ...], sample_rate: int) -> float:
+    """The most the sections lift any frequency by; never less than unity.
+
+    Never less, because what this answers is how much room a curve needs; a
+    curve that only cuts needs none. Searched downwards from half the sample
+    rate, since nothing above that is a frequency the stream can carry.
+    """
+    step = OCTAVE_RATIO ** (UNITY_GAIN / SEARCH_STEPS_PER_OCTAVE)
+    lowest = BAND_FREQUENCIES[0] / OCTAVE_RATIO**SEARCH_OCTAVES_BELOW
+    frequency = sample_rate / NYQUIST_DIVISOR
+    peak = UNITY_GAIN
+    while frequency >= lowest:
+        peak = max(peak, response(sections, frequency, sample_rate))
+        frequency /= step
+    return peak
+
+
 def cascade(equalisation: Equalisation, sample_rate: int) -> tuple[Biquad, ...]:
-    """The sections worth running, which is only the bands that do something.
+    """The sections worth running, with room made for whatever they lift.
 
     A band at nought is dropped because it is the identity; a band at or
     above half the sample rate is dropped because there is nothing up there for
     it to act on. Both leave the answer exactly as it would have been.
+
+    What is left is brought down by the most it lifts any frequency, folded
+    into the first section, so the curve never raises anything above the level
+    it arrived at. Reported by Oliver on 2026-09-15 as static at the same
+    moments on every play: a curve lifting 31 Hz by eight decibels took
+    Bicep's Saku, mastered to 0.966, to 2.3 times full scale; the engine
+    clipped 898,897 frames of it. A curve that only cuts is left exactly as
+    designed.
     """
     if equalisation.flat:
         return ()
     highest = sample_rate / NYQUIST_DIVISOR
-    return tuple(
+    sections = tuple(
         peaking(frequency, gain, sample_rate)
         for frequency, gain in zip(BAND_FREQUENCIES, equalisation.gains_db)
         if gain != FLAT_DB and frequency < highest
     )
+    if not sections:
+        return ()
+    first, *rest = sections
+    room = UNITY_GAIN / peak_lift(sections, sample_rate)
+    return (first.scaled(room), *rest)
 
 
 def as_text(equalisation: Equalisation) -> str:

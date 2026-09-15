@@ -9,7 +9,6 @@ size undo one another exactly.
 
 from __future__ import annotations
 
-import cmath
 import itertools
 import math
 
@@ -25,24 +24,45 @@ from stellody.domain.equalising import (
     as_text,
     cascade,
     from_text,
+    peak_lift,
     peaking,
+    response,
 )
 
 CD_RATE = 44100
 LIFT_DB = 6.0
+DECIBELS_PER_DECADE = 20.0
+
+# The curve that was reported clipping, as it stood on the screen.
+REPORTED_CURVE = (8.0, 6.0, 4.0, FLAT_DB, 2.0, 1.0, 1.0, 4.0, 7.0, 7.0)
+STREAM_RATES = (44100, 48000, 96000, 192000)
+# How far a found peak may sit below the true one: the largest shortfall
+# measured over 300 random curves was 0.024 dB, so this is that rounded up.
+SEARCH_TOLERANCE_DB = 0.05
+# The reference search: ten times finer than the one under test, from a floor
+# well below anything a band reaches.
+REFERENCE_STEPS_PER_OCTAVE = 480
+REFERENCE_FLOOR_HZ = 1.0
+
+
+def decibels(gain: float) -> float:
+    """A multiplier said in decibels."""
+    return DECIBELS_PER_DECADE * math.log10(gain)
 
 
 def response_db(section, frequency: int, sample_rate: int) -> float:
-    """How much this section lifts or cuts that frequency, in decibels.
+    """How much this one section lifts or cuts that frequency, in decibels."""
+    return decibels(response((section,), frequency, sample_rate))
 
-    The transfer function evaluated on the unit circle, which is the only
-    honest way to ask what a set of coefficients actually does.
-    """
-    angle = 2 * math.pi * frequency / sample_rate
-    z = cmath.exp(-1j * angle)
-    numerator = section.b0 + section.b1 * z + section.b2 * z * z
-    denominator = 1.0 + section.a1 * z + section.a2 * z * z
-    return 20.0 * math.log10(abs(numerator / denominator))
+
+def reference_peak(sections, sample_rate: int) -> float:
+    """The highest point of the response, found the slow way."""
+    step = 2.0 ** (1.0 / REFERENCE_STEPS_PER_OCTAVE)
+    frequency, peak = REFERENCE_FLOOR_HZ, 1.0
+    while frequency <= sample_rate / 2:
+        peak = max(peak, response(sections, frequency, sample_rate))
+        frequency *= step
+    return peak
 
 
 def lifted(band: int = 0, gain_db: float = LIFT_DB) -> Equalisation:
@@ -148,6 +168,59 @@ class TestTheSectionsThatComeOut:
         assert section.b0 == pytest.approx(1.0)
         assert section.b1 == pytest.approx(section.a1)
         assert section.b2 == pytest.approx(section.a2)
+
+
+class TestRoomForALift:
+    @pytest.mark.parametrize("rate", STREAM_RATES)
+    def test_the_reported_curve_lifts_nothing_above_where_it_arrived(
+        self, rate: int
+    ) -> None:
+        """The defect itself: eight decibels at 31 Hz took a record past full scale.
+
+        Measured against the reference search rather than the one that
+        designed the room, so a search that misses the peak cannot mark its
+        own work.
+        """
+        setting = Equalisation(gains_db=REPORTED_CURVE, enabled=True)
+        sections = cascade(setting, rate)
+        assert decibels(reference_peak(sections, rate)) <= SEARCH_TOLERANCE_DB
+
+    def test_the_shape_is_kept_while_the_level_comes_down(self) -> None:
+        """Every frequency comes down by the same amount, which is the lift."""
+        centre = BAND_FREQUENCIES[4]
+        designed = (peaking(centre, LIFT_DB, CD_RATE),)
+        roomy = cascade(lifted(band=4), CD_RATE)
+        for frequency in (BAND_FREQUENCIES[0], centre, BAND_FREQUENCIES[8]):
+            difference = decibels(response(roomy, frequency, CD_RATE)) - decibels(
+                response(designed, frequency, CD_RATE)
+            )
+            assert difference == pytest.approx(-LIFT_DB, abs=SEARCH_TOLERANCE_DB)
+
+    def test_a_curve_that_only_cuts_is_left_exactly_as_designed(self) -> None:
+        """A cut needs no room, so nothing about it may change."""
+        setting = lifted(band=2, gain_db=-LIFT_DB).with_band(6, -LIFT_DB)
+        assert cascade(setting, CD_RATE) == (
+            peaking(BAND_FREQUENCIES[2], -LIFT_DB, CD_RATE),
+            peaking(BAND_FREQUENCIES[6], -LIFT_DB, CD_RATE),
+        )
+
+    @pytest.mark.parametrize("rate", STREAM_RATES)
+    def test_the_search_finds_the_peak_where_two_lifts_overlap(self, rate: int) -> None:
+        """Neighbouring lifts pile up above either one alone, as the report did."""
+        sections = tuple(
+            peaking(frequency, gain, rate)
+            for frequency, gain in zip(BAND_FREQUENCIES, REPORTED_CURVE)
+            if gain != FLAT_DB
+        )
+        found = decibels(peak_lift(sections, rate))
+        true = decibels(reference_peak(sections, rate))
+        assert found > max(REPORTED_CURVE), "overlap lifts past the largest band"
+        assert found == pytest.approx(true, abs=SEARCH_TOLERANCE_DB)
+
+    def test_a_curve_with_nothing_it_can_act_on_designs_nothing(self) -> None:
+        """Only the top band lifted, at a rate whose half sits below it."""
+        top_only = lifted(band=BAND_COUNT - 1)
+        assert cascade(top_only, 8000) == ()
 
 
 class TestStoringIt:

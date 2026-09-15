@@ -61,8 +61,10 @@ class BiquadCascade:
             return block
         self._sized_for(block.shape[1])
         # Gathered in floating point and only then put back into the block's
-        # own format: a lift can ask for more than an integer sample holds,
-        # and writing it there before clipping overflows rather than clips.
+        # own format. The curve arrives with room already made for its lift,
+        # but a decoder can hand back samples past full scale and a filter
+        # overshoots as it starts; writing either into an integer before
+        # clipping overflows rather than clips.
         filtered = np.empty(block.shape, dtype="float64")
         for channel in range(block.shape[1]):
             filtered[:, channel] = self._channel(block[:, channel].tolist(), channel)
@@ -92,11 +94,13 @@ class BiquadCascade:
 
     @staticmethod
     def _limit(dtype: np.dtype) -> float:
-        """The largest sample this format holds, so a boost cannot wrap round.
+        """The largest sample this format holds, so nothing can wrap round.
 
-        A lift can ask for more than the format can carry. Clipping says so
-        quietly at the ceiling, where letting an integer overflow would turn a
-        loud passage into noise rather than into a loud passage.
+        The last resort rather than the plan: `cascade` brings a curve down by
+        its own lift so a record under the ceiling stays under it. What is
+        left is a sample that arrived over the ceiling already, which a lossy
+        decoder does hand back, plus the little a filter overshoots by. Letting
+        an integer overflow on either would turn a loud passage into noise.
         """
         if np.issubdtype(dtype, np.floating):
             return FLOAT_LIMIT
