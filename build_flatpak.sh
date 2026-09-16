@@ -60,7 +60,9 @@ KRB5_ARCHIVE="krb5-${KRB5_VERSION}.tar.gz"
 
 VENDOR_DIR=".flatpak-vendor"
 
-ICON_SIZES="16 24 32 48 64 96 128 256"
+# Every size generate_icons.py writes that the hicolor theme has a directory
+# for: 512 included, so a high density launcher is not scaling up the 256.
+ICON_SIZES="16 24 32 48 64 96 128 256 512"
 
 section() {
     if command -v tput >/dev/null 2>&1; then

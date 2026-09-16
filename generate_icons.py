@@ -10,6 +10,7 @@ Run:  python generate_icons.py
 from __future__ import annotations
 
 import pathlib
+import shutil
 import sys
 
 try:
@@ -22,7 +23,9 @@ except ImportError:  # pragma: no cover - a missing build tool, not a code path
     )
     raise SystemExit(1) from None
 
-ASSETS = pathlib.Path(__file__).resolve().parent / "assets"
+ROOT = pathlib.Path(__file__).resolve().parent
+ASSETS = ROOT / "assets"
+SITE = ROOT / "docs"
 MASTER = ASSETS / "application-icon.png"
 
 APP_SLUG = "stellody"
@@ -32,6 +35,16 @@ CANONICAL_SIZE = 256
 ICNS_SIZE = 1024
 
 RESAMPLE = Image.Resampling.LANCZOS
+
+# The site's icons are copies of generated files, byte for byte: measured on
+# 2026-09-16 they matched these exactly; they had to be copied over by hand
+# whenever the artwork changed. Copied here instead, so they cannot drift.
+SITE_COPIES = (
+    (f"{APP_SLUG}.ico", "favicon.ico"),
+    (f"{APP_SLUG}_icon_32.png", "favicon-32.png"),
+    (f"{APP_SLUG}_icon_256.png", "apple-touch-icon.png"),
+    (f"{APP_SLUG}_icon_512.png", f"{APP_SLUG}-512.png"),
+)
 
 
 def load_master() -> Image.Image:
@@ -89,8 +102,18 @@ def write_icns(master: Image.Image) -> pathlib.Path | None:
     return target
 
 
+def copy_to_site() -> list[pathlib.Path]:
+    """Put the site's icons in docs/, copied from what was just written."""
+    written: list[pathlib.Path] = []
+    for source, target in SITE_COPIES:
+        destination = SITE / target
+        shutil.copyfile(ASSETS / source, destination)
+        written.append(destination)
+    return written
+
+
 def main() -> int:
-    """Regenerate the whole icon set."""
+    """Regenerate the whole icon set, then the site's copies of it."""
     master = load_master()
     print(f"master: {MASTER.name} ({master.width}x{master.height})")
     produced: list[pathlib.Path] = []
@@ -102,6 +125,9 @@ def main() -> int:
     for path in produced:
         print(f"  wrote {path.name}")
     print(f"{len(produced)} asset(s) written to {ASSETS}")
+    site = copy_to_site()
+    for path in site:
+        print(f"  copied docs/{path.name}")
     return 0
 
 
