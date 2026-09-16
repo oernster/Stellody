@@ -425,7 +425,9 @@ paying for, a donation supports its maintenance and continued development.
 Dual licensed. The model, meaning the domain, application, infrastructure and
 shared layers together with `main.py`, the build scripts and the tests, is
 under GPL-3.0. The user interface layer is under LGPL-3.0, to align with Qt.
-See `LICENSE` for the mapping.
+The Windows setup program under `installer/` is under LGPL-3.0 alone; its
+Licence button says so, then says that Stellody itself is dual licensed. See
+`LICENSE` for the mapping.
 
 A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack and
 AAC. The FFmpeg libraries themselves are built LGPL-3.0-or-later, verified from

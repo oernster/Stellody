@@ -187,3 +187,12 @@ def test_about_states_the_musicbrainz_terms_that_ask_for_credit() -> None:
     terms = {name: terms for name, terms, _purpose in SOURCES}
     assert "CC0" in terms["MusicBrainz"]
     assert "CC BY-NC-SA 3.0" in terms["MusicBrainz"]
+
+
+def test_a_licence_given_no_note_shows_none(
+    application: QApplication, licence: pathlib.Path
+) -> None:
+    """Stellody's own two licences open on their text alone."""
+    dialog = LicenceDialog("Licence", licence)
+    assert dialog.note.isHidden()
+    dialog.close()

@@ -327,3 +327,17 @@ def test_removing_says_which_way_the_library_went(
     window._forget.setChecked(True)
     window._remove()
     assert "are gone" in window._verdict_lead.text()
+
+
+def test_the_licence_button_shows_the_note_above_setups_licence(
+    application: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The note reaches the dialog Licence opens, not only the wording module."""
+    window = _window(monkeypatch, _here())
+    shown: list[str] = []
+    monkeypatch.setattr(
+        setup.LicenceDialog, "exec", lambda dialog: shown.append(dialog.note.text())
+    )
+    window._show_licence()
+    assert shown == [wording.LICENCE_NOTE]
+    window.close()

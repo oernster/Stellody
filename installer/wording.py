@@ -110,3 +110,12 @@ REINSTALLED_LEAD = (
     "The files were written again and the shortcuts put back as a new install "
     "would leave them."
 )
+
+# Said above the setup program's own licence text. Setup carries ONE licence,
+# the LGPL-3.0 Qt asks for; the application it installs carries two, so that is
+# said here rather than left for somebody to assume setup's licence is Stellody's.
+LICENCE_NOTE = (
+    f"This setup program is covered by the LGPL-3.0 below. {APP_NAME} itself is "
+    "dual licensed: its model under the GPL-3.0 and its user interface under "
+    f"the LGPL-3.0. {APP_NAME} shows both under its Help menu."
+)

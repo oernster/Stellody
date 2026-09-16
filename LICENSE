@@ -14,6 +14,12 @@ USER INTERFACE  ->  GNU Lesser General Public License v3.0 (LGPL-3.0)
     align with Qt's own licensing. Full text: LICENSE-LGPL-3.0.txt, which
     incorporates the terms of the GPL-3.0 in LICENSE-GPL-3.0.txt.
 
+SETUP PROGRAM  ->  GNU Lesser General Public License v3.0 (LGPL-3.0)
+
+    Covers the Windows setup program (installer/) exclusively. It is a Qt
+    application and carries the one licence Qt asks for; its Licence button
+    shows that text, headed by a note that Stellody itself is dual licensed.
+
 The running application shows both under its Help menu: "Model licence
 (GPL-3.0)" and "UI licence (LGPL-3.0)".
 

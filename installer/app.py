@@ -316,8 +316,17 @@ class SetupWindow(Performing, QWidget):
         self._apply_theme()
 
     def _show_licence(self) -> None:
-        """Open the LGPL-3.0 text the setup program itself is covered by."""
-        LicenceDialog(LICENCE_TITLE, resources.ui_licence_path(), self).exec()
+        """Open the LGPL-3.0 text the setup program itself is covered by.
+
+        Headed by a line saying Stellody's own licences are two, so setup's one
+        is not mistaken for the application's.
+        """
+        LicenceDialog(
+            LICENCE_TITLE,
+            resources.ui_licence_path(),
+            self,
+            note=wording.LICENCE_NOTE,
+        ).exec()
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -82,3 +82,12 @@ def test_the_forget_box_does_not_understate_what_it_takes() -> None:
 
 def test_the_launch_box_says_setup_will_close_itself() -> None:
     assert "close setup" in wording.LAUNCH_LABEL
+
+
+def test_the_licence_note_says_the_application_is_dual_licensed() -> None:
+    """Setup carries one licence; what it installs carries two, said as such."""
+    note = wording.LICENCE_NOTE
+    assert "setup program is covered by the LGPL-3.0" in note
+    assert "dual licensed" in note
+    assert "model under the GPL-3.0" in note
+    assert "user interface under the LGPL-3.0" in note

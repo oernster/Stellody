@@ -125,7 +125,7 @@ inside PyAV supplies every decoder named here.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-F01 | MEASURED 2026-09-09. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; it encodes wmav2, wavpack and aac. | | Answered |
+| A-F01 | MEASURED 2026-09-09. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; it encodes wmav2, wavpack and aac among them. | | Answered |
 | A-F02 | MEASURED 2026-09-09. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging (Amendment 2). A WMA fixture reports no stated depth; a WavPack fixture written as `s16p` reports 16. | | Answered |
 | A-F03 | RULED 2026-09-10, without certainty. A listener with WMA files wants them in the library rather than reported; section 5 records the ruling. | | Answered |
 
@@ -231,7 +231,8 @@ already on record, where one file put rows in the store that the loader then
 choked on, so every later start failed too.
 
 Acceptance: Given a WavPack fixture carrying no tags at all, when the folder is
-scanned, then it assembles and the missing values read as absent.
+scanned, then no file is reported unreadable, the folder assembles into an album
+of one track and that track still carries a title.
 
 Verified by: `tests/infrastructure/test_scanning_formats.py::test_an_untagged_widened_file_still_assembles`
 

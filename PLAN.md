@@ -17,8 +17,8 @@ module. Where the code and the shorthand disagree, the code wins.
 - **The invariants are not repeated here.** They live in `ARCHITECTURE.md` and
   in the structural tests; they constrain every milestone below: the library
   is never written to, nothing reaches the network outside the four modules
-  invariant 12 names, the domain stays pure,
-  modules stay under the cap, domain and application hold 100% branch coverage.
+  invariant 12 names, the domain stays pure, modules stay under the cap,
+  domain and application hold 100% branch coverage.
 - **The order is a recommendation, not a contract.** The dependencies named in
   each milestone are real; everything else can be taken in any order.
 
@@ -35,19 +35,20 @@ since the file carries the pending release alone.
 
 The readiness call has been made and the owner made it; the number itself lives
 in `VERSION` rather than in any document here, this file included. What it
-commits to is stated in `README.md` and in `ARCHITECTURE.md` rather than here: the
-invariants are the promise. The two that matter most to somebody's collection,
-that a music file is only ever read and that nothing reaches the network unasked
-beyond the update check, are held by tests rather than by intention. Nothing
-below is sized against the number.
+commits to is stated in `README.md` and in `ARCHITECTURE.md` rather than here:
+the invariants are the promise. The two that matter most to somebody's
+collection, that a music file is only ever read and that nothing reaches the
+network unasked beyond the update check, are held by tests rather than by
+intention. Nothing below is sized against the number.
 
 ## Open work
 
-There is no open planned work. Every milestone this file carried has either shipped or been ruled out, so
-there is nothing here waiting to be built. That is a statement about the plan
-rather than about the product: the section below records what was decided
-against and why, which is the half of a plan that stops the same ground being
-argued twice. A new milestone arrives here when somebody decides on one.
+There is no open planned work. Every milestone this file carried has either
+shipped or been ruled out, so there is nothing here waiting to be built. That
+is a statement about the plan rather than about the product: the section below
+records what was decided against and why, which is the half of a plan that
+stops the same ground being argued twice. A new milestone arrives here when
+somebody decides on one.
 
 ## Not planned, so that this is not revisited
 
@@ -58,9 +59,10 @@ argued twice. A new milestone arrives here when somebody decides on one.
   of it is wanted. The markup the pages already carry stays as it is; it
   is simply not chased. This is a decision about reach rather than about the
   site, so nothing here reopens it.
-- **The formats still reported rather than played.** Monkey's Audio, Musepack, DSD and TAK
-  stay named in `UNPLAYABLE_SUFFIXES` and reported rather than played, along
-  with CAF, `.m4b` and `.tta`. This entry once covered WMA and WavPack too, on
+- **The formats still reported rather than played.** Monkey's Audio,
+  Musepack, DSD and TAK stay named in `UNPLAYABLE_SUFFIXES` and reported rather
+  than played, along with CAF, `.m4b` and `.tta`. This entry once covered WMA
+  and WavPack too, on
   the ground that not one file of any of them existed in the reference library,
   so writing decoders was a decision about other people's libraries. Measured
   on 2026-09-09, that ground was wrong about the cost rather than about the
@@ -138,9 +140,14 @@ argued twice. A new milestone arrives here when somebody decides on one.
   from, so the measurement would ride on a pass that happens anyway. What rules
   it out is the output. Measured in `infrastructure/audio.py`, a block reaches
   the device untouched only where the volume is exactly unity; any other figure
-  multiplies the block and casts it back to the sample type the device is fed. A
-  levelling gain is nearly always a reduction, so every album that had been
-  measured would be scaled and requantised on the way out. This application
+  multiplies the block and casts it back to the sample type the device is fed.
+  A levelling gain is nearly always a reduction, so every album that had been
+  measured would be scaled on the way out. Every stream Stellody opens today
+  asks for shared mode (`OutputRequest` in `domain/playback.py`), which is fed
+  floating point, so the block would be scaled without being requantised. The
+  exclusive path in `infrastructure/wasapi.py`, which nothing currently asks
+  for, is fed integers and would requantise it as well. Scaled is enough to
+  break the promise either way. This application
   exists because another player altered somebody's files; handing the device
   exactly what the file holds is that same promise, so spending it to save
   reaching for the volume once a record is a poor trade. It reopens for somebody

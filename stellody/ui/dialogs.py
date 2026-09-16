@@ -187,11 +187,21 @@ class LicenceDialog(FirstStopDialog):
     """Shows one licence text, sized to the text rather than to a guess."""
 
     def __init__(
-        self, title: str, path: pathlib.Path | None, parent: QWidget | None = None
+        self,
+        title: str,
+        path: pathlib.Path | None,
+        parent: QWidget | None = None,
+        note: str = "",
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
         layout = QVBoxLayout(self)
+        # A line of context above the text, where one is given: the setup
+        # program says which program its licence covers and which it does not.
+        self.note = QLabel(note, self)
+        self.note.setWordWrap(True)
+        self.note.setVisible(bool(note))
+        layout.addWidget(self.note)
         self._body = QTextBrowser(self)
         self._body.setObjectName("LicenceView")
         # Measured 2026-08-28: a fresh widget carries the fallback proportional

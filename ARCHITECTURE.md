@@ -126,8 +126,8 @@ constructor injection; there is no container and no service locator.
 by `buildinstaller.py` around the payload `buildexe.py` produces. It is a
 client of Stellody rather than a layer of it: it reads the identity, the theme
 and the licence viewer out of `stellody.shared` and `stellody.ui`, plus what
-it needs from `stellody.infrastructure`, while nothing under `stellody/`
-imports it back. The line cap applies to it exactly
+it needs from `stellody.infrastructure`; invariant 14 holds that direction.
+The line cap applies to it exactly
 as to the package.
 
 One reading of the machine picks the route. `installer/route.py` compares the
@@ -323,9 +323,9 @@ mistaken for each other. Why that is an address rather than a path is below.
 alone cannot separate two recordings of one work: a symphony under two
 conductors carries one composer, one title and often one year. They were once
 told apart by the place each was found. Since 2026-09-05 folders naming the
-same album and album artist are folded together instead, because the same rule
-is what joins an album's audio to bonus videos a library keeps in another
-folder, which is the common case. The two recordings therefore share a cover,
+same album and album artist are folded together instead, for the reason
+[Grouping](#grouping-folders-group-tags-name-and-join) gives, which is the
+common case. The two recordings therefore share a cover,
 an album rating and any accepted correction, while both files stay in the
 album. `tests/domain/test_identity_collisions.py` holds that cost as tests, so
 whoever reverses the decision sees what they are buying back.
@@ -364,7 +364,8 @@ padding rather than a different performance. A pair whose lengths disagree is
 two recordings and both are kept, because dropping a file is the one
 irreversible thing the rule does. Two folders holding one album, one rip
 lossless and one lossy, fold into one album where this same rule drops the
-lossy copies, so the lossless album keeps the handle it had alone. Two lossless
+lossy copies. The lossless copy is the one a listener means, so the lossless
+album keeps the handle it had alone. Two lossless
 recordings tagged alike, the case the telling apart was written for, now fold
 into one album holding both, as `TestWhatMustNotChange` in
 `tests/domain/test_lossy_duplicates.py` holds.
@@ -503,6 +504,13 @@ corrections fold two folders together sees slightly fewer albums than this.
 load, so improving a RESOLUTION rule takes effect on the next start without
 rescanning a library.
 
+**Missing files are flagged, never deleted.** An unplugged drive, a failed
+restore or an interrupted scan must not destroy library metadata, so a file the
+walk no longer finds is marked absent in the store rather than removed from it.
+The two rules that follow keep that honest: a folder whose files are all
+flagged is left out of the library until they come back; a scan that cannot
+reach the music folder at all is refused rather than flagging everything.
+
 **A scan and a load must assemble the same library from the same store.** The
 window measures every scan against the library on screen, which after a
 restart is what `LoadLibrary` in `application/loading.py` assembled, so any
@@ -618,20 +626,27 @@ Opus is the one constant here: it always decodes at 48 kHz whatever it was
 encoded from and mutagen states no rate for it, so `OPUS_SAMPLE_RATE` records a
 property of the format rather than a number chosen here.
 
-**Nought means unstated, which is what keeps bit perfect honest.** `OutputRequest`
-refuses only a negative depth; `states_depth` distinguishes nought from a real
-value, `depth_is_native` requires it and `is_bit_perfect` is therefore False for
-any lossy source in any mode. `open_output` in `wasapi.py` declines exclusive
-mode up front, opening the shared path with `NO_STATED_DEPTH` as its reason
-rather than letting the format search fail, so the reason names the file instead
-of blaming the device. All three rules were proved by planting
-violations: claiming bit perfect for a lossy source, giving a lossy file an
-invented depth of sixteen, leaving ID3 frames untranslated.
+**Nought means unstated, which is what keeps bit perfect honest.** A probe
+answering sixteen for a lossy file would be indistinguishable downstream from a
+file that really held sixteen, so nought is the absence of a reading rather
+than a reading of nought. `OutputRequest` refuses only a negative depth, being
+a value no file could state; `states_depth` distinguishes nought from a real
+value and decides whether a stream may be opened exclusively, `depth_is_native`
+requires it and `is_bit_perfect` is therefore False for any lossy source in any
+mode, without the playback rules knowing which formats are lossy.
+`open_output` in `wasapi.py` declines exclusive mode up front, opening the
+shared path with `NO_STATED_DEPTH` as its reason rather than letting the format
+search fail, so the reason names the file instead of blaming the device. All
+three rules were proved by planting violations: claiming bit perfect for a
+lossy source, giving a lossy file an invented depth of sixteen, leaving ID3
+frames untranslated.
 
 **`Track` draws the same distinction and must.** It carries its own
-`states_depth`, refuses only a negative depth and answers `is_high_resolution`
-False wherever no depth is stated, whatever the rate. Opus forces that last
-rule: it always decodes at 48 kHz whatever it was encoded from, so a rate test
+`states_depth`, which decides whether a track may exist at all and whether it
+may be called high resolution. It refuses only a negative depth and answers
+`is_high_resolution` False wherever no depth is stated, whatever the rate. Opus
+forces that last rule through the constant rate `OPUS_SAMPLE_RATE` records
+above: a rate test
 alone would badge every Opus file as better than CD on the strength of a
 property of the codec rather than of the recording.
 
@@ -640,8 +655,11 @@ property of the codec rather than of the recording.
 `OutputRequest` was taught that nought means unstated while `Track` still
 refused it, yet every gate stayed green: the probe tests read a probe, the
 domain tests built a `Track` from real depths, then the branch refusing nought
-was fully covered as intended behaviour. Nothing scanned a lossy file the whole
-way through, so nothing noticed that the library could not be assembled at all.
+was fully covered as intended behaviour. A test of the probe and a test of the
+domain each passed while agreeing about nothing; nothing scanned a lossy file
+the whole way through, so nothing noticed that the library could not be
+assembled at all. The end to end scan is the only shape of test that catches
+it.
 The failure was worse than a refused scan, because folder records are written
 inside the walk and the library is assembled after it: one MP3 put rows in the
 store that `LoadLibrary` then choked on, so every later start failed too. That
@@ -706,8 +724,8 @@ anybody reads; what a listener needs is which albums are missing and why.
 Nothing is opened to say it, the suffix being the whole of what is known. The
 list is NAMED rather than inferred from "not in `AUDIO_SUFFIXES`", since a stray
 text file is not a missing album. The finding proposes no value, so it can never
-be accepted, which the absence of a field for it in `FIELD_FOR_KIND` already
-decides. The unplayable files are left out of a folder's signatures, so a folder
+be accepted; [Accepting a correction](#accepting-a-correction) says why. The
+unplayable files are left out of a folder's signatures, so a folder
 holding nothing else has none and is reused rather than re-listed at every
 scan.
 
@@ -966,6 +984,13 @@ and the album's rating widget. `tests/ui/test_star_column.py` drives both
 gestures through the views; the double click and the keys were each proved by
 planting their removal.
 
+**Pressing the star a rating already sits on takes the rating back.** Nought
+is not a sixth rating; it is the absence of one. The gesture that undoes a
+thing should be the gesture that did it, rather than a separate clear nobody
+would find. The keyboard reaches nought directly instead, since a step that
+jumped back to where it started would be a trap: on the album's stars Down
+steps to it; in the track column it is the 0 key named above.
+
 **What is playing is marked in the model and named along the foot.** Reported on
 2026-09-13: once another track was clicked while one played, nothing on screen
 said which was playing, in either view. The list and the album open under the
@@ -1175,11 +1200,10 @@ need a credential; a credential compiled into a GPL application is a published
 credential.
 
 **Two services added ONE permitted module, not two.** Neither catalogue client
-holds a socket: `infrastructure/catalogue.py` and `infrastructure/similarity.py`
-hand a question to `infrastructure/fetching.py` and get an answer back. The
-offline structural test's whole value is that its list is short and that
-lengthening it is an edit somebody has to defend, so a feature reaching two
-hosts through one module is worth writing that way. `infrastructure/courtesy.py`
+holds a socket; both ask through `infrastructure/fetching.py`, as the prose
+under [Invariants](#invariants) sets out with why the offline guard's count is
+the point of it. A feature reaching two hosts through one module is worth
+writing that way for that reason. `infrastructure/courtesy.py`
 holds the user agent and the pacing for every service reached through
 `cover_search.py` or `fetching.py`, since a gap honoured in one client and
 forgotten in another is a client that gets the whole application refused. The
@@ -1371,8 +1395,8 @@ into the file from the beginning; nothing read them back, so a run that could
 not answer for a third of a library said exactly what a clean one said. That is
 the misreading `RunReport` was written to prevent, in its own words. The counts
 now follow the run's own message and the names sit behind a button beside it,
-which is the split `scan_summary` already makes: a count is the right weight for
-something nobody asked for, the names for an answer somebody pressed for.
+which is the split `scan_summary` already makes, for the reason
+[What a scan reports](#what-a-scan-reports) gives.
 `stellody/ui/shortfall.py` holds the words, the report and the dialog as text
 apart from any widget, plus the mixin that owns the button. The three kinds are
 counted apart rather than totalled, because they are not the same news: one is
@@ -1385,7 +1409,18 @@ seconds.
 which becomes a thing to tidy up; not a merge, which would have to rule on a
 candidate offered once and owned since. A run states what is missing at the
 moment it finished, carrying over an earlier answer only for an artist this run
-failed to reach, which `application/carrying_over.py` rules on. It is written
+failed to reach.
+
+**A run may correct what is known but may not take it away.** An artist a run
+cannot reach keeps the answer an earlier run got for it, rather than the file
+being replaced by a worse one; only an artist THIS run failed on is carried
+over, so an artist no longer in the library still falls away.
+`application/carrying_over.py` is the whole rule and is pure, which is what
+lets the file writer stay about files. The window reads the same rule before
+it speaks: `_carried` in `ui/discovery_endings.py` passes a finished run's
+report through `carried_over`, so the sentence and the shortfall button never
+call an artist unanswered beside a results screen showing that artist's
+answer. The file is written
 through `infrastructure/atomic.py`, beside the shop list, so a failed write
 leaves the last good copy rather than half of one.
 
@@ -1478,8 +1513,9 @@ does not cover. The second half is therefore discovered the same way rather
 than listed: `_named_pictures` parses every module in `stellody/ui` and
 collects each `.png` the source names, then asserts the guide draws all of
 them. It carries no exemptions at all, every picture a dialog names being a
-control somebody presses or drags. A companion case asserts the scan finds something, since a
-scan returning nothing would satisfy the sweep while checking nothing. Proved
+control somebody presses or drags. A companion case asserts the scan finds
+something, since a scan returning nothing would satisfy the sweep while
+checking nothing. Proved
 by taking the paging entry back out of the guide and reading it fail.
 
 **Under the furniture sit the rules no single screen can state.** Files are only
@@ -1612,21 +1648,110 @@ application and the image are notarized: stapling only the image leaves the
 copied-out application with no local ticket, so Gatekeeper falls back to an
 online check and it will not launch for somebody offline.
 
+## Reading panes and the keyboard
+
+**A long page reads itself, then yields at once.** `AutoScroller` in
+`stellody/ui/auto_scroller.py` works on any surface exposing a vertical scroll
+bar and a viewport; the surface becomes its Qt parent, so the two live exactly
+as long as each other. Three dialogs build one over their text: the licence
+viewer and About in `stellody/ui/dialogs.py`, plus the guide in
+`stellody/ui/guide.py`. The health report builds none. Each of the three also
+wraps the same text in a `ReadingPane`, whose stop rules are invariant 11 and
+the design decision that a reading dialog never opens on its own page.
+
+**The pace belongs to the class, never to a dialog**, since a surface needing a
+pace of its own would mean the pace is wrong everywhere. One timer ticks every
+`TICK_MS`, 40 milliseconds. A surface opens holding still for
+`START_PAUSE_MS`, 5000 milliseconds, then descends `DOWN_STEP_PX`, one pixel,
+every `DOWN_TICKS_PER_STEP`, two ticks. Reaching the end it holds for
+`BOTTOM_PAUSE_MS`, 5000 milliseconds, so the tail can be finished. It then
+rewinds `UP_STEP_PX`, 15 pixels, a tick, because the way back is not a reading
+pass. At the top it holds for `TOP_PAUSE_MS`, 2000 milliseconds, then goes
+round again. A page that fits its viewport never moves: a tick does nothing
+while the scroll bar has no range, so no hold counts down either.
+
+**Reading by hand suspends the cycle rather than switching it off.** A wheel
+turn, a mouse press or a key press on the surface or its viewport counts as
+reading by hand; so does pressing, releasing or dragging its scroll bar.
+Focus arriving on the surface or on anything inside it counts too, watched at
+the application because a child never sees the surface's own event filter.
+Each of those hands the page over and starts `RESUME_AFTER_MS`, 2500
+milliseconds, counting down. When it runs out the descent carries on from
+wherever the reader left the page; a reader left at the very end is rewound,
+since that is the only way on.
+
+**Two arrivals are not a reader.** A dialog that focuses its own text as it
+opens would otherwise turn the long opening stillness into the short manual
+one, so focus is ignored until the opening hold is spent; the flag clears when
+that hold runs out rather than on the first movement, so a reader arriving in
+between is not missed. A surface under a modal other than its own dialog is
+frozen: while `frozen` answers yes, a tick consumes no time and a suspension
+changes nothing. Two surfaces reading at once compete for the eye; a closing
+dialog also returns its view to the top, which acted on would leave the page
+beneath suspended instead of exactly where it was.
+
+`tests/ui/test_auto_scroller.py` drives the tick by hand, with every count
+derived from the constants rather than written out: the opening hold, the step
+every second tick, a page that fits, a suspension that resumes, resuming where
+the reader stopped, the rewind from a reader left at the end, the hold at the
+end, the rewind outpacing the descent, the dialog's own opening focus and a
+frozen surface. `tests/ui/test_dialogs.py::test_the_licence_reads_itself`
+asserts the licence's timer is running;
+`tests/ui/test_guide.py::TestTheDialog::test_it_opens_and_can_be_read` asserts
+the guide has a scroller. No test asserts that About has one.
+
+**Space chooses a row, exactly as Enter does.** Measured before it was
+written: Enter opened a track in the library while Space did nothing in the
+same list, because an item view spends Space on its selection rather than on
+the row. `SpaceChooses` in `stellody/ui/activating.py` is an event filter
+installed on the application, built beside the arrow ring by `wire_the_arrows`
+in `stellody/ui/ring_order.py` and parented to the main window. On a Space
+press carrying no modifier it asks the object the key was delivered to three
+things: whether it is a `QAbstractItemView`, whether its own window holds the
+focus on it (`holds_the_focus` in `stellody/ui/ring.py`, since a key nobody
+consumes is offered to the parent next) and whether it has a current row.
+Where all three hold it sends that view a Return press and release, then
+consumes the Space. Otherwise Space goes on where it was going, so a view with
+nothing current does not swallow it to no effect.
+
+**Space is handed on AS an Enter rather than given a second way of choosing.**
+A view already knows what activating a row means, while the window has already
+said what it wants done about it; a second path to the same place is a second
+path to drift away from it. The views the module names are the library list,
+the album grid and the two track columns beside an open sleeve. What Enter
+then does is the window's: the list's `activated` and the pane's
+`track_activated` both reach `activate` in `stellody/ui/playing.py`, which
+plays the album from the chosen track, toggles play and pause where that track
+is already loaded and plays nothing for an album row; the grid's `activated`
+reaches `open_album_at`, which shows that album in the pane. Being installed on
+the application, the filter answers in any item view of any window, a dialog
+included, without being told.
+
+`tests/ui/test_space_chooses.py` holds it: Space opens what Enter opens in the
+list and over the sleeves; Space opens something at all in the list, so the
+comparison cannot pass by both keys doing nothing; either key shows a shut
+sleeve's album in the pane; a track column beside a sleeve answers Space; a
+view with no current row is left alone. The menu bar answers the other half
+itself, since a popup owns the keyboard while it is up: `RingedMenuBar` in
+`stellody/ui/menu_bar.py` hands a highlighted menu item a Return for Space the
+same way, because the Windows styles answer `SH_Menu_SpaceActivatesItem` with
+0. It also opens the title under the cursor on Down, Return, Enter or Space.
+`tests/ui/test_menu_ring.py` holds that half, including
+`test_space_leaves_exactly_what_enter_leaves`.
+
 ## Design decisions
 
 | Decision | Reason |
 |---|---|
 | PySide6 rather than Rust or Go | The requirement is a player that is not buggy. That comes from working where the coverage gate, the structural guards and the delivery lineage already exist. |
 | `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also offers no equalizer of its own, so the one described below could not have been built on it. |
-| PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice: `PacketReader` counts packet timestamps back into frame positions and answers the same `AudioSource` as the existing reader, so the equalizer, the visualiser and gapless were not touched. Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. |
+| PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice; Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. See [The central abstraction](#the-central-abstraction). |
 | The bundled FFmpeg is LGPL, verified rather than assumed | The libraries report "LGPL version 3 or later" from the licence string the build itself computes, read out of the shipped binary. The same build links libx264 and libx265, which are GPL-2.0-or-later and which `avcodec` imports outright, so they cannot be dropped from a package. The decoder lives in `infrastructure`, which is the GPL-3.0 half, so the combination is compatible and the packaged application is distributed as a GPL-3.0 work. Nothing here encodes video; those two arrive as dependencies of a shared build. |
-| A lossy duplicate never displaces what is already there | An album's handle is what its cover and every rating are looked up by, so a handle that moves is data lost. Telling both copies apart moved the incumbent's, which is how making M4A visible reported three long-standing albums as no longer found. The lossless copy is the one a listener means, so it keeps the handle: two folders holding one album fold together, where the lossy copies are dropped as the duplicates they are. Two lossless recordings tagged alike fold into one album holding both, a price the section on accepting a correction states. |
 | A track that will not open is reported, never left as silence | Found on a real machine: a checkout whose requirements were not installed had no decoder for M4A, the exception left the transport entirely and the window did nothing at all. A listener cannot tell that from a press that missed. `PlaybackError` is named in the domain so the application can catch a failure without importing the layer that raised it; `DecodeError` and `OutputUnavailableError` are both that error. It is raised rather than reported: the transport lets it out and the window catches it in one place, which is the only place that can give the device back, put the buttons right and say what happened. Reporting it through a callback was tried and was worse, because the press then read as a success: the window said the track was playing over the top of the message saying it would not, with the device still held open behind a track that never started. An unplugged drive and a device another program holds arrive the same way. |
 | A pause is not an ending; it is caught in both layers | Reported against a real library: pausing a track then pressing play started it from its beginning. `pause` clears the resume and then stops the stream, so a feeder already past its wait writes into a stream that has just been stopped and PortAudio refuses that write. The failure landed in the branch that means "the track ran out", so a pause set `finished`. Everything downstream then followed correctly from a false premise: `play` declines to start a finished session, so the press did nothing; the poll a quarter of a second later took the ending as real; on the last track of a queue it gave the device back, which is what left the press after it reloading the track from nothing. The write is fixed where it goes wrong: a failure while the resume is already clear is a pause landing on the feeder, so the block in hand is dropped and the loop goes back to waiting. The transport carries the second half, because a device cannot tell a hold from an ending under any circumstances: `_held` is set when a listener pauses, cleared when they resume and taken from `playing` at every load, since a track opened without playing is one somebody is sitting on; `advance_if_finished` does nothing while it is set. Both halves were proved by planting their removal, each against a stream that refuses the write its stop landed in the middle of. |
 | Skipping while paused stays paused | Pressing Next while paused started playing, which nobody had asked for. The awkward part is that a track ending arrives through the same method, where playing on is right, while a device that has run out reports itself PAUSED exactly as a paused one does. Whether the move plays is therefore handed in by the caller rather than read off the device: a listener keeps the state they were in, while an ending carries on. Arriving by skipping is also not counted as waiting at a beginning, which is what pressing Back means, so Back after a skip still returns to the start of the track in hand. |
-| The runtime is pinned while the development tools keep their floors | A build of one commit has to be the same build whenever it is made, which a floor cannot promise. It matters more here than in most repositories: the packaged application carries a Nuitka flag written for the way one version of PyAV reaches one submodule, so a PyAV or PySide6 release arriving by itself would change the thing that flag is about, with the suite green throughout because the suite runs against whatever the environment holds. `requirements.txt` therefore pins with `==` and `requirements-dev.txt` reads it before adding the tools, so nothing is pinned in one place and floating in another. The tools stay on floors, since a formatter or a linter moving forward is a change to the checks rather than to what is shipped. A pin nothing checks is a comment, so `tests/structural/test_environment.py` asserts every pin is the version actually installed, proved by planting a pin one patch release out and reading the failure name the offender. |
+| The runtime is pinned while the development tools keep their floors | A build of one commit has to be the same build whenever it is made, which a floor cannot promise. It matters more here than in most repositories: the packaged application carries a Nuitka flag written for the way one version of PyAV reaches one submodule, so a PyAV or PySide6 release arriving by itself would change the thing that flag is about, with the suite green throughout because the suite runs against whatever the environment holds. `requirements.txt` therefore pins with `==` and `requirements-dev.txt` reads it before adding the tools, so nothing is pinned in one place and floating in another. The tools stay on floors, since a formatter or a linter moving forward is a change to the checks rather than to what is shipped. A pin nothing checks is a comment, so invariant 20 holds every pin to the version actually installed, proved by planting a pin one patch release out and reading the failure name the offender. |
 | The checks run in the project's own environment | PyAV was installed into the system Python while the application ran from the venv, so the whole gate reported green, 1544 tests at 100% coverage, while M4A could not be played at all. The suite could not have caught it: it was not running on the machine that was broken. A structural test now refuses to pass anywhere but the venv, a second says everything requirements.txt declares is installed there, then `gate.ps1` names the interpreter so the two cannot drift again. |
-| Missing files are flagged, never deleted | An unplugged drive, a failed restore or an interrupted scan must not destroy library metadata. A folder whose files are all flagged is left out of the library until they come back; a scan that cannot reach the music folder at all is refused rather than flagging everything. Both are under Scanning. |
 | The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
 | The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
 | Ending the application is said out loud, never left to Qt | Quitting when the last window closes is off, which is what lets the cross leave Stellody in the notification area. Nothing then ends the event loop by itself, so every path that means to leave says so. |
@@ -1648,7 +1773,6 @@ online check and it will not launch for somebody offline.
 | The chooser is injected, so a window without it offers nothing | The lookup reaches outward, so it arrives as an adapter behind a port like every other. A window assembled without one has no entry on its menu at all, which is what lets the whole test suite raise that menu with no network in the room. |
 | A refused ask is asked again; a refusal is never reported as an absence | Measured 2026-08-31, MusicBrainz refused 6 of 10 asks for one release at the one a second its own terms request; two asks five seconds apart were refused while a third was answered under three different user agents; the Cover Art Archive answered 4 of 4 in the same minute. So a refusal is neither a rate anybody exceeded nor rare; one ask is not a search: the release search is asked up to five times with a growing pause. What survives all five is carried as a refusal rather than as an empty result, because a service that would not answer has made no claim about the album; "nothing came back for this album" is a claim it never made. Only the search retries; a listing that will not come is one release of several, so the next one is the thing to try. |
 | The rating is one control rather than five buttons | Five buttons would each be a stop in the keyboard ring, so reaching past the rating would take five presses; each would carry a focus ring, which would say there are five controls here rather than one. It is one control holding one value, so it is one stop painting one ring. The stars are drawn rather than assembled. |
-| Pressing the star a rating already sits on takes the rating back | Nought is not a sixth rating; it is the absence of one. The gesture that undoes a thing should be the gesture that did it, rather than a separate clear nobody would find. The keyboard reaches nought directly instead, since a step that jumped back to where it started would be a trap: on the album's stars Down steps to it; in the track column the 0 key sets it, as 1 to 5 set the others. |
 | The transport is told who to report a play to, rather than being given it | One of the few places in this application that sets a collaborator rather than injecting one. Whoever is told has to turn a track into the album it belongs to; the only thing that can is the window, which does not exist when the transport is built. The alternative was a transport that knew about the library it plays out of. |
 | A narrowing keeps every cover already read | Replacing the rows used to drop the whole cover cache, so each keystroke sent every visible sleeve back to the disk. The pane a search opens is filled in that same call, before any read can answer, so it took the placeholder; the placeholder is painted in the pane's own colour, so the album read as having no sleeve at all. A cover belongs to an album rather than to a run of rows, so the cache is now dropped where the SOURCES are replaced, which only a load or a scan does. The pane also takes a sleeve that arrives after it opened, since reading happens on a thread of its own. |
 | A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. |
@@ -1665,7 +1789,6 @@ online check and it will not launch for somebody offline.
 | One dropped connection no longer ends a run; a run of them still does | Reported by Oliver on 2026-09-09. A run of fifty minutes over his whole library ended on its first answer of nothing at all, which was a single ListenBrainz request closed after 64 milliseconds: measured from that night's diary, the only one in 7252 lines. The judgement that continuing with no network is many slow ways of saying so was right; the proof it was reading was one sample. An artist nothing answered about now goes round again exactly as a refused one does; the run gives up on the connection only after five questions in a row have been met with nothing, with anything at all answering in between starting that count again. The count is one for the whole run rather than one a half, since the connection is one thing; `Silence` in `application/gathering.py` holds it. Being sure is cheap here: the run paces itself at about a second a question. |
 | Every answer is written down as it arrives, not only when a run ends | Reported by Oliver on 2026-09-09, having left a run going overnight. Both memories were read once at the start of a run and written once at the end, so a run of fifty minutes held 581 answers on a single line of code being reached: a crash, a power cut or a closed window took the lot. So each answer is now appended to a running record the moment it arrives and forced to the disk; each memory is read as its file plus that record; a record is dropped only once its own file holds what it held. `infrastructure/journal.py` owns the appending and no path of its own, exactly as `atomic.py` owns the replacing; `catalogue_memory.py` and `discovery_file.py` each name their own record. An append is chosen over rewriting the whole file because it cannot damage what is already there, so the worst a death mid-write costs is the line being written; the whole file is still written at the end, which is what keeps the record short. |
 | An answer with a hole in it is written, with the hole named in it | It was refused outright until 2026-09-09, on the ground that a file holding whichever artists a service felt like answering about is a different file every time. That reasoning was aimed at a file that stays SILENT about its holes; taking it literally cost Oliver two whole-library runs in one night with nothing shown for either, the second after 54 minutes and 843 requests, because ONE artist was refused twice then timed out. What could not be answered for is now written beside what was, the screen carries the shortfall sentence and the button that names those artists; the next run fills them in without asking about anybody else. The gaps are written in artist order, since an artist carried over would otherwise sit where the carrying put it while the same artist answered for directly sits in library order. |
-| A run may correct what is known but may not take it away | The second half of the same fault. An artist a run cannot reach keeps the answer an earlier run got for it, rather than the file being replaced by a worse one; only an artist THIS run failed on is carried over, so an artist no longer in the library still falls away. `application/carrying_over.py` is the whole rule and is pure, which is what lets the file writer stay about files. The window reads the same rule before it speaks: `_carried` in `ui/discovery_endings.py` passes a finished run's report through `carried_over`, so the sentence and the shortfall button never call an artist unanswered beside a results screen showing that artist's answer. |
 | What a failure says on screen is read off its kind, never off its message | A row reading "given up on part way through" followed by a MusicBrainz address is unreadable to whoever is using this and is the only thing worth having to whoever is fixing it, so both are kept apart: the row gets a sentence, the diary gets the class, the message and the artist. It is why a refusal and a timeout are now distinct kinds of failure rather than two messages inside one: Qt reports an abandoned reply the same way whether the wait ran out or somebody stopped wanting it. |
 | The results screen is dealt into columns and stops at a 13 inch display | The answer opened as one tall list at a fixed 700 by 560, so a run over two genres already ran off the foot of the screen while the room to show it sat empty either side. It takes a share of the screen now, dealt across as many columns as that width affords, a column being a third of what a 13 inch display shows, each a list read top to bottom the way the album pane reads an album's tracks. The share is capped at what a 13 inch display can show, ruled by Oliver on 2026-09-08: a dialog 3096 pixels wide is one nobody reads across in one go and one that cannot be checked on the machines this has to run on. The arithmetic is `results_room.py`, which reads a room and answers a size, a count of columns and which artist lands where; it holds no widget, so the interesting widths can be read on a platform reporting an 800 square screen. `results_columns.py` puts the two together and is the only place that knows both. |
 | A control that closes something wears the close picture, not the negative mark | The album pane's close button wore `negative.png`, which is the mark every switch wears LAID OVER its own picture to say it is off. Alone on a control it says nothing about what a press would do; it is also the one picture in the set that means "not this" rather than naming an action. The pane closes, so it now wears what every other Close wears. The mark goes back to being only ever composed over something else, which is what its exemption from the guide sweep already claims of it. |
@@ -1696,7 +1819,6 @@ online check and it will not launch for somebody offline.
 | A checkbox's ring is painted on its square, not stated in the stylesheet | The ring belongs on the box rather than round the words, because the box is what a checkbox is read as. The sheet cannot draw it there: naming `::indicator` hands Qt the whole subcontrol and the tick goes with it, measured as a square that could not be told ticked from unticked, while a rule scoped to `:focus` alone changes nothing at all. Owning the square in the sheet would mean inventing a checked picture and an unchecked one, which is a redrawn checkbox rather than a ring on Qt's. So `ringed_check.py` paints over the rectangle Qt reports for the square, in the room the sheet's own padding already leaves, taking its two colours from the sheet as properties so the palette stays the single home. The class is then the rule: a structural test forbids a plain `QCheckBox` anywhere but the module that subclasses it, since that is the one way an unringed stop could come back. |
 | The sleeve grid travels to a selection rather than snapping to it | A list view counts its scrollbar in items unless told otherwise, so the smallest move it could make was one whole row of sleeves: picking a cover two rows down jumped the grid a row at a time, which is what got reported. Counting in pixels makes the move continuous and a short run over it makes it readable, since artwork that arrives instantly somewhere else has to be found again by eye, which is the thing scrolling to it was meant to save. Where to scroll to stays Qt's answer: the jump it would have made is taken, put back and then travelled, so no second copy of the rules about revealing an item has to be kept in step with its own. Nothing travels while the grid is off screen; otherwise it would still be moving at the moment it is shown. `stellody/ui/gliding.py`, held by `tests/ui/test_gliding_grid.py`, which drives the run by setting its time rather than by sleeping. |
 | A cancelled lookup is stopped where it stands, not merely silenced | Silencing was the first answer and it was the wrong promise: a listener who moves off an album has stopped waiting, while a request already inside a read went on holding a thread and a socket until it finished anyway, which is what made leaving the application take as long as the last lookup did. The work is stopped instead. The worker hands the archive a question it can ask at any moment; the archive asks it between the gaps the terms require and again inside every read, so nothing long is entered without a way back out. Neither is atomic any more: a picture arrives in `CHUNK_BYTES` pieces of 64KB and a gap is sat through in `SLEEP_SLICE_S` slices of a quarter second, so a cancel is noticed within a slice rather than at the end of a whole gap or a whole image. Asking who sent an answer does not work here and the reason is worth keeping: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive; the archive's own slicing is held by a waiter and an opener the tests inject, so what is asserted is the giving up rather than the sleeping. |
-| A depth of nought means the file stated none; both enforcers say so | A lossy file carries no bit depth to report; a probe answering sixteen would be indistinguishable downstream from a file that really held sixteen, so nought is the absence of a reading rather than a reading of nought. A negative depth is still refused, being a value no file could state. The distinction is drawn in BOTH domain types that enforce it: `OutputRequest.states_depth` decides whether a stream may be opened exclusively, which is what makes `is_bit_perfect` False for every lossy source without the playback rules knowing which formats are lossy. `Track.states_depth` decides whether a track may exist at all and whether it may be called high resolution. Teaching one and not the other produced a library that probed every file correctly then could not be assembled from them, with every gate green, because a test of the probe and a test of the domain each pass while agreeing about nothing. The end to end scan is the only shape of test that catches it, so there is one, on real files of every format. |
 | A thread that outlives its dialog is held by the window, with leaving outright as the last resort | A cover lookup is started from a dialog and can still be in a request when that dialog closes, so the thread would be owned by an object that has gone. `ThreadKeeper` is given to the runner by the window, which is still there; it holds the worker as well as the thread, since the worker sits on that thread with no parent of its own and dropping the last reference would delete an object in the middle of its own method. Each is let go of the moment it finishes, so nothing is held a second longer than the request it waits on; the connection is made before the finished state is read rather than after, because a thread that ends between the two had already made its one announcement. What none of that covers is a socket that never comes back: a thread still running when the application is torn down is one Qt ends the process over, measured on 2026-09-05 as `QThread: Destroyed while thread is still running` from Qt6Core, an abort rather than an exit. So `leave_at_once` in `stellody/composition.py` leaves the process before the tearing down begins, everything durable having already been put away. It is the last resort and should now be unreachable; what it replaces is a crash report. |
 | Where the library was looking survives a reload that changes nothing about where it should be looking | Stating a genre replaces the whole library: the store is read again, every album comes back as a new object and the model is rebuilt from the top. That is right for what the rows SAY and wrong for where somebody is, since a listener who scrolled two thirds of the way down to correct one album should still be two thirds of the way down once it is corrected. A place cannot be a row number, because the library after an edit is not the library before it: albums fold together and an edit to an artist moves one somewhere else alphabetically. So `stellody/ui/placing.py` names the album by identity with the offset in pixels beside it and works the row out again on the other side. Where possible and no further: an album that is gone after the edit takes its own restoring with it while the offset still goes back, since somebody looking at the middle of the library is still looking at the middle of it. Nothing here scrolls to something that was not on screen to begin with. |
 | The focus rule names the arrivals that ARE a choice, rather than the ones that are not | Qt invents a current index on a focus arrival where there is none, which is correct for Tab and wrong for every other way in. Coming back from a menu or a dialog is not a choice of sleeve, yet it landed the place on the top of the library with the pane opening an album nobody had picked. Measured on 2026-09-05, an empty grid went to row 0 on a focus in carrying Popup, ActiveWindow or Other, which are a menu closing, a dialog closing and everything else respectively. Listing those would be a list to keep in step with Qt's, so `ASKING_FOR_A_PLACE` in `stellody/ui/gliding.py` names the two reasons that DO ask, Tab and Backtab; everything else is left alone by default. A reason nobody has thought about therefore changes nothing, which is the safe direction for the rule to fail in. |
