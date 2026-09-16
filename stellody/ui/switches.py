@@ -37,7 +37,7 @@ class Switches:
         happens once, here.
         """
         self._transport.set_volume(percent / MAXIMUM_PERCENT)
-        self._tray.set_percent(percent)
+        self._bottom_tray.set_percent(percent)
         self._settings.set_setting(SETTING_VOLUME, str(percent))
 
     def restore_volume(self) -> None:
@@ -93,7 +93,7 @@ class Switches:
     def _apply_muted(self, muted: bool) -> None:
         """Set the switch, show it and remember it: the three go together."""
         self._transport.set_muted(muted)
-        self._tray.set_muted(muted)
+        self._bottom_tray.set_muted(muted)
         self._remember(SETTING_MUTED, muted)
 
     def _apply_shuffled(self, shuffled: bool) -> None:

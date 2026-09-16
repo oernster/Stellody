@@ -212,7 +212,7 @@ class TestTheSliders:
         an arrow therefore has to shut the popup as it goes, else the ring
         would be reaching for a neighbour the slider does not have.
         """
-        tray = window._tray
+        tray = window._bottom_tray.sound
         button = tray.volume_button
         button.setFocus(Qt.FocusReason.TabFocusReason)
         press(application, Qt.Key.Key_Space)

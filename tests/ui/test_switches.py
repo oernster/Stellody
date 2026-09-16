@@ -25,6 +25,7 @@ from tray_support import RememberingStore, build, picture, rendered
 
 from stellody.domain.playback import SILENT_VOLUME, RepeatMode
 from stellody.shared import resources
+from stellody.ui.bottom_tray import BOTTOM_ICON_PX
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import (
@@ -34,7 +35,6 @@ from stellody.ui.settings_keys import (
     SETTING_SHUFFLE,
     TRUE,
 )
-from stellody.ui.toolbar import ICON_PX
 from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT
 
 # Long enough for the walk to come back round to where it started.
@@ -69,7 +69,7 @@ def _struck() -> QImage:
     """The speaker with the cross over it, composed as the tray composes it."""
     return rendered(
         struck_through(
-            resources.unmute_icon_path(), resources.negative_icon_path(), ICON_PX
+            resources.unmute_icon_path(), resources.negative_icon_path(), BOTTOM_ICON_PX
         )
     )
 
@@ -95,7 +95,7 @@ def test_muting_silences_the_device_and_the_speaker_shows_what_a_press_does(
     view and appearance toggles: both of those name where a press would take
     you, so a picture of where you already are is read the wrong way round.
     """
-    button = window._tray.mute_button
+    button = window._bottom_tray.sound.mute_button
     assert picture(button) == _struck(), "sound on, so a press would silence it"
     assert button.toolTip() == "Mute"
     window.toggle_mute()
@@ -132,7 +132,7 @@ def test_the_switches_come_back_as_they_were_left(
     assert reopened._transport.muted is True
     assert reopened._transport.shuffled is True
     assert reopened._transport.repeat is RepeatMode.ALBUM
-    assert reopened._tray.mute_button.toolTip() == "Unmute"
+    assert reopened._bottom_tray.sound.mute_button.toolTip() == "Unmute"
     assert reopened._bottom_tray.shuffle_button.toolTip() == "Turn shuffle off"
     assert player.volume == SILENT_VOLUME
 
@@ -142,35 +142,40 @@ def across(tray, widget) -> int:
     return widget.mapTo(tray, widget.rect().center()).x()
 
 
-def test_the_sound_controls_are_ruled_off_on_both_sides(
+def test_discovery_is_ruled_off_from_the_application_controls(
     window: MainWindow,
 ) -> None:
-    """Discovery acts on the library and theme and help on the application.
+    """Discovery acts on the library; theme and help act on the application.
 
-    Only the two between the lines act on what is playing, so the fence is
-    drawn on both sides of them rather than on one.
+    The right end of the tray reads discovery, a rule, the appearance toggle,
+    then Help, with nothing else between them.
     """
     window.show()
     tray = window._tray
-    for line in (tray.library_separator, tray.sound_separator):
-        assert line.isVisible()
-        assert line.focusPolicy() == 0, "a rule is not a control"
+    line = tray.library_separator
+    assert line.isVisible()
+    assert line.focusPolicy() == 0, "a rule is not a control"
     assert (
         across(tray, tray.discover_button)
-        < across(tray, tray.library_separator)
-        < across(tray, tray.volume_button)
-    ), "the first line sits between discovery and the sound controls"
-    assert (
-        across(tray, tray.mute_button)
-        < across(tray, tray.sound_separator)
+        < across(tray, line)
         < across(tray, tray.theme_button)
-    ), "the second line sits between the sound controls and the application"
+        < across(tray, tray.help_button)
+    )
+    row = tray.layout()
+    placed = [row.itemAt(index).widget() for index in range(row.count())]
+    start = placed.index(tray.discover_button)
+    assert placed[start:] == [
+        tray.discover_button,
+        line,
+        tray.theme_button,
+        tray.help_button,
+    ]
 
 
 def test_the_showing_controls_moved_to_the_strip_with_room_for_them(
     window: MainWindow,
 ) -> None:
-    """The view toggle, then the sleeve size, then the equalizer.
+    """The view toggle, then the sleeve size.
 
     They sit along the bottom rather than in the tray above, because that end
     of a window nobody has to maximise was getting crowded while this strip has
@@ -187,9 +192,9 @@ def test_the_showing_controls_moved_to_the_strip_with_room_for_them(
         button.mapTo(tray, button.rect().center()).x()
         for button in tray.showing.stops()
     ]
-    assert centres == sorted(centres), "view, then size, then the equalizer"
+    assert centres == sorted(centres), "view, then size"
     repair = tray.repair_button.mapTo(tray, tray.repair_button.rect().center()).x()
-    assert repair < min(centres), "and all three are drawn right of the errands"
+    assert repair < min(centres), "and both are drawn right of the errands"
     rule = tray.showing_separator.mapTo(
         tray, tray.showing_separator.rect().center()
     ).x()

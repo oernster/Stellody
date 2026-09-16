@@ -17,6 +17,8 @@ from tray_support import RememberingStore, build
 
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import SETTING_VOLUME
+from stellody.ui.sound_controls import SoundControls
+from stellody.ui.tray_metrics import BUTTON_PX, ICON_PX, TRAY_GAP_PX
 from stellody.ui.volume import DEFAULT_PERCENT, HALF, MAXIMUM_PERCENT
 
 # A level that is neither the default nor an end of the range.
@@ -49,7 +51,7 @@ def test_the_volume_starts_at_the_default_when_none_was_ever_chosen(
     """Full is startling on a first run; three quarters leaves room to go up."""
     assert window._transport.volume == DEFAULT_PERCENT / MAXIMUM_PERCENT
     assert player.volume == DEFAULT_PERCENT / MAXIMUM_PERCENT
-    assert f"{DEFAULT_PERCENT}%" in window._tray.volume_button.toolTip()
+    assert f"{DEFAULT_PERCENT}%" in window._bottom_tray.sound.volume_button.toolTip()
 
 
 def test_a_chosen_volume_is_written_down(
@@ -65,7 +67,7 @@ def test_the_volume_comes_back_as_it_was_left(
     """The whole point of writing it down."""
     reopened = build(RememberingStore({SETTING_VOLUME: str(QUIET_PERCENT)}), player)
     assert reopened._transport.volume == QUIET_PERCENT / MAXIMUM_PERCENT
-    assert f"{QUIET_PERCENT}%" in reopened._tray.volume_button.toolTip()
+    assert f"{QUIET_PERCENT}%" in reopened._bottom_tray.sound.volume_button.toolTip()
 
 
 def test_a_stored_volume_that_is_not_a_number_falls_back_to_the_default(
@@ -81,8 +83,8 @@ def test_the_popup_shows_the_level_as_a_number_above_the_slider(
 ) -> None:
     """A slider says roughly; a number says which."""
     window.show()
-    window._tray.volume_button.click()
-    popup = window._tray._popup
+    window._bottom_tray.sound.volume_button.click()
+    popup = window._bottom_tray.sound._popup
     column = popup.layout()
     widgets = [column.itemAt(index).widget() for index in range(column.count())]
     assert widgets.index(popup.reading) < widgets.index(popup.slider), "above it"
@@ -100,7 +102,7 @@ def test_the_volume_button_puts_the_slider_up_and_takes_it_down(
     window: MainWindow,
 ) -> None:
     window.show()
-    tray = window._tray
+    tray = window._bottom_tray.sound
     QTest.mouseClick(tray.volume_button, Qt.MouseButton.LeftButton)
     assert tray._popup.isVisible() is True
     QTest.mouseClick(tray.volume_button, Qt.MouseButton.LeftButton)
@@ -117,7 +119,7 @@ def test_the_press_that_closes_the_slider_does_not_reopen_it(
     only sometimes, since the replay is what decides it.
     """
     window.show()
-    tray = window._tray
+    tray = window._bottom_tray.sound
     tray._open()
     assert tray._popup.isVisible() is True
     press_over(tray._popup, tray.volume_button.mapToGlobal(QPoint(0, 0)))
@@ -133,7 +135,7 @@ def test_a_press_anywhere_else_closes_it_without_swallowing_the_next(
 ) -> None:
     """Only a press on the button itself is ever replayed onto the button."""
     window.show()
-    tray = window._tray
+    tray = window._bottom_tray.sound
     tray._open()
     press_over(tray._popup, window.mapToGlobal(window.rect().topLeft()))
     assert tray._popup.isVisible() is False
@@ -152,7 +154,7 @@ class TestWhereItSits:
         out of the layout sits at nothing, which a comparison of positions
         alone reports as a pass."""
         window.show()
-        tray = window._tray
+        tray = window._bottom_tray.sound
         row = tray.layout()
         widgets = [row.itemAt(position).widget() for position in range(row.count())]
         assert tray.volume_button in widgets, "it is actually laid out"
@@ -162,37 +164,60 @@ class TestWhereItSits:
 
     def test_it_is_drawn_to_the_left_of_mute(self, window: MainWindow) -> None:
         window.show()
-        tray = window._tray
+        tray = window._bottom_tray.sound
         here = tray.volume_button.mapTo(tray, tray.volume_button.rect().center())
         mute = tray.mute_button.mapTo(tray, tray.mute_button.rect().center())
         assert here.x() < mute.x()
 
     def test_the_ring_reaches_it_just_before_mute(self, window: MainWindow) -> None:
-        stops = window._tray.ring_stops()
-        assert stops.index(window._tray.volume_button) + 1 == stops.index(
-            window._tray.mute_button
-        )
+        sound = window._bottom_tray.sound
+        stops = window._bottom_tray.ring_stops()
+        assert stops.index(sound.volume_button) + 1 == stops.index(sound.mute_button)
 
-    def test_the_bottom_strip_no_longer_carries_it(self, window: MainWindow) -> None:
+    def test_the_tray_above_no_longer_carries_it(self, window: MainWindow) -> None:
         """One home for it, so the two strips cannot both claim to hold it."""
-        assert not hasattr(window._bottom_tray, "volume_button")
-        assert window._bottom_tray.switch_stops() == (
-            window._bottom_tray.shuffle_button,
-            window._bottom_tray.repeat_button,
+        assert not hasattr(window._tray, "volume_button")
+        assert not hasattr(window._tray, "mute_button")
+
+    def test_the_sound_leads_the_right_end_ruled_off_from_the_switches(
+        self, window: MainWindow
+    ) -> None:
+        """Volume, mute, the equalizer, a rule, then shuffle and repeat.
+
+        Read off the drawing, with the rule's own position asserted, since a
+        rule left out of the layout sits at nothing.
+        """
+        window.show()
+        tray = window._bottom_tray
+        sound = tray.sound
+        order = (
+            sound.volume_button,
+            sound.mute_button,
+            sound.equaliser_button,
+            tray.sound_separator,
+            tray.shuffle_button,
+            tray.repeat_button,
         )
+        centres = [w.mapTo(tray, w.rect().center()).x() for w in order]
+        assert centres == sorted(centres)
+        assert len(set(centres)) == len(centres), "each drawn in a place of its own"
+        stops = tray.ring_stops()
+        assert stops[-len(order) + 1 :] == tuple(
+            w for w in order if w is not tray.sound_separator
+        ), "the ring walks them in the order they are drawn"
 
 
 class TestWhereTheSliderOpens:
     """Above the button where there is room and below where there is not.
 
-    Always above was right while the button lived on the bottom strip. From
-    the tray at the top of the window it would put the slider off the top of
-    the screen, so the rule is asked of the room rather than assumed.
+    The button has lived on both strips. From the tray at the top of the
+    window, always above would put the slider off the top of the screen, so
+    the rule is asked of the room rather than assumed wherever it sits.
     """
 
     def _room(self, window: MainWindow) -> int:
         """How tall the slider wants to be, once it exists to be asked."""
-        return window._tray._popup.sizeHint().height()
+        return window._bottom_tray.sound._popup.sizeHint().height()
 
     @pytest.fixture(autouse=True)
     def _take_it_down(self, window: MainWindow):
@@ -200,7 +225,7 @@ class TestWhereTheSliderOpens:
         ring for it. Taken down here rather than at the end of each test,
         since a failure part way through would skip that."""
         yield
-        window._tray._popup.hide()
+        window._bottom_tray.sound._popup.hide()
 
     def _sides(self, window: MainWindow) -> tuple[int, int]:
         """Where the slider sits and where the button does, down the screen.
@@ -209,27 +234,39 @@ class TestWhereTheSliderOpens:
         on is the behaviour; an edge landing on the exact pixel of the other
         is a window manager's business rather than this rule's.
         """
-        button = window._tray.volume_button
-        popup = window._tray._popup
+        button = window._bottom_tray.sound.volume_button
+        popup = window._bottom_tray.sound._popup
         return (
             popup.y() + popup.height() // HALF,
             button.mapToGlobal(button.rect().center()).y(),
         )
 
     def test_it_opens_below_a_button_with_nothing_above_it(
-        self, window: MainWindow
+        self, application: QApplication
     ) -> None:
-        window.show()
-        window.move(0, 0)
-        window._tray._open()
-        slider, button = self._sides(window)
-        assert slider > button
+        """Built on its own, since inside the window the button sits at the foot
+        and a window moved to the top of the screen still leaves room over it."""
+        sound = SoundControls(None, BUTTON_PX, ICON_PX, TRAY_GAP_PX)
+        try:
+            sound.show()
+            sound.move(0, 0)
+            application.processEvents()
+            sound._open()
+            popup = sound._popup
+            button = sound.volume_button
+            slider = popup.y() + popup.height() // HALF
+            assert slider > button.mapToGlobal(button.rect().center()).y()
+        finally:
+            sound._popup.hide()
+            sound.deleteLater()
 
     def test_it_opens_above_a_button_with_room_over_it(
         self, window: MainWindow
     ) -> None:
         window.show()
-        window.move(0, self._room(window) + window._tray.volume_button.height())
-        window._tray._open()
+        window.move(
+            0, self._room(window) + window._bottom_tray.sound.volume_button.height()
+        )
+        window._bottom_tray.sound._open()
         slider, button = self._sides(window)
         assert slider < button

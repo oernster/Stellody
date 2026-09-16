@@ -261,22 +261,28 @@ class TestTheStripKeepsItsShapeAsTheWindowNarrows:
         drawn = first.mapTo(tray, first.rect().center())
         assert repair.x() < where.x() < drawn.x()
 
-    def test_a_rule_stands_between_what_is_shown_and_what_is_heard(
+    def test_no_rule_stands_inside_what_is_shown(self, window: MainWindow) -> None:
+        """The equalizer left this group, so the rule that fenced it went too."""
+        showing = window._bottom_tray.showing
+        assert not hasattr(showing, "sound_separator")
+        assert not hasattr(showing, "equaliser_button")
+
+    def test_a_rule_stands_between_what_is_heard_and_how_the_queue_runs(
         self, window: MainWindow
     ) -> None:
-        """The sleeve size draws the library; the equalizer shapes its sound."""
+        """The equalizer shapes the sound; shuffle decides what comes next."""
         window.show()
         tray = window._bottom_tray
-        showing = tray.showing
-        line = showing.sound_separator
+        line = tray.sound_separator
         where = line.mapTo(tray, line.rect().center()).x()
-        size = showing.size_button.mapTo(tray, showing.size_button.rect().center()).x()
-        equaliser = showing.equaliser_button.mapTo(
-            tray, showing.equaliser_button.rect().center()
+        equaliser = tray.sound.equaliser_button
+        shaped = equaliser.mapTo(tray, equaliser.rect().center()).x()
+        shuffle = tray.shuffle_button.mapTo(
+            tray, tray.shuffle_button.rect().center()
         ).x()
-        assert size < where < equaliser
+        assert shaped < where < shuffle
         assert line.focusPolicy() == 0, "a rule is not a control"
-        assert line not in showing.stops(), "the ring steps over it"
+        assert line not in tray.ring_stops(), "the ring steps over it"
 
     def test_the_visualiser_sits_at_the_middle_of_a_wide_strip(
         self, application: QApplication
@@ -312,7 +318,7 @@ class TestTheStripKeepsItsShapeAsTheWindowNarrows:
                 application.processEvents()
                 seen = tray.visualiser.geometry()
                 left = tray.showing.geometry()
-                right = tray.shuffle_button.geometry()
+                right = tray.sound.geometry()
                 assert left.right() < seen.left(), f"the errands clear it at {width}"
                 assert seen.right() < right.left(), f"the settings clear it at {width}"
         finally:

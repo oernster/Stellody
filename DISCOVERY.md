@@ -146,8 +146,8 @@ touching the file; the run then treats it exactly as a tagged one. Neither a
 Priority: Must
 
 Requirement: The main window shall place a discovery button in the toolbar to
-the left of the volume control, with the separator that divides the library
-controls from the sound controls to its right.
+the left of the appearance toggle, with the separator that divides the library
+controls from the application controls to its right.
 
 Rationale: Discovery is a library action rather than a sound control, so it
 belongs on the library side of that line. Amended on 2026-09-07, when both
@@ -155,13 +155,15 @@ trays were ruled into groups by what each control acts on: as first written
 this asked for a position to the left of the theme button, which put it among
 the sound controls it is not one of. The separator is the line between the two
 ideas; which side of it this sits on is the requirement. The theme button was
-only ever a landmark for saying so.
+only ever a landmark for saying so. Amended again on 2026-09-16, when the
+volume and mute moved to the bottom strip: the line now divides discovery from
+the appearance toggle and Help, which act on the application.
 
 Acceptance: Given the main window is open, when the toolbar is read left to
 right, then the discovery button appears before the separator and before the
-volume control.
+appearance toggle.
 
-Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_left_of_the_volume_button`
+Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_left_of_the_appearance_toggle`
 
 ---
 

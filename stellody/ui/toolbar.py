@@ -1,8 +1,8 @@
 """The icon tray under the menus.
 
 Picture-only buttons in reading order: choose the music folder, narrow it to a
-genre and search it on the left, the transport centred, then the volume, the
-mute switch, the appearance toggle and About on the right. The library buttons
+genre and search it on the left, the transport centred, then discovery, the
+appearance toggle and Help on the right. The library buttons
 repeat something the menus already offer, so they add reach rather than
 capability; nothing here owns any state of its own.
 
@@ -20,26 +20,19 @@ anything: there would be nothing for a second press to do.
 
 Rescan and repair are not here. They are errands about what the library holds
 rather than about what is playing, so they sit on the bottom strip among the
-things that outlast a track. This tray is what a listener uses while listening.
+things that outlast a track. The volume, mute and the equalizer sit there too,
+beside shuffle and repeat, as settings a listener leaves somewhere.
 
-Mute is ruled off from the two buttons after it. It acts on what is playing
+Discovery is ruled off from the two buttons after it. It acts on the library
 while they act on the application, so a line says they are different kinds of
-thing; the alternative is a run of eight buttons that all read as one group.
+thing rather than leaving the three to read as one group.
 
 Every picture here says what a press would DO rather than what is the case:
-the appearance toggle shows the appearance it would move to; the view toggle
-names the view it would move to; the mute switch is struck through while the
-sound is on, because that press is the one that silences it.
+the appearance toggle shows the appearance it would move to.
 
 The transport is centred because it is the one group that is about the track
 rather than about the library; also because a play button in the corner of a
 window is a play button nobody finds.
-
-Volume sits immediately left of mute because the two are one thought: how
-loud, then whether at all. It opens a slider rather than spending a strip of
-window on a bar touched twice a session; that slider lives in `volume.py`, so
-the button can sit wherever it reads best without the slider following it
-around.
 
 The tray itself is a container, so it never takes focus and never paints a ring.
 Its buttons are controls and wear the app's three ring states.
@@ -61,7 +54,6 @@ from PySide6.QtWidgets import (
 
 from stellody.shared import resources
 from stellody.ui.discovery_progress import DiscoveryBars
-from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import (
     ABOUT_ENTRY,
@@ -71,7 +63,6 @@ from stellody.ui.tray_metrics import (
     FILTERED_TOOLTIP,
     GUIDE_ENTRY,
     HELP_TOOLTIP,
-    ICON_PX,
     SEARCH_BOX_HEIGHT_PX,
     SEARCH_BOX_PX,
     SEARCH_PLACEHOLDER,
@@ -83,7 +74,6 @@ from stellody.ui.tray_metrics import (
     tray_button,
 )
 from stellody.ui.tray_parts import separator
-from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
 
 
 class LibraryTray(QWidget):
@@ -102,8 +92,6 @@ class LibraryTray(QWidget):
         toggle_search: Callable[[], None] = lambda: None,
         search_changed: Callable[[str], None] = lambda _phrase: None,
         search_again: Callable[[], None] = lambda: None,
-        toggle_mute: Callable[[], None] = lambda: None,
-        set_volume: Callable[[int], None] = lambda _percent: None,
         previous_track: Callable[[], None] = lambda: None,
         toggle_playback: Callable[[], None] = lambda: None,
         stop_playback: Callable[[], None] = lambda: None,
@@ -155,14 +143,6 @@ class LibraryTray(QWidget):
         self.next_button = tray_button(
             self, resources.next_icon_path(), "Next track", next_track
         )
-        self.volume_button = tray_button(
-            self, resources.volume_icon_path(), "Volume", self._open
-        )
-        self._popup = VolumeSlider(self, set_volume)
-        self._percent = DEFAULT_PERCENT
-        self.mute_button = tray_button(
-            self, resources.unmute_icon_path(), "Mute", toggle_mute
-        )
         # The run reports here rather than in a dialog, so the dialog can shut
         # the moment it has been told what to look for. Reserved rather than
         # shown only while a run is under way: appearing would move every
@@ -172,22 +152,17 @@ class LibraryTray(QWidget):
         # The name is unchanged, since what the window has to say to it is
         # unchanged: here is a report, draw it.
         self.discovery_bar = DiscoveryBars(self, BUTTON_PX)
-        # Left of the volume rather than right of it, ruled on 2026-09-07:
-        # discovery is a library action rather than a sound control, so a line
-        # goes between the two to keep that boundary visible.
         self.discover_button = tray_button(
             self,
             resources.discover_icon_path(),
             DISCOVER_TOOLTIP,
             open_discovery,
         )
+        # Discovery is a library action; theme and help act on the application.
+        # A line goes between the two to keep that boundary visible.
         self.library_separator = separator(
             self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX
         )
-        # The second line, ruled on 2026-09-07: theme and help act on the
-        # application rather than on what is playing, so the sound controls are
-        # fenced on both sides rather than running into their neighbours.
-        self.sound_separator = separator(self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX)
         self.theme_button = tray_button(self, None, "", toggle_theme)
         self.help_button = tray_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
@@ -215,9 +190,6 @@ class LibraryTray(QWidget):
         row.addWidget(self.discovery_bar)
         row.addWidget(self.discover_button)
         row.addWidget(self.library_separator)
-        row.addWidget(self.volume_button)
-        row.addWidget(self.mute_button)
-        row.addWidget(self.sound_separator)
         row.addWidget(self.theme_button)
         row.addWidget(self.help_button)
 
@@ -244,8 +216,6 @@ class LibraryTray(QWidget):
             self.search_box,
             *self.transport_stops(),
             self.discover_button,
-            self.volume_button,
-            self.mute_button,
             self.theme_button,
             self.help_button,
         )
@@ -311,20 +281,6 @@ class LibraryTray(QWidget):
         self.play_button.setEnabled(loaded or can_start)
         self.stop_button.setEnabled(playing)
 
-    def set_percent(self, percent: int) -> None:
-        """Remember where the volume is, so the slider opens showing it."""
-        self._percent = percent
-        self.volume_button.setToolTip(f"Volume {percent}%")
-
-    def _open(self) -> None:
-        """Put the slider up; take it down when it is already up."""
-        if self._popup.isVisible():
-            self._popup.hide()
-            return
-        if self._popup.dismissed_by(self.volume_button):
-            return
-        self._popup.open_at(self._percent, self.volume_button)
-
     def _open_help(self) -> None:
         """Drop the help menu under its button; take it down when it is up.
 
@@ -337,26 +293,6 @@ class LibraryTray(QWidget):
             return
         corner = self.help_button.rect().bottomLeft()
         self.help_menu.popup(self.help_button.mapToGlobal(corner))
-
-    def set_muted(self, muted: bool) -> None:
-        """Show what a press would do, as every button in this tray does.
-
-        A struck speaker while the sound is on says a press silences it; a
-        plain one while it is off says a press brings it back. It showed the
-        state instead, which read as inverted beside the view toggle and the
-        appearance toggle: both of those name where a press would take you,
-        so a picture of where you already are is read the wrong way round.
-
-        The tooltip says the same thing in words, so the two agree rather
-        than each carrying half of it.
-        """
-        speaker = resources.unmute_icon_path()
-        self.mute_button.setIcon(
-            plain_icon(speaker)
-            if muted
-            else struck_through(speaker, resources.negative_icon_path(), ICON_PX)
-        )
-        self.mute_button.setToolTip("Unmute" if muted else "Mute")
 
     def set_mode(self, mode: Mode) -> None:
         """Show the appearance the toggle would switch TO, as the installer does."""

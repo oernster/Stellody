@@ -76,16 +76,14 @@ def _top_tray_html() -> str:
             resources.discover_icon_path(),
             "Discover",
             "looks for music you do not own yet, in the genres you tick. It "
-            "sits to the left of the volume control, with its progress bars "
-            "beside it while a run is going. The procedure is below.",
+            "sits at the right end, with its progress bars beside it while a "
+            "run is going. The procedure is below.",
         )
         + "<p>"
-        + img(resources.volume_icon_path())
-        + img(resources.unmute_icon_path())
         + img(resources.light_mode_icon_path())
         + img(resources.info_icon_path())
-        + "volume, mute, the light or dark appearance, then Help. Help opens "
-        "a menu carrying this guide, About and a check for a new version.</p>"
+        + "the light or dark appearance, then Help. Help opens a menu "
+        "carrying this guide, About and a check for a new version.</p>"
     )
 
 
@@ -118,13 +116,15 @@ def _bottom_tray_html() -> str:
         + "<p>"
         + img(resources.view_icon_path())
         + img(resources.medium_grid_icon_path())
-        + img(resources.equaliser_icon_path())
-        + "switch between the list and the sleeves, change the sleeve size, "
-        "open the equalizer.</p>"
+        + "switch between the list and the sleeves; change the sleeve size.</p>"
         + "<p>"
+        + img(resources.volume_icon_path())
+        + img(resources.unmute_icon_path())
+        + img(resources.equaliser_icon_path())
         + img(resources.shuffle_icon_path())
         + img(resources.repeat_icon_path())
-        + "shuffle and repeat, at the right end. Repeat has three settings: "
+        + "volume, mute, the equalizer, then shuffle and repeat, at the right "
+        "end. Repeat has three settings: "
         "off, the album, then the one song. Every switch shows what pressing "
         "it would DO rather than what it is doing now.</p>"
     )

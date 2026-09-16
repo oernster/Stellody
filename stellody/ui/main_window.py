@@ -222,8 +222,6 @@ class MainWindow(
             show_guide=self.show_guide,
             show_about=self.show_about,
             check_for_updates=self.check_for_updates,
-            toggle_mute=self.toggle_mute,
-            set_volume=self.set_volume,
             previous_track=self.previous_track,
             toggle_playback=self.toggle_playback,
             stop_playback=self.stop_playback,
@@ -242,6 +240,8 @@ class MainWindow(
             toggle_view=self.toggle_view,
             toggle_cover_size=self.toggle_cover_size,
             open_equaliser=self.show_equaliser,
+            toggle_mute=self.toggle_mute,
+            set_volume=self.set_volume,
             read_levels=lambda: self._transport.levels,
         )
         # The strip owns it; the window keeps the name it is reached by, so

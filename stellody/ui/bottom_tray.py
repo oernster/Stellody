@@ -1,4 +1,4 @@
-"""The strip along the bottom: rescan and repair, shuffle and repeat.
+"""The strip along the bottom: rescan and repair, the sound, shuffle and repeat.
 
 Its own strip rather than a place in the tray above, because none of these is
 a transport command. They are settings and errands that outlast the track in
@@ -6,14 +6,11 @@ hand; they belong where a setting sits. Three quarters of the size of the tray
 above it, derived from that tray's own sizes so the two cannot drift apart:
 subordinate to the tray without the artwork becoming too small to read.
 
-The volume is the exception; it sits in the tray above beside the mute
-switch. The two are one thought: how loud, then whether at all. Splitting them
-across two strips meant crossing the window to do half of it.
-
-The switches sit at the right end, under About and the appearance toggle,
-which is where the application's own controls already are. Rescan and repair
-sit at the left instead, under the library they act on. Repair follows rescan
-because it is the answer to what a rescan finds.
+The right end holds how the music sounds, then how the queue runs: volume,
+mute and the equalizer, a rule, then shuffle and repeat. Volume and mute stay
+side by side because the two are one thought: how loud, then whether at all.
+Rescan and repair sit at the left instead, under the library they act on.
+Repair follows rescan because it is the answer to what a rescan finds.
 
 Neither is reached often. A rescan is asked for when something has been added
 to the folder, so it is an errand rather than a control of what is playing;
@@ -30,15 +27,15 @@ moving thing rather than a feature anybody looks AT.
 
 The donate button sits outside them at the head of the row, the first thing on
 the strip: it belongs to nothing on screen, so it sits where nothing else is
-reached by accident. A
-hairline rules it off from the two beside it, which is how the tray above
-separates the mute switch from the controls that act on the application.
+reached by accident. A hairline rules it off from the two beside it, which is
+how the tray above separates discovery from the controls that act on the
+application.
 
 Every picture here names what a press would DO rather than what the switch is
-currently holding, which is the rule the mute switch in the tray above has
-always followed. A cross is a promise to turn something off, never a report
-that it is off. One rule across the whole application beats a rule per strip:
-a listener who has read one switch has read the rest.
+currently holding, which is the rule the mute switch has always followed. A
+cross is a promise to turn something off, never a report that it is off. One
+rule across the whole application beats a rule per strip: a listener who has
+read one switch has read the rest.
 
 The tooltips follow the pictures, with repeat the one exception. It is the
 only control on either strip holding three states rather than two; words
@@ -60,6 +57,7 @@ from stellody.shared import resources
 from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.showing_controls import ShowingControls
+from stellody.ui.sound_controls import SoundControls
 from stellody.ui.tray_metrics import (
     BUTTON_PX,
     ICON_PX,
@@ -186,6 +184,8 @@ class BottomTray(QWidget):
         toggle_view: Callable[[], None] = lambda: None,
         toggle_cover_size: Callable[[], None] = lambda: None,
         open_equaliser: Callable[[], None] = lambda: None,
+        toggle_mute: Callable[[], None] = lambda: None,
+        set_volume: Callable[[int], None] = lambda _percent: None,
         read_levels=None,
     ) -> None:
         super().__init__(parent)
@@ -226,10 +226,22 @@ class BottomTray(QWidget):
             BOTTOM_BUTTON_PX,
             BOTTOM_ICON_PX,
             TRAY_GAP_PX,
-            BOTTOM_SEPARATOR_HEIGHT_PX,
             toggle_view=toggle_view,
             toggle_cover_size=toggle_cover_size,
+        )
+        self.sound = SoundControls(
+            self,
+            BOTTOM_BUTTON_PX,
+            BOTTOM_ICON_PX,
+            TRAY_GAP_PX,
+            toggle_mute=toggle_mute,
+            set_volume=set_volume,
             open_equaliser=open_equaliser,
+        )
+        # How the music sounds is a different question from how the queue
+        # runs, so a rule stands between the sound and the two switches.
+        self.sound_separator = separator(
+            self, SEPARATOR_WIDTH_PX, BOTTOM_SEPARATOR_HEIGHT_PX
         )
         # Half the height of a button beside it, centred against them: it
         # is something to notice out of the corner of an eye rather than a
@@ -252,6 +264,8 @@ class BottomTray(QWidget):
         right = QHBoxLayout()
         right.setContentsMargins(0, 0, 0, 0)
         right.setSpacing(TRAY_GAP_PX)
+        right.addWidget(self.sound)
+        right.addWidget(self.sound_separator)
         for button in self.switch_stops():
             right.addWidget(button)
         # Three columns, with the outer two given the same share of what is
@@ -298,6 +312,7 @@ class BottomTray(QWidget):
             self.donate_button,
             *self.library_stops(),
             *self.showing.stops(),
+            *self.sound.stops(),
             *self.switch_stops(),
         )
 
@@ -316,6 +331,14 @@ class BottomTray(QWidget):
     def set_next_cover_size(self, size: CoverSize) -> None:
         """Show the size a press would move to."""
         self.showing.set_next_cover_size(size)
+
+    def set_percent(self, percent: int) -> None:
+        """Remember where the volume is, so the slider opens showing it."""
+        self.sound.set_percent(percent)
+
+    def set_muted(self, muted: bool) -> None:
+        """Show what pressing the mute switch would do from here."""
+        self.sound.set_muted(muted)
 
     def set_shuffled(self, shuffled: bool) -> None:
         """Light the shuffle switch while the queue is scattered."""
