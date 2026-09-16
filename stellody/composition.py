@@ -47,6 +47,7 @@ from stellody.infrastructure.catalogue import MusicBrainz
 from stellody.infrastructure.courtesy import REQUEST_GAP_S, Gate
 from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
+from stellody.infrastructure.dropouts import DropoutWatch
 from stellody.infrastructure.fetching import Fetcher
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.output_devices import OutputDevices
@@ -133,7 +134,13 @@ def build_window(
     window = MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
-        transport=Transport(WasapiPlayback(opener=devices.open_output)),
+        # Every block the device ran dry before it arrived goes into the
+        # diary, so static heard under load can be matched to a line.
+        transport=Transport(
+            WasapiPlayback(
+                opener=devices.open_output, dropouts=DropoutWatch(diary.note)
+            )
+        ),
         settings=store,
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
         listening=listening,

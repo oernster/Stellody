@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from PySide6.QtCore import Qt
+
 from stellody.domain.album import Album, Disc
 from stellody.domain.text import year_of
 from stellody.domain.track import Track
@@ -26,7 +28,10 @@ ONE = 1
 SECONDS_PER_MINUTE = 60
 MINUTES_PER_HOUR = 60
 
-HEADINGS = ("Title", "Artist", "Detail", "Plays", "Length")
+HEADINGS = ("Title", "Artist", "Detail", "Plays", "Rating", "Length")
+# Where a track's rating is asked for as a number. The cell's own text is empty,
+# since the stars are drawn rather than written; see `star_cells.py`.
+STARS_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 class Column(IntEnum):
@@ -35,14 +40,16 @@ class Column(IntEnum):
     Detail and Plays are apart because a cell holding both could align
     neither: a track saying "44 kHz / 24  1 play" and one saying "1 play"
     started their counts in different places, so a column of them read as a
-    jumble rather than as a column.
+    jumble rather than as a column. The rating sits beside the plays, since
+    both say what somebody has made of a track.
     """
 
     TITLE = 0
     ARTIST = 1
     DETAIL = 2
     PLAYS = 3
-    LENGTH = 4
+    STARS = 4
+    LENGTH = 5
 
 
 def format_duration(milliseconds: int) -> str:

@@ -128,6 +128,8 @@ def build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
     # As wide as the longest count it holds and no wider, so the numbers stack
     # against the lengths rather than floating in a section sized for a word.
     header.setSectionResizeMode(Column.PLAYS, QHeaderView.ResizeMode.ResizeToContents)
+    # Sized by the delegate to carry every star, so no rating is ever cut off.
+    header.setSectionResizeMode(Column.STARS, QHeaderView.ResizeMode.ResizeToContents)
     tree.setColumnWidth(Column.TITLE, TITLE_COLUMN_PX)
     tree.setColumnWidth(Column.ARTIST, ARTIST_COLUMN_PX)
     return tree

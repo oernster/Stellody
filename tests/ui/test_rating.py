@@ -1,8 +1,9 @@
-"""Rating a track from the stars, then counting a track that plays out.
+"""Rating a track on its row, then counting a track that plays out.
 
-The two halves a headless run can settle: which track the row is about, then
-that what is said about it reaches the store and comes back. Whether five
-stars in a rectangle read as a rating rather than as decoration needs eyes.
+The halves a headless run can settle: that a rating given to a row reaches the
+store and comes back on that row; also that a count reaches the row under the
+library. How a press or a key turns into a rating is in test_star_column.py.
+Whether stars in a column read as a rating rather than as decoration needs eyes.
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ from __future__ import annotations
 import pytest
 from library_support import ART, PLANETS, SIMPLE
 from mouse_support import press_at
-from PySide6.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import QApplication
 from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
@@ -21,7 +22,7 @@ from stellody.domain.listening import (
     album_handle,
     track_handle,
 )
-from stellody.ui.row_text import Column
+from stellody.ui.row_text import STARS_ROLE, Column
 from stellody.ui.stars import PANEL_MARGIN_PX, STAR_GAP_PX, STAR_PX, StarRating
 
 
@@ -42,85 +43,58 @@ def window(application: QApplication, player: RecordingPlayer):
     made.close()
 
 
-def _highlight(window, row: int, track_row: int):
-    """Put the highlight on one track of one album, as arrowing to it would."""
+def _cell(window, row: int, track_row: int, column: Column = Column.STARS):
+    """One cell of one track row."""
     album = window._model.index(row, Column.TITLE, QModelIndex())
-    where = window._model.index(track_row, Column.TITLE, album)
-    window._tree.setCurrentIndex(where)
-    return where
+    return window._model.index(track_row, column, album)
 
 
-class TestWhichTrackTheRowIsAbout:
-    def test_nothing_highlighted_leaves_the_stars_dead(self, window) -> None:
-        """A control that cannot mean anything shows no border and is skipped."""
-        window.follow_rating()
-        assert not window._position_bar.stars.isEnabled()
+class TestRatingARow:
+    def test_a_rating_reaches_the_log_and_the_row(self, window) -> None:
+        assert window.rate_track(_cell(window, 0, 0), MAXIMUM_STARS)
+        handle = track_handle(PLANETS.identity, 1, 1)
+        assert window._listening.of(handle).stars == MAXIMUM_STARS
+        assert _cell(window, 0, 0).data(STARS_ROLE) == MAXIMUM_STARS
 
-    def test_it_follows_the_highlight(self, window) -> None:
-        _highlight(window, 0, 0)
-        window.follow_rating()
-        assert window._position_bar.stars.isEnabled()
-
-    def test_what_is_highlighted_wins_over_what_is_playing(self, window) -> None:
-        """A track picked out while something else plays is still ratable.
-
-        Deliberately not the rule the shape beside it follows: that is a
-        reading of what is audible, while this is a control; a control has
-        to be about the thing under the hand.
-        """
-        window.play_album(PLANETS)
-        _highlight(window, 1, 0)
-        window.follow_rating()
-        window.rate_shown(3)
-        assert window._listening.of(track_handle(SIMPLE.identity, 1, 1)).stars == 3
-        assert window._listening.of(track_handle(PLANETS.identity, 1, 1)).is_empty
-
-    def test_it_falls_back_to_what_is_playing(self, window) -> None:
-        """Nothing pointed at, so the stars answer for the music instead."""
-        window.play_album(PLANETS)
-        window._tree.setCurrentIndex(QModelIndex())
-        window.follow_rating()
-        window.rate_shown(2)
+    def test_two_tracks_are_rated_apart(self, window) -> None:
+        window.rate_track(_cell(window, 0, 0), 2)
+        window.rate_track(_cell(window, 0, 1), 4)
         assert window._listening.of(track_handle(PLANETS.identity, 1, 1)).stars == 2
+        assert window._listening.of(track_handle(PLANETS.identity, 1, 2)).stars == 4
 
     def test_a_track_never_played_can_be_rated(self, window) -> None:
         """The whole point of it: nothing has to be heard to be judged."""
-        _highlight(window, 1, 0)
-        window.follow_rating()
-        window.rate_shown(5)
+        window.rate_track(_cell(window, 1, 0), 5)
         record = window._listening.of(track_handle(SIMPLE.identity, 1, 1))
         assert record.stars == 5
         assert record.plays == 0
 
+    def test_an_album_row_rates_nothing(self, window) -> None:
+        album = window._model.index(0, Column.STARS, QModelIndex())
+        assert window.rate_track(album, 3) is False
+        assert album.data(STARS_ROLE) is None
+        assert window._listening.of(album_handle(PLANETS.identity)).is_empty
 
-class TestRating:
-    def test_a_rating_reaches_the_log_and_comes_back(self, window) -> None:
-        _highlight(window, 0, 0)
-        window.follow_rating()
-        window.rate_shown(MAXIMUM_STARS)
-        handle = track_handle(PLANETS.identity, 1, 1)
-        assert window._listening.of(handle).stars == MAXIMUM_STARS
-        assert window._position_bar.stars.stars == MAXIMUM_STARS
+    def test_the_row_says_it_in_words_as_well(self, window) -> None:
+        cell = _cell(window, 0, 0)
+        assert cell.data(Qt.ItemDataRole.ToolTipRole) == "Not rated"
+        window.rate_track(cell, 1)
+        assert cell.data(Qt.ItemDataRole.ToolTipRole) == "Rated 1 star out of 5"
+        window.rate_track(cell, 3)
+        assert cell.data(Qt.ItemDataRole.ToolTipRole) == "Rated 3 stars out of 5"
 
-    def test_two_tracks_are_rated_apart(self, window) -> None:
-        _highlight(window, 0, 0)
-        window.rate_shown(2)
-        _highlight(window, 0, 1)
-        window.follow_rating()
-        window.rate_shown(4)
-        assert window._listening.of(track_handle(PLANETS.identity, 1, 1)).stars == 2
-        assert window._listening.of(track_handle(PLANETS.identity, 1, 2)).stars == 4
+    def test_the_row_is_redrawn_when_the_rating_changes(self, window) -> None:
+        """Otherwise the rating is right and the screen is not."""
+        seen: list = []
+        window._model.dataChanged.connect(
+            lambda first, last, roles: seen.append((first.column(), last.column()))
+        )
+        window.rate_track(_cell(window, 0, 0), 2)
+        assert any(first <= Column.STARS <= last for first, last in seen)
 
-    def test_rating_nothing_is_harmless(self, window) -> None:
-        window.rate_shown(3)
-        assert window._position_bar.stars.stars == NO_STARS
-
-    def test_the_stars_say_it_in_words_as_well(self, window) -> None:
-        _highlight(window, 0, 0)
-        window.rate_shown(1)
-        assert window._position_bar.stars.toolTip() == "Rated 1 star out of 5"
-        window.rate_shown(3)
-        assert window._position_bar.stars.toolTip() == "Rated 3 stars out of 5"
+    def test_the_row_under_the_library_carries_no_stars(self, window) -> None:
+        """Moved into the column; one home for a track's rating."""
+        assert not hasattr(window._position_bar, "stars")
 
 
 class TestCountingAPlay:
@@ -131,7 +105,7 @@ class TestCountingAPlay:
         handle = track_handle(PLANETS.identity, 1, 1)
         assert window._listening.of(handle).plays == 1
 
-    def test_the_count_is_shown_beside_the_stars(self, window, player) -> None:
+    def test_the_count_is_shown_under_the_library(self, window, player) -> None:
         """An album of one track, so the row is still about it afterwards.
 
         A longer album moves on the moment the track ends, which is right: the
@@ -160,8 +134,7 @@ class TestCountingAPlay:
 
     def test_a_rating_survives_being_counted(self, window, player) -> None:
         window.play_album(PLANETS)
-        window.follow_rating()
-        window.rate_shown(4)
+        window.rate_track(_cell(window, 0, 0), 4)
         player.finished = True
         window._poll_transport()
         record = window._listening.of(track_handle(PLANETS.identity, 1, 1))
@@ -236,7 +209,7 @@ class TestRatingTheWholeAlbum:
 
     def test_a_track_rating_is_not_the_album_s(self, window) -> None:
         self._open(window)
-        window.rate_shown(2)
+        window.rate_track(_cell(window, 0, 0), 2)
         assert window._listening.of(album_handle(PLANETS.identity)).is_empty
 
     def test_it_comes_back_when_the_album_is_opened_again(self, window) -> None:

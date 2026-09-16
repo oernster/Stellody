@@ -13,16 +13,18 @@ from PySide6.QtGui import QPixmap
 from stellody.application.artwork import AlbumArtSources
 from stellody.application.listening import ListeningLog
 from stellody.domain.album import Album
-from stellody.domain.listening import track_handle
+from stellody.domain.listening import Listening, track_handle
 from stellody.domain.track import Track
 from stellody.ui.covering import GRID_COVER_PX
 from stellody.ui.nodes import Node, build, find_track
 from stellody.ui.row_text import (
     HEADINGS,
+    STARS_ROLE,
     Column,
     plays_text,
     text_for,
 )
+from stellody.ui.stars import rating_words
 
 
 class _NothingKept:
@@ -57,10 +59,10 @@ class AlbumTreeModel(QAbstractItemModel):
         listening: ListeningLog | None = None,
     ) -> None:
         super().__init__(parent)
-        # What each track has been played. Held here so a row can say it while
-        # the library is being read down, which is where somebody looks for
-        # it: the one beside the stars is about a single track and is gone the
-        # moment that track ends and the next one starts.
+        # What each track has been played and how it is rated. Held here so a
+        # row can say both while the library is being read down, which is
+        # where somebody looks for them: the count under the library is about
+        # a single track and is gone the moment that track ends.
         self._listening = listening or ListeningLog(_NothingKept())
         self._albums: tuple[Album, ...] = ()
         self._roots: list[Node] = []
@@ -99,32 +101,36 @@ class AlbumTreeModel(QAbstractItemModel):
         self._rebuild()
         self.endResetModel()
 
-    def plays_of(self, node: Node) -> int:
-        """How many times a track row's own track has played out."""
+    def _record_of(self, node: Node) -> Listening | None:
+        """What is kept about a track row's own track; None for any other row."""
         album = node.parent
         while album is not None and album.album is None:
             album = album.parent
         if album is None or album.album is None or node.track is None:
-            return 0
-        return self._listening.of(
-            track_handle(
-                album.album.identity,
-                node.track.disc_number,
-                node.track.track_number,
-            )
-        ).plays
+            return None
+        return self._listening.of(self._handle_of(album, node))
 
-    def redraw_plays(self, handle: str) -> None:
-        """Draw again the one row whose count has just changed.
+    def plays_of(self, node: Node) -> int:
+        """How many times a track row's own track has played out."""
+        record = self._record_of(node)
+        return 0 if record is None else record.plays
+
+    def stars_of(self, node: Node) -> int | None:
+        """A track row's rating; None for a row that is not a track."""
+        record = self._record_of(node)
+        return None if record is None else record.stars
+
+    def redraw_listening(self, handle: str) -> None:
+        """Draw again the one row whose count or rating has just changed.
 
         Found by walking rather than by asking where a track is: that search
         is retried when it misses, so spending it here would take the attempt
         the highlight needs.
         """
         for album in self._roots:
-            for row, node in enumerate(_track_rows(album)):
+            for node in _track_rows(album):
                 if self._handle_of(album, node) == handle:
-                    self._redraw_plays(node, row)
+                    self._redraw_listening(node)
                     return
 
     def _handle_of(self, album: Node, node: Node) -> str:
@@ -135,10 +141,15 @@ class AlbumTreeModel(QAbstractItemModel):
             node.track.track_number,
         )
 
-    def _redraw_plays(self, node: Node, row: int) -> None:
-        """Ask the view to draw one track's plays cell again."""
-        where = self.createIndex(node.row, Column.PLAYS, node)
-        self.dataChanged.emit(where, where, [Qt.ItemDataRole.DisplayRole])
+    def _redraw_listening(self, node: Node) -> None:
+        """Ask the view to draw one track's plays and rating cells again."""
+        first = self.createIndex(node.row, Column.PLAYS, node)
+        last = self.createIndex(node.row, Column.STARS, node)
+        self.dataChanged.emit(
+            first,
+            last,
+            [Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole, STARS_ROLE],
+        )
 
     def set_flash(self, flash) -> None:
         """Take whatever is pulsing a row, so a cell can ask it for paint.
@@ -338,6 +349,11 @@ class AlbumTreeModel(QAbstractItemModel):
             return self._cover(node)
         if role == Qt.ItemDataRole.BackgroundRole:
             return self._background(index, node)
+        if index.column() == Column.STARS and role == STARS_ROLE:
+            return self.stars_of(node)
+        if index.column() == Column.STARS and role == Qt.ItemDataRole.ToolTipRole:
+            stars = self.stars_of(node)
+            return None if stars is None else rating_words(stars)
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (
             Column.PLAYS,
             Column.LENGTH,

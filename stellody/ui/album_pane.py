@@ -45,7 +45,7 @@ from stellody.ui.track_column import track_column
 from stellody.ui.tray_parts import icon_button
 
 # Said rather than left to be inferred: this rates the ALBUM, while the stars
-# down on the position row rate one track; the two are inches apart.
+# in the rating column below it rate one track each; the two are inches apart.
 ALBUM_RATING_CAPTION = "Album rating"
 # Named so the appearance can reach them: each carries its own fill from the
 # blanket rule, so each is a rectangle whether or not it was meant to be one.

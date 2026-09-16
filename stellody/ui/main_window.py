@@ -229,7 +229,6 @@ class MainWindow(
         )
         self.show_discovery_offer()
         self._position_bar = PositionBar(self, seek=self.seek_to)
-        self._position_bar.stars.chosen.connect(self.rate_shown)
         self._bottom_tray = BottomTray(
             self,
             toggle_shuffle=self.toggle_shuffle,
@@ -258,6 +257,8 @@ class MainWindow(
         )
         # After the body, since the surface joins the holder the body placed.
         self.start_picturing(pictures)
+        # After the body, since the open album's columns are built with it.
+        self.start_rating()
         self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)
         # A permanent widget rather than part of the message: `showMessage`

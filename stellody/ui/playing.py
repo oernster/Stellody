@@ -52,7 +52,7 @@ class Playing:
         """
         self._show_transport()
         self.follow_shape()
-        self.follow_rating()
+        self.follow_plays()
 
     def play_album(self, album) -> None:
         """Start an album from its first track."""
@@ -158,7 +158,7 @@ class Playing:
         self._drive(self._transport.advance_if_finished)
         self._position_bar.show_position(self._transport.position)
         self.follow_shape()
-        self.follow_rating()
+        self.follow_plays()
         self.follow_picture()
 
     @Slot(int)

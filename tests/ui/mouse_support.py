@@ -14,8 +14,43 @@ where along a control the press landed.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QPointF, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
 from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QApplication, QWidget
+
+DOUBLE_CLICK = (
+    QEvent.Type.MouseButtonPress,
+    QEvent.Type.MouseButtonRelease,
+    QEvent.Type.MouseButtonDblClick,
+    QEvent.Type.MouseButtonRelease,
+)
+
+
+def double_click_at(widget: QWidget, where: QPoint) -> None:
+    """A left double click at `where`, sent as the four events Qt sends.
+
+    Built by hand because `QTest.mouseDClick` was measured offscreen on
+    2026-09-16 to reach a tree's viewport as no double click at all: neither
+    `doubleClicked` nor `activated` fired, even on a title. These four did.
+    """
+    local = QPointF(where)
+    for kind in DOUBLE_CLICK:
+        held = (
+            Qt.MouseButton.NoButton
+            if kind is QEvent.Type.MouseButtonRelease
+            else Qt.MouseButton.LeftButton
+        )
+        QApplication.sendEvent(
+            widget,
+            QMouseEvent(
+                kind,
+                local,
+                QPointF(widget.mapToGlobal(where)),
+                Qt.MouseButton.LeftButton,
+                held,
+                Qt.KeyboardModifier.NoModifier,
+            ),
+        )
 
 
 def press_at(

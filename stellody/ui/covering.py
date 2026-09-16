@@ -13,12 +13,19 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from PySide6.QtCore import QSize, Qt, Slot
+from PySide6.QtCore import QEvent, QModelIndex, QSize, Qt, Signal, Slot
 from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from stellody.application.artwork import AlbumArt, AlbumArtSources
 from stellody.ui.art_worker import ArtRunner
+from stellody.ui.row_text import STARS_ROLE, Column
+from stellody.ui.star_cells import (
+    cell_width,
+    paint_cell,
+    pressed_star,
+    released_rating,
+)
 from stellody.ui.theme import RADIUS_PX, Mode, palette_for
 
 
@@ -91,7 +98,44 @@ class RowCover(QStyledItemDelegate):
 
     Only a row carrying a picture is touched, so a track stays the height of
     the line of text it is.
+
+    It also draws a track's stars in the rating column and reports a press on
+    one as `rated`; what a cell of stars means lives in `star_cells.py`.
     """
+
+    rated = Signal(QModelIndex, int)
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self._mode = Mode.DARK
+
+    def show_appearance(self, mode: Mode) -> None:
+        """Draw the stars in the appearance the window is wearing."""
+        self._mode = mode
+
+    def sizeHint(self, option, index) -> QSize:
+        """Room for every star in the rating column; Qt's answer elsewhere."""
+        hint = super().sizeHint(option, index)
+        if index.column() != Column.STARS:
+            return hint
+        return QSize(max(hint.width(), cell_width()), hint.height())
+
+    def editorEvent(self, event, model, option, index) -> bool:
+        """A left release on a track's star rates it; a double click there is kept.
+
+        Kept rather than passed on, so the second click of a double click on
+        the stars does not also start the track playing. A plain press is
+        passed on, which is what lets the row be selected as it always was.
+        """
+        held = index.data(STARS_ROLE)
+        pressed = None if held is None else pressed_star(event, option.rect)
+        if pressed is None:
+            return super().editorEvent(event, model, option, index)
+        rating = released_rating(event, pressed, held)
+        if rating is not None:
+            self.rated.emit(index, rating)
+            return True
+        return event.type() is QEvent.Type.MouseButtonDblClick
 
     def initStyleOption(self, option, index) -> None:
         """Say how big the decoration is, rather than let the pixmap say."""
@@ -117,6 +161,9 @@ class RowCover(QStyledItemDelegate):
             option = QStyleOptionViewItem(option)
             option.state &= ~QStyle.StateFlag.State_Selected
         super().paint(painter, option, index)
+        stars = index.data(STARS_ROLE)
+        if stars is not None:
+            paint_cell(painter, option.rect, stars, self._mode)
 
 
 def placeholder_for(mode: Mode) -> QPixmap:

@@ -42,7 +42,6 @@ def ring_stops(window) -> tuple[QWidget, ...]:
         window._album_pane.album_stars,
         *window._album_pane.columns,
         window._position_bar.slider,
-        window._position_bar.stars,
         *window._bottom_tray.ring_stops(),
         window._shortfall_button,
     )

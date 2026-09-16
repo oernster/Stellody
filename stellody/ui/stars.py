@@ -19,6 +19,10 @@ is drawn rather than styled, so nothing hands it the stylesheet's answer and it
 had been reading a token of its own that no other control used: the stars
 ringed blue while the whole application ringed green. Two names for one idea is
 how the two came to disagree, so there is now one name.
+
+The drawing, the press rule and the words are functions rather than methods,
+because a track's stars are drawn in a column of the library as well: one row
+of stars, one rule and one wording, whichever surface holds them.
 """
 
 from __future__ import annotations
@@ -47,6 +51,7 @@ POINTS_PER_STAR = STAR_POINTS * 2
 INNER_RATIO = 0.42
 QUARTER_TURN = math.pi / 2
 FULL_TURN = math.pi * 2
+HALF = 2
 
 
 def _star_path(centre: QPointF, radius: float) -> QPainterPath:
@@ -67,6 +72,54 @@ def _star_path(centre: QPointF, radius: float) -> QPainterPath:
     return path
 
 
+def stars_width(star_px: int, gap_px: int) -> int:
+    """How wide a row of every star on the scale is, gaps included."""
+    return MAXIMUM_STARS * star_px + (MAXIMUM_STARS - 1) * gap_px
+
+
+def star_at(x: float, left: float, star_px: int, gap_px: int) -> int:
+    """Which star a press this far across landed on, counting from one."""
+    position = int((x - left) // (star_px + gap_px))
+    return min(max(position + 1, 1), MAXIMUM_STARS)
+
+
+def chosen_rating(held: int, pressed: int) -> int:
+    """The rating a press on a star leaves: that star, else none if it was held."""
+    return NO_STARS if pressed == held else pressed
+
+
+def rating_words(stars: int) -> str:
+    """The rating in words, for anyone not reading shapes."""
+    if stars == NO_STARS:
+        return "Not rated"
+    noun = "star" if stars == 1 else "stars"
+    return f"Rated {stars} {noun} out of {MAXIMUM_STARS}"
+
+
+def paint_stars(
+    painter: QPainter,
+    origin: QPointF,
+    star_px: int,
+    gap_px: int,
+    stars: int,
+    mode: Mode,
+) -> None:
+    """A row of stars from this top left corner, filled up to the rating."""
+    palette = palette_for(mode)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    for position in range(MAXIMUM_STARS):
+        left = origin.x() + position * (star_px + gap_px)
+        centre = QPointF(left + star_px / HALF, origin.y() + star_px / HALF)
+        path = _star_path(centre, star_px / HALF)
+        if position < stars:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(palette.star))
+        else:
+            painter.setPen(QPen(QColor(palette.text_dim), OUTLINE_PX))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(path)
+
+
 class StarRating(QWidget):
     """Five stars in a rectangle; a press on one sets the rating to it."""
 
@@ -80,9 +133,7 @@ class StarRating(QWidget):
         self._mode = Mode.DARK
         self._stars = NO_STARS
         self.setFixedSize(
-            MAXIMUM_STARS * STAR_PX
-            + (MAXIMUM_STARS - 1) * STAR_GAP_PX
-            + PANEL_MARGIN_PX * 2,
+            stars_width(STAR_PX, STAR_GAP_PX) + PANEL_MARGIN_PX * 2,
             STAR_PX + PANEL_MARGIN_PX * 2,
         )
 
@@ -94,7 +145,7 @@ class StarRating(QWidget):
     def show_stars(self, stars: int) -> None:
         """Show a rating without reporting one, which is how a track arrives."""
         self._stars = stars
-        self._say_what_it_holds()
+        self.setToolTip(rating_words(stars))
         self.update()
 
     def show_appearance(self, mode: Mode) -> None:
@@ -102,28 +153,9 @@ class StarRating(QWidget):
         self._mode = mode
         self.update()
 
-    def _say_what_it_holds(self) -> None:
-        """Put the rating into words as well, for anyone not reading shapes."""
-        if self._stars == NO_STARS:
-            self.setToolTip("Not rated")
-            return
-        stars = "star" if self._stars == 1 else "stars"
-        self.setToolTip(f"Rated {self._stars} {stars} out of {MAXIMUM_STARS}")
-
-    def _centre_of(self, position: int) -> QPointF:
-        """Where one star sits, counting from nought at the left."""
-        left = PANEL_MARGIN_PX + position * (STAR_PX + STAR_GAP_PX)
-        return QPointF(left + STAR_PX / 2, PANEL_MARGIN_PX + STAR_PX / 2)
-
-    def _star_at(self, x: int) -> int:
-        """Which star a press at this distance across landed on, from one."""
-        reach = x - PANEL_MARGIN_PX
-        position = int(reach // (STAR_PX + STAR_GAP_PX))
-        return min(max(position + 1, 1), MAXIMUM_STARS)
-
     def _choose(self, stars: int) -> None:
         """Take a rating, unless it is the one already held: that takes it back."""
-        wanted = NO_STARS if stars == self._stars else stars
+        wanted = chosen_rating(self._stars, stars)
         self.show_stars(wanted)
         self.chosen.emit(wanted)
 
@@ -132,7 +164,9 @@ class StarRating(QWidget):
         if event.button() is not Qt.MouseButton.LeftButton or not self.isEnabled():
             super().mousePressEvent(event)
             return
-        self._choose(self._star_at(int(event.position().x())))
+        self._choose(
+            star_at(event.position().x(), PANEL_MARGIN_PX, STAR_PX, STAR_GAP_PX)
+        )
 
     def keyPressEvent(self, event) -> None:
         """Up and Down move the rating; the horizontal keys belong to the ring.
@@ -166,15 +200,14 @@ class StarRating(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QColor(palette.surface_alt))
         painter.drawRoundedRect(self.rect(), RADIUS_PX, RADIUS_PX)
-        for position in range(MAXIMUM_STARS):
-            path = _star_path(self._centre_of(position), STAR_PX / 2)
-            if position < self._stars:
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(QColor(palette.star))
-            else:
-                painter.setPen(QPen(QColor(palette.text_dim), OUTLINE_PX))
-                painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawPath(path)
+        paint_stars(
+            painter,
+            QPointF(PANEL_MARGIN_PX, PANEL_MARGIN_PX),
+            STAR_PX,
+            STAR_GAP_PX,
+            self._stars,
+            self._mode,
+        )
         if self.hasFocus():
             painter.setPen(QPen(QColor(palette.ring), RING_PX))
             painter.setBrush(Qt.BrushStyle.NoBrush)

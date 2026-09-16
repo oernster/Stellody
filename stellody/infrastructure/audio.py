@@ -35,11 +35,11 @@ from stellody.domain.playback import (
     PlaybackPosition,
     PlaybackState,
 )
-from stellody.domain.spectrum import SILENT_BANDS
 from stellody.domain.track import TrackSource
-from stellody.infrastructure.analysing import BlockAnalyser
 from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
+from stellody.infrastructure.dropouts import DropoutWatch
 from stellody.infrastructure.filtering import BiquadCascade
+from stellody.infrastructure.metering import Meter
 from stellody.infrastructure.output import open_output
 
 BLOCK_FRAMES = 4096
@@ -87,6 +87,7 @@ class WasapiPlayback:
         device: int | None = None,
         block_frames: int = BLOCK_FRAMES,
         opener: Opener = open_output,
+        dropouts: DropoutWatch | None = None,
     ) -> None:
         self._device = device
         self._block_frames = block_frames
@@ -95,12 +96,8 @@ class WasapiPlayback:
         self._equalisation = Equalisation()
         self._session: _Session | None = None
         self._closed = False
-        # Off until something asks to see it, so a listener who never opens the
-        # visualiser pays nothing at all for it. `_analyser` being None IS the
-        # switch: there is no flag to disagree with it.
-        self._analyser: BlockAnalyser | None = None
-        self._visualising = False
-        self._levels = SILENT_BANDS
+        self._meter = Meter(block_frames)
+        self.dropouts = DropoutWatch() if dropouts is None else dropouts
 
     @property
     def state(self) -> PlaybackState:
@@ -140,7 +137,7 @@ class WasapiPlayback:
             dtype=dtype,
             filtering=self._designed_for(reader.sample_rate),
         )
-        self._analyser = self._analyser_for(reader.sample_rate)
+        self._meter.open_for(reader.sample_rate)
         session.thread = threading.Thread(
             target=self._feed, args=(session,), name="stellody-feeder", daemon=True
         )
@@ -154,6 +151,7 @@ class WasapiPlayback:
         if session is None or session.finished.is_set():
             return
         session.stream.start()
+        self.dropouts.started()
         session.resume.set()
 
     def pause(self) -> None:
@@ -273,53 +271,16 @@ class WasapiPlayback:
         with session.lock:
             session.filtering = self._designed_for(session.reader.sample_rate)
 
-    def _analyser_for(self, sample_rate: int) -> BlockAnalyser | None:
-        """One analyser per stream, since its bands depend on the sample rate."""
-        if not self._visualising:
-            return None
-        return BlockAnalyser(sample_rate, self._block_frames)
-
-    def _measure(self, shaped: np.ndarray) -> None:
-        """Read the block that has just gone out, if anybody is watching.
-
-        After the write, so this can never be what delays a device. What is
-        measured is the block AFTER the equalizer and BEFORE the volume: the
-        equalizer is what the bands are named for, while volume scales every
-        band by the same amount and so says nothing about the music. A display
-        that shrank when the volume came down would report the knob, not the
-        record.
-
-        The answer is swapped in as one whole tuple. The reader is the
-        interface thread and a swap is a single rebinding, so what it reads is
-        either the last measurement or this one, never half of each; a lock
-        here would be the feeder waiting on a painter, which is exactly what
-        this must never do.
-        """
-        analyser = self._analyser
-        if analyser is None:
-            return
-        measured = analyser.measure(shaped)
-        if measured is not None:
-            self._levels = measured
-
     @property
     def levels(self) -> tuple[float, ...]:
         """The bands as they were last measured; silence when nothing is on."""
-        return self._levels
+        return self._meter.levels
 
     def set_visualising(self, on: bool) -> None:
-        """Start or stop measuring what goes out.
-
-        Stopping forgets the last measurement as well as the analyser, so a
-        display turned back on opens empty rather than showing the bands of
-        whatever was playing when it was last switched off.
-        """
-        self._visualising = on
+        """Start or stop measuring what goes out; see `metering.py`."""
         session = self._session
         rate = None if session is None else session.reader.sample_rate
-        self._analyser = None if rate is None else self._analyser_for(rate)
-        if not on:
-            self._levels = SILENT_BANDS
+        self._meter.set_visualising(on, rate)
 
     def set_volume(self, level: float) -> None:
         """Set output gain, where 0.0 is silence and 1.0 is unattenuated."""
@@ -359,8 +320,11 @@ class WasapiPlayback:
                 continue
             try:
                 shaped = filtering.process(block)
-                session.stream.write(self._scaled(shaped, session.dtype))
-                self._measure(shaped)
+                underflowed = session.stream.write(self._scaled(shaped, session.dtype))
+                self.dropouts.wrote(
+                    bool(underflowed), len(block), session.reader.sample_rate
+                )
+                self._meter.measure(shaped)
             except sounddevice.PortAudioError:
                 # A write that fails while nothing is meant to be playing is a
                 # pause landing on this thread, not a track ending. `pause`
