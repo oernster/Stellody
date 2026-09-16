@@ -20,7 +20,7 @@ from stellody.ui.nodes import Node, build, find_track
 from stellody.ui.row_text import (
     HEADINGS,
     Column,
-    detail_text,
+    plays_text,
     text_for,
 )
 
@@ -124,7 +124,7 @@ class AlbumTreeModel(QAbstractItemModel):
         for album in self._roots:
             for row, node in enumerate(_track_rows(album)):
                 if self._handle_of(album, node) == handle:
-                    self._redraw_detail(node, row)
+                    self._redraw_plays(node, row)
                     return
 
     def _handle_of(self, album: Node, node: Node) -> str:
@@ -135,9 +135,9 @@ class AlbumTreeModel(QAbstractItemModel):
             node.track.track_number,
         )
 
-    def _redraw_detail(self, node: Node, row: int) -> None:
-        """Ask the view to draw one track's detail cell again."""
-        where = self.createIndex(node.row, Column.DETAIL, node)
+    def _redraw_plays(self, node: Node, row: int) -> None:
+        """Ask the view to draw one track's plays cell again."""
+        where = self.createIndex(node.row, Column.PLAYS, node)
         self.dataChanged.emit(where, where, [Qt.ItemDataRole.DisplayRole])
 
     def set_flash(self, flash) -> None:
@@ -327,8 +327,8 @@ class AlbumTreeModel(QAbstractItemModel):
             return None
         if role == Qt.ItemDataRole.DisplayRole:
             column = Column(index.column())
-            if column is Column.DETAIL and node.track is not None:
-                return detail_text(text_for(node, column), self.plays_of(node))
+            if column is Column.PLAYS and node.track is not None:
+                return plays_text(self.plays_of(node))
             return text_for(node, column)
         if (
             role == Qt.ItemDataRole.DecorationRole
@@ -339,6 +339,7 @@ class AlbumTreeModel(QAbstractItemModel):
         if role == Qt.ItemDataRole.BackgroundRole:
             return self._background(index, node)
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (
+            Column.PLAYS,
             Column.LENGTH,
         ):
             return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)

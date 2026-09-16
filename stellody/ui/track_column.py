@@ -75,11 +75,13 @@ def track_column(parent: QWidget, model: AlbumTreeModel) -> TrackColumn:
     view.setHeaderHidden(True)
     view.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
     view.setColumnHidden(Column.ARTIST, True)
-    # The detail cell is shown here, unlike the artist's, because it is where
-    # a track says what it has been played. It is empty until one has, so it
-    # costs an album nobody has listened to nothing at all.
+    # The detail and plays cells are shown here, unlike the artist's, because
+    # between them they are where a track says what it is and what it has been
+    # played. Both are empty until there is something to say, so they cost an
+    # album nobody has listened to nothing at all.
     header = view.header()
     header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Stretch)
     header.setSectionResizeMode(Column.DETAIL, QHeaderView.ResizeMode.ResizeToContents)
+    header.setSectionResizeMode(Column.PLAYS, QHeaderView.ResizeMode.ResizeToContents)
     header.setSectionResizeMode(Column.LENGTH, QHeaderView.ResizeMode.ResizeToContents)
     return view

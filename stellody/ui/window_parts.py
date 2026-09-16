@@ -125,6 +125,9 @@ def build_tree(window: QMainWindow, model: AlbumTreeModel) -> QTreeView:
     header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     header.setStretchLastSection(False)
     header.setSectionResizeMode(Column.DETAIL, QHeaderView.ResizeMode.Stretch)
+    # As wide as the longest count it holds and no wider, so the numbers stack
+    # against the lengths rather than floating in a section sized for a word.
+    header.setSectionResizeMode(Column.PLAYS, QHeaderView.ResizeMode.ResizeToContents)
     tree.setColumnWidth(Column.TITLE, TITLE_COLUMN_PX)
     tree.setColumnWidth(Column.ARTIST, ARTIST_COLUMN_PX)
     return tree

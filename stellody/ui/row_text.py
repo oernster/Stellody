@@ -16,22 +16,33 @@ from stellody.domain.track import Track
 from stellody.ui.nodes import Node
 
 MILLISECONDS_PER_SECOND = 1000
+# A sample rate is stated in hertz and read in kilohertz. Named for what it
+# divides rather than borrowed from the milliseconds above: the two are the
+# same number today and answer to nothing in common.
+HZ_PER_KHZ = 1000
 # One of a thing is the only count that reads singular; it is also the count a
 # second disc has to be told from.
 ONE = 1
 SECONDS_PER_MINUTE = 60
 MINUTES_PER_HOUR = 60
 
-HEADINGS = ("Title", "Artist", "Detail", "Length")
+HEADINGS = ("Title", "Artist", "Detail", "Plays", "Length")
 
 
 class Column(IntEnum):
-    """The columns the tree shows."""
+    """The columns the tree shows.
+
+    Detail and Plays are apart because a cell holding both could align
+    neither: a track saying "44 kHz / 24  1 play" and one saying "1 play"
+    started their counts in different places, so a column of them read as a
+    jumble rather than as a column.
+    """
 
     TITLE = 0
     ARTIST = 1
     DETAIL = 2
-    LENGTH = 3
+    PLAYS = 3
+    LENGTH = 4
 
 
 def format_duration(milliseconds: int) -> str:
@@ -61,6 +72,8 @@ def _album_text(album: Album, column: Column) -> str:
         return album.identity.display_artist
     if column is Column.LENGTH:
         return format_duration(album.duration_ms)
+    if column is not Column.DETAIL:
+        return ""
     # The year, not the date tag as written. A FLAC may carry "2003-05-12"
     # and an M4A ripped by iTunes carries a whole instant, "2003-08-05T12
     # :00:00Z", neither of which belongs in a row beside a genre.
@@ -91,22 +104,19 @@ def _track_text(track: Track, column: Column) -> str:
         return track.artist_text
     if column is Column.LENGTH:
         return format_duration(track.duration_ms)
-    if track.is_high_resolution:
-        return f"{track.sample_rate // MILLISECONDS_PER_SECOND} kHz / {track.bit_depth}"
+    if column is Column.DETAIL and track.is_high_resolution:
+        return f"{track.sample_rate // HZ_PER_KHZ} kHz / {track.bit_depth}"
     return ""
 
 
-def detail_text(known: str, plays: int) -> str:
-    """A track's detail cell: what it already said, plus what it has been played.
+def plays_text(plays: int) -> str:
+    """A track's plays cell: what it has been played; nothing until it has.
 
-    Nothing at all until it has played once. A column of noughts says only
-    that the library is new, while a column with a few numbers in it says
-    which records somebody keeps coming back to, which is the whole point.
+    Nothing until it has played once. A column of noughts says only that the
+    library is new, while a column with a few numbers in it says which records
+    somebody keeps coming back to, which is the whole point.
     """
-    if plays == 0:
-        return known
-    counted = _counted(plays, "play")
-    return f"{known}  {counted}" if known else counted
+    return "" if plays == 0 else _counted(plays, "play")
 
 
 def text_for(node: Node, column: Column) -> str:
