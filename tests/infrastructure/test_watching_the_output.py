@@ -47,6 +47,9 @@ class RecordingStream:
     def stop(self) -> None:
         """Nothing to stop."""
 
+    # No buffer to speak of, so the dropout watch never reads this as drained.
+    write_available = 0
+
     def write(self, block: np.ndarray) -> None:
         """Keep a copy, since the engine reuses the array it hands over."""
         self.blocks.append(np.array(block, copy=True))

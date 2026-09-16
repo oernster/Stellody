@@ -55,6 +55,9 @@ class StoppedStreamRefuses:
         """Refuse writes from here until started again."""
         self.running = False
 
+    # No buffer to speak of, so the dropout watch never reads this as drained.
+    write_available = 0
+
     def write(self, block: np.ndarray) -> None:
         """Play in real time; refuse a write the stop landed in the middle of.
 

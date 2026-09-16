@@ -1,9 +1,15 @@
-"""Every write that found the device already empty is written down.
+"""Every write that found the device's buffer already empty is written down.
 
 Static heard while another program held every core is the report this exists
-for. PortAudio answers underflowed from a write whose device ran dry; these
-tests hold that the answer is counted and put into words, both in the watch on
-its own and through the shipped feeder with a stream that says so.
+for. PortAudio's underflow answer was measured to say nothing on a shared
+WASAPI stream, so the room in the buffer is what is read: a freshly started
+stream has the whole buffer free, so a later write finding that much room
+follows a device with nothing left to play.
+
+The watch is held on its own with a clock it is told, then through the shipped
+feeder with a stream whose buffer empties on the writes chosen for it. The
+last test does it on the real device, which is the one that matters: the
+first version of this passed against a fake and was blind on real hardware.
 """
 
 from __future__ import annotations
@@ -11,6 +17,7 @@ from __future__ import annotations
 import time
 
 import numpy as np
+import pytest
 import soundfile
 
 from stellody.domain.playback import OutputMode, OutputReport, OutputRequest
@@ -20,10 +27,16 @@ from stellody.infrastructure.dropouts import DropoutWatch
 
 RATE = 44100
 BLOCK = 4096
-# A quarter of a second of track: a few blocks, over in no time at all.
-TRACK_FRAMES = RATE // 4
-# How late the fake clock says the late write was.
-LATE_SECONDS = 0.25
+CAPACITY = 1036
+# Room as it was measured while writes kept up on a real shared stream.
+KEEPING_UP = 300
+# Where the fake clock says the feeder started reading, then shaping, then
+# came back to write: away for 250 ms, 100 of them waiting to be run.
+READ_FROM_SECONDS = 0.1
+SHAPE_FROM_SECONDS = 0.2
+AWAY_SECONDS = 0.25
+# Eight blocks of track, so the feeder writes a known number of times.
+BLOCKS = 8
 WAIT_SECONDS = 5.0
 POLL_SECONDS = 0.01
 
@@ -39,48 +52,71 @@ class Clock:
 
 
 class TestTheWatchOnItsOwn:
-    def test_a_write_that_kept_up_says_nothing(self) -> None:
+    def _watch(self, notes: list[str], clock: Clock) -> DropoutWatch:
+        watch = DropoutWatch(notes.append, clock)
+        watch.started(CAPACITY)
+        return watch
+
+    def test_a_buffer_with_something_in_it_says_nothing(self) -> None:
         notes: list[str] = []
-        watch = DropoutWatch(notes.append, Clock())
-        watch.wrote(False, BLOCK, RATE)
-        watch.wrote(False, BLOCK, RATE)
+        watch = self._watch(notes, Clock())
+        for _ in range(3):
+            watch.writing(KEEPING_UP, BLOCK, 0, RATE)
+            watch.written()
         assert notes == []
         assert watch.count == 0
 
-    def test_a_dry_device_is_counted_with_how_late_the_write_was(self) -> None:
+    def test_an_empty_buffer_is_noted_with_where_and_how_long_away(self) -> None:
         notes: list[str] = []
         clock = Clock()
-        watch = DropoutWatch(notes.append, clock)
-        watch.wrote(False, BLOCK, RATE)
-        clock.now = LATE_SECONDS
-        watch.wrote(True, BLOCK, RATE)
+        watch = self._watch(notes, clock)
+        watch.writing(CAPACITY, BLOCK, 0, RATE)
+        watch.written()
+        clock.now = READ_FROM_SECONDS
+        watch.reading()
+        clock.now = SHAPE_FROM_SECONDS
+        watch.shaping()
+        clock.now = AWAY_SECONDS
+        watch.writing(CAPACITY, BLOCK, RATE * 142, RATE)
         assert watch.count == 1
-        assert len(notes) == 1
-        assert "playback dropout 1" in notes[0]
+        assert "playback dropout 1 at 2:22" in notes[0]
+        assert "23 ms buffer" in notes[0]
         assert f"{BLOCK} frames" in notes[0]
-        assert "250 ms since the write before" in notes[0]
+        assert "away 250 ms (100 ms reading, 50 ms shaping, 100 ms waiting" in notes[0]
 
-    def test_a_start_is_not_reported_as_a_late_write(self) -> None:
-        """A pause is a long gap between writes that nobody should read as a
-        starved feeder, so starting again forgets the write before it."""
+    def test_the_first_write_after_a_start_is_not_a_dropout(self) -> None:
+        """A started stream is empty by definition; so is one resumed."""
         notes: list[str] = []
-        clock = Clock()
-        watch = DropoutWatch(notes.append, clock)
-        watch.wrote(False, BLOCK, RATE)
-        clock.now = LATE_SECONDS
-        watch.started()
-        watch.wrote(True, BLOCK, RATE)
-        assert "the first write" in notes[0]
+        watch = self._watch(notes, Clock())
+        watch.writing(CAPACITY, BLOCK, 0, RATE)
+        watch.written()
+        watch.started(CAPACITY)
+        watch.writing(CAPACITY, BLOCK, 0, RATE)
+        assert notes == []
 
-    def test_it_can_be_built_with_nowhere_to_write(self) -> None:
-        """The engine's default: counted, said to nobody, never a failure."""
-        watch = DropoutWatch()
-        watch.wrote(True, BLOCK, RATE)
-        assert watch.count == 1
+    def test_a_stream_with_no_buffer_reading_is_never_drained(self) -> None:
+        notes: list[str] = []
+        watch = DropoutWatch(notes.append, Clock())
+        watch.started(0)
+        watch.writing(0, BLOCK, 0, RATE)
+        watch.written()
+        watch.writing(0, BLOCK, 0, RATE)
+        assert notes == []
 
 
-class DryStream:
-    """A stream whose device has always run dry by the time a block arrives."""
+class EmptiesOnSome:
+    """A stream whose buffer reads empty before the writes it is told to."""
+
+    def __init__(self, empty_before: set[int]) -> None:
+        self._empty_before = empty_before
+        self._writes = 0
+
+    @property
+    def write_available(self) -> int:
+        """The whole buffer at a start and before a chosen write; some else."""
+        if self._writes == 0 or self._writes in self._empty_before:
+            return CAPACITY
+        return KEEPING_UP
 
     def start(self) -> None:
         """Nothing to start."""
@@ -88,9 +124,9 @@ class DryStream:
     def stop(self) -> None:
         """Nothing to stop."""
 
-    def write(self, block: np.ndarray) -> bool:
-        """Take the block and say the device was already empty."""
-        return True
+    def write(self, block: np.ndarray) -> None:
+        """Take the block."""
+        self._writes += 1
 
     def abort(self, ignore_errors: bool = True) -> None:
         """Nothing held to abort."""
@@ -99,35 +135,88 @@ class DryStream:
         """Nothing held to release."""
 
 
-def _opener(request: OutputRequest, device: int | None):
-    """Hand back the dry stream, in `open_output`'s shape."""
-    report = OutputReport(
-        request=request,
-        mode=OutputMode.SHARED,
-        sample_rate=request.sample_rate,
-        bit_depth=request.bit_depth,
+def _opener(stream):
+    """Hand back that stream, in `open_output`'s shape."""
+
+    def open_it(request: OutputRequest, device: int | None):
+        report = OutputReport(
+            request=request,
+            mode=OutputMode.SHARED,
+            sample_rate=request.sample_rate,
+            bit_depth=request.bit_depth,
+        )
+        return stream, report, "float32"
+
+    return open_it
+
+
+def _silent_track(tmp_path, frames: int) -> str:
+    path = tmp_path / "silent.wav"
+    soundfile.write(
+        str(path), np.zeros((frames, 1), dtype="float32"), RATE, subtype="FLOAT"
     )
-    return DryStream(), report, "float32"
+    return str(path)
 
 
-def test_the_feeder_hands_every_dry_write_to_the_watch(tmp_path) -> None:
-    """Through the shipped feeder, so the answer is not dropped on the way."""
-    path = tmp_path / "short.wav"
-    samples = np.zeros((TRACK_FRAMES, 1), dtype="float32")
-    soundfile.write(str(path), samples, RATE, subtype="FLOAT")
+def _played_through(player: WasapiPlayback) -> None:
+    deadline = time.monotonic() + WAIT_SECONDS
+    while not player.finished and time.monotonic() < deadline:
+        time.sleep(POLL_SECONDS)
+    assert player.finished
+
+
+def test_the_feeder_notes_exactly_the_writes_that_found_it_empty(tmp_path) -> None:
+    """Through the shipped feeder, so the reading is taken where it matters."""
     notes: list[str] = []
+    empty_before = {2, 5}
     player = WasapiPlayback(
-        block_frames=BLOCK, opener=_opener, dropouts=DropoutWatch(notes.append)
+        block_frames=BLOCK,
+        opener=_opener(EmptiesOnSome(empty_before)),
+        dropouts=DropoutWatch(notes.append),
     )
-    player.load(TrackSource(path=str(path)), OutputRequest(RATE, 16))
+    player.load(
+        TrackSource(path=_silent_track(tmp_path, BLOCK * BLOCKS)),
+        OutputRequest(RATE, 16),
+    )
     try:
         player.play()
-        deadline = time.monotonic() + WAIT_SECONDS
-        while not player.finished and time.monotonic() < deadline:
-            time.sleep(POLL_SECONDS)
-        assert player.finished
-        blocks = -(-TRACK_FRAMES // BLOCK)
-        assert player.dropouts.count == blocks
-        assert len(notes) == blocks
+        _played_through(player)
+        assert player.dropouts.count == len(empty_before)
+        assert [note.split(" at ")[1].split(":")[0] for note in notes] == ["0", "0"]
     finally:
         player.stop()
+
+
+def test_a_real_device_left_waiting_is_seen_to_run_dry(tmp_path) -> None:
+    """On the machine's own output, starved on purpose, writing silence.
+
+    The measurement the first version never took. Skipped where there is no
+    output device to open, which is the only way a run can have nothing to say.
+    """
+    import sounddevice
+
+    from stellody.infrastructure.output import open_output
+
+    try:
+        stream, _report, dtype = open_output(OutputRequest(RATE, 16), None)
+    except Exception as error:  # noqa: BLE001 - no device is a skip, not a fault
+        pytest.skip(f"no output device to open: {error}")
+    notes: list[str] = []
+    watch = DropoutWatch(notes.append)
+    silence = np.zeros((BLOCK, stream.channels), dtype=dtype)
+    try:
+        stream.start()
+        watch.started(stream.write_available)
+        for _ in range(3):
+            watch.writing(stream.write_available, BLOCK, 0, RATE)
+            stream.write(silence)
+            watch.written()
+        time.sleep(AWAY_SECONDS)
+        watch.writing(stream.write_available, BLOCK, 0, RATE)
+        stream.write(silence)
+    except sounddevice.PortAudioError as error:
+        pytest.skip(f"the output device refused the probe: {error}")
+    finally:
+        stream.stop()
+        stream.close()
+    assert watch.count == 1, notes

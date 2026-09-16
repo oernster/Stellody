@@ -151,7 +151,7 @@ class WasapiPlayback:
         if session is None or session.finished.is_set():
             return
         session.stream.start()
-        self.dropouts.started()
+        self.dropouts.started(session.stream.write_available)
         session.resume.set()
 
     def pause(self) -> None:
@@ -303,6 +303,7 @@ class WasapiPlayback:
             session.resume.wait()
             if session.cancel.is_set():
                 return
+            self.dropouts.reading()
             with session.lock:
                 block = session.reader.read(self._block_frames)
                 if len(block) == 0 and session.follower is not None:
@@ -319,11 +320,16 @@ class WasapiPlayback:
                 session.resume.clear()
                 continue
             try:
+                self.dropouts.shaping()
                 shaped = filtering.process(block)
-                underflowed = session.stream.write(self._scaled(shaped, session.dtype))
-                self.dropouts.wrote(
-                    bool(underflowed), len(block), session.reader.sample_rate
+                self.dropouts.writing(
+                    session.stream.write_available,
+                    len(block),
+                    session.reader.frame - len(block),
+                    session.reader.sample_rate,
                 )
+                session.stream.write(self._scaled(shaped, session.dtype))
+                self.dropouts.written()
                 self._meter.measure(shaped)
             except sounddevice.PortAudioError:
                 # A write that fails while nothing is meant to be playing is a
