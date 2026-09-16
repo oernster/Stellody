@@ -87,6 +87,25 @@ def test_every_dialog_opens_on_its_own_first_stop(
 
 
 @pytest.mark.parametrize("build", DIALOGS.values(), ids=DIALOGS.keys())
+def test_every_dialog_has_its_window_before_it_is_shown(
+    application: QApplication, window, build
+) -> None:
+    """The reported fault: the results screen opening across all four displays.
+
+    Sized before its native window existed, a dialog on a 300% panel beside a
+    wider 100% primary opened at its width times three. The offscreen platform
+    has one screen at one scale, so the size cannot go wrong here; what can be
+    pinned is the precondition that stopped it on the real screens.
+    """
+    dialog = build(window)
+    try:
+        assert dialog.testAttribute(Qt.WidgetAttribute.WA_WState_Created)
+    finally:
+        dialog.close()
+        dialog.deleteLater()
+
+
+@pytest.mark.parametrize("build", DIALOGS.values(), ids=DIALOGS.keys())
 def test_no_dialog_opens_on_a_reading_pane(
     application: QApplication, window, build
 ) -> None:

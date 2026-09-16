@@ -80,6 +80,13 @@ class FirstStopDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        # The native window is made now, before any subclass sizes itself.
+        # Measured on 2026-09-16 on a 3440 wide primary beside 13 inch panels
+        # at 250% and 300%: a dialog sized before its window exists opens at
+        # its width times the panel's scale whenever that product passes the
+        # primary's width, so 1152 wide came up 3441 wide across every screen.
+        # Made first, every size tried opened as asked.
+        self.winId()
         self._started = False
 
     def first_stop(self) -> QWidget | None:
