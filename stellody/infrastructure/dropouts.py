@@ -1,28 +1,34 @@
-"""Writing down every block the device ran dry before it was handed.
+"""Writing down every moment the output device had nothing to play.
 
-Reported on 2026-09-16: static during playback while another program's build
-held every core, never permanent. The suspicion is that the feeder thread is
-starved of time and the device runs out of samples before the next block
-arrives. That is a hypothesis until it is measured; this is the measurement.
+Reported on 2026-09-16: static during playback while a Nuitka build held every
+core. The suspicion is that the feeder thread is starved of time and the device
+runs out of samples. That is a hypothesis until it is measured; this is the
+measurement.
 
-**PortAudio's own answer cannot be trusted for it.** A write is supposed to
-answer underflowed when the device had already run dry. Measured on
-2026-09-16 on a shared WASAPI stream: it answered no after the device had been
-left for 0.2, 0.5 and 1.0 seconds, against a buffer holding 23 ms. The first
-version of this module trusted that answer and reported nothing through a run
-full of static.
+**PortAudio's own answer cannot be trusted for it.** Measured on 2026-09-16 on
+a shared WASAPI stream: a write answered "not underflowed" after the device had
+been left for 0.2, 0.5 and 1.0 seconds against a 23 ms buffer. It is not read.
 
-**What is read instead is the room in the device's buffer.** Straight after a
-stream starts, the room is the whole buffer: nothing has been written yet.
-Measured on the same device, the room then moved between 53 and 815 frames
-while writes kept up; it came back to the whole buffer, 1036 frames, after
-every gap. So a write that finds the whole buffer free follows a device that
-had nothing left to play. The underflow answer is not read at all, since it
-was measured to say nothing on the path this application plays through.
+A device can run dry in two places, so both are watched.
 
-Each dropout is noted with a running count, where in the track it happened
-and how long the feeder was away from the device, split into reading, shaping
-and waiting to run; each of the three points at a different cause.
+- **Between writes.** A freshly started stream has its whole buffer free (1036
+  frames on that device). While writes kept up the room was measured between
+  53 and 815 frames; after every gap it was the whole buffer again. A write
+  that finds the whole buffer free follows a device with nothing left to play.
+  The time the feeder was away is split into reading, shaping and waiting to
+  run, since each points at a different cause.
+- **Inside a write.** A write of 4096 frames into a 23 ms buffer is not one
+  copy: PortAudio tops the buffer up as it drains, so the thread must be woken
+  every twenty milliseconds or so until the block is in. A thread woken late
+  there lets the device run dry mid-write, which the check between writes
+  cannot see. This is what the first real report looked like: one empty buffer
+  with the feeder away 1 ms, while the static went on. It is caught by
+  arithmetic rather than by asking: a device cannot play faster than real
+  time, so a write taking longer than the samples it carried plus the samples
+  already buffered had a silence in it of at least the difference.
+
+The clock is `perf_counter`. `monotonic` moves in 15.6 ms steps on Windows,
+which is most of the buffer being measured.
 """
 
 from __future__ import annotations
@@ -45,19 +51,24 @@ def _nothing(_message: str) -> None:
 
 
 class DropoutWatch:
-    """Counts the writes that found the device already empty; notes each one."""
+    """Counts the moments the device had nothing to play; notes each one."""
 
     def __init__(
         self,
         note: Callable[[str], None] = _nothing,
-        clock: Callable[[], float] = time.monotonic,
+        clock: Callable[[], float] = time.perf_counter,
     ) -> None:
         self._note = note
         self._clock = clock
         self._last: float | None = None
         self._reading_from = 0.0
         self._shaping_from = 0.0
+        self._writing_from = 0.0
         self._capacity = 0
+        self._buffered = 0
+        self._block_frames = 0
+        self._frame = 0
+        self._sample_rate = 0
         self.count = 0
 
     def started(self, capacity: int) -> None:
@@ -83,30 +94,56 @@ class DropoutWatch:
         """Look at the room just before a write; note it if the buffer was empty.
 
         The time away is measured from the moment the write before RETURNED,
-        since the write itself blocks for most of a block by design. It is
-        split three ways, because each points somewhere different: reading is
-        the file and the decoder, so a slow disk; shaping is the equalizer; the
-        rest is the thread ready to run and not being run.
+        since the write itself blocks for most of a block by design.
         """
-        previous = self._last
-        if previous is None:
-            return
-        if self._capacity <= 0 or room < self._capacity:
-            return
-        self.count += 1
         now = self._clock()
+        self._writing_from = now
+        self._buffered = max(0, self._capacity - room)
+        self._block_frames = block_frames
+        self._frame = frame
+        self._sample_rate = sample_rate
+        previous = self._last
+        if previous is None or self._capacity <= 0 or room < self._capacity:
+            return
         away = _milliseconds(now - previous)
         read = _milliseconds(self._shaping_from - self._reading_from)
         shaped = _milliseconds(now - self._shaping_from)
-        buffered = self._capacity * MILLISECONDS_PER_SECOND // sample_rate
-        self._note(
-            f"playback dropout {self.count} at {clock_text(frame, sample_rate)}: "
-            f"the device's {buffered} ms buffer had run dry before a block of "
-            f"{block_frames} frames; the feeder was away {away} ms "
-            f"({read} ms reading, {shaped} ms shaping, "
+        self._record(
+            f"the device's {self._buffered_ms(self._capacity)} ms buffer had run "
+            f"dry before a block of {block_frames} frames; the feeder was away "
+            f"{away} ms ({read} ms reading, {shaped} ms shaping, "
             f"{away - read - shaped} ms waiting to run)"
         )
 
     def written(self) -> None:
-        """Mark the moment a write returned, which the next gap is taken from."""
-        self._last = self._clock()
+        """Mark a write returned; note it if it must have held a silence.
+
+        Nothing is judged for a write whose stream has no buffer reading, nor
+        for the first write after a start, which fills an empty buffer.
+        """
+        now = self._clock()
+        previous = self._last
+        self._last = now
+        if previous is None or self._capacity <= 0 or self._sample_rate <= 0:
+            return
+        took = now - self._writing_from
+        carried = self._block_frames + self._buffered
+        silent = took - carried / self._sample_rate
+        if silent <= 0:
+            return
+        self._record(
+            f"the device ran dry for at least {_milliseconds(silent)} ms inside a "
+            f"write of {self._block_frames} frames; the write took "
+            f"{_milliseconds(took)} ms with {self._buffered_ms(self._buffered)} ms "
+            f"already buffered"
+        )
+
+    def _buffered_ms(self, frames: int) -> int:
+        """A count of frames at the current rate, in whole milliseconds."""
+        return frames * MILLISECONDS_PER_SECOND // self._sample_rate
+
+    def _record(self, what: str) -> None:
+        """Count one dropout and write it down with where in the track it was."""
+        self.count += 1
+        where = clock_text(self._frame, self._sample_rate)
+        self._note(f"playback dropout {self.count} at {where}: {what}")

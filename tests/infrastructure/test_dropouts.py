@@ -35,6 +35,12 @@ KEEPING_UP = 300
 READ_FROM_SECONDS = 0.1
 SHAPE_FROM_SECONDS = 0.2
 AWAY_SECONDS = 0.25
+# How far past the audio it carried the fake clock says a write ran.
+LATE_INSIDE_SECONDS = 0.09
+# One steady write as measured on the real device: 60 frames of room before
+# it, 107.3 ms to return.
+MEASURED_ROOM = 60
+MEASURED_WRITE_SECONDS = 0.1073
 # Eight blocks of track, so the feeder writes a known number of times.
 BLOCKS = 8
 WAIT_SECONDS = 5.0
@@ -83,6 +89,36 @@ class TestTheWatchOnItsOwn:
         assert "23 ms buffer" in notes[0]
         assert f"{BLOCK} frames" in notes[0]
         assert "away 250 ms (100 ms reading, 50 ms shaping, 100 ms waiting" in notes[0]
+
+    def test_a_write_that_took_longer_than_it_carried_held_a_silence(self) -> None:
+        """The device cannot play faster than real time, so the difference
+        between how long a write took and what it carried is a silence."""
+        notes: list[str] = []
+        clock = Clock()
+        watch = self._watch(notes, clock)
+        watch.writing(KEEPING_UP, BLOCK, 0, RATE)
+        watch.written()
+        clock.now = 1.0
+        watch.writing(KEEPING_UP, BLOCK, RATE * 148, RATE)
+        carried = (BLOCK + CAPACITY - KEEPING_UP) / RATE
+        clock.now = 1.0 + carried + LATE_INSIDE_SECONDS
+        watch.written()
+        assert watch.count == 1
+        assert "playback dropout 1 at 2:28" in notes[0]
+        assert "ran dry for at least 90 ms inside a write" in notes[0]
+
+    def test_a_write_that_kept_pace_holds_no_silence(self) -> None:
+        """Measured on the real device: 107 ms for a write carrying 115 ms."""
+        notes: list[str] = []
+        clock = Clock()
+        watch = self._watch(notes, clock)
+        watch.writing(KEEPING_UP, BLOCK, 0, RATE)
+        watch.written()
+        clock.now = 1.0
+        watch.writing(MEASURED_ROOM, BLOCK, 0, RATE)
+        clock.now = 1.0 + MEASURED_WRITE_SECONDS
+        watch.written()
+        assert notes == []
 
     def test_the_first_write_after_a_start_is_not_a_dropout(self) -> None:
         """A started stream is empty by definition; so is one resumed."""
