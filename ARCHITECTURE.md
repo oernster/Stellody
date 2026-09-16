@@ -931,9 +931,18 @@ step to forget.
 
 **The count is read down the rows, never beside the stars.** A figure beside
 the stars is about one track and is gone the moment that track ends, which is
-the moment a play count becomes worth reading. It sits instead in the detail
-cell of each track row, so a record can be read down for what somebody keeps
-returning to. The model is handed the log rather than each row asking for it,
+the moment a play count becomes worth reading. It sits instead in a column of
+its own on each track row, so a record can be read down for what somebody keeps
+returning to.
+
+**That column is its own rather than a share of the detail cell.** The detail
+cell held both until 2026-09-16, joined by two spaces, so a track reading
+`44 kHz / 24  1 play` started its count in a different place from one reading
+`1 play` and a column of them could align neither; it read as a jumble. One
+fact to a cell is what lets the counts stack, right aligned as the lengths
+beside them are. A track's detail cell now holds the format alone and
+`Column.PLAYS` holds the count, in the library list and in the open album's
+track columns alike. The model is handed the log rather than each row asking for it,
 so a drawn row costs no query; when a count changes the model redraws that one
 row, found by walking the tracks rather than by asking where the track is,
 since that search is retried when it misses and spending it here would take
