@@ -21,6 +21,7 @@ from __future__ import annotations
 import sounddevice
 
 from stellody.domain.playback import OutputMode, OutputReport, OutputRequest
+from stellody.infrastructure.buffering import buffer_seconds
 from stellody.infrastructure.portaudio import (
     DTYPE_BIT_DEPTHS,
     SHARED_DTYPE,
@@ -96,6 +97,7 @@ def _open_exclusive(
         samplerate=request.sample_rate,
         channels=request.channels,
         dtype=dtype,
+        latency=buffer_seconds(request.sample_rate),
         extra_settings=sounddevice.WasapiSettings(
             exclusive=True, explicit_sample_format=True
         ),
@@ -111,6 +113,7 @@ def _open_shared(
         samplerate=request.sample_rate,
         channels=request.channels,
         dtype=SHARED_DTYPE,
+        latency=buffer_seconds(request.sample_rate),
         extra_settings=sounddevice.WasapiSettings(exclusive=False, auto_convert=True),
     )
 

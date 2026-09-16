@@ -36,13 +36,13 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
+from stellody.infrastructure.buffering import BLOCK_FRAMES
 from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
 from stellody.infrastructure.dropouts import DropoutWatch
 from stellody.infrastructure.filtering import BiquadCascade
 from stellody.infrastructure.metering import Meter
 from stellody.infrastructure.output import open_output
 
-BLOCK_FRAMES = 4096
 JOIN_TIMEOUT_SECONDS = 2.0
 
 # What open_output does, named so a test can hand in a stream of its own and
@@ -72,6 +72,9 @@ class _Session:
     # The equalizer, designed for this stream's own sample rate. Empty
     # while it is flat, which is how it costs nothing.
     filtering: BiquadCascade = field(default_factory=BiquadCascade)
+    # What the device keeps queued, as the stream reports it: heard that much
+    # after it is written. See buffering.py.
+    buffer_frames: int = 0
 
 
 class WasapiPlayback:
@@ -136,6 +139,7 @@ class WasapiPlayback:
             report=report,
             dtype=dtype,
             filtering=self._designed_for(reader.sample_rate),
+            buffer_frames=round(stream.latency * reader.sample_rate),
         )
         self._meter.open_for(reader.sample_rate)
         session.thread = threading.Thread(
@@ -236,8 +240,15 @@ class WasapiPlayback:
 
     @property
     def lead_frames(self) -> int:
-        """One block: what has been handed to the device but not yet heard."""
-        return self._block_frames
+        """How far the decode runs ahead of the speakers, in frames.
+
+        One block in hand, plus whatever the device keeps queued. The queue
+        was 23 ms and left out; asked for two blocks it is about 195 ms,
+        which the position and the pictures would otherwise run ahead by.
+        """
+        session = self._session
+        queued = 0 if session is None else session.buffer_frames
+        return self._block_frames + queued
 
     def position(self) -> PlaybackPosition | None:
         """How far the DECODE has reached; None when nothing is loaded."""

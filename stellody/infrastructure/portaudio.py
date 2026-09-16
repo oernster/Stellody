@@ -33,6 +33,7 @@ from stellody.domain.playback import (
     OutputRequest,
     PlaybackError,
 )
+from stellody.infrastructure.buffering import buffer_seconds
 
 # What a mixer stream is fed in; what that is worth in bits. Both paths
 # report the same thing for the same reason: the mixer converts whatever it is
@@ -73,6 +74,7 @@ def open_shared(device: int | None, request: OutputRequest) -> sounddevice.Outpu
         samplerate=request.sample_rate,
         channels=request.channels,
         dtype=SHARED_DTYPE,
+        latency=buffer_seconds(request.sample_rate),
     )
 
 

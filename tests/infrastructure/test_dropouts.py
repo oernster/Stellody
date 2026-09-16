@@ -35,6 +35,9 @@ KEEPING_UP = 300
 READ_FROM_SECONDS = 0.1
 SHAPE_FROM_SECONDS = 0.2
 AWAY_SECONDS = 0.25
+# Longer than the device's whole queue, which buffering.py asks to be two
+# blocks: about 195 ms on the machine this was measured on.
+STARVE_SECONDS = 1.0
 # How far past the audio it carried the fake clock says a write ran.
 LATE_INSIDE_SECONDS = 0.09
 # One steady write as measured on the real device: 60 frames of room before
@@ -143,6 +146,9 @@ class TestTheWatchOnItsOwn:
 class EmptiesOnSome:
     """A stream whose buffer reads empty before the writes it is told to."""
 
+    # Nothing queued, so the engine counts no buffer in its lead.
+    latency = 0.0
+
     def __init__(self, empty_before: set[int]) -> None:
         self._empty_before = empty_before
         self._writes = 0
@@ -247,7 +253,7 @@ def test_a_real_device_left_waiting_is_seen_to_run_dry(tmp_path) -> None:
             watch.writing(stream.write_available, BLOCK, 0, RATE)
             stream.write(silence)
             watch.written()
-        time.sleep(AWAY_SECONDS)
+        time.sleep(STARVE_SECONDS)
         watch.writing(stream.write_available, BLOCK, 0, RATE)
         stream.write(silence)
     except sounddevice.PortAudioError as error:

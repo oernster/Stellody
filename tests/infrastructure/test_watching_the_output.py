@@ -49,6 +49,8 @@ class RecordingStream:
 
     # No buffer to speak of, so the dropout watch never reads this as drained.
     write_available = 0
+    # Nothing queued, so the engine counts no buffer in its lead.
+    latency = 0.0
 
     def write(self, block: np.ndarray) -> None:
         """Keep a copy, since the engine reuses the array it hands over."""
