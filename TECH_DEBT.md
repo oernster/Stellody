@@ -19,12 +19,12 @@ There is no open technical debt.
 
 **`_drive` catches `OSError`, `RuntimeError` and `ValueError` rather than
 `PlaybackError` alone.** Now that the domain names a playback error and the
-transport raises it, narrowing the catch looks like the tidy move. It is the
-wrong one: the catch exists because an exception raised inside a Qt slot ends
-the slot in silence, leaving the buttons wearing faces that are no longer true
-and nothing said to anybody. A narrow catch would let exactly the failures
-nobody predicted through that hole, which is the failure mode the catch was
-written for. The breadth is the point.
+adapters behind the transport raise it, narrowing the catch looks like the
+tidy move. It is the wrong one: the catch exists because an exception raised
+inside a Qt slot ends the slot in silence, leaving the buttons wearing faces
+that are no longer true and nothing said to anybody. A narrow catch would let
+exactly the failures nobody predicted through that hole, which is the failure
+mode the catch was written for. The breadth is the point.
 
 **The suffix tables are two lists that could be one.** `AUDIO_SUFFIXES` and
 `UNPLAYABLE_SUFFIXES` in the walker could be a single mapping. They are
@@ -43,7 +43,7 @@ recorded in
 real library and the Windows shell would either be a number nobody can hold or a
 suite full of mocks standing in for the very things worth testing.
 
-**The build and packaging scripts are long and are exempt from the line cap.**
+**The build and packaging scripts are exempt from the line cap.**
 `buildexe.py`, `buildinstaller.py`, `builddmg.py`, `dmg_icon.py`,
 `build_utils.py`, `stamp_version.py`, `stamp_sitemap.py`, `sync_site.py` and
 `generate_icons.py` are linear recipes read top to bottom.

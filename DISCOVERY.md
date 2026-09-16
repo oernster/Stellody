@@ -159,11 +159,17 @@ only ever a landmark for saying so. Amended again on 2026-09-16, when the
 volume and mute moved to the bottom strip: the line now divides discovery from
 the appearance toggle and Help, which act on the application.
 
+**The File menu carries the same press.** Added on 2026-09-16, when every
+picture button gained a menu entry: `Discover new music...` calls what the
+button calls, so while a run is under way it stops that run as FR-D23 says of
+the button. It is offered exactly where the button is enabled, read off the
+button each time the menu opens.
+
 Acceptance: Given the main window is open, when the toolbar is read left to
 right, then the discovery button appears before the separator and before the
 appearance toggle.
 
-Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_left_of_the_appearance_toggle`
+Verified by: `tests/ui/test_discovery_button.py::test_discovery_sits_left_of_the_appearance_toggle`, `tests/ui/test_menu_mirrors.py::test_an_entry_is_offered_exactly_where_its_button_is`
 
 ---
 
@@ -858,9 +864,10 @@ happened shall be named. This applies both where the run found something and
 where it found nothing. An artist whose earlier answer the discovery file
 carries over (FR-D46) has a usable answer and is not counted.
 
-Rationale: FR-D22 records the failures, `_about` records the other two and the
-file has carried all three since; nothing read them back, so a run that could
-not answer for a third of a library said exactly what a clean one said. That is
+Rationale: FR-D22 records the failures, `Gathering` in
+`application/gathering.py` records the other two and the file has carried all
+three since; nothing read them back, so a run that could not answer for a third
+of a library said exactly what a clean one said. That is
 the misreading `RunReport` was written to prevent, in its own words: an artist
 nobody could look up is the artist somebody would otherwise assume had nothing
 missing. Found 2026-09-08 by reading the path rather than by anybody meeting it.
@@ -1712,6 +1719,13 @@ nobody reads across in one go; it is also a shape that cannot be checked on the
 machines this has to run on, so a defect at that width would only ever be found
 by the one person with that screen.
 
+The share is of the screen the dialog opens on only because its native window
+exists before it is sized. Measured on 2026-09-16 on a 3440 wide primary beside
+13 inch panels at 250% and 300%: a dialog sized before its window existed
+opened at its width times the panel's scale wherever that product passed the
+primary's width, so the results screen opened across every display. Every
+dialog now makes its window first, in `FirstStopDialog` (`ui/dialogs.py`).
+
 Dealt by height rather than in equal counts because one artist can carry fifteen
 albums while the next carries one, so a count-by-count fill leaves one column
 twice the length of another. It is the rule the genre grid already deals its
@@ -1739,7 +1753,7 @@ inch display; given fewer artists than the width affords columns, then no empty
 column is built; given a row chosen in one column, then any selection in the
 others is cleared.
 
-Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_three_is_the_ruling_rather_than_whatever_the_constant_says`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_the_three_that_were_asked_for`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`
+Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_three_is_the_ruling_rather_than_whatever_the_constant_says`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_the_three_that_were_asked_for`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`, `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown`
 
 ---
 

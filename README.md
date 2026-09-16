@@ -78,7 +78,8 @@ checks run; if it ever stopped being true the suite would fail.
   clicking the star already held clears it. The number keys 1 to 5 rate the
   highlighted song and 0 clears it. The album keeps a rating of its own, set in
   the header of its pane. The play count of the song in hand also sits beside
-  its shape. Only a song played all the way through counts.
+  its shape. Only a song that plays on to its end counts; pressing Next before
+  then does not.
 - **Album art found for you**, from what your files already carry. For an album
   with none, ask Stellody to look then pick from what it finds. It never
   guesses.
@@ -99,23 +100,24 @@ checks run; if it ever stopped being true the suite would fail.
   for, including the albums that state none at all, then clear it in one press.
   Every tick widens what is shown, so asking for two genres shows both.
 - **What your collection is missing.** Discovery sits at the right end of the
-  top tray, beside the appearance toggle and Help. Tick the genres worth looking in and
-  Stellody asks two public music catalogues what those artists made that you do
-  not hold, along with who else sounds like them. Tick the box for compilations
-  and it asks about the artists on their tracks too, saying first roughly how
-  many minutes that adds. It reports as it goes, says roughly how long is left
-  and stops the moment you ask it to or quit Stellody. Where it could not get a
-  usable answer about somebody and holds none from an earlier run, it says so
-  and counts them, with the names one press away, so an answer with gaps in it
-  never reads like a complete one. Every answer is kept the moment it arrives,
-  so a run stopped or cut short loses nothing it had already paid for and a second
-  attempt asks only for the rest. What it finds opens as a list you can read
-  and tick, dealt across the width of the screen and turned a page at a time,
-  then narrowed to some of the genres it looked in when the answer runs long.
-  From there one press takes the ticked albums to a shop, opening that shop's
-  own search for each of them in your browser. The shops on offer are yours to
-  add, edit, delete and reorder from that same screen. Nothing is bought here
-  and nothing is streamed: Stellody hands over a search and stops.
+  top tray, beside the appearance toggle and Help. Tick the genres worth
+  looking in and Stellody asks two public music catalogues what those artists
+  made that you do not hold, along with who else sounds like them. Tick the box
+  for compilations and it asks about the artists on their tracks too, saying
+  first roughly how many minutes that adds. It reports as it goes, says roughly
+  how long is left and stops the moment you ask it to or quit Stellody. Where it
+  could not get a usable answer about somebody and holds none from an earlier
+  run, it says so and counts them, with the names one press away, so an answer
+  with gaps in it never reads like a complete one. Every answer is kept the
+  moment it arrives, so a run stopped or cut short loses nothing it had already
+  paid for and a second attempt asks only for the rest. What it finds opens as
+  a list you can read and tick, dealt across the width of the screen and turned
+  a page at a time, then narrowed to some of the genres it looked in when the
+  answer runs long. From there the ticked albums go to the shop you choose,
+  opening that shop's own search for each of them in your browser. The shops on
+  offer are yours to add, edit, delete and reorder from that same screen.
+  Nothing is bought here and nothing is streamed: Stellody hands over a search
+  and stops.
 - **The videos that came with the album.** A bonus video sits in the album it
   belongs to, plays from the same press as any song and draws its picture at
   the size it was made; fill the window when you want it larger.
@@ -138,8 +140,9 @@ checks run; if it ever stopped being true the suite would fail.
   file. The short version is put in front of you before you choose a music
   folder for the first time, so you can go and look at what you have rather
   than find out afterwards.
-- **Everything reachable from the keyboard.** Every button on both trays is
-  on the menu bar too, down to the repeat mode and the size of the album art.
+- **Everything reachable from the keyboard.** Every button on both trays bar
+  the donation button is on the menu bar too, down to the repeat mode and the
+  size of the album art.
   It can also wait quietly by the clock rather than filling your screen.
 
 The [features page](https://stellody.co.uk/features.html) has the lot.
@@ -148,12 +151,14 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 
 - **It plays FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A, WMA, WavPack and AAC.** Not
   Monkey's Audio, Musepack, DSD, TAK, TrueAudio, CAF or an M4B audiobook.
-  Anything it cannot decode is named in the health report rather than passed
-  over, so a missing album says so instead of simply not appearing. An M4A
+  A file in one of those formats is named in the health report rather than
+  passed over, as is one whose details cannot be read, so a missing album says
+  so instead of simply not appearing. An M4A
   carries either AAC or ALAC and Stellody tells them apart: ALAC states the
-  depth it stores, while AAC is lossy and states none. WMA and AAC are lossy on the same terms; WavPack is
-  lossless and keeps the depth it states. A bonus video that came with an album
-  plays as well, from the same MP4 container under a `.m4v` name.
+  depth it stores, while AAC is lossy and states none. WMA and AAC are lossy on
+  the same terms; WavPack is lossless and keeps the depth it states. A bonus
+  video that came with an album plays as well, from the same MP4 container
+  under a `.m4v` name.
 - **The last three of those are proved differently, so here is what that
   means.** Every other format on that list was tested against files somebody
   owns. There were none of WMA, WavPack or AAC to test with, so each is proved
@@ -204,15 +209,14 @@ Five things reach outside your computer at all, so here are all five:
   they find, the fixed settings each request states for itself (the answer's
   format, how many results to return, which release types to list, which
   details to include and which similarity algorithm to use) plus a user agent
-  naming Stellody, its
-  version and the project's contact address: not your library,
-  not a count of it, not a word about you or your machine. Tick nothing and
-  nothing leaves.
+  naming Stellody, its version and the project's contact address: not your
+  library, not a count of it, not a word about you or your machine. Tick
+  nothing and nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
   a run found, choose a shop and Stellody gives the browser one search address
-  per album, carrying the artist, the title or both as that shop's address asks.
-  Stellody connects to no shop,
-  holds no account with one and takes nothing from any sale.
+  per album, carrying the artist, the title or both as that shop's address
+  asks. Stellody connects to no shop, holds no account with one and takes
+  nothing from any sale.
 - **The donation button**, which hands an address to your web browser. Stellody
   itself connects to nothing. It is one button on the bottom strip and the only
   place money is mentioned; its tooltip offers to buy the author a drink, which
@@ -305,8 +309,8 @@ the package and both versions; that is the guard working rather than a fault.
 That runs the formatter, both linters and the suite against the project's own
 virtual environment, reading each exit code rather than its output. Running
 `python -m pytest` directly works too, provided it is the venv's Python;
-otherwise a test fails the run, since the checks passing in one environment while
-the application runs in another is a fault this project has actually had.
+otherwise a test fails the run, since the checks passing in one environment
+while the application runs in another is a fault this project has actually had.
 
 The suite gates at 100% branch coverage over the domain and application
 layers; below that the run fails. It also runs black, flake8 and ruff as
@@ -356,9 +360,10 @@ The wheels and the source archives are fetched to the host first, so the build
 itself reaches the network for nothing. PortAudio is compiled from source into
 the bundle, because the sounddevice wheel carries a library for Windows and
 macOS only while the freedesktop runtime ships none. So is the Kerberos client
-library, which Qt's network module links while the runtime carries none. The cleaner uninstalls Stellody then removes
-what the build wrote and nothing else; pass `--purge-data` to remove your
-ratings, play counts, stated tags and accepted corrections as well.
+library, which Qt's network module links while the runtime carries none. The
+cleaner uninstalls Stellody then removes what the build wrote and nothing else;
+pass `--purge-data` to remove your ratings, play counts, stated tags and
+accepted corrections as well.
 
 ## The website
 
@@ -378,10 +383,11 @@ and both hosts follow.
 
 **The deploy is asked for rather than inferred, deliberately.** Render's own
 Auto-Deploy is set to On Commit, yet it stopped hearing pushes with nothing
-anywhere saying so; deploys went out only when somebody pressed for one. The workflow already
-knows a deploy is wanted, so it says so outright, through a deploy hook held as
-`RENDER_DEPLOY_HOOK`. Without that secret the mirror still updates while
-stellody.com waits; the run then logs a warning saying exactly that.
+anywhere saying so; deploys went out only when somebody pressed for one. The
+workflow already knows a deploy is wanted, so it says so outright, through a
+deploy hook held as `RENDER_DEPLOY_HOOK`. Without that secret the mirror still
+updates while stellody.com waits; the run then logs a warning saying exactly
+that.
 
 One trap is worth knowing before investigating either host. A browser holding
 the previous page is indistinguishable from a deploy that never ran, so hard
@@ -422,12 +428,11 @@ under GPL-3.0. The user interface layer is under LGPL-3.0, to align with Qt.
 See `LICENSE` for the mapping.
 
 A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack and
-AAC. The FFmpeg
-libraries themselves are built LGPL-3.0-or-later, verified from the licence
-string the build reports rather than from its documentation. That build also
-links libx264 and libx265, which are GPL-2.0-or-later, so the packaged
-application as a whole is distributed as a GPL-3.0 work. Nothing here encodes
-video; those two arrive as dependencies of the shared FFmpeg build.
+AAC. The FFmpeg libraries themselves are built LGPL-3.0-or-later, verified from
+the licence string the build reports rather than from its documentation. That
+build also links libx264 and libx265, which are GPL-2.0-or-later, so the
+packaged application as a whole is distributed as a GPL-3.0 work. Nothing here
+encodes video; those two arrive as dependencies of the shared FFmpeg build.
 
 A commercial licence for my own code is also available, separately from the
 open-source licences: see

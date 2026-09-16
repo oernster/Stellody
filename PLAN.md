@@ -133,12 +133,12 @@ argued twice. A new milestone arrives here when somebody decides on one.
   level their era chose, so moving between them means reaching for the volume.
   That is real; it is not worth what it costs here. The decode is not the
   expensive part, which is the thing most likely to be re-argued:
-  `infrastructure/waveform.py` already reads every file through to measure its
+  `infrastructure/waveform.py` already reads a track through to measure its
   shape and already accumulates the sums of squares a loudness figure is built
   from, so the measurement would ride on a pass that happens anyway. What rules
   it out is the output. Measured in `infrastructure/audio.py`, a block reaches
   the device untouched only where the volume is exactly unity; any other figure
-  multiplies the block and casts it back to the file's own integer type. A
+  multiplies the block and casts it back to the sample type the device is fed. A
   levelling gain is nearly always a reduction, so every album that had been
   measured would be scaled and requantised on the way out. This application
   exists because another player altered somebody's files; handing the device
