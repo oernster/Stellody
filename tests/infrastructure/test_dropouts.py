@@ -14,6 +14,7 @@ first version of this passed against a fake and was blind on real hardware.
 
 from __future__ import annotations
 
+import threading
 import time
 
 import numpy as np
@@ -262,3 +263,67 @@ def test_a_real_device_left_waiting_is_seen_to_run_dry(tmp_path) -> None:
         stream.stop()
         stream.close()
     assert watch.count == 1, notes
+
+
+class KeepsItsQueue:
+    """A stream whose queue survives a stop, as the real one was measured to.
+
+    Measured on 2026-09-16: 8633 frames free on a fresh start; 374 free on a
+    start straight after a stop, the queued audio still waiting to play. The
+    first write holds until the test lets it go, so a pause and a resume can
+    land while the feeder is part way in.
+    """
+
+    latency = 0.0
+
+    def __init__(self) -> None:
+        self.inside = threading.Event()
+        self.release = threading.Event()
+        self._starts = 0
+
+    @property
+    def write_available(self) -> int:
+        """The whole buffer on the first start; some queued ever after."""
+        return CAPACITY if self._starts <= 1 else KEEPING_UP
+
+    def start(self) -> None:
+        self._starts += 1
+
+    def stop(self) -> None:
+        """The queue is kept."""
+
+    def write(self, block: np.ndarray) -> None:
+        """Hold the first write until released; take the rest at once."""
+        self.inside.set()
+        self.release.wait(WAIT_SECONDS)
+
+    def abort(self, ignore_errors: bool = True) -> None:
+        """Nothing held to abort."""
+
+    def close(self, ignore_errors: bool = True) -> None:
+        """Nothing held to release."""
+
+
+def test_a_resume_keeps_the_size_the_fresh_stream_showed(tmp_path) -> None:
+    """Read from a resume instead, the buffer looked 40 ms long in a real run
+    and a buffer merely part empty was reported as dry, over and over."""
+    notes: list[str] = []
+    stream = KeepsItsQueue()
+    player = WasapiPlayback(
+        block_frames=BLOCK, opener=_opener(stream), dropouts=DropoutWatch(notes.append)
+    )
+    player.load(
+        TrackSource(path=_silent_track(tmp_path, BLOCK * BLOCKS)),
+        OutputRequest(RATE, 16),
+    )
+    try:
+        player.play()
+        assert stream.inside.wait(WAIT_SECONDS)
+        player.pause()
+        player.play()
+        stream.release.set()
+        _played_through(player)
+        assert notes == []
+    finally:
+        stream.release.set()
+        player.stop()

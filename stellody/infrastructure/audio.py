@@ -75,6 +75,8 @@ class _Session:
     # What the device keeps queued, as the stream reports it: heard that much
     # after it is written. See buffering.py.
     buffer_frames: int = 0
+    # The room a fresh start showed: the whole buffer, before anything queued.
+    capacity: int | None = None
 
 
 class WasapiPlayback:
@@ -155,7 +157,12 @@ class WasapiPlayback:
         if session is None or session.finished.is_set():
             return
         session.stream.start()
-        self.dropouts.started(session.stream.write_available)
+        # Read on the stream's first start only, when nothing is queued yet.
+        # A queue survives a stop: measured 374 frames free on a restart
+        # against 8633 on a fresh start, which read as a far smaller buffer.
+        if session.capacity is None:
+            session.capacity = session.stream.write_available
+        self.dropouts.started(session.capacity)
         session.resume.set()
 
     def pause(self) -> None:
