@@ -25,9 +25,6 @@ from stellody.ui.tray_parts import icon_button
 # named for the menu it opens rather than for the entry that used to be all
 # of it. What each entry does is said by the entry.
 HELP_TOOLTIP = "Help"
-GUIDE_ENTRY = "Guide"
-ABOUT_ENTRY = "About"
-UPDATES_ENTRY = "Check for updates"
 
 ICON_PX = 60
 BUTTON_PX = 91

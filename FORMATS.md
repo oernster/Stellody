@@ -11,7 +11,7 @@ arrive as numbered amendments with a reason rather than as silent edits.
 
 ### 1.1 Purpose
 
-When this was written, Stellody decoded nine suffixes and named nine more it
+When this was written, Stellody decoded nine audio suffixes and named nine more it
 could see but not play.
 Three of those nine turn out to need no new decoder at all: the FFmpeg build
 already shipped inside PyAV decodes them, mutagen already reads what each
@@ -38,8 +38,8 @@ music, which section 1.4 holds:
 **That standard is amended by this document, on Oliver's ruling of
 2026-09-09.** A format may now be claimed where a test PROVES the whole path:
 a fixture encoded at test time, walked, probed, assembled, then decoded back.
-The old standard required a real file somebody owned, which is why five
-formats sat unplayable in a library holding none of them.
+The old standard required a real file somebody owned, which is why formats the
+bundled FFmpeg already decoded sat unplayable in a library holding none of them.
 
 **What the new standard is weaker at, said plainly rather than discovered
 later.** A generated fixture proves the pipeline handles what FFmpeg writes.

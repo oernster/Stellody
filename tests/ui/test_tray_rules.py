@@ -23,7 +23,7 @@ from collections.abc import Iterator
 
 import pytest
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QVBoxLayout, QWidget
 
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.theme import Mode, palette_for, stylesheet
@@ -76,7 +76,7 @@ def _rows(widget: QWidget) -> tuple[str, str]:
 def test_the_top_tray_is_ruled_off_along_its_bottom(dressed: QApplication) -> None:
     """The library below it starts at a line, not at a change of shade."""
     colour = palette_for(Mode.DARK)
-    tray = LibraryTray(None, lambda: None, lambda: None, lambda: None, lambda: None)
+    tray = LibraryTray(None, lambda: None, lambda: None, QMenu())
     host = _hosted(tray)
     assert host is not None
     dressed.processEvents()

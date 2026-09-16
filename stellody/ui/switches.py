@@ -90,6 +90,10 @@ class Switches:
         """Step the switch on: off, then the album, then one track, then off."""
         self._apply_repeat(self._transport.repeat.after)
 
+    def choose_repeat(self, repeat: RepeatMode) -> None:
+        """Go straight to one mode, as the menu names them, without stepping."""
+        self._apply_repeat(repeat)
+
     def _apply_muted(self, muted: bool) -> None:
         """Set the switch, show it and remember it: the three go together."""
         self._transport.set_muted(muted)

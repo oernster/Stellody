@@ -1,10 +1,10 @@
 """The menu titles as stops on the keyboard ring, one press each.
 
-The model wants Tab and the horizontal arrows to walk File, View, Sound and
-Help, a title to be highlighted as the ring passes over it, then Down to open
-the one under the cursor. Qt gives none of that: a menu bar takes no tab focus
-at all; asking for an active action OPENS the menu rather than lighting it.
-So the cursor is the bar's own and this says what it does.
+The model wants Tab and the horizontal arrows to walk File, Edit, View, Sound,
+Control and Help, a title to be highlighted as the ring passes over it, then
+Down to open the one under the cursor. Qt gives none of that: a menu bar takes
+no tab focus at all; asking for an active action OPENS the menu rather than
+lighting it. So the cursor is the bar's own and this says what it does.
 
 Driven with real key presses rather than `focusNextChild`, which asks the
 WINDOW to move focus and never consults the focused widget. Measured: a Tab
@@ -29,12 +29,17 @@ from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.menu_bar import NOWHERE
 from stellody.ui.settings_keys import SETTING_ROOT
 
-TITLES = ("&File", "&View", "&Sound", "&Help")
-# The one entry chosen by these tests, reached with two Down presses in the
-# View menu. It is picked because it toggles and nothing else: choosing an
-# appearance would restyle the window under the test and move the focus.
+TITLES = ("&File", "&Edit", "&View", "&Sound", "&Control", "&Help")
+# The one entry chosen by these tests, reached with Down presses in the
+# View menu past the appearances and the showing entries. It is picked
+# because it toggles and nothing else: choosing an appearance would restyle
+# the window under the test and move the focus.
 HARMLESS = "Sort &Z to A"
-STEPS_TO_HARMLESS = 2
+# Dark, Album art, List, then Sort: the size entry is dead over the list the
+# window opens on, so Down passes it by. Measured, not counted from the source.
+STEPS_TO_HARMLESS = 4
+# How many titles along the View menu sits.
+TO_VIEW = TITLES.index("&View")
 # One more press than there are titles, so the walk is seen to LEAVE the bar
 # rather than stopping at the last one.
 PAST_THE_END = len(TITLES) + 1
@@ -329,7 +334,8 @@ class TestWhileOneIsDown:
     ) -> None:
         """Qt gives Space to a menu item nowhere, so the bar gives it."""
         window.focusNextChild()
-        press(application, Qt.Key.Key_Right)
+        for _ in range(TO_VIEW):
+            press(application, Qt.Key.Key_Right)
         press(application, Qt.Key.Key_Down)
         menu = live(window)
         for _ in range(STEPS_TO_HARMLESS):
@@ -358,7 +364,8 @@ class TestWhileOneIsDown:
             with a_window(application) as window:
                 bar = window.menuBar()
                 window.focusNextChild()
-                press(application, Qt.Key.Key_Right)
+                for _ in range(TO_VIEW):
+                    press(application, Qt.Key.Key_Right)
                 press(application, Qt.Key.Key_Down)
                 menu = live(window)
                 # Said outright rather than walked to, so what is under test

@@ -20,12 +20,7 @@ from tray_support import RememberingStore, build
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.application.values import ReleaseAsset, ReleaseInfo, UpdateStatus
 from stellody.ui.settings_keys import SETTING_SKIPPED_UPDATE
-from stellody.ui.toolbar import (
-    ABOUT_ENTRY,
-    GUIDE_ENTRY,
-    HELP_TOOLTIP,
-    UPDATES_ENTRY,
-)
+from stellody.ui.toolbar import HELP_TOOLTIP
 from stellody.ui.update_check import (
     DOWNLOAD,
     LATER,
@@ -106,11 +101,27 @@ class TestTheHelpButton:
         assert window._tray.help_button.toolTip() == "Help"
         assert HELP_TOOLTIP == "Help"
 
-    def test_the_menu_carries_about_and_the_update_check(self, window) -> None:
+    def test_the_button_drops_the_menu_bars_own_help_menu(self, window) -> None:
+        """The same menu rather than one built alike, so the two cannot differ.
+
+        They did: the button's was the guide, About and the update check alone,
+        worded apart from the bar's, until Oliver asked for the two to match.
+        """
+        bar = [action.menu() for action in window.menuBar().actions()]
+        assert window._tray.help_menu in bar
         labels = [action.text() for action in window._tray.help_menu.actions()]
-        # The separator under the guide reads as an entry with no words.
-        assert labels == ["Guide", "", "About", "Check for updates"]
-        assert [GUIDE_ENTRY, "", ABOUT_ENTRY, UPDATES_ENTRY] == labels
+        # A separator reads as an entry with no words.
+        assert labels == [
+            "&Guide...",
+            "",
+            "Library &health...",
+            "",
+            "&Model licence (GPL-3.0)",
+            "&UI licence (LGPL-3.0)",
+            "",
+            "&About Stellody",
+            "Check for &updates",
+        ]
 
     def test_the_menu_drops_under_the_button_and_closes_again(self, window) -> None:
         """A second press takes it down, as the volume popup behaves."""

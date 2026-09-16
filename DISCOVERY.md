@@ -149,8 +149,8 @@ Requirement: The main window shall place a discovery button in the toolbar to
 the left of the appearance toggle, with the separator that divides the library
 controls from the application controls to its right.
 
-Rationale: Discovery is a library action rather than a sound control, so it
-belongs on the library side of that line. Amended on 2026-09-07, when both
+Rationale: Discovery is a library action rather than a control acting on the
+application, so it belongs on the library side of that line. Amended on 2026-09-07, when both
 trays were ruled into groups by what each control acts on: as first written
 this asked for a position to the left of the theme button, which put it among
 the sound controls it is not one of. The separator is the line between the two
@@ -495,8 +495,8 @@ Requirement: When a source artist has been identified, the discovery service
 shall request the ten artists the similarity source considers most similar to
 them.
 
-Rationale: Ten was settled in PLAN.md and confirmed on 2026-09-06 as the shipped
-figure. It is a named constant rather than a literal, since it is a decision
+Rationale: Ten was confirmed on 2026-09-06 as the shipped figure. It is a named
+constant (`SIMILAR_WANTED` in `application/discovering.py`) rather than a literal, since it is a decision
 about how much to offer rather than a fact about anything.
 
 Acceptance: Given an identified source artist, when the run reaches similarity,
@@ -1762,7 +1762,7 @@ tell a long run from a hang closes the window, which throws the run away.
 The second place was added the same day, on his report that the estimate could
 not be found. It was in the status bar as this required, which is the foot of a
 window whose discovery bar is at the top: somebody watching a percentage climb
-never meets a sentence 800 pixels below it. The bar is a strip 170 pixels wide,
+never meets a sentence at the other end of the window. The bar is a strip 170 pixels wide,
 so what it carries is "4m" rather than the sentence; the room for it is taken
 out of the bar before the stage name is centred in what is left. One
 reading of the pace answers both, else the two could be taken a moment apart

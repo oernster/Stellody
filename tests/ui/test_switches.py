@@ -21,7 +21,7 @@ import pytest
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from recording_player import RecordingPlayer
-from tray_support import RememberingStore, build, picture, rendered
+from tray_support import RememberingStore, build, laid_out, picture, rendered
 
 from stellody.domain.playback import SILENT_VOLUME, RepeatMode
 from stellody.shared import resources
@@ -161,8 +161,7 @@ def test_discovery_is_ruled_off_from_the_application_controls(
         < across(tray, tray.theme_button)
         < across(tray, tray.help_button)
     )
-    row = tray.layout()
-    placed = [row.itemAt(index).widget() for index in range(row.count())]
+    placed = laid_out(tray.layout())
     start = placed.index(tray.discover_button)
     assert placed[start:] == [
         tray.discover_button,
@@ -186,8 +185,8 @@ def test_the_showing_controls_moved_to_the_strip_with_room_for_them(
     window.show()
     tray = window._bottom_tray
     assert not hasattr(window._tray, "showing"), "and no longer in the tray above"
-    laid_out = tray.showing.parentWidget() is tray and tray.showing.isVisibleTo(tray)
-    assert laid_out, "the group is actually placed on the strip"
+    placed = tray.showing.parentWidget() is tray and tray.showing.isVisibleTo(tray)
+    assert placed, "the group is actually placed on the strip"
     centres = [
         button.mapTo(tray, button.rect().center()).x()
         for button in tray.showing.stops()

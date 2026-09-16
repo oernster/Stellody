@@ -21,7 +21,15 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QApplication
 from recording_player import RecordingPlayer
-from tray_support import RememberingStore, build, picture, strip_plain, strip_struck
+from tray_support import (
+    CENTRE_SLACK_PX,
+    WIDE_STRIP_PX,
+    RememberingStore,
+    build,
+    picture,
+    strip_plain,
+    strip_struck,
+)
 
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
@@ -31,10 +39,6 @@ from stellody.ui.bottom_tray import REPEAT_TOOLTIP, BottomTray
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE, TRUE
 
-# Wide enough that both outer columns have room to take an equal share.
-WIDE_STRIP_PX = 1400
-# One pixel of rounding where the width is odd; no more than that.
-CENTRE_SLACK_PX = 1
 # Down to a window narrower than anything worth using.
 NARROWING_PX = (1600, 1400, 1100, 1000, 900, 800, 700)
 

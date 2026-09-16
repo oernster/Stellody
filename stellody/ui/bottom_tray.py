@@ -20,8 +20,8 @@ is what decides which strip anything goes on.
 
 The visualiser sits in the middle, between the two groups. It is the one thing
 on this strip that is neither a control nor a setting, so it belongs where
-nothing is pressed; a stretch either side is what centres it, which is how the
-tray above centres its transport. It had a whole band of the window to itself
+nothing is pressed; it is held at the middle the way the tray above holds its
+transport. It had a whole band of the window to itself
 at first, which was room taken from the library for something that is a small
 moving thing rather than a feature anybody looks AT.
 
@@ -50,7 +50,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QPushButton, QWidget
 
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
@@ -66,7 +66,7 @@ from stellody.ui.tray_metrics import (
     TRAY_GAP_PX,
     TRAY_MARGIN_PX,
 )
-from stellody.ui.tray_parts import icon_button, separator
+from stellody.ui.tray_parts import centred_row, group, icon_button, separator
 from stellody.ui.visualiser import Visualiser
 
 HALF = 2
@@ -77,10 +77,6 @@ SWITCH_DENOMINATOR = 4
 BOTTOM_BUTTON_PX = BUTTON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_ICON_PX = ICON_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
 BOTTOM_MARGIN_PX = TRAY_MARGIN_PX // HALF
-# The far column of the three the strip is laid in: the errands, the
-# visualiser, then the settings. Named so the two that share what is spare
-# cannot drift apart from the one the settings are placed in.
-SPARE_COLUMN = 2
 # The hairline is inset from this strip's own button in the same proportion as
 # the one in the tray above, so the two read as the same rule at two scales.
 BOTTOM_SEPARATOR_INSET_PX = SEPARATOR_INSET_PX * SWITCH_NUMERATOR // SWITCH_DENOMINATOR
@@ -249,54 +245,30 @@ class BottomTray(QWidget):
         self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX // HALF)
         if read_levels is not None:
             self.visualiser.read_levels_from(read_levels)
-        left = QHBoxLayout()
-        left.setContentsMargins(0, 0, 0, 0)
-        left.setSpacing(TRAY_GAP_PX)
-        left.addWidget(self.donate_button)
-        left.addWidget(self.separator)
-        for button in self.library_stops():
-            left.addWidget(button)
+        # The visualiser at the middle of the strip rather than the middle of
+        # what the two groups leave over: see centred_row for why those differ.
         # What the library is drawn as is a different errand from rescanning
         # and repairing it, so a rule stands between the two groups exactly as
         # one stands after the donation mark.
-        left.addWidget(self.showing_separator)
-        left.addWidget(self.showing)
-        right = QHBoxLayout()
-        right.setContentsMargins(0, 0, 0, 0)
-        right.setSpacing(TRAY_GAP_PX)
-        right.addWidget(self.sound)
-        right.addWidget(self.sound_separator)
-        for button in self.switch_stops():
-            right.addWidget(button)
-        # Three columns, with the outer two given the same share of what is
-        # spare. A stretch either side of the visualiser centres it in what the
-        # two groups leave OVER, which is the middle of the strip only while
-        # those groups are the same width. They are not; moving three of the
-        # controls down here made them further apart, which is what pushed it
-        # off centre.
-        #
-        # Equal shares put it at the middle of the strip while there is room,
-        # and where there is not, each column keeps its own content instead:
-        # the visualiser drifts rather than being sat on. Measured, laying all
-        # three in ONE cell centres it exactly at every width and the left
-        # group then overlaps it below about 1100 pixels, which is a window
-        # nobody has to maximise.
-        row = QGridLayout(self)
-        row.setContentsMargins(
-            BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX, BOTTOM_MARGIN_PX
-        )
-        row.setSpacing(TRAY_GAP_PX)
-        row.setColumnStretch(0, 1)
-        row.setColumnStretch(SPARE_COLUMN, 1)
-        row.addLayout(
-            left, 0, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
-        row.addWidget(self.visualiser, 0, 1, Qt.AlignmentFlag.AlignVCenter)
-        row.addLayout(
-            right,
-            0,
-            SPARE_COLUMN,
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+        centred_row(
+            self,
+            BOTTOM_MARGIN_PX,
+            TRAY_GAP_PX,
+            group(
+                TRAY_GAP_PX,
+                self.donate_button,
+                self.separator,
+                *self.library_stops(),
+                self.showing_separator,
+                self.showing,
+            ),
+            group(TRAY_GAP_PX, self.visualiser),
+            group(
+                TRAY_GAP_PX,
+                self.sound,
+                self.sound_separator,
+                *self.switch_stops(),
+            ),
         )
         self.set_shuffled(False)
         self.set_repeat(RepeatMode.OFF)

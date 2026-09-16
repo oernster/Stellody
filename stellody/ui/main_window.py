@@ -42,6 +42,7 @@ from stellody.ui.geometry import Geometry
 from stellody.ui.leaving import Leaving
 from stellody.ui.maximising import Maximising
 from stellody.ui.menu_bar import RingedMenuBar
+from stellody.ui.menu_mirrors import MenuMirrors
 from stellody.ui.menus import Menus
 from stellody.ui.models import AlbumTreeModel
 from stellody.ui.now_playing import NowPlaying
@@ -104,6 +105,7 @@ class MainWindow(
     ShowingShapes,
     ShowingSpectrum,
     Menus,
+    MenuMirrors,
     Rating,
     Geometry,
     Maximising,
@@ -210,18 +212,17 @@ class MainWindow(
             genre_memory=genre_memory,
         )
         self.start_keeping_place()
+        self._help_menu = self._build_help_menu()
         self._tray = LibraryTray(
             self,
             choose_folder=self.choose_folder,
+            toggle_theme=self.toggle_theme,
+            help_menu=self._help_menu,
             open_filter=self.open_filter,
             open_discovery=self.open_discovery,
             toggle_search=self.toggle_search,
             search_changed=self.search_changed,
             search_again=self.search_again,
-            toggle_theme=self.toggle_theme,
-            show_guide=self.show_guide,
-            show_about=self.show_about,
-            check_for_updates=self.check_for_updates,
             previous_track=self.previous_track,
             toggle_playback=self.toggle_playback,
             stop_playback=self.stop_playback,

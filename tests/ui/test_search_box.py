@@ -9,7 +9,7 @@ looks as though it has lost albums.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
 from stellody.ui.toolbar import LibraryTray
 
@@ -24,8 +24,7 @@ def tray(application: QApplication):
         parent,
         choose_folder=lambda: None,
         toggle_theme=lambda: None,
-        show_guide=lambda: None,
-        show_about=lambda: None,
+        help_menu=QMenu(),
         toggle_search=lambda: presses.append(1),
         search_changed=typed.append,
     )

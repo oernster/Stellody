@@ -7,7 +7,8 @@ assumed to follow from where it was drawn.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QMenu, QWidget
+from tray_support import laid_out
 
 from stellody.ui.toolbar import DISCOVER_TOOLTIP, LibraryTray
 
@@ -18,8 +19,7 @@ def make_tray(parent: QWidget, **wiring) -> LibraryTray:
         parent,
         choose_folder=lambda: None,
         toggle_theme=lambda: None,
-        show_guide=lambda: None,
-        show_about=lambda: None,
+        help_menu=QMenu(),
         **wiring,
     )
 
@@ -32,9 +32,7 @@ def test_discovery_sits_left_of_the_appearance_toggle(application) -> None:
     """
     holder = QWidget()
     tray = make_tray(holder)
-    row = tray.layout()
-    order = [row.itemAt(index).widget() for index in range(row.count())]
-    placed = [widget for widget in order if widget is not None]
+    placed = laid_out(tray.layout())
     line = placed.index(tray.library_separator)
     assert placed.index(tray.discover_button) == line - 1
     assert line == placed.index(tray.theme_button) - 1

@@ -14,6 +14,7 @@ sides of any comparison are the same picture asked for the same way.
 from __future__ import annotations
 
 from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QLayout, QWidget
 from recording_player import RecordingPlayer
 
 from stellody.application.loading import LoadLibrary
@@ -29,6 +30,11 @@ from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.main_window import MainWindow
 
 ICON_PX = 30
+# Wide enough that both outer groups of either strip have room to take an
+# equal share of what is spare.
+WIDE_STRIP_PX = 1800
+# One pixel of rounding where the width is odd; no more than that.
+CENTRE_SLACK_PX = 1
 
 
 def track(number: int) -> Track:
@@ -156,6 +162,22 @@ def build(
     )
     made._model.set_albums((album(),))
     return made
+
+
+def laid_out(layout: QLayout) -> list[QWidget]:
+    """Every widget a layout holds, in the order it was laid out.
+
+    Walks into the groups a strip is built from, so a test reading the order
+    across a strip does not depend on how many layouts deep a control sits.
+    """
+    found: list[QWidget] = []
+    for index in range(layout.count()):
+        item = layout.itemAt(index)
+        if item.widget() is not None:
+            found.append(item.widget())
+        elif item.layout() is not None:
+            found.extend(laid_out(item.layout()))
+    return found
 
 
 def picture(button) -> QImage:

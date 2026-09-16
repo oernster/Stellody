@@ -52,6 +52,7 @@ class Menus:
         file_menu = self.menuBar().addMenu("&File")
         menu_action(file_menu, self, "Choose &music folder...", self.choose_folder)
         self._rescan_action = menu_action(file_menu, self, "&Rescan", self.rescan)
+        self._mirror_file(file_menu)
         file_menu.addSeparator()
         self._forget_close_action = menu_action(
             file_menu, self, "&Ask again when I close", self.forget_close_choice
@@ -60,6 +61,8 @@ class Menus:
         file_menu.addSeparator()
         menu_action(file_menu, self, "&Quit", self.quit_application)
 
+        self._build_edit_menu()
+
         view_menu = self.menuBar().addMenu("&View")
         self._light_action = menu_action(
             view_menu, self, "&Light appearance", self.use_light, checkable=True
@@ -67,6 +70,8 @@ class Menus:
         self._dark_action = menu_action(
             view_menu, self, "&Dark appearance", self.use_dark, checkable=True
         )
+        view_menu.addSeparator()
+        self._mirror_view(view_menu)
         view_menu.addSeparator()
         self._descending_action = menu_action(
             view_menu, self, "Sort &Z to A", self.toggle_order, checkable=True
@@ -84,8 +89,24 @@ class Menus:
 
         sound_menu = self.menuBar().addMenu("&Sound")
         menu_action(sound_menu, self, "&Equalizer...", self.show_equaliser)
+        self._mirror_sound(sound_menu)
 
-        help_menu = self.menuBar().addMenu("&Help")
+        self._build_control_menu()
+
+        self.menuBar().addMenu(self._help_menu)
+
+    def _build_help_menu(self) -> QMenu:
+        """The one Help menu, dropped from the bar and from the tray's button.
+
+        One menu rather than two built alike. They were two once, the tray's
+        a shorter list worded differently; Oliver asked on 2026-09-16 for
+        the button to offer what the menu offers: sharing the menu itself is
+        what keeps the two from drifting apart again.
+
+        Built before the tray, which is handed it, so it is ready before the
+        bar it also belongs to.
+        """
+        help_menu = QMenu("&Help", self)
         menu_action(help_menu, self, "&Guide...", self.show_guide)
         help_menu.addSeparator()
         menu_action(help_menu, self, "Library &health...", self.show_health)
@@ -97,6 +118,7 @@ class Menus:
         help_menu.addSeparator()
         menu_action(help_menu, self, f"&About {APP_NAME}", self.show_about)
         menu_action(help_menu, self, "Check for &updates", self.check_for_updates)
+        return help_menu
 
     @Slot()
     def _show_whether_a_choice_is_remembered(self) -> None:

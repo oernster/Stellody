@@ -41,6 +41,31 @@ EXPECTED = {
     "Choose music folder...": (True, True, True),
     # Nothing to scan until somewhere has been named.
     "Rescan": (False, True, True),
+    # Built with no repair service and no discovery source, so both buttons
+    # are disabled and the entries standing for them follow.
+    "Repair the library...": (False, False, False),
+    "Discover new music...": (False, False, False),
+    "Search the library": (True, True, True),
+    "Filter the library...": (True, True, True),
+    "Album art": (True, True, True),
+    "List": (True, True, True),
+    # A sleeve size means nothing over the list, as on its button.
+    "Album art size": (False, False, True),
+    "Medium": (False, False, True),
+    "Large": (False, False, True),
+    "Extra large": (False, False, True),
+    "Mute": (True, True, True),
+    "Shuffle": (True, True, True),
+    "Repeat": (True, True, True),
+    "Off": (True, True, True),
+    "Album": (True, True, True),
+    "One track": (True, True, True),
+    # Nothing is loaded or highlighted in any of the three, so the transport
+    # has nothing to act on, exactly as its buttons say.
+    "Play": (False, False, False),
+    "Stop": (False, False, False),
+    "Previous track": (False, False, False),
+    "Next track": (False, False, False),
     # Nothing to forget: a window that has not been told to stop asking is
     # already asking, which is what this entry would restore.
     "Ask again when I close": (False, False, False),
@@ -72,14 +97,21 @@ def _entries(window) -> dict[str, bool]:
     """
     found: dict[str, bool] = {}
     for top in window.menuBar().actions():
-        menu = top.menu()
-        if menu is None:
+        if top.menu() is not None:
+            found.update(_swept(top.menu()))
+    return found
+
+
+def _swept(menu) -> dict[str, bool]:
+    """One menu's entries, then those of every menu opening off it."""
+    menu.aboutToShow.emit()
+    found: dict[str, bool] = {}
+    for action in menu.actions():
+        if action.isSeparator():
             continue
-        menu.aboutToShow.emit()
-        for action in menu.actions():
-            if action.isSeparator():
-                continue
-            found[action.text().replace("&", "")] = action.isEnabled()
+        found[action.text().replace("&", "")] = action.isEnabled()
+        if action.menu() is not None:
+            found.update(_swept(action.menu()))
     return found
 
 

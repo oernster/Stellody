@@ -57,7 +57,14 @@ checks run; if it ever stopped being true the suite would fail.
   by as much as it lifts, so a loud record never clips; music plays quieter
   with such a curve on, while a curve that only cuts keeps its level. Switched
   off it adds nothing of its own, handing each block back untouched; at full
-  volume nothing else in Stellody touches the samples either.
+  volume nothing else in Stellody touches the samples either. Volume, mute and
+  the equalizer sit together at the right end of the bottom strip, ahead of
+  shuffle and repeat.
+- **No crackle when the computer is busy.** The sound device keeps about two
+  blocks of music queued rather than the sliver it would choose for itself, so
+  a machine working hard at something else does not break the sound up. Any
+  dropout that still happens is written in the diary described under Your
+  privacy.
 - **Headphones in, music paused.** When your computer's sound output changes,
   say because headphones connected, Stellody pauses rather than carrying on
   through the old one. Both play buttons show play and the foot of the window
@@ -65,9 +72,13 @@ checks run; if it ever stopped being true the suite would fail.
   last heard it.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
-- **Stars and play counts.** Rate a song, rate the album separately, then read
-  down a record to see what you keep coming back to. Only a song played all the
-  way through counts.
+- **Stars and play counts.** Every song shows its rating in a Rating column
+  beside Plays, in the list and in the album opened under the covers, so you can
+  read down a record to see what you keep coming back to. Click a star to rate;
+  clicking the star already held clears it. The number keys 1 to 5 rate the
+  highlighted song and 0 clears it. The album keeps a rating of its own, set in
+  the header of its pane. The play count of the song in hand also sits beside
+  its shape. Only a song played all the way through counts.
 - **Album art found for you**, from what your files already carry. For an album
   with none, ask Stellody to look then pick from what it finds. It never
   guesses.
@@ -87,7 +98,8 @@ checks run; if it ever stopped being true the suite would fail.
 - **Show me only the folk.** Narrow the wall of covers to the genres you ask
   for, including the albums that state none at all, then clear it in one press.
   Every tick widens what is shown, so asking for two genres shows both.
-- **What your collection is missing.** Tick the genres worth looking in and
+- **What your collection is missing.** Discovery sits at the right end of the
+  top tray, beside the appearance toggle and Help. Tick the genres worth looking in and
   Stellody asks two public music catalogues what those artists made that you do
   not hold, along with who else sounds like them. Tick the box for compilations
   and it asks about the artists on their tracks too, saying first roughly how
@@ -126,8 +138,9 @@ checks run; if it ever stopped being true the suite would fail.
   file. The short version is put in front of you before you choose a music
   folder for the first time, so you can go and look at what you have rather
   than find out afterwards.
-- **Everything reachable from the keyboard.** It can also wait quietly by the
-  clock rather than filling your screen.
+- **Everything reachable from the keyboard.** Every button on both trays is
+  on the menu bar too, down to the repeat mode and the size of the album art.
+  It can also wait quietly by the clock rather than filling your screen.
 
 The [features page](https://stellody.co.uk/features.html) has the lot.
 
@@ -215,7 +228,8 @@ the library database: `%LOCALAPPDATA%\Stellody` on Windows,
 on macOS. A Linux flatpak keeps its own copy of that directory under
 `~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no audio and
 nothing about you; during a discovery run it notes each address asked, which
-carries the artist names sent. Beside it, `stellody-startup.log` holds the
+carries the artist names sent. A playback dropout is noted there too, with
+where in the track it fell. Beside it, `stellody-startup.log` holds the
 reason when Stellody could not start. Neither is ever sent anywhere; either can
 be deleted whenever you like.
 
@@ -344,7 +358,7 @@ the bundle, because the sounddevice wheel carries a library for Windows and
 macOS only while the freedesktop runtime ships none. So is the Kerberos client
 library, which Qt's network module links while the runtime carries none. The cleaner uninstalls Stellody then removes
 what the build wrote and nothing else; pass `--purge-data` to remove your
-ratings and settings as well.
+ratings, play counts, stated tags and accepted corrections as well.
 
 ## The website
 

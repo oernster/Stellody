@@ -44,24 +44,16 @@ from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLineEdit,
-    QMenu,
-    QPushButton,
-    QWidget,
-)
+from PySide6.QtWidgets import QLineEdit, QMenu, QPushButton, QWidget
 
 from stellody.shared import resources
 from stellody.ui.discovery_progress import DiscoveryBars
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import (
-    ABOUT_ENTRY,
     BUTTON_PX,
     DISCOVER_TOOLTIP,
     FILTER_TOOLTIP,
     FILTERED_TOOLTIP,
-    GUIDE_ENTRY,
     HELP_TOOLTIP,
     SEARCH_BOX_HEIGHT_PX,
     SEARCH_BOX_PX,
@@ -70,10 +62,9 @@ from stellody.ui.tray_metrics import (
     SEPARATOR_WIDTH_PX,
     TRAY_GAP_PX,
     TRAY_MARGIN_PX,
-    UPDATES_ENTRY,
     tray_button,
 )
-from stellody.ui.tray_parts import separator
+from stellody.ui.tray_parts import centred_row, group, separator
 
 
 class LibraryTray(QWidget):
@@ -84,9 +75,7 @@ class LibraryTray(QWidget):
         parent: QWidget,
         choose_folder: Callable[[], None],
         toggle_theme: Callable[[], None],
-        show_guide: Callable[[], None],
-        show_about: Callable[[], None],
-        check_for_updates: Callable[[], None] = lambda: None,
+        help_menu: QMenu,
         open_filter: Callable[[], None] = lambda: None,
         open_discovery: Callable[[], None] = lambda: None,
         toggle_search: Callable[[], None] = lambda: None,
@@ -167,31 +156,32 @@ class LibraryTray(QWidget):
         self.help_button = tray_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help
         )
-        self.help_menu = QMenu(self)
-        self.help_menu.addAction(GUIDE_ENTRY, show_guide)
-        self.help_menu.addSeparator()
-        self.help_menu.addAction(ABOUT_ENTRY, show_about)
-        self.help_menu.addAction(UPDATES_ENTRY, check_for_updates)
-        row = QHBoxLayout(self)
-        row.setContentsMargins(
-            TRAY_MARGIN_PX, TRAY_MARGIN_PX, TRAY_MARGIN_PX, TRAY_MARGIN_PX
+        # The menu bar's own Help menu rather than one built alike, so the
+        # button cannot come to offer less than the menu or word it otherwise.
+        self.help_menu = help_menu
+        # The transport at the middle of the tray rather than the middle of
+        # what the two ends leave over: see centred_row for why those differ.
+        centred_row(
+            self,
+            TRAY_MARGIN_PX,
+            TRAY_GAP_PX,
+            group(
+                TRAY_GAP_PX,
+                self.choose_button,
+                self.filter_button,
+                self.search_button,
+                self.search_box,
+            ),
+            group(TRAY_GAP_PX, *self.transport_stops()),
+            group(
+                TRAY_GAP_PX,
+                self.discovery_bar,
+                self.discover_button,
+                self.library_separator,
+                self.theme_button,
+                self.help_button,
+            ),
         )
-        row.setSpacing(TRAY_GAP_PX)
-        row.addWidget(self.choose_button)
-        row.addWidget(self.filter_button)
-        row.addWidget(self.search_button)
-        row.addWidget(self.search_box)
-        # A stretch either side is what centres the transport, whatever the
-        # window is widened to and whatever sits at the two ends.
-        row.addStretch()
-        for button in self.transport_stops():
-            row.addWidget(button)
-        row.addStretch()
-        row.addWidget(self.discovery_bar)
-        row.addWidget(self.discover_button)
-        row.addWidget(self.library_separator)
-        row.addWidget(self.theme_button)
-        row.addWidget(self.help_button)
 
     def transport_stops(self) -> tuple[QPushButton, ...]:
         """The transport, left to right: previous, play, stop, next."""

@@ -82,8 +82,9 @@ def _top_tray_html() -> str:
         + "<p>"
         + img(resources.light_mode_icon_path())
         + img(resources.info_icon_path())
-        + "the light or dark appearance, then Help. Help opens a menu "
-        "carrying this guide, About and a check for a new version.</p>"
+        + "the light or dark appearance, then Help. Help opens the same menu "
+        "as Help on the menu bar: this guide, Library health, the two "
+        "licences, About and a check for a new version.</p>"
     )
 
 

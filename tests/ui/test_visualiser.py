@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QApplication, QMenu
 from recording_player import RecordingPlayer
-from tray_support import RememberingStore, build
+from tray_support import RememberingStore, build, laid_out
 
 from stellody.domain.equalising import BAND_COUNT
 from stellody.domain.playback import PlaybackState
@@ -139,11 +139,9 @@ class TestTheDisplayInTheWindow:
         made.show()
         tray = made._bottom_tray
         assert made._visualiser.parent() is tray
-        row = tray.layout()
-        widgets = [row.itemAt(position).widget() for position in range(row.count())]
-        gaps = [position for position, one in enumerate(widgets) if one is None]
+        widgets = laid_out(tray.layout())
         here = widgets.index(made._visualiser)
-        assert gaps[0] < here < gaps[1], "a stretch either side is what centres it"
+        assert widgets.index(tray.showing) < here < widgets.index(tray.sound)
         made.close()
 
     def test_it_stands_lower_than_the_controls_and_sits_between_them(
@@ -183,7 +181,8 @@ class TestTheDisplayInTheWindow:
             if menu.title().replace("&", "") == "Sound"
             for action in menu.actions()
         ]
-        assert entries == ["&Equalizer..."]
+        # A separator reads as an entry with no words.
+        assert entries == ["&Equalizer...", "", "&Mute", "", "&Shuffle", "&Repeat"]
         made.close()
 
     def test_it_runs_only_while_something_is_playing(self, application) -> None:

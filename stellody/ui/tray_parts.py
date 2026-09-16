@@ -3,7 +3,8 @@
 The strip along the top and the strip along the bottom draw the same kind of
 control at two sizes, so the button is written once and told how large to be
 rather than written twice and kept in step by hand. The hairline that rules one
-group off from the next is here for the same reason.
+group off from the next is here for the same reason, as is the row that holds
+one thing at the middle of a strip between two groups.
 """
 
 from __future__ import annotations
@@ -13,7 +14,20 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFrame, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QBoxLayout,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QPushButton,
+    QWidget,
+)
+
+LEFT_COLUMN = 0
+MIDDLE_COLUMN = 1
+RIGHT_COLUMN = 2
+# The two outer columns take the same share of what is spare.
+EQUAL_SHARE = 1
 
 
 def icon_button(
@@ -60,3 +74,48 @@ def separator(parent: QWidget, width_px: int, height_px: int) -> QFrame:
     line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
     line.setFixedSize(width_px, height_px)
     return line
+
+
+def group(gap_px: int, *widgets: QWidget) -> QHBoxLayout:
+    """Widgets side by side with the strip's gap between them and no margin."""
+    row = QHBoxLayout()
+    row.setContentsMargins(0, 0, 0, 0)
+    row.setSpacing(gap_px)
+    for widget in widgets:
+        row.addWidget(widget)
+    return row
+
+
+def centred_row(
+    parent: QWidget,
+    margin_px: int,
+    gap_px: int,
+    left: QBoxLayout,
+    middle: QBoxLayout,
+    right: QBoxLayout,
+) -> QGridLayout:
+    """Hold `middle` at the middle of the strip, whatever the two ends weigh.
+
+    A stretch either side of the middle centres it in what the two end groups
+    leave OVER, which is the middle of the strip only while those groups are
+    the same width. They seldom are: that is what put the bottom strip's
+    visualiser off centre, then the top tray's transport, reported left of
+    centre on a 13 inch 4K screen on 2026-09-16.
+
+    Three columns instead, with the outer two given the same share of what is
+    spare. That puts the middle at the middle while there is room; where there
+    is not, each column keeps its own content and the middle drifts rather than
+    being sat on. Measured on the bottom strip, laying all three in ONE cell
+    centres exactly at every width but lets a group overlap the middle below
+    about 1100 pixels.
+    """
+    row = QGridLayout(parent)
+    row.setContentsMargins(margin_px, margin_px, margin_px, margin_px)
+    row.setSpacing(gap_px)
+    row.setColumnStretch(LEFT_COLUMN, EQUAL_SHARE)
+    row.setColumnStretch(RIGHT_COLUMN, EQUAL_SHARE)
+    across = Qt.AlignmentFlag.AlignVCenter
+    row.addLayout(left, 0, LEFT_COLUMN, Qt.AlignmentFlag.AlignLeft | across)
+    row.addLayout(middle, 0, MIDDLE_COLUMN, across)
+    row.addLayout(right, 0, RIGHT_COLUMN, Qt.AlignmentFlag.AlignRight | across)
+    return row

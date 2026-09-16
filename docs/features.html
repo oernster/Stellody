@@ -220,7 +220,7 @@
     </div>
   </div>
   <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with the length at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Emotional Technology (Special Collector's Edition) is open at the foot of the list, showing its tracks, with Dark Hart Dawning, the track playing, painted pink on its row and one play noted beside the first track. The foot of the window reads Playing: Dark Hart Dawning, BT. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom, while the spectrum display sits in the middle of the strip below it.">
+    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Emotional Technology (Special Collector's Edition) is open at the foot of the list, showing its tracks with a row of rating stars on each. Force of Gravity, the track playing, is painted pink on its row with all five stars filled; the first track notes two plays and the four after it one each. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window reads Playing: Force of Gravity, BT. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom. The spectrum display sits in the middle of the strip below it, with the sound controls grouped at its right end.">
   </div>
   <p class="shot-caption">The list view, with the play controls across the top and your settings along the bottom.</p>
 </section>
@@ -404,7 +404,8 @@
     </div>
     <div class="feat">
       <h3>Volume, mute, shuffle and repeat</h3>
-      <p>All four are remembered for next time. Repeat has three settings rather than two: off, repeat the
+      <p>They sit at the right end of the strip along the bottom: volume, mute and the equalizer, then
+      shuffle and repeat. Volume, mute, shuffle and repeat are all remembered for next time. Repeat has three settings rather than two: off, repeat the
       album, then hold the one song you are on. Shuffle reorders the album afresh each time it comes round
       again. Every switch shows you what pressing it would do rather than what it is doing now, so you
       never have to work out which way round it is.</p>
@@ -432,9 +433,19 @@
     <div class="feat">
       <h3>See the shape of the song</h3>
       <p>A picture of the whole track runs along the bottom, showing the quiet parts and the loud ones at
-      a glance, with a line marking where you are and the time either side of it. Click anywhere on it to
+      a glance, with a line marking where you are; beside it, the time reached and the length of the
+      whole track. Click anywhere on it to
       jump there. A track played before draws its shape at once; a new one is measured the moment it is
       highlighted, before you press play.</p>
+    </div>
+    <div class="feat">
+      <h3>No static on a busy computer</h3>
+      <p>Music used to break up into static while the computer was working flat out on something else,
+      such as a large software build using every core. Stellody now keeps a larger reserve of sound
+      queued at the output device, so a moment's delay in feeding it is not heard. The fix was measured
+      and heard on Windows; macOS and Linux ask their mixer for the same reserve. Sound now leaves the
+      device a fraction of a second after it is decoded, which the position line and the dancing bars
+      allow for.</p>
     </div>
   </div>
 </section>
@@ -445,7 +456,8 @@
   <div class="features-grid">
     <div class="feat">
       <h3>Ten sliders, from deep bass to high treble</h3>
-      <p>Open it from the button along the bottom of the window or from the Sound menu. Take the bass up,
+      <p>Open it from its button beside the volume at the right end of the bottom strip, else from the
+      Sound menu. Take the bass up,
       bring the harshness down, then hear the change as you move each slider. A lift is given room rather
       than clipped: the whole curve is brought down by the most it raises any part of the sound, so a
       record already mastered loud never distorts. That is why music plays quieter with a lift switched
@@ -484,8 +496,9 @@
   <div class="features-grid">
     <div class="feat">
       <h3>Five stars for a song</h3>
-      <p>The stars sit in a column on every song's row, beside its play count, so you can read a whole
-      record's ratings at a glance and rate something without listening to it first. Press a star to rate
+      <p>The stars sit in a Rating column on every song's row, beside its play count, in the list and in
+      the album open under the covers alike. You can read a whole record's ratings at a glance and rate
+      something without listening to it first. Press a star to rate
       the song; press the star it already sits on to clear the rating. With a song highlighted, the
       number keys 1 to 5 rate it and 0 clears it.</p>
     </div>
@@ -588,9 +601,16 @@
     </div>
     <div class="feat">
       <h3>Help, About and updates</h3>
-      <p>One Help button at the right of the top tray drops a menu led by the guide, then About and Check
-      for updates. The menu bar's Help menu opens with the guide as well and carries the same two,
-      along with the library health report and the two licences.</p>
+      <p>The top tray ends with discovery, the light or dark appearance switch and Help. That one Help
+      button drops the same menu as Help on the menu bar: the guide, the library health report, the two
+      licences, About and Check for updates.</p>
+    </div>
+    <div class="feat">
+      <h3>Every button is on a menu too</h3>
+      <p>Anything a picture button does can be reached from the menu bar as well. File repairs the
+      library and discovers new music; Edit searches and filters; View switches between the sleeves and
+      the list and picks a sleeve size; Sound mutes, shuffles and chooses a repeat mode by name; Control plays, pauses, stops and steps between tracks. A tick
+      beside an entry always says what is really on, however it was switched.</p>
     </div>
   </div>
 </section>
@@ -613,7 +633,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.4.1<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.5.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>
