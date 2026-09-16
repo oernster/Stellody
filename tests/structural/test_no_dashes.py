@@ -23,7 +23,7 @@ from __future__ import annotations
 import pathlib
 
 import pytest
-from conftest import REPO_ROOT, relative
+from conftest import REPO_ROOT, relative, repository_files
 
 # Every dash-like character, held as a CODE POINT rather than as itself, so
 # this file obeys the rule it enforces and is not the one exception to it. A
@@ -46,18 +46,13 @@ FORBIDDEN = {
 # Where the rule applies: everything written by hand or shipped to a reader.
 SEARCHED = ("*.py", "*.md", "*.html", "*.css", "*.js", "*.json", "*.ps1", "*.sh")
 
-# Directories holding nothing anybody here wrote.
-SKIPPED = {".git", "venv", "__pycache__", "node_modules", "build", "dist"}
-
 
 def _searchable() -> list[pathlib.Path]:
     """Every file the rule governs, newest arrivals included."""
-    found: list[pathlib.Path] = []
-    for pattern in SEARCHED:
-        for path in REPO_ROOT.rglob(pattern):
-            if SKIPPED.isdisjoint(part for part in path.parts):
-                found.append(path)
-    return sorted(set(found))
+    found = {
+        path for pattern in SEARCHED for path in repository_files(REPO_ROOT, pattern)
+    }
+    return sorted(found)
 
 
 def offences(text: str) -> list[str]:

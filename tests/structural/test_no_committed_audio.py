@@ -16,27 +16,20 @@ from __future__ import annotations
 
 import pathlib
 
-from conftest import REPO_ROOT, relative
+from conftest import REPO_ROOT, relative, repository_files
 
 # The formats proved by a fixture, so the formats no file of may be committed.
 FIXTURE_SUFFIXES = (".wma", ".wv", ".aac")
 
-# Where the repository is not the repository: the virtual environment holds
-# other people's packages and the build directories hold output, neither of
-# which is anybody's decision to commit an audio file.
-IGNORED_DIRECTORIES = frozenset(
-    {"venv", ".git", "dist", "dist-installer", "build", "payload", "stage"}
-)
-
 
 def _tracked_paths() -> list[pathlib.Path]:
-    """Every file in the working tree that is the repository's own."""
-    return [
-        path
-        for path in REPO_ROOT.rglob("*")
-        if path.is_file()
-        and not any(part in IGNORED_DIRECTORIES for part in path.parts)
-    ]
+    """Every file in the working tree that is the repository's own.
+
+    The virtual environment holds other people's packages and the build
+    directories hold output, neither of which is anybody's decision to commit
+    an audio file; `conftest.NOT_OURS` names them.
+    """
+    return repository_files(REPO_ROOT, "*")
 
 
 def test_no_fixture_audio_is_committed() -> None:

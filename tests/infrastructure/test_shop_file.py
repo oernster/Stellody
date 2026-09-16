@@ -164,19 +164,37 @@ class TestWhatIsRefused:
         ]
 
 
+def installed() -> str:
+    """The shop file exactly as a first run writes it."""
+    read_book()
+    text = shops_path().read_text(encoding="utf-8")
+    shops_path().unlink()
+    return text
+
+
 class TestWhatCannotBeRead:
-    def test_an_unreadable_file_falls_back_and_is_left_alone(self, elsewhere) -> None:
-        """FR-S12: a file mid-edit must not be replaced under the editor."""
+    """FR-S12: a file that holds no usable list is put back as installed.
+
+    Ruled by Oliver on 2026-09-16. It was answered with the defaults and left
+    on disk, which only postponed the replacement: the first change made in
+    the dialog wrote the defaults plus that change over it anyway.
+    """
+
+    @pytest.mark.parametrize(
+        "unusable",
+        ["{ this is not json", json.dumps(["Qobuz"]), json.dumps({"shops": "Qobuz"})],
+        ids=["not json", "not an object", "shops not a list"],
+    )
+    def test_it_falls_back_to_the_installed_list(self, elsewhere, unusable) -> None:
+        expected = installed()
+        shops_path().write_text(unusable, encoding="utf-8")
+        assert read_book().rows == DEFAULT_SHOPS
+        assert shops_path().read_text(encoding="utf-8") == expected
+
+    def test_a_directory_that_cannot_be_written_still_offers_the_shops(
+        self, elsewhere, refusing
+    ) -> None:
         shops_path().write_text("{ this is not json", encoding="utf-8")
-        assert read_book().rows == DEFAULT_SHOPS
-        assert shops_path().read_text(encoding="utf-8") == "{ this is not json"
-
-    def test_a_file_that_is_not_an_object_falls_back(self, elsewhere) -> None:
-        put(["Qobuz"])
-        assert read_book().rows == DEFAULT_SHOPS
-
-    def test_a_shops_key_that_is_not_a_list_falls_back(self, elsewhere) -> None:
-        put({"shops": "Qobuz"})
         assert read_book().rows == DEFAULT_SHOPS
 
 

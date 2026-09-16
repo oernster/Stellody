@@ -10,17 +10,14 @@ from __future__ import annotations
 
 import pathlib
 
-from conftest import REPO_ROOT, package_modules, relative
+import pytest
+from conftest import REPO_ROOT, relative, repository_files
 
 LINE_CAP = 400
 DANGER_BAND_PERCENT = 5
 COMFORTABLE_TARGET = 350
 
 DANGER_BAND_FLOOR = LINE_CAP - (LINE_CAP * DANGER_BAND_PERCENT // 100)
-
-# Build output written inside the source tree. Generated code is not held to
-# the cap; Nuitka writes its scons artifacts under installer/payload.
-GENERATED_DIRECTORIES = ("payload", "stage")
 
 BUILD_SCRIPTS = frozenset(
     {
@@ -38,22 +35,18 @@ BUILD_SCRIPTS = frozenset(
 
 
 def _measured() -> list[pathlib.Path]:
-    """Every source, installer and test file the cap applies to.
+    """Every Python file in the repository the cap applies to.
 
-    The setup program's interface is held to the cap like any other code. The
-    repo-root delivery scripts are not: they are linear recipes read top to
-    bottom, where splitting a sequence of flags across modules costs more than
-    it buys.
+    The whole tree is walked, repo root included, so `main.py` and whatever
+    arrives beside it are held to the cap as surely as the package is; only
+    `conftest.NOT_OURS` is skipped. The setup program's interface is held to it
+    like any other code. The delivery scripts are not: they are linear recipes
+    read top to bottom, where splitting a sequence of flags across modules
+    costs more than it buys.
     """
-    tests = sorted((REPO_ROOT / "tests").rglob("*.py"))
-    installer = [
-        path
-        for path in sorted((REPO_ROOT / "installer").rglob("*.py"))
-        if not any(part in GENERATED_DIRECTORIES for part in path.parts)
-    ]
     return [
         path
-        for path in [*package_modules(), *installer, *tests]
+        for path in repository_files(REPO_ROOT, "*.py")
         if path.name not in BUILD_SCRIPTS
     ]
 
@@ -84,3 +77,31 @@ def test_no_module_sits_in_the_danger_band() -> None:
         f"Modules in the {DANGER_BAND_FLOOR + 1} to {LINE_CAP} danger band must "
         f"be reduced to {COMFORTABLE_TARGET} or below, not shaved: " + "; ".join(inside)
     )
+
+
+def test_every_exempt_script_is_one_the_walk_would_otherwise_measure() -> None:
+    """An exemption naming nothing the walk reaches is an exemption doing nothing.
+
+    The list once sat beside a walk that never looked at the repo root, which is
+    where every script it names lives, so it exempted nothing for as long as
+    nobody noticed. A stale name now fails here rather than lying quietly.
+    """
+    walked = {path.name for path in repository_files(REPO_ROOT, "*.py")}
+    assert BUILD_SCRIPTS <= walked, sorted(BUILD_SCRIPTS - walked)
+
+
+@pytest.mark.parametrize("name", ["planted.py", "buildexe.py"])
+def test_a_planted_file_at_the_root_is_measured_unless_exempt(
+    name: str, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The walk reaches the repo root and skips only what is not ours."""
+    monkeypatch.setattr("test_loc.REPO_ROOT", tmp_path)
+    planted = tmp_path / name
+    over_the_cap = "\n" * (LINE_CAP + 1)
+    planted.write_text(over_the_cap, encoding="utf-8")
+    ignored = tmp_path / "venv" / "planted.py"
+    ignored.parent.mkdir()
+    ignored.write_text(over_the_cap, encoding="utf-8")
+    measured = _measured()
+    assert ignored not in measured, "the virtual environment is not ours"
+    assert (planted in measured) is (name not in BUILD_SCRIPTS)

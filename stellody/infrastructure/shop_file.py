@@ -14,10 +14,12 @@ writes their answer back, so the file never holds a list the dialog did not
 show. It is written the first time it is wanted (FR-S09) and again whenever
 settling it against this release changes anything (FR-S30 to FR-S36).
 
-**A file that cannot be read falls back and is LEFT ALONE.** A file halfway
-through being edited by hand must not be replaced under the person editing it.
-FR-S12. A list holding rows that cannot be searched is not that: it is read row
-by row, each broken row kept in its place with its reason (FR-S42).
+**A file that cannot be read goes back to the installed list.** Ruled by
+Oliver on 2026-09-16, FR-S12. It used to be answered with the defaults and left
+on disk, which only postponed the replacement: the first change made in the
+dialog wrote the defaults plus that change over it anyway. A list holding rows
+that cannot be searched is not that: it is read row by row, each broken row
+kept in its place with its reason (FR-S42).
 
 Nothing here opens a page. Who opens what is `browsing.py` and the use cases.
 """
@@ -193,18 +195,16 @@ def _write_quietly(book: ShopBook) -> None:
 def read_book() -> ShopBook:
     """The list, settled against this release; written back where that changed it.
 
-    A missing file is written with the defaults. A file that cannot be read is
-    answered with the defaults and left alone; so is one whose shops are not a
-    list.
+    A missing file is written with the defaults. So is one that cannot be read
+    or whose shops are not a list: both go back to the state a first run
+    installs (FR-S12).
     """
-    if not shops_path().exists():
+    held = _held() if shops_path().exists() else None
+    rows = held.get(SHOPS_KEY) if held is not None else None
+    if held is None or not isinstance(rows, list):
         book = _defaults()
         _write_quietly(book)
         return book
-    held = _held()
-    rows = held.get(SHOPS_KEY) if held is not None else None
-    if held is None or not isinstance(rows, list):
-        return _defaults()
     book = merged(
         rows=tuple(_row(entry) for entry in rows),
         recorded=_record(held),

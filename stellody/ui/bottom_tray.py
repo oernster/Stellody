@@ -207,8 +207,8 @@ class BottomTray(QWidget):
         self.repair_button = _small_button(
             self, resources.library_health_icon_path(), REPAIR_TOOLTIP, repair_library
         )
-        # Nothing to press yet: what each issue should become is worked out on
-        # every load; there is nowhere to keep a correction once accepted.
+        # Off until the library has reported: `offer_repairs` turns it on once
+        # there is a correction to accept or an accepted one to take back.
         self.repair_button.setEnabled(False)
         # What the library is SHOWN as, moved down from the tray above. Three
         # more pictures crowded that end of a window nobody has to maximise,

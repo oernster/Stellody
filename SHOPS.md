@@ -337,18 +337,25 @@ Verified by: `tests/infrastructure/test_shop_file.py::TestWhatIsRefused::test_a_
 Priority: Must
 
 Requirement: If the shop file cannot be read or does not hold a usable list,
-then the shop service shall offer the shipped defaults and shall not overwrite
-the file.
+then the shop service shall offer the shipped defaults and shall write the file
+as a first run installs it (FR-S09).
 
 Rationale: The unwanted sibling of FR-S09; also the same judgement the
-discovery file already makes: a list nobody can read is a disappointment, while an
-exception in the middle of a results dialog is worse. The file is left alone
-because a half-parsed file somebody is editing must not be replaced under them.
+discovery file already makes: a list nobody can read is a disappointment, while
+an exception in the middle of a results dialog is worse. Amended on 2026-09-16
+by Oliver's ruling. The file used to be left on disk, so that a half-parsed file
+somebody was editing would not be replaced under them. That only postponed the
+replacement: the first change made in the dialog saved the defaults plus that
+change over it anyway. An unusable file now goes straight back to the installed
+state, which is what the dialog was already showing.
 
-Acceptance: Given a shop file holding malformed JSON, when the list is read,
-then the shipped defaults are offered and the file on disk is unchanged.
+Acceptance: Given a shop file holding malformed JSON, a top level that is not an
+object or a `shops` that is not a list, when the list is read, then the shipped
+defaults are offered and the file on disk is exactly what a first run writes.
+Given a directory that refuses the write, the shipped defaults are still
+offered.
 
-Verified by: `tests/infrastructure/test_shop_file.py::TestWhatCannotBeRead::test_an_unreadable_file_falls_back_and_is_left_alone`
+Verified by: `tests/infrastructure/test_shop_file.py::TestWhatCannotBeRead::test_it_falls_back_to_the_installed_list`, `tests/infrastructure/test_shop_file.py::TestWhatCannotBeRead::test_a_directory_that_cannot_be_written_still_offers_the_shops`
 
 ---
 
@@ -439,7 +446,8 @@ still holding exactly the shipped list is untouched by the only other evidence
 available, so it gains the record and becomes refreshable, which is what every
 file written before this existed needs. One carrying no record AND a different
 list is either an edit or an older list, with nothing on disk to tell them
-apart, so it is left alone: the same judgement FR-S12 makes.
+apart, so it is left alone: replacing somebody's readable list is the one
+thing this must not do.
 
 Acceptance: Given a shop file whose list is identical to the shipped list it
 records, with a shipped list that has since changed, when the shops are read,
