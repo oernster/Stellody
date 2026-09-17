@@ -1698,11 +1698,10 @@ Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`
 Priority: Must
 
 Requirement: The results dialog shall open at nine tenths of the screen it
-opens on, never below 700 by 560 and never above what a 13 inch display can
-show. It shall deal the source artists across as many columns as that width
-affords, a column being a third of what a 13 inch display shows, each a list
-read top to
-bottom. Artists shall be dealt to the shortest column at the time, counting an
+opens on, never below 700 by 560 and never above 1920 by 1080. It shall deal
+the source artists across as many columns as that width affords, never more
+than three, a column being a third of the width it opens at on a real 13 inch
+display, each a list read top to bottom. Artists shall be dealt to the shortest column at the time, counting an
 artist's height as its own row plus one for each album and each candidate under
 it. A column shall be built only where an artist landed in it; a run that found
 nobody shall still show one. One selection shall stand across the columns.
@@ -1714,7 +1713,7 @@ artists carrying albums and candidates under each, so a single list is a shape
 nobody reaches the end of whatever height it is given.
 
 The ceiling is his ruling of the same day: no bigger than a 13 inch display can
-show. Nine tenths of a 3440 monitor is 3096 pixels of dialog, which is a window
+show, taken then as 1920 by 1080 and kept at that. Nine tenths of a 3440 monitor is 3096 pixels of dialog, which is a window
 nobody reads across in one go; it is also a shape that cannot be checked on the
 machines this has to run on, so a defect at that width would only ever be found
 by the one person with that screen.
@@ -1731,16 +1730,23 @@ albums while the next carries one, so a count-by-count fill leaves one column
 twice the length of another. It is the rule the genre grid already deals its
 groups by, which is why that helper reads as it does.
 
-The column width is not a number of its own: it is the ceiling divided by the
-three columns a 13 inch display is meant to show, so there is one decision to
-argue with rather than two that can disagree. Three is Oliver's ruling of
-2026-09-08 on seeing the first two-column screen. It is supported by measuring
-that screen, which is 1919 pixels for a 1920 pixel dialog: rows draw at between
-5.5 and 6.0 pixels a character, so the longest row this library produces, at 75
-characters, is about 450 pixels against a column of 640. It could not be
-measured in the suite, where the offscreen platform reports no font families at
-all and every size draws the same width. One selection across the columns for the reason
-the album pane shares one across its tracks: a highlight per column says a
+The column width is not a number of its own: it is the width the dialog opens
+at on a real 13 inch display divided by the three columns that display is meant
+to show, so there is one decision to argue with rather than two that can
+disagree. Three is Oliver's ruling of 2026-09-08 on seeing the first two-column
+screen. Amended on 2026-09-17: the width was the 1920 pixel ceiling divided by
+three, 640 pixels, which a 13 inch 4K panel at 300% cannot fit three of, so
+Oliver saw one column at the far left. Qt reports that panel as 1422 by 836
+with the interface drawn at nine tenths, so the dialog opens 1279 wide there
+and a column is 426 pixels; measured on that panel, three columns of 411 pixels
+drew with no sideways scrolling. The price, accepted by Oliver the same day, is
+the longest rows: at 5.5 to 6.0 pixels a character, measured on 2026-09-08, the
+longest row this library produces is about 450 pixels, so it is cut short with
+an ellipsis rather than drawn whole. A wide monitor would now have room for a
+fourth column, so three is also the most any screen shows. None of this could
+be measured in the suite, where the offscreen platform reports no font families
+at all and every size draws the same width. One selection across the columns
+for the reason the album pane shares one across its tracks: a highlight per column says a
 reader is in two places at once. What a press acts on is the ticks, which is
 unchanged.
 
@@ -1748,12 +1754,13 @@ Acceptance: Given a screen wide enough that nine tenths of it holds two column
 widths, when the dialog opens,
 then the source artists are drawn over two or more lists side by side and each
 artist appears exactly once; given a screen at the floor, then one list is
-drawn as before; given a 3440 monitor, then the dialog opens no wider than a 13
-inch display; given fewer artists than the width affords columns, then no empty
+drawn as before; given a 3440 monitor, then the dialog opens no wider than
+1920 pixels and shows three columns; given a 13 inch display at 300% reported
+as 1422 by 836, then three columns are drawn; given fewer artists than the width affords columns, then no empty
 column is built; given a row chosen in one column, then any selection in the
 others is cleared.
 
-Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_three_is_the_ruling_rather_than_whatever_the_constant_says`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_the_three_that_were_asked_for`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`, `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown`
+Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_three_is_the_ruling_rather_than_whatever_the_constant_says`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_the_three_that_were_asked_for`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_a_real_13_inch_display_shows_three`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_a_wide_monitor_shows_three_and_no_more`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`, `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown`
 
 ---
 

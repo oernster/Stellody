@@ -22,13 +22,14 @@ from results_support import gaps_with
 from stellody.domain.discovery import Gaps, SimilarArtist
 from stellody.ui.results_columns import ResultsColumns
 from stellody.ui.results_room import (
+    CEILING_HEIGHT_PX,
+    CEILING_WIDTH_PX,
     COLUMN_PX,
     COLUMNS_AT_THE_CEILING,
     DIALOG_HEIGHT_PX,
     DIALOG_WIDTH_PX,
     SCREEN_SHARE,
-    THIRTEEN_INCH_HEIGHT_PX,
-    THIRTEEN_INCH_WIDTH_PX,
+    THIRTEEN_INCH_ROOM,
     columns_for,
     dealt_into_columns,
     height_of,
@@ -58,7 +59,7 @@ class TestHowMuchRoomItTakes:
         dialog, which is a window nobody can read across and a shape that
         cannot be checked on the machines this has to run on."""
         assert opening_size(QSize(3440, 1440)) == QSize(
-            THIRTEEN_INCH_WIDTH_PX, THIRTEEN_INCH_HEIGHT_PX
+            CEILING_WIDTH_PX, CEILING_HEIGHT_PX
         )
 
     def test_it_never_asks_for_more_room_than_there_is(self) -> None:
@@ -88,12 +89,30 @@ class TestHowManyColumns:
     def test_the_13_inch_ceiling_affords_the_three_that_were_asked_for(
         self,
     ) -> None:
-        assert columns_for(THIRTEEN_INCH_WIDTH_PX) == 3
+        assert columns_for(CEILING_WIDTH_PX) == 3
 
     def test_the_column_width_is_the_ruling_rather_than_a_number(self) -> None:
-        """Three at the ceiling is the decision; the width follows from it."""
-        assert COLUMN_PX * COLUMNS_AT_THE_CEILING <= THIRTEEN_INCH_WIDTH_PX
-        assert (COLUMN_PX + 1) * COLUMNS_AT_THE_CEILING > THIRTEEN_INCH_WIDTH_PX
+        """Three on a 13 inch display is the decision; the width follows."""
+        opens_at = opening_size(THIRTEEN_INCH_ROOM).width()
+        assert COLUMN_PX * COLUMNS_AT_THE_CEILING <= opens_at
+        assert (COLUMN_PX + 1) * COLUMNS_AT_THE_CEILING > opens_at
+
+    def test_a_real_13_inch_display_shows_three(self) -> None:
+        """Reported by Oliver on 2026-09-17: one column at the far left.
+
+        The ruling of three was held against a 1920 pixel dialog, which is not
+        what a 13 inch display offers. Qt reported his 13 inch 4K panel at 300%
+        as 1422 by 836 with the interface drawn at nine tenths, measured the
+        same day. Stated as those numbers rather than through the constants,
+        since a room derived from the constants agrees with every value they
+        could hold.
+        """
+        assert columns_for(opening_size(QSize(1422, 836)).width()) == 3
+
+    def test_a_wide_monitor_shows_three_and_no_more(self) -> None:
+        """The column is narrower than it was, so a wide dialog would otherwise
+        fit a fourth; three is the ruling however much room there is."""
+        assert columns_for(opening_size(QSize(3440, 1440)).width()) == 3
 
     def test_room_is_measured_in_readable_columns(self) -> None:
         assert columns_for(THREE_COLUMNS_PX) == 3

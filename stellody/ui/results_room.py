@@ -21,9 +21,10 @@ artist under a heading.
 
 **The columns follow the width rather than being counted out.** How many fit
 is a division: the room divided by what one column has to be to stay readable.
-That width is not a number of its own; it is the ceiling divided by the number
-of columns a 13 inch display is meant to show, so the two cannot drift apart.
-One column is the answer at the floor, three at the cap.
+That width is not a number of its own; it is what the dialog opens at on a real
+13 inch display divided by the number of columns that display is meant to show,
+so the two cannot drift apart. One column is the answer at the floor; three is
+the answer on a 13 inch display and the most any screen gets.
 
 **The pages follow the height the same way.** Three columns of a whole library
 is three lists nobody reaches the end of, so the answer is dealt a page at a
@@ -43,6 +44,11 @@ from __future__ import annotations
 from PySide6.QtCore import QSize
 
 from stellody.domain.discovery import Gaps
+from stellody.ui.interface_scale import (
+    INTERFACE_SCALE,
+    SMALLEST_ROOM_HEIGHT_PX,
+    SMALLEST_ROOM_WIDTH_PX,
+)
 
 # The floor, not the size it opens at. Wide enough for an album title under an
 # artist under a heading without the titles wrapping; the same measurement the
@@ -53,32 +59,46 @@ DIALOG_HEIGHT_PX = 560
 # tenths rather than everything, so the window underneath still shows at the
 # edges and the screen does not read as having been taken over by a dialog.
 SCREEN_SHARE = 0.9
-# What a 13 inch display is capable of, which is as big as this may open
-# however much room it is given. Ruled by Oliver on 2026-09-08: a dialog is
-# checked on the smallest screen it has to work on, so one that only fits a
-# wide monitor is one nobody can vouch for.
-THIRTEEN_INCH_WIDTH_PX = 1920
-THIRTEEN_INCH_HEIGHT_PX = 1080
-# How many columns a 13 inch display is meant to show. Ruled by Oliver on
-# 2026-09-08, having seen the first two-column screen and asked for three.
+# The room a 13 inch display actually gives a window, in the units this dialog
+# is sized in. `interface_scale` measured the panel on 2026-09-14 as 1280 by
+# 752 at Qt's own scale; drawn at `INTERFACE_SCALE`, Qt reports the same panel
+# larger by that factor, measured on 2026-09-17 as 1422 by 836.
+THIRTEEN_INCH_ROOM = QSize(
+    round(SMALLEST_ROOM_WIDTH_PX / INTERFACE_SCALE),
+    round(SMALLEST_ROOM_HEIGHT_PX / INTERFACE_SCALE),
+)
+# As big as this may open however much room it is given. Ruled by Oliver on
+# 2026-09-08 as what a 13 inch display is capable of: a dialog is checked on
+# the smallest screen it has to work on, so one that only fits a wide monitor is
+# one nobody can vouch for. It was taken then as 1920 by 1080, which is more
+# than a real 13 inch panel gives (`THIRTEEN_INCH_ROOM`); it is kept as the cap
+# so a wide monitor opens exactly as it did.
+CEILING_WIDTH_PX = 1920
+CEILING_HEIGHT_PX = 1080
+# How many columns a 13 inch display is meant to show; also the most any screen
+# shows. Ruled by Oliver on 2026-09-08, having seen the first two-column screen
+# and asked for three.
 #
 # The width of a column follows from it rather than the other way round, so
-# there is one number to argue with instead of two that can disagree.
+# there is one number to argue with instead of two that can disagree. It is the
+# width this opens at on a real 13 inch display divided by three. It used to be
+# the ceiling divided by three, 640 pixels, which a 13 inch display at 300%
+# cannot fit three of: Oliver saw one column at the far left on 2026-09-17.
 #
-# Measured off that screen shot, which is 1919 pixels wide for a 1920 pixel
-# dialog and so is very nearly one to one: an album row of 47 characters draws
-# 258 pixels and one of 49 characters draws 292, which is between 5.5 and 6.0
-# pixels a character. The longest row this library produces is 75 characters,
-# "Jools Holland & His Rhythm & Blues Orchestra (15 albums, 3 similar
-# artists)", so about 450 pixels drawn. A third of the ceiling is 640, which
-# holds it with room to spare.
+# Measured on 2026-09-08 off a screen shot 1919 pixels wide for a 1920 pixel
+# dialog: an album row of 47 characters draws 258 pixels and one of 49 draws
+# 292, between 5.5 and 6.0 pixels a character. The longest row that library
+# produces is 75 characters, "Jools Holland & His Rhythm & Blues Orchestra (15
+# albums, 3 similar artists)", about 450 pixels drawn, so the longest rows no
+# longer fit a column whole; ruled acceptable by Oliver on 2026-09-17 in
+# exchange for three columns on the display he reads it on.
 #
 # It could not be measured in the suite: the offscreen platform reports zero
 # font families, so every family at every size resolves to one fallback and
 # draws the same width. A pixel taken from there would be a pixel of nothing,
 # which is why the figures above come from a real screen.
 COLUMNS_AT_THE_CEILING = 3
-COLUMN_PX = THIRTEEN_INCH_WIDTH_PX // COLUMNS_AT_THE_CEILING
+COLUMN_PX = int(THIRTEEN_INCH_ROOM.width() * SCREEN_SHARE) // COLUMNS_AT_THE_CEILING
 # What the dialog spends on everything that is not the list: the title, the
 # genres it looked in, the three line key, the strip that says what is being
 # asked, the pager and the row of controls. It does not grow with the window,
@@ -96,7 +116,7 @@ FURNITURE_PX = 300
 # and what one row costs follows from it, so there is one number to argue with
 # rather than two that can disagree.
 ROWS_AT_THE_CEILING = 30
-ROW_PX = (THIRTEEN_INCH_HEIGHT_PX - FURNITURE_PX) // ROWS_AT_THE_CEILING
+ROW_PX = (CEILING_HEIGHT_PX - FURNITURE_PX) // ROWS_AT_THE_CEILING
 
 
 def _between(room: int, share: float, floor: int, ceiling: int) -> int:
@@ -117,10 +137,8 @@ def opening_size(room: QSize) -> QSize:
     records against the main window.
     """
     return QSize(
-        _between(room.width(), SCREEN_SHARE, DIALOG_WIDTH_PX, THIRTEEN_INCH_WIDTH_PX),
-        _between(
-            room.height(), SCREEN_SHARE, DIALOG_HEIGHT_PX, THIRTEEN_INCH_HEIGHT_PX
-        ),
+        _between(room.width(), SCREEN_SHARE, DIALOG_WIDTH_PX, CEILING_WIDTH_PX),
+        _between(room.height(), SCREEN_SHARE, DIALOG_HEIGHT_PX, CEILING_HEIGHT_PX),
     )
 
 
@@ -128,9 +146,10 @@ def columns_for(width: int) -> int:
     """How many readable columns fit across a dialog this wide.
 
     Never none: a dialog narrower than one column still shows its answer, in
-    the one column it has room for.
+    the one column it has room for. Never more than the ruling either, since a
+    wide dialog has room for a fourth column of this width.
     """
-    return max(1, width // COLUMN_PX)
+    return min(COLUMNS_AT_THE_CEILING, max(1, width // COLUMN_PX))
 
 
 def rows_for(height: int) -> int:

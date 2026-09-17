@@ -23,11 +23,11 @@ from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.results_pager import ResultsPager
 from stellody.ui.results_pages import ResultsPages
 from stellody.ui.results_room import (
+    CEILING_HEIGHT_PX,
+    CEILING_WIDTH_PX,
     COLUMNS_AT_THE_CEILING,
     FURNITURE_PX,
     ROWS_AT_THE_CEILING,
-    THIRTEEN_INCH_HEIGHT_PX,
-    THIRTEEN_INCH_WIDTH_PX,
     dealt_into_columns,
     paged,
     rows_for,
@@ -37,7 +37,7 @@ from stellody.ui.theme import Mode, palette_for
 
 # A room of the size the ceiling allows, which is what the widget cases are
 # built at: three columns of thirty rows each.
-CEILING = QSize(THIRTEEN_INCH_WIDTH_PX, THIRTEEN_INCH_HEIGHT_PX)
+CEILING = QSize(CEILING_WIDTH_PX, CEILING_HEIGHT_PX)
 # A source artist with nothing under it, so its height is one row and a page
 # holds exactly as many of them as a column holds rows.
 PLAIN = gaps_with()
@@ -56,11 +56,11 @@ def _artists(many: int) -> tuple[Gaps, ...]:
 class TestHowLongAPageIs:
     def test_the_ceiling_holds_the_rows_it_says_it_does(self) -> None:
         """The one number to argue with, read back at the size it is about."""
-        assert rows_for(THIRTEEN_INCH_HEIGHT_PX) == ROWS_AT_THE_CEILING
+        assert rows_for(CEILING_HEIGHT_PX) == ROWS_AT_THE_CEILING
 
     def test_a_shorter_dialog_gets_a_shorter_page(self) -> None:
         """A laptop panel gets fewer rows rather than the same page scrolled."""
-        assert rows_for(THIRTEEN_INCH_HEIGHT_PX // 2) < ROWS_AT_THE_CEILING
+        assert rows_for(CEILING_HEIGHT_PX // 2) < ROWS_AT_THE_CEILING
 
     def test_a_dialog_with_no_room_at_all_still_shows_a_row(self) -> None:
         """It scrolls, which is what every column did before there were pages."""
