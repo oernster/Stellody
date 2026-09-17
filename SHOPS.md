@@ -402,21 +402,35 @@ Verified by: `tests/ui/test_shop_choosing.py::test_copy_puts_the_ticked_albums_o
 
 Priority: Must
 
-Requirement: The results dialog shall place each list of albums and both
-controls in the keyboard ring, in reading order. Within a list, every tick box
-shall be reachable by the arrow keys and tickable from the keyboard.
+Requirement: The results dialog shall open focused on its first list with that
+list's first row current. It shall place each list then each control beneath
+them in the keyboard ring, in the order they are drawn. Within a list, Up and
+Down shall walk the rows; Right shall open an artist and Left shall shut it;
+Enter and Space shall tick or untick an album and open or shut an artist. The
+current row shall wear the ring while its list has the focus.
 
 Rationale: The house keyboard model. A control reachable only with a mouse is
 half a control. A tick box is a row of its list rather than a widget of its
-own, so the ring stops on the list and the arrow keys move within it.
+own, so the ring stops on the list and the arrow keys move within it. Amended
+on 2026-09-17 by Oliver's ruling, after the installed build showed the ticks
+never taking the focus: measured that day over the real window, the dialog
+opened on a control beneath the lists, Left and Right stepped the ring out of a
+list rather than opening an artist, Enter and Space did nothing on an artist,
+Enter did not tick an album and a current album showed no sign of it. The
+arrangement follows the library list, where Left and Right already shut and
+open an album.
 
-Acceptance: Given the dialog open, when Tab is pressed repeatedly, then each
-list and both controls are reached in the order they are drawn; within a list,
-the arrow keys reach every tick box and a key ticks it.
+Acceptance: Given the dialog open, then the first list has the focus and its
+first row is current; when Tab is pressed repeatedly, then each list and each
+enabled control are reached in the order they are drawn; within a list, Right
+opens an artist and Left shuts it without leaving the list; Enter and Space
+tick and untick an album without closing the dialog and open and shut an
+artist; the current row is ringed while its list has the focus and not after.
 
 Verified by: `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_are_stops_on_the_ring`,
 `tests/ui/test_shop_choosing.py::test_a_tick_box_is_reached_and_ticked_from_the_keyboard`,
-`tests/ui/test_space_chooses.py::TestADialogOverTheWindow::test_space_still_ticks_an_album_in_the_results`
+`tests/ui/test_space_chooses.py::TestADialogOverTheWindow::test_space_still_ticks_an_album_in_the_results`,
+`tests/ui/test_results_keyboard.py`
 
 ---
 

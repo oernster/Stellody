@@ -163,6 +163,12 @@ def stylesheet(mode: Mode) -> str:
     QTreeView::item {{
         padding: 2px 4px;
     }}
+    /* The discovery results' current row, ringed while its list has focus:
+       a tick box has no other sign of it. Ruled by Oliver on 2026-09-17. */
+    QTreeWidget#ResultsList::item {{ border: {FOCUS_WIDTH_PX}px solid transparent; }}
+    QTreeWidget#ResultsList::item:focus {{
+        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
+    }}
     /* The cover chooser's tiles. A picture is picked rather than merely
        highlighted, so the one picked wears the ring the rest of the
        application wears when something is chosen; the tint alone was too

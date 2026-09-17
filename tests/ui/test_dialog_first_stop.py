@@ -19,6 +19,7 @@ import pytest
 from dialog_support import BUILDERS, dialog_classes, settled
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QAbstractScrollArea,
     QApplication,
     QLineEdit,
@@ -119,11 +120,18 @@ def test_no_dialog_opens_on_a_reading_pane(
     Asserted over the widget the dialog actually focused rather than over the
     stylesheet, since what is wrong is where focus lands and not what a focused
     pane looks like.
+
+    A list is not a reading pane, though Qt makes both scroll areas: its rows
+    are what somebody acts on. The results screen opens on its first list by
+    Oliver's ruling of 2026-09-17.
     """
     dialog = build(window)
     try:
         focused = opened(dialog, application)
-        assert not isinstance(focused, QAbstractScrollArea), type(focused).__name__
+        reading = isinstance(focused, QAbstractScrollArea) and not isinstance(
+            focused, QAbstractItemView
+        )
+        assert not reading, type(focused).__name__
     finally:
         settled(dialog, application)
         dialog.close()

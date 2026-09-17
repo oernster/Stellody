@@ -61,10 +61,26 @@ def test_no_pane_is_named_as_a_ring_target(mode: Mode) -> None:
 
 @pytest.mark.parametrize("mode", tuple(Mode))
 def test_an_item_view_wears_no_ring_in_any_state(mode: Mode) -> None:
-    """Its current row is the indicator, so the view itself needs nothing."""
+    """Its current row is the indicator, so the view itself needs nothing.
+
+    A rule on the view's ROWS is that indicator rather than a ring round the
+    view, so a selector reaching only `::item` is not the fault this guards
+    against: the discovery results ring their current row, ruled by Oliver on
+    2026-09-17, since a row with a tick box shows nothing else.
+    """
     for selector, _block in ring_rules(stylesheet(mode)):
+        if selector.endswith("::item"):
+            continue
         for view in ITEM_VIEWS:
             assert view not in selector, f"{view} given a ring in {selector!r}"
+
+
+def test_a_row_rule_does_not_excuse_a_ring_round_the_view() -> None:
+    """The exemption above reaches a row and nothing wider, proved by planting."""
+    planted = "QTreeWidget#ResultsList:focus { border: 2px solid #00ff00; }"
+    selectors = [selector for selector, _block in ring_rules(planted)]
+    assert selectors == ["QTreeWidget#ResultsList"]
+    assert not selectors[0].endswith("::item")
 
 
 def test_no_pane_appears_in_the_windows_focus_chain(

@@ -15,11 +15,11 @@ on text that by then says more than a name.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QBrush, QColor
+from PySide6.QtGui import QBrush, QColor, QFocusEvent, QKeyEvent
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
-from stellody.ui.results_ticks import make_tickable
+from stellody.ui.results_ticks import TICKED, UNTICKED, is_tickable, make_tickable
 from stellody.ui.results_words import candidate_row, source_row
 from stellody.ui.theme import Palette
 
@@ -35,6 +35,63 @@ NAME_ROLE = Qt.ItemDataRole.UserRole + 1
 # than one row, since two source artists can lead to the same candidate and
 # both rows are owed the same answer.
 CandidateRows = dict[str, list[QTreeWidgetItem]]
+# What the stylesheet names the lists by, so the current row's ring reaches
+# these lists and no other view.
+LIST_NAME = "ResultsList"
+# The keys that choose the current row: tick an album, open or shut an artist.
+CHOOSING_KEYS = (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space)
+PLAIN = (Qt.KeyboardModifier.NoModifier, Qt.KeyboardModifier.KeypadModifier)
+
+
+class ResultsList(QTreeWidget):
+    """One list of the answer, walked and chosen from the keyboard.
+
+    Ruled by Oliver on 2026-09-17, following the library list. Up and Down walk
+    the rows. Right opens an artist and Left shuts it, which is Qt's own tree
+    behaviour once the ring stops taking those keys, hence the flag below.
+    Enter and Space choose the current row: they tick an album and open or shut
+    an artist. Handled here rather than left to Qt, since Qt ticks on Space
+    alone and hands Enter to the dialog's default control, which closed it.
+    """
+
+    # Read by `ring.py`: Left and Right open and shut an artist here, the only
+    # keyboard route into one, exactly as in the library list.
+    keeps_horizontal_keys = True
+
+    def focusInEvent(self, event: QFocusEvent) -> None:
+        """Arrive on the first row when nothing is current.
+
+        A list arrived at with no current row shows nothing whatever, so the
+        focus would be somewhere nobody can see.
+        """
+        super().focusInEvent(event)
+        if self.currentItem() is None and self.topLevelItemCount():
+            self.setCurrentItem(self.topLevelItem(0))
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Choose the current row on Enter or Space; leave every other key."""
+        item = self.currentItem()
+        if (
+            item is None
+            or event.key() not in CHOOSING_KEYS
+            or event.modifiers() not in PLAIN
+        ):
+            super().keyPressEvent(event)
+            return
+        chosen(item)
+        event.accept()
+
+
+def chosen(item: QTreeWidgetItem) -> None:
+    """Tick or untick an album; open or shut anything that opens."""
+    if is_tickable(item):
+        item.setCheckState(0, UNTICKED if item.checkState(0) is TICKED else TICKED)
+        return
+    opens = item.childIndicatorPolicy() is (
+        QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator
+    )
+    if item.childCount() or opens:
+        item.setExpanded(not item.isExpanded())
 
 
 def coloured(item: QTreeWidgetItem, colour: str) -> QTreeWidgetItem:
@@ -105,7 +162,13 @@ def filled_tree(
     artists that landed in different ones. One index across the lot is what
     lets an answer arriving later reach every row it belongs under.
     """
-    tree = QTreeWidget(parent)
+    tree = ResultsList(parent)
+    tree.setObjectName(LIST_NAME)
+    # Styled before a row goes in. Measured on 2026-09-17: filled first, the
+    # rows measured before the stylesheet reached the list kept the height of
+    # an unstyled row while the rest took the padding and border, so a list
+    # read at two row heights, 18 and 26 pixels.
+    tree.ensurePolished()
     tree.setHeaderHidden(True)
     tree.setColumnCount(1)
     for found in gaps:

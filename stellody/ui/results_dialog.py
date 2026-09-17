@@ -54,6 +54,8 @@ instruction instead.
 
 from __future__ import annotations
 
+import itertools
+
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
@@ -160,6 +162,7 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         # the way out of it on another, which reads as two separate feet. One
         # row, immediately under the answer.
         outer.addLayout(self._buttons())
+        self._state_ring()
         self._offer_filter()
         self._listen()
         self._ticks_changed()
@@ -192,6 +195,38 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         for tree in self.pages.trees:
             tree.itemExpanded.connect(self.opened)
             tree.itemChanged.connect(self.ticks_changed)
+
+    def first_stop(self) -> QWidget | None:
+        """The first list on the page showing; the base's answer without one.
+
+        Ruled by Oliver on 2026-09-17: the dialog opens on the answer. The base
+        passes over every scroll area so a reading dialog does not open on its
+        page, which a list also is to Qt, so the list is named here instead.
+        """
+        showing = [tree for tree in self.pages.trees if tree.isVisibleTo(self)]
+        return showing[0] if showing else super().first_stop()
+
+    def _state_ring(self) -> None:
+        """Tab walks the lists left to right, then the controls as drawn.
+
+        Stated rather than left to the order the widgets were made in, which
+        walked the controls out of drawn order: measured on 2026-09-17 by
+        taking this out and reading the Tab tests fail. It is not stated again
+        when a filter deals the answer afresh: the new lists join the chain
+        after Close, which is where the cycle already wants them, measured the
+        same way. A list on a page not showing is hidden, so Tab passes it by.
+        """
+        stops = (
+            *self.pages.trees,
+            self.filter_button,
+            self.copy_button,
+            self.shops_button,
+            self.pager.previous_button,
+            self.pager.next_button,
+            self.close_button,
+        )
+        for earlier, later in itertools.pairwise(stops):
+            QWidget.setTabOrder(earlier, later)
 
     def _listen(self) -> None:
         """Take the answers the asker brings back, where there is one.

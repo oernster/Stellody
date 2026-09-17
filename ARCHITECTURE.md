@@ -1729,7 +1729,7 @@ reaches `open_album_at`, which shows that album in the pane.
 the application, so it sees a dialog's keys too; it acts only where the view's
 window is the one it was built for. It once answered every item view of every
 window. That broke FR-S15, since Space ticks an album in the discovery results
-and an Enter ticks nothing; the shop test covering ticking built its dialog
+and the Enter it was turned into ticked nothing; the shop test covering ticking built its dialog
 with no window behind it, so the filter was never installed there and the break
 went unseen. Reproduced on 2026-09-16. No dialog opens a row on Enter, so
 nothing was lost by narrowing it.
@@ -1746,6 +1746,26 @@ same way, because the Windows styles answer `SH_Menu_SpaceActivatesItem` with
 0. It also opens the title under the cursor on Down, Return, Enter or Space.
 `tests/ui/test_menu_ring.py` holds that half, including
 `test_space_leaves_exactly_what_enter_leaves`.
+
+**The discovery results answer their own keys, as the library list does.** Each
+list is a `ResultsList` in `stellody/ui/results_tree.py`, which sets
+`keeps_horizontal_keys`, so Left and Right shut and open an artist rather than
+stepping the ring. It chooses the current row on Enter or Space: an album is
+ticked or unticked, an artist opened or shut. It chooses itself rather than
+leaving Enter to Qt, which hands it to the dialog's default control and closed
+the dialog. Arriving with nothing current, a list makes its first row current,
+since a list with no current row shows no sign of the focus at all. The dialog
+names its first list as its first stop, because `FirstStopDialog` passes over
+every scroll area so a reading dialog does not open on its page; a list is a
+scroll area to Qt. `_state_ring` in `results_dialog.py` states Tab as the
+lists left to right then the controls as drawn. The current row wears the ring
+while its list has focus through `QTreeWidget#ResultsList::item:focus`, the one
+item-level ring rule; `tests/ui/test_focus_rings.py` still refuses a ring round
+any view and proves that exemption reaches a row alone. A list is styled before
+a row goes in: filled first, the rows measured before the stylesheet arrived
+kept an unstyled height, so one list read at 18 and 26 pixels. Ruled by Oliver
+on 2026-09-17 against the installed build; `tests/ui/test_results_keyboard.py`
+holds it over the real window, each part proved by taking it out.
 
 ## Design decisions
 
