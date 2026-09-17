@@ -93,9 +93,9 @@ APART_PX = 12
 class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
     """The run's answer: source artists with their albums, candidates to open.
 
-    Non-modal by intention, which is the caller's business rather than this
-    dialog's: a run takes minutes, so whatever somebody moved on to doing in
-    the meantime is not something to interrupt. This simply does not insist.
+    Whether it is modal is the caller's business rather than this dialog's:
+    the window opens it with `exec`, so it is modal, as FR-D28 states. Nothing
+    here insists either way.
     """
 
     def __init__(

@@ -2,10 +2,11 @@ Stellody is distributed under two licences, split by component.
 
 MODEL  ->  GNU General Public License v3.0 (GPL-3.0)
 
-    Covers everything except the user interface: the library model, the
-    scanner, the audio engine and their supporting code. In the source tree
-    that is stellody/domain, stellody/application, stellody/infrastructure and
-    stellody/shared, together with main.py, the build scripts and the tests.
+    Covers everything except the user interface and the setup program: the
+    library model, the scanner, the audio engine and their supporting code.
+    In the source tree that is stellody/domain, stellody/application,
+    stellody/infrastructure and stellody/shared, together with main.py, the
+    build scripts and the tests.
     Full text: LICENSE-GPL-3.0.txt
 
 USER INTERFACE  ->  GNU Lesser General Public License v3.0 (LGPL-3.0)

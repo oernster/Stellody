@@ -11,9 +11,9 @@ arrive as numbered amendments with a reason rather than as silent edits.
 
 ### 1.1 Purpose
 
-When this was written, Stellody decoded nine audio suffixes and named nine more it
-could see but not play.
-Three of those nine turn out to need no new decoder at all: the FFmpeg build
+When this was written, Stellody decoded nine audio suffixes and named nine more
+it could see but not play. Three of those nine turn out to need no new decoder
+at all: the FFmpeg build
 already shipped inside PyAV decodes them, mutagen already reads what each
 carries (ASF tags from WMA, APEv2 tags from WavPack, stream details and no tags
 from a raw AAC, which has no tag block) and the existing packet reader already
@@ -125,7 +125,7 @@ inside PyAV supplies every decoder named here.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-F01 | MEASURED 2026-09-09. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; it encodes wmav2, wavpack and aac among them. | | Answered |
+| A-F01 | MEASURED 2026-09-09. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
 | A-F02 | MEASURED 2026-09-09. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging (Amendment 2). A WMA fixture reports no stated depth; a WavPack fixture written as `s16p` reports 16. | | Answered |
 | A-F03 | RULED 2026-09-10, without certainty. A listener with WMA files wants them in the library rather than reported; section 5 records the ruling. | | Answered |
 
@@ -270,8 +270,9 @@ Requirement: The probe shall report the bits per sample a WavPack file states
 rather than reducing it to nought.
 
 Rationale: The other half of FR-F06; it is the half a guard written only
-against lossy formats would break. WavPack is lossless and states a real depth, so
-suppressing it would deny a bit-perfect stream to a file that has earned one.
+against lossy formats would break. WavPack is lossless and states a real depth,
+so suppressing it would deny a bit-perfect stream to a file that has earned
+one.
 
 Acceptance: Given a WavPack fixture encoded at sixteen bits, when it is probed,
 then the stated depth is sixteen; given one encoded at thirty two, then it is

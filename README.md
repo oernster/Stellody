@@ -113,9 +113,10 @@ checks run; if it ever stopped being true the suite would fail.
   paid for and a second attempt asks only for the rest. What it finds opens as
   a list you can read and tick, dealt across the width of the screen and turned
   a page at a time, then narrowed to some of the genres it looked in when the
-  answer runs long. From there the ticked albums go to the shop you choose,
-  opening that shop's own search for each of them in your browser. The shops on
-  offer are yours to add, edit, delete and reorder from that same screen.
+  answer runs long. From there Find in shops takes the ticked albums to the
+  shop you choose, opening that shop's own search for each of them in your
+  browser. The shops on offer are yours to add, edit, delete and reorder on the
+  screen where you choose one.
   Nothing is bought here and nothing is streamed: Stellody hands over a search
   and stops.
 - **The videos that came with the album.** A bonus video sits in the album it

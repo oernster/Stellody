@@ -81,11 +81,11 @@ An addition to an existing application, taking the third outward-reaching
 module after the cover chooser and the update check. It is a client of the
 application layer exactly as every other dialog is.
 
-Two services are reached through ONE permitted module: neither catalogue client holds a
-socket, both handing their questions to `infrastructure/fetching.py`. Invariant
-12 names four permitted modules rather than three, the fourth being the local
-channel a second launch speaks to the running copy over, which was found by
-this work rather than added by it.
+Two services are reached through ONE permitted module: neither catalogue client
+holds a socket, both handing their questions to `infrastructure/fetching.py`.
+Invariant 12 names four permitted modules rather than three, the fourth being
+the local channel a second launch speaks to the running copy over, which was
+found by this work rather than added by it.
 
 ### 2.2 The one user class
 
@@ -150,14 +150,15 @@ the left of the appearance toggle, with the separator that divides the library
 controls from the application controls to its right.
 
 Rationale: Discovery is a library action rather than a control acting on the
-application, so it belongs on the library side of that line. Amended on 2026-09-07, when both
-trays were ruled into groups by what each control acts on: as first written
-this asked for a position to the left of the theme button, which put it among
-the sound controls it is not one of. The separator is the line between the two
-ideas; which side of it this sits on is the requirement. The theme button was
-only ever a landmark for saying so. Amended again on 2026-09-16, when the
-volume and mute moved to the bottom strip: the line now divides discovery from
-the appearance toggle and Help, which act on the application.
+application, so it belongs on the library side of that line. Amended on
+2026-09-07, when both trays were ruled into groups by what each control acts on:
+as first written this asked for a position to the left of the theme button,
+which put it among the sound controls it is not one of. The separator is the
+line between the two ideas; which side of it this sits on is the requirement.
+The theme button was only ever a landmark for saying so. Amended again on
+2026-09-16, when the volume and mute moved to the bottom strip: the line now
+divides discovery from the appearance toggle and Help, which act on the
+application.
 
 **The File menu carries the same press.** Added on 2026-09-16, when every
 picture button gained a menu entry: `Discover new music...` calls what the
@@ -254,9 +255,9 @@ and the reason one control carries both meanings rather than two sitting side
 by side. It is read off the boxes so that ticking the last genre by hand moves
 it too, which a control remembering its own last press would get wrong.
 
-It does not close, for the reason FR-D25 gives for Clear in the filter dialog:
-sweeping and then asking is two presses, while somebody who swept by accident
-has lost nothing.
+It does not close, exactly as Clear in the filter dialog does not: sweeping and
+then asking is two presses, while somebody who swept by accident has lost
+nothing.
 
 Acceptance: Given a dialog with nothing ticked, when the control is read, then
 it offers to select all; when it is pressed, then every genre in the catalogue
@@ -274,11 +275,11 @@ Verified by: `tests/ui/test_discovery_dialog.py::test_the_sweep_ticks_every_genr
 Priority: Must
 
 Requirement: When a run starts, the discovery service shall take as its source
-artists the album artists of every held album that is not a compilation and whose
-resolved genre names at least one ticked genre. Where compilations are included
-(FR-D51), it shall also take every track credit of each compilation whose
-resolved genre names at least one ticked genre. It shall never take "Various
-Artists" as a source artist.
+artists the album artists of every held album that is not a compilation and
+whose resolved genre names at least one ticked genre. Where compilations are
+included (FR-D51), it shall also take every track credit of each compilation
+whose resolved genre names at least one ticked genre. It shall never take
+"Various Artists" as a source artist.
 
 Rationale: The resolved genre is what the listener sees and what they spent
 their time stating. Reading the probed tag instead reports the library as it was
@@ -287,12 +288,13 @@ that did exactly this and reported 179 albums as untagged when the true figure
 was three.
 
 Amended on 2026-09-13, reported by Oliver: adding Global Underground: Adapt #6
-changed nothing a run did, which he refused to believe and was right to. Measured
-the same day: the rule read only the album artist, so the album contributed
-"Various Artists" in place of the 24 credits on its tracks. That name was already
-answered from memory, so four runs over four days each finished in a quarter of a
-second with the same report. A name meaning nobody in particular is never worth a
-request, so it is dropped whether or not compilations are included.
+changed nothing a run did, which he refused to believe and was right to.
+Measured the same day: the rule read only the album artist, so the album
+contributed "Various Artists" in place of the 24 credits on its tracks. That
+name was already answered from memory, so four runs over four days each finished
+in a quarter of a second with the same report. A name meaning nobody in
+particular is never worth a request, so it is dropped whether or not
+compilations are included.
 
 Acceptance: Given an album whose probed tag names nothing and whose album edit
 states Reggae, when Reggae alone is ticked, then that album's artist is a source
@@ -311,8 +313,8 @@ Priority: Must
 
 Requirement: The discovery dialog shall carry a tick box reading "Include
 compilations (Various Artists)" between the genres and its buttons. It shall be
-unticked the first time the dialog opens. After that it shall open as it was last
-left; its state shall be handed to the run with the ticked genres.
+unticked the first time the dialog opens. After that it shall open as it was
+last left; its state shall be handed to the run with the ticked genres.
 
 Rationale: Ruled by Oliver on 2026-09-13. Measured from the tags of his library
 that day: 21 compilations carry 348 distinct track credits, 314 of them never
@@ -334,20 +336,20 @@ Verified by: `tests/ui/test_discovery_compilations.py::test_compilations_start_l
 
 Priority: Must
 
-Requirement: Beneath the tick box of FR-D51, the discovery dialog shall state how
-many track credits on compilations inside the ticked genres a run would newly
-look up, with the minutes that adds at the request pace NFR-PERF-001 permits. It
-shall restate both whenever a genre is ticked or unticked. A credit counts as
-newly looked up unless a run leaving compilations out would already ask about it
-or the catalogue memory holds a standing answer for it.
+Requirement: Beneath the tick box of FR-D51, the discovery dialog shall state
+how many track credits on compilations inside the ticked genres a run would
+newly look up, with the minutes that adds at the request pace NFR-PERF-001
+permits. It shall restate both whenever a genre is ticked or unticked. A credit
+counts as newly looked up unless a run leaving compilations out would already
+ask about it or the catalogue memory holds a standing answer for it.
 
 Rationale: Ruled by Oliver on 2026-09-13: a tick box whose consequence is not
 stated invites a run of unknown length. The minutes are arithmetic rather than a
 prediction, which is what NFR-PERF-002 leaves standing: two paced requests to
-identify an artist then read its releases, at 1.1 seconds each. A busy catalogue,
-the candidates a run then narrows and the artists FR-D53 adds all make a real run
-longer; the words name a busy catalogue and call the figure a pace rather than a
-forecast.
+identify an artist then read its releases, at 1.1 seconds each. A busy
+catalogue, the candidates a run then narrows and the artists FR-D53 adds all
+make a real run longer; the words name a busy catalogue and call the figure a
+pace rather than a forecast.
 
 Acceptance: Given compilations in a ticked genre crediting three artists nobody
 has looked up, when the dialog shows, then it states three artists with the
@@ -369,12 +371,12 @@ same run. That credit shall not then be reported as unrecognised; a part that
 reaches nobody shall be. A part that is already a source artist shall not be
 asked about twice.
 
-Rationale: Ruled by Oliver on 2026-09-13. The whole credit is asked first because
-an ampersand does not always join two people: Eli & Fur is one duo, which split
-would be two names meaning nobody. It falls back to the parts because a credit
-such as ODESZA & Bettye LaVette may reach nobody whole while naming two artists
-a catalogue can each be asked about. An album artist is left whole, since the
-name somebody filed an album under is theirs to decide.
+Rationale: Ruled by Oliver on 2026-09-13. The whole credit is asked first
+because an ampersand does not always join two people: Eli & Fur is one duo,
+which split would be two names meaning nobody. It falls back to the parts
+because a credit such as ODESZA & Bettye LaVette may reach nobody whole while
+naming two artists a catalogue can each be asked about. An album artist is left
+whole, since the name somebody filed an album under is theirs to decide.
 
 Acceptance: Given a compilation credit "ODESZA & Bettye LaVette" the catalogue
 does not know while it knows both artists, when the run asks, then ODESZA and
@@ -392,8 +394,9 @@ Priority: Must
 Requirement: If the ticked genres yield no source artists, then the window
 shall say so in its status bar, make no request and write no file.
 
-Rationale: Ticking a genre nothing in the library carries is an ordinary thing to do; the library holds a worked example: one artist, Smetana, is reachable
-by no genre at all.
+Rationale: Ticking a genre nothing in the library carries is an ordinary thing
+to do; the library holds a worked example: one artist, Smetana, is reachable by
+no genre at all.
 
 Acceptance: Given a genre no held album names, when the action button is
 pressed, then the status bar reports that nothing in the library matches, no
@@ -478,8 +481,8 @@ Verified by: `tests/application/test_discovery.py::test_albums_are_requested_wit
 Priority: Must
 
 Requirement: When albums are received for a source artist, the discovery service
-shall discard every album whose release key and secondary types match those of an
-album the library already holds by that artist, as section 3.5 defines them.
+shall discard every album whose release key and secondary types match those of
+an album the library already holds by that artist, as section 3.5 defines them.
 
 Rationale: The whole value of the feature is the gap. An offer of something on
 the shelf spends the listener's attention and teaches them to distrust the rest
@@ -502,11 +505,18 @@ shall request the ten artists the similarity source considers most similar to
 them.
 
 Rationale: Ten was confirmed on 2026-09-06 as the shipped figure. It is a named
-constant (`SIMILAR_WANTED` in `application/discovering.py`) rather than a literal, since it is a decision
-about how much to offer rather than a fact about anything.
+constant (`SIMILAR_WANTED` in `application/discovering.py`) rather than a
+literal, since it is a decision about how much to offer rather than a fact about
+anything.
+
+The endpoint takes no count, so the ten are taken at the client: the request
+carries the identifier and the algorithm, the answer arrives already ranked and
+`ListenBrainz.similar_to` in `infrastructure/similarity.py` keeps the first ten
+it can name.
 
 Acceptance: Given an identified source artist, when the run reaches similarity,
-then one request is made carrying that artist's identifier and asking for ten.
+then one request is made of the similarity source carrying that artist's
+identifier and asking for ten.
 
 Verified by: `tests/application/test_discovery.py::test_similar_artists_are_requested`
 
@@ -580,12 +590,13 @@ artist's place in the stage (one more than the number completed) and the
 stage's total.
 
 Rationale: A run over the whole library has taken 54 minutes at the rate the
-sources permit. A spinner over that long is indistinguishable from a hang. Amended on 2026-09-07 after a measured failure: the dialog reported the
-first half of a run only, so a run over Blues sat at 75% and silent for the
-whole of the second half, which is the longer one. Both halves now report; they
-report to the toolbar rather than to a dialog, since the dialog closes when the
-run starts. The stage rather than the artist is drawn, because a strip of a
-toolbar does not hold "Jools Holland & His Rhythm & Blues Orchestra".
+sources permit. A spinner over that long is indistinguishable from a hang.
+Amended on 2026-09-07 after a measured failure: the dialog reported the first
+half of a run only, so a run over Blues sat at 75% and silent for the whole of
+the second half, which is the longer one. Both halves now report; they report to
+the toolbar rather than to a dialog, since the dialog closes when the run
+starts. The stage rather than the artist is drawn, because a strip of a toolbar
+does not hold "Jools Holland & His Rhythm & Blues Orchestra".
 
 Amended again the same day, on Oliver's ruling. One bar carrying both halves in
 turn says how far through the current half a run is and nothing whatever about
@@ -671,11 +682,11 @@ Verified by: `tests/application/test_stopping_a_run.py::test_cancel_stops_before
 
 Priority: Must
 
-Requirement: When a run completes, the discovery service shall replace the single
-discovery file, whose `gaps` object is keyed by source artist with each value
-holding that artist's candidate albums and candidate artists. Beside `gaps` the
-file carries the artists left unresolved, ambiguous or failed and the genres
-the run was scoped to.
+Requirement: When a run completes, the discovery service shall replace the
+single discovery file, whose `gaps` object is keyed by source artist with each
+value holding that artist's candidate albums and candidate artists. Beside
+`gaps` the file carries the artists left unresolved, ambiguous or failed and the
+genres the run was scoped to.
 
 Rationale: A file rather than a screen, because this stage exists to produce the
 resource the later stages consume. One file replaced rather than a directory of
@@ -684,8 +695,9 @@ would have to decide what becomes of a candidate offered last month that is
 owned today.
 
 Acceptance: Given a completed run over one source artist with two candidate
-albums and three candidate artists, when the file is read, then its `gaps` object
-holds one key naming that artist, with two albums and three artists beneath it.
+albums and three candidate artists, when the file is read, then its `gaps`
+object holds one key naming that artist, with two albums and three artists
+beneath it.
 
 Verified by: `tests/infrastructure/test_discovery_file.py::test_the_file_is_keyed_by_the_artist_it_was_found_for`
 
@@ -909,8 +921,8 @@ shall be taken away when the next run starts.
 Rationale: The same split `scan_summary` already makes. A count is the right
 weight for something nobody asked for; the names are the right weight for an
 answer somebody pressed a button to get. A status line that tried to carry
-several hundred names would be unreadable at the length that matters; the
-names are also the half somebody can act on: a misspelt tag is only fixable once it
+several hundred names would be unreadable at the length that matters; the names
+are also the half somebody can act on: a misspelt tag is only fixable once it
 has been seen.
 
 **The button carries its own count rather than leaning on the sentence.** The
@@ -1009,7 +1021,8 @@ Verified by: `tests/ui/test_discovery_dialog.py::test_finding_closes_the_dialog`
 Priority: Must
 
 Requirement: The discovery service shall keep what each candidate artist was
-found to play and shall not ask about a candidate it already holds an answer for.
+found to play and shall not ask about a candidate it already holds an answer
+for.
 
 Rationale: The second stage of a run asks the catalogue what every suggested
 artist plays, at one request a second. What somebody plays does not change
@@ -1316,9 +1329,9 @@ Priority: Must
 
 Requirement: While one or more candidate artist lookups are in flight, the
 results dialog shall show a busy indicator naming the artist being asked about;
-where there is more than one, it shall name the number of artists instead. The indicator shall
-occupy its place whether or not anything is in flight, carrying instead what to
-do to fetch an artist's albums.
+where there is more than one, it shall name the number of artists instead. The
+indicator shall occupy its place whether or not anything is in flight, carrying
+instead what to do to fetch an artist's albums.
 
 Rationale: Reported by Oliver on 2026-09-07: opening an amber name left the
 dialog doing nothing visible for several seconds, which reads as stuck. It is
@@ -1384,15 +1397,15 @@ Priority: Must
 Requirement: The discovery service shall keep what each catalogue answered,
 against the question that was asked; it shall ask a catalogue for an artist's
 identity, releases or similar artists only where that answer is not kept or was
-kept more than thirty days ago; what a candidate plays is kept without a limit. A run shall write down
-what it learned however that run ended. Where a run cannot reach a source about
-an artist an earlier run answered for, the discovery file shall keep the
-earlier answer and shall record no failure for that artist; the run's closing
-message and its count of unanswered artists shall be read from the answer as the
-file will hold it, so neither names that artist. Where a run reaches
-its end still owing an answer about an artist nothing was ever known about, the
-discovery file shall be written with that artist named as unanswered rather
-than withheld. The gaps written shall be ordered by artist.
+kept more than thirty days ago; what a candidate plays is kept without a limit.
+A run shall write down what it learned however that run ended. Where a run
+cannot reach a source about an artist an earlier run answered for, the discovery
+file shall keep the earlier answer and shall record no failure for that artist;
+the run's closing message and its count of unanswered artists shall be read from
+the answer as the file will hold it, so neither names that artist. Where a run
+reaches its end still owing an answer about an artist nothing was ever known
+about, the discovery file shall be written with that artist named as unanswered
+rather than withheld. The gaps written shall be ordered by artist.
 
 Rationale: Reported by Oliver on 2026-09-08, repeatedly and in the strongest
 terms: two runs over the same library gave different answers, sometimes
@@ -1435,12 +1448,12 @@ happens to be willing. A run may add to what is known and may correct it; it
 may not take it away because a service said no. Only an artist this run failed
 on is carried over, so an artist no longer in the library still falls away.
 
-Acceptance: Given a library run over twice with the same genres, when the
-second run finishes, then it asked the catalogues nothing and answered exactly
-as the first did; given an artist an earlier run answered for and this one
-could not reach, then the file still holds that artist and records no failure
-for it, while the run's message counts nobody unanswered and no shortfall button
-is shown; given an artist nothing has ever been learned about that this run could
+Acceptance: Given a library run over twice with the same genres, when the second
+run finishes, then it asked the catalogues nothing and answered exactly as the
+first did; given an artist an earlier run answered for and this one could not
+reach, then the file still holds that artist and records no failure for it,
+while the run's message counts nobody unanswered and no shortfall button is
+shown; given an artist nothing has ever been learned about that this run could
 not reach either, then the file is still written, holding what did answer with
 that artist named among the failures, while the run says which artists it could
 not answer about; given an answer kept more than thirty days ago, then it is
@@ -1455,11 +1468,11 @@ Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::
 Priority: Must
 
 Requirement: Each answer a run's catalogues give and each answer about what a
-candidate plays shall be written to a running record as it arrives and forced
-to the disk. An answer fetched when a candidate is opened on the results screen
-is written straight into the memory file once that lookup ends. Both memories shall be read as their file plus that record; each
-record shall be dropped only once its own file has been written with what it
-held.
+candidate plays shall be written to a running record as it arrives and forced to
+the disk. An answer fetched when a candidate is opened on the results screen is
+written straight into the memory file once that lookup ends. Both memories shall
+be read as their file plus that record; each record shall be dropped only once
+its own file has been written with what it held.
 
 Rationale: Reported by Oliver on 2026-09-09, having left a run going overnight.
 Both memories were read once when a run started and written once when it
@@ -1567,11 +1580,11 @@ holding a tall artist scroll, which is one artist's worth of scrolling rather
 than the library's; it took that answer from 99 pages to 42 with every one
 of them but the last carrying three columns.
 
-Every page is built at once rather than on the way to it, because a tick is
-held by the row it is on: a page rebuilt on return would quietly drop whatever
-was ticked on it, where what is ticked is exactly what the shop controls
-beneath are for. Nothing is fetched either way, since a page holds what the run has
-already answered.
+Every page is built at once rather than on the way to it, because a tick is held
+by the row it is on: a page rebuilt on return would quietly drop whatever was
+ticked on it, where what is ticked is exactly what the shop controls beneath are
+for. Nothing is fetched either way, since a page holds what the run has already
+answered.
 
 One row rather than two is Oliver's ruling of 2026-09-09, made against the
 shipped screen: the pager stood above the row holding Copy, Find in shops and
@@ -1609,11 +1622,11 @@ Requirement: The results dialog shall carry a Filter control wearing the
 library's filter artwork, offering only the genres the run looked in. While any
 is picked, it shall show a source artist's albums only where the library holds
 an album in a picked genre filed under that artist or crediting them on a
-compilation. It shall show a candidate
-artist only where the candidate genre cache records a genre for them naming a picked
-genre. A source artist with nothing left to show shall not be shown. The control
-shall stay pressed in while a filter is on; the pages shall be dealt again from
-what is shown. The filter shall not be remembered between openings.
+compilation. It shall show a candidate artist only where the candidate genre
+cache records a genre for them naming a picked genre. A source artist with
+nothing left to show shall not be shown. The control shall stay pressed in while
+a filter is on; the pages shall be dealt again from what is shown. The filter
+shall not be remembered between openings.
 
 Rationale: Ruled by Oliver on 2026-09-13, after a whole-library answer ran to
 5279 albums over hundreds of pages. His choice between two readings: a source
@@ -1637,8 +1650,8 @@ Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_e
 Priority: Must
 
 Requirement: While a filter is on, the results dialog shall state how many
-candidate artists are withheld because the candidate genre cache records no genre
-for them that Stellody's genre catalogue recognises.
+candidate artists are withheld because the candidate genre cache records no
+genre for them that Stellody's genre catalogue recognises.
 
 Rationale: Measured on 2026-09-13: 260 of 1112 candidates in Oliver's answer
 have no remembered genre. A filter cannot judge them; rows that vanish without a
@@ -1697,14 +1710,15 @@ Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`
 
 Priority: Must
 
-Requirement: The results dialog shall open at nine tenths of the screen it
-opens on, never below 700 by 560 and never above 1920 by 1080. It shall deal
-the source artists across as many columns as that width affords, never more
-than three, a column being a third of the width it opens at on a real 13 inch
-display, each a list read top to bottom. Artists shall be dealt to the shortest column at the time, counting an
-artist's height as its own row plus one for each album and each candidate under
-it. A column shall be built only where an artist landed in it; a run that found
-nobody shall still show one. One selection shall stand across the columns.
+Requirement: The results dialog shall open at nine tenths of the screen it opens
+on, never below 700 by 560 and never above 1920 by 1080. It shall deal the
+source artists across as many columns as that width affords, never more than
+three, a column being a third of the width it opens at on a real 13 inch
+display, each a list read top to bottom. Artists shall be dealt to the shortest
+column at the time, counting an artist's height as its own row plus one for each
+album and each candidate under it. A column shall be built only where an artist
+landed in it; a run that found nobody shall still show one. One selection shall
+stand across the columns.
 
 Rationale: Reported by Oliver on 2026-09-08 against a run over two genres,
 which already ran off the foot of the screen with the room to show it sitting
@@ -1713,10 +1727,11 @@ artists carrying albums and candidates under each, so a single list is a shape
 nobody reaches the end of whatever height it is given.
 
 The ceiling is his ruling of the same day: no bigger than a 13 inch display can
-show, taken then as 1920 by 1080 and kept at that. Nine tenths of a 3440 monitor is 3096 pixels of dialog, which is a window
-nobody reads across in one go; it is also a shape that cannot be checked on the
-machines this has to run on, so a defect at that width would only ever be found
-by the one person with that screen.
+show, taken then as 1920 by 1080 and kept at that. Nine tenths of a 3440 monitor
+is 3096 pixels of dialog, which is a window nobody reads across in one go; it is
+also a shape that cannot be checked on the machines this has to run on, so a
+defect at that width would only ever be found by the one person with that
+screen.
 
 The share is of the screen the dialog opens on only because its native window
 exists before it is sized. Measured on 2026-09-16 on a 3440 wide primary beside
@@ -1730,35 +1745,34 @@ albums while the next carries one, so a count-by-count fill leaves one column
 twice the length of another. It is the rule the genre grid already deals its
 groups by, which is why that helper reads as it does.
 
-The column width is not a number of its own: it is the width the dialog opens
-at on a real 13 inch display divided by the three columns that display is meant
-to show, so there is one decision to argue with rather than two that can
-disagree. Three is Oliver's ruling of 2026-09-08 on seeing the first two-column
-screen. Amended on 2026-09-17: the width was the 1920 pixel ceiling divided by
-three, 640 pixels, which a 13 inch 4K panel at 300% cannot fit three of, so
-Oliver saw one column at the far left. Qt reports that panel as 1422 by 836
-with the interface drawn at nine tenths, so the dialog opens 1279 wide there
-and a column is 426 pixels; measured on that panel, three columns of 411 pixels
-drew with no sideways scrolling. The price, accepted by Oliver the same day, is
-the longest rows: at 5.5 to 6.0 pixels a character, measured on 2026-09-08, the
-longest row this library produces is about 450 pixels, so it is cut short with
-an ellipsis rather than drawn whole. A wide monitor would now have room for a
-fourth column, so three is also the most any screen shows. None of this could
-be measured in the suite, where the offscreen platform reports no font families
-at all and every size draws the same width. One selection across the columns
-for the reason the album pane shares one across its tracks: a highlight per column says a
+The column width is not a number of its own: it is the width the dialog opens at
+on a real 13 inch display divided by the three columns that display is meant to
+show, so there is one decision to argue with rather than two that can disagree.
+Three is Oliver's ruling of 2026-09-08 on seeing the first two-column screen.
+Amended on 2026-09-17: the width was the 1920 pixel ceiling divided by three,
+640 pixels, which a 13 inch 4K panel at 300% cannot fit three of, so Oliver saw
+one column at the far left. Qt reports that panel as 1422 by 836 with the
+interface drawn at nine tenths, so the dialog opens 1279 wide there and a column
+is 426 pixels; measured on that panel, three columns of 411 pixels drew with no
+sideways scrolling. The price, accepted by Oliver the same day, is the longest
+rows: at 5.5 to 6.0 pixels a character, measured on 2026-09-08, the longest row
+this library produces is about 450 pixels, so it is cut short with an ellipsis
+rather than drawn whole. A wide monitor would now have room for a fourth column,
+so three is also the most any screen shows. None of this could be measured in
+the suite, where the offscreen platform reports no font families at all and
+every size draws the same width. One selection across the columns for the reason
+the album pane shares one across its tracks: a highlight per column says a
 reader is in two places at once. What a press acts on is the ticks, which is
 unchanged.
 
 Acceptance: Given a screen wide enough that nine tenths of it holds two column
-widths, when the dialog opens,
-then the source artists are drawn over two or more lists side by side and each
-artist appears exactly once; given a screen at the floor, then one list is
-drawn as before; given a 3440 monitor, then the dialog opens no wider than
-1920 pixels and shows three columns; given a 13 inch display at 300% reported
-as 1422 by 836, then three columns are drawn; given fewer artists than the width affords columns, then no empty
-column is built; given a row chosen in one column, then any selection in the
-others is cleared.
+widths, when the dialog opens, then the source artists are drawn over two or
+more lists side by side and each artist appears exactly once; given a screen at
+the floor, then one list is drawn as before; given a 3440 monitor, then the
+dialog opens no wider than 1920 pixels and shows three columns; given a 13 inch
+display at 300% reported as 1422 by 836, then three columns are drawn; given
+fewer artists than the width affords columns, then no empty column is built;
+given a row chosen in one column, then any selection in the others is cleared.
 
 Verified by: `tests/ui/test_results_columns.py::TestHowMuchRoomItTakes::test_a_wide_monitor_gets_no_more_than_a_13_inch_display`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_three_is_the_ruling_rather_than_whatever_the_constant_says`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_the_13_inch_ceiling_affords_the_three_that_were_asked_for`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_a_real_13_inch_display_shows_three`, `tests/ui/test_results_columns.py::TestHowManyColumns::test_a_wide_monitor_shows_three_and_no_more`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_every_artist_lands_in_exactly_one_column`, `tests/ui/test_results_columns.py::TestWhichArtistLandsWhere::test_it_deals_by_height_rather_than_by_count`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_it_builds_what_the_width_affords`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_fewer_artists_than_columns_builds_no_empty_column`, `tests/ui/test_results_columns.py::TestTheColumnsOnScreen::test_a_run_that_found_nobody_still_gets_a_screen`, `tests/ui/test_results_columns.py::TestOneSelectionAcrossThem::test_choosing_in_one_column_clears_the_others`, `tests/ui/test_results_columns.py::TestWhatIsTickedAcrossThem::test_the_ticks_are_read_from_every_column`, `tests/ui/test_results_size.py`, `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown`
 
@@ -1777,17 +1791,18 @@ Both shall be answered from one reading of the pace.
 
 Rationale: Reported by Oliver on 2026-09-07: a small run took a minute or two
 with nothing on screen saying whether that was normal. The pacing arithmetic
-puts a whole library at about twelve minutes for the first stage alone. Somebody who cannot
-tell a long run from a hang closes the window, which throws the run away.
+puts a whole library at about twelve minutes for the first stage alone. Somebody
+who cannot tell a long run from a hang closes the window, which throws the run
+away.
 
 The second place was added the same day, on his report that the estimate could
 not be found. It was in the status bar as this required, which is the foot of a
 window whose discovery bar is at the top: somebody watching a percentage climb
-never meets a sentence at the other end of the window. The bar is a strip 170 pixels wide,
-so what it carries is "4m" rather than the sentence; the room for it is taken
-out of the bar before the stage name is centred in what is left. One
-reading of the pace answers both, else the two could be taken a moment apart
-and disagree across a rounding.
+never meets a sentence at the other end of the window. The bar is a strip 170
+pixels wide, so what it carries is "4m" rather than the sentence; the room for
+it is taken out of the bar before the stage name is centred in what is left. One
+reading of the pace answers both, else the two could be taken a moment apart and
+disagree across a rounding.
 
 Acceptance: Given a run under way with an estimate available, when the status
 bar is read, then it names a whole number of minutes or says less than a
@@ -1807,9 +1822,9 @@ actually taken for each unit of work finished, rather than from the request gap
 NFR-PERF-001 states.
 
 Rationale: A run meets refusals; each costs a second ask on the spot as FR-D21
-requires, then a place in a later pass, so what a refusal costs is not the gap. An estimate built on the
-configured gap would read as confident while being wrong by minutes on exactly
-the runs where somebody most needs it.
+requires, then a place in a later pass, so what a refusal costs is not the gap.
+An estimate built on the configured gap would read as confident while being
+wrong by minutes on exactly the runs where somebody most needs it.
 
 Acceptance: Given a run whose finished units took twice the gap apiece, when the
 estimate is computed, then it follows the observed pace rather than the
@@ -1832,8 +1847,8 @@ so its size is unknown until the first stage ends. An estimate covering only the
 first stage would understate the wait by the larger half of it, which is worse
 than saying nothing at all.
 
-Acceptance: Given a run that has finished two of ten source artists and turned up
-twelve distinct candidates, when the estimate is computed, then it covers a
+Acceptance: Given a run that has finished two of ten source artists and turned
+up twelve distinct candidates, when the estimate is computed, then it covers a
 projected sixty candidates alongside the eight source artists left.
 
 Verified by: `tests/domain/test_estimating.py::TestProjectingTheSecondStage::test_the_second_stage_is_projected_from_the_first`
@@ -1878,7 +1893,8 @@ library or names the listener. Genre scoping is what makes this satisfiable: a
 run names the subset the listener chose rather than an inventory of everything
 they own.
 
-Verification: `tests/infrastructure/test_what_leaves_the_machine.py::test_a_field_holds_the_name_the_identifier_or_a_constant`
+Verification:
+`tests/infrastructure/test_what_leaves_the_machine.py::test_a_field_holds_the_name_the_identifier_or_a_constant`
 puts every question both catalogue clients can ask through a recording fetcher
 and asserts each field holds the artist name, the identifier or a constant the
 client states for itself. Proved to bite on 2026-09-13 by planting an extra
@@ -1896,7 +1912,8 @@ no machine name, no file path and no library statistic.
 Rationale: The application has no account and no telemetry; this must not be
 the feature that introduces one by accident.
 
-Verification: `tests/infrastructure/test_what_leaves_the_machine.py::test_every_field_sent_is_one_its_address_is_allowed`
+Verification:
+`tests/infrastructure/test_what_leaves_the_machine.py::test_every_field_sent_is_one_its_address_is_allowed`
 with `::test_every_address_asked_is_one_the_allowed_set_names` hold every
 request against a fixed allowed set of addresses and fields, so a field added
 later fails rather than passing unnoticed.
@@ -1910,7 +1927,8 @@ against this machine's name, the user name and the home directory.
 Priority: Must
 
 Requirement: The catalogue source shall send a User-Agent naming Stellody, its
-version and a project contact address, as MusicBrainz requires, with nothing about the listener.
+version and a project contact address, as MusicBrainz requires, with nothing
+about the listener.
 
 Verification: `tests/structural/test_user_agent.py` asserts from the source
 that `USER_AGENT` in `infrastructure/courtesy.py` is built from `APP_NAME` and
@@ -1932,15 +1950,16 @@ Rationale: MusicBrainz declines above one per second per IP; ListenBrainz states
 the same limit. Pacing to the published figure is the difference between a run
 that finishes and an address that gets refused.
 
-Verification: `tests/infrastructure/test_fetching.py::TestAskingAService::test_it_waits_its_turn_and_names_the_application`
+Verification:
+`tests/infrastructure/test_fetching.py::TestAskingAService::test_it_waits_its_turn_and_names_the_application`
 asserts that every request passes through the pacing gate, whose gap is
 `REQUEST_GAP_S`, 1.1 seconds, in `infrastructure/courtesy.py`. Amended
-2026-09-12: this named a test driving a fake clock over a run of twenty
-artists, which does not exist. What is proved is that no request skips the
-gate; the spacing itself rests on that one constant. A second client asking the
-same host through a gate of its own would undo that spacing, so every client
-asking MusicBrainz is given the one gate: the run, an expansion and the cover
-search. Held by
+2026-09-12: this named a test driving a fake clock over a run of twenty artists,
+which does not exist. What is proved is that no request skips the gate; the
+spacing itself rests on that one constant. A second client asking the same host
+through a gate of its own would undo that spacing, so every client asking
+MusicBrainz is given the one gate: the run, an expansion and the cover search.
+Held by
 `tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`.
 
 ---
@@ -1951,8 +1970,10 @@ Priority: Won't, ruled 2026-09-09
 
 Withdrawn as a requirement. It asked that a run over the full library of 327
 source artists complete within twenty minutes, the two catalogue requests per
-artist paced at one per second with the similarity request overlapping them.
-At the 1.1 second gap NFR-PERF-001 sets, that arithmetic gives about twelve minutes; it is what FR-D35 cites and it stands as arithmetic rather than a claim about any run.
+artist paced at one per second with the similarity request overlapping them. At
+the 1.1 second gap NFR-PERF-001 sets, that arithmetic gives about twelve
+minutes; it is what FR-D35 cites and it stands as arithmetic rather than a claim
+about any run.
 
 **Ruled by Oliver on 2026-09-09: the duration is not to be measured.** It was
 carried as the one requirement no evidence stood behind, on the expectation
@@ -1972,7 +1993,8 @@ from the run's own observed pace under FR-D36 rather than from any figure here.
 Priority: Must
 
 Requirement: The discovery service shall look up a candidate artist's genre at
-most once per run, however many source artists name that candidate, then retain what it learned for reuse by later runs.
+most once per run, however many source artists name that candidate, then retain
+what it learned for reuse by later runs.
 
 Rationale: The similarity source returns identifiers with no genre, so filtering
 candidates by genre costs one lookup each. Ten candidates for each of 327
@@ -1981,7 +2003,8 @@ rate. Deduplication is what makes the result-side filter affordable. Measured
 on 2026-09-13 over a whole-library run, it took 555 source artists' 5,550
 possible lookups down to 1,350; OQ-04 records how.
 
-Verification: `tests/application/test_discovery.py::test_a_candidate_artist_is_asked_about_once`
+Verification:
+`tests/application/test_discovery.py::test_a_candidate_artist_is_asked_about_once`
 gives two source artists one shared candidate and asserts one genre lookup
 rather than two.
 
@@ -2072,13 +2095,15 @@ suite depending on a third party fails on their bad day rather than on yours.
 
 **Reworded on 2026-09-13, ruled by Oliver.** It read "no test shall make a
 network request", which the suite never met: the fetcher's own tests run a real
-HTTP server on the loopback address, in `tests/infrastructure/fetching_support.py`,
-because what Qt makes of a status and a silence is what they exist to test. A
-fake reply would only test the fake. None of those requests leaves the machine,
-which is the property the rationale is about. Six test modules are permitted
-the machinery, each with its reason, in `TESTS_PERMITTED`.
+HTTP server on the loopback address, in
+`tests/infrastructure/fetching_support.py`, because what Qt makes of a status
+and a silence is what they exist to test. A fake reply would only test the fake.
+None of those requests leaves the machine, which is the property the rationale
+is about. Six test modules are permitted the machinery, each with its reason, in
+`TESTS_PERMITTED`.
 
-Verification: `tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network`
+Verification:
+`tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network`
 scans the whole test tree with the reader the package scan uses.
 `::test_every_permitted_test_module_exists_and_still_needs_it` keeps the
 permitted set from outliving its reasons. Both proved to bite on 2026-09-13.
@@ -2093,21 +2118,23 @@ Requirement: The discovery file, the candidate genre cache, the catalogue
 memory and the running record each of those memories keeps shall be written
 inside Stellody's own data directory and nowhere else.
 
-Verification: `tests/structural/test_discovery_paths.py` asserts from the
-source that every place `infrastructure/discovery_file.py` and
+Verification: `tests/structural/test_discovery_paths.py` asserts from the source
+that every place `infrastructure/discovery_file.py` and
 `infrastructure/catalogue_memory.py` name is `paths.data_dir()` with a named
 file under it, that neither names a directory of its own and that every call to
 the running record (`journal`) or the atomic writer (`_written`) is handed one
-of those places. A read made straight off a path is not inspected. Proved to bite on 2026-09-13 by
-planting a path under the home directory, then a writer handed a place of its
-own.
+of those places. A read made straight off a path is not inspected. Proved to
+bite on 2026-09-13 by planting a path under the home directory, then a writer
+handed a place of its own.
 
 ---
 
 ### 3.3 External interfaces
 
-**The catalogue source** answers three questions: the identifier for an artist name; the albums an artist made with their stated genres; the genres an artist is said to play. **The similarity
-source** answers one: the artists similar to an identifier.
+**The catalogue source** answers three questions: the identifier for an artist
+name; the albums an artist made with their stated genres; the genres an artist
+is said to play. **The similarity source** answers one: the artists similar to
+an identifier.
 
 Both are reached through interfaces declared in the application layer, so the
 choice below is an infrastructure decision and is reversible without touching a
@@ -2127,10 +2154,10 @@ similarity.** Recorded with its reasoning so it is not re-argued.
 
 Neither catalogue source has a similarity relation, so two sources are required
 by the sources rather than by preference. Discogs and Last.fm are excluded by
-C-07: both need a credential; a credential compiled into a GPL application
-is a published credential. Last.fm is excluded twice over, since its
-non-commercial condition would be imposed on everyone who forks the project.
-MusicBrainz costs a User-Agent naming the application, which NFR-PRIV-003 covers.
+C-07: both need a credential; a credential compiled into a GPL application is a
+published credential. Last.fm is excluded twice over, since its non-commercial
+condition would be imposed on everyone who forks the project. MusicBrainz costs
+a User-Agent naming the application, which NFR-PRIV-003 covers.
 
 ### 3.4 Data
 
@@ -2145,10 +2172,10 @@ which becomes a thing to tidy up; not a merge, which would have to rule on a
 candidate offered once and owned since. A run therefore states what is missing
 at the moment it finished, which is the only claim it can honestly make.
 
-Its JSON shape, written by `infrastructure/discovery_file.py`, is constrained by FR-D18 and by
-the four things the file carries beside the results: the artists that could not
-be resolved (FR-D08), the ambiguous ones (FR-D09), the failures (FR-D22) and
-the genres the run was scoped to (FR-D41).
+Its JSON shape, written by `infrastructure/discovery_file.py`, is constrained by
+FR-D18 and by the four things the file carries beside the results: the artists
+that could not be resolved (FR-D08), the ambiguous ones (FR-D09), the failures
+(FR-D22) and the genres the run was scoped to (FR-D41).
 
 The genres were added on 2026-09-08. Until then the file was an answer to a
 question nobody had written down, so a run over Folk and a run over Rock
@@ -2221,9 +2248,10 @@ title rather than reducing to nothing.
 and secondary types, which are stated data rather than a string parsed by us. A
 release group's identity for matching is its release key together with its
 secondary types, so a live album never suppresses the studio album of the same
-name and is never suppressed by it. Offered: primary type Album and EP, plus the secondary types Live, Remix and Demo, which are genuinely different records.
-Excluded: every other secondary type, Compilation and DJ-mix among them, since a hits package of an artist already held
-is noise rather than a discovery.
+name and is never suppressed by it. Offered: primary type Album and EP, plus the
+secondary types Live, Remix and Demo, which are genuinely different records.
+Excluded: every other secondary type, Compilation and DJ-mix among them, since a
+hits package of an artist already held is noise rather than a discovery.
 
 **What the library measured, which is why each table looks as it does.**
 
@@ -2285,17 +2313,18 @@ Inside out; no user-visible action waits on a screen to be exercisable.
    in tests by hand-written fakes with error injection for every `If` sibling
    above.
 3. **Infrastructure**: the two catalogue clients over the one fetching module
-   that holds the sockets, the pacing, the JSON writer and the candidate genre cache.
-   The retry belongs to the application layer (`application/asking.py`), where
-   a run and the expanding of a candidate share it.
+   that holds the sockets, the pacing, the JSON writer and the candidate genre
+   cache. The retry belongs to the application layer (`application/asking.py`),
+   where a run and the expanding of a candidate share it.
 4. **UI**: the toolbar button, the dialog and the progress reporting, last.
 
 **Not currently met:** no test drives a whole run into the discovery file. The
-application tests assert the run's report; `tests/infrastructure/test_discovery_file.py`
-writes reports built by hand; the window's wiring tests use a fake service, with
-either a fake writer or the real writer handed a report built by hand. Meeting this needs one test that runs the discovery service over
-a fabricated library and fake sources, writes through the real writer and
-asserts the file.
+application tests assert the run's report;
+`tests/infrastructure/test_discovery_file.py` writes reports built by hand; the
+window's wiring tests use a fake service, with either a fake writer or the real
+writer handed a report built by hand. Meeting this needs one test that runs the
+discovery service over a fabricated library and fake sources, writes through the
+real writer and asserts the file.
 
 The diagnostic that says the foundation is sound: a whole run must be executable
 from a test with a fabricated library and fake sources, producing an asserted

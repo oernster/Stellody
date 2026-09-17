@@ -17,7 +17,7 @@ has never been seen to fail is not yet a guard.
 | 7 | No module exceeds 400 lines: every Python file in the repository from its root, bar the build scripts named in the test and the directories `tests/structural/conftest.py` names as not ours (the virtual environment and build output among them). | `tests/structural/test_loc.py::test_no_module_exceeds_the_line_cap` |
 | 8 | No module sits in the 381 to 400 danger band; a file that reaches it is reduced to 350 or below rather than shaved. | `tests/structural/test_loc.py::test_no_module_sits_in_the_danger_band` |
 | 9 | Formatting and linting are current, as assertions rather than as a remembered step. | `tests/structural/test_style.py` |
-| 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one in any state, no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py` |
+| 10 | A ring belongs to a control; to every control. No container is named as a ring target, no item view wears one round itself in any state (a row may: the results list rings its current row, the cover chooser its picked tile), no pane reaches the window's focus chain; every control that Tab can land on shows a ring, either named in the stylesheet or painted by itself, walked off the real widgets rather than off a list. A checkbox is always the ringed subclass, never Qt's own. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py` |
 | 11 | A read-only page is never focused by a click and is never what a dialog opens on; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py`, `tests/ui/test_dialog_first_stop.py` |
 | 12 | Exactly four modules may hold the machinery to open a connection, each named with what it is for; the cover search is reached only through its port, which the composition root alone builds. Nothing on the scanning, drawing or playback path can reach the network at all. | `tests/structural/test_offline.py` |
 | 13 | No control tells a listener that what it does has not been built. Swept off the real widgets of the window and of the dialogs, rather than checked where one was reported. | `tests/ui/test_unbuilt_words.py` |
@@ -61,23 +61,23 @@ setup program at all: a guarantee nobody was holding, which is worse than one
 nobody had claimed. It is held by planting `import installer` in a domain
 module and watching it fail, with the plant restored and the caches cleared.
 
-Invariant 12 is the second of that kind. A local-first player that quietly
-talks to the internet is not local-first whatever its README says, so the
-guarantee is held by a test rather than by a promise. It permits four modules
-and no others. `stellody/infrastructure/cover_search.py` is reached when
-somebody asks for a cover; `stellody/infrastructure/update_source.py` asks
-GitHub whether a newer Stellody has been published;
-`stellody/infrastructure/fetching.py` is the one module a discovery run asks
-its two catalogues through; it is also how an expanded candidate artist is
-looked up afterwards; `stellody/infrastructure/instance.py` is the
-channel a second launch tells the running copy to show itself over, which is a
-named pipe or a local socket file on this machine rather than a way off it. The composition root builds all
-four. The only other modules naming one are the two catalogue clients,
-`catalogue.py` and `similarity.py`, which hold no socket of their own: each is
-handed the fetcher, building a default one only when none is given. The cover
-search is held to its port by `test_the_search_is_reached_only_through_its_port`.
-So the reach outward stays a few named things rather than a capability spread
-through the application.
+Invariant 12 is the second of that kind. A local-first player that quietly talks
+to the internet is not local-first whatever its README says, so the guarantee is
+held by a test rather than by a promise. It permits four modules and no others.
+`stellody/infrastructure/cover_search.py` is reached when somebody asks for a
+cover; `stellody/infrastructure/update_source.py` asks GitHub whether a newer
+Stellody has been published; `stellody/infrastructure/fetching.py` is the one
+module a discovery run asks its two catalogues through; it is also how an
+expanded candidate artist is looked up afterwards;
+`stellody/infrastructure/instance.py` is the channel a second launch tells the
+running copy to show itself over, which is a named pipe or a local socket file
+on this machine rather than a way off it. The composition root builds all four.
+The only other modules naming one are the two catalogue clients, `catalogue.py`
+and `similarity.py`, which hold no socket of their own: each is handed the
+fetcher, building a default one only when none is given. The cover search is
+held to its port by `test_the_search_is_reached_only_through_its_port`. So the
+reach outward stays a few named things rather than a capability spread through
+the application.
 
 The last of the four was found rather than added. The guard matched a package
 by its top-level name, which is right for `urllib` and useless for
@@ -89,18 +89,18 @@ each of the three ways an import can be spelled, every one of them proved by
 planting it.
 
 The count in that test is the point of it. Going from one permitted module to
-two was an edit somebody had to make and defend; a guard written as "the
-network is used sparingly" would have allowed the same change silently. The
-update check is also the only one of the four that speaks without being asked,
-which is why what it sends is worth stating exactly. It carries a fixed URL,
-an Accept header naming GitHub's JSON media type plus a user agent that is the product
-name and nothing more. Not the library, not an identifier, not the running
-version. The agent is stated rather than left to urllib, which would send
+two was an edit somebody had to make and defend; a guard written as "the network
+is used sparingly" would have allowed the same change silently. The update check
+is also the only one of the four that speaks without being asked, which is why
+what it sends is worth stating exactly. It carries a fixed URL, an Accept header
+naming GitHub's JSON media type plus a user agent that is the product name and
+nothing more. Not the library, not an identifier, not the running version. The
+agent is stated rather than left to urllib, which would send
 `Python-urllib/<version>` and so name the machine's Python: a fact about the
 listener's computer that a version check has no use for. It is held by
-`tests/infrastructure/test_update_source.py`, proved by dropping the header
-and then by putting the running version into it, each read as a failure. It
-reads a public document about Stellody and compares it locally.
+`tests/infrastructure/test_update_source.py`, proved by dropping the header and
+then by putting the running version into it, each read as a failure. It reads a
+public document about Stellody and compares it locally.
 
 ## Layers
 
@@ -139,13 +139,14 @@ throughout: the files under `%LOCALAPPDATA%\Programs`, the uninstall record and
 the sign-in entry under `HKCU`, so Windows never asks for administrator rights.
 Setup also creates the desktop and Start Menu shortcuts, leaves two handover
 notes in Stellody's own data directory and deletes that directory on uninstall
-only when asked. Beyond those, setup writes its own step log, `stellody-setup.log` in
-the temporary directory, which `installer/steplog.py` owns.
-`installer/performing.py` drives them a step at a time and reports how it went,
-owning the sequence rather than the writing. `installer/app.py` assembles the
-interface; `installer/screens.py`, `installer/shell.py`, `installer/footer.py`,
-`installer/wording.py`, `installer/theme.py` and `installer/appearance.py` hold
-it, one screen to a step. `tests/installer/` covers it.
+only when asked. Beyond those, setup writes its own step log,
+`stellody-setup.log` in the temporary directory, which `installer/steplog.py`
+owns. `installer/performing.py` drives them a step at a time and reports how it
+went, owning the sequence rather than the writing. `installer/app.py` assembles
+the interface; `installer/screens.py`, `installer/shell.py`,
+`installer/footer.py`, `installer/wording.py`, `installer/theme.py` and
+`installer/appearance.py` hold it, one screen to a step. `tests/installer/`
+covers it.
 
 **Setup never opens the library database.** It runs at the one moment that file
 is least safe to touch, having just ended the application by force, so where a
@@ -154,17 +155,17 @@ application to act on instead. `stellody/infrastructure/switch_reset.py` is
 both halves of that handover.
 
 **A fresh install, a repair and a reinstall open the window maximised on the
-screen setup was on.** The same kind of handover: `stellody/infrastructure/window_reset.py`
-is a note naming that screen by its name and its top left corner, left by
-`installer/performing.py` through `actions.install` and `actions.repair`.
-Unlike the switches' note it is left on a machine with no directory yet, since
-a screen still has to be named there. The composition root takes it, forgets
-the remembered size through `forget_window` then asks `open_on` in
-`stellody/ui/geometry.py` to lay the window in that screen's room before it is
-shown. An update and a downgrade leave no note, so a size left at the last run
-still comes back. Measured on 2026-09-13 across four monitors of mixed scaling:
-a window laid in a screen's room before it is shown, then marked maximised,
-lands maximised on that screen.
+screen setup was on.** The same kind of handover:
+`stellody/infrastructure/window_reset.py` is a note naming that screen by its
+name and its top left corner, left by `installer/performing.py` through
+`actions.install` and `actions.repair`. Unlike the switches' note it is left on
+a machine with no directory yet, since a screen still has to be named there. The
+composition root takes it, forgets the remembered size through `forget_window`
+then asks `open_on` in `stellody/ui/geometry.py` to lay the window in that
+screen's room before it is shown. An update and a downgrade leave no note, so a
+size left at the last run still comes back. Measured on 2026-09-13 across four
+monitors of mixed scaling: a window laid in a screen's room before it is shown,
+then marked maximised, lands maximised on that screen.
 
 ## The central abstraction
 
@@ -192,12 +193,13 @@ albums, so neither knows which shape a track holds.
 to; `open_source` chooses by suffix and is the only place that knows there are
 two. `SourceReader` covers everything libsndfile can address by frame.
 `PacketReader`, in `packet_decode.py`, covers M4A, WMA, WavPack and AAC, which
-arrive as packets carrying timestamps rather than as addressable PCM; it counts those back
-into frame positions so that a cue slice, the equalizer, the visualiser and
-gapless all keep working without a line changed. It covers the video files too:
-.m4v is the same MP4 container with AAC inside, measured by pointing the reader
-at real files off the library unmodified, so a track carrying a picture needed
-no second decoder and no change to the sound path at all.
+arrive as packets carrying timestamps rather than as addressable PCM; it counts
+those back into frame positions so that a cue slice, the equalizer, the
+visualiser and gapless all keep working without a line changed. It covers the
+video files too: .m4v is the same MP4 container with AAC inside, measured by
+pointing the reader at real files off the library unmodified, so a track
+carrying a picture needed no second decoder and no change to the sound path at
+all.
 
 **The picture is a separate stream read by a separate module, following the
 sound.** `stellody/infrastructure/video.py` reads the picture and nothing else;
@@ -276,22 +278,22 @@ either. Both are disabled where there is nothing outstanding to accept and
 nothing already accepted to take back, since the screen would open saying
 nothing. See "Accepting a correction" below.
 
-**A file is reported once for its track number, however many rules touched
-it.** A colliding file whose name carries no leading number used to be
-reported twice: as a duplicate, then as having no track number, although its
-tag named one. Both findings pin the same field, so accepting the album pinned
-each such file twice. `resolve_tracks` now says a number is missing only where
-the tags carried none; `Repairs.pins_for` keeps one pin per album, file and
-field whatever findings name it, so the count `accept` returns is a count of
-files. Held by
+**A file is reported once for its track number, however many rules touched it.**
+A colliding file whose name carries no leading number used to be reported twice:
+as a duplicate, then as having no track number, although its tag named one. Both
+findings pin the same field, so accepting the album pinned each such file twice.
+`resolve_tracks` now says a number is missing only where the tags carried none;
+`Repairs.pins_for` keeps one pin per album, file and field whatever findings
+name it, so the count `accept` returns is a count of files. Held by
 `tests/domain/test_health_and_ordering.py::test_a_colliding_file_with_no_ordinal_is_reported_once`
 and
 `tests/application/test_repairs.py::TestAcceptingAndResetting::test_two_findings_naming_one_file_for_one_field_pin_it_once`,
 both seen to fail before the change.
 
-`stellody/domain/ordering.py` holds the track rules, `stellody/domain/grouping.py`
-the album rules, `stellody/domain/folding.py` the rule joining folders that name
-one album and `stellody/domain/health.py` the reporting vocabulary.
+`stellody/domain/ordering.py` holds the track rules,
+`stellody/domain/grouping.py` the album rules, `stellody/domain/folding.py` the
+rule joining folders that name one album and `stellody/domain/health.py` the
+reporting vocabulary.
 
 ## Accepting a correction
 
@@ -308,16 +310,17 @@ saying "yes, keep that" about a correction Stellody already made, so the library
 does not move when a report is accepted; what changes is that the finding stops
 being reported and the value stops depending on the rule that suggested it. The
 domain will apply a DIFFERENT value and is tested for it, so preferring one of
-your own is a decision rather than a rewrite; the tag editor is what records one,
-through the same table.
+your own is a decision rather than a rewrite; the tag editor is what records
+one, through the same table.
 
-**An override is keyed by the album's identity handle, with the path alongside.**
-The handle survives a folder rename and a re-rip, which is why artwork and
-ratings already use it; it is stated once as `AlbumIdentity.handle` rather than
-digested again per user, since three spellings of one value is three chances for
-two of them to drift. Beside it sits the SOURCE ADDRESS, which names the one
-file a track-level pin is about, so two files folded into one album are never
-mistaken for each other. Why that is an address rather than a path is below.
+**An override is keyed by the album's identity handle, with the path
+alongside.** The handle survives a folder rename and a re-rip, which is why
+artwork and ratings already use it; it is stated once as `AlbumIdentity.handle`
+rather than digested again per user, since three spellings of one value is three
+chances for two of them to drift. Beside it sits the SOURCE ADDRESS, which names
+the one file a track-level pin is about, so two files folded into one album are
+never mistaken for each other. Why that is an address rather than a path is
+below.
 
 **Two albums that resolve alike are one album; that is a price, stated.** Tags
 alone cannot separate two recordings of one work: a symphony under two
@@ -541,16 +544,15 @@ reading the failures.
 rescan.** How a file becomes records at all, which is what `records.py` and the
 cue parsing behind it do, runs during the scan and the store then holds its
 answer. Unchanged files were on their own a reason to reuse that answer, so such
-a rule reached only whichever folder somebody happened to touch. Measured on its own day, which is
-why the count differs from the reading above: a correction letting a file's own
-tags answer where a cue sheet says only Unknown had reached none of the 659
-folders the walk saw then, three days after it landed, because not one of those
-files had changed. `records.DERIVATION` names
-the rules in force, a folder record carries the value it was written under and
-`_unchanged` requires the two to agree, so a corrected rule now reaches a whole
-library on the next scan. A record from a database written before the question
-was asked carries nought, which no rule set answers to, so it is always read
-again.
+a rule reached only whichever folder somebody happened to touch. Measured on its
+own day, which is why the count differs from the reading above: a correction
+letting a file's own tags answer where a cue sheet says only Unknown had reached
+none of the 659 folders the walk saw then, three days after it landed, because
+not one of those files had changed. `records.DERIVATION` names the rules in
+force, a folder record carries the value it was written under and `_unchanged`
+requires the two to agree, so a corrected rule now reaches a whole library on
+the next scan. A record from a database written before the question was asked
+carries nought, which no rule set answers to, so it is always read again.
 
 **What the walker skips is named, never guessed.** An earlier version treated a
 leading dot as "hidden" and silently swallowed two real albums, `...And Justice
@@ -780,8 +782,8 @@ handler has nothing waiting behind it.
 
 **The report is measured rather than given a size.** A scan that changed nothing
 says so in six lines while a scan that found twenty albums needs twenty more, so
-any fixed height is either a cramped page or a great deal of empty dialog under a
-short report, which is what it was. Both dimensions are now taken from the
+any fixed height is either a cramped page or a great deal of empty dialog under
+a short report, which is what it was. Both dimensions are now taken from the
 content: the page is laid out at the widest it may be, asked what width it
 actually used, then laid out again at that width to be asked its height. The
 tables are sized to their content for the same reason, since at full width every
@@ -800,14 +802,14 @@ Releasing the height clamp after measuring lets the page grow back to fill the
 dialog on show, which is the empty space the measuring exists to remove, so the
 clamp stays.
 
-**The view is made wider than the text by its own frame.** What wraps the text is
-the VIEWPORT rather than the widget, so giving the widget the measured width left
-the viewport narrower than the width the height was measured at, 618 against 620
-as measured, which lets a line wrap that had not wrapped in the measurement and
-puts the report past the height it was given. The frame is asked for rather than
-assumed, since the style decides it. That exactness is what lets the padding
-under the last line be 8 pixels of deliberate breathing room rather than the 26
-pixel allowance that was really covering the mismatch.
+**The view is made wider than the text by its own frame.** What wraps the text
+is the VIEWPORT rather than the widget, so giving the widget the measured width
+left the viewport narrower than the width the height was measured at, 618
+against 620 as measured, which lets a line wrap that had not wrapped in the
+measurement and puts the report past the height it was given. The frame is asked
+for rather than assumed, since the style decides it. That exactness is what lets
+the padding under the last line be 8 pixels of deliberate breathing room rather
+than the 26 pixel allowance that was really covering the mismatch.
 
 **Qt rich text is not a browser and the report is written for what it has.** It
 supports no `opacity`, so a colour is stated outright rather than faded; an
@@ -816,9 +818,9 @@ one, so neither may appear. Both are held by
 `tests/ui/test_scan_summary.py::test_the_report_carries_no_dash_and_no_styling_qt_would_drop`,
 proved by planting each in turn.
 
-**A modal report hangs a test suite that completes a scan.** `tests/ui/test_launch.py`
-patches `ScanSummaryDialog.exec` for exactly that reason, so any later test that
-runs a scan to its end has to do the same.
+**A modal report hangs a test suite that completes a scan.**
+`tests/ui/test_launch.py` patches `ScanSummaryDialog.exec` for exactly that
+reason, so any later test that runs a scan to its end has to do the same.
 
 ## Searching
 
@@ -959,9 +961,9 @@ cell held both until 2026-09-16, joined by two spaces, so a track reading
 fact to a cell is what lets the counts stack, right aligned as the lengths
 beside them are. A track's detail cell now holds the format alone and
 `Column.PLAYS` holds the count, in the library list and in the open album's
-track columns alike. The model is handed the log rather than each row asking for it,
-so a drawn row costs no query; when a count changes the model redraws that one
-row, found by walking the tracks rather than by asking where the track is,
+track columns alike. The model is handed the log rather than each row asking
+for it, so a drawn row costs no query; when a count changes the model redraws
+that one row, found by walking the tracks rather than by asking where the track is,
 since that search is retried when it misses and spending it here would take
 the attempt the highlight needs. The cell text itself lives in
 `stellody/ui/row_text.py`, split out of the model when the model reached the
@@ -1002,10 +1004,10 @@ after it. The delegate fills the brush ahead of the selection, which is why the
 mark is a pink of its own told from the selection by hue. The status bar used to
 say what was playing only after a double click, for six seconds.
 `stellody/ui/now_playing.py` now writes a permanent label, asked for by
-`_show_transport` in `stellody/ui/playing.py`, which every command, every failure and every poll passes
-through, so no route that changes the track can leave the mark or the name
-behind. A stop clears both; a pause keeps them. The switches moved to
-`stellody/ui/switches.py` to make the room in `playing.py`.
+`_show_transport` in `stellody/ui/playing.py`, which every command, every
+failure and every poll passes through, so no route that changes the track can
+leave the mark or the name behind. A stop clears both; a pause keeps them. The
+switches moved to `stellody/ui/switches.py` to make the room in `playing.py`.
 
 ## Gapless transitions
 
@@ -1141,12 +1143,12 @@ it must never do. A strip that cannot keep up misses measurements rather than
 delaying the sound.
 
 **Two clocks, because the rates differ.** At 44.1 kHz a block carries about 93
-milliseconds of audio, so measurements land some eleven times a second, which is slow enough
-to read as steps. The strip repaints thirty times a second and lets the domain
-decide where a bar has fallen to in between, so the motion is continuous while
-every peak in it was really measured. Bars rise instantly and fall at a fixed
-rate: the transient is the thing worth seeing; a bar that eased up to it
-would arrive after it had gone.
+milliseconds of audio, so measurements land some eleven times a second, which is
+slow enough to read as steps. The strip repaints thirty times a second and lets
+the domain decide where a bar has fallen to in between, so the motion is
+continuous while every peak in it was really measured. Bars rise instantly and
+fall at a fixed rate: the transient is the thing worth seeing; a bar that eased
+up to it would arrive after it had gone.
 
 **It has no switch; it is a few centimetres wide.** It was given a band of
 the window and an entry in the Sound menu at first. Both were wrong the same
@@ -1203,11 +1205,11 @@ credential.
 holds a socket; both ask through `infrastructure/fetching.py`, as the prose
 under [Invariants](#invariants) sets out with why the offline guard's count is
 the point of it. A feature reaching two hosts through one module is worth
-writing that way for that reason. `infrastructure/courtesy.py`
-holds the user agent and the pacing for every service reached through
-`cover_search.py` or `fetching.py`, since a gap honoured in one client and
-forgotten in another is a client that gets the whole application refused. The
-update check states its own agent in `update_source.py`. For the same reason the composition root hands the
+writing that way for that reason. `infrastructure/courtesy.py` holds the user
+agent and the pacing for every service reached through `cover_search.py` or
+`fetching.py`, since a gap honoured in one client and forgotten in another is a
+client that gets the whole application refused. The update check states its own
+agent in `update_source.py`. For the same reason the composition root hands the
 run, an expansion and the cover search one gate for MusicBrainz, which
 `tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`
 holds.
@@ -1261,10 +1263,10 @@ stale phrase the guide was corrected for.
 **The estimate is read off the run rather than off the configured gap.** A run
 meets refusals; each costs a second ask on the spot and then a place in a later
 pass, so an estimate built on the permitted rate would read as confident while
-being wrong by minutes on exactly the runs where somebody needs it. The second stage
-is projected from the candidates the first has turned up, because covering only
-the first stage would understate the wait by the larger half of it. Under two
-finished units it says nothing rather than swinging.
+being wrong by minutes on exactly the runs where somebody needs it. The second
+stage is projected from the candidates the first has turned up, because covering
+only the first stage would understate the wait by the larger half of it. Under
+two finished units it says nothing rather than swinging.
 
 **Colour never carries the meaning alone.** Source artists and candidate artists
 are drawn apart; every row also states its kind in words. That was reported
@@ -1278,8 +1280,8 @@ run would add a request per surviving candidate and roughly double the longer
 stage. Most are never opened; the ones that are pay for themselves.
 
 **A compilation is asked about by the artists on its tracks, only when somebody
-ticks for it.** Reported by Oliver on 2026-09-13: adding a Global Underground mix
-changed nothing a run did. Measured the same day, the run read only album
+ticks for it.** Reported by Oliver on 2026-09-13: adding a Global Underground
+mix changed nothing a run did. Measured the same day, the run read only album
 artists, so a compilation contributed "Various Artists" in place of its 24 track
 credits; that one name was already answered from memory, so four runs over four
 days finished in a quarter of a second with an identical report.
@@ -1312,7 +1314,8 @@ release every time that happens. `shops.json` therefore records the shipped list
 beside the list in use, then `stellody/domain/shop_list.py` settles the two shop
 by shop rather than file by file. A rule over the whole file was right while the
 file could only be changed by hand; once the shops dialog could edit it, nearly
-every file would count as edited somewhere and none would take a correction again.
+every file would count as edited somewhere and none would take a correction
+again.
 
 **A shop is recognised by its name, ignoring case**, since a release carries
 nothing else to know it by. An untouched shipped shop follows the release; an
@@ -1320,13 +1323,13 @@ edited one keeps the edit; a new shipped shop is added at the bottom. A shipped
 shop somebody deleted is named in the file's `deleted` record, which is what
 stops the next release putting it back; renaming one records the old name there
 for the same reason. A shop the release dropped goes only if it was untouched,
-named in `retired` so the dialog can say so once. A file from before deleting was
-recorded gains no shipped shop it lacks, since it may have lost one by hand with
-nothing written down. A file that cannot be read still falls back to the shipped
-defaults and is not overwritten, because a half-parsed file somebody is editing
-must not be replaced under them. `stellody/application/shop_editing.py` writes
-every change before the dialog shows it, so what is on screen is what the file
-holds.
+named in `retired` so the dialog can say so once. A file from before deleting
+was recorded gains no shipped shop it lacks, since it may have lost one by hand
+with nothing written down. A file that cannot be read or whose shops are not a
+list is written over with the shipped defaults, the state a first run installs
+(FR-S12), as `tests/infrastructure/test_shop_file.py` holds.
+`stellody/application/shop_editing.py` writes every change before the dialog
+shows it, so what is on screen is what the file holds.
 
 **Two albums are the same album when they are the same recording, not the same
 pressing.** A remaster is the same album; a live version is not. Both sides
@@ -1334,11 +1337,11 @@ arrive as a key plus a kind: the library reads its kinds out of the title then
 takes the qualifier off, while the catalogue takes its kinds as stated data and
 drops a trailing word that only repeats one of them. The rule had to be
 symmetric, since the library holds `Secret World (Live)` where the catalogue
-holds that record as `Secret World Live` with Live also stated as its kind, so the two
-would never have met. `stellody/domain/matching.py` is that rule, built on the
-same `comparison_key` primitive the search uses so the two cannot drift on
-normalisation; `AlbumIdentity` is deliberately untouched, its handle keying the
-artwork cache and every rating.
+holds that record as `Secret World Live` with Live also stated as its kind, so
+the two would never have met. `stellody/domain/matching.py` is that rule, built
+on the same `comparison_key` primitive the search uses so the two cannot drift
+on normalisation; `AlbumIdentity` is deliberately untouched, its handle keying
+the artwork cache and every rating.
 
 **The year is deliberately absent from the key.** A remastered album's tag
 carries the remaster's year while the release group carries the original's, so a
@@ -1362,21 +1365,22 @@ actually gave is still remembered. `CandidateGenres.narrowed` in
 `application/candidate_genres.py` is that rule, held by
 `tests/application/test_discovery_narrowing.py`.
 
-**The results can be narrowed by genre, judged differently at each end.**
-FR-D54 to FR-D56, ruled by Oliver on 2026-09-13 after a whole-library answer ran
-to 5279 albums. A source artist keeps their albums where a run over the picked
+**The results can be narrowed by genre, judged differently at each end.** FR-D54
+to FR-D56, ruled by Oliver on 2026-09-13 after a whole-library answer ran to
+5279 albums. A source artist keeps their albums where a run over the picked
 genres would ask about them, which is `source_artists` asked again of the
 library: judged by the genres on the listener's own albums, so nobody the
 library holds is withheld for want of a catalogue genre. A candidate is not in
 the library, so the memory above is all there is to judge them by; one it
 records nothing for is withheld and counted rather than guessed at.
-`filtered_answer` in `domain/discovery.py` is that rule. `ui/results_filtering.py`
-deals the pages again from what it leaves rather than hiding rows, since pages
-are dealt by height and hidden rows would leave columns half empty. Dealing
-again throws the rows away, so the ticks and every candidate's fetched albums
-are held by the dialog then written back after each deal; Copy and Find in shops
-still read only the rows on screen. `ui/results_asking.py` was split out of
-`results_dialog.py` by this change to make the room.
+`filtered_answer` in `domain/discovery.py` is that rule.
+`ui/results_filtering.py` deals the pages again from what it leaves rather than
+hiding rows, since pages are dealt by height and hidden rows would leave columns
+half empty. Dealing again throws the rows away, so the ticks and every
+candidate's fetched albums are held by the dialog then written back after each
+deal; Copy and Find in shops still read only the rows on screen.
+`ui/results_asking.py` was split out of `results_dialog.py` by this change to
+make the room.
 
 **The file records what was asked as well as what was found.** A run's answer
 is meaningless without the genres that scoped it, since those decide which
@@ -1613,9 +1617,9 @@ ship on a reading of the source alone.
 **Each platform builds on itself; none of the three cross-compiles.**
 `buildexe.py` with `buildinstaller.py` produce the Windows setup program,
 `builddmg.py` the macOS disk image and `build_flatpak.sh` the Linux Flatpak,
-with `clean_flatpak.sh` uninstalling it and undoing what that one wrote, touching
-the application's own data only when `--purge-data` asks. The three output
-paths are deliberately independent, so a cleaner reaching into a sibling
+with `clean_flatpak.sh` uninstalling it and undoing what that one wrote,
+touching the application's own data only when `--purge-data` asks. The three
+output paths are deliberately independent, so a cleaner reaching into a sibling
 platform's output is a cleaner nobody dares run.
 
 **The site's icons are copies, made by the same script as the application's.**
@@ -1700,19 +1704,19 @@ asserts the licence's timer is running;
 `tests/ui/test_guide.py::TestTheDialog::test_it_opens_and_can_be_read` asserts
 the guide has a scroller. No test asserts that About has one.
 
-**Space chooses a row, exactly as Enter does.** Measured before it was
-written: Enter opened a track in the library while Space did nothing in the
-same list, because an item view spends Space on its selection rather than on
-the row. `SpaceChooses` in `stellody/ui/activating.py` is an event filter
-installed on the application, built beside the arrow ring by `wire_the_arrows`
-in `stellody/ui/ring_order.py` and parented to the main window. On a Space
-press carrying no modifier it asks the object the key was delivered to three
-things: whether it is a `QAbstractItemView`, whether its own window holds the
-focus on it (`holds_the_focus` in `stellody/ui/ring.py`, since a key nobody
-consumes is offered to the parent next) and whether it has a current row.
-Where all three hold it sends that view a Return press and release, then
-consumes the Space. Otherwise Space goes on where it was going, so a view with
-nothing current does not swallow it to no effect.
+**Space chooses a row, exactly as Enter does.** Measured before it was written:
+Enter opened a track in the library while Space did nothing in the same list,
+because an item view spends Space on its selection rather than on the row.
+`SpaceChooses` in `stellody/ui/activating.py` is an event filter installed on
+the application, built beside the arrow ring by `wire_the_arrows` in
+`stellody/ui/ring_order.py` and parented to the main window. On a Space press
+carrying no modifier it asks the object the key was delivered to three things:
+whether it is a `QAbstractItemView`, whether its own window holds the focus on
+it (`holds_the_focus` in `stellody/ui/ring.py`, since a key nobody consumes is
+offered to the parent next) and whether it has a current row. Where all three
+hold on one of the main window's own views (see below), it sends that view a
+Return press and release, then consumes the Space. Otherwise Space goes on where
+it was going, so a view with nothing current does not swallow it to no effect.
 
 **Space is handed on AS an Enter rather than given a second way of choosing.**
 A view already knows what activating a row means, while the window has already
@@ -1729,10 +1733,12 @@ reaches `open_album_at`, which shows that album in the pane.
 the application, so it sees a dialog's keys too; it acts only where the view's
 window is the one it was built for. It once answered every item view of every
 window. That broke FR-S15, since Space ticks an album in the discovery results
-and the Enter it was turned into ticked nothing; the shop test covering ticking built its dialog
-with no window behind it, so the filter was never installed there and the break
-went unseen. Reproduced on 2026-09-16. No dialog opens a row on Enter, so
-nothing was lost by narrowing it.
+and the Enter it was turned into ticked nothing; the shop test covering ticking
+built its dialog with no window behind it, so the filter was never installed
+there and the break went unseen. Reproduced on 2026-09-16. No dialog's view acts
+on the `activated` signal an Enter emits, so nothing was lost by narrowing it;
+the results lists answer Enter and Space themselves, as the next section sets
+out.
 
 `tests/ui/test_space_chooses.py` holds it: Space opens what Enter opens in the
 list and over the sleeves; Space opens something at all in the list, so the
@@ -1760,7 +1766,8 @@ every scroll area so a reading dialog does not open on its page; a list is a
 scroll area to Qt. `_state_ring` in `results_dialog.py` states Tab as the
 lists left to right then the controls as drawn. The current row wears the ring
 while its list has focus through `QTreeWidget#ResultsList::item:focus`, the one
-item-level ring rule; `tests/ui/test_focus_rings.py` still refuses a ring round
+rule that rings a row for focus (the cover chooser rings a picked tile, which
+is a selection); `tests/ui/test_focus_rings.py` still refuses a ring round
 any view and proves that exemption reaches a row alone. A list is styled before
 a row goes in: filled first, the rows measured before the stylesheet arrived
 kept an unstyled height, so one list read at 18 and 26 pixels. A ticked album
@@ -1822,7 +1829,7 @@ holds it over the real window, each part proved by taking it out.
 | Every answer is written down as it arrives, not only when a run ends | Reported by Oliver on 2026-09-09, having left a run going overnight. Both memories were read once at the start of a run and written once at the end, so a run of fifty minutes held 581 answers on a single line of code being reached: a crash, a power cut or a closed window took the lot. So each answer is now appended to a running record the moment it arrives and forced to the disk; each memory is read as its file plus that record; a record is dropped only once its own file holds what it held. `infrastructure/journal.py` owns the appending and no path of its own, exactly as `atomic.py` owns the replacing; `catalogue_memory.py` and `discovery_file.py` each name their own record. An append is chosen over rewriting the whole file because it cannot damage what is already there, so the worst a death mid-write costs is the line being written; the whole file is still written at the end, which is what keeps the record short. |
 | An answer with a hole in it is written, with the hole named in it | It was refused outright until 2026-09-09, on the ground that a file holding whichever artists a service felt like answering about is a different file every time. That reasoning was aimed at a file that stays SILENT about its holes; taking it literally cost Oliver two whole-library runs in one night with nothing shown for either, the second after 54 minutes and 843 requests, because ONE artist was refused twice then timed out. What could not be answered for is now written beside what was, the screen carries the shortfall sentence and the button that names those artists; the next run fills them in without asking about anybody else. The gaps are written in artist order, since an artist carried over would otherwise sit where the carrying put it while the same artist answered for directly sits in library order. |
 | What a failure says on screen is read off its kind, never off its message | A row reading "given up on part way through" followed by a MusicBrainz address is unreadable to whoever is using this and is the only thing worth having to whoever is fixing it, so both are kept apart: the row gets a sentence, the diary gets the class, the message and the artist. It is why a refusal and a timeout are now distinct kinds of failure rather than two messages inside one: Qt reports an abandoned reply the same way whether the wait ran out or somebody stopped wanting it. |
-| The results screen is dealt into columns and stops at a 13 inch display | The answer opened as one tall list at a fixed 700 by 560, so a run over two genres already ran off the foot of the screen while the room to show it sat empty either side. It takes a share of the screen now, dealt across as many columns as that width affords up to three, a column being a third of the width it opens at on a real 13 inch display (FR-D45 in `DISCOVERY.md` holds the measurement), each a list read top to bottom the way the album pane reads an album's tracks. The share is capped at what a 13 inch display can show, ruled by Oliver on 2026-09-08: a dialog 3096 pixels wide is one nobody reads across in one go and one that cannot be checked on the machines this has to run on. The arithmetic is `results_room.py`, which reads a room and answers a size, a count of columns and which artist lands where; it holds no widget, so the interesting widths can be read on a platform reporting an 800 square screen. `results_columns.py` puts the two together and is the only place that knows both. |
+| The results screen is dealt into columns and stops at a 13 inch display | The answer opened as one tall list at a fixed 700 by 560, so a run over two genres already ran off the foot of the screen while the room to show it sat empty either side. It takes a share of the screen now, dealt across as many columns as that width affords up to three, a column being a third of the width it opens at on a real 13 inch display (FR-D45 in `DISCOVERY.md` holds the measurement), each a list read top to bottom the way the album pane reads an album's tracks. The share is capped at 1920 by 1080, which Oliver ruled on 2026-09-08 to be what a 13 inch display can show: a dialog 3096 pixels wide is one nobody reads across in one go and one that cannot be checked on the machines this has to run on. A real 13 inch panel gives less than that cap (`THIRTEEN_INCH_ROOM`); the cap was kept so a wide monitor opens exactly as it did. The arithmetic is `results_room.py`, which reads a room and answers a size, a count of columns and which artist lands where; it holds no widget, so the interesting widths can be read on a platform reporting an 800 square screen. `results_columns.py` puts the two together and is the only place that knows both. |
 | A control that closes something wears the close picture, not the negative mark | The album pane's close button wore `negative.png`, which is the mark every switch wears LAID OVER its own picture to say it is off. Alone on a control it says nothing about what a press would do; it is also the one picture in the set that means "not this" rather than naming an action. The pane closes, so it now wears what every other Close wears. The mark goes back to being only ever composed over something else, which is what its exemption from the guide sweep already claims of it. |
 | Both genre filters share one row of pictured controls | Ruled by Oliver on 2026-09-13 for the chooser a discovery answer opens: Filter wears the filter picture, Cancel beside it wears that picture struck through with the negative mark, Clear wears the close picture. The library's own filter asks the same question with the same three controls, so it takes the same row; `stellody/ui/filter_controls.py` builds it once for both. Clear is the one control wearing the close picture that does not leave its dialog, which is his ruling rather than an oversight; the guide says so beside the picture. The filtering press is disabled while nothing is ticked, reported by Oliver the same day, except in a chooser opened on a filter: emptying one is the only way a filter comes off, Cancel keeping it. `offer_apply` reads the boxes at every toggle, so Clear and a hand untick move it alike. Held by `tests/ui/test_filter_controls.py`, which compares each picture with the one it should be and walks the enabling. |
 | A three-state switch is told apart by its artwork, never by a fill | A fill behind one unchanging picture says exactly two things, so it could never carry repeat's three. Each state has its own picture instead, made from two files plus a cross composed over one of them at run time rather than a third drawing. The fill was then removed altogether rather than left repeating what the picture already said, in a wash that fought the artwork above it; shuffle lost it at the same time, so one rule reads the whole strip. |
@@ -1876,7 +1883,7 @@ but not for the launch that follows it, so every run of the suite started the
 copy of Stellody installed on the machine, on the owner's own desktop, while a
 window arriving unbidden was being hunted. `tests/conftest.py` refuses any
 `subprocess.Popen` command naming `stellody.exe`, whatever a test believes it
-has stood in for. It also points the diary at a directory of the test's own, so a run of
-the suite cannot write into the account of real ones. That matters more since
-the diary moved into the data directory: the file the suite must not touch now
-sits beside the library database rather than among temporary files.
+has stood in for. It also points the diary at a directory of the test's own, so
+a run of the suite cannot write into the account of real ones. That matters more
+since the diary moved into the data directory: the file the suite must not touch
+now sits beside the library database rather than among temporary files.

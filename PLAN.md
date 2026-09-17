@@ -103,11 +103,12 @@ somebody decides on one.
   have to go and get one, so a listing screen would serve the few who had done
   that and nobody else. The remaining shape that needs no key is handing a gig
   site's search address to the browser, which is the shops mechanism pointed at
-  other sites and is a link rather than a feature. Two further costs were open when it was dropped:
-  it would send a place as well as artist names, narrowed to a postcode
-  district somebody typed rather than one detected; its answers also go stale
-  in a way a catalogue's do not, so nothing about the thirty day memory could
-  be inherited. It reopens only as a decision about all four together.
+  other sites and is a link rather than a feature. Two further costs were open
+  when it was dropped: it would send a place as well as artist names, narrowed
+  to a postcode district somebody typed rather than one detected; its answers
+  also go stale in a way a catalogue's do not, so nothing about the thirty day
+  memory could be inherited. It reopens only as a decision about all four
+  together.
 - **Anything over the network that carries your library or names you.** No
   scrobbling, no telemetry, no account, no identifier. Four modules may hold
   the machinery to connect, each named in invariant 12; three of them leave the

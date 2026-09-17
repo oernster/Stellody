@@ -48,8 +48,9 @@ suite full of mocks standing in for the very things worth testing.
 `build_utils.py`, `stamp_version.py`, `stamp_sitemap.py`, `sync_site.py` and
 `generate_icons.py` are linear recipes read top to bottom. Splitting a sequence
 of flags across modules costs more than it buys, so the structural line-cap
-test, which walks every Python file in the repository from its root, exempts
-them by name. A name on that list that the walk no longer finds fails the
+test, which walks every Python file in the repository from its root bar the
+directories `tests/structural/conftest.py` names as not ours, exempts them by
+name. A name on that list that the walk no longer finds fails the
 suite, so the exemption cannot quietly outlive the script.
 
 **Quitting during a cover lookup leaves the process without unwinding.** A

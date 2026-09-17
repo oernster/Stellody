@@ -1,8 +1,9 @@
 # Reaching the shops that sell what the library is missing
 
 Specification for the second stage of discovering music the library does not
-hold. The first stage says what the library is missing; this says how somebody gets from one of those gaps
-to a place that sells it. It is written before the code, in the house form:
+hold. The first stage says what the library is missing; this says how somebody
+gets from one of those gaps to a place that sells it. It is written before the
+code, in the house form:
 EARS requirements, each with the failure case beside it, each naming the test
 that will prove it.
 
@@ -21,8 +22,9 @@ amendments, in section 6, are built too.
 
 A discovery run ends with a list of albums the library does not hold. Before
 this stage that list was somewhere to look at rather than somewhere to act, so
-buying one of them meant retyping an artist and a title into a shop by hand. This closes that
-gap: from a ticked album, one press reaches a shop's own search results for it.
+buying one of them meant retyping an artist and a title into a shop by hand.
+This closes that gap: from a ticked album, one press reaches a shop's own search
+results for it.
 
 ### 1.2 Intended audience
 
@@ -134,7 +136,8 @@ focus moves and cannot survive a row being rebuilt; a tick box is a state the
 reader can see and the dialog can read back.
 
 Acceptance: Given a run holding two albums under one artist, when the dialog
-opens, then each album row carries an unticked box and no artist row carries one.
+opens, then each album row carries an unticked box and no artist row carries
+one.
 
 Verified by: `tests/ui/test_shop_choosing.py::test_every_album_row_can_be_ticked`
 
@@ -278,8 +281,8 @@ Stellody's own directory, writing the shipped defaults there where no file
 exists.
 
 Rationale: Measured on 2026-09-07: of the shops checked that afternoon, one had
-closed, one had walled its search and one had moved it. A shop list inside the application is a
-release every time that happens; a file is an edit.
+closed, one had walled its search and one had moved it. A shop list inside the
+application is a release every time that happens; a file is an edit.
 
 Acceptance: Given no shop file, when the shops dialog is opened, then the file
 is written holding the shipped defaults and those shops are listed.
@@ -302,9 +305,10 @@ searches badly on two terms is given one. Two placeholders let each row say
 what that shop can actually take. `%20` rather than `+` because HDtracks shows
 a literal plus sign, while every other shop measured accepted `%20`.
 
-Acceptance: Given the template `https://www.qobuz.com/gb-en/search?q={artist}%20{album}`
-and the album "Hounds of Love" by "Kate Bush", when the address is built, then it
-is `https://www.qobuz.com/gb-en/search?q=Kate%20Bush%20Hounds%20of%20Love`.
+Acceptance: Given the template
+`https://www.qobuz.com/gb-en/search?q={artist}%20{album}` and the album
+"Hounds of Love" by "Kate Bush", when the address is built, then it is
+`https://www.qobuz.com/gb-en/search?q=Kate%20Bush%20Hounds%20of%20Love`.
 
 Verified by: `tests/domain/test_shop_address.py::TestTheAddress::test_both_placeholders_are_filled_and_encoded`
 
@@ -446,7 +450,8 @@ alongside the list in use. Where the two are identical and the shipped list has
 since changed, the shop service shall replace both with the current shipped
 list. Where its list is identical to the current shipped list but the file
 records no shipped list or an older one, the shop service shall write the
-current record, leaving the list itself unchanged. In every other case the file shall be left exactly as it is.
+current record, leaving the list itself unchanged. In every other case the file
+shall be left exactly as it is.
 
 Rationale: FR-S09 writes the file once and never overwrites it, so a corrected
 address can never reach anybody who has already opened the shops. Found on
@@ -481,8 +486,9 @@ Verified by: retired with this requirement; its successors name their own tests.
 Priority: Must
 
 Requirement: Every shop search address Stellody opens shall contain only the
-shop's own template text, the artist name and the album title. It shall contain no
-identifier for the listener, the machine or the library, nor any other album.
+shop's own template text, the artist name and the album title. It shall contain
+no identifier for the listener, the machine or the library, nor any other
+album.
 
 Rationale: The stance PLAN.md records, stated as something testable rather than
 as an intention. Handing an address to a browser is not an outward call that
@@ -576,8 +582,8 @@ is named `shops.json`. Its shape:
 ```
 
 - `shops` is the list in use; `shipped` records the release list the rows were
-  last settled against, which is how FR-S32 and FR-S33 tell an untouched shipped shop from an
-  edited one.
+  last settled against, which is how FR-S32 and FR-S33 tell an untouched
+  shipped shop from an edited one.
 - ~~`name` and `template` are required; a row missing either is skipped.~~
   Amended by 6.6: such a row is kept in its place with its reason (FR-S42).
 - `note` is optional and is shown beside the shop.
@@ -599,11 +605,11 @@ and reading what came back, except where marked:
 | ProStudioMasters | `https://www.prostudiomasters.com/search?q={artist}%20{album}` | Answered. Hi-res, with FLAC, MQA and DSD tabs on the page. |
 | Beatport | `https://www.beatport.com/search?q={artist}%20{album}` | Exact release found. Electronic; rarely FLAC. |
 
-Not shipped, with the reason: Juno Download has closed; Traxsource and eClassical could
-not be read past their bot and consent walls; Volumo's search path answered 404.
-HDtracks reached a search page whose results could not be confirmed and was then
-ruled out by Oliver on 2026-09-08 rather than left pending. Any of them can be
-added as a row.
+Not shipped, with the reason: Juno Download has closed; Traxsource and
+eClassical could not be read past their bot and consent walls; Volumo's search
+path answered 404. HDtracks reached a search page whose results could not be
+confirmed and was then ruled out by Oliver on 2026-09-08 rather than left
+pending. Any of them can be added as a row.
 
 ## 4. Other requirements
 
@@ -667,7 +673,8 @@ and section 3.4 gains the `deleted` and `retired` keys described in 6.6.
 ### 6.1 Why
 
 Reported by Oliver on 2026-09-13. A shop row broken by hand-editing
-`shops.json` vanished from the list without a word (FR-S11 was then built in part).
+`shops.json` vanished from the list without a word (FR-S11 was then built in
+part).
 Two repairs were put to him: a message naming the broken row, which he judged
 the wrong fix; leaving the silence, which he judged worse. What he chose is
 removing the need to hand-edit at all: the list is changed from inside the
@@ -1276,8 +1283,8 @@ Verified by: `tests/ui/test_shop_dragging.py::test_the_held_row_follows_the_poin
 Priority: Must
 
 Requirement: The shop form shall show `try.png` on Try and `save.png` on Save;
-the shops dialog shall show `revert-shops.png` on its put-back control. The guide
-shall show all three beside what each does.
+the shops dialog shall show `revert-shops.png` on its put-back control. The
+guide shall show all three beside what each does.
 
 Rationale: Apart from the buttons carrying a shop's own name, the other controls
 on both screens already wear Oliver's artwork, so three bare words beside them
