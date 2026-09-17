@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stellody features: what the player actually does</title>
-  <meta name="description" content="Everything Stellody does: two ways to browse your collection, instant search, gapless albums, an equalizer, star ratings, album art, finding music you do not own and a player that never changes your files.">
+  <meta name="description" content="Everything Stellody does, starting with finding the music you do not own yet: two ways to browse, instant search, gapless albums, an equalizer, ratings and art, from a player that never changes a file.">
   <link rel="canonical" href="https://stellody.co.uk/features.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Stellody">
   <meta property="og:url" content="https://stellody.co.uk/features.html">
   <meta property="og:title" content="Stellody features: what the player actually does">
-  <meta property="og:description" content="Incremental scanning, cue sheets, two library views, search, waveforms, ratings and play counts, cover art, finding music you do not own and the update check.">
+  <meta property="og:description" content="Finding the music you do not own yet, then everything else: incremental scanning, cue sheets, two library views, search, waveforms, ratings and play counts, cover art and the update check.">
   <meta property="og:image" content="https://stellody.co.uk/social-features.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
@@ -26,7 +26,7 @@
     "@context": "https://schema.org",
     "@type": "WebPage",
     "name": "Stellody features: what the player actually does",
-    "description": "Two ways to browse a collection, instant search, gapless albums, an equalizer, ratings and album art, from a player that never changes a file.",
+    "description": "Finding the records a collection does not hold, plus two ways to browse it, instant search, gapless albums, an equalizer, ratings and album art, from a player that never changes a file.",
     "url": "https://stellody.co.uk/features.html",
     "primaryImageOfPage": "https://stellody.co.uk/social-features.png",
     "isPartOf": {"@type": "WebSite", "@id": "https://stellody.co.uk/#site",
@@ -64,6 +64,123 @@
     The whole list, in plain words. Where something is not built yet, it is said here rather than left
     out and discovered later.
   </p>
+</section>
+
+<section class="section">
+  <div class="section-label">Finding more of it</div>
+  <h2 class="section-title">Music you do not own yet</h2>
+  <p style="max-width:65ch;">
+    The rest of this page is about the music already on your disk. This is the opposite question:
+    given what you have collected, what is worth reaching for next. Tick the genres worth looking in and Stellody
+    asks two public music catalogues what those artists released that you do not hold, along with who
+    else sounds like them.
+  </p>
+  <div class="shot" style="margin-top:2.5rem;">
+    <img src="screenshots/discovered.png" width="1720" height="995" alt="The What the last discovery run found window, opened across a wide screen. A line at the top names the 34 genres the search looked in. Under it a key names the three kinds of row: an artist you hold, drawn in blue, with albums by them you do not underneath; a similar artist you hold nothing by, drawn in amber, which fetches its albums when opened; every other line, which is an album title. The key states outright that nothing in the list is a track. The answer is dealt into three columns of artists: Aerosmith with 35 albums and 4 similar artists, Afel Bocoum and Afrojack, then Affkt with 35 albums and 2 similar artists. Every album has a tick box. Three of Aerosmith's are ticked, each tick drawn inside its box. The last of them, The Complete Unplugged, is the row the keyboard is on, ringed in green. One row runs under the columns: Filter, Copy and Find in shops at the left, then Previous and Next with the words Page 3 of 86 between them, then Close at the right.">
+  </div>
+  <p class="shot-caption">What the search found, turned a page at a time. Blue is an artist you hold; amber is one you do not. Every line says which it is in words.</p>
+
+  <div class="features-grid">
+    <div class="feat">
+      <h3>You choose what it looks at</h3>
+      <p>The genres you tick decide which of your artists are named, so what goes out is a subset you
+      chose rather than an inventory of everything you own. What goes out is those artist names, the
+      identifiers the catalogue gives back for them plus a user agent naming Stellody, its version and the
+      project's contact address: no collection,
+      no counts, nothing about you or your machine.</p>
+    </div>
+    <div class="feat">
+      <h3>Compilations, if you want them</h3>
+      <p>A compilation filed under Various Artists is one name that means nobody, so by default it adds
+      nothing. Tick the box for compilations and the search asks about the artists on their tracks
+      instead, still only in the genres you ticked; a line beneath the box says how many of those
+      artists have never been looked up and roughly how many minutes they add. A credit naming two
+      artists is looked up whole first, then as its two names only if nobody answers to the whole.</p>
+    </div>
+    <div class="feat">
+      <h3>It says how it is getting on</h3>
+      <p>A search takes minutes, because the catalogues ask to be questioned slowly and Stellody keeps
+      to that. Two bars in the toolbar show each half of it, hovering names who is being asked about and
+      the time remaining is written both on the bar and along the foot of the window.</p>
+    </div>
+    <div class="feat">
+      <h3>Stop means stop</h3>
+      <p>While a search runs, the button that started it wears a cross and offers to stop it. One press
+      ends it there and then, with nothing to confirm: the request already in flight is dropped rather
+      than waited out.</p>
+    </div>
+    <div class="feat">
+      <h3>What it found, read plainly</h3>
+      <p>Artists you hold are shown in one colour with the albums by them you do not underneath;
+      artists you hold nothing by are shown in another; opening one fetches its records then. Every
+      line also says in words which kind it is, so the colours are never carrying the meaning alone.</p>
+    </div>
+    <div class="feat">
+      <h3>A page at a time, up to three columns wide</h3>
+      <p>A whole library answers with hundreds of artists, which is more list than anybody reads. The
+      answer is dealt across the width of the screen and turned a page at a time, with two controls
+      under it saying which page of how many you are on; the direction that leads nowhere wears its
+      own picture struck through. Albums you tick stay ticked as you turn the pages, so what goes to
+      a shop is everything you picked out wherever you picked it.</p>
+    </div>
+    <div class="feat">
+      <h3>Narrow a long answer by genre</h3>
+      <p>A search over a whole library can answer with thousands of albums. A Filter button under the
+      answer offers the genres that search looked in; tick some and the pages are dealt again from what
+      is left. An artist you hold stays where one of your own albums by them sits under a picked genre.
+      A similar artist stays where an earlier search recorded what they play, else is held back with a
+      line saying how many. Filtering never takes a tick away, while Copy and Find in shops act only on
+      the ticked albums you can see.</p>
+    </div>
+    <div class="feat">
+      <h3>A search always shows you what it found</h3>
+      <p>One artist a catalogue would not discuss no longer costs you the rest: what could not be
+      answered for is written down beside what was; the screen opens either way, saying how many
+      artists are missing from it. Every answer is kept the moment it arrives too, so a search
+      stopped, interrupted or cut off by the machine going down loses nothing it had already paid
+      for. Running it again asks only for what is still missing, which is why a second attempt is
+      quick.</p>
+    </div>
+    <div class="feat">
+      <h3>It never offers you what you already have</h3>
+      <p>A remaster of a record you own is the same record, so it is not a gap; a live album of the same
+      name is a different one, so it is. That rule was worked out against a real collection rather than
+      assumed; the edition wording rippers leave in titles is stripped from both sides before
+      anything is compared.</p>
+    </div>
+    <div class="feat">
+      <h3>It says who it could not answer for</h3>
+      <p>Some questions come back with nothing usable: the catalogue is having a bad moment; it holds
+      nobody under a name; it holds several artists under one and none of your tags says which is
+      yours. Each kind is counted separately at the end of a search, since one is worth trying again
+      later and one is a spelling worth a look. A button beside that count opens the names themselves.
+      Without it, an answer that had missed a third of your collection would read exactly like a
+      complete one.</p>
+    </div>
+    <div class="feat">
+      <h3>Then to a shop, if you want one</h3>
+      <p>Tick the albums you want and choose a shop: your browser opens that shop's own search for each
+      one. Stellody has no affiliation with any of them, no arrangement and no referral; it takes
+      nothing from a sale and sells nothing itself. Copy puts the ticked albums on the clipboard for
+      anywhere else.</p>
+      <p>The shops screen edits its own list: add a shop, change or delete one, move it with Ctrl and
+      the arrow keys or drag it by its grip, which carries the shop with the pointer while the others
+      slide aside. A Try button opens a new shop's search before you keep it and a shop that cannot
+      search will not save. When a new version changes the shops it ships, a shop you deleted stays
+      deleted and one you changed keeps your change; one press puts the original shops back while
+      keeping any you added.</p>
+    </div>
+  </div>
+
+  <div class="shot" style="margin-top:2.5rem;">
+    <img src="screenshots/discover.png" width="629" height="641" alt="The Discover new music window: the same genre catalogue the filter uses, laid out in three columns of tick boxes, with the styles indented under the mains that carry them. No genre is ticked yet, so Find is greyed out. A line above says that every tick adds to what is shown and that a style shows that style alone. Beneath the genres, Include compilations (Various Artists) is ticked. A last line says to tick the genres to find similar music in, then press Find, which closes the window while the toolbar reports on the search. Select all sits at the left of the foot with Close and Find at the right, each wearing its own picture.">
+  </div>
+  <p class="shot-caption">Tick what to look in. Find closes this window; the search then reports from the toolbar.</p>
+
+  <div class="shot" style="margin-top:2.5rem;">
+    <img src="screenshots/findinshop.png" width="622" height="675" alt="The Find these in a shop window, saying three albums are ticked and that choosing a shop leaves this window open. Eight shops are listed one to a row, each with a note saying what it stocks: 7digital, Qobuz, Bandcamp, Boomkat, Bleep, Presto Music, ProStudioMasters and Beatport. Each row has a grip at its left for dragging it up or down, with an edit button and a delete button at its right. Add a shop and Put the original shops back sit at the left of the foot, Close at the right.">
+  </div>
+  <p class="shot-caption">Choosing a shop opens that shop's own search for each ticked album. The window stays open so prices can be compared; the list itself is yours to change.</p>
 </section>
 
 <section class="section">
@@ -263,122 +380,6 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="section-label">Finding more of it</div>
-  <h2 class="section-title">Music you do not own yet</h2>
-  <p style="max-width:65ch;">
-    Everything above is about the music already on your disk. This is the opposite question: given what
-    you have collected, what is worth reaching for next. Tick the genres worth looking in and Stellody
-    asks two public music catalogues what those artists released that you do not hold, along with who
-    else sounds like them.
-  </p>
-  <div class="features-grid">
-    <div class="feat">
-      <h3>You choose what it looks at</h3>
-      <p>The genres you tick decide which of your artists are named, so what goes out is a subset you
-      chose rather than an inventory of everything you own. What goes out is those artist names, the
-      identifiers the catalogue gives back for them plus a user agent naming Stellody, its version and the
-      project's contact address: no collection,
-      no counts, nothing about you or your machine.</p>
-    </div>
-    <div class="feat">
-      <h3>Compilations, if you want them</h3>
-      <p>A compilation filed under Various Artists is one name that means nobody, so by default it adds
-      nothing. Tick the box for compilations and the search asks about the artists on their tracks
-      instead, still only in the genres you ticked; a line beneath the box says how many of those
-      artists have never been looked up and roughly how many minutes they add. A credit naming two
-      artists is looked up whole first, then as its two names only if nobody answers to the whole.</p>
-    </div>
-    <div class="feat">
-      <h3>It says how it is getting on</h3>
-      <p>A search takes minutes, because the catalogues ask to be questioned slowly and Stellody keeps
-      to that. Two bars in the toolbar show each half of it, hovering names who is being asked about and
-      the time remaining is written both on the bar and along the foot of the window.</p>
-    </div>
-    <div class="feat">
-      <h3>Stop means stop</h3>
-      <p>While a search runs, the button that started it wears a cross and offers to stop it. One press
-      ends it there and then, with nothing to confirm: the request already in flight is dropped rather
-      than waited out.</p>
-    </div>
-    <div class="feat">
-      <h3>What it found, read plainly</h3>
-      <p>Artists you hold are shown in one colour with the albums by them you do not underneath;
-      artists you hold nothing by are shown in another; opening one fetches its records then. Every
-      line also says in words which kind it is, so the colours are never carrying the meaning alone.</p>
-    </div>
-    <div class="feat">
-      <h3>A page at a time, up to three columns wide</h3>
-      <p>A whole library answers with hundreds of artists, which is more list than anybody reads. The
-      answer is dealt across the width of the screen and turned a page at a time, with two controls
-      under it saying which page of how many you are on; the direction that leads nowhere wears its
-      own picture struck through. Albums you tick stay ticked as you turn the pages, so what goes to
-      a shop is everything you picked out wherever you picked it.</p>
-    </div>
-    <div class="feat">
-      <h3>Narrow a long answer by genre</h3>
-      <p>A search over a whole library can answer with thousands of albums. A Filter button under the
-      answer offers the genres that search looked in; tick some and the pages are dealt again from what
-      is left. An artist you hold stays where one of your own albums by them sits under a picked genre.
-      A similar artist stays where an earlier search recorded what they play, else is held back with a
-      line saying how many. Filtering never takes a tick away, while Copy and Find in shops act only on
-      the ticked albums you can see.</p>
-    </div>
-    <div class="feat">
-      <h3>A search always shows you what it found</h3>
-      <p>One artist a catalogue would not discuss no longer costs you the rest: what could not be
-      answered for is written down beside what was; the screen opens either way, saying how many
-      artists are missing from it. Every answer is kept the moment it arrives too, so a search
-      stopped, interrupted or cut off by the machine going down loses nothing it had already paid
-      for. Running it again asks only for what is still missing, which is why a second attempt is
-      quick.</p>
-    </div>
-    <div class="feat">
-      <h3>It never offers you what you already have</h3>
-      <p>A remaster of a record you own is the same record, so it is not a gap; a live album of the same
-      name is a different one, so it is. That rule was worked out against a real collection rather than
-      assumed; the edition wording rippers leave in titles is stripped from both sides before
-      anything is compared.</p>
-    </div>
-    <div class="feat">
-      <h3>It says who it could not answer for</h3>
-      <p>Some questions come back with nothing usable: the catalogue is having a bad moment; it holds
-      nobody under a name; it holds several artists under one and none of your tags says which is
-      yours. Each kind is counted separately at the end of a search, since one is worth trying again
-      later and one is a spelling worth a look. A button beside that count opens the names themselves.
-      Without it, an answer that had missed a third of your collection would read exactly like a
-      complete one.</p>
-    </div>
-    <div class="feat">
-      <h3>Then to a shop, if you want one</h3>
-      <p>Tick the albums you want and choose a shop: your browser opens that shop's own search for each
-      one. Stellody has no affiliation with any of them, no arrangement and no referral; it takes
-      nothing from a sale and sells nothing itself. Copy puts the ticked albums on the clipboard for
-      anywhere else.</p>
-      <p>The shops screen edits its own list: add a shop, change or delete one, move it with Ctrl and
-      the arrow keys or drag it by its grip, which carries the shop with the pointer while the others
-      slide aside. A Try button opens a new shop's search before you keep it and a shop that cannot
-      search will not save. When a new version changes the shops it ships, a shop you deleted stays
-      deleted and one you changed keeps your change; one press puts the original shops back while
-      keeping any you added.</p>
-    </div>
-  </div>
-
-  <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/discover.png" width="629" height="641" alt="The Discover new music window: the same genre catalogue the filter uses, laid out in three columns of tick boxes, with the styles indented under the mains that carry them. No genre is ticked yet, so Find is greyed out. A line above says that every tick adds to what is shown and that a style shows that style alone. Beneath the genres, Include compilations (Various Artists) is ticked. A last line says to tick the genres to find similar music in, then press Find, which closes the window while the toolbar reports on the search. Select all sits at the left of the foot with Close and Find at the right, each wearing its own picture.">
-  </div>
-  <p class="shot-caption">Tick what to look in. Find closes this window; the search then reports from the toolbar.</p>
-
-  <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/discovered.png" width="1720" height="995" alt="The What the last discovery run found window, opened across a wide screen. A line at the top names the 34 genres the search looked in. Under it a key names the three kinds of row: an artist you hold, drawn in blue, with albums by them you do not underneath; a similar artist you hold nothing by, drawn in amber, which fetches its albums when opened; every other line, which is an album title. The key states outright that nothing in the list is a track. The answer is dealt into three columns of artists: Aerosmith with 35 albums and 4 similar artists, Afel Bocoum and Afrojack, then Affkt with 35 albums and 2 similar artists. Every album has a tick box. Three of Aerosmith's are ticked, each tick drawn inside its box. The last of them, The Complete Unplugged, is the row the keyboard is on, ringed in green. One row runs under the columns: Filter, Copy and Find in shops at the left, then Previous and Next with the words Page 3 of 86 between them, then Close at the right.">
-  </div>
-  <p class="shot-caption">What the search found, turned a page at a time. Blue is an artist you hold; amber is one you do not. Every line says which it is in words.</p>
-
-  <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/findinshop.png" width="622" height="675" alt="The Find these in a shop window, saying three albums are ticked and that choosing a shop leaves this window open. Eight shops are listed one to a row, each with a note saying what it stocks: 7digital, Qobuz, Bandcamp, Boomkat, Bleep, Presto Music, ProStudioMasters and Beatport. Each row has a grip at its left for dragging it up or down, with an edit button and a delete button at its right. Add a shop and Put the original shops back sit at the left of the foot, Close at the right.">
-  </div>
-  <p class="shot-caption">Choosing a shop opens that shop's own search for each ticked album. The window stays open so prices can be compared; the list itself is yours to change.</p>
-</section>
 
 <section class="section">
   <div class="section-label">Playing</div>
