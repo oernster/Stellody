@@ -182,17 +182,22 @@ class TestWhereItSits:
     def test_the_sound_leads_the_right_end_ruled_off_from_the_switches(
         self, window: MainWindow
     ) -> None:
-        """Volume, mute, the equalizer, a rule, then shuffle and repeat.
+        """Volume, mute, a rule, exclusive, the equalizer, a rule, then the switches.
 
-        Read off the drawing, with the rule's own position asserted, since a
-        rule left out of the layout sits at nothing.
+        Read off the drawing, with each rule's own position asserted, since a
+        rule left out of the layout sits at nothing. The order Oliver asked
+        for on 2026-09-17 is the one asserted here: the level, then a rule,
+        then the two controls that describe the stream itself.
         """
         window.show()
         tray = window._bottom_tray
         sound = tray.sound
+        rules = (sound.stream_separator, tray.sound_separator)
         order = (
             sound.volume_button,
             sound.mute_button,
+            sound.stream_separator,
+            sound.exclusive_button,
             sound.equaliser_button,
             tray.sound_separator,
             tray.shuffle_button,
@@ -202,9 +207,10 @@ class TestWhereItSits:
         assert centres == sorted(centres)
         assert len(set(centres)) == len(centres), "each drawn in a place of its own"
         stops = tray.ring_stops()
-        assert stops[-len(order) + 1 :] == tuple(
-            w for w in order if w is not tray.sound_separator
-        ), "the ring walks them in the order they are drawn"
+        walked = tuple(w for w in order if w not in rules)
+        assert (
+            stops[-len(walked) :] == walked
+        ), "the ring walks them in the order they are drawn, skipping the rules"
 
 
 class TestWhereTheSliderOpens:

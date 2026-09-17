@@ -158,6 +158,7 @@ class Playing:
         """Move on at the end of a track; keep the buttons and the bar honest."""
         self._drive(self._transport.advance_if_finished)
         self._position_bar.show_position(self._transport.position)
+        self._position_bar.show_stream(self._transport.report)
         self.follow_shape()
         self.follow_plays()
         self.follow_picture()
@@ -167,6 +168,7 @@ class Playing:
         """Move within the track in hand, in the listener's own frames."""
         self._drive(lambda: self._transport.seek(frame))
         self._position_bar.show_position(self._transport.position)
+        self._position_bar.show_stream(self._transport.report)
 
     def _drive(self, action: Callable[[], object]) -> bool:
         """Run one transport command, saying so when it cannot be done.
@@ -282,5 +284,6 @@ class Playing:
             can_start=self._model.track_at(self.highlighted()) is not None,
         )
         self._position_bar.show_position(self._transport.position)
+        self._position_bar.show_stream(self._transport.report)
         self.follow_spectrum()
         self.show_now_playing()

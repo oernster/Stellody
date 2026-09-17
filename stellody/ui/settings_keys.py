@@ -31,6 +31,8 @@ SETTING_VOLUME = "volume_percent"
 # so each is remembered between sessions rather than starting off every time.
 SETTING_MUTED = "muted"
 SETTING_SHUFFLE = "shuffle"
+# Which stream the device is asked for; see `domain/playback.py OutputMode`.
+SETTING_OUTPUT_MODE = "output_mode"
 SETTING_REPEAT = "repeat"
 # The equalizer, kept as two settings rather than one: the curve
 # outlives being switched off, so somebody comparing on against off

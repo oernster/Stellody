@@ -29,9 +29,10 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.domain.listening import Listening
-from stellody.domain.playback import PlaybackPosition, clock_text
+from stellody.domain.playback import OutputReport, PlaybackPosition, clock_text
 from stellody.domain.waveform import Envelope
 from stellody.ui.row_text import plays_text
+from stellody.ui.stream_words import stream_text
 from stellody.ui.theme import Mode, palette_for
 
 # The groove is addressed in thousandths rather than in frames. A frame count
@@ -171,9 +172,15 @@ class PositionBar(QWidget):
         # the library on 2026-09-16, where every track says its rating at once.
         self.plays = QLabel("", self)
         self.plays.setObjectName("PlayCount")
+        # What the device actually took, beside the clock rather than in the
+        # status line: it describes the track being played rather than
+        # something that just happened. See `stream_words.py`.
+        self.stream = QLabel("", self)
+        self.stream.setObjectName("StreamReport")
         row = QHBoxLayout(self)
         row.addWidget(self.slider, 1)
         row.addWidget(self.clock)
+        row.addWidget(self.stream)
         row.addWidget(self.plays)
         self.slider.sliderMoved.connect(self._moved)
         self.slider.sliderReleased.connect(self._released)
@@ -193,6 +200,10 @@ class PositionBar(QWidget):
         come to say one count two ways.
         """
         self.plays.setText("" if record is None else plays_text(record.plays))
+
+    def show_stream(self, report: OutputReport | None) -> None:
+        """Say what the open stream is; nothing at all while none is open."""
+        self.stream.setText(stream_text(report))
 
     def show_position(self, position: PlaybackPosition | None) -> None:
         """Draw where playback has reached; empty when there is nothing to draw.

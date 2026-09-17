@@ -1568,23 +1568,52 @@ fail in: a platform nobody has thought about plays through its mixer rather
 than not at all. The Windows module is imported inside the call rather than at
 module scope, so a Mac never loads a module naming a host API it does not have.
 
-**Nothing asks for exclusive mode yet.** The transport opens every track with
-the default shared request (`stellody/application/transport.py`), so the
-exclusive path described next is built and tested but does not run, while the
-report of what an open stream delivers is read by nothing on screen. Making it
-run needs the transport to ask for exclusive mode and something to show the
-report.
+**The listener chooses the mode; the strip shows what the device answered.**
+A switch on the bottom strip between mute and the equalizer sets
+`Transport.set_output_mode`, which reopens the track in hand where it is and as
+it was, since a mode belongs to a stream rather than to something a running
+stream can be told. The choice is written down under `output_mode` and is what
+every later track asks for. What the device granted is a different fact and is
+shown separately, beside the clock, by `ui/stream_words.py` reading
+`PlaybackPort.report`: the mode, the rate, the depth, whether it is bit perfect
+plus the reason given where exclusive mode was refused. A refusal never
+changes the choice, so the next track asks again and takes the device the
+moment it is free.
 
-**Exclusive mode is Windows only; that is a statement about the route
-rather than about the machines.** A system mixer owns the device on macOS and
-on Linux exactly as one does on Windows; reaching past it means CoreAudio's own
-interface on the Mac and ALSA addressing the hardware directly on Linux,
-neither of which is reachable through the settings object a stream is opened
-with here. Inside a Flatpak the sandbox hands over a sound socket rather than a
-device at all, so there is nothing to take exclusively. A request for exclusive
-mode is therefore answered with the mixer path and a reason naming why, which
-is the answer a Windows device refusing exclusive mode already gets. Nothing
-claims to be bit perfect that is not.
+**Two things stop an exclusive stream being bit perfect from inside the
+application.** Volume below unity multiplies the block and casts it back
+(`infrastructure/audio.py`); an equalizer that is switched on shapes it
+(`infrastructure/filtering.py`, which costs nothing while flat). Neither is
+prevented; both are simply not bit perfect. `OutputReport.is_bit_perfect`
+answers for the stream rather than for those.
+
+**The route past the mixer differs on every platform; on one there is
+none.** `infrastructure/output.py` answers which module a platform plays
+through and `offers_exclusive` answers whether the mode is offered at all.
+
+- **Windows** takes the device itself, through WASAPI in exclusive mode. This
+  is the only one of the three that stops another application reaching the
+  device.
+- **macOS** cannot. Measured on 2026-09-17 by reading the built library:
+  `paMacCorePro` is 0x1, which is exactly `paMacCoreChangeDeviceParameters`.
+  PortAudio exposes no hog mode at all, so nothing here can take a Mac
+  device away from anything else. What `infrastructure/coreaudio.py` does
+  instead is run the device at the track's own rate and refuse the stream
+  rather than let CoreAudio convert, which delivers the samples untouched
+  while another application playing alongside is still mixed in. It is
+  reported as exclusive mode because it is the mode that was asked for and
+  granted; the difference from Windows is this paragraph rather than a second
+  word in the enumeration. None of it has been run on a Mac.
+- **Linux is ruled out deliberately**, decided with Oliver on 2026-09-17. The
+  build is a Flatpak, so the sandbox hands over a sound socket rather than a
+  device and there is nothing to take; outside the sandbox it would depend on
+  PipeWire letting go, on PortAudio having been built against ALSA and on a raw
+  device existing to address, which differs between distributions and between
+  machines of one distribution. A mode that worked on some Linux machines and
+  quietly did not on others is worse than one that says up front it is not
+  offered, so the control is disabled there with the reason on it.
+
+Nothing claims to be bit perfect that is not.
 
 **A move of the system's output pauses the music; play opens it again there.**
 Measured on 2026-09-14 with headphones connected after launch: PortAudio takes

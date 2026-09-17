@@ -36,6 +36,7 @@ from stellody.infrastructure import (
     diary,
     discovery_file,
     instance,
+    output,
     qt_messages,
     switch_reset,
     window_reset,
@@ -142,6 +143,11 @@ def build_window(
             )
         ),
         settings=store,
+        # The platform question is asked HERE, where infrastructure may be
+        # reached; the answer then travels as a value the window can show.
+        exclusive_refusal=(
+            "" if output.offers_exclusive() else output.NO_EXCLUSIVE_ON_LINUX
+        ),
         shapes=TrackShapes(FileWaveforms(shape_cache_dir())),
         listening=listening,
         art=AlbumArt(artwork),

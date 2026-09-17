@@ -121,13 +121,23 @@ def _bottom_tray_html() -> str:
         + "<p>"
         + img(resources.volume_icon_path())
         + img(resources.unmute_icon_path())
+        + img(resources.exclusive_icon_path())
         + img(resources.equaliser_icon_path())
         + img(resources.shuffle_icon_path())
         + img(resources.repeat_icon_path())
-        + "volume, mute, the equalizer, then shuffle and repeat, at the right "
-        "end. Repeat has three settings: "
+        + "volume, mute, exclusive output, the equalizer, then shuffle and "
+        "repeat, at the right end. Repeat has three settings: "
         "off, the album, then the one song. Every switch shows what pressing "
         "it would DO rather than what it is doing now.</p>"
+        + "<p><b>Exclusive output</b> asks the sound device for the track "
+        "exactly as the file holds it, with the system mixer out of the way. "
+        "The mixer resamples everything it is given, so shared output is "
+        "never bit perfect; exclusive output is, as long as the volume is at "
+        "100% and the equalizer is off, since either one alters the samples "
+        "on the way out. A device another application is holding will refuse: "
+        "the music carries on through the mixer and the foot of the window "
+        "says so. It is offered where the platform has a route past its "
+        "mixer, which today means Windows.</p>"
     )
 
 

@@ -176,6 +176,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Switch to album art",
         f"Volume {DEFAULT_PERCENT}%",
         "Mute",
+        "Take the device exclusively, for the track untouched",
         "Shape what is heard",
         "Turn shuffle on",
         "Repeat mode",

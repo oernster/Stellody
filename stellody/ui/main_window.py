@@ -141,6 +141,11 @@ class MainWindow(
         genre_memory: GenreMemory | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
+        # Why exclusive output is not on offer here; empty where it is. A
+        # VALUE rather than the platform question, because the UI may not
+        # reach into infrastructure to ask one: `infrastructure/output.py`
+        # answers it and the composition root carries the answer in.
+        exclusive_refusal: str = "",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -159,6 +164,7 @@ class MainWindow(
         # application's own quit when nobody supplies one.
         self._leave = leave
         self._scan_session = scan_session
+        self._exclusive_refusal = exclusive_refusal
         # Built at the end of __init__, once there is a window to sit over.
         # A window given no service never checks and never offers, which is
         # what every test that is about something else wants.
@@ -240,6 +246,7 @@ class MainWindow(
             toggle_cover_size=self.toggle_cover_size,
             open_equaliser=self.show_equaliser,
             toggle_mute=self.toggle_mute,
+            toggle_exclusive=self.toggle_exclusive,
             set_volume=self.set_volume,
             read_levels=lambda: self._transport.levels,
         )

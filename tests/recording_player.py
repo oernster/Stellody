@@ -47,21 +47,44 @@ class RecordingPlayer:
         self.lined_up: list[TrackSource | None] = []
         self.joins = True
         self.crossings = 0
+        # Whether an exclusive request is granted, plus the reason given when
+        # it is not. A real device refuses for reasons of its own; a
+        # stand-in has to be told which answer it is giving.
+        self.grants = True
+        self.refusal = ""
+        self._report: OutputReport | None = None
+
+    @property
+    def report(self) -> OutputReport | None:
+        """What the last load answered; None before anything was loaded.
+
+        A test that wants to see a refused mode on screen sets `grants` to
+        False and reads this back, which is what a device holding the
+        exclusive path does to a request for it.
+        """
+        return self._report
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
-        """Record the load and report a plain shared stream."""
+        """Record the load and report the stream this stand-in grants.
+
+        Shared unless the test says the exclusive path is granted, which is
+        the honest default: the mixer is the mode no device refuses.
+        """
         self.calls.append("load")
         self.crossings = 0
         self.loaded.append(source)
         self.requests.append(request)
         self.finished = False
         self.state = PlaybackState.PAUSED
-        return OutputReport(
+        granted = self.grants and request.mode is OutputMode.EXCLUSIVE
+        self._report = OutputReport(
             request=request,
-            mode=OutputMode.SHARED,
+            mode=request.mode if granted else OutputMode.SHARED,
             sample_rate=request.sample_rate,
             bit_depth=request.bit_depth,
+            fallback_reason="" if granted else self.refusal,
         )
+        return self._report
 
     def queue_next(self, source: TrackSource | None) -> bool:
         """Record what was lined up to follow the loaded track."""

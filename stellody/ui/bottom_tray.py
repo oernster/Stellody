@@ -181,6 +181,7 @@ class BottomTray(QWidget):
         toggle_cover_size: Callable[[], None] = lambda: None,
         open_equaliser: Callable[[], None] = lambda: None,
         toggle_mute: Callable[[], None] = lambda: None,
+        toggle_exclusive: Callable[[], None] = lambda: None,
         set_volume: Callable[[int], None] = lambda _percent: None,
         read_levels=None,
     ) -> None:
@@ -233,6 +234,8 @@ class BottomTray(QWidget):
             toggle_mute=toggle_mute,
             set_volume=set_volume,
             open_equaliser=open_equaliser,
+            toggle_exclusive=toggle_exclusive,
+            separator_height_px=BOTTOM_SEPARATOR_HEIGHT_PX,
         )
         # How the music sounds is a different question from how the queue
         # runs, so a rule stands between the sound and the two switches.
@@ -307,6 +310,14 @@ class BottomTray(QWidget):
     def set_percent(self, percent: int) -> None:
         """Remember where the volume is, so the slider opens showing it."""
         self.sound.set_percent(percent)
+
+    def set_exclusive(self, exclusive: bool) -> None:
+        """Show what pressing the output switch would do from here."""
+        self.sound.set_exclusive(exclusive)
+
+    def refuse_exclusive(self, reason: str) -> None:
+        """Stand the output switch down where the platform offers no route."""
+        self.sound.refuse_exclusive(reason)
 
     def set_muted(self, muted: bool) -> None:
         """Show what pressing the mute switch would do from here."""

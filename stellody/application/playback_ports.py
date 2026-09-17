@@ -33,6 +33,17 @@ class PlaybackPort(Protocol):
         """Where the transport is right now."""
         ...
 
+    @property
+    def report(self) -> OutputReport | None:
+        """What the open stream delivers; None while nothing is loaded.
+
+        Declared on the port rather than read off an implementation, because
+        the window shows it: a listener who asked for exclusive output and got
+        the mixer instead is owed the reason; this is the only thing that
+        knows one was given. See `ui/stream_words.py`.
+        """
+        ...
+
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened.
 

@@ -11,12 +11,13 @@ from __future__ import annotations
 from PySide6.QtCore import Slot
 
 from stellody.domain.equalising import Equalisation, as_text, from_text
-from stellody.domain.playback import RepeatMode
+from stellody.domain.playback import OutputMode, RepeatMode
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_EQ_ENABLED,
     SETTING_EQ_GAINS,
     SETTING_MUTED,
+    SETTING_OUTPUT_MODE,
     SETTING_REPEAT,
     SETTING_SHUFFLE,
     SETTING_VOLUME,
@@ -63,6 +64,7 @@ class Switches:
         self._apply_muted(self._flag(SETTING_MUTED))
         self._apply_shuffled(self._flag(SETTING_SHUFFLE))
         self._apply_repeat(self._stored_repeat())
+        self.restore_output_mode()
         self._transport.set_equalisation(self._stored_equalisation())
 
     def _stored_equalisation(self) -> Equalisation:
@@ -81,6 +83,16 @@ class Switches:
     def toggle_mute(self) -> None:
         """Silence the output, else give it back at the level already chosen."""
         self._apply_muted(not self._transport.muted)
+
+    def toggle_exclusive(self) -> None:
+        """Take the device exclusively, else go back to sharing it.
+
+        Two states rather than a cycle, so the picture and the press are one
+        thought: shared is where everything starts, since it is the mode no
+        device refuses.
+        """
+        going = self._transport.output_mode is OutputMode.SHARED
+        self._apply_output_mode(OutputMode.EXCLUSIVE if going else OutputMode.SHARED)
 
     def toggle_shuffle(self) -> None:
         """Scatter the queue, else put the album back into its own order."""
@@ -105,6 +117,48 @@ class Switches:
         self._transport.set_shuffled(shuffled)
         self._bottom_tray.set_shuffled(shuffled)
         self._remember(SETTING_SHUFFLE, shuffled)
+
+    def _apply_output_mode(self, mode: OutputMode) -> None:
+        """Set the mode, show it and remember it: the three go together.
+
+        The transport reopens whatever is in hand on it, so the switch is
+        heard rather than merely noted for the next track.
+        """
+        self._transport.set_output_mode(mode)
+        self._bottom_tray.set_exclusive(mode is OutputMode.EXCLUSIVE)
+        self._settings.set_setting(SETTING_OUTPUT_MODE, mode.value)
+
+    def restore_output_mode(self) -> None:
+        """Open on the mode last left, unless this platform offers no choice.
+
+        Where it offers none the control is stood down rather than left
+        pressable, so nothing can be asked for a mode that cannot be
+        delivered. What is WRITTEN DOWN is deliberately left alone in that
+        case: a listener who chose exclusive output on Windows and opened the
+        same settings on Linux finds it still chosen when they go back, rather
+        than quietly reset by a machine that could not honour it.
+        """
+        if self._exclusive_refusal:
+            self._transport.set_output_mode(OutputMode.SHARED)
+            self._bottom_tray.refuse_exclusive(self._exclusive_refusal)
+            return
+        self._apply_output_mode(self._stored_output_mode())
+
+    def _stored_output_mode(self) -> OutputMode:
+        """The mode last left; shared where nothing readable is stored.
+
+        Shared rather than the last thing written, for a value that is not a
+        mode at all: a listener whose device is suddenly held exclusively by
+        an application they did not ask to hold it has a silent machine and
+        no idea why.
+        """
+        stored = self._settings.get_setting(
+            SETTING_OUTPUT_MODE, OutputMode.SHARED.value
+        )
+        try:
+            return OutputMode(stored)
+        except ValueError:
+            return OutputMode.SHARED
 
     def _apply_repeat(self, repeat: RepeatMode) -> None:
         """Set the switch, show it and remember it: the three go together."""
