@@ -132,10 +132,9 @@ def stylesheet(mode: Mode) -> str:
     /* An item view rings in NO state. Its current row is the indicator, so a
        rectangle round the whole view outlines everything while selecting
        nothing, which is what a click on the empty space below the last row
-       used to do. QTreeView and QListView deliberately gain no rule here. */
-    QTextBrowser:enabled:focus {{
-        border: {FOCUS_WIDTH_PX}px solid {colour.ring};
-    }}
+       used to do. QTreeView and QListView deliberately gain no rule here.
+       A text view rings in no state either, focus included: it is a pane of
+       words, so Tab reaching a licence must not outline the whole page. */
     QLineEdit#SearchBox {{
         font-size: {SEARCH_FONT_PX}px;
         padding-left: {RADIUS_PX}px;
@@ -150,7 +149,7 @@ def stylesheet(mode: Mode) -> str:
     QLineEdit:enabled:hover, QLineEdit:enabled:focus {{
         border: {FOCUS_WIDTH_PX}px solid {colour.ring};
     }}
-    QLineEdit:disabled, QTextBrowser:disabled {{
+    QLineEdit:disabled {{
         border: {FOCUS_WIDTH_PX}px solid {colour.danger};
     }}
     /* A licence is hard wrapped for a fixed pitch font, so it is drawn in
