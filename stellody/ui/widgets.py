@@ -42,9 +42,9 @@ class ReadingPane(QObject):
 
     Two changes; the first is what a reader actually notices:
 
-    TabFocus rather than StrongFocus, so a CLICK never focuses it. The ring
-    then only ever appears because somebody tabbed there, which is the one time
-    it means anything.
+    TabFocus rather than StrongFocus, so a CLICK never focuses it. Only Tab
+    reaches it; even then it wears no ring, since the theme rings no text view
+    in any state.
 
     Then the stop itself is conditional. A page that fits its viewport scrolls
     nowhere, so it is not actionable and drops off the ring entirely. A page
