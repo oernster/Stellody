@@ -144,7 +144,6 @@ checks run; if it ever stopped being true the suite would fail.
 - **Everything reachable from the keyboard.** Every button on both trays bar
   the donation button is on the menu bar too, down to the repeat mode and the
   size of the album art.
-  It can also wait quietly by the clock rather than filling your screen.
 
 The [features page](https://stellody.co.uk/features.html) has the lot.
 
