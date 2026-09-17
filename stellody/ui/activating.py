@@ -59,8 +59,15 @@ class SpaceChooses(QObject):
 
         A view with nothing current has nothing to choose, so Space is left
         alone there rather than being swallowed to no effect.
+
+        Only the views of the window this was built for. A dialog's list keeps
+        Space for itself: in the discovery results Space ticks an album, which
+        an Enter does not, so answering there broke ticking from the keyboard
+        (FR-S15). Reproduced on 2026-09-16; no dialog opens a row on Enter.
         """
         if not isinstance(view, QAbstractItemView):
+            return False
+        if view.window() is not self.parent():
             return False
         if not holds_the_focus(view):
             return False

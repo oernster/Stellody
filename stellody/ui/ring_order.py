@@ -58,6 +58,7 @@ def wire_the_arrows(window) -> tuple[ArrowRing, SpaceChooses]:
 
     Both are parented to the window, so they live exactly as long as the ring
     they walk. They listen to the application rather than to the window, which
-    is what puts a dialog under the same rule without it being told.
+    puts a dialog under the arrow rule without it being told. Space answers
+    only the window's own views, since a dialog's list spends Space on a tick.
     """
     return ArrowRing(window), SpaceChooses(window)

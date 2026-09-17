@@ -1723,15 +1723,23 @@ then does is the window's: the list's `activated` and the pane's
 `track_activated` both reach `activate` in `stellody/ui/playing.py`, which
 plays the album from the chosen track, toggles play and pause where that track
 is already loaded and plays nothing for an album row; the grid's `activated`
-reaches `open_album_at`, which shows that album in the pane. Being installed on
-the application, the filter answers in any item view of any window, a dialog
-included, without being told.
+reaches `open_album_at`, which shows that album in the pane.
+
+**Space answers only the main window's own views.** The filter is installed on
+the application, so it sees a dialog's keys too; it acts only where the view's
+window is the one it was built for. It once answered every item view of every
+window. That broke FR-S15, since Space ticks an album in the discovery results
+and an Enter ticks nothing; the shop test covering ticking built its dialog
+with no window behind it, so the filter was never installed there and the break
+went unseen. Reproduced on 2026-09-16. No dialog opens a row on Enter, so
+nothing was lost by narrowing it.
 
 `tests/ui/test_space_chooses.py` holds it: Space opens what Enter opens in the
 list and over the sleeves; Space opens something at all in the list, so the
 comparison cannot pass by both keys doing nothing; either key shows a shut
 sleeve's album in the pane; a track column beside a sleeve answers Space; a
-view with no current row is left alone. The menu bar answers the other half
+view with no current row is left alone; Space still ticks an album in a results
+dialog opened over the window. The menu bar answers the other half
 itself, since a popup owns the keyboard while it is up: `RingedMenuBar` in
 `stellody/ui/menu_bar.py` hands a highlighted menu item a Return for Space the
 same way, because the Windows styles answer `SH_Menu_SpaceActivatesItem` with

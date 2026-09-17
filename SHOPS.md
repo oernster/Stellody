@@ -415,7 +415,8 @@ list and both controls are reached in the order they are drawn; within a list,
 the arrow keys reach every tick box and a key ticks it.
 
 Verified by: `tests/ui/test_shop_choosing.py::test_the_ticks_and_the_controls_are_stops_on_the_ring`,
-`tests/ui/test_shop_choosing.py::test_a_tick_box_is_reached_and_ticked_from_the_keyboard`
+`tests/ui/test_shop_choosing.py::test_a_tick_box_is_reached_and_ticked_from_the_keyboard`,
+`tests/ui/test_space_chooses.py::TestADialogOverTheWindow::test_space_still_ticks_an_album_in_the_results`
 
 ---
 

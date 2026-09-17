@@ -17,6 +17,11 @@ from library_support import library_window
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
+from results_support import gaps_with
+
+from stellody.ui.results_dialog import ResultsDialog
+from stellody.ui.results_ticks import TICKED, is_tickable
+from stellody.ui.theme import Mode
 
 
 @pytest.fixture
@@ -118,6 +123,41 @@ class TestOverTheSleeves:
         column.setCurrentIndex(first_track(window))
         column.setFocus(Qt.FocusReason.TabFocusReason)
         assert opened_by(column, Qt.Key.Key_Space, application)
+
+
+class TestADialogOverTheWindow:
+    def test_space_still_ticks_an_album_in_the_results(
+        self, application: QApplication, window
+    ) -> None:
+        """Reproduced on 2026-09-16: FR-S15 broken by this very rule.
+
+        The rule listens to the whole application, so once the window existed
+        it turned Space in the results list into an Enter, which ticks nothing.
+        The shop test that covers ticking builds its dialog with no window
+        behind it, which is how the break went unseen. Built here the way the
+        window builds one, over the window.
+        """
+        dialog = ResultsDialog((gaps_with(albums=2),), mode=Mode.DARK, parent=window)
+        try:
+            dialog.show()
+            tree = dialog.pages.trees[0]
+            dialog.activateWindow()
+            tree.setFocus(Qt.FocusReason.TabFocusReason)
+            source = dialog.sources[0]
+            album = next(
+                source.child(at)
+                for at in range(source.childCount())
+                if is_tickable(source.child(at))
+            )
+            tree.setCurrentItem(album)
+            application.processEvents()
+            assert application.focusWidget() is tree, "the key goes to the list"
+            QTest.keyClick(tree, Qt.Key.Key_Space)
+            application.processEvents()
+            assert album.checkState(0) is TICKED
+        finally:
+            dialog.close()
+            dialog.deleteLater()
 
 
 class TestWhereThereIsNothingToOpen:
