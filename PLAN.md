@@ -97,14 +97,13 @@ somebody decides on one.
   2026-09-09, the same day it was scoped and for a related reason: it was
   judged to cause more problems than it solves. What the scoping found is kept
   here so the judgement is not made twice from scratch. Every concert listing
-  service is keyed, which meets C-07's second clause rather than its first: the
-  objection is not that a key would be published, since a key the listener
-  pastes into a file of their own is no more compiled in than a shop row is.
-  It is that everybody wanting the feature would have to go and get one. A
-  listing screen therefore serves whoever has done that and nobody else. The
-  remaining shape that needs no key is handing a gig site's search address to
-  the browser, which is the shops mechanism pointed at other sites and is a
-  link rather than a feature. Two further costs were open when it was dropped:
+  service needs an API key, which C-07 in `DISCOVERY.md` rules out. A key built
+  into the application would be a published key. A key each listener fetches
+  for themselves would not be published; everybody wanting the feature would
+  have to go and get one, so a listing screen would serve the few who had done
+  that and nobody else. The remaining shape that needs no key is handing a gig
+  site's search address to the browser, which is the shops mechanism pointed at
+  other sites and is a link rather than a feature. Two further costs were open when it was dropped:
   it would send a place as well as artist names, narrowed to a postcode
   district somebody typed rather than one detected; its answers also go stale
   in a way a catalogue's do not, so nothing about the thirty day memory could
