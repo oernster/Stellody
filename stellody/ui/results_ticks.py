@@ -18,8 +18,16 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PySide6.QtCore import QModelIndex, QPersistentModelIndex, Qt
+from PySide6.QtGui import QPainter
+from PySide6.QtWidgets import (
+    QApplication,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
+    QTreeWidget,
+    QTreeWidgetItem,
+)
 
 from stellody.domain.shopping import WantedAlbum
 
@@ -49,6 +57,53 @@ def is_tickable(item: QTreeWidgetItem) -> bool:
     box appears is whether the row carries a state at all.
     """
     return item.data(0, Qt.ItemDataRole.CheckStateRole) is not None
+
+
+class BoxedTicks(QStyledItemDelegate):
+    """Draws a ticked album's box as well as its tick.
+
+    Asked for by Oliver on 2026-09-17. Measured on the real screen the same
+    day: the platform style draws an unticked album as an empty box and a
+    ticked one as a bare tick with no box round it, so the two read as
+    different kinds of row. The box drawn is the style's own unticked one,
+    with the tick drawn again over it, so nothing here invents a picture or
+    a colour of its own.
+    """
+
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
+        """The row as Qt draws it; then, where ticked, the box and the tick."""
+        super().paint(painter, option, index)
+        state = index.data(Qt.ItemDataRole.CheckStateRole)
+        if state is None or Qt.CheckState(state) is not TICKED:
+            return
+        item = QStyleOptionViewItem(option)
+        self.initStyleOption(item, index)
+        view = option.widget
+        style = view.style() if view is not None else QApplication.style()
+        indicator = style.subElementRect(
+            QStyle.SubElement.SE_ItemViewItemCheckIndicator, item, view
+        )
+        for shown in (QStyle.StateFlag.State_Off, QStyle.StateFlag.State_On):
+            drawn = QStyleOptionViewItem(item)
+            drawn.rect = indicator
+            drawn.state = (item.state & ~QStyle.StateFlag.State_On) | shown
+            self.draw_indicator(style, drawn, painter, view)
+
+    def draw_indicator(self, style: QStyle, option, painter, view) -> None:
+        """Have the style draw one tick box. Its own method so a test can see
+        what is drawn: offscreen, the style already boxes a tick, so a picture
+        taken there looks the same with this delegate or without it."""
+        style.drawPrimitive(
+            QStyle.PrimitiveElement.PE_IndicatorItemViewItemCheck,
+            option,
+            painter,
+            view,
+        )
 
 
 def _rows(item: QTreeWidgetItem):

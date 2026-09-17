@@ -24,12 +24,18 @@ import pytest
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QStyle
 from results_support import gaps_with
 from ring_support import build_ring_window
 
 from stellody.ui.results_dialog import ResultsDialog
-from stellody.ui.results_ticks import TICKED, UNTICKED, every_row, is_tickable
+from stellody.ui.results_ticks import (
+    TICKED,
+    UNTICKED,
+    BoxedTicks,
+    every_row,
+    is_tickable,
+)
 from stellody.ui.theme import Mode, palette_for
 
 # Room for three lists side by side: what a 13 inch display gives the dialog.
@@ -214,6 +220,37 @@ def test_every_row_of_a_list_is_one_height(
                 if is_tickable(row) is tickable
             }
             assert len(heights) == 1, (tickable, heights)
+
+
+class RecordingTicks(BoxedTicks):
+    """The delegate, noting each box it draws instead of drawing it."""
+
+    def __init__(self, parent) -> None:
+        super().__init__(parent)
+        self.drawn: list[bool] = []
+
+    def draw_indicator(self, style, option, painter, view) -> None:
+        self.drawn.append(bool(option.state & QStyle.StateFlag.State_On))
+
+
+def test_a_ticked_album_is_drawn_boxed(
+    application: QApplication, dialog: ResultsDialog
+) -> None:
+    """Asked for by Oliver on 2026-09-17: the platform style drew a ticked
+    album as a bare tick with no box, measured on the real screen. Every list
+    draws through the delegate; a ticked row gets the empty box then the tick,
+    an unticked row gets nothing beyond what Qt draws."""
+    for tree in dialog.pages.trees:
+        assert isinstance(tree.itemDelegate(), BoxedTicks)
+    tree = dialog.pages.trees[0]
+    recorder = RecordingTicks(tree)
+    tree.setItemDelegate(recorder)
+    album = first_album(dialog)
+    tree.grab()
+    assert recorder.drawn == [], "nothing ticked, nothing extra drawn"
+    album.setCheckState(0, TICKED)
+    tree.grab()
+    assert recorder.drawn[:2] == [False, True], "the box, then the tick in it"
 
 
 def ring_pixels(widget, ring: str) -> int:

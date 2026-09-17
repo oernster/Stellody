@@ -1763,7 +1763,11 @@ while its list has focus through `QTreeWidget#ResultsList::item:focus`, the one
 item-level ring rule; `tests/ui/test_focus_rings.py` still refuses a ring round
 any view and proves that exemption reaches a row alone. A list is styled before
 a row goes in: filled first, the rows measured before the stylesheet arrived
-kept an unstyled height, so one list read at 18 and 26 pixels. Ruled by Oliver
+kept an unstyled height, so one list read at 18 and 26 pixels. A ticked album
+is drawn through `BoxedTicks` in `results_ticks.py`, since the Windows style
+draws a ticked row as a bare tick with no box: the delegate has the style draw
+its own empty box at the indicator, then the tick again over it, so no picture
+or colour is invented. Ruled by Oliver
 on 2026-09-17 against the installed build; `tests/ui/test_results_keyboard.py`
 holds it over the real window, each part proved by taking it out.
 

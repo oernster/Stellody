@@ -19,7 +19,13 @@ from PySide6.QtGui import QBrush, QColor, QFocusEvent, QKeyEvent
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
-from stellody.ui.results_ticks import TICKED, UNTICKED, is_tickable, make_tickable
+from stellody.ui.results_ticks import (
+    TICKED,
+    UNTICKED,
+    BoxedTicks,
+    is_tickable,
+    make_tickable,
+)
 from stellody.ui.results_words import candidate_row, source_row
 from stellody.ui.theme import Palette
 
@@ -169,6 +175,7 @@ def filled_tree(
     # an unstyled row while the rest took the padding and border, so a list
     # read at two row heights, 18 and 26 pixels.
     tree.ensurePolished()
+    tree.setItemDelegate(BoxedTicks(tree))
     tree.setHeaderHidden(True)
     tree.setColumnCount(1)
     for found in gaps:
