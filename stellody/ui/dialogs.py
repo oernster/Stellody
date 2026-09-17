@@ -58,10 +58,23 @@ LICENCE_HEIGHT_PX = 520
 # licence; the screen is the harder limit of the two.
 LICENCE_MAX_WIDTH_PX = 1400
 
+# Qt's Wayland platform plugins all carry this prefix: wayland, wayland-egl,
+# wayland-brcm.
+WAYLAND_PLATFORM_PREFIX = "wayland"
+
 LICENCE_FALLBACK = (
     "The licence text could not be located beside the application. "
     "It is available in the source repository."
 )
+
+
+def makes_window_early(platform_name: str) -> bool:
+    """Whether a dialog makes its native window before it is sized.
+
+    Every platform but Wayland, where doing so corrupts the window behind it;
+    see FirstStopDialog.
+    """
+    return not platform_name.startswith(WAYLAND_PLATFORM_PREFIX)
 
 
 class FirstStopDialog(QDialog):
@@ -86,7 +99,16 @@ class FirstStopDialog(QDialog):
         # its width times the panel's scale whenever that product passes the
         # primary's width, so 1152 wide came up 3441 wide across every screen.
         # Made first, every size tried opened as asked.
-        self.winId()
+        #
+        # Never on Wayland. Measured on 2026-09-17 in the flatpak on a 200%
+        # panel the compositor scales fractionally at 180%: a dialog window
+        # made before it is shown sends the main window behind it through one
+        # frame drawn at 1.8 but presented at 2.0, so the whole window shrank
+        # to nine tenths inside a ghost of its own frame and a caret was left
+        # blinking beside a button once the dialog closed. The same build with
+        # this one call skipped showed neither.
+        if makes_window_early(QApplication.platformName()):
+            self.winId()
         self._started = False
 
     def first_stop(self) -> QWidget | None:

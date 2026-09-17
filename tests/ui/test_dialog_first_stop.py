@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
 
 from stellody.composition import build_window
 from stellody.infrastructure.store import SqliteLibraryStore
-from stellody.ui.dialogs import FirstStopDialog
+from stellody.ui.dialogs import FirstStopDialog, makes_window_early
 from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.settings_keys import SETTING_ROOT
 
@@ -104,6 +104,23 @@ def test_every_dialog_has_its_window_before_it_is_shown(
     finally:
         dialog.close()
         dialog.deleteLater()
+
+
+@pytest.mark.parametrize("platform", ["wayland", "wayland-egl"])
+def test_no_dialog_makes_its_window_early_on_wayland(platform: str) -> None:
+    """The reported fault: About shrank the main window inside a ghost frame.
+
+    Seen only in the flatpak on Wayland and gone with the early window
+    skipped, so the platform check is what is pinned; the offscreen suite
+    cannot show a compositor presenting a frame at the wrong scale.
+    """
+    assert not makes_window_early(platform)
+
+
+@pytest.mark.parametrize("platform", ["windows", "xcb", "cocoa", "offscreen"])
+def test_every_other_platform_still_makes_the_window_early(platform: str) -> None:
+    """The multi-display sizing fix stays wherever it was not measured harmful."""
+    assert makes_window_early(platform)
 
 
 @pytest.mark.parametrize("build", DIALOGS.values(), ids=DIALOGS.keys())
