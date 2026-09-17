@@ -230,16 +230,16 @@ def test_a_placement_that_does_not_happen_is_tried_again(
     five_track_album(window)
     album_index = window._model.index(0, 0)
     window.activate(window._model.index(0, 0, album_index))
-    placing = window._model.index_for
+    placing = window._model.index_for_handle
     misses = [1]
 
-    def sometimes(track):
+    def sometimes(handle):
         if misses:
             misses.pop()
             return QModelIndex()
-        return placing(track)
+        return placing(handle)
 
-    window._model.index_for = sometimes
+    window._model.index_for_handle = sometimes
     player.finished = True
     window._poll_transport()
     assert highlighted(window) is not window._transport.current, "it missed"

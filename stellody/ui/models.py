@@ -13,10 +13,10 @@ from PySide6.QtGui import QPixmap
 from stellody.application.artwork import AlbumArtSources
 from stellody.application.listening import ListeningLog
 from stellody.domain.album import Album
-from stellody.domain.listening import Listening, track_handle
+from stellody.domain.listening import Listening
 from stellody.domain.track import Track
 from stellody.ui.covering import GRID_COVER_PX
-from stellody.ui.nodes import Node, build, find_track
+from stellody.ui.nodes import Node, build, find_handle, find_track, handle_of
 from stellody.ui.row_text import (
     HEADINGS,
     STARS_ROLE,
@@ -36,16 +36,6 @@ class _NothingKept:
 
     def set_listening(self, handle: str, path: str, record) -> None:
         """Take it and forget it."""
-
-
-def _track_rows(album: Node):
-    """Every track under an album, whether or not discs sit between."""
-    for child in album.children:
-        if child.track is not None:
-            yield child
-        for deeper in child.children:
-            if deeper.track is not None:
-                yield deeper
 
 
 class AlbumTreeModel(QAbstractItemModel):
@@ -103,12 +93,8 @@ class AlbumTreeModel(QAbstractItemModel):
 
     def _record_of(self, node: Node) -> Listening | None:
         """What is kept about a track row's own track; None for any other row."""
-        album = node.parent
-        while album is not None and album.album is None:
-            album = album.parent
-        if album is None or album.album is None or node.track is None:
-            return None
-        return self._listening.of(self._handle_of(album, node))
+        handle = handle_of(node)
+        return None if handle is None else self._listening.of(handle)
 
     def plays_of(self, node: Node) -> int:
         """How many times a track row's own track has played out."""
@@ -121,25 +107,10 @@ class AlbumTreeModel(QAbstractItemModel):
         return None if record is None else record.stars
 
     def redraw_listening(self, handle: str) -> None:
-        """Draw again the one row whose count or rating has just changed.
-
-        Found by walking rather than by asking where a track is: that search
-        is retried when it misses, so spending it here would take the attempt
-        the highlight needs.
-        """
-        for album in self._roots:
-            for node in _track_rows(album):
-                if self._handle_of(album, node) == handle:
-                    self._redraw_listening(node)
-                    return
-
-    def _handle_of(self, album: Node, node: Node) -> str:
-        """The handle a track row's record is kept against."""
-        return track_handle(
-            album.album.identity,
-            node.track.disc_number,
-            node.track.track_number,
-        )
+        """Draw again the one row whose count or rating has just changed."""
+        node = find_handle(self._roots, handle)
+        if node is not None:
+            self._redraw_listening(node)
 
     def _redraw_listening(self, node: Node) -> None:
         """Ask the view to draw one track's plays and rating cells again."""
@@ -172,7 +143,7 @@ class AlbumTreeModel(QAbstractItemModel):
         flashed = None if self._flash is None else self._flash.brush(index)
         if flashed is not None or self._mark is None:
             return flashed
-        return self._mark.brush(node.track)
+        return self._mark.brush(handle_of(node))
 
     def redraw_row(self, where: QModelIndex) -> None:
         """Ask the view to draw one whole row again."""
@@ -278,6 +249,23 @@ class AlbumTreeModel(QAbstractItemModel):
         played is a particular one of them.
         """
         found = find_track(self._roots, track)
+        if found is None:
+            return QModelIndex()
+        return self.createIndex(found.row, 0, found)
+
+    def handle_at(self, index: QModelIndex) -> str | None:
+        """The handle this row is known by; None where it holds no track."""
+        node = self._node(index)
+        return None if node is None else handle_of(node)
+
+    def index_for_handle(self, handle: str) -> QModelIndex:
+        """Where the track known by this handle sits; invalid where none is.
+
+        By handle rather than by the track object, so a caller holding a track
+        from before a scan or a reload still finds its row. `index_for` stays
+        for a caller holding one of the tracks on show.
+        """
+        found = find_handle(self._roots, handle)
         if found is None:
             return QModelIndex()
         return self.createIndex(found.row, 0, found)

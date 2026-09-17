@@ -49,7 +49,9 @@ class NowPlaying:
     def show_now_playing(self) -> None:
         """Mark and name the track in hand; clear both once nothing is."""
         in_hand = self._transport.current if self._transport.state.is_active else None
-        self._mark.show(in_hand)
+        # The album goes with it, because the mark is held by handle rather
+        # than by the track object: see `playing_mark.py`.
+        self._mark.show(self._transport.album, in_hand)
         self._now_playing.setText(now_playing_line(in_hand))
 
     def show_mark_appearance(self, mode: Mode) -> None:

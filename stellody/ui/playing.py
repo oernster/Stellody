@@ -18,6 +18,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Slot
 
+from stellody.ui.playing_mark import handle_for
 from stellody.ui.settings_keys import STATUS_TIMEOUT_MS, UNPLAYABLE_MESSAGE_MS
 
 # Often enough that the button never lies for long, rarely enough that an idle
@@ -220,22 +221,28 @@ class Playing:
         own highlight in the album open under it, so pointing the tree at a
         track left the visible one where it was: reported against an album
         playing through, where nothing on screen said what was playing.
+
+        Every comparison here is between HANDLES rather than between track
+        objects. A scan, a repair or a tag edit reloads the library and builds
+        every track afresh while this one plays on, so the object the
+        transport holds then matches no row: the follow stopped dead and the
+        "leave the listener alone" guard held it there. See `playing_mark.py`.
         """
-        track = self._transport.current
-        if track is None:
+        handle = handle_for(self._transport.album, self._transport.current)
+        if handle is None:
             return
-        showing = self._model.track_at(self.highlighted())
-        if showing is track:
-            self._followed = track
+        showing = self._model.handle_at(self.highlighted())
+        if showing == handle:
+            self._followed = handle
             return
-        if track is self._followed and showing is not self._followed:
+        if handle == self._followed and showing != self._followed:
             return
-        index = self._model.index_for(track)
+        index = self._model.index_for_handle(handle)
         if not index.isValid():
             return
         if not self._show_highlight(index):
             return
-        self._followed = track
+        self._followed = handle
 
     def _show_highlight(self, index: QModelIndex) -> bool:
         """Move the highlight in the view on show; False if it could not.

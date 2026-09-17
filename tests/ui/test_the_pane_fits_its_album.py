@@ -25,6 +25,7 @@ from stellody.application.transport import Transport
 from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.ui.covering import COVER_SIZES
+from stellody.ui.covers_page import GRID_SHARE_OF_PAGE
 from stellody.ui.main_window import MainWindow
 
 SHORT = 2
@@ -144,3 +145,36 @@ def test_larger_sleeves_leave_a_long_album_less_room(
     window.show_cover_size_choice(COVER_SIZES[-1])
     application.processEvents()
     assert pane.sizeHint().height() < smallest
+
+
+def test_a_long_album_is_kept_to_half_the_page(
+    window: MainWindow, application: QApplication
+) -> None:
+    """Reported by Oliver on 2026-09-17: one album's pane dominated the screen.
+
+    The grid used to keep one row of sleeves and give the pane everything
+    else, so a long album left a single row showing where a short one left
+    three. Half the page reads the same under every album.
+    """
+    pane = open_album(window, application, LONG)
+    page = window._covers_page
+    assert page.height() > 2 * (
+        window._grid.gridSize().height() + 2 * window._grid.frameWidth()
+    ), "the page has to be taller than two rows for the share to be the binding rule"
+    assert pane.height() <= page.height() // GRID_SHARE_OF_PAGE
+
+
+def test_the_grid_keeps_its_share_under_a_long_album(
+    window: MainWindow, application: QApplication
+) -> None:
+    """What he asked for: sleeves to go on browsing, not one album's listing.
+
+    Said as the share rather than as a number of rows, because the offscreen
+    page is 535 pixels and one row of the smallest sleeve is 196 of them: a row
+    count provable here would be a row count of one. The share is the rule and
+    it is what makes a real window show several rows.
+    """
+    open_album(window, application, LONG)
+    page = window._covers_page
+    kept = page.height() - window._album_pane.height()
+    assert kept >= page.height() // GRID_SHARE_OF_PAGE

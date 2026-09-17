@@ -30,6 +30,7 @@ from stellody.ui.covering import (
     stored_cover_size,
 )
 from stellody.ui.covers_page import CoversPage
+from stellody.ui.playing_mark import handle_for
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_COVER_SIZE,
@@ -256,11 +257,33 @@ class Viewing:
         self._shown_album = album
         self._shown_index = where
         self._album_pane.show_album(album, where, self._model.data(where, DECORATION))
+        self._point_at_what_is_in_hand()
         self.show_album_rating()
         self._album_pane.setVisible(True)
         # Now the pane has its room, not before: see `scroll_settled`.
         self._grid.scroll_settled(where)
         self._ring_open(where.row())
+
+    def _point_at_what_is_in_hand(self) -> None:
+        """Open on the track in hand, where the album just opened holds it.
+
+        Reported by Oliver on 2026-09-17 and reproduced offscreen the same
+        day: pausing on the third track, rolling the pane up and back down,
+        then pressing play started the album from the top. An album opens with
+        the highlight on its first track and the play button means the
+        highlighted track, so the pane coming back had thrown away where the
+        listener was.
+
+        Only the album in hand is affected. Any other opens on its first
+        track exactly as before, which is what keeps the rule that picking a
+        second album and pressing play starts THAT album.
+        """
+        handle = handle_for(self._transport.album, self._transport.current)
+        if handle is None:
+            return
+        where = self._model.index_for_handle(handle)
+        if where.isValid():
+            self._album_pane.show_track(where)
 
     def show_pane_cover(self, key: str) -> None:
         """Put a sleeve on the open album once it has actually been read.

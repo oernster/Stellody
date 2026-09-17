@@ -27,7 +27,6 @@ from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService
 from stellody.domain.health import LibraryIssue
-from stellody.domain.track import Track
 from stellody.shared.version import APP_NAME
 from stellody.ui import ring_order, standing_in
 from stellody.ui.appearance import Appearance
@@ -284,7 +283,7 @@ class MainWindow(
         self._model.set_descending(self._flag(SETTING_DESCENDING))
         # The track the highlight was last moved to, so the library follows
         # the transport on a change rather than on every poll.
-        self._followed: Track | None = None
+        self._followed: str | None = None
         self.wire_tree()
         self.restore_volume()
         self.restore_switches()
