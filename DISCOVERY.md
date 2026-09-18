@@ -5,7 +5,8 @@ not hold. It was written before any code, because the milestone was explicitly
 undesigned and a feature
 generated from a loose description is a feature debugged rather than built.
 
-It is built and it is finished. Where this document and the code disagree, this
+It is built. One diagnostic in section 6 is not yet met; that section says so.
+Where this document and the code disagree, this
 document is amended rather than quietly diverged from; every requirement below
 names the test that holds it, so a claim here is checkable against the suite.
 
@@ -467,6 +468,9 @@ Priority: Must
 
 Requirement: When a source artist has been identified, the discovery service
 shall request the albums that artist made, including each album's stated genres.
+One request is made, so what comes back is the first 100 albums and EPs the
+catalogue lists (`GROUP_LIMIT` in `infrastructure/catalogue.py`, the most the
+service puts on a page); a larger discography is cut short there.
 
 Acceptance: Given an identified source artist, when the run reaches their
 albums, then one request is made carrying that artist's identifier and asking
@@ -515,8 +519,8 @@ carries the identifier and the algorithm, the answer arrives already ranked and
 it can name.
 
 Acceptance: Given an identified source artist, when the run reaches similarity,
-then one request is made of the similarity source carrying that artist's
-identifier and asking for ten.
+then one call is made to the similarity source carrying that artist's
+identifier and a count of ten, which the client applies to the ranked answer.
 
 Verified by: `tests/application/test_discovery.py::test_similar_artists_are_requested`
 
@@ -1185,7 +1189,8 @@ Priority: Must
 Requirement: When a candidate artist is expanded in the results dialog, the
 results dialog shall show the releases that artist made which pass the offering
 rule section 3.5 states, fetched at the moment of expanding rather than during
-the run.
+the run. As with FR-D10, one request is made, so an artist is shown at most
+the first 100 albums and EPs the catalogue lists.
 
 Rationale: Measured on 2026-09-07: one catalogue request costs at least the 1.1
 second gap NFR-PERF-001 requires. Asking during the run would add a request for
@@ -1738,7 +1743,8 @@ exists before it is sized. Measured on 2026-09-16 on a 3440 wide primary beside
 13 inch panels at 250% and 300%: a dialog sized before its window existed
 opened at its width times the panel's scale wherever that product passed the
 primary's width, so the results screen opened across every display. Every
-dialog now makes its window first, in `FirstStopDialog` (`ui/dialogs.py`).
+dialog now makes its window first, in `FirstStopDialog` (`ui/dialogs.py`),
+except on Wayland, where doing so corrupts the window behind it.
 
 Dealt by height rather than in equal counts because one artist can carry fifteen
 albums while the next carries one, so a count-by-count fill leaves one column

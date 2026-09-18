@@ -50,8 +50,8 @@ from stellody.domain.discovery import Gaps
 
 # Said against an artist the catalogue would not talk about on any pass. Plain
 # words rather than a status, since it reaches a person: the discovery file
-# treats it as a hole and declines to write, so what somebody sees is the last
-# complete answer plus this name.
+# writes the run with this artist named as a hole in it, keeping whatever the
+# last run held for them, so what somebody sees is that answer plus this name.
 REFUSED_EVERY_PASS = "the catalogue stayed busy through every pass"
 # Said against an artist nothing answered about on any pass. Its own words
 # rather than the ones above, for the reason a busy source and an unreachable

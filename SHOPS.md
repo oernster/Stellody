@@ -303,7 +303,8 @@ Rationale: Measured on 2026-09-07: Boomkat's search returned nothing for
 "Autechre Amber" and 85 results including Amber for "Autechre", so a shop that
 searches badly on two terms is given one. Two placeholders let each row say
 what that shop can actually take. `%20` rather than `+` because HDtracks shows
-a literal plus sign, while every other shop measured accepted `%20`.
+a literal plus sign, while Qobuz, Bandcamp, Boomkat, Bleep, Beatport and
+ProStudioMasters all accepted `%20`.
 
 Acceptance: Given the template
 `https://www.qobuz.com/gb-en/search?q={artist}%20{album}` and the album
@@ -321,16 +322,21 @@ Priority: Must
 **Completed by FR-S42.** The row is never searched; the shops dialog lists
 it greyed out with its reason instead of passing over it in silence.
 
-Requirement: If a shop's template holds neither `{artist}` nor `{album}`, then
+Requirement: ~~If a shop's template holds neither `{artist}` nor `{album}`, then
 the shop service shall leave that shop out of the list and shall say which row
-was refused.
+was refused.~~ Amended by FR-S42: if a shop's template holds neither `{artist}`
+nor `{album}`, then the shop service shall leave that row out of the shops that
+can be searched and shall keep it in the list with its reason.
 
 Rationale: The unwanted sibling of FR-S10. A template with no placeholder opens
 the same page whatever is ticked, which looks like a broken search rather than
 a mistyped row.
 
-Acceptance: Given a shop file holding a row whose template has no placeholder,
-when the list is read, then that shop is absent and the reason names it.
+Acceptance: ~~Given a shop file holding a row whose template has no placeholder,
+when the list is read, then that shop is absent and the reason names it.~~
+Amended by FR-S42: given a shop file holding a row whose template has no
+placeholder, when the list is read, then that row is not among the shops that
+can be searched and is read back as a broken row naming its reason.
 
 Verified by: `tests/infrastructure/test_shop_file.py::TestWhatIsRefused::test_a_template_with_no_placeholder_is_refused`
 

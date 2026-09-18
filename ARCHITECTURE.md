@@ -1614,7 +1614,8 @@ planting its removal.
 
 **Which rates a device takes is asked once per device, not once per refresh.**
 `exclusive_rates` in `infrastructure/wasapi.py` asks the driver one rate at a
-time and opens no stream, six questions an answer, while the window refreshes
+time and opens no stream: six rates, each costing one question or two since
+`native_dtype` tries the deeper sample type first, while the window refreshes
 four times a second. `OutputDevices.exclusive_rates` in
 `infrastructure/output_devices.py` therefore keeps the answer until the output
 moves. After a move PortAudio still means the old device until its list is
@@ -1693,7 +1694,7 @@ settings object is passed at all, since one belongs to a single host API and
 handing a WASAPI object to CoreAudio fails the stream outright. Proved by
 planting exactly that. `tests/infrastructure/test_output_switch.py` walks the
 switch under a stated platform, because the Windows branch is the only one that
-runs on the machine the suite is developed on and the other would otherwise
+runs on the machine the suite is developed on and the other two would otherwise
 ship on a reading of the source alone.
 
 ## Shipping to three platforms

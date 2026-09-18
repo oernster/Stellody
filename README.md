@@ -64,8 +64,8 @@ checks run; if it ever stopped being true the suite would fail.
   on the bottom strip asks the sound device for the music with the system
   mixer out of the way, which is the only way it can be bit perfect. Pressing
   it reopens the song in hand where it was; a paused song stays paused. Beside
-  the clock sits what the device actually took: the mode, the rate, the depth
-  plus "bit perfect" where that is true. Bit perfect also needs the volume at
+  the playing time sits what the device actually took: the mode, the rate, the
+  depth plus "bit perfect" where that is true. Bit perfect also needs the volume at
   100% and the equalizer off, since either one alters the samples. It is
   offered only for a song the device can take untouched: not for a lossy song
   such as an MP3, which has nothing to deliver untouched, nor at a rate the

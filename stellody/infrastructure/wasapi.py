@@ -37,7 +37,8 @@ CANDIDATE_DTYPES = ("int32", "int16")
 CANDIDATE_RATES = (44100, 48000, 88200, 96000, 176400, 192000)
 # What the probe asks WITH. A rate is offered or it is not; the depth of
 # the file asking does not change the driver's answer, so one stands for
-# all of them and the probe costs six questions rather than twelve.
+# all of them. Each rate still costs one question or two, since
+# `native_dtype` tries each candidate sample type in turn.
 PROBE_DEPTH = 16
 NO_EXCLUSIVE_FORMAT = "the device offers no exclusive format at this rate"
 
