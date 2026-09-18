@@ -142,12 +142,13 @@ somebody decides on one.
   the device untouched only where the volume is exactly unity; any other figure
   multiplies the block and casts it back to the sample type the device is fed.
   A levelling gain is nearly always a reduction, so every album that had been
-  measured would be scaled on the way out. Every stream Stellody opens today
-  asks for shared mode (`OutputRequest` in `domain/playback.py`), which is fed
-  floating point, so the block would be scaled without being requantised. The
-  exclusive path in `infrastructure/wasapi.py`, which nothing currently asks
-  for, is fed integers and would requantise it as well. Scaled is enough to
-  break the promise either way. This application
+  measured would be scaled on the way out. A shared stream is fed floating
+  point, so the block would be scaled without being requantised. An exclusive
+  stream on Windows (`infrastructure/wasapi.py`) is fed integers and would
+  requantise it as well; exclusive output is the switch a listener presses to
+  have the file's samples reach the device untouched, which a levelling gain
+  would undo on every measured album. Scaled is enough to break the promise
+  either way. This application
   exists because another player altered somebody's files; handing the device
   exactly what the file holds is that same promise, so spending it to save
   reaching for the volume once a record is a poor trade. It reopens for somebody

@@ -57,9 +57,35 @@ checks run; if it ever stopped being true the suite would fail.
   by as much as it lifts, so a loud record never clips; music plays quieter
   with such a curve on, while a curve that only cuts keeps its level. Switched
   off it adds nothing of its own, handing each block back untouched; at full
-  volume nothing else in Stellody touches the samples either. Volume, mute and
-  the equalizer sit together at the right end of the bottom strip, ahead of
-  shuffle and repeat.
+  volume nothing else in Stellody touches the samples either. Volume, mute,
+  exclusive output and the equalizer sit together at the right end of the
+  bottom strip, ahead of shuffle and repeat.
+- **Exclusive output, for the track exactly as the file holds it.** One press
+  on the bottom strip asks the sound device for the music with the system
+  mixer out of the way, which is the only way it can be bit perfect. Pressing
+  it reopens the song in hand where it was; a paused song stays paused. Beside
+  the clock sits what the device actually took: the mode, the rate, the depth
+  plus "bit perfect" where that is true. Bit perfect also needs the volume at
+  100% and the equalizer off, since either one alters the samples. It is
+  offered only for a song the device can take untouched: not for a lossy song
+  such as an MP3, which has nothing to deliver untouched, nor at a rate the
+  device does not take. A Bluetooth headphone taking 48 kHz alone cannot have a
+  44.1 kHz CD rip that way. For such a song the switch is shut off, with the
+  reason on it naming the rates the device does take; the choice stands, so
+  the next song that can have it gets it without a press. With no song
+  selected the device is judged against your library instead: the switch is
+  shut off where the device takes none of the rates your lossless songs are
+  at. Changing the sound output while Stellody runs asks the new device
+  again, so the right device brings the switch back. A device that turns
+  down a request it was expected to take, because another application holds
+  it say, takes the switch back to shared; the foot of the window says why.
+  Stellody remembers the choice between sessions.
+  - **Windows** hands the device over outright, so no other application can
+    play through it meanwhile.
+  - **macOS** runs the device at the song's own rate and refuses to convert,
+    so the samples arrive untouched while another application playing at the
+    same time is still mixed in. This has not yet been tried on a Mac.
+  - **Linux** does not offer it; the music plays through the system mixer.
 - **No crackle when the computer is busy.** The sound device keeps about two
   blocks of music queued rather than the sliver it would choose for itself, so
   a machine working hard at something else does not break the sound up. Any
@@ -168,9 +194,10 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   yours is read wrongly, that is a defect worth reporting rather than a format
   nobody thought about.
 - **Windows, macOS and Linux.** A setup program on Windows, a disk image
-  on macOS and a Flatpak on Linux. On all three the sound reaches the device
-  through the system mixer, which converts on the way, so playback is not bit
-  perfect on any of them.
+  on macOS and a Flatpak on Linux. Out of the box the sound reaches the device
+  through the system mixer, which converts on the way, so it is not bit
+  perfect. Exclusive output, described above, takes the mixer out of the way
+  on Windows and macOS; Linux does not offer it.
 - **Sized to fit a laptop screen.** Everything is drawn at nine tenths of the
   size it is built at, so the whole window fits a 13 inch 4K screen at 300%
   scaling. To choose a different size, set the `QT_SCALE_FACTOR` environment
@@ -183,7 +210,7 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
 - **It reads; it never repairs.** It tidies muddled labelling in its own view
   and lets you keep that, though it will never rewrite the files themselves:
   that is the whole point rather than a limitation. A control that cannot do
-  anything just now is greyed out rather than left to disappoint you.
+  anything just now is shown switched off rather than left to disappoint you.
 
 ## Your privacy
 
@@ -273,7 +300,7 @@ Everything above is the product. What follows is the code.
 | Interface | PySide6 |
 | Tags | mutagen |
 | Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
-| Output | sounddevice over PortAudio, taking WASAPI on Windows; Qt Multimedia notices the output device changing |
+| Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux; Qt Multimedia notices the output device changing |
 | Buffers | numpy |
 | Store | SQLite |
 

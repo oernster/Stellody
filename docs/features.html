@@ -342,7 +342,7 @@
     </div>
   </div>
   <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Emotional Technology (Special Collector's Edition) is open at the foot of the list, showing its tracks with a row of rating stars on each. Force of Gravity, the track playing, is painted pink on its row with all five stars filled; the first track notes two plays and the four after it one each. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window reads Playing: Force of Gravity, BT. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom. The spectrum display sits in the middle of the strip below it, with the sound controls grouped at its right end.">
+    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Electronic Opus is open at the foot of the list, showing its tracks with a row of rating stars on each. Flaming June, the track playing, is painted pink on its row. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window reads Playing: Flaming June, BT. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom; beside it the time reads 2:29 of 4:18, then shared, 44.1 kHz, 32 bit. The sleeve size button at the left end of the strip below is greyed out, since the list shows no sleeves. The spectrum display sits in the middle of that strip. Volume, mute, exclusive output and the equalizer are grouped at its right end, then shuffle and repeat.">
   </div>
   <p class="shot-caption">The list view, with the play controls across the top and your settings along the bottom.</p>
 </section>
@@ -410,8 +410,8 @@
     </div>
     <div class="feat">
       <h3>Volume, mute, shuffle and repeat</h3>
-      <p>They sit at the right end of the strip along the bottom: volume, mute and the equalizer, then
-      shuffle and repeat. Volume, mute, shuffle and repeat are all remembered for next time. Repeat has three settings rather than two: off, repeat the
+      <p>They sit at the right end of the strip along the bottom: volume, mute, exclusive output and
+      the equalizer, then shuffle and repeat. Volume, mute, shuffle and repeat are all remembered for next time. Repeat has three settings rather than two: off, repeat the
       album, then hold the one song you are on.</p>
       <p>Shuffle reorders the album afresh each time it comes round
       again. Every switch shows you what pressing it would do rather than what it is doing now, so you
@@ -464,8 +464,7 @@
   <div class="features-grid">
     <div class="feat">
       <h3>Ten sliders, from deep bass to high treble</h3>
-      <p>Open it from its button beside the volume at the right end of the bottom strip, else from the
-      Sound menu. Take the bass up,
+      <p>Open it from its button at the right end of the bottom strip, else from the Sound menu. Take the bass up,
       bring the harshness down, then hear the change as you move each slider. A lift is given room rather
       than clipped: the whole curve is brought down by the most it raises any part of the sound, so a
       record already mastered loud never distorts.</p>
@@ -478,9 +477,28 @@
       <p>Plenty of players still push your music through their sound processing even with everything set
       to zero. Stellody adds nothing of its own: turned off, the equalizer hands the block back untouched
       rather than multiplying it by one. Left at full, the volume does the same.</p>
-      <p>What leaves Stellody then goes through your system's sound mixer on Windows, macOS and Linux
-      alike, which converts on the way, so playback is not bit perfect on any of them. Stellody does not
-      take a sound device for itself.</p>
+      <p>Out of the box, what leaves Stellody then goes through your system's sound mixer, which
+      converts on the way, so it is not bit perfect. Exclusive output, below, takes the mixer out of
+      the way.</p>
+    </div>
+    <div class="feat">
+      <h3>Exclusive output, exactly as the file holds it</h3>
+      <p>One press on the bottom strip asks the sound device for the music with the system mixer out
+      of the way, which is the only way it can be bit perfect. The song in hand reopens where it was; a
+      paused song stays paused. Beside the time along the bottom, a line says what the device actually
+      took: the mode, the rate, the depth, plus "bit perfect" where that is true. Bit perfect also needs
+      the volume at 100% and the equalizer off, since either one alters the samples.</p>
+      <p>It is offered only for a song the device can take untouched: not for a lossy song such as an
+      MP3, which has nothing to deliver untouched, nor at a rate the device does not take. A Bluetooth
+      headphone taking 48 kHz alone cannot have a 44.1 kHz CD rip that way. For such a song the switch
+      is shut off with the reason on it, naming the rates the device does take; your choice stands, so
+      the next song that can have it gets it without a press. With no song selected the device is judged
+      against your library instead.</p>
+      <p>Changing the sound output asks the new device afresh. A device that turns the request down,
+      because another application holds it say, takes the switch back to shared and the foot of the
+      window says why. On Windows the device is handed over outright; on macOS it runs at the song's own
+      rate and refuses to convert, though another application playing at the same time is still mixed
+      in. That path has not yet been tried on a Mac. Linux does not offer it.</p>
     </div>
     <div class="feat">
       <h3>Little bars that dance</h3>
@@ -622,7 +640,7 @@
       alone excepted.</p>
       <p>File repairs the
       library and discovers new music; Edit searches and filters; View switches between the sleeves and
-      the list and picks a sleeve size; Sound mutes, shuffles and chooses a repeat mode by name; Control plays, pauses, stops and steps between tracks. A tick
+      the list and picks a sleeve size; Sound switches exclusive output, mutes, shuffles and chooses a repeat mode by name; Control plays, pauses, stops and steps between tracks. A tick
       beside an entry always says what is really on, however it was switched.</p>
     </div>
   </div>
@@ -646,7 +664,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.6.1<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.7.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>
