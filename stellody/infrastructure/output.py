@@ -26,7 +26,6 @@ than leaving the reason to a document nobody opens; see `offers_exclusive`.
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable
 
 from stellody.infrastructure import portaudio
 
@@ -74,20 +73,6 @@ def exclusive_rates(device: int | None = None) -> tuple[int, ...] | None:
     if sys.platform == MACOS:
         return None
     return ()
-
-
-# How a player asks which rates its device takes: the device, then whether a
-# stream is open on it, which decides whether the answer can be had yet.
-Rates = Callable[[int | None, bool], tuple[int, ...] | None]
-
-
-def asked_afresh(device: int | None, _stream_open: bool) -> tuple[int, ...] | None:
-    """Ask the driver every time; for a player built without a device watcher.
-
-    The composition root hands the player `OutputDevices.exclusive_rates`
-    instead, which keeps the answer and knows when the device has moved.
-    """
-    return exclusive_rates(device)
 
 
 def open_output(*args, **kwargs):

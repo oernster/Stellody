@@ -16,6 +16,13 @@ So a move is reported only when the default device's identity differs from the
 last one seen. That turns two signals into one; a device arriving that is not
 the default turns into none.
 
+A change to the list itself is reported separately (`listed`), once for each
+different set of devices, so the output list a listener chooses from is kept
+current with no relaunch (`OUTPUTS.md` FR-O13). Either kind of change leaves
+PortAudio's list out of date, since PortAudio knows only what it listed when it
+last looked: a device connected since then cannot be opened until it looks
+again.
+
 Taking the list again closes every stream PortAudio has open, so it is done
 only where none is: on the way into opening a stream, which the engine reaches
 once the previous stream is closed; or when the window asks which rates the new
@@ -30,9 +37,9 @@ import sounddevice
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtMultimedia import QMediaDevices
 
+from stellody.domain.outputs import OutputDevice
 from stellody.domain.playback import OutputReport, OutputRequest
-from stellody.infrastructure.audio import Opener
-from stellody.infrastructure.output import exclusive_rates, open_output
+from stellody.infrastructure.output_list import NamedOpener, named_rates, open_named
 
 
 def rescan() -> None:
@@ -46,36 +53,50 @@ def default_output_id() -> bytes:
     return bytes(QMediaDevices.defaultAudioOutput().id().data())
 
 
+def output_ids() -> tuple[bytes, ...]:
+    """The identity of every output device, as Qt lists them."""
+    return tuple(bytes(device.id().data()) for device in QMediaDevices.audioOutputs())
+
+
 class OutputDevices(QObject):
-    """Says when the default output moves; opens the next stream where it went."""
+    """Says when the outputs change; opens the next stream where they went."""
 
     changed = Signal()
+    listed = Signal()
 
     def __init__(
         self,
-        opener: Opener = open_output,
+        opener: NamedOpener = open_named,
         refresh: Callable[[], None] = rescan,
         default_id: Callable[[], bytes] = default_output_id,
         parent: QObject | None = None,
-        rates: Callable[[int | None], tuple[int, ...] | None] = exclusive_rates,
+        rates: Callable[[OutputDevice | None], tuple[int, ...] | None] = named_rates,
+        output_ids: Callable[[], tuple[bytes, ...]] = output_ids,
     ) -> None:
         super().__init__(parent)
         self._opener = opener
         self._refresh = refresh
         self._default_id = default_id
         self._rates = rates
+        self._output_ids = output_ids
         self._known = default_id()
-        # Whether a move has been seen since PortAudio's list was last taken.
+        self._known_list = output_ids()
+        # Whether anything has changed since PortAudio's list was last taken.
         self._moved = False
         # The last answer about exclusive rates, with the device it was about;
-        # None until asked and again after every move.
-        self._answered: tuple[int | None, tuple[int, ...] | None] | None = None
+        # None until asked and again after every change.
+        self._answered: tuple[OutputDevice | None, tuple[int, ...] | None] | None = None
         self._devices = QMediaDevices(self)
         self._devices.audioOutputsChanged.connect(self.notice)
 
     @Slot()
     def notice(self) -> None:
-        """Report a move of the default output once; anything else is not one."""
+        """Report each different change once: the default moving, the list."""
+        listing = self._output_ids()
+        if listing != self._known_list:
+            self._known_list = listing
+            self._moved = True
+            self.listed.emit()
         now = self._default_id()
         if now == self._known:
             return
@@ -84,14 +105,14 @@ class OutputDevices(QObject):
         self.changed.emit()
 
     def open_output(
-        self, request: OutputRequest, device: int | None = None
+        self, request: OutputRequest, device: OutputDevice | None = None
     ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
         """Open a stream, taking PortAudio's list again first after a move."""
         self._take_the_list_again()
         return self._opener(request, device)
 
     def exclusive_rates(
-        self, device: int | None, stream_open: bool
+        self, device: OutputDevice | None, stream_open: bool
     ) -> tuple[int, ...] | None:
         """Which rates the device takes exclusively, kept until the output moves.
 

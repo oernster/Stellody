@@ -20,13 +20,12 @@ stopped, so the device is handed one unbroken run of blocks.
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
-from dataclasses import dataclass, field
 
 import numpy as np
 import sounddevice
 
 from stellody.domain.equalising import Equalisation, cascade
+from stellody.domain.outputs import OutputDevice
 from stellody.domain.playback import (
     SILENT_VOLUME,
     UNITY_VOLUME,
@@ -36,48 +35,18 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
-from stellody.infrastructure import output as open_module
 from stellody.infrastructure.buffering import BLOCK_FRAMES
-from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
+from stellody.infrastructure.decode import DecodeError, open_source
 from stellody.infrastructure.dropouts import DropoutWatch
 from stellody.infrastructure.filtering import BiquadCascade
 from stellody.infrastructure.metering import Meter
-from stellody.infrastructure.output import open_output
-
-JOIN_TIMEOUT_SECONDS = 2.0
-
-# What open_output does, named so a test can hand in a stream of its own and
-# read the samples the engine writes. Nothing else here opens a device.
-Opener = Callable[
-    [OutputRequest, int | None],
-    tuple[sounddevice.OutputStream, OutputReport, str],
-]
-
-
-@dataclass(slots=True)
-class _Session:
-    """Everything one loaded track owns. Discarded whole when playback stops."""
-
-    reader: AudioSource
-    stream: sounddevice.OutputStream
-    report: OutputReport
-    dtype: str
-    lock: threading.Lock = field(default_factory=threading.Lock)
-    resume: threading.Event = field(default_factory=threading.Event)
-    cancel: threading.Event = field(default_factory=threading.Event)
-    finished: threading.Event = field(default_factory=threading.Event)
-    thread: threading.Thread | None = None
-    # Opened ahead of the seam so the feeder never has to wait at one.
-    follower: AudioSource | None = None
-    crossings: int = 0
-    # The equalizer, designed for this stream's own sample rate. Empty
-    # while it is flat, which is how it costs nothing.
-    filtering: BiquadCascade = field(default_factory=BiquadCascade)
-    # What the device keeps queued, as the stream reports it: heard that much
-    # after it is written. See buffering.py.
-    buffer_frames: int = 0
-    # The room a fresh start showed: the whole buffer, before anything queued.
-    capacity: int | None = None
+from stellody.infrastructure.output_list import (
+    NamedOpener,
+    NamedRates,
+    named_rates,
+    open_named,
+)
+from stellody.infrastructure.session import Session
 
 
 class WasapiPlayback:
@@ -90,11 +59,11 @@ class WasapiPlayback:
 
     def __init__(
         self,
-        device: int | None = None,
+        device: OutputDevice | None = None,
         block_frames: int = BLOCK_FRAMES,
-        opener: Opener = open_output,
+        opener: NamedOpener = open_named,
         dropouts: DropoutWatch | None = None,
-        rates: open_module.Rates = open_module.asked_afresh,
+        rates: NamedRates = named_rates,
     ) -> None:
         self._rates = rates
         self._device = device
@@ -102,7 +71,7 @@ class WasapiPlayback:
         self._opener = opener
         self._volume = UNITY_VOLUME
         self._equalisation = Equalisation()
-        self._session: _Session | None = None
+        self._session: Session | None = None
         self._closed = False
         self._meter = Meter(block_frames)
         self.dropouts = DropoutWatch() if dropouts is None else dropouts
@@ -139,6 +108,10 @@ class WasapiPlayback:
         """
         return self._rates(self._device, self._session is not None)
 
+    def use_device(self, device: OutputDevice | None) -> None:
+        """Open later streams on `device`; None is the system default."""
+        self._device = device
+
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened."""
         self.stop()
@@ -148,7 +121,7 @@ class WasapiPlayback:
         except Exception:
             stream.close()
             raise
-        session = _Session(
+        session = Session(
             reader=reader,
             stream=stream,
             report=report,
@@ -192,15 +165,7 @@ class WasapiPlayback:
         self._session = None
         if session is None:
             return
-        session.cancel.set()
-        session.resume.set()
-        if session.thread is not None:
-            session.thread.join(timeout=JOIN_TIMEOUT_SECONDS)
-        session.stream.abort(ignore_errors=True)
-        session.stream.close(ignore_errors=True)
-        session.reader.close()
-        if session.follower is not None:
-            session.follower.close()
+        session.end()
 
     def seek(self, frame: int) -> None:
         """Move to a frame offset within the loaded source, clamped to it."""
@@ -232,7 +197,7 @@ class WasapiPlayback:
         session = self._session
         if session is None:
             return False
-        self._drop_follower(session)
+        session.drop_follower()
         if source is None:
             return False
         try:
@@ -249,14 +214,6 @@ class WasapiPlayback:
         if not joins:
             candidate.close()
         return joins
-
-    def _drop_follower(self, session: _Session) -> None:
-        """Let go of whatever was lined up, closing its file."""
-        with session.lock:
-            previous = session.follower
-            session.follower = None
-        if previous is not None:
-            previous.close()
 
     @property
     def lead_frames(self) -> int:
@@ -328,7 +285,7 @@ class WasapiPlayback:
             return block
         return (block * self._volume).astype(dtype)
 
-    def _feed(self, session: _Session) -> None:
+    def _feed(self, session: Session) -> None:
         """Read and write blocks until the track ends or the session is torn down."""
         while True:
             session.resume.wait()

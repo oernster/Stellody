@@ -16,11 +16,13 @@ from PySide6.QtWidgets import QApplication
 from stellody.infrastructure.output_devices import (
     OutputDevices,
     default_output_id,
+    output_ids,
     rescan,
 )
 
 HEADPHONES = b"headphones"
 SPEAKERS = b"speakers"
+BATHYS = b"bathys"
 ANSWER = ("stream", "report", "dtype")
 REQUEST = "request"
 # What each device takes exclusively, as the Bathys and the speakers answered
@@ -35,8 +37,10 @@ class Machine:
 
     def __init__(self) -> None:
         self.default = HEADPHONES
+        self.outputs = (HEADPHONES, SPEAKERS)
         self.events: list[object] = []
         self.moves = 0
+        self.listings = 0
 
     def refresh(self) -> None:
         self.events.append("rescan")
@@ -56,12 +60,17 @@ class Machine:
             refresh=self.refresh,
             default_id=lambda: self.default,
             rates=self.rates,
+            output_ids=lambda: self.outputs,
         )
         devices.changed.connect(self._moved)
+        devices.listed.connect(self._listed)
         return devices
 
     def _moved(self) -> None:
         self.moves += 1
+
+    def _listed(self) -> None:
+        self.listings += 1
 
 
 @pytest.fixture
@@ -98,6 +107,39 @@ class TestNoticingAMove:
         machine.default = HEADPHONES
         devices.notice()
         assert machine.moves == 2
+
+
+class TestNoticingTheListChange:
+    """FR-O13: the Bathys connecting while Stellody runs is offered at once."""
+
+    def test_a_device_connecting_is_announced(self, machine) -> None:
+        devices = machine.watching()
+        machine.outputs = (*machine.outputs, BATHYS)
+        devices.notice()
+        assert machine.listings == 1
+        assert machine.moves == 0
+
+    def test_the_same_list_twice_is_announced_once(self, machine) -> None:
+        """Qt signals more than once for one change; one answer is enough."""
+        devices = machine.watching()
+        machine.outputs = (*machine.outputs, BATHYS)
+        devices.notice()
+        devices.notice()
+        assert machine.listings == 1
+
+    def test_a_device_leaving_is_announced(self, machine) -> None:
+        devices = machine.watching()
+        machine.outputs = (HEADPHONES,)
+        devices.notice()
+        assert machine.listings == 1
+
+    def test_the_next_stream_takes_portaudios_list_again(self, machine) -> None:
+        """PortAudio knows only the devices it listed; the new one needs it."""
+        devices = machine.watching()
+        machine.outputs = (*machine.outputs, BATHYS)
+        devices.notice()
+        devices.open_output(REQUEST, BATHYS)
+        assert machine.events == ["rescan", (REQUEST, BATHYS)]
 
 
 class TestOpeningAfterAMove:
@@ -173,6 +215,11 @@ class TestAskingWhichRatesTheDeviceTakes:
 class TestTheRealHalves:
     def test_qt_names_the_default_by_identity(self, application) -> None:
         assert isinstance(default_output_id(), bytes)
+
+    def test_qt_lists_every_output_by_identity_with_the_default_among_them(
+        self, application
+    ) -> None:
+        assert default_output_id() in output_ids()
 
     def test_portaudio_answers_after_being_taken_again(self) -> None:
         rescan()
