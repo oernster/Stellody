@@ -44,12 +44,16 @@ FIXED = {
     "type": frozenset({"album|ep"}),
     "inc": frozenset({"genres"}),
     "algorithm": frozenset({ALGORITHM}),
+    # Where the second page starts; asked only after a full first one.
+    "offset": frozenset({str(GROUP_LIMIT)}),
 }
+# A first page full to the limit, so the second page is asked for too.
+FULL_PAGE = {"release-groups": [{"title": "t", "primary-type": "Album"}] * GROUP_LIMIT}
 # Which fields each address may carry. The identifier stands in the path of the
 # one address that takes it there, which is still the identifier and no more.
 ALLOWED = {
     ARTIST_URL: frozenset({"query", "fmt", "limit"}),
-    RELEASE_GROUP_URL: frozenset({"artist", "type", "inc", "fmt", "limit"}),
+    RELEASE_GROUP_URL: frozenset({"artist", "type", "inc", "fmt", "limit", "offset"}),
     f"{ARTIST_URL}/{IDENTIFIER}": frozenset({"inc", "fmt"}),
     SIMILAR_URL: frozenset({"artist_mbids", "algorithm"}),
 }
@@ -67,17 +71,18 @@ class Recording:
         parameters: dict[str, str],
         wanted: Wanted = always_wanted,
     ) -> object:
-        """Keep the address with its fields; say nothing back."""
+        """Keep the address with its fields; one full page, then nothing."""
+        first = not self.asked
         self.asked.append((address, dict(parameters)))
-        return {}
+        return FULL_PAGE if address == RELEASE_GROUP_URL and first else {}
 
 
 def asked() -> list[tuple[str, dict[str, str]]]:
     """Every question a run can put to either catalogue, once each."""
     fetch = Recording()
     catalogue = MusicBrainz(fetch)
-    catalogue.identify(NAME)
     catalogue.albums_of(IDENTIFIER)
+    catalogue.identify(NAME)
     catalogue.genres_of(IDENTIFIER)
     ListenBrainz(fetch).similar_to(IDENTIFIER, MOST)
     return fetch.asked

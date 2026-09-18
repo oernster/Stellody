@@ -468,9 +468,10 @@ Priority: Must
 
 Requirement: When a source artist has been identified, the discovery service
 shall request the albums that artist made, including each album's stated genres.
-One request is made, so what comes back is the first 100 albums and EPs the
-catalogue lists (`GROUP_LIMIT` in `infrastructure/catalogue.py`, the most the
-service puts on a page); a larger discography is cut short there.
+The service puts at most 100 on a page (`GROUP_LIMIT` in
+`infrastructure/catalogue.py`), so the next page is asked for only after a full
+one: an artist who fits costs one request as always, while a larger
+discography is read to its end, up to `MOST_PAGES` pages.
 
 Acceptance: Given an identified source artist, when the run reaches their
 albums, then one request is made carrying that artist's identifier and asking
@@ -1189,8 +1190,7 @@ Priority: Must
 Requirement: When a candidate artist is expanded in the results dialog, the
 results dialog shall show the releases that artist made which pass the offering
 rule section 3.5 states, fetched at the moment of expanding rather than during
-the run. As with FR-D10, one request is made, so an artist is shown at most
-the first 100 albums and EPs the catalogue lists.
+the run. Read a page at a time exactly as in FR-D10.
 
 Rationale: Measured on 2026-09-07: one catalogue request costs at least the 1.1
 second gap NFR-PERF-001 requires. Asking during the run would add a request for
@@ -1892,7 +1892,8 @@ together with the application's own User-Agent: the names of artists drawn from
 the ticked genres; the catalogue identifiers the sources answered with, for
 those artists or for the candidates the similarity source suggested; fixed
 values each client states for itself, being the response format, a result
-limit, the release types, the genres inclusion and the similarity algorithm.
+limit, where a following page starts, the release types, the genres inclusion
+and the similarity algorithm.
 The headers carry only where the request goes, the User-Agent, the transport's
 own terms and a language fixed at any (`ACCEPT_LANGUAGE` in
 `infrastructure/fetching.py`).

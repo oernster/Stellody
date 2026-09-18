@@ -15,6 +15,8 @@ from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure.catalogue import (
     ARTIST_URL,
+    GROUP_LIMIT,
+    MOST_PAGES,
     RELEASE_GROUP_URL,
     MusicBrainz,
 )
@@ -33,8 +35,10 @@ class Answering:
     happens to spell it.
     """
 
-    def __init__(self, body: object) -> None:
-        self._body = body
+    def __init__(self, body: object, *following: object) -> None:
+        # One answer per ask, in order, the last repeated: a single answer is
+        # every answer, which is what every test but the paging ones wants.
+        self._bodies = (body, *following)
         self.addresses: list[str] = []
         self.parameters: list[dict[str, str]] = []
         self.wanted: list[Wanted] = []
@@ -45,16 +49,27 @@ class Answering:
         parameters: dict[str, str],
         wanted: Wanted = always_wanted,
     ) -> object:
-        """Record what was asked for, then answer with the prepared body."""
+        """Record what was asked for, then answer with the next prepared body."""
+        asked = len(self.addresses)
         self.addresses.append(address)
         self.parameters.append(dict(parameters))
         self.wanted.append(wanted)
-        return self._body
+        return self._bodies[min(asked, len(self._bodies) - 1)]
 
 
-def fetching(body: object) -> Answering:
-    """A fetcher stand-in that answers with this and remembers the asking."""
-    return Answering(body)
+def fetching(body: object, *following: object) -> Answering:
+    """A fetcher stand-in that answers with these and remembers the asking."""
+    return Answering(body, *following)
+
+
+def page_of(count: int, first: int = 0) -> dict:
+    """One page of release groups, every one an album, numbered from `first`."""
+    return {
+        "release-groups": [
+            {"title": f"Album {number}", "primary-type": "Album"}
+            for number in range(first, first + count)
+        ]
+    }
 
 
 class TestHandingTheQuestionDown:
@@ -176,6 +191,41 @@ class TestWhatAnArtistReleased:
             ]
         }
         assert MusicBrainz(fetching(body)).albums_of("id")[0].genres == ()
+
+
+class TestALongDiscography:
+    """A full page means there is more; only then is the next one asked for.
+
+    The service answers at most GROUP_LIMIT release groups a request, so one
+    ask used to stop every artist there: measured on 2026-09-08, The Rolling
+    Stones carry 1474 release groups at MusicBrainz. Paging only past a full
+    page leaves every artist who fits costing exactly what they always did.
+    """
+
+    def test_an_artist_who_fits_is_asked_about_once(self) -> None:
+        """No offset, no second request."""
+        fetch = fetching(page_of(GROUP_LIMIT - 1))
+        found = MusicBrainz(fetch).albums_of("id")
+        assert len(found) == GROUP_LIMIT - 1
+        assert len(fetch.addresses) == 1
+        assert "offset" not in fetch.parameters[0]
+
+    def test_a_full_page_asks_for_the_next_and_keeps_both(self) -> None:
+        """The second page picks up where the first stopped, in order."""
+        fetch = fetching(page_of(GROUP_LIMIT), page_of(1, GROUP_LIMIT))
+        found = MusicBrainz(fetch).albums_of("id")
+        assert [group.title for group in found][-2:] == [
+            f"Album {GROUP_LIMIT - 1}",
+            f"Album {GROUP_LIMIT}",
+        ]
+        assert fetch.parameters[1]["offset"] == str(GROUP_LIMIT)
+        assert len(fetch.addresses) == 2
+
+    def test_a_service_that_never_stops_is_stopped(self) -> None:
+        """A page count is foreign input, so it is capped rather than believed."""
+        fetch = fetching(page_of(GROUP_LIMIT))
+        MusicBrainz(fetch).albums_of("id")
+        assert len(fetch.addresses) == MOST_PAGES
 
 
 class TestWhatAnArtistPlays:

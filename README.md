@@ -234,7 +234,8 @@ Five things reach outside your computer at all, so here are all five:
   that you do not hold. What goes out is those artist names, the MusicBrainz
   identifiers the catalogues give back for them and for the similar artists
   they find, the fixed settings each request states for itself (the answer's
-  format, how many results to return, which release types to list, which
+  format, how many results to return, where a following page starts, which
+  release types to list, which
   details to include and which similarity algorithm to use) plus a user agent
   naming Stellody, its version and the project's contact address. The language
   asked for is fixed at any, rather than your computer's own: not your

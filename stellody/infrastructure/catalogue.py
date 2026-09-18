@@ -32,6 +32,12 @@ RELEASE_GROUP_URL = "https://musicbrainz.org/ws/2/release-group"
 NAME_LIMIT = 25
 # A discography in one ask where it fits. The service caps a page at 100.
 GROUP_LIMIT = 100
+# The most pages one artist may take. A page comes back full only where there
+# is more, so this only stops a service that answers full pages forever: a
+# page count is foreign input. Twenty pages is 2000 albums and EPs, beyond the
+# 1474 release groups of every type measured for The Rolling Stones on
+# 2026-09-08, the largest discography seen.
+MOST_PAGES = 20
 # The primary types worth offering. A single is not a record somebody goes
 # looking for; everything else is not an album at all.
 PRIMARY_WANTED = frozenset({"album", "ep"})
@@ -118,31 +124,28 @@ class MusicBrainz:
     def albums_of(
         self, identifier: str, wanted: Wanted = always_wanted
     ) -> tuple[ReleaseGroup, ...]:
-        """The albums and EPs this artist released, with their stated genres."""
-        answer = self._fetch.json(
-            RELEASE_GROUP_URL,
-            {
+        """The albums and EPs this artist released, with their stated genres.
+
+        A page at a time, the next asked for only after a full one, so an
+        artist who fits on one page costs one request as always.
+        """
+        found: list[ReleaseGroup] = []
+        for page in range(MOST_PAGES):
+            asked = {
                 "artist": identifier,
                 "type": "album|ep",
                 "inc": "genres",
                 "fmt": "json",
                 "limit": str(GROUP_LIMIT),
-            },
-            wanted,
-        )
-        found = []
-        for entry in _entries(answer, "release-groups"):
-            title = str(entry.get("title") or "").strip()
-            primary = str(entry.get("primary-type") or "").casefold()
-            if not title or primary not in PRIMARY_WANTED:
-                continue
-            found.append(
-                ReleaseGroup(
-                    title=title,
-                    kinds=_kinds_of(entry),
-                    genres=_named(entry, "genres"),
-                )
+            }
+            if page:
+                asked["offset"] = str(page * GROUP_LIMIT)
+            entries = _entries(
+                self._fetch.json(RELEASE_GROUP_URL, asked, wanted), "release-groups"
             )
+            found.extend(_groups(entries))
+            if len(entries) < GROUP_LIMIT:
+                break
         return tuple(found)
 
     def genres_of(
@@ -155,3 +158,21 @@ class MusicBrainz:
         if not isinstance(answer, dict):
             return ()
         return _named(answer, "genres")
+
+
+def _groups(entries: list[dict]) -> list[ReleaseGroup]:
+    """The albums and EPs on one page, as the domain knows them."""
+    found = []
+    for entry in entries:
+        title = str(entry.get("title") or "").strip()
+        primary = str(entry.get("primary-type") or "").casefold()
+        if not title or primary not in PRIMARY_WANTED:
+            continue
+        found.append(
+            ReleaseGroup(
+                title=title,
+                kinds=_kinds_of(entry),
+                genres=_named(entry, "genres"),
+            )
+        )
+    return found
