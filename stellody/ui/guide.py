@@ -134,10 +134,18 @@ def _bottom_tray_html() -> str:
         "The mixer resamples everything it is given, so shared output is "
         "never bit perfect; exclusive output is, as long as the volume is at "
         "100% and the equalizer is off, since either one alters the samples "
-        "on the way out. A device another application is holding will refuse: "
-        "the music carries on through the mixer and the foot of the window "
-        "says so. It is offered where the platform has a route past its "
-        "mixer, which today means Windows.</p>"
+        "on the way out. It is offered on Windows and macOS; Linux does not "
+        "offer it. It is offered only for a song the device can take "
+        "untouched: not for a lossy song such as an MP3, nor at a rate the "
+        "device does not take. For such a song the switch is shut off, its "
+        "tooltip naming the rates the device does take; the next song that "
+        "can have it gets it again as you left it. With no song selected the "
+        "device is judged against your library: it is shut off where the "
+        "device takes none of the rates your lossless songs are at. A device "
+        "that refuses "
+        "anyway, say because another application is holding it, takes the "
+        "switch back to shared: the music carries on through the mixer and "
+        "the foot of the window says why.</p>"
     )
 
 

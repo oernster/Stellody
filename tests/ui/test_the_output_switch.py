@@ -19,6 +19,7 @@ from playback_support import BareStore, album, player, window
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
 from recording_player import RecordingPlayer
+from tray_support import wears_the_dead_ring
 
 from stellody.application.loading import LoadLibrary
 from stellody.application.scan import ScanLibrary
@@ -215,30 +216,21 @@ class TestWhenTheDeviceRefuses:
         assert switch(window).icon().pixmap(32).toImage() == plain
         assert switch(window).toolTip() == EXCLUSIVE_TOOLTIP
 
-    def test_the_status_line_names_the_rates_the_device_does_take(
+    def test_a_refusal_at_a_rate_it_lists_gives_the_devices_own_reason(
         self, window: MainWindow, player: RecordingPlayer
     ) -> None:
-        """Oliver on 2026-09-18: a refusal nobody can act on looks like a fault.
+        """Another application holding it, say: the rates are no answer then.
 
-        The device's own reason is true and useless: "no exclusive format at
-        this rate" leaves a listener nowhere to go. What it WILL take, beside
-        the rate of the track it would not, is the thing to act on.
+        A rate the device does not list never gets this far since
+        2026-09-18: such a song is not offered the switch at all, with the
+        rates it does take in the tooltip instead. See
+        `test_exclusive_follows_the_device.py`.
         """
-        player.rates = (48000, 96000)
+        player.rates = (44100, 48000)
         self.refused(window, player)
         said = window.statusBar().currentMessage()
-        assert "Exclusive output was refused for this 44.1 kHz track" in said
-        assert "takes exclusive output at 48 kHz and 96 kHz" in said
-
-    def test_one_rate_is_named_without_a_conjunction(
-        self, window: MainWindow, player: RecordingPlayer
-    ) -> None:
-        """The reference machine's own case: a Bluetooth headphone takes 48 alone."""
-        player.rates = (48000,)
-        self.refused(window, player)
-        assert (
-            "takes exclusive output at 48 kHz." in window.statusBar().currentMessage()
-        )
+        assert "Exclusive output was refused" in said
+        assert "the device is in use" in said
 
     def test_a_device_that_cannot_be_asked_falls_back_to_its_own_reason(
         self, window: MainWindow, player: RecordingPlayer
@@ -304,7 +296,7 @@ class TestWhenTheDeviceRefuses:
 
 
 class TestADeviceThatTakesNoneAtAll:
-    """The device half of the rule the platform half already follows.
+    """The device half of the rule the platform half follows, until a move.
 
     Oliver on 2026-09-18: a control offering a mode the machine cannot deliver
     is misleading, whether what cannot deliver it is the operating system or
@@ -323,24 +315,10 @@ class TestADeviceThatTakesNoneAtAll:
     def test_it_wears_the_red_rounded_rectangle_every_dead_control_wears(
         self, application: QApplication
     ) -> None:
-        """Asked for by name on 2026-09-18; it is the house disabled rule.
-
-        Rendered rather than read off the stylesheet, since a rule that does
-        not reach the widget looks identical in the source to one that does.
-        The corner is transparent, which is what rounds it.
-        """
+        """Asked for by name on 2026-09-18; it is the house disabled rule."""
         made = built_with(application, BareStore(), refusal="", rates=())
-        drawn = switch(made).grab().toImage()
         danger = QColor(palette_for(made.theme_mode).danger).name()
-        width, height = drawn.width(), drawn.height()
-        edges = (
-            drawn.pixelColor(width // 2, 0),
-            drawn.pixelColor(width // 2, height - 1),
-            drawn.pixelColor(0, height // 2),
-            drawn.pixelColor(width - 1, height // 2),
-        )
-        assert [edge.name() for edge in edges] == [danger] * len(edges)
-        assert drawn.pixelColor(0, 0).alpha() == 0, "the corner is rounded away"
+        assert wears_the_dead_ring(switch(made), danger)
 
     def test_a_device_that_takes_something_keeps_the_control(
         self, application: QApplication
@@ -356,11 +334,17 @@ class TestADeviceThatTakesNoneAtAll:
         made = built_with(application, BareStore(), refusal="", rates=None)
         assert switch(made).isEnabled()
 
-    def test_the_mode_opens_shared_where_the_device_takes_none(
+    def test_the_choice_is_kept_where_the_device_takes_none(
         self, application: QApplication
     ) -> None:
+        """Since 2026-09-18 a move of the output can bring a device that does.
+
+        The choice stands, as it does through a lossy song, so the first
+        device that takes the song's rate gets exclusive output with no press.
+        Asked of such a device meanwhile, a request is answered by the mixer.
+        """
         store = BareStore()
         store.set_setting(SETTING_OUTPUT_MODE, OutputMode.EXCLUSIVE.value)
         made = built_with(application, store, refusal="", rates=())
-        assert made._transport.output_mode is OutputMode.SHARED
+        assert made._transport.output_mode is OutputMode.EXCLUSIVE
         assert store.get_setting(SETTING_OUTPUT_MODE) == OutputMode.EXCLUSIVE.value

@@ -94,7 +94,9 @@ class WasapiPlayback:
         block_frames: int = BLOCK_FRAMES,
         opener: Opener = open_output,
         dropouts: DropoutWatch | None = None,
+        rates: open_module.Rates = open_module.asked_afresh,
     ) -> None:
+        self._rates = rates
         self._device = device
         self._block_frames = block_frames
         self._opener = opener
@@ -135,7 +137,7 @@ class WasapiPlayback:
         system's, so a listener who has moved their output gets the
         answer for where the music is actually going.
         """
-        return open_module.exclusive_rates(self._device)
+        return self._rates(self._device, self._session is not None)
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened."""

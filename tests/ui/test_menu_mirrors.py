@@ -15,10 +15,11 @@ from PySide6.QtWidgets import QApplication, QMenu
 from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
-from stellody.domain.playback import RepeatMode
+from stellody.domain.playback import OutputMode, RepeatMode
 from stellody.ui.covering import CoverSize
 from stellody.ui.main_window import MainWindow
 from stellody.ui.row_text import Column
+from stellody.ui.sound_controls import SHARED_TOOLTIP
 
 
 @pytest.fixture
@@ -53,6 +54,11 @@ def test_mute_and_shuffle_are_ticked_as_the_transport_stands(
             window._shuffle_action,
             lambda: window._transport.shuffled,
         ),
+        (
+            window.toggle_exclusive,
+            window._exclusive_action,
+            lambda: window._transport.output_mode is OutputMode.EXCLUSIVE,
+        ),
     ):
         for _ in range(2):
             toggle()
@@ -63,6 +69,21 @@ def test_mute_and_shuffle_are_ticked_as_the_transport_stands(
 def test_choosing_mute_from_the_menu_mutes(window: MainWindow) -> None:
     window._mute_action.trigger()
     assert window._transport.muted
+
+
+def test_choosing_exclusive_output_from_the_menu_asks_for_it(
+    window: MainWindow,
+) -> None:
+    """The same press the strip's switch makes, picture included."""
+    window._exclusive_action.trigger()
+    assert window._transport.output_mode is OutputMode.EXCLUSIVE
+    assert window._bottom_tray.sound.exclusive_button.toolTip() == SHARED_TOOLTIP
+
+
+def test_exclusive_output_sits_beside_the_equalizer(window: MainWindow) -> None:
+    """Both act on the stream, as the strip groups them after its rule."""
+    labels = [action.text() for action in opened(window, "&Sound").actions()]
+    assert labels[:2] == ["&Equalizer...", "E&xclusive output"]
 
 
 def test_the_repeat_entry_ticked_is_the_mode_the_switch_is_holding(
@@ -147,6 +168,12 @@ def test_filter_is_ticked_while_its_button_is_held_down(window: MainWindow) -> N
             "&Control",
         ),
         (lambda w: w._tray.next_button, lambda w: w._next_action, "&Control"),
+        # Stood down by the platform, the device or a lossy song alike.
+        (
+            lambda w: w._bottom_tray.sound.exclusive_button,
+            lambda w: w._exclusive_action,
+            "&Sound",
+        ),
     ),
 )
 def test_an_entry_is_offered_exactly_where_its_button_is(

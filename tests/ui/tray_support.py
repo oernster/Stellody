@@ -210,3 +210,25 @@ def strip_struck(path) -> QImage:
     return rendered(
         struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
     )
+
+
+def wears_the_dead_ring(button: QWidget, danger: str) -> bool:
+    """Whether the rendered button wears the house red rounded rectangle.
+
+    Read off the paint rather than the stylesheet, since a rule that does not
+    reach the widget looks identical in the source to one that does. Each edge
+    at its middle is the danger colour; the corner is transparent, which is
+    what rounds it.
+    """
+    drawn = button.grab().toImage()
+    width, height = drawn.width(), drawn.height()
+    edges = (
+        drawn.pixelColor(width // 2, 0),
+        drawn.pixelColor(width // 2, height - 1),
+        drawn.pixelColor(0, height // 2),
+        drawn.pixelColor(width - 1, height // 2),
+    )
+    return (
+        all(edge.name() == danger for edge in edges)
+        and drawn.pixelColor(0, 0).alpha() == 0
+    )

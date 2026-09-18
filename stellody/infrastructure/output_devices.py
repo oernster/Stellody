@@ -16,9 +16,10 @@ So a move is reported only when the default device's identity differs from the
 last one seen. That turns two signals into one; a device arriving that is not
 the default turns into none.
 
-Taking the list again closes every stream PortAudio has open, so it is done in
-exactly one place: on the way into opening a stream, which the engine reaches
-only once the previous stream is closed.
+Taking the list again closes every stream PortAudio has open, so it is done
+only where none is: on the way into opening a stream, which the engine reaches
+once the previous stream is closed; or when the window asks which rates the new
+device takes exclusively while nothing is loaded.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ from PySide6.QtMultimedia import QMediaDevices
 
 from stellody.domain.playback import OutputReport, OutputRequest
 from stellody.infrastructure.audio import Opener
-from stellody.infrastructure.output import open_output
+from stellody.infrastructure.output import exclusive_rates, open_output
 
 
 def rescan() -> None:
@@ -56,14 +57,19 @@ class OutputDevices(QObject):
         refresh: Callable[[], None] = rescan,
         default_id: Callable[[], bytes] = default_output_id,
         parent: QObject | None = None,
+        rates: Callable[[int | None], tuple[int, ...] | None] = exclusive_rates,
     ) -> None:
         super().__init__(parent)
         self._opener = opener
         self._refresh = refresh
         self._default_id = default_id
+        self._rates = rates
         self._known = default_id()
         # Whether a move has been seen since PortAudio's list was last taken.
         self._moved = False
+        # The last answer about exclusive rates, with the device it was about;
+        # None until asked and again after every move.
+        self._answered: tuple[int | None, tuple[int, ...] | None] | None = None
         self._devices = QMediaDevices(self)
         self._devices.audioOutputsChanged.connect(self.notice)
 
@@ -81,7 +87,31 @@ class OutputDevices(QObject):
         self, request: OutputRequest, device: int | None = None
     ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
         """Open a stream, taking PortAudio's list again first after a move."""
+        self._take_the_list_again()
+        return self._opener(request, device)
+
+    def exclusive_rates(
+        self, device: int | None, stream_open: bool
+    ) -> tuple[int, ...] | None:
+        """Which rates the device takes exclusively, kept until the output moves.
+
+        Each answer is six questions to the driver while the window asks four
+        times a second, so it is kept. After a move the list is taken again
+        first, since until then PortAudio still means the old device; that
+        closes any stream open, so with one open the answer is None, unknown,
+        until the next stream opens and takes the list itself. Unknown stands
+        nothing down, which is the safe direction to be wrong in.
+        """
+        if self._moved and stream_open:
+            return None
+        self._take_the_list_again()
+        if self._answered is None or self._answered[0] != device:
+            self._answered = (device, self._rates(device))
+        return self._answered[1]
+
+    def _take_the_list_again(self) -> None:
+        """Have PortAudio list the devices again, where a move says it must."""
         if self._moved:
             self._refresh()
             self._moved = False
-        return self._opener(request, device)
+            self._answered = None

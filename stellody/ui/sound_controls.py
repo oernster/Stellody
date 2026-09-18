@@ -42,6 +42,12 @@ UNMUTE_TOOLTIP = "Unmute"
 # shared output goes through the system mixer, which always opens.
 EXCLUSIVE_TOOLTIP = "Take the device exclusively, for the track untouched"
 SHARED_TOOLTIP = "Go back to sharing the device with everything else"
+# Oliver's ruling of 2026-09-18: a lossy file holds no bit depth to deliver
+# untouched, so offering exclusive output for one is a misleading hi-fi offer.
+LOSSY_TOOLTIP = (
+    "Exclusive output is not offered for this song: it is a lossy file, so "
+    "there is nothing for it to deliver untouched."
+)
 # The rule between the level and the stream. The width and the height are the
 # tray's, handed in with the buttons' own sizes.
 SEPARATOR_WIDTH_PX = 1
@@ -66,6 +72,11 @@ class SoundControls(QWidget):
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._icon_px = icon_px
+        # Whether the choice is exclusive, so the tooltip can be put back
+        # after a lossy song; whether the platform or the device stood the
+        # switch down for good, which no song may undo.
+        self._exclusive = False
+        self._stood_down = False
         self.volume_button = icon_button(
             self, resources.volume_icon_path(), "Volume", self._open, button_px, icon_px
         )
@@ -141,30 +152,58 @@ class SoundControls(QWidget):
 
         Plain artwork while the device is shared, because that press takes it;
         struck through while it is held exclusively, because that press gives
-        it back. It says what was ASKED for rather than what the device
-        granted: a device that refuses is answered with the shared stream and
-        the position bar says so, while the choice stands and the next track
-        asks again.
+        it back. It follows the choice, which a refusal moves: a device that
+        turns exclusive output down takes the choice back to shared
+        (`Switches.follow_output_refusal`), so the picture never claims a mode
+        nothing granted.
         """
+        self._exclusive = exclusive
         artwork = resources.exclusive_icon_path()
         self.exclusive_button.setIcon(
             struck_through(artwork, resources.negative_icon_path(), self._icon_px)
             if exclusive
             else plain_icon(artwork)
         )
-        self.exclusive_button.setToolTip(
-            SHARED_TOOLTIP if exclusive else EXCLUSIVE_TOOLTIP
-        )
+        # A stood-down switch keeps the reason it was stood down for.
+        if self.exclusive_button.isEnabled():
+            self.exclusive_button.setToolTip(self._offer_words())
+
+    def _offer_words(self) -> str:
+        """What a press would do from here, in words."""
+        return SHARED_TOOLTIP if self._exclusive else EXCLUSIVE_TOOLTIP
 
     def refuse_exclusive(self, reason: str) -> None:
         """Say the platform has no route past its mixer, then stand down.
 
         A control that cannot do anything is worse than no control, so it is
         disabled rather than left to be pressed; the reason is in the tooltip,
-        because a disabled button with no explanation reads as a fault.
+        because a disabled button with no explanation reads as a fault. It is
+        for good: no song brings it back.
         """
+        self._stood_down = True
         self.exclusive_button.setEnabled(False)
         self.exclusive_button.setToolTip(reason)
+
+    def hold_exclusive(self, reason: str) -> None:
+        """Stand down for the song in hand where there is a reason; else offer.
+
+        Ruled by Oliver on 2026-09-18: a song the file or the device cannot
+        deliver untouched is not offered exclusive output. The disabled state
+        wears the house red rounded rectangle, with the reason in the tooltip.
+        A song that can have it brings the button back pressable, offering
+        what a press would do from the choice as it now stands. Where the
+        platform stood the switch down, nothing here touches it. Asked on
+        every refresh, so it changes the button only when the answer changes.
+        """
+        if self._stood_down:
+            return
+        tooltip = reason or self._offer_words()
+        if self.exclusive_button.isEnabled() == (not reason) and (
+            self.exclusive_button.toolTip() == tooltip
+        ):
+            return
+        self.exclusive_button.setEnabled(not reason)
+        self.exclusive_button.setToolTip(tooltip)
 
     def set_muted(self, muted: bool) -> None:
         """Show what a press would do, as every switch in this application does.

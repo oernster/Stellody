@@ -22,7 +22,7 @@ from __future__ import annotations
 from PySide6.QtCore import QModelIndex
 
 from stellody.application.artwork import AlbumArtSources
-from stellody.domain.album import Album
+from stellody.domain.album import Album, lossless_rates
 from stellody.domain.searching import AlbumText, Found, Search, narrowed, prepared
 from stellody.domain.track import Track
 from stellody.ui.flashing import RowFlash
@@ -35,6 +35,9 @@ class Searching:
     def start_searching(self) -> None:
         """Begin holding the whole library, with nothing asked of it."""
         self._all_albums: tuple[Album, ...] = ()
+        # What a sound device is judged against while no song is in hand;
+        # see `Switches.follow_song`. Worked out per load, not per refresh.
+        self._library_rates: frozenset[int] = frozenset()
         self._prepared: tuple[AlbumText, ...] = ()
         self._search = Search()
         self._flash = RowFlash(self._model, self)
@@ -54,6 +57,7 @@ class Searching:
         are on screen and nothing whatever about their sleeves.
         """
         self._all_albums = albums
+        self._library_rates = lossless_rates(albums)
         self._prepared = prepared(albums)
         self.show_art(art)
         self._narrow()

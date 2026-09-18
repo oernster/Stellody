@@ -26,6 +26,7 @@ than leaving the reason to a document nobody opens; see `offers_exclusive`.
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 
 from stellody.infrastructure import portaudio
 
@@ -33,11 +34,12 @@ WINDOWS = "win32"
 MACOS = "darwin"
 # Said to a listener rather than to a developer: it names the platform and it
 # names the consequence, because a disabled control with no reason on it reads
-# as a fault in the application.
+# as a fault in the application. The why stays in this module's docstring,
+# ruled by Oliver on 2026-09-18: a listener is owed what happens, not the
+# packaging argument behind it.
 NO_EXCLUSIVE_ON_LINUX = (
-    "Exclusive output is not offered on Linux: the Flatpak reaches the sound "
-    "system through a socket rather than a device, so there is nothing to "
-    "take. The music plays through the system mixer."
+    "Exclusive output is not offered on Linux. The music plays through the "
+    "system mixer."
 )
 
 
@@ -72,6 +74,20 @@ def exclusive_rates(device: int | None = None) -> tuple[int, ...] | None:
     if sys.platform == MACOS:
         return None
     return ()
+
+
+# How a player asks which rates its device takes: the device, then whether a
+# stream is open on it, which decides whether the answer can be had yet.
+Rates = Callable[[int | None, bool], tuple[int, ...] | None]
+
+
+def asked_afresh(device: int | None, _stream_open: bool) -> tuple[int, ...] | None:
+    """Ask the driver every time; for a player built without a device watcher.
+
+    The composition root hands the player `OutputDevices.exclusive_rates`
+    instead, which keeps the answer and knows when the device has moved.
+    """
+    return exclusive_rates(device)
 
 
 def open_output(*args, **kwargs):

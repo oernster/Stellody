@@ -319,6 +319,10 @@ class BottomTray(QWidget):
         """Stand the output switch down where the platform offers no route."""
         self.sound.refuse_exclusive(reason)
 
+    def hold_exclusive(self, reason: str) -> None:
+        """Stand the output switch down for the song in hand where there is why."""
+        self.sound.hold_exclusive(reason)
+
     def set_muted(self, muted: bool) -> None:
         """Show what pressing the mute switch would do from here."""
         self.sound.set_muted(muted)

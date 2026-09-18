@@ -11,7 +11,7 @@ from __future__ import annotations
 from PySide6.QtCore import Slot
 
 from stellody.domain.equalising import Equalisation, as_text, from_text
-from stellody.domain.playback import OutputMode, OutputReport, RepeatMode
+from stellody.domain.playback import OutputMode, RepeatMode
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_EQ_ENABLED,
@@ -24,23 +24,33 @@ from stellody.ui.settings_keys import (
     TRUE,
     UNPLAYABLE_MESSAGE_MS,
 )
+from stellody.ui.sound_controls import LOSSY_TOOLTIP
 from stellody.ui.stream_words import rate_text
 from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT, MINIMUM_PERCENT
 
-# Said once, in words, when a device turns exclusive output down. Oliver's
-# point on 2026-09-18: a refusal a listener cannot act on makes the whole
-# feature look broken rather than unsupported. So where the device has told us
-# which rates it WILL take, the message names them beside the rate of the
-# track that was refused, which between them say what to do about it.
+# Said once, in words, when a device turns down a request it was expected to
+# take: another application holding it, say. A rate it does not list never gets
+# this far, since such a song is not offered exclusive output at all.
 REFUSAL_MESSAGE = "Exclusive output was refused, so the mixer is playing it: {reason}"
-RATES_REFUSAL = (
-    "Exclusive output was refused for this {track} track, so the mixer is "
-    "playing it. This device takes exclusive output at {rates}."
-)
 NO_REASON_GIVEN = "the device did not say why"
+# Why a song the device cannot take at its own rate is not offered it: the
+# rates it does take beside the song's own, which say what would work. Oliver's
+# point on 2026-09-18: a refusal a listener cannot act on makes the whole
+# feature look broken rather than unsupported.
+RATE_NOT_TAKEN = (
+    "Exclusive output is not offered for this song: this sound device takes "
+    "it at {rates}, not at the song's {track}."
+)
+# Why a device fitting none of the library is not offered it while no song is in
+# hand, ruled by Oliver on 2026-09-18: the wrong device is as misleading an
+# offer as the wrong song.
+NOT_FOR_THIS_LIBRARY = (
+    "Exclusive output is not offered on this sound device: it takes it only at "
+    "{rates}, where no lossless song in your library sits."
+)
 # What a device that will take none at all is said to be. It stands the switch
-# down exactly as an unsupported platform does, because the two are the same
-# thing to a listener: there is no press that would achieve anything.
+# down as an unsupported platform does, since there is no press that would
+# achieve anything; unlike a platform, only until the output moves.
 NO_RATES_AT_ALL = (
     "This sound device offers no exclusive output at any sample rate, so the "
     "music plays through the system mixer."
@@ -68,6 +78,58 @@ def rates_text(rates: tuple[int, ...]) -> str:
 class Switches:
     """The window's switches, each set, shown and remembered together."""
 
+    def follow_song(self) -> None:
+        """Offer exclusive output only for a song the device in use can take.
+
+        Ruled by Oliver on 2026-09-18, for a lossy file first, then for a
+        rate the device does not list: his Focal Bathys takes 48 kHz alone, so
+        a 44.1 kHz song cannot have it there. Either way offering the switch
+        would be a misleading hi-fi offer, so it stands down in the house red
+        rounded rectangle with the reason in its tooltip rather than on the
+        status line. The menu entry follows the switch.
+
+        The CHOICE is left exactly as it was, also his ruling: the next song
+        that can have exclusive output gets it with no press. Nothing is lost
+        meanwhile, since a request the file or the device cannot honour is
+        answered with the mixer and the readout says shared.
+        """
+        self._bottom_tray.hold_exclusive(self._not_offered())
+
+    def _not_offered(self) -> str:
+        """Why the song in hand cannot have exclusive output; empty where it can.
+
+        The song in hand is the one loaded, else the one play would start,
+        so a highlighted song is judged before it is pressed. An unanswered
+        question about the device is not a no, so it stands nothing down.
+        """
+        rates = self._transport.exclusive_rates
+        if rates is not None and not rates:
+            return NO_RATES_AT_ALL
+        track = self._transport.current or self._model.track_at(self.highlighted())
+        if track is None:
+            return self._not_for_the_library(rates)
+        if not track.states_depth:
+            return LOSSY_TOOLTIP
+        if rates and track.sample_rate not in rates:
+            return RATE_NOT_TAKEN.format(
+                rates=rates_text(rates), track=rate_text(track.sample_rate)
+            )
+        return ""
+
+    def _not_for_the_library(self, rates: tuple[int, ...] | None) -> str:
+        """Why nothing the library holds could have it here; empty where some could.
+
+        With no song in hand the device is judged against the library, ruled
+        by Oliver on 2026-09-18: a device taking none of the rates its lossless
+        songs are at is the wrong device; the right one brings the switch back.
+        A library not yet loaded answers nothing, as does one holding nothing
+        lossless, which stands nothing down.
+        """
+        held = self._library_rates
+        if not rates or not held or held.intersection(rates):
+            return ""
+        return NOT_FOR_THIS_LIBRARY.format(rates=rates_text(rates))
+
     def follow_output_refusal(self) -> None:
         """Take the switch back to shared where the device turned it down.
 
@@ -87,30 +149,15 @@ class Switches:
         if self._transport.output_mode is not OutputMode.EXCLUSIVE:
             return
         report = self._transport.report
-        if report is None or not report.fell_back:
+        # A song that was never offered it is answered by `follow_song`, which
+        # leaves the choice alone; only a refusal nobody could foresee moves it.
+        if report is None or not report.fell_back or self._not_offered():
             return
         self._transport.stand_down_to_shared()
         self._bottom_tray.set_exclusive(False)
         self._settings.set_setting(SETTING_OUTPUT_MODE, OutputMode.SHARED.value)
-        self.statusBar().showMessage(self._refusal_words(report), UNPLAYABLE_MESSAGE_MS)
-
-    def _refusal_words(self, report: OutputReport) -> str:
-        """What to say about a refusal, as usefully as the device allows.
-
-        The device's own reason is the fallback rather than the first choice:
-        "no exclusive format at this rate" is true and leaves a listener
-        nowhere to go. Where the rates it does take can be had, they are what
-        is said, since they are the thing that can be acted on.
-        """
-        rates = self._transport.exclusive_rates
-        if not rates:
-            return REFUSAL_MESSAGE.format(
-                reason=report.fallback_reason or NO_REASON_GIVEN
-            )
-        return RATES_REFUSAL.format(
-            track=rate_text(report.request.sample_rate),
-            rates=rates_text(rates),
-        )
+        said = REFUSAL_MESSAGE.format(reason=report.fallback_reason or NO_REASON_GIVEN)
+        self.statusBar().showMessage(said, UNPLAYABLE_MESSAGE_MS)
 
     @Slot(int)
     def set_volume(self, percent: int) -> None:
@@ -212,35 +259,24 @@ class Switches:
         self._settings.set_setting(SETTING_OUTPUT_MODE, mode.value)
 
     def restore_output_mode(self) -> None:
-        """Open on the mode last left, unless there is no choice to be had.
+        """Open on the mode last left, unless the platform offers no choice.
 
-        Two ways there is none: a platform with no route past its own mixer;
-        a device that will take no rate exclusively. They are one thing to
-        a listener, since neither leaves a press that would achieve anything,
-        so both stand the control down with the reason on it rather than
-        leaving it pressable.
+        A platform with no route past its own mixer stands the control down
+        for good, with the reason on it. A device is different: a move of the
+        output can bring one that does take something, so what the device
+        allows is judged song by song in `follow_song` instead.
 
-        What is WRITTEN DOWN is deliberately left alone in that case: a
+        What is WRITTEN DOWN is deliberately left alone on such a platform: a
         listener who chose exclusive output on one machine and opened the same
         settings on another finds it still chosen when they go back, rather
         than quietly reset by a machine that could not honour it.
         """
-        refusal = self._exclusive_refusal or self._device_refusal()
-        if refusal:
+        if self._exclusive_refusal:
             self._transport.set_output_mode(OutputMode.SHARED)
-            self._bottom_tray.refuse_exclusive(refusal)
+            self._bottom_tray.refuse_exclusive(self._exclusive_refusal)
             return
         self._apply_output_mode(self._stored_output_mode())
-
-    def _device_refusal(self) -> str:
-        """Why this DEVICE offers nothing, where it offers nothing at all.
-
-        Empty where it offers something; empty too where the platform cannot
-        be asked without disturbing whatever else is playing: an unanswered
-        question is not a no, so nothing is stood down on one.
-        """
-        rates = self._transport.exclusive_rates
-        return NO_RATES_AT_ALL if rates is not None and not rates else ""
+        self.follow_song()
 
     def _stored_output_mode(self) -> OutputMode:
         """The mode last left; shared where nothing readable is stored.

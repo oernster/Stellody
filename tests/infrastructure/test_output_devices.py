@@ -23,6 +23,11 @@ HEADPHONES = b"headphones"
 SPEAKERS = b"speakers"
 ANSWER = ("stream", "report", "dtype")
 REQUEST = "request"
+# What each device takes exclusively, as the Bathys and the speakers answered
+# on 2026-09-18.
+RATES = {HEADPHONES: (48000,), SPEAKERS: (44100, 48000, 96000, 192000)}
+NO_STREAM = False
+A_STREAM = True
 
 
 @pytest.fixture(scope="module")
@@ -47,9 +52,17 @@ class Machine:
         self.events.append((request, device))
         return ANSWER
 
+    def rates(self, device):
+        """The driver being asked, which costs a question a rate."""
+        self.events.append(("rates", device))
+        return RATES[self.default]
+
     def watching(self) -> OutputDevices:
         devices = OutputDevices(
-            opener=self.opener, refresh=self.refresh, default_id=lambda: self.default
+            opener=self.opener,
+            refresh=self.refresh,
+            default_id=lambda: self.default,
+            rates=self.rates,
         )
         devices.changed.connect(self._moved)
         return devices
@@ -114,6 +127,54 @@ class TestOpeningAfterAMove:
         devices = machine.watching()
         devices.open_output(REQUEST)
         assert machine.events == [(REQUEST, None)]
+
+
+class TestAskingWhichRatesTheDeviceTakes:
+    """Asked on every refresh of the window, so it must cost nothing twice.
+
+    Each answer is six questions to the driver; the window asks four times a
+    second. So an answer is kept until the output moves. After a move the list
+    has to be taken again before the answer means the new device, which closes
+    any stream open, so that is done only while none is; with one open the
+    answer is unknown until the next stream opens, which takes the list anyway.
+    """
+
+    def test_an_answer_is_kept_rather_than_asked_again(self, machine) -> None:
+        devices = machine.watching()
+        assert devices.exclusive_rates(None, NO_STREAM) == RATES[HEADPHONES]
+        assert devices.exclusive_rates(None, NO_STREAM) == RATES[HEADPHONES]
+        assert machine.events == [("rates", None)]
+
+    def test_a_move_with_no_stream_open_asks_the_new_device(self, machine) -> None:
+        devices = machine.watching()
+        devices.exclusive_rates(None, NO_STREAM)
+        machine.default = SPEAKERS
+        devices.notice()
+        assert devices.exclusive_rates(None, NO_STREAM) == RATES[SPEAKERS]
+        assert machine.events == [("rates", None), "rescan", ("rates", None)]
+
+    def test_a_move_with_a_stream_open_answers_unknown(self, machine) -> None:
+        """Taking the list again would close the stream the music is on."""
+        devices = machine.watching()
+        machine.default = SPEAKERS
+        devices.notice()
+        assert devices.exclusive_rates(None, A_STREAM) is None
+        assert "rescan" not in machine.events
+
+    def test_the_next_stream_brings_the_answer_back(self, machine) -> None:
+        devices = machine.watching()
+        machine.default = SPEAKERS
+        devices.notice()
+        devices.exclusive_rates(None, A_STREAM)
+        devices.open_output(REQUEST)
+        assert devices.exclusive_rates(None, A_STREAM) == RATES[SPEAKERS]
+        assert machine.events.count("rescan") == 1
+
+    def test_another_device_is_asked_about_afresh(self, machine) -> None:
+        devices = machine.watching()
+        devices.exclusive_rates(None, NO_STREAM)
+        devices.exclusive_rates(3, NO_STREAM)
+        assert machine.events == [("rates", None), ("rates", 3)]
 
 
 class TestTheRealHalves:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from stellody.domain.identity import AlbumIdentity
@@ -95,3 +96,19 @@ class Album:
     def ordered_tracks(self) -> tuple[Track, ...]:
         """Every track in playing order, disc by disc."""
         return tuple(track for disc in self.discs for track in disc.tracks)
+
+
+def lossless_rates(albums: Iterable[Album]) -> frozenset[int]:
+    """Every sample rate a lossless song in these albums is at.
+
+    What a sound device is judged against while no song is in hand: exclusive
+    output is offered only where the device takes at least one of these. A
+    lossy song states no depth and has nothing to deliver untouched, so its
+    rate is no reason to offer it and is left out.
+    """
+    return frozenset(
+        track.sample_rate
+        for album in albums
+        for track in album.tracks
+        if track.states_depth
+    )

@@ -120,10 +120,10 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing):
         paused, so it is a gap rather than a restart.
 
         What is ASKED for, never what was granted. A device that refuses
-        exclusive mode is answered with the shared stream and a reason; the
-        choice stands, so the next track asks again and takes it the moment
-        the device is free. `PlaybackPort.report` is what says which of the
-        two is actually playing.
+        exclusive mode is answered with the shared stream and a reason;
+        `PlaybackPort.report` is what says which of the two is actually
+        playing. Moving the choice back after a refusal is the window's
+        decision, made through `stand_down_to_shared`.
         """
         if mode is self._output_mode:
             return

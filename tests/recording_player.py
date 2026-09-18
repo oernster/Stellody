@@ -22,6 +22,7 @@ from stellody.domain.playback import (
 )
 from stellody.domain.spectrum import SILENT_BANDS
 from stellody.domain.track import TrackSource
+from stellody.infrastructure.portaudio import MIXER_BIT_DEPTH
 
 
 class RecordingPlayer:
@@ -89,11 +90,14 @@ class RecordingPlayer:
         self.finished = False
         self.state = PlaybackState.PAUSED
         granted = self.grants and request.mode is OutputMode.EXCLUSIVE
+        # A mixer stream is the mixer's depth whatever the file states, as the
+        # real modules report it; copying the request's would be nought for a
+        # lossy file, which no report can carry.
         self._report = OutputReport(
             request=request,
             mode=request.mode if granted else OutputMode.SHARED,
             sample_rate=request.sample_rate,
-            bit_depth=request.bit_depth,
+            bit_depth=request.bit_depth if granted else MIXER_BIT_DEPTH,
             fallback_reason="" if granted else self.refusal,
         )
         return self._report

@@ -3,8 +3,9 @@
 Oliver asked on 2026-09-16 for every button to be reachable from the menu bar
 as well: the view and the sleeve size, repair, mute, shuffle, repeat, discovery,
 search and filter, with search and filter under an Edit menu of their own. The
-transport followed the same day, on a Control menu right of Sound. The volume
-stays off the menus by the same ruling, since a slider is not an entry.
+transport followed the same day, on a Control menu right of Sound; exclusive
+output joined Sound on 2026-09-18. The volume stays off the menus by the same
+ruling, since a slider is not an entry.
 
 Each entry reads its state from the thing it stands for, at the moment its menu
 opens, rather than being kept in step as that thing changes. Whether it can act
@@ -20,7 +21,7 @@ from collections.abc import Callable
 from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import QMenu
 
-from stellody.domain.playback import RepeatMode
+from stellody.domain.playback import OutputMode, RepeatMode
 from stellody.ui.covering import COVER_SIZES
 from stellody.ui.menus import menu_action
 from stellody.ui.showing_controls import SIZE_NAMES
@@ -84,7 +85,19 @@ class MenuMirrors:
         view_menu.aboutToShow.connect(self._show_mirrored_state)
 
     def _mirror_sound(self, sound_menu: QMenu) -> None:
-        """Mute, then how the queue runs: shuffle and the repeat mode."""
+        """Exclusive output, mute, then how the queue runs.
+
+        Exclusive output follows the equalizer, since both act on the stream,
+        which is how the strip groups them after its rule. Asked for by Oliver
+        on 2026-09-18, the switch having arrived after the menus did.
+        """
+        self._exclusive_action = menu_action(
+            sound_menu,
+            self,
+            "E&xclusive output",
+            self.toggle_exclusive,
+            checkable=True,
+        )
         sound_menu.addSeparator()
         self._mute_action = menu_action(
             sound_menu, self, "&Mute", self.toggle_mute, checkable=True
@@ -139,6 +152,12 @@ class MenuMirrors:
         for size, action in self._size_actions.items():
             action.setEnabled(sizing)
             action.setChecked(size is self._cover_size)
+        # Offered where the switch is: a platform, a device or a lossy song
+        # that stands it down takes the entry down with it.
+        self._exclusive_action.setEnabled(strip.sound.exclusive_button.isEnabled())
+        self._exclusive_action.setChecked(
+            self._transport.output_mode is OutputMode.EXCLUSIVE
+        )
         self._mute_action.setChecked(self._transport.muted)
         self._shuffle_action.setChecked(self._transport.shuffled)
         for mode, action in self._repeat_actions.items():

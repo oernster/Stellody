@@ -139,7 +139,9 @@ def build_window(
         # diary, so static heard under load can be matched to a line.
         transport=Transport(
             WasapiPlayback(
-                opener=devices.open_output, dropouts=DropoutWatch(diary.note)
+                opener=devices.open_output,
+                dropouts=DropoutWatch(diary.note),
+                rates=devices.exclusive_rates,
             )
         ),
         settings=store,

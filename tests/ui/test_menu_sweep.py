@@ -54,6 +54,7 @@ EXPECTED = {
     "Medium": (False, False, True),
     "Large": (False, False, True),
     "Extra large": (False, False, True),
+    "Exclusive output": (True, True, True),
     "Mute": (True, True, True),
     "Shuffle": (True, True, True),
     "Repeat": (True, True, True),

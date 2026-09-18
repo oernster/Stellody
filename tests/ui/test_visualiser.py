@@ -182,7 +182,15 @@ class TestTheDisplayInTheWindow:
             for action in menu.actions()
         ]
         # A separator reads as an entry with no words.
-        assert entries == ["&Equalizer...", "", "&Mute", "", "&Shuffle", "&Repeat"]
+        assert entries == [
+            "&Equalizer...",
+            "E&xclusive output",
+            "",
+            "&Mute",
+            "",
+            "&Shuffle",
+            "&Repeat",
+        ]
         made.close()
 
     def test_it_runs_only_while_something_is_playing(self, application) -> None:
