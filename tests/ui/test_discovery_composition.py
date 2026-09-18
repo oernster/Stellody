@@ -54,6 +54,18 @@ def test_everything_asking_musicbrainz_waits_at_one_gate(window) -> None:
     assert window._chooser._search._gate is run_gate, "the cover search's too"
 
 
+def test_everything_keeping_catalogue_answers_shares_one_memory(window) -> None:
+    """One memory, so its lock is the one lock over the one file.
+
+    Measured on 2026-09-18: a run, its price and an expansion were each given
+    a memory of their own, so a save by one could clear what another had just
+    noted however carefully each saved. The lock only holds if they share it.
+    """
+    recall = window._discovery.recall
+    assert window._expansion.recall is recall
+    assert window._compilation_cost.recall is recall
+
+
 def test_a_run_is_given_somewhere_to_remember_what_it_learns(window) -> None:
     """The wiring the cache spent a release without, in silence."""
     memory = window._discovery.memory

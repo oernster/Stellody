@@ -126,6 +126,9 @@ def build_window(
     # the cover search share this one.
     gate = Gate()
     catalogue = MusicBrainz(Fetcher(gate))
+    # One memory of what the catalogues said, shared by the run, its price
+    # and the expansion, so its lock is the one lock over the one file.
+    recall = catalogue_memory.FileCatalogueMemory()
     artwork = FileArtwork(art_cache_dir(), EmbeddedPictures())
     listening = ListeningLog(store)
     listening.load()
@@ -171,7 +174,7 @@ def build_window(
             # same library gives the same answer rather than whatever the
             # service felt like that minute. Shared with the expansion below,
             # so an artist opened once is known to the next run as well.
-            recall=catalogue_memory.FileCatalogueMemory(),
+            recall=recall,
         ),
         write_discovery=discovery_file.write,
         # What including compilations would add to a run, priced before it is
@@ -179,7 +182,7 @@ def build_window(
         # the catalogue's client is paced to, so the price and the run cannot
         # disagree about either. FR-D52.
         compilation_cost=CompilationCost(
-            recall=catalogue_memory.FileCatalogueMemory(),
+            recall=recall,
             request_gap_s=REQUEST_GAP_S,
         ),
         # What the results dialog is made of: the file read back, plus the one
@@ -195,7 +198,7 @@ def build_window(
         expansion=Expansion(
             catalogue=MusicBrainz(Fetcher(gate)),
             pause=time.sleep,
-            recall=catalogue_memory.FileCatalogueMemory(),
+            recall=recall,
         ),
         # Taking a ticked album to a shop. Nothing here opens a connection:
         # the browser is handed an address and does the asking itself, which

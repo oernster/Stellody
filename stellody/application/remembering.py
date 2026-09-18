@@ -70,6 +70,14 @@ Clock = Callable[[], float]
 IDENTIFIERS = "identifiers"
 ALBUMS = "albums"
 SIMILAR = "similar"
+# When an answer with no stamp reads as written: before anything was, so it
+# is asked about again and gives way to any answer that says when it came.
+UNSTAMPED = 0.0
+
+
+def stamp_for(kind: str, key: str) -> str:
+    """How the moment an answer was written is filed: by kind, then key."""
+    return f"{kind}:{key}"
 
 
 @dataclass(slots=True)
@@ -93,7 +101,7 @@ class Recollection:
 
     def standing(self, question: str, now: float) -> bool:
         """Whether the answer to this question is still worth reusing."""
-        return now - self.written_at.get(question, 0.0) < MEMORY_LIFE_S
+        return now - self.written_at.get(question, UNSTAMPED) < MEMORY_LIFE_S
 
     def holds(self, kind: str, key: str, held: dict, now: float) -> bool:
         """Whether this answer is both known and still young enough to use.
@@ -101,7 +109,40 @@ class Recollection:
         One home for the rule, since two readers need it: a run deciding
         whether to ask; the price of a run deciding whether it will.
         """
-        return key in held and self.standing(f"{kind}:{key}", now)
+        return key in held and self.standing(stamp_for(kind, key), now)
+
+
+def merged(standing: Recollection, kept: Recollection) -> Recollection:
+    """The two laid together, keeping the later answer to each question.
+
+    What saving rests on once two users can hold copies of the memory at once:
+    a new run started while a stopped one winds down (FR-D27), a candidate
+    opened while a run goes on. Saving used to write one copy whole, so a copy
+    taken before somebody else learned something put back the memory as it was
+    then; measured on 2026-09-18, against the real file. A question only one of
+    the two holds comes from that one. A tie goes to `kept`, the copy being
+    saved. Neither argument is changed.
+    """
+    result = Recollection(
+        identifiers=dict(standing.identifiers),
+        albums=dict(standing.albums),
+        similar=dict(standing.similar),
+        written_at=dict(standing.written_at),
+    )
+    for kind, answers, into in (
+        (IDENTIFIERS, kept.identifiers, result.identifiers),
+        (ALBUMS, kept.albums, result.albums),
+        (SIMILAR, kept.similar, result.similar),
+    ):
+        for key, answer in answers.items():
+            stamp = stamp_for(kind, key)
+            when = kept.written_at.get(stamp, UNSTAMPED)
+            if key in into and when < result.written_at.get(stamp, UNSTAMPED):
+                continue
+            into[key] = answer
+            if stamp in kept.written_at:
+                result.written_at[stamp] = when
+    return result
 
 
 class CatalogueMemory(Protocol):
@@ -190,7 +231,7 @@ class RememberingCatalogue:
         """
         when = self.now()
         held[key] = found
-        self.kept.written_at[f"{kind}:{key}"] = when
+        self.kept.written_at[stamp_for(kind, key)] = when
         self.keeper.note(kind, key, found, when)
 
     def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
@@ -238,7 +279,7 @@ class RememberingSimilarity:
     ) -> tuple[SimilarArtist, ...]:
         """Who resembles this artist, from memory where it is already known."""
         question = similar_key(identifier, most)
-        stamp = f"{SIMILAR}:{question}"
+        stamp = stamp_for(SIMILAR, question)
         if question in self.kept.similar and self.kept.standing(stamp, self.now()):
             return self.kept.similar[question]
         found = self.similarity.similar_to(identifier, most, wanted)

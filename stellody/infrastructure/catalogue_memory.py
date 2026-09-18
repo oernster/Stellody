@@ -25,12 +25,15 @@ from __future__ import annotations
 
 import json
 import pathlib
+import threading
 
 from stellody.application.remembering import (
     ALBUMS,
     IDENTIFIERS,
     SIMILAR,
     Recollection,
+    merged,
+    stamp_for,
 )
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.infrastructure import journal, paths
@@ -180,7 +183,7 @@ def _replayed(kept: Recollection, entries: tuple[dict, ...]) -> Recollection:
         if not isinstance(key, str) or not isinstance(when, (int, float)):
             continue
         if _put(kept, str(kind), key, entry.get("answer")):
-            kept.written_at[f"{kind}:{key}"] = float(when)
+            kept.written_at[stamp_for(str(kind), key)] = float(when)
     return kept
 
 
@@ -214,19 +217,31 @@ def note(kind: str, key: str, answer: object, when: float) -> None:
 def remember(kept: Recollection) -> None:
     """Keep this for the next run; say nothing where it cannot be kept.
 
-    The running record is dropped once the file holds what it held; never
-    before. A record cleared beside a file that was never written would throw
-    away the very answers it exists to protect.
+    Laid over what is already known rather than written in its place: another
+    run may have saved or noted answers since this copy was taken. The later
+    answer to each question is the one kept (`merged`). The running
+    record is dropped once the file holds what it held; never before. A record
+    cleared beside a file that was never written would throw away the very
+    answers it exists to protect.
     """
     try:
-        _written(memory_path(), _as_written(kept))
+        _written(memory_path(), _as_written(merged(remembered(), kept)))
     except OSError:
         return
     journal.cleared(journal_path())
 
 
 class FileCatalogueMemory:
-    """The catalogue memory as a file, for a run to be handed."""
+    """The catalogue memory as a file, for a run to be handed.
+
+    One is made, then shared by everything that keeps answers, so its lock is
+    the one lock: a note landing between a save reading what is known and
+    clearing the running record would be cleared without ever reaching the
+    file.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
 
     def remembered(self) -> Recollection:
         """Everything already known; empty where nothing is."""
@@ -234,8 +249,10 @@ class FileCatalogueMemory:
 
     def note(self, kind: str, key: str, answer: object, when: float) -> None:
         """Write this one answer down now."""
-        note(kind, key, answer, when)
+        with self._lock:
+            note(kind, key, answer, when)
 
     def remember(self, kept: Recollection) -> None:
-        """Keep it for next time."""
-        remember(kept)
+        """Keep it for next time, over whatever was kept since."""
+        with self._lock:
+            remember(kept)
