@@ -5,11 +5,13 @@ screen read it, which ARCHITECTURE.md recorded as the missing half of the
 feature. This is that half: one line naming the mode, the rate, the depth and
 whether anything altered the samples on the way out.
 
-**It says what was OPENED, never what was asked for.** The switch on the strip
-shows the choice; this shows the answer. A device another application is
-holding refuses exclusive mode; a listener who is only told what they
-chose has no way to find that out. The reason the device gave is carried
-through, because "exclusive refused" without it sends nobody anywhere.
+**It says what was OPENED, never what was asked for.** A refusal is NOT
+reported here: Oliver ruled on 2026-09-18 that a device refusing exclusive
+mode must take the switch back to shared rather than leave it claiming a mode
+it did not get, so by the time this line is drawn the application really is in
+shared mode and there is nothing left to qualify. The refusal itself is said
+once, in words, along the status line; `REFUSAL_MESSAGE` in `switches.py` is
+that sentence.
 
 No widget is touched here, so what the line says can be checked without a
 screen; that is the same reason the reports themselves are built as text apart
@@ -26,8 +28,6 @@ KHZ_PER_HZ = 1000
 BIT_PERFECT = "bit perfect"
 EXCLUSIVE = "exclusive"
 SHARED = "shared"
-# Why exclusive mode was not what opened, when it was asked for and refused.
-REFUSED = "exclusive refused: {reason}"
 
 
 def rate_text(sample_rate: int) -> str:
@@ -54,6 +54,4 @@ def stream_text(report: OutputReport | None) -> str:
     ]
     if report.is_bit_perfect:
         parts.append(BIT_PERFECT)
-    if report.fell_back and report.fallback_reason:
-        parts.append(REFUSED.format(reason=report.fallback_reason))
     return ", ".join(parts)

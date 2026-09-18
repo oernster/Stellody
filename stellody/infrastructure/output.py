@@ -51,6 +51,29 @@ def offers_exclusive(platform: str | None = None) -> bool:
     return (platform or sys.platform) in (WINDOWS, MACOS)
 
 
+def exclusive_rates(device: int | None = None) -> tuple[int, ...] | None:
+    """Which rates this platform will take exclusively; None where unknown.
+
+    Three answers rather than two, because they are three different
+    facts. A tuple is what the device said. An empty tuple is a device
+    that will take none, which is worth saying out loud. None is a
+    platform that cannot be asked without cost: on a Mac the flags that
+    would answer may disturb a device other programs are using, in
+    sounddevice's own words, so the question is not asked at all and
+    nothing is claimed about the answer.
+
+    Linux answers the empty tuple because the mode is not offered there;
+    see the note at the top of this module.
+    """
+    if sys.platform == WINDOWS:
+        from stellody.infrastructure import wasapi
+
+        return wasapi.exclusive_rates(device)
+    if sys.platform == MACOS:
+        return None
+    return ()
+
+
 def open_output(*args, **kwargs):
     """Open an output stream through whichever module this platform wants.
 

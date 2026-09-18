@@ -20,7 +20,7 @@ import inspect
 import pytest
 
 from stellody.domain.playback import OutputMode, OutputRequest
-from stellody.infrastructure import coreaudio
+from stellody.infrastructure import coreaudio, portaudio
 
 RATE = 96000
 CHANNELS = 2
@@ -162,7 +162,7 @@ class TestWhenItCannotHaveIt:
             request(OutputMode.EXCLUSIVE, depth=NO_DEPTH)
         )
         assert report.mode is OutputMode.SHARED
-        assert report.fallback_reason == coreaudio.NO_STATED_DEPTH
+        assert report.fallback_reason == portaudio.NO_STATED_DEPTH
         assert len(seen["attempts"]) == 1, "only the mixer was ever asked"
 
     def test_asking_for_the_mixer_asks_for_nothing_else(
@@ -204,5 +204,5 @@ class TestWhenItCannotHaveIt:
 
         monkeypatch.setattr(coreaudio.sounddevice, "OutputStream", no_device)
         monkeypatch.setattr(coreaudio, "default_device", lambda: None)
-        with pytest.raises(coreaudio.OutputUnavailableError):
+        with pytest.raises(portaudio.OutputUnavailableError):
             coreaudio.open_output(request(OutputMode.SHARED))

@@ -51,8 +51,20 @@ class RecordingPlayer:
         # it is not. A real device refuses for reasons of its own; a
         # stand-in has to be told which answer it is giving.
         self.grants = True
+        self.rates: tuple[int, ...] | None = (44100,)
         self.refusal = ""
         self._report: OutputReport | None = None
+
+    @property
+    def exclusive_rates(self) -> tuple[int, ...] | None:
+        """What a test has said this device takes; 44.1 kHz by default.
+
+        A device that takes the rate under test is the ordinary case, so the
+        default is the one that leaves the switch offered. A test wanting the
+        switch stood down says so by emptying this; None stands for a platform
+        that cannot be asked at all.
+        """
+        return self.rates
 
     @property
     def report(self) -> OutputReport | None:

@@ -24,14 +24,22 @@ from stellody.domain.playback import OutputMode, OutputReport, OutputRequest
 from stellody.infrastructure.buffering import buffer_seconds
 from stellody.infrastructure.portaudio import (
     DTYPE_BIT_DEPTHS,
+    NO_STATED_DEPTH,
     SHARED_DTYPE,
-    OutputUnavailableError,
-    shared_result,
+    opened_shared,
 )
 
 CANDIDATE_DTYPES = ("int32", "int16")
+# The rates a listener's music is actually in, asked of a device to find
+# out what it will take exclusively. Every rate a CD, a download or a
+# studio master arrives at, which is what makes an empty answer mean the
+# device offers nothing rather than that the list was too short.
+CANDIDATE_RATES = (44100, 48000, 88200, 96000, 176400, 192000)
+# What the probe asks WITH. A rate is offered or it is not; the depth of
+# the file asking does not change the driver's answer, so one stands for
+# all of them and the probe costs six questions rather than twelve.
+PROBE_DEPTH = 16
 NO_EXCLUSIVE_FORMAT = "the device offers no exclusive format at this rate"
-NO_STATED_DEPTH = "the file states no bit depth, so nothing can be bit perfect"
 
 
 WASAPI_API_NAME = "WASAPI"
@@ -88,6 +96,32 @@ def native_dtype(device: int | None, request: OutputRequest) -> str | None:
     return None
 
 
+def exclusive_rates(device: int | None = None) -> tuple[int, ...]:
+    """Every rate this device will take exclusively; empty where none.
+
+    Asked of the driver rather than of a stream, so it opens nothing and
+    makes no sound. Measured on the reference machine on 2026-09-18: the
+    onboard Realtek speakers answer 44100, 48000, 96000 and 192000, while
+    a Bluetooth headphone answers 48000 alone. That difference is the
+    whole reason this exists: a listener whose device takes one rate is
+    owed that fact rather than a refusal they cannot act on.
+    """
+    device = default_device() if device is None else device
+    return tuple(
+        rate
+        for rate in CANDIDATE_RATES
+        if native_dtype(
+            device,
+            OutputRequest(
+                sample_rate=rate,
+                bit_depth=PROBE_DEPTH,
+                mode=OutputMode.EXCLUSIVE,
+            ),
+        )
+        is not None
+    )
+
+
 def _open_exclusive(
     device: int | None, request: OutputRequest, dtype: str
 ) -> sounddevice.OutputStream:
@@ -118,24 +152,6 @@ def _open_shared(
     )
 
 
-def _shared_result(
-    device: int | None, request: OutputRequest, reason: str
-) -> tuple[sounddevice.OutputStream, OutputReport, str]:
-    """Open the mixer path, recording why it was taken when it was a fallback.
-
-    The stream is opened here because a WASAPI mixer stream needs settings of
-    its own; the report is built by the substrate, so a mixer stream is
-    described identically whichever platform opened one.
-    """
-    try:
-        stream = _open_shared(device, request)
-    except Exception as error:  # reported, never swallowed
-        raise OutputUnavailableError(
-            f"no output at {request.sample_rate} Hz: {error}"
-        ) from error
-    return shared_result(stream, request, reason)
-
-
 def open_output(
     request: OutputRequest, device: int | None = None
 ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
@@ -146,20 +162,20 @@ def open_output(
     """
     device = default_device() if device is None else device
     if request.mode is not OutputMode.EXCLUSIVE:
-        return _shared_result(device, request, "")
+        return opened_shared(_open_shared, device, request, "")
     # Refused here rather than left to fail at the format search, so the
     # reason names the file instead of blaming the device. A lossy source has
     # no depth to hand an exclusive stream; an exclusive stream carrying a
     # decoder's output is not bit perfect however well it opens.
     if not request.states_depth:
-        return _shared_result(device, request, NO_STATED_DEPTH)
+        return opened_shared(_open_shared, device, request, NO_STATED_DEPTH)
     dtype = native_dtype(device, request)
     if dtype is None:
-        return _shared_result(device, request, NO_EXCLUSIVE_FORMAT)
+        return opened_shared(_open_shared, device, request, NO_EXCLUSIVE_FORMAT)
     try:
         stream = _open_exclusive(device, request, dtype)
     except Exception as error:  # noqa: BLE001 - a refusal is a fallback
-        return _shared_result(device, request, str(error))
+        return opened_shared(_open_shared, device, request, str(error))
     report = OutputReport(
         request=request,
         mode=OutputMode.EXCLUSIVE,

@@ -38,17 +38,16 @@ from stellody.domain.playback import OutputMode, OutputReport, OutputRequest
 from stellody.infrastructure.buffering import buffer_seconds
 from stellody.infrastructure.portaudio import (
     DTYPE_BIT_DEPTHS,
+    NO_STATED_DEPTH,
     SHARED_DTYPE,
-    OutputUnavailableError,
     default_device,
-    shared_result,
+    opened_shared,
 )
 
 # What a CoreAudio device is fed. Its own format is float, so a float feed is
 # the one that reaches the hardware without PortAudio converting on the way;
 # an integer sample sits in it exactly, which is why this stays bit perfect.
 DIRECT_DTYPE = SHARED_DTYPE
-NO_STATED_DEPTH = "the file states no bit depth, so nothing can be bit perfect"
 
 
 # The two flags this path is, named rather than left inside the call: they
@@ -98,19 +97,6 @@ def _open_shared(
     )
 
 
-def _shared_result(
-    device: int | None, request: OutputRequest, reason: str
-) -> tuple[sounddevice.OutputStream, OutputReport, str]:
-    """Open the mixer path, recording why it was taken when it was a fallback."""
-    try:
-        stream = _open_shared(device, request)
-    except Exception as error:  # reported, never swallowed
-        raise OutputUnavailableError(
-            f"no output at {request.sample_rate} Hz: {error}"
-        ) from error
-    return shared_result(stream, request, reason)
-
-
 def open_output(
     request: OutputRequest, device: int | None = None
 ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
@@ -122,12 +108,12 @@ def open_output(
     """
     device = default_device() if device is None else device
     if request.mode is not OutputMode.EXCLUSIVE:
-        return _shared_result(device, request, "")
+        return opened_shared(_open_shared, device, request, "")
     # Refused here rather than left to the device, so the reason names the
     # file instead of blaming the hardware: a lossy source has no depth to
     # deliver untouched, whatever the stream does with it.
     if not request.states_depth:
-        return _shared_result(device, request, NO_STATED_DEPTH)
+        return opened_shared(_open_shared, device, request, NO_STATED_DEPTH)
     # A PortAudio built without CoreAudio support is a fallback like any
     # other refusal: measured on Windows, where the symbol the settings need
     # is simply not in the library, so the settings raise before a device is
@@ -135,7 +121,7 @@ def open_output(
     try:
         stream = _open_direct(device, request)
     except Exception as error:  # noqa: BLE001 - a refusal is a fallback
-        return _shared_result(device, request, str(error))
+        return opened_shared(_open_shared, device, request, str(error))
     report = OutputReport(
         request=request,
         mode=OutputMode.EXCLUSIVE,

@@ -81,8 +81,13 @@ class TestSayingTheStream:
         said = stream_text(report(file_depth=NO_DEPTH))
         assert "bit perfect" not in said
 
-    def test_a_refusal_names_the_reason_the_device_gave(self) -> None:
-        """ "Exclusive refused" on its own sends nobody anywhere."""
+    def test_a_refusal_is_not_reported_here_at_all(self) -> None:
+        """Oliver ruled on 2026-09-18 that the switch stands down instead.
+
+        By the time this line is drawn the application really is in shared
+        mode, so there is nothing left to qualify. The refusal is said once
+        along the status line, which `test_the_output_switch.py` holds.
+        """
         said = stream_text(
             report(
                 mode=OutputMode.SHARED,
@@ -91,25 +96,22 @@ class TestSayingTheStream:
                 reason="the device is in use",
             )
         )
-        assert said == (
-            "shared, 44.1 kHz, 32 bit, exclusive refused: the device is in use"
-        )
-
-    def test_a_mixer_stream_nobody_asked_otherwise_for_says_no_more(self) -> None:
-        """A fallback and a choice look the same without this line."""
-        said = stream_text(
-            report(mode=OutputMode.SHARED, depth=MIXER_DEPTH, asked=OutputMode.SHARED)
-        )
+        assert said == "shared, 44.1 kHz, 32 bit"
         assert "refused" not in said
 
-    def test_a_fallback_with_no_reason_given_says_no_more_than_it_knows(self) -> None:
-        """A device can refuse without saying why; inventing one would be worse."""
-        said = stream_text(
+    def test_a_stream_that_fell_back_reads_like_one_nobody_asked_about(
+        self,
+    ) -> None:
+        """Both really are the mixer, so both say the mixer and no more."""
+        chosen = stream_text(
+            report(mode=OutputMode.SHARED, depth=MIXER_DEPTH, asked=OutputMode.SHARED)
+        )
+        fell_back = stream_text(
             report(
                 mode=OutputMode.SHARED,
                 depth=MIXER_DEPTH,
                 asked=OutputMode.EXCLUSIVE,
-                reason="",
+                reason="the device is in use",
             )
         )
-        assert said == "shared, 44.1 kHz, 32 bit"
+        assert chosen == fell_back

@@ -285,5 +285,6 @@ class Playing:
         )
         self._position_bar.show_position(self._transport.position)
         self._position_bar.show_stream(self._transport.report)
+        self.follow_output_refusal()
         self.follow_spectrum()
         self.show_now_playing()

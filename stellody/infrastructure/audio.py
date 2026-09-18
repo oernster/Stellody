@@ -36,6 +36,7 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
+from stellody.infrastructure import output as open_module
 from stellody.infrastructure.buffering import BLOCK_FRAMES
 from stellody.infrastructure.decode import AudioSource, DecodeError, open_source
 from stellody.infrastructure.dropouts import DropoutWatch
@@ -125,6 +126,16 @@ class WasapiPlayback:
         """What the open stream actually delivers; None when nothing is loaded."""
         session = self._session
         return None if session is None else session.report
+
+    @property
+    def exclusive_rates(self) -> tuple[int, ...] | None:
+        """Rates this device takes exclusively; None where unknown.
+
+        Asked of the device this player would open rather than of the
+        system's, so a listener who has moved their output gets the
+        answer for where the music is actually going.
+        """
+        return open_module.exclusive_rates(self._device)
 
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened."""

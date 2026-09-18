@@ -44,6 +44,17 @@ class PlaybackPort(Protocol):
         """
         ...
 
+    @property
+    def exclusive_rates(self) -> tuple[int, ...] | None:
+        """Rates the open device takes exclusively; None where unknown.
+
+        An empty tuple is a device that will take none, which is what
+        lets the window stand the switch down rather than offer a mode
+        that cannot happen. None means the platform cannot be asked
+        without disturbing something, so nothing is claimed.
+        """
+        ...
+
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened.
 

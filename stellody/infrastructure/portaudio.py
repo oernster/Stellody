@@ -25,6 +25,8 @@ already gets. Nothing claims to be bit perfect that is not.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import sounddevice
 
 from stellody.domain.playback import (
@@ -95,6 +97,37 @@ def shared_result(
         fallback_reason=reason,
     )
     return stream, report, SHARED_DTYPE
+
+
+# Said of a file rather than of a device, so both host modules say it the same
+# way: a lossy source has no bit depth to deliver untouched, whatever opens.
+NO_STATED_DEPTH = "the file states no bit depth, so nothing can be bit perfect"
+
+
+def opened_shared(
+    open_stream: Callable[[int | None, OutputRequest], sounddevice.OutputStream],
+    device: int | None,
+    request: OutputRequest,
+    reason: str,
+) -> tuple[sounddevice.OutputStream, OutputReport, str]:
+    """Open the mixer path, recording why it was taken when it was a fallback.
+
+    The opener is handed in because each host API asks for its mixer stream
+    slightly differently, while everything around that is the same three
+    lines: try, report the failure rather than swallow it, describe what
+    opened. Those three lines lived in both host modules byte for byte until
+    2026-09-18, which is one wording and one contract with two homes.
+
+    Raises OutputUnavailableError when even the mixer fails, which means there
+    is no usable output device at all.
+    """
+    try:
+        stream = open_stream(device, request)
+    except Exception as error:  # reported, never swallowed
+        raise OutputUnavailableError(
+            f"no output at {request.sample_rate} Hz: {error}"
+        ) from error
+    return shared_result(stream, request, reason)
 
 
 def open_output(

@@ -97,6 +97,16 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing):
         return self._player.report
 
     @property
+    def exclusive_rates(self) -> tuple[int, ...] | None:
+        """Rates the device takes exclusively; None where it cannot be asked.
+
+        Passed through rather than remembered. A device can be changed
+        under a running application, so an answer kept here would be
+        about whichever device was open when it was taken.
+        """
+        return self._player.exclusive_rates
+
+    @property
     def output_mode(self) -> OutputMode:
         """The mode every stream is asked for, whatever the device grants."""
         return self._output_mode
@@ -119,6 +129,20 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing):
             return
         self._output_mode = mode
         self._reopen_in_place()
+
+    def stand_down_to_shared(self) -> None:
+        """Take the choice back to shared, leaving the open stream alone.
+
+        For the one case where the device has already answered: an exclusive
+        request it refused was opened through the mixer, so the stream IS
+        shared and reopening it would buy a gap in the music and nothing else.
+        The CHOICE is what moves, so the switch on the strip stops claiming a
+        mode that was not granted.
+
+        Apart from `set_output_mode` because that reopens by design, which is
+        right when a listener asks and wrong when a device answers.
+        """
+        self._output_mode = OutputMode.SHARED
 
     def _reopen_in_place(self) -> None:
         """Open the track in hand again, where it is and as it was.
