@@ -3,7 +3,7 @@
 The device is stood in for. What is measured is the ASKING: which arguments
 reach sounddevice and what is said about the stream afterwards. Nothing here
 makes a sound, so it runs on a machine with no audio hardware at all, which is
-what this work needs of it: there is no Mac to run it on.
+what this work needs of it: the suite runs where there is no Mac.
 
 **That absence is the point of this file.** The CoreAudio path cannot be heard
 here, so every claim it makes has to be pinned by assertion instead. The flags

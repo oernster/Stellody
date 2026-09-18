@@ -23,11 +23,10 @@ somebody else's music to answer a question. The stream is opened instead and a
 refusal is the answer, which costs the same and disturbs nothing it did not
 have to.
 
-**None of this has been measured on a Mac.** Oliver has no Mac in front of
-him and neither has anything here; the flags were read off the built library
-on Windows. The report says what was opened, so a Mac that refuses says so on
-screen rather than leaving anybody to guess; that report is the
-measurement when one is finally taken.
+**Run on a Mac by Oliver on 2026-09-18; it worked.** The flags were first
+read off the built library on Windows, where the suite still runs and where
+none of this can be heard. The report says what was opened, so a Mac that
+refuses says so on screen rather than leaving anybody to guess.
 """
 
 from __future__ import annotations

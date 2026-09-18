@@ -1657,7 +1657,8 @@ through and `offers_exclusive` answers whether the mode is offered at all.
   while another application playing alongside is still mixed in. It is
   reported as exclusive mode because it is the mode that was asked for and
   granted; the difference from Windows is this paragraph rather than a second
-  word in the enumeration. None of it has been run on a Mac.
+  word in the enumeration. Oliver ran it on a Mac on 2026-09-18 and it
+  worked.
 - **Linux is ruled out deliberately**, decided with Oliver on 2026-09-17. The
   build is a Flatpak, so the sandbox hands over a sound socket rather than a
   device and there is nothing to take; outside the sandbox it would depend on

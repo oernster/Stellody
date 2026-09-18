@@ -84,7 +84,7 @@ checks run; if it ever stopped being true the suite would fail.
     play through it meanwhile.
   - **macOS** runs the device at the song's own rate and refuses to convert,
     so the samples arrive untouched while another application playing at the
-    same time is still mixed in. This has not yet been tried on a Mac.
+    same time is still mixed in.
   - **Linux** does not offer it; the music plays through the system mixer.
 - **No crackle when the computer is busy.** The sound device keeps about two
   blocks of music queued rather than the sliver it would choose for itself, so
