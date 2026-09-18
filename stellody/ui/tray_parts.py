@@ -12,8 +12,8 @@ from __future__ import annotations
 import pathlib
 from collections.abc import Callable
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QPointF, QSize, Qt
+from PySide6.QtGui import QIcon, QPainter, QPalette, QPen
 from PySide6.QtWidgets import (
     QBoxLayout,
     QFrame,
@@ -23,11 +23,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from stellody.ui.theme import HALF
+
 LEFT_COLUMN = 0
 MIDDLE_COLUMN = 1
 RIGHT_COLUMN = 2
 # The two outer columns take the same share of what is spare.
 EQUAL_SHARE = 1
+# The room a rule is laid out in, wider than the line drawn down its middle:
+# three pixels are more than two device pixels at nine tenths, so the middle
+# always sits inside the widget's own pixels rather than on its edge.
+RULE_ROOM_PX = 3
+# Qt's word for a cosmetic pen's width: one device pixel, whatever the scale.
+COSMETIC_WIDTH = 0
 
 
 def icon_button(
@@ -61,18 +69,41 @@ def icon_button(
     return button
 
 
-def separator(parent: QWidget, width_px: int, height_px: int) -> QFrame:
+class Rule(QFrame):
     """The hairline ruling one group of buttons off from the next.
 
-    Drawn as a plain frame carrying a background rather than as a Qt VLine,
-    because a VLine takes its colour from the palette and this one has to take
-    it from the appearance the application is wearing.
+    It draws its own line rather than wearing a background a pixel wide.
+    Every window is drawn at nine tenths, so a background one pixel wide is
+    nine tenths of a device pixel: measured on 2026-09-18, one position in
+    every ten covered no pixel at all and the rule vanished, which one
+    depending only on the window's width. A cosmetic pen is one device pixel
+    at any scale, including one a listener sets for themselves, so the line
+    lands somewhere whatever the arithmetic.
+
+    The colour still comes from the appearance, through the stylesheet's
+    `color`, which Qt hands to the palette; a VLine would take the palette's
+    own colour instead.
     """
-    line = QFrame(parent)
+
+    def paintEvent(self, event) -> None:
+        """Draw the one line, down the middle of the room it is given."""
+        pen = QPen(self.palette().color(QPalette.ColorRole.WindowText))
+        pen.setCosmetic(True)
+        pen.setWidth(COSMETIC_WIDTH)
+        painter = QPainter(self)
+        painter.setPen(pen)
+        middle = self.width() / HALF
+        painter.drawLine(QPointF(middle, 0), QPointF(middle, self.height()))
+        painter.end()
+
+
+def separator(parent: QWidget, height_px: int) -> QFrame:
+    """One rule, `height_px` tall, at the width every rule shares."""
+    line = Rule(parent)
     line.setObjectName("TraySeparator")
     line.setFrameShape(QFrame.Shape.NoFrame)
     line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    line.setFixedSize(width_px, height_px)
+    line.setFixedSize(RULE_ROOM_PX, height_px)
     return line
 
 

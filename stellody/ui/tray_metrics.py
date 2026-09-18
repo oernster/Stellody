@@ -30,7 +30,6 @@ ICON_PX = 60
 BUTTON_PX = 91
 TRAY_MARGIN_PX = 6
 TRAY_GAP_PX = 6
-SEPARATOR_WIDTH_PX = 1
 # The line stops short of the tray's own edges, so it reads as a division
 # between buttons rather than as a border on the tray.
 SEPARATOR_INSET_PX = 12

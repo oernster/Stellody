@@ -48,9 +48,6 @@ LOSSY_TOOLTIP = (
     "Exclusive output is not offered for this song: it is a lossy file, so "
     "there is nothing for it to deliver untouched."
 )
-# The rule between the level and the stream. The width and the height are the
-# tray's, handed in with the buttons' own sizes.
-SEPARATOR_WIDTH_PX = 1
 
 
 class SoundControls(QWidget):
@@ -90,9 +87,9 @@ class SoundControls(QWidget):
             button_px,
             icon_px,
         )
-        self.stream_separator = separator(
-            self, SEPARATOR_WIDTH_PX, separator_height_px or icon_px
-        )
+        # The rule between the level and the stream, as tall as the strip's
+        # own rules where the strip says so; its width is every rule's.
+        self.stream_separator = separator(self, separator_height_px or icon_px)
         self.exclusive_button = icon_button(
             self,
             resources.exclusive_icon_path(),

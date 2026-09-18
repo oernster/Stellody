@@ -59,7 +59,6 @@ from stellody.ui.tray_metrics import (
     SEARCH_BOX_PX,
     SEARCH_PLACEHOLDER,
     SEPARATOR_HEIGHT_PX,
-    SEPARATOR_WIDTH_PX,
     TRAY_GAP_PX,
     TRAY_MARGIN_PX,
     tray_button,
@@ -149,9 +148,7 @@ class LibraryTray(QWidget):
         )
         # Discovery is a library action; theme and help act on the application.
         # A line goes between the two to keep that boundary visible.
-        self.library_separator = separator(
-            self, SEPARATOR_WIDTH_PX, SEPARATOR_HEIGHT_PX
-        )
+        self.library_separator = separator(self, SEPARATOR_HEIGHT_PX)
         self.theme_button = tray_button(self, None, "", toggle_theme)
         self.help_button = tray_button(
             self, resources.info_icon_path(), HELP_TOOLTIP, self._open_help

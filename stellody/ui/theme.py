@@ -311,7 +311,8 @@ def stylesheet(mode: Mode) -> str:
         width: 0px;
     }}
     QFrame#TraySeparator {{
-        background-color: {colour.border};
+        color: {colour.border};
+        background-color: transparent;
         border: 0px;
     }}
     QFrame#VolumePopup {{

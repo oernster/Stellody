@@ -62,7 +62,6 @@ from stellody.ui.tray_metrics import (
     BUTTON_PX,
     ICON_PX,
     SEPARATOR_INSET_PX,
-    SEPARATOR_WIDTH_PX,
     TRAY_GAP_PX,
     TRAY_MARGIN_PX,
 )
@@ -201,7 +200,7 @@ class BottomTray(QWidget):
         self.donate_button = _small_button(
             self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
         )
-        self.separator = separator(self, SEPARATOR_WIDTH_PX, BOTTOM_SEPARATOR_HEIGHT_PX)
+        self.separator = separator(self, BOTTOM_SEPARATOR_HEIGHT_PX)
         self.rescan_button = _small_button(
             self, resources.rescan_icon_path(), "Rescan the library", rescan
         )
@@ -215,9 +214,7 @@ class BottomTray(QWidget):
         # more pictures crowded that end of a window nobody has to maximise,
         # while this strip has room going spare. They stay in their own order
         # and simply continue the errands already here.
-        self.showing_separator = separator(
-            self, SEPARATOR_WIDTH_PX, BOTTOM_SEPARATOR_HEIGHT_PX
-        )
+        self.showing_separator = separator(self, BOTTOM_SEPARATOR_HEIGHT_PX)
         self.showing = ShowingControls(
             self,
             BOTTOM_BUTTON_PX,
@@ -239,9 +236,7 @@ class BottomTray(QWidget):
         )
         # How the music sounds is a different question from how the queue
         # runs, so a rule stands between the sound and the two switches.
-        self.sound_separator = separator(
-            self, SEPARATOR_WIDTH_PX, BOTTOM_SEPARATOR_HEIGHT_PX
-        )
+        self.sound_separator = separator(self, BOTTOM_SEPARATOR_HEIGHT_PX)
         # Half the height of a button beside it, centred against them: it
         # is something to notice out of the corner of an eye rather than a
         # sixth control, so it should not stand as tall as the things that are.
