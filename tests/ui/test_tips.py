@@ -8,13 +8,32 @@ that one question differently and every other question as before.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QApplication, QStyle, QStyleFactory
+from collections.abc import Iterator
+
+import pytest
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QPushButton,
+    QStyle,
+    QStyleFactory,
+    QToolTip,
+    QWidget,
+)
+from results_support import waited_for
 
 from stellody.composition import configure
+from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.tips import WAKE_UP_MS, QuickTips, show_tips_quickly
 
 WAKE_UP = QStyle.StyleHint.SH_ToolTip_WakeUpDelay
 FALL_ASLEEP = QStyle.StyleHint.SH_ToolTip_FallAsleepDelay
+ALWAYS = Qt.WidgetAttribute.WA_AlwaysShowToolTips
+# Long enough for the wake-up delay many times over, so a tip that does not
+# appear within it is one that was never going to.
+TIP_WAIT_MS = WAKE_UP_MS * 10
 
 
 class _RememberingApplication:
@@ -107,6 +126,81 @@ class TestPuttingItInFront:
         standing_in = _RememberingApplication(was)
         show_tips_quickly(standing_in)
         assert standing_in.given.baseStyle().name() == was.name()
+
+
+@pytest.fixture
+def quick_application(application: QApplication) -> Iterator[QApplication]:
+    """The application as a launch leaves it: quick tips under the theme.
+
+    The session's own style and stylesheet are put back afterwards, so no
+    other test inherits them.
+    """
+    was_style = application.style().name()
+    was_sheet = application.styleSheet()
+    show_tips_quickly(application)
+    application.setStyleSheet(stylesheet(Mode.DARK))
+    yield application
+    QToolTip.hideText()
+    application.setStyleSheet(was_sheet)
+    application.setStyle(QStyleFactory.create(was_style))
+
+
+def _hovered_while_another_window_is_active(holder: QWidget) -> QWidget:
+    """Show `holder` with a button, activate another window, hover the button.
+
+    The other window is handed back so the caller holds it: collected, it
+    would close and hand focus back, passing the test for the wrong reason.
+    """
+    button = QPushButton("tip", holder)
+    button.setToolTip("Says what it does")
+    holder.show()
+    holder.activateWindow()
+    other = QWidget()
+    other.show()
+    other.activateWindow()
+    waited_for(None, lambda: not holder.isActiveWindow(), TIP_WAIT_MS)
+    assert not holder.isActiveWindow()
+    QTest.mouseMove(button, QPoint(1, 1))
+    QTest.mouseMove(button, QPoint(2, 2))
+    return other
+
+
+class TestWhateverHasFocus:
+    """Reported by Oliver on 2026-09-18, on the installed 1.7.0 build.
+
+    Tooltips came and went. Qt shows one only while its window is the active
+    window unless that window says otherwise, so hovering Stellody while
+    another application held focus showed nothing. Reproduced offscreen the
+    same day: no tip over an inactive window, a tip once it carries
+    `WA_AlwaysShowToolTips`.
+    """
+
+    def test_an_inactive_window_still_shows_its_tip(
+        self, quick_application: QApplication
+    ) -> None:
+        holder = QWidget()
+        other = _hovered_while_another_window_is_active(holder)
+
+        assert waited_for(quick_application, QToolTip.isVisible, TIP_WAIT_MS)
+        assert other.isActiveWindow()
+
+    def test_a_dialog_is_given_the_same(self, quick_application: QApplication) -> None:
+        """Every window, not only the main one: a dialog is a window too."""
+        owner = QWidget()
+        dialog = QDialog(owner)
+        dialog.show()
+
+        assert dialog.testAttribute(ALWAYS)
+
+    def test_a_widget_inside_a_window_is_left_alone(
+        self, quick_application: QApplication
+    ) -> None:
+        """Qt reads the attribute from the window, so a child needs none."""
+        holder = QWidget()
+        button = QPushButton("tip", holder)
+        holder.show()
+
+        assert not button.testAttribute(ALWAYS)
 
 
 class TestAtStartup:
