@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from stellody.application.following import Following
+from stellody.application.output_choosing import OutputChoosing
 from stellody.application.output_following import OutputFollowing
 from stellody.application.playback_ports import PlaybackPort
 from stellody.application.queue_order import QueueOrder, scattered
@@ -42,7 +43,7 @@ from stellody.domain.track import Track
 PlayedOut = Callable[[Album, Track], None]
 
 
-class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing):
+class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing, OutputChoosing):
     """The transport the window drives: a queue, plus a device to play it on."""
 
     def __init__(
@@ -86,6 +87,7 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing):
         # Shared until a listener says otherwise, which is the mode that
         # always opens: an exclusive stream is the one a device can refuse.
         self._output_mode = OutputMode.SHARED
+        self._forget_outputs()
 
     @property
     def report(self) -> OutputReport | None:
@@ -354,7 +356,7 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing):
         self._waiting_at_the_start = (not playing) if waiting is None else waiting
         self._held = not playing
         self._player.set_volume(self._loudness.audible)
-        self._player.load(
+        self._open(
             track.source,
             OutputRequest(
                 sample_rate=track.sample_rate,

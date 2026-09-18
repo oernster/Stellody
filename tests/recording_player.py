@@ -11,7 +11,9 @@ import path for every test beneath it, so each suite imports it by name.
 
 from __future__ import annotations
 
+from stellody.application.playback_ports import OutputRefused
 from stellody.domain.equalising import Equalisation
+from stellody.domain.outputs import OutputDevice
 from stellody.domain.playback import (
     UNITY_VOLUME,
     OutputMode,
@@ -55,6 +57,16 @@ class RecordingPlayer:
         self.rates: tuple[int, ...] | None = (44100,)
         self.refusal = ""
         self._report: OutputReport | None = None
+        # Which device later streams open on; None is the system default.
+        # A device named in `refuses` will not open at all, with the reason
+        # given; the default is keyed by the empty identity.
+        self.device: OutputDevice | None = None
+        self.refuses: dict[str, str] = {}
+
+    def use_device(self, device: OutputDevice | None) -> None:
+        """Record where later streams are to open."""
+        self.calls.append(f"device {device.identity if device else 'default'}")
+        self.device = device
 
     @property
     def exclusive_rates(self) -> tuple[int, ...] | None:
@@ -84,6 +96,9 @@ class RecordingPlayer:
         the honest default: the mixer is the mode no device refuses.
         """
         self.calls.append("load")
+        refusal = self.refuses.get(self.device.identity if self.device else "")
+        if refusal is not None:
+            raise OutputRefused(refusal)
         self.crossings = 0
         self.loaded.append(source)
         self.requests.append(request)

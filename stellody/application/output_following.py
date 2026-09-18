@@ -14,6 +14,7 @@ already open. Only a move of the output reopens.
 from __future__ import annotations
 
 from stellody.application.playback_ports import PlaybackPort
+from stellody.domain.outputs import OutputDevice
 from stellody.domain.playback import PlaybackState
 
 
@@ -23,6 +24,7 @@ class OutputFollowing:
     _player: PlaybackPort
     _held: bool
     _output_moved: bool
+    _in_use: OutputDevice | None
 
     def output_moved(self) -> bool:
         """Pause for a move of the output; True when that stopped the music.
@@ -31,7 +33,12 @@ class OutputFollowing:
         one is still open on the device that has just been left. With nothing
         loaded there is nothing to mark: the next track is opened where the
         output now is.
+
+        Music on a device the listener named is not on the default, so the
+        default moving is nothing to it (`OUTPUTS.md`, Amendment 3).
         """
+        if self._in_use is not None:
+            return False
         state = self._player.state
         if not state.is_active:
             return False

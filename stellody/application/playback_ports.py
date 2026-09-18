@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from stellody.domain.equalising import Equalisation
+from stellody.domain.outputs import OutputDevice
 from stellody.domain.playback import (
     OutputReport,
     OutputRequest,
@@ -19,6 +20,15 @@ from stellody.domain.playback import (
     PlaybackState,
 )
 from stellody.domain.track import TrackSource
+
+
+class OutputRefused(RuntimeError):
+    """A device would not open a stream at all; the message is its reason.
+
+    Apart from a refused MODE, which opens through the mixer and is carried in
+    the report: this is a device that gave nothing, another application holding
+    it say, so the transport falls back to the system default (FR-O08).
+    """
 
 
 class PlaybackPort(Protocol):
@@ -55,12 +65,21 @@ class PlaybackPort(Protocol):
         """
         ...
 
+    def use_device(self, device: OutputDevice | None) -> None:
+        """Open every later stream on this device; None is the system default.
+
+        The stream already open is left alone: a device belongs to a stream
+        as a mode does, so moving the music means opening it again.
+        """
+        ...
+
     def load(self, source: TrackSource, request: OutputRequest) -> OutputReport:
         """Open `source` on a device and report what was actually opened.
 
         Stops whatever was playing first. Raises when the source cannot be
-        decoded at all; a device refusing the requested mode is a fallback
-        recorded in the report, not an error.
+        decoded at all; raises `OutputRefused` when the device will not open.
+        A device refusing the requested mode is a fallback recorded in the
+        report, not an error.
         """
         ...
 

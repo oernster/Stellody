@@ -549,6 +549,7 @@ case the feature cannot ship without. Won't this time is the out-of-scope list i
 | OQ-O1 | Two outputs share the name `U13ZA (NVIDIA High Definition Audio)` and PortAudio cannot state endpoint identity. Which PortAudio device is which? | Claude | Played a tone through each PortAudio WASAPI output while reading every endpoint's own peak meter. | Answered 2026-09-18; Amendment 2 |
 | OQ-O2 | On Linux, Qt lists PulseAudio or PipeWire outputs while PortAudio may see ALSA devices under other names. Can the two be matched, inside the Flatpak? | Oliver, on the Linux machine | Run the device probe from this session inside the Flatpak build; compare the two lists. | Open |
 | OQ-O3 | On macOS, do Qt's names match PortAudio's CoreAudio names? | Oliver, on the Mac | The same probe on the Mac. | Open |
+| OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Open |
 | OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Open |
 
 ## 6. The build order this implies
@@ -616,3 +617,20 @@ used to match. What follows for the build:
   enumeration, then a device whose name repeats is not guessed at; it is a
   refusal under FR-O08. A device whose name is unique is matched by name
   whatever the order.
+
+**Amendment 3, 2026-09-18: three rules the application layer had to settle.**
+None changes a requirement's intent; each states a case the text left open.
+
+- **A named device ignores the default moving.** FR-O15 says what the default
+  moving does while it is the choice. While music plays on a device the
+  listener named, the default moving is nothing to it, so the pause
+  `application/output_following.py` makes for a move is not made. Music on the
+  default because the chosen device is missing does follow it.
+- **A refusal keeps the choice and is not retried on every track.** FR-O08
+  falls back to the default. The choice stays as it was, marked in the list;
+  the refused device is not asked again until the listener chooses it again,
+  else it leaves the list and returns. Otherwise every later track would open
+  into the same refusal with the same message.
+- **A choice made with nothing loaded opens nothing.** FR-O07 moves the track
+  in hand; a queue left stopped is not a track in hand, so it is not opened
+  just to be moved.
