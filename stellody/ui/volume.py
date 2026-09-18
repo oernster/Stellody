@@ -15,7 +15,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QFrame, QLabel, QSlider, QVBoxLayout, QWidget
 
-HALF = 2
+from stellody.ui.theme import HALF
 
 # The slider runs in whole percent, which is what the label says and what is
 # stored. The engine takes a fraction, so one conversion lives at that seam.

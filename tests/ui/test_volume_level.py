@@ -18,8 +18,9 @@ from tray_support import RememberingStore, build
 from stellody.ui.main_window import MainWindow
 from stellody.ui.settings_keys import SETTING_VOLUME
 from stellody.ui.sound_controls import SoundControls
+from stellody.ui.theme import HALF
 from stellody.ui.tray_metrics import BUTTON_PX, ICON_PX, TRAY_GAP_PX
-from stellody.ui.volume import DEFAULT_PERCENT, HALF, MAXIMUM_PERCENT
+from stellody.ui.volume import DEFAULT_PERCENT, MAXIMUM_PERCENT
 
 # A level that is neither the default nor an end of the range.
 QUIET_PERCENT = 30

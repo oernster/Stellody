@@ -34,7 +34,7 @@ from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QWidget
 
 from stellody.domain.listening import MAXIMUM_STARS, NO_STARS
-from stellody.ui.theme import RADIUS_PX, Mode, palette_for
+from stellody.ui.theme import HALF, RADIUS_PX, Mode, palette_for
 
 STAR_PX = 20
 STAR_GAP_PX = 4
@@ -51,7 +51,6 @@ POINTS_PER_STAR = STAR_POINTS * 2
 INNER_RATIO = 0.42
 QUARTER_TURN = math.pi / 2
 FULL_TURN = math.pi * 2
-HALF = 2
 
 
 def _star_path(centre: QPointF, radius: float) -> QPainterPath:

@@ -47,6 +47,7 @@ from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QProgressBar, QVBoxLayout, QWidget
 
 from stellody.application.values import PERCENT, DiscoveryProgress, DiscoveryStage
+from stellody.ui.theme import HALF
 
 # What the pair says it is for while nothing is under way. On the slot rather
 # than on either bar, since each bar's own writing is its stage.
@@ -75,7 +76,6 @@ WRITING_PAD_PX = 6
 # where the time begins.
 WRITING_GAP_PX = 4
 NOTHING = ""
-HALF = 2
 
 
 def stacked_height(height_px: int) -> int:

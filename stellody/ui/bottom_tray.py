@@ -6,8 +6,9 @@ hand; they belong where a setting sits. Three quarters of the size of the tray
 above it, derived from that tray's own sizes so the two cannot drift apart:
 subordinate to the tray without the artwork becoming too small to read.
 
-The right end holds how the music sounds, then how the queue runs: volume,
-mute and the equalizer, a rule, then shuffle and repeat. Volume and mute stay
+The right end holds how the music sounds, then how the queue runs: volume and
+mute, a rule, exclusive output and the equalizer, a rule, then shuffle and
+repeat. Volume and mute stay
 side by side because the two are one thought: how loud, then whether at all.
 Rescan and repair sit at the left instead, under the library they act on.
 Repair follows rescan because it is the answer to what a rescan finds.
@@ -58,6 +59,7 @@ from stellody.ui.covering import CoverSize
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.showing_controls import ShowingControls
 from stellody.ui.sound_controls import SoundControls
+from stellody.ui.theme import HALF
 from stellody.ui.tray_metrics import (
     BUTTON_PX,
     ICON_PX,
@@ -68,7 +70,6 @@ from stellody.ui.tray_metrics import (
 from stellody.ui.tray_parts import centred_row, group, icon_button, separator
 from stellody.ui.visualiser import Visualiser
 
-HALF = 2
 # Three quarters of the tray above. Expressed against that tray's own sizes so
 # the two cannot drift apart when either is retuned.
 SWITCH_NUMERATOR = 3

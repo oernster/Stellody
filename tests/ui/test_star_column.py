@@ -26,9 +26,9 @@ from stellody.ui.star_cells import (
     CELL_MARGIN_PX,
     CELL_STAR_GAP_PX,
     CELL_STAR_PX,
-    HALF,
     cell_width,
 )
+from stellody.ui.theme import HALF
 
 THIRD_STAR = 3
 NARROW_TITLE_PX = 120

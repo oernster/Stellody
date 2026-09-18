@@ -13,6 +13,7 @@ from stellody.ui.palette import Mode, Palette, palette_for
 
 __all__ = [
     "FOCUS_WIDTH_PX",
+    "HALF",
     "LABEL_PAD_PX",
     "RADIUS_PX",
     "ROW_HEIGHT_PX",
@@ -48,6 +49,8 @@ HAIRLINE_PX = 1
 # stay concentric instead of the fill's corner poking through.
 PROGRESS_RADIUS_PX = RADIUS_PX * 3
 PROGRESS_FILL_RADIUS_PX = PROGRESS_RADIUS_PX - HAIRLINE_PX
+# Halving, for centring one thing in another. Its one home: the trays, the
+# stars and the volume slider all divide by it, so it is said once here.
 HALF = 2
 
 # The volume slider. The handle carries an outline in the window colour, so it

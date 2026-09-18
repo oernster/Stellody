@@ -25,12 +25,11 @@ from PySide6.QtGui import QMouseEvent, QPainter
 
 from stellody.domain.listening import MAXIMUM_STARS, NO_STARS
 from stellody.ui.stars import chosen_rating, paint_stars, star_at, stars_width
-from stellody.ui.theme import Mode
+from stellody.ui.theme import HALF, Mode
 
 CELL_STAR_PX = 14
 CELL_STAR_GAP_PX = 3
 CELL_MARGIN_PX = 6
-HALF = 2
 # Each number key stands for the rating it names, nought included.
 RATING_KEYS = {
     Qt.Key.Key_0.value + stars: stars for stars in range(NO_STARS, MAXIMUM_STARS + 1)
