@@ -1410,7 +1410,9 @@ the run's closing message and its count of unanswered artists shall be read from
 the answer as the file will hold it, so neither names that artist. Where a run
 reaches its end still owing an answer about an artist nothing was ever known
 about, the discovery file shall be written with that artist named as unanswered
-rather than withheld. The gaps written shall be ordered by artist.
+rather than withheld. The gaps written shall be ordered by artist. Where two
+holders of the memory save over one another, the file shall keep every answer
+either of them learned, taking the later answer to any question both hold.
 
 Rationale: Reported by Oliver on 2026-09-08, repeatedly and in the strongest
 terms: two runs over the same library gave different answers, sometimes
@@ -1453,6 +1455,16 @@ happens to be willing. A run may add to what is known and may correct it; it
 may not take it away because a service said no. Only an artist this run failed
 on is carried over, so an artist no longer in the library still falls away.
 
+Saving lays a copy over what is known rather than writing it whole. A run, the
+price of a run and the expansion behind an opened candidate each hold a copy of
+the memory; two of them can be alive at once, as when a new run starts while a
+stopped one winds down (FR-D27) or a candidate is opened while a run goes on.
+Measured on 2026-09-18 against the real file: whichever copy saved last put the
+memory back as it stood when that copy was taken, then cleared the running
+record that held the rest. Each question now keeps whichever answer came later.
+All three share one memory, so one lock covers both a save and any note that
+would otherwise land between the save reading the file and clearing the record.
+
 Acceptance: Given a library run over twice with the same genres, when the second
 run finishes, then it asked the catalogues nothing and answered exactly as the
 first did; given an artist an earlier run answered for and this one could not
@@ -1462,9 +1474,10 @@ shown; given an artist nothing has ever been learned about that this run could
 not reach either, then the file is still written, holding what did answer with
 that artist named among the failures, while the run says which artists it could
 not answer about; given an answer kept more than thirty days ago, then it is
-asked about again.
+asked about again; given two holders of the memory that each learned something
+the other did not, when both have saved, then the file holds both answers.
 
-Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
+Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`, `tests/application/test_merging_recollections.py`, `tests/infrastructure/test_overlapping_memory.py`, `tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`
 
 ---
 
