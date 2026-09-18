@@ -32,13 +32,6 @@ from stellody.infrastructure.browsing import SystemBrowser, SystemClipboard
 SOMEWHERE = "https://example.invalid/search?q=Autechre%20Amber"
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication, since these are Qt objects. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 class Catcher(QObject):
     """Takes the addresses Qt would otherwise give to a browser."""
 

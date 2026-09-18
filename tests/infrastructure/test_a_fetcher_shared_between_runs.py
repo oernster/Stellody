@@ -54,16 +54,11 @@ import time
 from PySide6.QtCore import QCoreApplication, QThread
 
 from stellody.infrastructure.fetching import Fetcher
-from tests.infrastructure.fetching_support import Service
+from tests.infrastructure.fetching_support import OpenGate, Service
 
 MODE, ASKS = sys.argv[1], int(sys.argv[2])
 DELAY_S, LIMIT_MS = float(sys.argv[3]), int(sys.argv[4])
 SLICE_S = 0.01
-
-
-class OpenGate:
-    def wait(self, wanted=None):
-        return True
 
 
 def asked(service):

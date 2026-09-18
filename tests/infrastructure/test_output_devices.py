@@ -30,13 +30,6 @@ NO_STREAM = False
 A_STREAM = True
 
 
-@pytest.fixture(scope="module")
-def application() -> QApplication:
-    """One real QApplication, since these are Qt objects. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 class Machine:
     """The default device, plus a record of what was done about it."""
 

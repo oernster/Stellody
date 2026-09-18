@@ -19,25 +19,14 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.application.discovery_ports import RateRefused
 from stellody.infrastructure.fetching import SAID_LIMIT, Fetcher
-from tests.infrastructure.fetching_support import Noting, Service
+from tests.infrastructure.fetching_support import (
+    NO_TIMEOUT_S,
+    Noting,
+    OpenGate,
+    Service,
+)
 
 REFUSAL_CODE = 503
-NO_TIMEOUT_S = 30.0
-
-
-class OpenGate:
-    """A gate that lets everything through at once."""
-
-    def wait(self, wanted=None) -> bool:
-        """Let it through."""
-        return True
-
-
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication, since these are Qt objects. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
 
 
 @pytest.fixture

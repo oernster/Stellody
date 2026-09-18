@@ -22,13 +22,6 @@ CLAIM = "Stellody.tests.claim"
 CHANNEL = "Stellody.tests.activation"
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication, since these are Qt objects. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 @pytest.fixture
 def copies(application: QApplication):
     """Two copies of the application, as two launches would be."""

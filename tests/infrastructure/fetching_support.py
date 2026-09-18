@@ -17,6 +17,8 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from stellody.infrastructure.fetching import Fetcher
+
 LOOPBACK = "127.0.0.1"
 # The system picks the port, so nothing here can collide with anything else.
 ANY_PORT = 0
@@ -27,6 +29,9 @@ HANG_LIMIT_S = 10.0
 # How long to wait for the serving thread to notice it has been shut down.
 CLOSE_LIMIT_S = 5.0
 OK = 200
+# Long enough that no fetch here can reach it; the timeout is asked about by
+# the one test that is about the timeout.
+NO_TIMEOUT_S = 30.0
 
 
 class Service:
@@ -47,6 +52,10 @@ class Service:
     ) -> None:
         self.asked: list[str] = []
         self.agents: list[str] = []
+        # Every header of every ask, as received. The agent above is one of
+        # them; the rest are what Qt adds by itself, which is where something
+        # about the listener could leave without any code here asking it to.
+        self.headers: list[dict[str, str]] = []
         # How many connections are open right now. Only a service holding one
         # open has anything for a client to leave behind, so this is what a
         # test about closing them reads. Counted under a lock, since the
@@ -86,6 +95,7 @@ class Service:
                 """Record the ask, then answer it or deliberately do not."""
                 service.asked.append(self.path)
                 service.agents.append(self.headers.get("User-Agent", ""))
+                service.headers.append(dict(self.headers.items()))
                 if hangs:
                     service._released.wait(HANG_LIMIT_S)
                     return
@@ -146,3 +156,27 @@ class Noting:
     def __call__(self, line: str) -> None:
         """Keep the line, in the order it was written."""
         self.lines.append(line)
+
+
+class OpenGate:
+    """A gate that lets everything through at once and counts the asks."""
+
+    def __init__(self) -> None:
+        self.waits = 0
+
+    def wait(self, wanted=None) -> bool:
+        """Let it through, having noted that permission was sought."""
+        self.waits += 1
+        return True
+
+
+def fetching(
+    gate=None, timeout_s: float = NO_TIMEOUT_S, note=None, **manager
+) -> Fetcher:
+    """A fetcher that waits for nothing it does not have to."""
+    return Fetcher(
+        gate=gate or OpenGate(),
+        timeout_s=timeout_s,
+        note=note or Noting(),
+        **manager,
+    )

@@ -106,6 +106,12 @@ SAID_LIMIT = 160
 # tell the two apart.
 HOST_LETS_GO_AFTER_S = 30.0
 IDLE_LIMIT_S = HOST_LETS_GO_AFTER_S / 2
+# Any language, stated so Qt does not state one. Measured on 2026-09-18: Qt
+# adds `Accept-Language` by itself from the system locale wherever a request
+# names none, so every ask said `en-GB` about the machine it came from while
+# the privacy note said nothing did. Setting it here is what stops Qt adding
+# its own: the test on the loopback service reads the header that arrives.
+ACCEPT_LANGUAGE = "*"
 
 # Handed one line about a request that has just ended. The diary is what fills
 # this in; a test hands in a list instead.
@@ -287,6 +293,7 @@ class Fetcher:
         held.last_ask = now
         request = QNetworkRequest(QUrl(url))
         request.setRawHeader(b"User-Agent", USER_AGENT.encode("utf-8"))
+        request.setRawHeader(b"Accept-Language", ACCEPT_LANGUAGE.encode("utf-8"))
         return held.manager.get(request)
 
     def _waited_on(self, reply: QNetworkReply, wanted: Wanted) -> None:

@@ -18,13 +18,6 @@ from stellody import composition
 from stellody.infrastructure import paths, startup_log
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the run. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 class Boom(RuntimeError):
     """A startup fault of the kind that used to vanish."""
 

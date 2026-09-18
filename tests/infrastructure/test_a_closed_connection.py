@@ -25,12 +25,15 @@ is a real socket, opened by real Qt, counted by a real server.
 
 from __future__ import annotations
 
-import pytest
 from PySide6.QtWidgets import QApplication
-from test_fetching import NO_TIMEOUT_S, OpenGate
 
 from stellody.infrastructure.fetching import Fetcher
-from tests.infrastructure.fetching_support import Noting, Service
+from tests.infrastructure.fetching_support import (
+    NO_TIMEOUT_S,
+    Noting,
+    OpenGate,
+    Service,
+)
 
 # The idle limit these run against. Small enough that a suite waits for
 # nothing: the clock is handed in, so no test here sleeps at all.
@@ -40,13 +43,6 @@ BRIEF_IDLE_LIMIT_S = 10.0
 # and leave a test asserting the opposite of what it says.
 WITHIN_THE_LIMIT_S = BRIEF_IDLE_LIMIT_S / 2
 PAST_THE_LIMIT_S = BRIEF_IDLE_LIMIT_S * 2
-
-
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication, since these are Qt objects. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
 
 
 class Clock:

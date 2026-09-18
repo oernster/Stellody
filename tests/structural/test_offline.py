@@ -188,8 +188,10 @@ TESTS_PERMITTED = frozenset(
         # picks, because what the fetcher makes of a status and a silence is
         # Qt's, which a fake reply would only imitate.
         "tests/infrastructure/fetching_support.py",
-        # The fetcher's own suite, asking that loopback service through Qt.
-        "tests/infrastructure/test_fetching.py",
+        # Which of Qt's network managers the fetcher asks through on which
+        # thread, asked of that loopback service. The rest of the fetcher's
+        # suite reaches it through the support module alone.
+        "tests/infrastructure/test_fetching_threads.py",
         # The single-instance channel, a named pipe or a socket file the system
         # owns, which is addressed by name and goes nowhere off the machine.
         "tests/infrastructure/test_instance.py",

@@ -16,8 +16,6 @@ from __future__ import annotations
 import time
 
 import pytest
-from PySide6.QtCore import QThread
-from PySide6.QtNetwork import QNetworkAccessManager
 from PySide6.QtWidgets import QApplication
 
 from stellody.application.discovery_ports import (
@@ -27,35 +25,31 @@ from stellody.application.discovery_ports import (
     SourceUnavailable,
 )
 from stellody.infrastructure.courtesy import USER_AGENT
-from stellody.infrastructure.fetching import Fetcher
-from tests.infrastructure.fetching_support import Noting, Service, nowhere
+from stellody.infrastructure.fetching import ACCEPT_LANGUAGE
+from tests.infrastructure.fetching_support import (
+    OpenGate,
+    Service,
+    fetching,
+    nowhere,
+)
+
+# Every header a request may carry: where it is going, who is asking and the
+# transport's own terms. Nothing here can name the listener or their machine.
+SENT_HEADERS = frozenset(
+    {"Host", "User-Agent", "Connection", "Accept-Encoding", "Accept-Language"}
+)
 
 # What "at once" means when a request is abandoned. Generous by an order of
 # magnitude against the measured figure, since the point is that nothing waits
 # out a timeout rather than any particular millisecond.
 PROMPTLY_S = 2.0
-# How long to give a socket to finish closing, in slices. The close is read by
-# the server on its own thread, so it arrives shortly rather than at once.
-SETTLING_SLICE_S = 0.05
-SETTLING_SLICES = 60
 # Longer than two of the fetcher's give-up slices, so a request still wanted is
 # asked about while it is in flight rather than only at the end of it.
 SLOW_S = 0.6
 # Short enough that the timeout arrives long before a held request would.
 BRIEF_TIMEOUT_S = 0.2
-# Long enough that no fetch here can reach it; the timeout is asked about by
-# the one test that is about the timeout.
-NO_TIMEOUT_S = 30.0
-THREAD_LIMIT_MS = 5000
 REFUSAL_CODES = [429, 503]
 SERVICE_ERROR = 500
-
-
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication, since these are Qt objects. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
 
 
 @pytest.fixture
@@ -64,18 +58,6 @@ def service(request: pytest.FixtureRequest):
     made = Service(**getattr(request, "param", {}))
     yield made
     made.close()
-
-
-class OpenGate:
-    """A gate that lets everything through at once and counts the asks."""
-
-    def __init__(self) -> None:
-        self.waits = 0
-
-    def wait(self, wanted=None) -> bool:
-        """Let it through, having noted that permission was sought."""
-        self.waits += 1
-        return True
 
 
 class ShutGate:
@@ -98,18 +80,6 @@ class Flipping:
         return self._left >= 0
 
 
-def fetching(
-    gate=None, timeout_s: float = NO_TIMEOUT_S, note=None, **manager
-) -> Fetcher:
-    """A fetcher that waits for nothing it does not have to."""
-    return Fetcher(
-        gate=gate or OpenGate(),
-        timeout_s=timeout_s,
-        note=note or Noting(),
-        **manager,
-    )
-
-
 class TestAskingAService:
     """An ordinary question with an ordinary answer."""
 
@@ -122,6 +92,21 @@ class TestAskingAService:
         assert fetching(gate).json(service.address, {}) == {"ok": True}
         assert gate.waits == 1
         assert service.agents == [USER_AGENT]
+
+    @pytest.mark.parametrize("service", [{"body": {}}], indirect=True)
+    def test_no_header_says_anything_about_the_listener(
+        self, application: QApplication, service: Service
+    ) -> None:
+        """Only the headers every request carries, with the language fixed.
+
+        Measured on 2026-09-18: Qt adds `Accept-Language` by itself, from the
+        system locale, so every discovery request was saying `en-GB` about the
+        machine it came from while the privacy note said nothing did.
+        """
+        fetching().json(service.address, {})
+        (sent,) = service.headers
+        assert set(sent) == SENT_HEADERS
+        assert sent["Accept-Language"] == ACCEPT_LANGUAGE
 
     @pytest.mark.parametrize("service", [{"body": {}}], indirect=True)
     def test_it_builds_the_query_so_a_client_needs_no_networking(
@@ -239,131 +224,3 @@ class TestWhatCameBack:
         missing = tmp_path / "nothing.json"
         with pytest.raises(SourceUnavailable):
             fetching().json(missing.as_uri(), {})
-
-
-class Elsewhere(QThread):
-    """Asks the fetcher which manager it would use, from another thread."""
-
-    def __init__(self, fetcher: Fetcher) -> None:
-        super().__init__()
-        self._fetcher = fetcher
-        self.answer: QNetworkAccessManager | None = None
-
-    def run(self) -> None:
-        """What the fetcher answers when the asking happens over here."""
-        self.answer = self._fetcher._asking()
-
-
-class Fetching(QThread):
-    """Makes a real request from another thread, as a run does."""
-
-    def __init__(self, fetcher: Fetcher, address: str) -> None:
-        super().__init__()
-        self._fetcher = fetcher
-        self._address = address
-        self.answered: object = None
-        self.manager: QNetworkAccessManager | None = None
-        self.trouble = ""
-
-    def run(self) -> None:
-        """Ask once, then end, leaving whatever it opened behind.
-
-        The manager is kept here as well, so this stands for the case where
-        the fetcher letting go of it is not the last reference to it.
-        """
-        try:
-            self.answered = self._fetcher.json(self._address, {})
-            self.manager = self._fetcher._asking()
-        except Exception as trouble:  # noqa: BLE001
-            self.trouble = f"{type(trouble).__name__}: {trouble}"
-
-
-def _settled(service: Service, application: QApplication) -> bool:
-    """Whether the service has no connection open, given a moment to notice.
-
-    A loop of slices rather than one sleep: a socket closes when the far end
-    reads the close, which is its own thread's business rather than this
-    one's, so the answer arrives shortly rather than immediately.
-    """
-    for _ in range(SETTLING_SLICES):
-        application.processEvents()
-        if service.open_connections == 0:
-            return True
-        time.sleep(SETTLING_SLICE_S)
-    return False
-
-
-class TestWhereTheManagerLives:
-    """Qt objects belong to the thread that made them; a run has its own.
-
-    Asked through the private method rather than through a fetch, because
-    which manager was used has no other observable: two fetches from two
-    threads both answer, whether or not the rule was honoured.
-    """
-
-    def test_one_thread_asking_twice_uses_the_manager_it_has(
-        self, application: QApplication
-    ) -> None:
-        """Rebuilding it per request would throw away every kept connection."""
-        fetcher = fetching(manager=QNetworkAccessManager())
-        assert fetcher._asking() is fetcher._asking()
-
-    def test_a_run_on_its_own_thread_gets_a_manager_of_its_own(
-        self, application: QApplication
-    ) -> None:
-        """A manager used from a thread that did not make it is undefined."""
-        fetcher = fetching(manager=QNetworkAccessManager())
-        here = fetcher._asking()
-        thread = Elsewhere(fetcher)
-        thread.start()
-        assert thread.wait(THREAD_LIMIT_MS), "the thread finished"
-        assert thread.answer is not None
-        assert thread.answer is not here
-
-    def test_the_manager_is_let_go_when_its_thread_ends(
-        self, application: QApplication
-    ) -> None:
-        """Measured from the diary on 2026-09-08, over two runs.
-
-        A run keeps its connections open between requests, which the gap the
-        terms ask for makes worth doing. Nothing closed them when the run
-        ended, so idle sockets were left on a thread that had finished and Qt
-        tore them down thirty seconds later with nobody home, saying
-        `QIODevice::read (QSslSocket): device not open` once per host.
-
-        Asserted on the manager rather than on the message, since the message
-        is Qt's and arrives half a minute afterwards. What this holds is the
-        thing that caused it: nothing of that thread's is still held once the
-        thread has gone.
-        """
-        fetcher = fetching()
-        thread = Elsewhere(fetcher)
-        thread.start()
-        assert thread.wait(THREAD_LIMIT_MS), "the thread finished"
-        application.processEvents()
-        assert thread.answer is not None, "it did build one over there"
-        assert fetcher._held == {}, "and let go of it when that ended"
-
-    def test_a_connection_left_open_is_closed_when_that_thread_ends(
-        self, application: QApplication
-    ) -> None:
-        """The half of it that the reported message was actually about.
-
-        A service that keeps a connection alive is what leaves an idle socket
-        behind, so this asks one to, then watches the socket go when the
-        thread that opened it ends. Against HTTP/1.0, which is what the rest
-        of this file talks to, there is no connection to leave and nothing to
-        see.
-        """
-        service = Service(body={"ok": True}, keeps_alive=True)
-        try:
-            thread = Fetching(fetching(), service.address)
-            thread.start()
-            assert thread.wait(THREAD_LIMIT_MS), "the thread finished"
-            assert thread.answered == {"ok": True}, thread.trouble
-            assert thread.manager is not None, "something else still holds it"
-            assert _settled(
-                service, application
-            ), "the connection the run left open was closed with its thread"
-        finally:
-            service.close()
