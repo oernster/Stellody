@@ -329,19 +329,22 @@ Verified by: `tests/application/test_choosing_an_output.py::test_a_missing_choic
 Priority: Must
 
 Requirement: If the device in use disappears from the output list while a
-track is loaded, then the transport shall open the track again on the system
-default from the position it had reached; the window shall say so on the
-status line.
+track is loaded, then the transport shall pause the track where it was; when
+play is next pressed, the transport shall open it on the system default from
+that place. The window shall say on the status line that the device
+disconnected.
 
-Rationale: Decision 4 of 2026-09-18. A Bluetooth pair walking out of range is
-the ordinary case. The music carrying on out of the speakers is the milder
-failure; silence with no word would be the worse one.
+Rationale: Decision 4 of 2026-09-18, brought under Oliver's rule of
+2026-09-14 by his ruling on OQ-O5 (Amendment 4): music never goes to the
+speakers without a press. A Bluetooth pair walking out of range is the
+ordinary case.
 
 Acceptance: Given a track playing at 2:00 on the Bathys, when the Bathys
-disconnects, then the track goes on from about 2:00 on the system default and
-the status line says the Bathys disconnected.
+disconnects, then the track pauses at about 2:00 and the status line says the
+Bathys disconnected; when play is pressed, then it goes on from there on the
+system default.
 
-Verified by: `tests/application/test_choosing_an_output.py::test_a_vanished_device_falls_back_in_place`, `tests/ui/test_output_messages.py::test_a_disconnect_is_said`
+Verified by: `tests/application/test_choosing_an_output.py::TestWhatALossDoesToTheTrackInHand`, `tests/ui/test_output_messages.py::test_a_disconnect_is_said`
 
 ---
 
@@ -351,17 +354,20 @@ Priority: Must
 
 Requirement: While the chosen device is missing, when it appears in the output
 list, the transport shall open the track in hand again on it from the position
-it had reached.
+it had reached, leaving a paused track paused.
 
 Rationale: The other half of FR-O10 and FR-O11. The choice was kept precisely
 so it could come back; a listener who puts their headphones back on expects
-the music in them.
+the music in them. A track paused by the loss stays paused (Amendment 4), so
+nothing starts without a press.
 
 Acceptance: Given the Bathys chosen but disconnected while a track plays on the
 speakers, when the Bathys connects, then the track moves to the Bathys from
-where it had reached.
+where it had reached and plays on; given a track paused when the Bathys
+disconnected, when the Bathys connects, then the track is on the Bathys and
+still paused.
 
-Verified by: `tests/application/test_choosing_an_output.py::test_a_returning_device_takes_the_music_back`
+Verified by: `tests/application/test_choosing_an_output.py::TestWhatALossDoesToTheTrackInHand`
 
 ---
 
@@ -549,7 +555,7 @@ case the feature cannot ship without. Won't this time is the out-of-scope list i
 | OQ-O1 | Two outputs share the name `U13ZA (NVIDIA High Definition Audio)` and PortAudio cannot state endpoint identity. Which PortAudio device is which? | Claude | Played a tone through each PortAudio WASAPI output while reading every endpoint's own peak meter. | Answered 2026-09-18; Amendment 2 |
 | OQ-O2 | On Linux, Qt lists PulseAudio or PipeWire outputs while PortAudio may see ALSA devices under other names. Can the two be matched, inside the Flatpak? | Oliver, on the Linux machine | Run the device probe from this session inside the Flatpak build; compare the two lists. | Open |
 | OQ-O3 | On macOS, do Qt's names match PortAudio's CoreAudio names? | Oliver, on the Mac | The same probe on the Mac. | Open |
-| OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Open |
+| OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Answered 2026-09-18; Amendment 4 |
 | OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Open |
 
 ## 6. The build order this implies
@@ -634,3 +640,10 @@ None changes a requirement's intent; each states a case the text left open.
 - **A choice made with nothing loaded opens nothing.** FR-O07 moves the track
   in hand; a queue left stopped is not a track in hand, so it is not opened
   just to be moved.
+
+**Amendment 4, 2026-09-18: OQ-O5 answered.** Oliver ruled that his rule of
+2026-09-14 governs the chosen device leaving and returning: music never goes
+to the speakers without a press. FR-O11 was rewritten in place: a loss pauses
+the track where it was, the same pause a move of the system output makes;
+play then opens it on the default. FR-O12 gained that a paused track stays
+paused when the device returns; a playing one moves back and plays on.

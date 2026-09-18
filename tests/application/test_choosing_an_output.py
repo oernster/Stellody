@@ -243,6 +243,89 @@ class TestTheListChanging:
         assert player.device == FOCUSRITE
 
 
+class TestWhatALossDoesToTheTrackInHand:
+    """OQ-O5, ruled by Oliver on 2026-09-18: the 2026-09-14 rule governs.
+
+    Music never jumps to the speakers without a press. The device the
+    listener chose takes the music back when it returns.
+    """
+
+    def _lost_while_playing(self) -> tuple[Transport, RecordingPlayer]:
+        transport, player = _playing((*LISTED, BATHYS))
+        transport.choose_output(chose(BATHYS))
+        player.calls.clear()
+        transport.outputs_listed(LISTED)
+        return transport, player
+
+    def test_a_loss_while_playing_pauses(self) -> None:
+        """FR-O11: paused where it was, rather than out of the speakers."""
+        _transport, player = self._lost_while_playing()
+        assert player.calls == ["device default", "pause"]
+
+    def test_play_after_a_loss_opens_on_the_default(self) -> None:
+        """FR-O11: the press is the listener agreeing to the speakers."""
+        transport, player = self._lost_while_playing()
+        player.calls.clear()
+        transport.toggle()
+        assert player.calls[0] == "load"
+        assert player.device is None
+        assert player.calls[-1] == "play"
+
+    def test_a_loss_while_paused_starts_nothing(self) -> None:
+        transport, player = _playing((*LISTED, BATHYS))
+        transport.choose_output(chose(BATHYS))
+        transport.toggle()
+        player.calls.clear()
+        transport.outputs_listed(LISTED)
+        assert player.calls == ["device default"]
+
+    def test_play_after_a_loss_while_paused_reopens_rather_than_resumes(
+        self,
+    ) -> None:
+        """The paused stream is open on the device that went; resuming it
+        would play into nothing."""
+        transport, player = _playing((*LISTED, BATHYS))
+        transport.choose_output(chose(BATHYS))
+        transport.toggle()
+        transport.outputs_listed(LISTED)
+        player.calls.clear()
+        transport.toggle()
+        assert player.calls[0] == "load"
+
+    def test_a_loss_with_nothing_loaded_touches_nothing_else(self) -> None:
+        transport, player = _listed((*LISTED, BATHYS))
+        transport.choose_output(chose(BATHYS))
+        player.calls.clear()
+        transport.outputs_listed(LISTED)
+        assert player.calls == ["device default"]
+
+    def test_a_return_takes_a_playing_track_back_in_place(self) -> None:
+        """FR-O12: the chosen device takes the music back, playing on."""
+        transport, player = _playing()
+        transport.choose_output(chose(BATHYS))
+        player.calls.clear()
+        transport.outputs_listed((*LISTED, BATHYS))
+        assert player.calls[:2] == [f"device {BATHYS.identity}", "load"]
+        assert f"seek {PART_WAY + LEAD}" in player.calls
+        assert "play" in player.calls
+
+    def test_a_return_after_a_loss_leaves_the_pause_in_place(self) -> None:
+        """FR-O12: moved to the device, still waiting for the press."""
+        transport, player = self._lost_while_playing()
+        player.calls.clear()
+        transport.outputs_listed((*LISTED, BATHYS))
+        assert "load" in player.calls
+        assert "play" not in player.calls
+        assert player.device == BATHYS
+
+    def test_a_return_with_nothing_loaded_opens_nothing(self) -> None:
+        transport, player = _listed()
+        transport.choose_output(chose(BATHYS))
+        player.calls.clear()
+        transport.outputs_listed((*LISTED, BATHYS))
+        assert player.calls == [f"device {BATHYS.identity}"]
+
+
 class TestTheSystemMovingItsDefault:
     def test_the_default_is_followed(self) -> None:
         """FR-O15: today's pause for a move, while the default is the choice."""

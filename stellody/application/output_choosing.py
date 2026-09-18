@@ -105,8 +105,11 @@ class OutputChoosing:
     def outputs_listed(self, devices: tuple[OutputDevice, ...]) -> OutputChange:
         """Take the system's list of devices again. FR-O13.
 
-        Later streams follow what it means for the device in use; what the
-        track in hand does about it is the caller's to decide.
+        Ruled by Oliver on 2026-09-18 (OQ-O5), the rule of 2026-09-14 governs
+        the track in hand: music never goes to the speakers without a press.
+        Losing the chosen device pauses it where it was, exactly as a move of
+        the system's output does; play then opens it on the default (FR-O11). The device coming back takes the track in hand where it is
+        and as it was, so a pause is still a pause (FR-O12).
         """
         self._outputs = devices
         listed = device_in_use(devices, self._choice)
@@ -114,12 +117,16 @@ class OutputChoosing:
             self._refused_identity = ""
         elif listed.identity == self._refused_identity:
             listed = None
-        was = self._in_use
-        if listed == was:
+        if listed == self._in_use:
             return OutputChange.NONE
         self._in_use = listed
         self._player.use_device(listed)
-        return OutputChange.LOST if listed is None else OutputChange.RETURNED
+        if listed is None:
+            self.output_moved()
+            return OutputChange.LOST
+        if self._player.state.is_active:
+            self._reopen_in_place()
+        return OutputChange.RETURNED
 
     def _move_to(self, device: OutputDevice | None) -> None:
         """Open later streams on `device`; reopen what is loaded there."""
