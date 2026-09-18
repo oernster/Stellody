@@ -1563,7 +1563,8 @@ true before Stellody ran anywhere but Windows; what was not true is that the
 module holding it was named for a Windows interface and asked for one by name.
 WASAPI is a host API WITHIN PortAudio, so the split is along that line rather
 than along the platforms: `infrastructure/portaudio.py` is the substrate and
-holds what every platform shares, including the mixer fallback `opened_shared`;
+holds what every platform shares, including the mixer fallback `opened_shared`
+and the plain mixer stream `open_shared`, which CoreAudio opens as well;
 `infrastructure/wasapi.py` and `infrastructure/coreaudio.py` are the two host
 APIs worth asking for by name, each reading its vocabulary from the substrate.
 The direction cannot be the other way round, since a specialisation importing

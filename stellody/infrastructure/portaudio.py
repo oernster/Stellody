@@ -141,10 +141,4 @@ def open_output(
     """
     device = default_device() if device is None else device
     reason = NO_EXCLUSIVE_HERE if request.mode is OutputMode.EXCLUSIVE else ""
-    try:
-        stream = open_shared(device, request)
-    except Exception as error:  # reported, never swallowed
-        raise OutputUnavailableError(
-            f"no output at {request.sample_rate} Hz: {error}"
-        ) from error
-    return shared_result(stream, request, reason)
+    return opened_shared(open_shared, device, request, reason)

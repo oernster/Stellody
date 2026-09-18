@@ -41,6 +41,7 @@ from stellody.infrastructure.portaudio import (
     NO_STATED_DEPTH,
     SHARED_DTYPE,
     default_device,
+    open_shared,
     opened_shared,
 )
 
@@ -84,19 +85,6 @@ def _open_direct(
     )
 
 
-def _open_shared(
-    device: int | None, request: OutputRequest
-) -> sounddevice.OutputStream:
-    """A stream through the mixer, which converts whatever it is given."""
-    return sounddevice.OutputStream(
-        device=device,
-        samplerate=request.sample_rate,
-        channels=request.channels,
-        dtype=SHARED_DTYPE,
-        latency=buffer_seconds(request.sample_rate),
-    )
-
-
 def open_output(
     request: OutputRequest, device: int | None = None
 ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
@@ -108,12 +96,12 @@ def open_output(
     """
     device = default_device() if device is None else device
     if request.mode is not OutputMode.EXCLUSIVE:
-        return opened_shared(_open_shared, device, request, "")
+        return opened_shared(open_shared, device, request, "")
     # Refused here rather than left to the device, so the reason names the
     # file instead of blaming the hardware: a lossy source has no depth to
     # deliver untouched, whatever the stream does with it.
     if not request.states_depth:
-        return opened_shared(_open_shared, device, request, NO_STATED_DEPTH)
+        return opened_shared(open_shared, device, request, NO_STATED_DEPTH)
     # A PortAudio built without CoreAudio support is a fallback like any
     # other refusal: measured on Windows, where the symbol the settings need
     # is simply not in the library, so the settings raise before a device is
@@ -121,7 +109,7 @@ def open_output(
     try:
         stream = _open_direct(device, request)
     except Exception as error:  # noqa: BLE001 - a refusal is a fallback
-        return opened_shared(_open_shared, device, request, str(error))
+        return opened_shared(open_shared, device, request, str(error))
     report = OutputReport(
         request=request,
         mode=OutputMode.EXCLUSIVE,
