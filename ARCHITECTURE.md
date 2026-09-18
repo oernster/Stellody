@@ -4,7 +4,8 @@
 
 Each invariant names the test that enforces it. Every one of these guards has
 been verified by planting a violation and reading the exit code; a guard that
-has never been seen to fail is not yet a guard.
+has never been seen to fail is not yet a guard. How to run these tests and
+write new ones is in [`TESTING.md`](TESTING.md).
 
 | # | Invariant | Enforced by |
 |---|---|---|

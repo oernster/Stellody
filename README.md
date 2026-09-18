@@ -236,7 +236,8 @@ Five things reach outside your computer at all, so here are all five:
   they find, the fixed settings each request states for itself (the answer's
   format, how many results to return, which release types to list, which
   details to include and which similarity algorithm to use) plus a user agent
-  naming Stellody, its version and the project's contact address: not your
+  naming Stellody, its version and the project's contact address. The language
+  asked for is fixed at any, rather than your computer's own: not your
   library, not a count of it, not a word about you or your machine. Tick
   nothing and nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
@@ -304,13 +305,14 @@ Everything above is the product. What follows is the code.
 | Buffers | numpy |
 | Store | SQLite |
 
-`ARCHITECTURE.md` states the invariants first, each linked to the test that
-enforces it. `PLAN.md` holds the open work plus what is deliberately excluded.
-`TECH_DEBT.md` says what is still open internally, what is deliberately left
-and what only looks like debt. `DISCOVERY.md` and `SHOPS.md` are the two
-specifications discovery was built from; `FORMATS.md` specifies the three
-formats proved by a generated fixture. Each requirement names the test that
-proves it.
+[`ARCHITECTURE.md`](ARCHITECTURE.md) states the invariants first, each linked to
+the test that enforces it. [`PLAN.md`](PLAN.md) holds the open work plus what is
+deliberately excluded. [`TECH_DEBT.md`](TECH_DEBT.md) says what is still open
+internally, what is deliberately left and what only looks like debt.
+[`DISCOVERY.md`](DISCOVERY.md) and [`SHOPS.md`](SHOPS.md) are the two
+specifications discovery was built from; [`FORMATS.md`](FORMATS.md) specifies
+the three formats proved by a generated fixture. Each requirement names the
+test that proves it.
 
 ## Running from source
 
@@ -334,14 +336,9 @@ the package and both versions; that is the guard working rather than a fault.
 ```
 
 That runs the formatter, both linters and the suite against the project's own
-virtual environment, reading each exit code rather than its output. Running
-`python -m pytest` directly works too, provided it is the venv's Python;
-otherwise a test fails the run, since the checks passing in one environment
-while the application runs in another is a fault this project has actually had.
-
-The suite gates at 100% branch coverage over the domain and application
-layers; below that the run fails. It also runs black, flake8 and ruff as
-assertions, so a formatting or linting regression is a test failure.
+virtual environment. The suite gates at 100% branch coverage over the domain
+and application layers. [`TESTING.md`](TESTING.md) says how to read the result,
+the rules a run by hand has to follow and how a new test or guard is written.
 
 ## Building
 

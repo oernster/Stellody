@@ -1893,18 +1893,26 @@ the ticked genres; the catalogue identifiers the sources answered with, for
 those artists or for the candidates the similarity source suggested; fixed
 values each client states for itself, being the response format, a result
 limit, the release types, the genres inclusion and the similarity algorithm.
+The headers carry only where the request goes, the User-Agent, the transport's
+own terms and a language fixed at any (`ACCEPT_LANGUAGE` in
+`infrastructure/fetching.py`).
 
 Rationale: The stance in PLAN.md forbids anything outward that carries the
 library or names the listener. Genre scoping is what makes this satisfiable: a
 run names the subset the listener chose rather than an inventory of everything
-they own.
+they own. The language is fixed because Qt otherwise adds one by itself from
+the system locale: measured on 2026-09-18, every request said `en-GB` about
+the machine it came from.
 
 Verification:
 `tests/infrastructure/test_what_leaves_the_machine.py::test_a_field_holds_the_name_the_identifier_or_a_constant`
 puts every question both catalogue clients can ask through a recording fetcher
 and asserts each field holds the artist name, the identifier or a constant the
 client states for itself. Proved to bite on 2026-09-13 by planting an extra
-field in `infrastructure/catalogue.py`.
+field in `infrastructure/catalogue.py`. The headers are read where they arrive,
+on a loopback service:
+`tests/infrastructure/test_fetching.py::TestAskingAService::test_no_header_says_anything_about_the_listener`
+failed on `en-GB,*` before the language was fixed.
 
 ---
 
