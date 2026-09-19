@@ -113,7 +113,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt Multimedia's list of output devices, Qt's image codecs, Qt's network stack, the filesystem. | `domain`, `application` and `shared`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and the host API chosen from it, Qt Multimedia's list of output devices, Windows' own audio endpoint enumeration over COM, Qt's image codecs, Qt's network stack, the filesystem. | `domain`, `application` and `shared`. |
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain`, `application` and `shared`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
@@ -233,8 +233,8 @@ reason. Importing it loads a shared FFmpeg build of some sixty megabytes. A
 library holding nothing that reader takes never pays for it and one holding a
 few pays only when a track from them is opened. The other imports deferred
 into a function are different: `output.py` reaches `wasapi` only on Windows and
-`coreaudio` only on macOS, while `stellody/__init__.py` defers the composition
-root into `main`.
+`coreaudio` only on macOS, `output_list.py` reaches `endpoints` only on Windows,
+while `stellody/__init__.py` defers the composition root into `main`.
 
 ## Grouping: folders group, tags name and join
 
@@ -1572,7 +1572,9 @@ The direction cannot be the other way round, since a specialisation importing
 the thing it specialises is a cycle waiting to be written.
 
 **`infrastructure/output.py` is the whole of what the application knows about
-there being more than one.** It switches on `sys.platform` rather than on what a
+there being more than one way to open a stream.** Where the list of devices
+comes from is the one other platform question, answered in
+`infrastructure/output_list.py` against the same `output.WINDOWS`. It switches on `sys.platform` rather than on what a
 device reports, because what differs is the INTERFACE rather than the hardware:
 asking a Mac whether it has WASAPI is asking the wrong question. Windows takes
 `wasapi.py`, macOS takes `coreaudio.py` and everything else takes the
@@ -1582,7 +1584,7 @@ host modules are imported inside the call rather than at module scope, so no
 platform loads a module naming a host API it does not have.
 
 **The listener chooses the mode; the strip shows what the device answered.**
-A switch on the bottom strip between mute and the equalizer sets
+A switch on the bottom strip between the output device and the equalizer sets
 `Transport.set_output_mode`, which reopens the track in hand where it is and as
 it was, since a mode belongs to a stream rather than to something a running
 stream can be told. The choice is written down under `output_mode` and is what
@@ -1618,8 +1620,10 @@ planting its removal.
 time and opens no stream: six rates, each costing one question or two since
 `native_dtype` tries the deeper sample type first, while the window refreshes
 four times a second. `OutputDevices.exclusive_rates` in
-`infrastructure/output_devices.py` therefore keeps the answer until the output
-moves. After a move PortAudio still means the old device until its list is
+`infrastructure/output_devices.py` therefore keeps the answer, with the device
+it was about, until the output moves or the list of devices changes; a
+different device is asked afresh. The question is put to the device in use, so
+a chosen device is asked about itself rather than the default. After a move PortAudio still means the old device until its list is
 taken again, which closes any stream open, so that is done only while none is:
 with nothing loaded the new device is asked at once, while with a stream open
 the answer is unknown until the next stream opens and takes the list itself.
@@ -1634,7 +1638,9 @@ stream alone: reopening it would buy a gap in the music and nothing else.
 Shared is written down and the device's own reason said once along the status
 line. It passes over any song `follow_song` has already stood the switch down
 for, which is what once saved shared over the choice for an MP3 and named the
-song's own rate as refused.
+song's own rate as refused. A chosen DEVICE refusing to open at all is a
+different refusal with a different answer, the system default instead of it;
+[Choosing the output device](#choosing-the-output-device) sets that out.
 
 **Two things stop an exclusive stream being bit perfect from inside the
 application.** Volume below unity multiplies the block and casts it back
@@ -1672,7 +1678,7 @@ through and `offers_exclusive` answers whether the mode is offered at all.
 
 Nothing claims to be bit perfect that is not.
 
-**A move of the system's output pauses the music; play opens it again there.**
+**A device arriving carries the music on; a device leaving pauses it.**
 Measured on 2026-09-14 with headphones connected after launch: PortAudio takes
 its device list once, so a process left running went on naming the old default
 however often it asked, while Qt's `QMediaDevices.audioOutputsChanged` fired
@@ -1680,14 +1686,39 @@ within a second of every switch (twice per switch; also for list changes that
 move nothing). `infrastructure/output_devices.py` therefore reports a move only
 when the default's identity differs from the last one seen, then takes
 PortAudio's list again on the way into the next stream, the one moment the
-engine holds none. The composition root opens every stream through it. What a
-move DOES is the application's: `application/output_following.py` pauses a
-playing track, then the press that resumes opens it again from what was last
-heard, while a pause the listener made resumes on the stream already open. The
-window turns both play buttons back to play at once and says why along the
-foot. `tests/application/test_following_the_output.py`,
-`tests/infrastructure/test_output_devices.py` and
-`tests/ui/test_pausing_when_the_output_moves.py` hold the three halves.
+engine holds none. The composition root opens every stream through it.
+
+Each move says whether the default it left is still listed, read from Qt's own
+list at that moment; that is the one fact the two answers turn on, ruled by
+Oliver on 2026-09-19 after a live test with his Px7 S3 (`OUTPUTS.md`
+Amendment 5). What a move DOES is the application's,
+in `application/output_following.py`. While System default is the choice and
+the default left is still listed, a device has arrived: `output_switched`
+reopens the track in hand there where it was, so playing plays on and paused
+stays paused. Otherwise `output_moved` pauses a playing track; the press that
+resumes opens it again from what was last heard, while a pause the listener
+made resumes on the stream already open. A default changed by hand with both
+devices present reads as an arrival, which the ruling accepts.
+
+**A device switched off fails the stream before Qt says so.** Measured on
+2026-09-19 through the shipped engine: the write fails 0.29 seconds ahead of
+the report. The feeder used to read that failure as the track ending, which
+skipped to the next song. It now marks the session interrupted and holds the
+track (`infrastructure/audio.py`); `output_moved` counts that as the move
+having stopped the music, once. `Transport.toggle` reopens rather than resumes
+an interrupted track. An interrupted stream also keeps its pause when
+the move that follows would otherwise carry the music on.
+
+Music on a device the listener named is not on the default, so a move of the
+default is nothing to it; music on the default only because the chosen device
+is away is never carried to a device nobody chose. The window turns both play
+buttons back to play at once on a pause and says why along the foot.
+`tests/application/test_following_the_output.py`,
+`tests/application/test_a_device_arriving.py`,
+`tests/infrastructure/test_output_devices.py`,
+`tests/ui/test_pausing_when_the_output_moves.py` and
+`tests/ui/test_output_composition.py` hold it, the last emitting both answers
+through the real wiring.
 
 `tests/infrastructure/test_portaudio_output.py` asserts the ASKING, which is
 what a machine with no audio hardware can still measure: that no host API
@@ -1697,6 +1728,67 @@ planting exactly that. `tests/infrastructure/test_output_switch.py` walks the
 switch under a stated platform, because the Windows branch is the only one that
 runs on the machine the suite is developed on and the other two would otherwise
 ship on a reading of the source alone.
+
+## Choosing the output device
+
+**It is specified before it is described.** `OUTPUTS.md` holds the
+requirements, each naming its test, plus the amendments that ruled what the
+first text left open. What follows is where they landed.
+
+**The choice is kept apart from the device in use.** `OutputChoice` in
+`stellody/domain/outputs.py` is an identity and the name the system gave it
+when chosen; an empty identity is System default. The device in use is where
+streams open now. The two differ while the chosen device is missing or has
+refused to open, when the music plays on the default while the choice waits,
+so it can find its device again. The name is kept because a missing device
+cannot be asked for one.
+
+**Identity decides; the name is what a listener reads.** Windows gives two
+monitors on the reference machine one name, so a choice is stored by endpoint
+identity under `output_device`, beside `output_device_name`. `output_list`
+builds what both lists show: System default first, then every device in the
+system's own order, a repeated name numbered from its second use, a missing
+choice kept last as not connected. The tick follows the device in use rather
+than the choice (Amendment 5), so System default carries it while the choice
+is away or refused.
+
+**Windows' own enumeration is read, because PortAudio names no identity.** The
+bundled PortAudio exports no endpoint identity, so a device can only be matched
+to a PortAudio output by name. Measured on 2026-09-18 by playing a tone through
+each PortAudio WASAPI output while reading every endpoint's peak meter:
+PortAudio's outputs come in exactly the order
+`IMMDeviceEnumerator::EnumAudioEndpoints` gives, one for one, while Qt lists
+the same devices default first. So `infrastructure/endpoints.py` reads that
+enumeration over COM through ctypes and `infrastructure/output_list.py` matches
+by position among namesakes. `opener_position` relies on the order only while
+the two lists agree name for name; otherwise a name more than one device
+carries is not guessed at, which makes the open a refusal rather than music on
+the wrong device. The list is Qt's elsewhere, as it is on Windows should the COM
+call fail.
+
+**What a choice does is the transport's.** `OutputChoosing` in
+`stellody/application/output_choosing.py` is mixed into the transport beside
+`OutputFollowing`. Choosing reopens the track in hand where it was, exactly as
+the exclusive switch does; a queue left stopped is not opened just to be moved.
+A new list from the system answers with `OutputChange`: the chosen device lost
+pauses the track, the same pause a move of the default makes; play then opens
+it on the default (Amendment 4); the device returning takes the track
+back where it is and as it was. A device that refuses to open is answered by
+the default, with a `Refusal` naming the device and its reason kept for the
+window once; the refused device is not asked again until it is chosen again or
+leaves the list and returns, else every later track would open into the same
+refusal.
+
+**The window says what a listener would otherwise have to guess.**
+`stellody/ui/choosing_outputs.py` shows the list, stores the choice and says on
+the status line when a device refused, is missing at launch or disconnected.
+`stellody/ui/output_menu.py` fills both lists, the one the button on the bottom
+strip pops up and the Sound menu's Output device submenu, from one function, so
+the two cannot come to disagree. `OutputDevices` in
+`infrastructure/output_devices.py` emits `listed` for a change to the list,
+ahead of `changed` for a move of the default, so the list is current before a
+move is acted on. Which rates exclusive output is offered at is asked of the
+device in use rather than of the default.
 
 ## Shipping to three platforms
 
@@ -1874,7 +1966,7 @@ holds it over the real window, each part proved by taking it out.
 | `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also offers no equalizer of its own, so the one described below could not have been built on it. |
 | PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice; Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. See [The central abstraction](#the-central-abstraction). |
 | The bundled FFmpeg is LGPL, verified rather than assumed | The libraries report "LGPL version 3 or later" from the licence string the build itself computes, read out of the shipped binary. The same build links libx264 and libx265, which are GPL-2.0-or-later and which `avcodec` imports outright, so they cannot be dropped from a package. The decoder lives in `infrastructure`, which is the GPL-3.0 half, so the combination is compatible and the packaged application is distributed as a GPL-3.0 work. Nothing here encodes video; those two arrive as dependencies of a shared build. |
-| A track that will not open is reported, never left as silence | Found on a real machine: a checkout whose requirements were not installed had no decoder for M4A, the exception left the transport entirely and the window did nothing at all. A listener cannot tell that from a press that missed. `PlaybackError` is named in the domain so the application can catch a failure without importing the layer that raised it; `DecodeError` and `OutputUnavailableError` are both that error. It is raised rather than reported: the transport lets it out and the window catches it in one place, which is the only place that can give the device back, put the buttons right and say what happened. Reporting it through a callback was tried and was worse, because the press then read as a success: the window said the track was playing over the top of the message saying it would not, with the device still held open behind a track that never started. An unplugged drive and a device another program holds arrive the same way. |
+| A track that will not open is reported, never left as silence | Found on a real machine: a checkout whose requirements were not installed had no decoder for M4A, the exception left the transport entirely and the window did nothing at all. A listener cannot tell that from a press that missed. `PlaybackError` is named in the domain so the application can catch a failure without importing the layer that raised it; `DecodeError` and `OutputUnavailableError` are both that error. It is raised rather than reported: the transport lets it out and the window catches it in one place, which is the only place that can give the device back, put the buttons right and say what happened. Reporting it through a callback was tried and was worse, because the press then read as a success: the window said the track was playing over the top of the message saying it would not, with the device still held open behind a track that never started. An unplugged drive and a default device another program holds arrive the same way; a chosen device that will not open is answered by the default instead, as [Choosing the output device](#choosing-the-output-device) sets out. |
 | A pause is not an ending; it is caught in both layers | Reported against a real library: pausing a track then pressing play started it from its beginning. `pause` clears the resume and then stops the stream, so a feeder already past its wait writes into a stream that has just been stopped and PortAudio refuses that write. The failure landed in the branch that means "the track ran out", so a pause set `finished`. Everything downstream then followed correctly from a false premise: `play` declines to start a finished session, so the press did nothing; the poll a quarter of a second later took the ending as real; on the last track of a queue it gave the device back, which is what left the press after it reloading the track from nothing. The write is fixed where it goes wrong: a failure while the resume is already clear is a pause landing on the feeder, so the block in hand is dropped and the loop goes back to waiting. The transport carries the second half, because a device cannot tell a hold from an ending under any circumstances: `_held` is set when a listener pauses, cleared when they resume and taken from `playing` at every load, since a track opened without playing is one somebody is sitting on; `advance_if_finished` does nothing while it is set. Both halves were proved by planting their removal, each against a stream that refuses the write its stop landed in the middle of. |
 | Skipping while paused stays paused | Pressing Next while paused started playing, which nobody had asked for. The awkward part is that a track ending arrives through the same method, where playing on is right, while a device that has run out reports itself PAUSED exactly as a paused one does. Whether the move plays is therefore handed in by the caller rather than read off the device: a listener keeps the state they were in, while an ending carries on. Arriving by skipping is also not counted as waiting at a beginning, which is what pressing Back means, so Back after a skip still returns to the start of the track in hand. |
 | The runtime is pinned while the development tools keep their floors | A build of one commit has to be the same build whenever it is made, which a floor cannot promise. It matters more here than in most repositories: the packaged application carries a Nuitka flag written for the way one version of PyAV reaches one submodule, so a PyAV or PySide6 release arriving by itself would change the thing that flag is about, with the suite green throughout because the suite runs against whatever the environment holds. `requirements.txt` therefore pins with `==` and `requirements-dev.txt` reads it before adding the tools, so nothing is pinned in one place and floating in another. The tools stay on floors, since a formatter or a linter moving forward is a change to the checks rather than to what is shipped. A pin nothing checks is a comment, so invariant 20 holds every pin to the version actually installed, proved by planting a pin one patch release out and reading the failure name the offender. |
@@ -1927,7 +2019,7 @@ holds it over the real window, each part proved by taking it out.
 | The equalizer switch is kept apart from its sliders | Somebody comparing on against off is asking one question; losing the curve they set up to compare with would answer a different one. The two are stored as two settings for the same reason. |
 | A boost is clipped at the format's ceiling, as the last resort | The curve arrives with room made for its own lift, so a record under the ceiling stays under it; see the equalizer section. What can still reach the ceiling is a sample that arrived over it, which a lossy decoder hands back on a loud master, plus the little a filter overshoots by and the few hundredths of a decibel the peak search can fall short by. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
 | What the library is shown as is one group on the bottom strip | The view toggle and the sleeve size sit together on the bottom strip in `stellody/ui/showing_controls.py`: one child group rather than loose buttons, so their order is stated once and the strip delegates to it. |
-| How the music sounds is one group on the right of the bottom strip | Volume, mute, exclusive output and the equalizer sit together in `stellody/ui/sound_controls.py`, ruled off from shuffle and repeat, which close the strip. Volume stays immediately left of mute, since the two are one thought: how loud, then whether at all. A rule divides those two from exclusive output and the equalizer, which act on the stream rather than on the level; Oliver stated that order on 2026-09-17. The tray above keeps discovery, a rule, the appearance toggle and Help at its right end. |
+| How the music sounds is one group on the right of the bottom strip | Volume, mute, the output device, exclusive output and the equalizer sit together in `stellody/ui/sound_controls.py`, ruled off from shuffle and repeat, which close the strip. Volume stays immediately left of mute, since the two are one thought: how loud, then whether at all. A rule divides those two from the controls that act on the stream rather than on the level; Oliver stated that order on 2026-09-17. The output device joined them on 2026-09-18, straight after the rule, since which device comes before how it is held (`OUTPUTS.md` FR-O01). The tray above keeps discovery, a rule, the appearance toggle and Help at its right end. |
 | Opening the whole library is a toggle on its heading | Expand all and Collapse all were on the View menu alone, so this is reach rather than capability: the gesture belongs beside the column of albums it acts on. It is one chevron at the left of the Title heading, this application's own artwork so that the toggle is drawn in the same hand as every other control here. A typed triangle was never on offer, since the font a heading lands in is not decided here while a glyph it lacks shows as a box; measured offscreen, the fallback font carries none of the four triangles. Where the artwork cannot be found the style's own arrow is drawn instead, so a checkout missing its assets shows a toggle rather than a gap. Room for it is kept by `QHeaderView::section:first` in the stylesheet, padded by a width DERIVED in `expanding.py` from the picture plus the space either side of it: written as one number it reserved exactly the picture, which left the chevron touching the word beside it. The picture is fitted once per size rather than per paint, the source being over a thousand pixels square against a heading that repaints on every hover. What a press would do is read off the rows rather than remembered, since a listener opening albums by hand moves the tree without touching this; partly open counts as shut, so one press always finishes the job it looks like it would. Replacing a tree's heading also throws away what the tree configured on the one it built, measured as three differences: headings centred rather than left, sections that cannot be dragged and a last section that stretches, so all three are taken from the heading being replaced. The heading is not a keyboard stop and does not become one, the menu being the keyboard route. Proved by planting the press away and by freezing the arrow, each failing its own case. |
 | A change that moves every row is answered once, never per row | What the heading's chevron should say is read off the albums, so every signal saying a row moved costs a walk of all of them. That is right for one album opened by hand and ruinous for a change that opens the lot: `expandAll` reports every row it opens, measured at 8792 signals on a library of 628 albums holding 8164 tracks; answering each of them took 3.72 seconds with the interface thread held throughout, against 0.03 seconds for the same call with nothing listening. The answer is therefore silent for the duration of such a change and asked once at the end, measured after at 0.04 seconds. The View menu goes through the same object for the same reason, so the menu cannot leave the chevron offering to do what it has just done. An earlier note here said `expandAll` emits nothing at all, inferred from a probe against an EMPTY library rather than measured; the freeze that shipped is what a claim taken from the wrong fixture costs. The rule is held by COUNTING the questions rather than by timing them, since a timing that fails on a slow machine is one people learn to ignore. |
 | An album's own chevron is the same picture as the heading's | Qt draws a branch indicator from the platform style, which was the last thing in this window still wearing one. A row says exactly what the heading above it says, about one album rather than all of them, so it is drawn from the same two pictures through `Chevrons`, which loads them once and fits them once per size. `ExpandingTree.drawBranches` answers only for a row with something under it, a track having nothing to open; anything else goes back to the base class. The row's chevron is larger than the heading's, an album row being as tall as the sleeve it carries rather than as tall as a line of text. |
@@ -1940,7 +2032,7 @@ holds it over the real window, each part proved by taking it out.
 | A rule draws its own line rather than wearing a background | Reported from a real window on 2026-09-18: the rule between mute and exclusive output was missing from a screenshot while the rule after the equalizer was there. Every window is drawn at nine tenths, so a background one pixel wide is nine tenths of a device pixel; measured across ten widths in a row, each rule covered no pixel at one position in ten and vanished, which one depending only on the width of the window. `tray_parts.Rule` is laid out three pixels wide and draws a cosmetic pen down its middle, one device pixel at any scale, including a scale a listener sets for themselves; the colour still arrives from the appearance through the stylesheet. The guard sweeps ten widths in a process started at nine tenths, since Qt reads its scale once: `tests/ui/test_every_rule_is_drawn.py`, proved by planting the one pixel background back and reading the same three rules go missing. |
 | A menu entry that cannot act is disabled, as a button that cannot act is | Expand all and Collapse all belong to the list, which is the nested view; the sleeves are a flat grid of albums with nothing inside them to open. Both entries stayed live there and did nothing when pressed. Every button in the application already answers this rule, wearing a ring that says it cannot be pressed; a menu entry was quietly exempt from it only because it is not a button. `viewing.show_covers` is the one place the view changes, so it is the one place that says what the change means for anything else. |
 | The whole menu bar is swept, rather than the entry that was reported | Two entries breached the rule above and they were found one at a time: Expand all in the sleeves, then Rescan before a music folder had been chosen, which looked ready and answered "Choose a music folder to begin" once pressed. Fixing the reported one leaves the rest unexamined, so `tests/ui/test_menu_sweep.py` states every entry in the bar against the three situations the enabling turns on and asserts that the table IS the bar. An entry added later with nobody having decided where it can act fails there, which is the half that matters: both defects were entries nobody had thought about away from the view they were written in. Rescan is answered where its state is set rather than inside the errand, so the menu entry and the button on the strip cannot disagree. |
-| Every picture button is on the menu bar too | Oliver asked on 2026-09-16 for the buttons to be reachable from the menus: repair and discovery on File; search and filter on an Edit menu of their own between File and View; the sleeves or the list and the sleeve size on View; mute, shuffle and the repeat mode on Sound, joined there on 2026-09-18 by exclusive output beside the equalizer, since the switch arrived after the menus; play or pause, stop, previous and next on a Control menu right of Sound, in the order the right click menu offers them. The volume stays off the menus by the same ruling, since a slider is not an entry. The donation button is on no menu either: `open_donation` is wired to the bottom strip alone. The sleeve size and the repeat mode are chosen by name from a submenu rather than stepped through, which is what a menu can do that a button cannot. Every such entry reads its state from what it stands for when its menu opens (`stellody/ui/menu_mirrors.py`): whether it can act is its button's own answer, whether it is ticked is the transport's or the window's. So an entry and its button cannot disagree, whichever of the two was pressed. `tests/ui/test_menu_mirrors.py` changes each state through the window rather than through the entry, since a tick that only follows its own press is the defect being ruled out. |
+| Every picture button is on the menu bar too | Oliver asked on 2026-09-16 for the buttons to be reachable from the menus: repair and discovery on File; search and filter on an Edit menu of their own between File and View; the sleeves or the list and the sleeve size on View; mute, shuffle and the repeat mode on Sound, joined there on 2026-09-18 by exclusive output beside the equalizer, since the switch arrived after the menus, then by the Output device submenu straight after it; play or pause, stop, previous and next on a Control menu right of Sound, in the order the right click menu offers them. The volume stays off the menus by the same ruling, since a slider is not an entry. The donation button is on no menu either: `open_donation` is wired to the bottom strip alone. The sleeve size and the repeat mode are chosen by name from a submenu rather than stepped through, which is what a menu can do that a button cannot. Every such entry reads its state from what it stands for when its menu opens (`stellody/ui/menu_mirrors.py`): whether it can act is its button's own answer, whether it is ticked is the transport's or the window's. So an entry and its button cannot disagree, whichever of the two was pressed. The Output device submenu is the one exception, refilled by `show_outputs` whenever the devices or the choice change, since it is a list rather than one entry. `tests/ui/test_menu_mirrors.py` changes each state through the window rather than through the entry, since a tick that only follows its own press is the defect being ruled out. |
 | One thing held at the middle of a strip is held by three columns, not two stretches | A stretch either side centres the middle in what the two end groups leave over, which is the middle of the strip only while the groups are the same width. They are not on either strip. The bottom strip's visualiser was found off centre that way first; the top tray's transport stayed on the old shape until Oliver reported it left of centre on a 13 inch 4K screen, measured offscreen as 91 pixels left at 1800 wide and still 42 with the search box open. `tray_parts.centred_row` now lays both strips as three grid columns with the outer two given an equal share of what is spare, so the middle sits at the middle while there is room and drifts rather than being covered where there is not. `tests/ui/test_transport_centred.py` holds the transport to within a pixel with the search box open or shut; it also proves nothing overlaps as the tray narrows. |
 | A stylesheet border needs `WA_StyledBackground` on a plain widget | Both trays were written to be ruled off from the library between them, both said so in `theme.py` and neither drew a line; the top one had gone its whole life that way. Qt fills a plain `QWidget` subclass's background from the sheet while dropping its border unless that attribute is set, with no warning anywhere. Measured on both trays: unset, every edge pixel comes back the surface colour; set, the first and last rows come back the border colour. The attribute is therefore load-bearing rather than decoration, which is why it is stated on each tray with the measurement beside it. `tests/ui/test_tray_rules.py` reads the PAINT rather than the sheet, because asserting the rule is in the sheet is exactly what let this stand: the sheet said the line was there the entire time it was not. |
 | Every stop that can be landed on shows a ring, the same one everywhere | The ring rules had been stated one way only: which things must NOT ring. A control with no rule at all passed both checks, so a checkbox shipped as a stop that Tab landed on while nothing on screen reported it, which is worse than not being a stop since the reader is simply lost. The converse is now asserted by walking the real widgets of the window and of the dialogs, rather than against a list, because whoever forgets a rule forgets the list entry with it. The exceptions are named and reasoned: a zero-size holder has nothing to paint on; the stars, the ringed checkbox, the sleeve size button and each menu title paint their own ring, the stars because five glyphs standing for one value must ring once rather than five times. Item views and text views stand outside the rule altogether: neither wears a ring, as invariant 10 states. The stars were also ringing in a colour of their own, a second token nothing else used, so they read blue while the application read green; one name now serves both. |

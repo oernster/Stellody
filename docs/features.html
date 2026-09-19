@@ -343,7 +343,7 @@
     </div>
   </div>
   <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Electronic Opus is open at the foot of the list, showing its tracks with a row of rating stars on each. Flaming June, the track playing, is painted pink on its row. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window reads 612 albums, 8535 tracks at its left and Playing: Flaming June, BT at its right. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom; beside it the time reads 2:24 of 4:18, then shared, 44.1 kHz, 32 bit. The sleeve size button at the left end of the strip below is greyed out, since the list shows no sleeves. The spectrum display sits in the middle of that strip. Volume, mute, exclusive output and the equalizer are grouped at its right end, then shuffle and repeat.">
+    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Electronic Opus is open at the foot of the list, showing its tracks with a row of rating stars on each. Flaming June, the track playing, is painted pink on its row. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window reads 613 albums, 8563 tracks at its left and Playing: Flaming June, BT at its right. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom; beside it the time reads 1:54 of 4:18, then shared, 44.1 kHz, 32 bit. The sleeve size button at the left end of the strip below is outlined in red and shut off, since the list shows no sleeves. The spectrum display sits in the middle of that strip. Volume, mute, the output device, exclusive output and the equalizer are grouped at its right end, then shuffle and repeat.">
   </div>
   <p class="shot-caption">The list view, with the play controls across the top and your settings along the bottom.</p>
 </section>
@@ -411,8 +411,8 @@
     </div>
     <div class="feat">
       <h3>Volume, mute, shuffle and repeat</h3>
-      <p>They sit at the right end of the strip along the bottom: volume, mute, exclusive output and
-      the equalizer, then shuffle and repeat. Volume, mute, shuffle and repeat are all remembered for next time. Repeat has three settings rather than two: off, repeat the
+      <p>They sit at the right end of the strip along the bottom: volume, mute, the output device,
+      exclusive output and the equalizer, then shuffle and repeat. Volume, mute, shuffle and repeat are all remembered for next time. Repeat has three settings rather than two: off, repeat the
       album, then hold the one song you are on.</p>
       <p>Shuffle reorders the album afresh each time it comes round
       again. Every switch shows you what pressing it would do rather than what it is doing now, so you
@@ -426,11 +426,24 @@
       sound device back and leaves the rest of your library working.</p>
     </div>
     <div class="feat">
-      <h3>Headphones in, music paused</h3>
-      <p>When your computer's sound output changes, say because headphones have just connected, Stellody
-      pauses the music rather than carrying on through the device you have left. Both play buttons turn
-      back to play at once and the bottom of the window says why. Press play and the song carries on
-      through the new output from the point you last heard.</p>
+      <h3>Choose where the music plays</h3>
+      <p>A button on the bottom strip, also Output device on the Sound menu, lists System default first
+      and then every device your computer can play through, in its own order, with two devices of one
+      name numbered apart. Choose one and the song moves there from where it was; a paused song stays
+      paused. The choice is remembered, while the list keeps up as devices come and go.</p>
+      <p>Headphones you chose that disconnect pause the music; press play and it carries on through the
+      system default, while the list names them as not connected with System default ticked. Put them
+      back on and the music moves back to them by itself. A device that will not open leaves the music on
+      the system default, with the bottom of the window naming it and the reason it gave. Tried on
+      Windows so far.</p>
+    </div>
+    <div class="feat">
+      <h3>Headphones on, music follows</h3>
+      <p>With System default chosen, headphones that connect and become your computer's sound output
+      take the song with them, from where it was, with no press. Headphones switched off pause the music
+      rather than sending it out of the speakers: both play buttons turn back to play at once and the
+      bottom of the window says why. Press play and the song carries on through the new output from the
+      point you last heard.</p>
     </div>
     <div class="feat">
       <h3>Albums that flow, flow</h3>
@@ -641,7 +654,7 @@
       alone excepted.</p>
       <p>File repairs the
       library and discovers new music; Edit searches and filters; View switches between the sleeves and
-      the list and picks a sleeve size; Sound switches exclusive output, mutes, shuffles and chooses a repeat mode by name; Control plays, pauses, stops and steps between tracks. A tick
+      the list and picks a sleeve size; Sound switches exclusive output, chooses the output device, mutes, shuffles and chooses a repeat mode by name; Control plays, pauses, stops and steps between tracks. A tick
       beside an entry always says what is really on, however it was switched.</p>
     </div>
   </div>
@@ -665,7 +678,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.7.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.8.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>

@@ -58,8 +58,8 @@ checks run; if it ever stopped being true the suite would fail.
   with such a curve on, while a curve that only cuts keeps its level. Switched
   off it adds nothing of its own, handing each block back untouched; at full
   volume nothing else in Stellody touches the samples either. Volume, mute,
-  exclusive output and the equalizer sit together at the right end of the
-  bottom strip, ahead of shuffle and repeat.
+  the output device, exclusive output and the equalizer sit together at the
+  right end of the bottom strip, ahead of shuffle and repeat.
 - **Exclusive output, for the track exactly as the file holds it.** One press
   on the bottom strip asks the sound device for the music with the system
   mixer out of the way, which is the only way it can be bit perfect. Pressing
@@ -91,11 +91,23 @@ checks run; if it ever stopped being true the suite would fail.
   a machine working hard at something else does not break the sound up. Any
   dropout that still happens is written in the diary described under Your
   privacy.
-- **Headphones in, music paused.** When your computer's sound output changes,
-  say because headphones connected, Stellody pauses rather than carrying on
-  through the old one. Both play buttons show play and the foot of the window
-  says why; press play and it carries on through the new output from where you
-  last heard it.
+- **Choose where the music plays.** A button on the bottom strip, also the
+  Sound menu's Output device, lists System default first then every device
+  your system lists, in its own order, with two of one name numbered apart.
+  Choosing one moves the song in hand there from where it was; a paused song
+  stays paused. The choice is remembered between sessions and the list keeps
+  up as devices come and go. A chosen device that disconnects pauses the
+  music; press play and it carries on through the system default, while the
+  list names the device as not connected with System default ticked. When it
+  comes back the music moves back to it by itself. A device that will not open
+  leaves the music on the system default, with the foot of the window naming
+  it and the reason it gave. Tried on Windows so far.
+- **Headphones on, music follows; headphones off, music pauses.** While System
+  default is your choice, a device that connects and becomes the default takes
+  the song with it, from where it was, with no press. A device going away
+  pauses the music rather than sending it out of the speakers: both play
+  buttons show play, the foot of the window says why and pressing play carries
+  on through the new output from where you last heard it.
 - **The shape of each song** drawn along the bottom, so you can see the quiet
   parts and the loud ones. Click anywhere on it to jump there.
 - **Stars and play counts.** Every song shows its rating in a Rating column
@@ -299,8 +311,9 @@ deliberately excluded. [`TECH_DEBT.md`](TECH_DEBT.md) says what is still open
 internally, what is deliberately left and what only looks like debt.
 [`DISCOVERY.md`](DISCOVERY.md) and [`SHOPS.md`](SHOPS.md) are the two
 specifications discovery was built from; [`FORMATS.md`](FORMATS.md) specifies
-the three formats proved by a generated fixture. Each requirement names the
-test that proves it.
+the three formats proved by a generated fixture; [`OUTPUTS.md`](OUTPUTS.md)
+specifies choosing the output device. Each requirement names the test that
+proves it.
 
 ## Supporting the project
 

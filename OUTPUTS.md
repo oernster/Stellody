@@ -86,12 +86,12 @@ Out, so that none of it is argued twice:
 
 | Term | Meaning |
 |---|---|
-| Output device | A device the operating system lists as able to play sound, as `QMediaDevices.audioOutputs()` reports it. |
+| Output device | A device the operating system lists as able to play sound: on Windows as its own endpoint enumeration reports it (Amendment 2), elsewhere as `QMediaDevices.audioOutputs()` does. |
 | System default | The output device the operating system currently names as its default. It can move while Stellody runs. |
 | The choice | What the listener last picked: either System default or one named output device. |
-| The device in use | The output device the open stream plays to. It differs from the choice only while the chosen device is missing. |
+| The device in use | The output device the open stream plays to. It differs from the choice only while the chosen device is missing or has refused to open (Amendment 3). |
 | The output list | The vertical list the button and the Sound menu both show. |
-| Endpoint identity | The identity the operating system gives an output device, which Qt reports as `QAudioDevice.id()`. It survives a rename and tells apart two devices of the same name. |
+| Endpoint identity | The identity the operating system gives an output device: on Windows the endpoint identity its enumeration states, elsewhere `QAudioDevice.id()`. It survives a rename and tells apart two devices of the same name. |
 
 ### 1.6 References
 
@@ -132,7 +132,7 @@ are targets whose device lists have not been measured; OQ-O2 and OQ-O3.
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-O01 | Qt's output list on Windows is the list Windows' Sound settings show. Measured on one machine only. | Claude | Build, on the reference machine |
-| A-O02 | `audioOutputsChanged` fires when a Bluetooth output connects or disconnects. Measured for a default switch and a list change, never for Bluetooth. | Claude, with Oliver's Bathys | Before FR-O12 is called done |
+| A-O02 | `audioOutputsChanged` fires when a Bluetooth output connects or disconnects. Observed on 2026-09-19 in the live test with the Px7 S3: the list followed the headphones on and off. The timed five-cycle probe of OQ-O4 was not run. | Claude, with Oliver's Bathys | OQ-O4 |
 
 ## 3. Requirements
 
@@ -322,7 +322,8 @@ a reason to forget that the listener wants them.
 
 Acceptance: Given the Bathys remembered and switched off, when Stellody starts
 and a track plays, then it plays on the system default, the status line says
-the Bathys is not connected and the list still marks the Bathys.
+the Bathys is not connected and the list still names the Bathys, with System
+default ticked (Amendment 5).
 
 Verified by: `tests/application/test_choosing_an_output.py::test_a_missing_choice_plays_on_the_default`, `tests/ui/test_output_messages.py::test_a_missing_device_is_said_once`
 
@@ -348,7 +349,7 @@ disconnects, then the track pauses at about 2:00 and the status line says the
 Bathys disconnected; when play is pressed, then it goes on from there on the
 system default.
 
-Verified by: `tests/application/test_choosing_an_output.py::TestWhatALossDoesToTheTrackInHand`, `tests/ui/test_output_messages.py::test_a_disconnect_is_said`
+Verified by: `tests/application/test_choosing_an_output.py::TestWhatALossDoesToTheTrackInHand`, `tests/ui/test_output_messages.py::test_a_disconnect_while_playing_is_said`, `tests/ui/test_output_messages.py::test_a_disconnect_with_nothing_playing_is_said`
 
 ---
 
@@ -494,7 +495,7 @@ the choose-device button; given the list open, when Down then Enter are
 pressed, then the first output device is chosen; given the list open, when
 Escape is pressed, then nothing changes.
 
-Verified by: `tests/ui/test_output_button.py::test_the_ring_stops_on_it`, `tests/ui/test_output_button.py::test_the_list_is_keyboard_driven`
+Verified by: `tests/ui/test_output_button.py::test_the_ring_stops_on_it_straight_after_mute`, `tests/ui/test_output_button.py::test_the_list_is_keyboard_driven`, `tests/ui/test_output_button.py::test_escape_leaves_the_choice_alone`
 
 ---
 
@@ -569,7 +570,7 @@ case the feature cannot ship without. Won't this time is the out-of-scope list i
 | OQ-O2 | On Linux, Qt lists PulseAudio or PipeWire outputs while PortAudio may see ALSA devices under other names. Can the two be matched, inside the Flatpak? | Oliver, on the Linux machine | Run the device probe from this session inside the Flatpak build; compare the two lists. | Open |
 | OQ-O3 | On macOS, do Qt's names match PortAudio's CoreAudio names? | Oliver, on the Mac | The same probe on the Mac. | Open |
 | OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Answered 2026-09-18; Amendment 4 |
-| OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Open |
+| OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Observed working with the Px7 S3 on 2026-09-19; the timed probe is still open |
 
 ## 6. The build order this implies
 
