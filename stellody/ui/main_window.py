@@ -28,7 +28,7 @@ from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService
 from stellody.domain.health import LibraryIssue
 from stellody.shared.version import APP_NAME
-from stellody.ui import ring_order, standing_in
+from stellody.ui import hover_paint, ring_order, standing_in
 from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
@@ -333,8 +333,9 @@ class MainWindow(
         )
 
     def _wire_the_arrows(self) -> None:
-        """Give the cursor keys and Space the jobs Tab and Enter have."""
+        """Give the keys their jobs; redraw what a popup leaves ringed."""
         self._arrows, self._space = ring_order.wire_the_arrows(self)
+        self._leave_repaints = hover_paint.LeaveRepaints(self)
 
     def _set_ring_order(self) -> None:
         """Pin Tab to reading order; `ring_order` states what that is."""
