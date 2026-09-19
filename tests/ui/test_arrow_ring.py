@@ -176,6 +176,10 @@ class TestTheSliders:
         """Oliver's ruling: the vertical keys change the value once the
         slider is focused; the horizontal ones move the ring on.
         """
+        # The window's poll draws the transport's position, which with nothing
+        # loaded puts this slider back to nought; a poll landing between the
+        # value set here and the key press made this fail one run in three.
+        window._transport_timer.stop()
         slider = window._position_bar.slider
         slider.setEnabled(True)
         slider.setValue(slider.maximum() // 2)
@@ -193,6 +197,10 @@ class TestTheSliders:
         exactly what the ring wants them for, so this is the case that would
         silently seek the track if the rule were ever dropped.
         """
+        # The window's poll draws the transport's position, which with nothing
+        # loaded puts this slider back to nought; a poll landing between the
+        # value set here and the key press made this fail one run in three.
+        window._transport_timer.stop()
         slider = window._position_bar.slider
         slider.setEnabled(True)
         slider.setValue(slider.maximum() // 2)
