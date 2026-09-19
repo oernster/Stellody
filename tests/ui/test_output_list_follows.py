@@ -51,15 +51,37 @@ def test_a_removed_device_leaves(choosing, devices: Devices) -> None:
     assert lines(choosing._bottom_tray.sound.output_menu) == expected_lines()
 
 
-def test_a_removed_choice_stays_marked_not_connected(
-    choosing, devices: Devices
-) -> None:
-    """FR-O14: what will happen when it returns stays in sight."""
+def _chose_then_lost(choosing, devices: Devices) -> None:
     devices.listed = (*LISTED, BATHYS)
     choosing.outputs_changed()
     choosing.choose_output(chose(BATHYS))
     devices.listed = LISTED
     choosing.outputs_changed()
+
+
+def test_a_removed_choice_stays_listed_not_connected(
+    choosing, devices: Devices
+) -> None:
+    """FR-O14: what will happen when it returns stays in sight."""
+    _chose_then_lost(choosing, devices)
     menu = choosing._bottom_tray.sound.output_menu
     assert lines(menu)[-1] == NOT_CONNECTED_LABEL.format(name=BATHYS.name)
-    assert menu.actions()[-1].isChecked()
+
+
+def test_the_tick_moves_to_where_the_music_goes(choosing, devices: Devices) -> None:
+    """Amendment 5: System default is ticked while the choice is away."""
+    _chose_then_lost(choosing, devices)
+    for menu in (choosing._bottom_tray.sound.output_menu, choosing._output_menu):
+        ticked = [action.isChecked() for action in menu.actions()]
+        assert ticked == [True] + [False] * (len(ticked) - 1)
+
+
+def test_the_tick_goes_back_with_the_device(choosing, devices: Devices) -> None:
+    """FR-O12: the choice was kept, so its return takes the tick too."""
+    _chose_then_lost(choosing, devices)
+    devices.listed = (*LISTED, BATHYS)
+    choosing.outputs_changed()
+    menu = choosing._bottom_tray.sound.output_menu
+    assert [action.text() for action in menu.actions() if action.isChecked()] == [
+        BATHYS.name
+    ]

@@ -232,19 +232,23 @@ Verified by: `tests/domain/test_output_choice.py::test_a_repeated_name_is_number
 
 ---
 
-**FR-O06 The choice is marked**
+**FR-O06 The device in use is marked**
 
 Priority: Must
 
-Requirement: The output list shall mark the entry holding the choice.
+Requirement: The output list shall mark the entry the music is going to: the
+chosen device while it is present and opened, else System default (rewritten
+by Amendment 5).
 
 Rationale: A list of places with nothing saying which is in force answers the
-wrong half of the question.
+wrong half of the question. A tick on a device that is not playing answers it
+wrongly.
 
 Acceptance: Given the Focusrite chosen, when the list is shown, then the
-Focusrite entry alone is marked.
+Focusrite entry alone is marked. Given the Focusrite chosen and refusing, when
+the list is shown, then System default alone is marked.
 
-Verified by: `tests/ui/test_output_button.py::test_the_choice_is_marked`
+Verified by: `tests/ui/test_output_button.py::test_the_choice_is_marked`, `tests/domain/test_output_choice.py::test_a_refused_choice_leaves_the_tick_on_the_system_default`, `tests/application/test_choosing_an_output.py::TestARefusal::test_the_tick_is_on_the_default_it_plays_on`
 
 ---
 
@@ -398,15 +402,17 @@ Verified by: `tests/ui/test_output_list_follows.py::test_a_new_device_appears`, 
 Priority: Must
 
 Requirement: While the chosen device is missing, the output list shall still
-name it, marked as the choice and marked as not connected.
+name it, marked as not connected and not ticked; System default carries the
+tick (rewritten by Amendment 5).
 
 Rationale: Without it, the choice the window kept (FR-O10) would be invisible;
 a listener could not see what will happen when the device returns.
 
 Acceptance: Given the Bathys chosen and disconnected, when the list is shown,
-then it names the Bathys, marked as chosen and as not connected.
+then it names the Bathys as not connected, with System default ticked; when
+the Bathys returns, the tick goes back to it.
 
-Verified by: `tests/domain/test_output_choice.py::test_a_missing_choice_is_still_listed`
+Verified by: `tests/domain/test_output_choice.py::test_a_missing_choice_is_still_listed`, `tests/domain/test_output_choice.py::test_a_missing_choice_leaves_the_tick_on_the_system_default`, `tests/ui/test_output_list_follows.py::test_the_tick_moves_to_where_the_music_goes`, `tests/ui/test_output_list_follows.py::test_the_tick_goes_back_with_the_device`
 
 ---
 
@@ -416,15 +422,22 @@ Priority: Must
 
 Requirement: While System default is the choice, when the operating system
 moves its default output, the transport shall send the next stream it opens to
-the new default.
+the new default. Where the previous default is still listed, the transport
+shall also move the track in hand to the new default where it was, a playing
+track playing on and a paused one staying paused; where the previous default
+is gone, the track in hand is paused (FR-O11). Rewritten by Amendment 5.
 
-Rationale: Today's behaviour, held rather than rebuilt. Stated so the new
-choice cannot quietly break it.
+Rationale: Today's behaviour, held rather than rebuilt, so the new choice
+cannot quietly break it. Headphones switched on are a request to hear the
+music there; the rule of 2026-09-14 paused it instead, which the live test of
+2026-09-19 showed to be the wrong answer for an arrival.
 
 Acceptance: Given System default chosen, when Windows moves its default to the
-Focusrite, then the next track plays on the Focusrite.
+Focusrite, then the next track plays on the Focusrite. Given a track playing
+on the speakers, when the Px7 connects and becomes the default, then the track
+plays on through the Px7 from where it was, with no press.
 
-Verified by: `tests/infrastructure/test_output_devices.py` (existing), `tests/application/test_choosing_an_output.py::test_the_default_is_followed`
+Verified by: `tests/infrastructure/test_output_devices.py`, `tests/application/test_choosing_an_output.py::test_the_default_is_followed`, `tests/application/test_a_device_arriving.py`, `tests/ui/test_output_composition.py::test_whether_the_default_left_reaches_the_transport`
 
 ---
 
@@ -647,3 +660,25 @@ to the speakers without a press. FR-O11 was rewritten in place: a loss pauses
 the track where it was, the same pause a move of the system output makes;
 play then opens it on the default. FR-O12 gained that a paused track stays
 paused when the device returns; a playing one moves back and plays on.
+
+**Amendment 5, 2026-09-19: three rulings from the live test.** Oliver tested
+the installed build with his Px7 S3 headphones. FR-O06, FR-O14 and FR-O15 were
+rewritten in place. Whether the previous default is still listed is read from
+Qt's own list at the moment the default moves
+(`infrastructure/output_devices.py`), so a default changed by hand in Windows,
+both devices still present, carries the music on as an arrival does.
+
+- **The tick follows the device in use.** FR-O06 and FR-O14 change: while the
+  chosen device is missing or refused, System default carries the tick; the
+  chosen device stays listed as not connected, unticked, still the one the
+  music goes back to (FR-O12 unchanged).
+- **A device arriving carries the music on.** FR-O15 changes: while System
+  default is the choice, when the system's default moves because a device
+  arrived (the previous default still listed), the transport shall move the
+  track in hand to it where it was and keep it playing; a paused track stays
+  paused. This replaces the rule of 2026-09-14 for that case alone.
+- **A device leaving still pauses.** Where the previous default is gone, as
+  where the stream was interrupted, the pause stands: music never goes to the speakers
+  without a press (FR-O11, Amendment 4).
+- **Nothing switches to a device never chosen.** Only the listener's own choice
+  is ever returned to automatically.

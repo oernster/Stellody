@@ -43,9 +43,14 @@ def chose(device: OutputDevice) -> OutputChoice:
     return OutputChoice(identity=device.identity, name=device.name)
 
 
+def listed(devices: tuple[OutputDevice, ...], choice: OutputChoice):
+    """The list with nothing refused: the choice's device in use where present."""
+    return output_list(devices, choice, device_in_use(devices, choice))
+
+
 def test_system_default_leads_the_list() -> None:
     """FR-O03."""
-    entries = output_list(REFERENCE, chose(FOCUSRITE))
+    entries = listed(REFERENCE, chose(FOCUSRITE))
 
     assert entries[0].choice == SYSTEM_DEFAULT
     assert entries[0].choice.follows_default
@@ -53,14 +58,14 @@ def test_system_default_leads_the_list() -> None:
 
 def test_system_default_is_listed_with_no_devices_at_all() -> None:
     """FR-O03, at the empty end: the list is never empty."""
-    entries = output_list((), SYSTEM_DEFAULT)
+    entries = listed((), SYSTEM_DEFAULT)
 
     assert tuple(entry.choice for entry in entries) == (SYSTEM_DEFAULT,)
 
 
 def test_every_device_follows_in_listed_order() -> None:
     """FR-O05: the system's names, in the system's order, after the default."""
-    entries = output_list(REFERENCE, SYSTEM_DEFAULT)
+    entries = listed(REFERENCE, SYSTEM_DEFAULT)
 
     assert tuple(entry.choice.identity for entry in entries[1:]) == tuple(
         device.identity for device in REFERENCE
@@ -71,7 +76,7 @@ def test_a_repeated_name_is_numbered_in_listed_order() -> None:
     """FR-O05, measured: two monitors here share one name."""
     labels = {
         entry.choice.identity: entry.label
-        for entry in output_list(REFERENCE, SYSTEM_DEFAULT)[1:]
+        for entry in listed(REFERENCE, SYSTEM_DEFAULT)[1:]
     }
 
     assert labels[FIRST_MONITOR.identity] == MONITOR
@@ -82,21 +87,21 @@ def test_a_repeated_name_is_numbered_in_listed_order() -> None:
 def test_a_third_namesake_is_numbered_three() -> None:
     """FR-O05: the count runs on, whatever lies between the namesakes."""
     third = OutputDevice(identity="{third}", name=MONITOR)
-    entries = output_list((*REFERENCE, third), SYSTEM_DEFAULT)
+    entries = listed((*REFERENCE, third), SYSTEM_DEFAULT)
 
     assert entries[-1].label == f"{MONITOR} (3)"
 
 
 def test_choosing_an_entry_keeps_the_systems_own_name() -> None:
     """FR-O09: the name stored is the system's, never the numbered label."""
-    second = output_list(REFERENCE, SYSTEM_DEFAULT)[6]
+    second = listed(REFERENCE, SYSTEM_DEFAULT)[6]
 
     assert second.choice == chose(SECOND_MONITOR)
 
 
 def test_the_choice_alone_is_marked() -> None:
     """FR-O06."""
-    entries = output_list(REFERENCE, chose(FOCUSRITE))
+    entries = listed(REFERENCE, chose(FOCUSRITE))
 
     assert tuple(entry.choice for entry in entries if entry.chosen) == (
         chose(FOCUSRITE),
@@ -105,7 +110,7 @@ def test_the_choice_alone_is_marked() -> None:
 
 def test_system_default_is_marked_while_it_is_the_choice() -> None:
     """FR-O06, for the entry every listener starts on."""
-    entries = output_list(REFERENCE, SYSTEM_DEFAULT)
+    entries = listed(REFERENCE, SYSTEM_DEFAULT)
 
     assert tuple(entry.chosen for entry in entries) == (True,) + (False,) * len(
         REFERENCE
@@ -114,20 +119,34 @@ def test_system_default_is_marked_while_it_is_the_choice() -> None:
 
 def test_every_present_device_is_connected() -> None:
     """FR-O14's other side: only a missing choice is marked absent."""
-    entries = output_list(REFERENCE, chose(FOCUSRITE))
+    entries = listed(REFERENCE, chose(FOCUSRITE))
 
     assert all(entry.connected for entry in entries)
 
 
 def test_a_missing_choice_is_still_listed() -> None:
-    """FR-O14: last, marked as the choice and as not connected."""
-    entries = output_list(REFERENCE, chose(BATHYS))
+    """FR-O14: last and marked as not connected."""
+    entries = listed(REFERENCE, chose(BATHYS))
 
     assert entries[-1].choice == chose(BATHYS)
     assert entries[-1].label == BATHYS.name
-    assert entries[-1].chosen
     assert not entries[-1].connected
     assert len(entries) == len(REFERENCE) + 2
+
+
+def test_a_missing_choice_leaves_the_tick_on_the_system_default() -> None:
+    """Amendment 5: the tick says where the music is going, not what waits."""
+    entries = listed(REFERENCE, chose(BATHYS))
+
+    assert tuple(entry.choice for entry in entries if entry.chosen) == (SYSTEM_DEFAULT,)
+
+
+def test_a_refused_choice_leaves_the_tick_on_the_system_default() -> None:
+    """Amendment 5: listed and connected, yet the music goes elsewhere."""
+    entries = output_list(REFERENCE, chose(FOCUSRITE), None)
+
+    assert tuple(entry.choice for entry in entries if entry.chosen) == (SYSTEM_DEFAULT,)
+    assert all(entry.connected for entry in entries)
 
 
 def test_the_default_goes_to_the_system_default() -> None:

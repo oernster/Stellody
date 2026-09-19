@@ -41,6 +41,8 @@ class Machine:
         self.events: list[object] = []
         self.moves = 0
         self.listings = 0
+        # For each move, whether the default it left had left the list too.
+        self.left: list[bool] = []
 
     def refresh(self) -> None:
         self.events.append("rescan")
@@ -66,8 +68,9 @@ class Machine:
         devices.listed.connect(self._listed)
         return devices
 
-    def _moved(self) -> None:
+    def _moved(self, left: bool) -> None:
         self.moves += 1
+        self.left.append(left)
 
     def _listed(self) -> None:
         self.listings += 1
@@ -107,6 +110,33 @@ class TestNoticingAMove:
         machine.default = HEADPHONES
         devices.notice()
         assert machine.moves == 2
+
+
+class TestSayingWhetherTheDefaultLeft:
+    """Amendment 5: an arrival carries the music on; a departure pauses it."""
+
+    def test_a_device_arriving_leaves_the_old_default_listed(self, machine) -> None:
+        devices = machine.watching()
+        machine.outputs = (*machine.outputs, BATHYS)
+        machine.default = BATHYS
+        devices.notice()
+        assert machine.left == [False]
+
+    def test_the_default_going_away_is_said(self, machine) -> None:
+        devices = machine.watching()
+        machine.outputs = (SPEAKERS,)
+        machine.default = SPEAKERS
+        devices.notice()
+        assert machine.left == [True]
+
+    def test_the_list_arriving_ahead_of_the_move_changes_nothing(self, machine) -> None:
+        """Measured: Qt reports the list, then the default, separately."""
+        devices = machine.watching()
+        machine.outputs = (SPEAKERS,)
+        devices.notice()
+        machine.default = SPEAKERS
+        devices.notice()
+        assert machine.left == [True]
 
 
 class TestNoticingTheListChange:

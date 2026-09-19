@@ -145,11 +145,19 @@ class TestARefusal:
         assert transport.take_refusal() is None
 
     def test_the_choice_is_kept(self) -> None:
-        """The list still marks what was asked for; the device answered no."""
+        """What was asked for is remembered; the device answered no."""
         transport, player = _playing()
         player.refuses = {FOCUSRITE.identity: REASON}
         transport.choose_output(chose(FOCUSRITE))
         assert transport.output_choice == chose(FOCUSRITE)
+
+    def test_the_tick_is_on_the_default_it_plays_on(self) -> None:
+        """Amendment 5: the list ticks where the music is going."""
+        transport, player = _playing()
+        player.refuses = {FOCUSRITE.identity: REASON}
+        transport.choose_output(chose(FOCUSRITE))
+        marked = [entry.choice for entry in transport.output_entries if entry.chosen]
+        assert marked == [SYSTEM_DEFAULT]
 
     def test_the_next_track_does_not_ask_again(self) -> None:
         """One refusal, one message: not a failed open on every track."""

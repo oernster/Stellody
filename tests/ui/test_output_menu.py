@@ -49,7 +49,7 @@ def test_choosing_from_the_menu_chooses(choosing) -> None:
 def test_an_ampersand_in_a_name_is_shown_rather_than_eaten(application) -> None:
     """A single one would mark a shortcut and vanish from the line."""
     named = OutputDevice(identity="{rock}", name="Rock & Roll")
-    entries = output_list((named,), chose(named))
+    entries = output_list((named,), chose(named), named)
     menu = QMenu()
     fill_output_menu(menu, entries, lambda _choice: None)
     assert menu.actions()[1].iconText() == entry_text(entries[1])

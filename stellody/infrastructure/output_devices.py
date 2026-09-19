@@ -14,7 +14,9 @@ headphones connected after Stellody had started:
 
 So a move is reported only when the default device's identity differs from the
 last one seen. That turns two signals into one; a device arriving that is not
-the default turns into none.
+the default turns into none. Each move says whether the default it left has
+left the list as well: a device arriving carries the music on, one leaving
+pauses it (`OUTPUTS.md` Amendment 5).
 
 A change to the list itself is reported separately (`listed`), once for each
 different set of devices, so the output list a listener chooses from is kept
@@ -61,7 +63,8 @@ def output_ids() -> tuple[bytes, ...]:
 class OutputDevices(QObject):
     """Says when the outputs change; opens the next stream where they went."""
 
-    changed = Signal()
+    # True when the default left behind is no longer listed.
+    changed = Signal(bool)
     listed = Signal()
 
     def __init__(
@@ -100,9 +103,10 @@ class OutputDevices(QObject):
         now = self._default_id()
         if now == self._known:
             return
+        left = self._known not in listing
         self._known = now
         self._moved = True
-        self.changed.emit()
+        self.changed.emit(left)
 
     def open_output(
         self, request: OutputRequest, device: OutputDevice | None = None

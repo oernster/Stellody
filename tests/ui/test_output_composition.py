@@ -48,3 +48,16 @@ def test_a_move_reaches_the_window(window) -> None:
     devices = _devices(window)
     signal = QMetaMethod.fromSignal(devices.changed)
     assert devices.isSignalConnected(signal)
+
+
+@pytest.mark.parametrize(("left", "followed"), [(True, "moved"), (False, "switched")])
+def test_whether_the_default_left_reaches_the_transport(
+    window, left: bool, followed: str
+) -> None:
+    """Amendment 5: a departure pauses, an arrival carries on; both via Qt."""
+    heard: list[str] = []
+    transport = window._transport
+    transport.output_moved = lambda: heard.append("moved") or False
+    transport.output_switched = lambda: heard.append("switched") or False
+    _devices(window).changed.emit(left)
+    assert heard == [followed]

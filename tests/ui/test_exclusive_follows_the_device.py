@@ -149,10 +149,10 @@ def test_a_move_of_the_output_asks_again(
     played(made, CD_ROW)
     assert switch(made).isEnabled()
     player.rates = BATHYS
-    made.output_moved()
+    made.output_moved(left=True)
     assert not switch(made).isEnabled()
     player.rates = SPEAKERS
-    made.output_moved()
+    made.output_moved(left=True)
     assert switch(made).isEnabled()
 
 
@@ -228,13 +228,13 @@ class TestWithNothingSelected:
         """Both directions, across moves of the output."""
         made = held(window, cd_album())
         player.rates = BATHYS
-        made.output_moved()
+        made.output_moved(left=True)
         assert not switch(made).isEnabled()
         player.rates = SPEAKERS
-        made.output_moved()
+        made.output_moved(left=True)
         assert switch(made).isEnabled()
         player.rates = BATHYS
-        made.output_moved()
+        made.output_moved(left=True)
         assert not switch(made).isEnabled()
 
     def test_a_library_not_yet_known_stands_nothing_down(
@@ -269,5 +269,5 @@ def test_a_device_taking_nothing_is_not_stood_down_for_good(
     assert not switch(made).isEnabled()
     assert switch(made).toolTip() == NO_RATES_AT_ALL
     player.rates = SPEAKERS
-    made.output_moved()
+    made.output_moved(left=True)
     assert switch(made).isEnabled()

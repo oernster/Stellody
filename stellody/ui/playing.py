@@ -142,14 +142,20 @@ class Playing:
         """Play the track after this one."""
         self._drive(self._transport.next)
 
-    @Slot()
-    def output_moved(self) -> None:
-        """Pause for a move of the system's sound output, saying so at once.
+    @Slot(bool)
+    def output_moved(self, left: bool) -> None:
+        """Follow a move of the system's sound output, saying so on a pause.
 
-        The play buttons are pointed at the new state here rather than at the
-        next poll, so their faces change as the music stops.
+        `left` says the default moved from has gone from the list, which
+        pauses; otherwise a device arrived, which carries the music on
+        (`OUTPUTS.md` Amendment 5). The play buttons are pointed at the new
+        state here rather than at the next poll, so their faces change as the
+        music stops.
         """
-        if self._transport.output_moved():
+        follow = (
+            self._transport.output_moved if left else self._transport.output_switched
+        )
+        if follow():
             self.statusBar().showMessage(OUTPUT_MOVED_MESSAGE, STATUS_TIMEOUT_MS)
         self._show_transport()
 

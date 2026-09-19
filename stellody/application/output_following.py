@@ -9,12 +9,15 @@ again wherever the output is by then, at the place it was paused.
 
 A pause the listener made themselves resumes exactly as before, on the stream
 already open. Only a move of the output reopens.
+
+Ruled again by Oliver on 2026-09-19 (`OUTPUTS.md` Amendment 5): a move to a
+device that arrived, the one left still listed, carries the music on instead.
 """
 
 from __future__ import annotations
 
 from stellody.application.playback_ports import PlaybackPort
-from stellody.domain.outputs import OutputDevice
+from stellody.domain.outputs import OutputChoice, OutputDevice
 from stellody.domain.playback import PlaybackState
 
 
@@ -25,6 +28,23 @@ class OutputFollowing:
     _held: bool
     _output_moved: bool
     _in_use: OutputDevice | None
+    _choice: OutputChoice
+
+    def output_switched(self) -> bool:
+        """Carry the music to a new default; True when it paused instead.
+
+        For a move that left the previous default still listed, which is a
+        device arriving. While System default is the choice, the track in
+        hand is opened there where it was: playing plays on, paused stays
+        paused. A stream already interrupted lost its device, so its pause
+        stands; music on the default only because the chosen device is away
+        is never carried to one the listener did not choose (Amendment 5).
+        """
+        if not self._choice.follows_default or self._player.interrupted:
+            return self.output_moved()
+        if self._player.state.is_active:
+            self._reopen_in_place()
+        return False
 
     def output_moved(self) -> bool:
         """Pause for a move of the output; True when that stopped the music.

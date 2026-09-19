@@ -4,6 +4,9 @@ Oliver asked on 2026-09-14 that the pause show on the play buttons at once: the
 tray at the top and the album pane both wear the face of what a press would do,
 so a pause the listener did not make must turn both back to play straight
 away rather than at the next poll. The status line says why it happened.
+
+A move to a device that arrived carries the music on instead (`OUTPUTS.md`
+Amendment 5, 2026-09-19).
 """
 
 from __future__ import annotations
@@ -36,39 +39,51 @@ def window(application: QApplication):
 
 class TestAMoveWhileAtrackPlays:
     def test_the_music_is_paused(self, window) -> None:
-        window.output_moved()
+        window.output_moved(left=True)
         assert window._player.calls[-1] == "pause"
 
     def test_the_top_tray_shows_play_at_once(self, window) -> None:
         button = window._tray.play_button
         assert button.toolTip() == PAUSE_TIP, "playing, so the button pauses"
         pause_face = picture(button)
-        window.output_moved()
+        window.output_moved(left=True)
         assert button.toolTip() == PLAY_TIP
         assert picture(button) != pause_face
 
     def test_the_album_pane_agrees(self, window) -> None:
         assert window._album_pane.play_button.toolTip() == PAUSE_TOOLTIP
-        window.output_moved()
+        window.output_moved(left=True)
         assert window._album_pane.play_button.toolTip() == PLAY_TOOLTIP
 
     def test_the_status_line_says_why(self, window) -> None:
-        window.output_moved()
+        window.output_moved(left=True)
         assert window.statusBar().currentMessage() == OUTPUT_MOVED_MESSAGE
 
     def test_play_carries_on_through_the_new_output(self, window) -> None:
-        window.output_moved()
+        window.output_moved(left=True)
         window._player.calls.clear()
         window.toggle_playback()
         assert window._player.calls == ["load", "play"]
         assert window._tray.play_button.toolTip() == PAUSE_TIP
 
 
+class TestADeviceArriving:
+    """Amendment 5: the one left is still listed, so the music plays on."""
+
+    def test_the_music_plays_on_with_nothing_said(self, window) -> None:
+        window._player.calls.clear()
+        window.output_moved(left=False)
+        assert "pause" not in window._player.calls
+        assert "load" in window._player.calls
+        assert window._tray.play_button.toolTip() == PAUSE_TIP
+        assert window.statusBar().currentMessage() == ""
+
+
 class TestAMoveWithNothingPlaying:
     def test_nothing_is_said_or_done(self, application: QApplication) -> None:
         player = RecordingPlayer()
         made = build(RememberingStore(), player)
-        made.output_moved()
+        made.output_moved(left=True)
         assert player.calls == []
         assert made.statusBar().currentMessage() == ""
         made.close()

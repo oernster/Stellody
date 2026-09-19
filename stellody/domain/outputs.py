@@ -55,6 +55,8 @@ class OutputEntry:
 
     `label` is empty on the system default's line, whose words belong to the
     window; every other line reads the system's name, numbered where repeated.
+    `chosen` marks the line the music is going to, which is not the choice
+    while the chosen device is missing or refused (Amendment 5).
     """
 
     choice: OutputChoice
@@ -64,14 +66,21 @@ class OutputEntry:
 
 
 def output_list(
-    devices: tuple[OutputDevice, ...], choice: OutputChoice
+    devices: tuple[OutputDevice, ...],
+    choice: OutputChoice,
+    in_use: OutputDevice | None,
 ) -> tuple[OutputEntry, ...]:
-    """The list as a listener reads it: FR-O03, FR-O05, FR-O06 and FR-O14."""
+    """The list as a listener reads it: FR-O03, FR-O05, FR-O06 and FR-O14.
+
+    The tick follows `in_use`, the device the music is going to; None is the
+    system default. A chosen device that is missing stays listed, unticked,
+    as the one the music goes back to (Amendment 5, FR-O12).
+    """
     entries = [
         OutputEntry(
             choice=SYSTEM_DEFAULT,
             label="",
-            chosen=choice.follows_default,
+            chosen=in_use is None,
             connected=True,
         )
     ]
@@ -84,13 +93,13 @@ def output_list(
             OutputEntry(
                 choice=picked,
                 label=_labelled(device.name, ordinal),
-                chosen=picked.identity == choice.identity,
+                chosen=device == in_use,
                 connected=True,
             )
         )
     if not choice.follows_default and device_in_use(devices, choice) is None:
         entries.append(
-            OutputEntry(choice=choice, label=choice.name, chosen=True, connected=False)
+            OutputEntry(choice=choice, label=choice.name, chosen=False, connected=False)
         )
     return tuple(entries)
 

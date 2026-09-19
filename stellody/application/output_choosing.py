@@ -74,7 +74,7 @@ class OutputChoosing:
     @property
     def output_entries(self) -> tuple[OutputEntry, ...]:
         """The list the window shows."""
-        return output_list(self._outputs, self._choice)
+        return output_list(self._outputs, self._choice, self._in_use)
 
     @property
     def output_missing(self) -> bool:
