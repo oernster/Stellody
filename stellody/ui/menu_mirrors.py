@@ -4,14 +4,18 @@ Oliver asked on 2026-09-16 for every button to be reachable from the menu bar
 as well: the view and the sleeve size, repair, mute, shuffle, repeat, discovery,
 search and filter, with search and filter under an Edit menu of their own. The
 transport followed the same day, on a Control menu right of Sound; exclusive
-output joined Sound on 2026-09-18. The volume stays off the menus by the same
-ruling, since a slider is not an entry.
+output joined Sound on 2026-09-18, the output device beside it. The volume
+stays off the menus by the same ruling, since a slider is not an entry.
 
 Each entry reads its state from the thing it stands for, at the moment its menu
 opens, rather than being kept in step as that thing changes. Whether it can act
 is the button's own answer; whether it is ticked is the transport's or the
 window's. So an entry and its button cannot come to disagree, which is the rule
 Rescan already follows from the other direction.
+
+The output device is the one exception, for a reason of its own: its lines are
+the devices themselves, which change while a list is open, so both lists are
+refilled from the transport by one function whenever they change.
 """
 
 from __future__ import annotations
@@ -85,11 +89,16 @@ class MenuMirrors:
         view_menu.aboutToShow.connect(self._show_mirrored_state)
 
     def _mirror_sound(self, sound_menu: QMenu) -> None:
-        """Exclusive output, mute, then how the queue runs.
+        """Exclusive output, the output device, mute, then how the queue runs.
 
         Exclusive output follows the equalizer, since both act on the stream,
         which is how the strip groups them after its rule. Asked for by Oliver
-        on 2026-09-18, the switch having arrived after the menus did.
+        on 2026-09-18, the switch having arrived after the menus did. The
+        output device joined them the same day, beside exclusive output
+        (`OUTPUTS.md` FR-O17) and after it, so exclusive output still sits
+        beside the equalizer. Its lines are the strip's list, filled by one
+        function whenever the choice or the devices change, which is every
+        way they can; `ChoosingOutputs.show_outputs` fills both.
         """
         self._exclusive_action = menu_action(
             sound_menu,
@@ -98,6 +107,7 @@ class MenuMirrors:
             self.toggle_exclusive,
             checkable=True,
         )
+        self._output_menu = sound_menu.addMenu("Output &device")
         sound_menu.addSeparator()
         self._mute_action = menu_action(
             sound_menu, self, "&Mute", self.toggle_mute, checkable=True

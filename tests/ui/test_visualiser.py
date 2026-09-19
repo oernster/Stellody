@@ -185,6 +185,7 @@ class TestTheDisplayInTheWindow:
         assert entries == [
             "&Equalizer...",
             "E&xclusive output",
+            "Output &device",
             "",
             "&Mute",
             "",

@@ -32,6 +32,7 @@ from stellody.ui import ring_order, standing_in
 from stellody.ui.appearance import Appearance
 from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.choosing import Choosing
+from stellody.ui.choosing_outputs import ChoosingOutputs
 from stellody.ui.covering import Covering
 from stellody.ui.discovering import Discovering, WriteDiscovery
 from stellody.ui.editing_tags import EditingTags
@@ -97,6 +98,7 @@ class MainWindow(
     ShowingShortfall,
     Playing,
     Switches,
+    ChoosingOutputs,
     NowPlaying,
     TransportMenu,
     Choosing,

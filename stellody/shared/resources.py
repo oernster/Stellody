@@ -48,6 +48,7 @@ UNMUTE_ICON = "unmute.png"
 NEGATIVE_ICON = "negative.png"
 EQUALISER_ICON = "equalizer.png"
 EXCLUSIVE_ICON = "exclusive-audio.png"
+OUTPUT_DEVICE_ICON = "choose-audio-device.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -213,6 +214,11 @@ def unmute_icon_path() -> pathlib.Path | None:
 def equaliser_icon_path() -> pathlib.Path | None:
     """The artwork for the button that opens the equalizer."""
     return find_asset(EQUALISER_ICON)
+
+
+def output_device_icon_path() -> pathlib.Path | None:
+    """The artwork for the button that opens the list of output devices."""
+    return find_asset(OUTPUT_DEVICE_ICON)
 
 
 def exclusive_icon_path() -> pathlib.Path | None:

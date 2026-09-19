@@ -10,7 +10,9 @@ A rule then stands between those two and the last pair, because the question
 changes. Volume and mute are about the level; the output mode and the
 equalizer are about the stream itself, one asking for the device untouched and
 the other shaping what is sent to it. Oliver asked for the order on
-2026-09-17: volume, mute, the rule, exclusive output, the equalizer.
+2026-09-17: volume, mute, the rule, exclusive output, the equalizer. On
+2026-09-18 the choice of output device joined the stream's group, straight
+after the rule (`OUTPUTS.md` FR-O01): which device comes before how it is held.
 
 A group of its own rather than three loose buttons on the strip, so the order is
 stated once and the strip delegates to it, as it does for what the library is
@@ -27,10 +29,17 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QMenu, QPushButton, QWidget
 
+from stellody.domain.outputs import OutputEntry
 from stellody.shared import resources
 from stellody.ui.icons import plain_icon, struck_through
+from stellody.ui.output_menu import (
+    OUTPUT_TOOLTIP,
+    Choose,
+    fill_output_menu,
+    pop_up_above,
+)
 from stellody.ui.tray_parts import icon_button, separator
 from stellody.ui.volume import DEFAULT_PERCENT, VolumeSlider
 
@@ -51,7 +60,7 @@ LOSSY_TOOLTIP = (
 
 
 class SoundControls(QWidget):
-    """Volume, mute, the rule, the output mode and the equalizer, in order."""
+    """Volume, mute, the rule, device, output mode and equalizer, in order."""
 
     def __init__(
         self,
@@ -90,6 +99,15 @@ class SoundControls(QWidget):
         # The rule between the level and the stream, as tall as the strip's
         # own rules where the strip says so; its width is every rule's.
         self.stream_separator = separator(self, separator_height_px or icon_px)
+        self.output_menu = QMenu(self)
+        self.output_button = icon_button(
+            self,
+            resources.output_device_icon_path(),
+            OUTPUT_TOOLTIP,
+            lambda: pop_up_above(self.output_menu, self.output_button),
+            button_px,
+            icon_px,
+        )
         self.exclusive_button = icon_button(
             self,
             resources.exclusive_icon_path(),
@@ -118,9 +136,14 @@ class SoundControls(QWidget):
             self.volume_button,
             self.mute_button,
             self.stream_separator,
+            self.output_button,
             self.exclusive_button,
             self.equaliser_button,
         )
+
+    def show_outputs(self, entries: tuple[OutputEntry, ...], choose: Choose) -> None:
+        """Put these lines in the list the output button opens."""
+        fill_output_menu(self.output_menu, entries, choose)
 
     def stops(self) -> tuple[QPushButton, ...]:
         """The controls the ring stops at, left to right as they are drawn.

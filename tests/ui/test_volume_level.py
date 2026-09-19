@@ -183,7 +183,7 @@ class TestWhereItSits:
     def test_the_sound_leads_the_right_end_ruled_off_from_the_switches(
         self, window: MainWindow
     ) -> None:
-        """Volume, mute, a rule, exclusive, the equalizer, a rule, then the switches.
+        """Volume, mute, a rule, device, exclusive, equalizer, a rule, the switches.
 
         Read off the drawing, with each rule's own position asserted, since a
         rule left out of the layout sits at nothing. The order Oliver asked
@@ -198,6 +198,7 @@ class TestWhereItSits:
             sound.volume_button,
             sound.mute_button,
             sound.stream_separator,
+            sound.output_button,
             sound.exclusive_button,
             sound.equaliser_button,
             tray.sound_separator,

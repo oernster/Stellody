@@ -55,6 +55,8 @@ EXPECTED = {
     "Large": (False, False, True),
     "Extra large": (False, False, True),
     "Exclusive output": (True, True, True),
+    # Where the music goes needs no library and no view. OUTPUTS.md FR-O17.
+    "Output device": (True, True, True),
     "Mute": (True, True, True),
     "Shuffle": (True, True, True),
     "Repeat": (True, True, True),

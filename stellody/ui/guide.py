@@ -121,12 +121,13 @@ def _bottom_tray_html() -> str:
         + "<p>"
         + img(resources.volume_icon_path())
         + img(resources.unmute_icon_path())
+        + img(resources.output_device_icon_path())
         + img(resources.exclusive_icon_path())
         + img(resources.equaliser_icon_path())
         + img(resources.shuffle_icon_path())
         + img(resources.repeat_icon_path())
-        + "volume, mute, exclusive output, the equalizer, then shuffle and "
-        "repeat, at the right end. Repeat has three settings: "
+        + "volume, mute, the output device, exclusive output, the equalizer, "
+        "then shuffle and repeat, at the right end. Repeat has three settings: "
         "off, the album, then the one song. Every switch shows what pressing "
         "it would DO rather than what it is doing now.</p>"
         + "<p><b>Exclusive output</b> asks the sound device for the track "
@@ -146,6 +147,15 @@ def _bottom_tray_html() -> str:
         "anyway, say because another application is holding it, takes the "
         "switch back to shared: the music carries on through the mixer and "
         "the foot of the window says why.</p>"
+        + "<p><b>The output device</b> lists every device your computer can "
+        f"play to, headphones connected while {APP_NAME} runs included, with "
+        "System default first; the one in use is ticked. Choosing one moves "
+        f"the song in hand there at once, where it was. {APP_NAME} remembers "
+        "the choice. If that device is switched off, the music plays through the "
+        "system default until it is back; if it disconnects while playing, "
+        "the music pauses rather than carry on out of the speakers, then "
+        "moves back when the device returns. The same list is on the Sound "
+        "menu.</p>"
     )
 
 

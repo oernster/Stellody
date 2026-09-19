@@ -33,6 +33,11 @@ SETTING_MUTED = "muted"
 SETTING_SHUFFLE = "shuffle"
 # Which stream the device is asked for; see `domain/playback.py OutputMode`.
 SETTING_OUTPUT_MODE = "output_mode"
+# The output device chosen, by the identity the system gives it, since names
+# repeat; empty is the system default. The name it had is kept beside it, so
+# a device that is missing can still be named. `OUTPUTS.md` FR-O09.
+SETTING_OUTPUT_DEVICE = "output_device"
+SETTING_OUTPUT_DEVICE_NAME = "output_device_name"
 SETTING_REPEAT = "repeat"
 # The equalizer, kept as two settings rather than one: the curve
 # outlives being switched off, so somebody comparing on against off

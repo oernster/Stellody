@@ -37,6 +37,7 @@ from stellody.infrastructure import (
     discovery_file,
     instance,
     output,
+    output_list,
     qt_messages,
     switch_reset,
     window_reset,
@@ -219,6 +220,11 @@ def build_window(
     # pause; a move of the output pauses it and says so.
     devices.setParent(window)
     devices.changed.connect(window.output_moved)
+    # The devices to choose from, read from the system here, where
+    # infrastructure may be reached; the list follows every change to them
+    # with no relaunch (`OUTPUTS.md` FR-O13).
+    window.start_choosing_outputs(output_list.listed_outputs)
+    devices.listed.connect(window.outputs_changed)
     return window
 
 

@@ -162,6 +162,7 @@ class Playing:
         self.follow_shape()
         self.follow_plays()
         self.follow_picture()
+        self.say_output_refusal()
 
     @Slot(int)
     def seek_to(self, frame: int) -> None:
