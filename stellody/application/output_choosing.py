@@ -108,8 +108,9 @@ class OutputChoosing:
         Ruled by Oliver on 2026-09-18 (OQ-O5), the rule of 2026-09-14 governs
         the track in hand: music never goes to the speakers without a press.
         Losing the chosen device pauses it where it was, exactly as a move of
-        the system's output does; play then opens it on the default (FR-O11). The device coming back takes the track in hand where it is
-        and as it was, so a pause is still a pause (FR-O12).
+        the system's output does; play then opens it on the default (FR-O11).
+        The device coming back takes the track in hand where it is and as it
+        was, so a pause is still a pause (FR-O12).
         """
         self._outputs = devices
         listed = device_in_use(devices, self._choice)
