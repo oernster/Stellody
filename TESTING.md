@@ -68,7 +68,7 @@ For a count of tests, `python -m pytest --no-cov -q` ends with one.
 | `application/` | the use cases | hand-written fakes of every port |
 | `infrastructure/` | files, audio, the network client, the store | real files in a temporary folder, a real loopback server |
 | `ui/` | the windows, dialogs and trays | a real `QApplication` on the offscreen platform |
-| `installer/` | the setup program | what its own `conftest.py` provides |
+| `installer/` | the setup program | a real `QApplication`, with the registry, the filesystem and the processes stood in for |
 | `structural/` | the rules no single test can see | the source tree itself |
 
 ## Writing a test
@@ -83,11 +83,10 @@ For a count of tests, `python -m pytest --no-cov -q` ends with one.
   Many interface suites have a `*_support.py` beside them building the window,
   album or dialog they are driven against; start from the nearest one rather
   than writing another.
-- **One `QApplication`, no window outliving its test.** `tests/ui/conftest.py`
-  provides the session's `application` fixture and destroys every top level
-  widget between tests; `tests/infrastructure/conftest.py` and
-  `tests/installer/conftest.py` provide the same fixture to the suites there,
-  so no suite builds its own. A window left to the garbage collector was destroyed
+- **One `QApplication`, no window outliving its test.** `tests/conftest.py`
+  provides the session's `application` fixture to every suite, so no suite
+  builds its own; `tests/ui/conftest.py` destroys every top level widget
+  between the interface tests. A window left to the garbage collector was destroyed
   inside the next test, measured as an access violation five runs in six.
 - **The network.** `tests/infrastructure/fetching_support.py` runs a real HTTP
   service on the loopback address and records every ask and every header, so a

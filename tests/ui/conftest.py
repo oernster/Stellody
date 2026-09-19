@@ -1,4 +1,6 @@
-"""One QApplication for the suite; no window outliving the test that made it.
+"""No window outliving the test that made it.
+
+The QApplication itself is the whole suite's, in `tests/conftest.py`.
 
 Closing a window is not destroying it. A window left for the garbage collector
 is destroyed at whatever moment Python next collects it, which is typically
@@ -15,13 +17,6 @@ from __future__ import annotations
 import pytest
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
-
-
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
 
 
 @pytest.fixture(autouse=True)

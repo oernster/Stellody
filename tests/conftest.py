@@ -15,6 +15,10 @@ enough that the test which tried it is the one that fails.
 Everything else a test legitimately runs, the formatter, the linters, the
 process table, is left alone: the guard is aimed at the one program whose
 appearance on somebody's screen is the harm.
+
+The one real QApplication lives here too. The interface, infrastructure and
+setup program suites each built their own, word for word; a fixture written
+three times is three fixtures the day one of them is changed.
 """
 
 from __future__ import annotations
@@ -23,10 +27,18 @@ import pathlib
 import subprocess
 
 import pytest
+from PySide6.QtWidgets import QApplication
 
 from stellody.infrastructure import diary
 
 FORBIDDEN = "stellody.exe"
+
+
+@pytest.fixture(scope="session")
+def application() -> QApplication:
+    """One real QApplication for the whole session. Qt is never mocked."""
+    existing = QApplication.instance()
+    return existing or QApplication([])
 
 
 class RefusedToStartTheApplication(AssertionError):
