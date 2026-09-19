@@ -92,7 +92,7 @@ role, no administrator and no shared state.
 
 ### 2.3 Operating environment
 
-Windows, Linux and macOS, the three Stellody already ships to. A default
+Windows, macOS and Linux, the three Stellody already ships to. A default
 browser is assumed present; the case where the operating system cannot open one
 is specified rather than assumed away.
 

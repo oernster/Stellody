@@ -95,7 +95,7 @@ is no second class: no administrator, no server, no other person's library.
 
 ### 2.3 Operating environment
 
-Windows, Linux and macOS, as the application already ships. A working outbound
+Windows, macOS and Linux, as the application already ships. A working outbound
 HTTPS connection during a run. Everything else the application already assumes.
 
 ### 2.4 Constraints

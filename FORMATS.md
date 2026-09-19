@@ -109,7 +109,7 @@ A listener with a mixed library, running Stellody on their own machine.
 
 ### 2.3 Operating environment
 
-Windows, Linux and macOS, as the application already ships. The FFmpeg build
+Windows, macOS and Linux, as the application already ships. The FFmpeg build
 inside PyAV supplies every decoder named here.
 
 ### 2.4 Constraints
