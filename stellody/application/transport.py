@@ -236,7 +236,7 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing, OutputChoo
             self._player.pause()
             return
         if self._player.state is PlaybackState.PAUSED:
-            if self._output_moved:
+            if self._output_moved or self._player.interrupted:
                 self._reopen_where_paused()
                 return
             self._held = False

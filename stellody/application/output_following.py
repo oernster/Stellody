@@ -42,7 +42,14 @@ class OutputFollowing:
         state = self._player.state
         if not state.is_active:
             return False
+        already = self._output_moved
         self._output_moved = True
+        # The device went away beneath the stream before this report came:
+        # measured 2026-09-19, the write fails 0.29 s ahead of Qt. The engine
+        # has already held the track, so this move is what stopped the music.
+        if self._player.interrupted:
+            self._held = True
+            return not already
         if state is not PlaybackState.PLAYING:
             return False
         self._held = True

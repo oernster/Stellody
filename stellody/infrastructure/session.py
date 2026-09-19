@@ -45,6 +45,9 @@ class Session:
     buffer_frames: int = 0
     # The room a fresh start showed: the whole buffer, before anything queued.
     capacity: int | None = None
+    # Whether a write failed while playing, which is the device going away:
+    # the stream cannot be resumed, only opened again.
+    interrupted: bool = False
 
     def drop_follower(self) -> None:
         """Let go of whatever was lined up, closing its file."""

@@ -93,6 +93,12 @@ class WasapiPlayback:
         return session is not None and session.finished.is_set()
 
     @property
+    def interrupted(self) -> bool:
+        """Whether the open stream stopped because its device went away."""
+        session = self._session
+        return session is not None and session.interrupted
+
+    @property
     def report(self) -> OutputReport | None:
         """What the open stream actually delivers; None when nothing is loaded."""
         session = self._session
@@ -333,5 +339,9 @@ class WasapiPlayback:
                 # the device was refusing anyway.
                 if not session.resume.is_set():
                     continue
-                session.finished.set()
+                # Still meant to be playing, so the device went: headphones
+                # switched off, measured 2026-09-19. Not an ending, which moved
+                # the queue on; interrupted, held where it was for the
+                # transport to reopen wherever there is to play to.
+                session.interrupted = True
                 session.resume.clear()

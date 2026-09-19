@@ -160,15 +160,20 @@ class TestAPauseLandingOnTheFeeder:
 
 
 class TestADeviceThatFailsWhilePlaying:
-    """The other side of the same branch, which nothing used to exercise.
+    """The other side of the same branch: the device going away.
 
     A write refused while the resume is still set is the device going away
-    rather than a listener holding the track, so it does end playback. Without
-    a test the fix above could be widened to swallow every failure and no gate
-    would notice the track had stopped being able to end at all.
+    rather than a listener holding the track. It used to end the track, which
+    Oliver found on 2026-09-19 by switching his headphones off: the poll moved
+    to the next song from its start; on the last song it left that one back
+    at its beginning. Measured the same day through the shipped engine: the write
+    failed 0.29 s before Qt reported the device gone, so the ending always won.
+
+    A song does not end because a device did. It is interrupted: paused where
+    it was, so the transport can reopen it on whatever is there to play to.
     """
 
-    def test_the_track_ends(self, tmp_path) -> None:
+    def test_the_track_is_interrupted_rather_than_ended(self, tmp_path) -> None:
         stream = StoppedStreamRefuses()
         player = WasapiPlayback(opener=_opener(stream))
         try:
@@ -180,7 +185,16 @@ class TestADeviceThatFailsWhilePlaying:
             time.sleep(SETTLE)
             stream.broken = True
             time.sleep(SETTLE)
-            assert player.finished is True
+            assert player.finished is False
+            assert player.interrupted is True
+            assert player.state is PlaybackState.PAUSED
+        finally:
+            player.stop()
+
+    def test_a_stream_that_never_failed_is_not_interrupted(self, tmp_path) -> None:
+        player = _paused_partway(tmp_path)
+        try:
+            assert player.interrupted is False
         finally:
             player.stop()
 

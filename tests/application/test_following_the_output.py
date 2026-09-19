@@ -36,6 +36,54 @@ def playing() -> tuple[Transport, RecordingPlayer]:
     return transport, player
 
 
+def interrupted() -> tuple[Transport, RecordingPlayer]:
+    """Playing, when the device went away underneath the stream.
+
+    Measured on 2026-09-19 through the shipped engine with headphones switched
+    off: the stream's write fails first, 0.29 s before Qt reports the device
+    gone. The engine then holds the track paused and says it was interrupted.
+    """
+    transport, player = playing()
+    player.interrupted = True
+    player.state = PlaybackState.PAUSED
+    return transport, player
+
+
+class TestADeviceGoneBeneathTheStream:
+    """Reported by Oliver on 2026-09-19: switching headphones off skipped to
+    the next song, else left the last one back at its start."""
+
+    def test_nothing_moves_on(self) -> None:
+        transport, player = interrupted()
+        assert transport.advance_if_finished() is False
+        assert player.calls == []
+
+    def test_the_move_that_follows_is_said_as_a_pause(self) -> None:
+        """Qt's report arrives after the stream stopped; it still stopped it."""
+        transport, player = interrupted()
+        assert transport.output_moved() is True
+        assert player.calls == []
+
+    def test_a_second_signal_for_it_says_nothing_more(self) -> None:
+        transport, _player = interrupted()
+        transport.output_moved()
+        assert transport.output_moved() is False
+
+    def test_play_reopens_where_it_was_heard(self) -> None:
+        """Even with no report from Qt: that stream can only be reopened."""
+        transport, player = interrupted()
+        transport.toggle()
+        assert player.calls[0] == "load"
+        assert f"seek {HEARD_FRAME}" in player.calls
+        assert player.calls[-1] == "play"
+
+    def test_nothing_loaded_is_nothing_to_say(self) -> None:
+        player = RecordingPlayer()
+        transport = Transport(player)
+        player.interrupted = True
+        assert transport.output_moved() is False
+
+
 class TestAMoveWhilePlaying:
     def test_the_music_is_paused(self) -> None:
         """The whole of what this is for."""

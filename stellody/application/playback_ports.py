@@ -94,6 +94,15 @@ class PlaybackPort(Protocol):
         ...
 
     @property
+    def interrupted(self) -> bool:
+        """Whether the open stream stopped because its device went away.
+
+        Not an ending: the track is held where it was. Such a stream cannot be
+        resumed, only opened again, which is the transport's to do.
+        """
+        ...
+
+    @property
     def crossings(self) -> int:
         """How many lined-up sources the device has run into by itself.
 

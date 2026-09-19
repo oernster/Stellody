@@ -62,6 +62,8 @@ class RecordingPlayer:
         # given; the default is keyed by the empty identity.
         self.device: OutputDevice | None = None
         self.refuses: dict[str, str] = {}
+        # Whether the open stream's device went away, as a test says it did.
+        self.interrupted = False
 
     def use_device(self, device: OutputDevice | None) -> None:
         """Record where later streams are to open."""
