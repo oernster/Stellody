@@ -86,9 +86,8 @@ For a count of tests, `python -m pytest --no-cov -q` ends with one.
 - **One `QApplication`, no window outliving its test.** `tests/ui/conftest.py`
   provides the session's `application` fixture and destroys every top level
   widget between tests; `tests/infrastructure/conftest.py` and
-  `tests/installer/conftest.py` provide the same fixture to the suites there.
-  Two installer suites, `test_launching.py` and `test_setup_window.py`, still
-  define one of their own. A window left to the garbage collector was destroyed
+  `tests/installer/conftest.py` provide the same fixture to the suites there,
+  so no suite builds its own. A window left to the garbage collector was destroyed
   inside the next test, measured as an access violation five runs in six.
 - **The network.** `tests/infrastructure/fetching_support.py` runs a real HTTP
   service on the loopback address and records every ask and every header, so a

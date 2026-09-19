@@ -26,13 +26,6 @@ INSTALLED_AT = pathlib.Path("C:/Programs/Stellody")
 THIS_VERSION = "0.2.0"
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 def _here(version: str = "", **flags: bool) -> Existing:
     """A fabricated reading of the machine, so no test touches the real one."""
     return Existing(

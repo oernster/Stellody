@@ -31,13 +31,6 @@ DESKTOP = 4
 MAX_LINGER_S = 5.0
 
 
-@pytest.fixture(scope="session")
-def application() -> QApplication:
-    """One real QApplication for the whole session. Qt is never mocked."""
-    existing = QApplication.instance()
-    return existing or QApplication([])
-
-
 class _FakeProcess:
     """A launched application, as far as setup needs to know."""
 
