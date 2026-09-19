@@ -1572,9 +1572,11 @@ The direction cannot be the other way round, since a specialisation importing
 the thing it specialises is a cycle waiting to be written.
 
 **`infrastructure/output.py` is the whole of what the application knows about
-there being more than one way to open a stream.** Where the list of devices
-comes from is the one other platform question, answered in
-`infrastructure/output_list.py` against the same `output.WINDOWS`. It switches on `sys.platform` rather than on what a
+there being more than one way to open a stream.** Two other platform questions
+are about a chosen device rather than a stream. Where the list of devices comes
+from is answered in `infrastructure/output_list.py` against the same
+`output.WINDOWS`; whether a device is found by name or addressed by sink is
+answered by `routes_by_sink` in `infrastructure/pulsesink.py`. It switches on `sys.platform` rather than on what a
 device reports, because what differs is the INTERFACE rather than the hardware:
 asking a Mac whether it has WASAPI is asking the wrong question. Windows takes
 `wasapi.py`, macOS takes `coreaudio.py` and everything else takes the
@@ -1765,6 +1767,22 @@ the two lists agree name for name; otherwise a name more than one device
 carries is not guessed at, which makes the open a refusal rather than music on
 the wrong device. The list is Qt's elsewhere, as it is on Windows should the COM
 call fail.
+
+**On Linux a device is addressed by its sink, because no name is shared.**
+Measured inside the installed Flatpak on 2026-09-19 (`OUTPUTS.md` Amendment 6):
+Qt lists the sound server's devices under the names a listener knows while the
+Flatpak's PortAudio, built against ALSA with no PulseAudio host API, lists
+`default`, `pulse` and the hardware, so not one name appears on both sides and
+every choice was refused. Qt's identity for a device there IS the sink's own
+name, which the sound server answers to. So on any platform that is neither
+Windows nor macOS, `open_named` opens the stream on PortAudio's `pulse` device
+with `PULSE_SINK` naming the chosen sink (`infrastructure/pulsesink.py`), held
+for that open alone and put back afterwards, since a sink is chosen as a stream
+connects. A machine with no sound server has no `pulse` device and falls back
+to the match by name; a sink name nothing carries opens on the default.
+Measured the same day by reading which sink each stream landed on: the
+speakers, then the headphones, then the default with the variable unset.
+`tests/infrastructure/test_pulsesink.py` holds the routing.
 
 **What a choice does is the transport's.** `OutputChoosing` in
 `stellody/application/output_choosing.py` is mixed into the transport beside

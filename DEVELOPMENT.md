@@ -13,7 +13,7 @@ publish its website. What the product does and why is in
 | Interface | PySide6 |
 | Tags | mutagen |
 | Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
-| Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux; Qt Multimedia notices the output devices changing. The list of devices to choose from is read from Windows' own endpoint enumeration (ctypes over COM) on Windows, from Qt Multimedia elsewhere |
+| Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux; Qt Multimedia notices the output devices changing. The list of devices to choose from is read from Windows' own endpoint enumeration (ctypes over COM) on Windows, from Qt Multimedia elsewhere; on Linux a chosen device is reached through PortAudio's `pulse` device with `PULSE_SINK` naming its sink |
 | Buffers | numpy |
 | Store | SQLite |
 

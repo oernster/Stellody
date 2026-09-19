@@ -101,7 +101,8 @@ checks run; if it ever stopped being true the suite would fail.
   list names the device as not connected with System default ticked. When it
   comes back the music moves back to it by itself. A device that will not open
   leaves the music on the system default, with the foot of the window naming
-  it and the reason it gave. Tried on Windows so far.
+  it and the reason it gave. Tried on Windows, macOS and Linux, every listed
+  device chosen and heard playing.
 - **Headphones on, music follows; headphones off, music pauses.** While System
   default is your choice, a device that connects and becomes the default takes
   the song with it, from where it was, with no press. A device going away
