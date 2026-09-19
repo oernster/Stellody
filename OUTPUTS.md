@@ -114,8 +114,11 @@ sound settings give them.
 
 ### 2.3 Operating environment
 
-Windows 11 on the reference machine, measured. macOS and Linux (the Flatpak)
-are targets whose device lists have not been measured; OQ-O2 and OQ-O3.
+Three machines, one of each kind, all measured: a Windows 11 AMD desktop; a
+Framework 13 (AMD) running Linux, where the measurements were taken inside the
+installed Flatpak; a MacBook Air 2025 on M4 silicon. "The reference machine"
+elsewhere in this document means the Windows desktop, which is where the
+Windows endpoint measurements were taken.
 
 ### 2.4 Constraints
 
@@ -131,7 +134,7 @@ are targets whose device lists have not been measured; OQ-O2 and OQ-O3.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-O01 | Qt's output list on Windows is the list Windows' Sound settings show. Measured on one machine only. | Claude | Build, on the reference machine |
+| A-O01 | Qt's output list is the list the system's own sound settings show. Confirmed: Oliver has exercised every feature by hand on all three machines of section 2.3, choosing each listed device and hearing it play. | Oliver | Confirmed 2026-09-19 |
 | A-O02 | `audioOutputsChanged` fires when a Bluetooth output connects or disconnects. Observed on 2026-09-19 in the live test with the Px7 S3: the list followed the headphones on and off. The timed five-cycle probe of OQ-O4 was not run. | Claude, with Oliver's Bathys | OQ-O4 |
 
 ## 3. Requirements
@@ -538,9 +541,8 @@ belongs inside `SoundControls` rather than beside it. Verified by the existing
 structural suite. Priority: Must.
 
 **NFR-O-PORT-001 Platforms.** The button and the list shall be present on
-Windows, macOS and Linux alike. Windows is verified on the reference machine;
-macOS and Linux are verified by Oliver choosing each listed device on a real
-machine of that kind and hearing it play there (OQ-O2, OQ-O3). A listed
+Windows, macOS and Linux alike. Each is verified on a real machine of that
+kind by choosing every listed device and hearing it play there. A listed
 device that cannot be matched to one PortAudio can open is a refusal, so
 FR-O08 applies: the music falls back to the system default and the status line
 names the device. Priority: Must.
@@ -567,8 +569,8 @@ case the feature cannot ship without. Won't this time is the out-of-scope list i
 | # | Question | Owner | Probe | Status |
 |---|---|---|---|---|
 | OQ-O1 | Two outputs share the name `U13ZA (NVIDIA High Definition Audio)` and PortAudio cannot state endpoint identity. Which PortAudio device is which? | Claude | Played a tone through each PortAudio WASAPI output while reading every endpoint's own peak meter. | Answered 2026-09-18; Amendment 2 |
-| OQ-O2 | On Linux, Qt lists PulseAudio or PipeWire outputs while PortAudio may see ALSA devices under other names. Can the two be matched, inside the Flatpak? | Oliver, on the Linux machine | Run the device probe from this session inside the Flatpak build; compare the two lists. | Open |
-| OQ-O3 | On macOS, do Qt's names match PortAudio's CoreAudio names? | Oliver, on the Mac | The same probe on the Mac. | Open |
+| OQ-O2 | On Linux, Qt lists PulseAudio or PipeWire outputs while PortAudio may see ALSA devices under other names. Can the two be matched, inside the Flatpak? | Claude | Ran the device probe inside the installed Flatpak; compared the two lists; then played a tone to each sink in turn and read which sink it landed on. | Answered 2026-09-19; Amendment 6. They cannot be matched by name; the device is addressed by sink instead |
+| OQ-O3 | On macOS, do Qt's names match PortAudio's CoreAudio names? | Oliver, on the Mac | The same probe on the Mac. | Answered 2026-09-19: they match; every listed device plays when it is chosen |
 | OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Answered 2026-09-18; Amendment 4 |
 | OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Observed working with the Px7 S3 on 2026-09-19; the timed probe is still open |
 
@@ -631,8 +633,9 @@ used to match. What follows for the build:
   identity and the order together. The n-th output of a name there is the n-th
   PortAudio WASAPI output of that name.
 - FR-O05's "the order the system lists them" means that enumeration order.
-- The one-for-one correspondence is measured on one machine rather than read
-  from PortAudio's source. So the match is checked each time a stream opens:
+- The one-for-one correspondence is measured on the Windows desktop rather
+  than read from PortAudio's source, so it is a reading of that machine rather
+  than a guarantee. The match is therefore checked each time a stream opens:
   if PortAudio's WASAPI output names, in order, differ from Windows'
   enumeration, then a device whose name repeats is not guessed at; it is a
   refusal under FR-O08. A device whose name is unique is matched by name
@@ -683,3 +686,30 @@ both devices still present, carries the music on as an arrival does.
   without a press (FR-O11, Amendment 4).
 - **Nothing switches to a device never chosen.** Only the listener's own choice
   is ever returned to automatically.
+
+**Amendment 6, 2026-09-19: Linux addresses a sink; it does not match a name.**
+OQ-O2 answered by measurement inside the installed Flatpak. Qt lists the sound
+server's devices under the names a listener knows (`Px7 S3`), while PortAudio
+there is built against ALSA and lists `default`, `pulse`, `hdmi` and
+`HD-Audio Generic: HDMI 0 (hw:0,3)`. Not one name appears on both sides, so
+`opener_position` refused every device and the music stayed wherever the
+system default sends it, whatever was chosen. The Flatpak's PortAudio is
+19.7.0, which carries no PulseAudio host API at all, so there is no list of
+sinks to match against either.
+
+What the two lists share is identity: Qt's id for a device here is the sink's
+own name (`bluez_output.EC:66:D1:CC:5A:F0`), which is what the sound server
+answers to. So on any platform that is neither Windows nor macOS the stream is
+opened on PortAudio's `pulse` device with `PULSE_SINK` naming the sink
+(`infrastructure/pulsesink.py`); the by-name match stays the route where there
+is no sound server to name a sink to. Measured in the Flatpak by reading which
+sink each stream landed on: the speaker sink, then the headphones, then the
+default with the variable unset, each on demand within one process.
+
+- **The variable is held for the open alone.** A sink is chosen when the
+  stream connects, so putting the variable back afterwards leaves the open
+  stream where it is; measured, not assumed.
+- **A sink name no sink carries is not an error.** The stream opens on the
+  system default, which is the fallback FR-O12 already asks for.
+- **FR-O08 still governs the other route.** A device that cannot be addressed
+  or opened is a refusal with a reason, unchanged.

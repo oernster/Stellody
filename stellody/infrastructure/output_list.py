@@ -24,7 +24,7 @@ from PySide6.QtMultimedia import QMediaDevices
 from stellody.application.playback_ports import OutputRefused
 from stellody.domain.outputs import OutputDevice, opener_position
 from stellody.domain.playback import OutputReport, OutputRequest
-from stellody.infrastructure import output
+from stellody.infrastructure import output, pulsesink
 from stellody.infrastructure.portaudio import OutputUnavailableError
 
 WASAPI = "Windows WASAPI"
@@ -102,12 +102,25 @@ def open_named(
 ) -> tuple[sounddevice.OutputStream, OutputReport, str]:
     """Open a stream on `device`, else on the system default.
 
-    A named device that will not open at all is a refusal rather than the
-    end of the music; the default failing stays what it always was.
+    Two routes to one device, chosen by platform in `pulsesink.sink_route`:
+    Windows and macOS find it in PortAudio's own list by name, while a machine
+    playing through a sound server names its sink instead (Amendment 6). A
+    named device that will not open at all is a refusal rather than the end of
+    the music; the default failing stays what it always was.
     """
     if device is None:
         return output.open_output(request, None)
-    number = portaudio_number(device)
+    sink = pulsesink.sink_route(device)
+    if sink is None:
+        return _opened(request, portaudio_number(device))
+    with pulsesink.chosen_sink(device.identity):
+        return _opened(request, sink)
+
+
+def _opened(
+    request: OutputRequest, number: int
+) -> tuple[sounddevice.OutputStream, OutputReport, str]:
+    """Open on PortAudio device `number`; a failure to open is a refusal."""
     try:
         return output.open_output(request, number)
     except OutputUnavailableError as error:
@@ -120,6 +133,9 @@ def named_rates(
     """Which rates `device` takes exclusively; None where that is unknown."""
     if device is None:
         return output.exclusive_rates(None)
+    sink = pulsesink.sink_route(device)
+    if sink is not None:
+        return output.exclusive_rates(sink)
     try:
         return output.exclusive_rates(portaudio_number(device))
     except OutputRefused:
