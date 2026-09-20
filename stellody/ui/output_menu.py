@@ -19,6 +19,7 @@ from PySide6.QtGui import QActionGroup
 from PySide6.QtWidgets import QMenu, QWidget
 
 from stellody.domain.outputs import OutputChoice, OutputEntry
+from stellody.ui.dismissal import Dismissal
 
 OUTPUT_TOOLTIP = "Choose the output device"
 SYSTEM_DEFAULT_LABEL = "System default"
@@ -69,14 +70,43 @@ def fill_output_menu(
     menu.adjustSize()
 
 
-def pop_up_above(menu: QMenu, button: QWidget) -> None:
+class OutputMenu(QMenu):
+    """The list, which remembers the press that closed it.
+
+    A plain menu was enough until Oliver reported on 2026-09-20 that pressing
+    the button again left the list up. Reproduced the same day: Qt closes a
+    menu on a press outside it, so the menu was already down by the time the
+    button's own click arrived and that click opened it afresh. It is the
+    volume slider's defect on a second control, so it reads the same record
+    (`dismissal.py`) rather than carrying a second copy of the knowledge.
+    """
+
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._dismissal = Dismissal()
+
+    def mousePressEvent(self, event) -> None:
+        """Close on a press outside, remembering where that press landed."""
+        self._dismissal.note(self, event)
+        super().mousePressEvent(event)
+
+    def dismissed_by(self, button: QWidget) -> bool:
+        """Whether the press that closed this landed on that button."""
+        return self._dismissal.dismissed_by(button)
+
+
+def pop_up_above(menu: OutputMenu, button: QWidget) -> None:
     """Show the menu over its button; take it down when it is already up.
 
     Above, since the button sits on the bottom strip; Qt keeps a menu on the
     screen, so one with no room above is moved down onto it. A second press
-    closes it, as the help menu and the volume slider do.
+    closes it, as the help menu and the volume slider do: the press itself
+    takes the menu down, so what reaches here is the click that follows and
+    all it has to do is leave it down.
     """
     if menu.isVisible():
         menu.hide()
+        return
+    if menu.dismissed_by(button):
         return
     menu.popup(button.mapToGlobal(QPoint(0, -menu.sizeHint().height())))

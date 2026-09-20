@@ -29,7 +29,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QMenu, QPushButton, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QWidget
 
 from stellody.domain.outputs import OutputEntry
 from stellody.shared import resources
@@ -37,6 +37,7 @@ from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.output_menu import (
     OUTPUT_TOOLTIP,
     Choose,
+    OutputMenu,
     fill_output_menu,
     pop_up_above,
 )
@@ -99,7 +100,7 @@ class SoundControls(QWidget):
         # The rule between the level and the stream, as tall as the strip's
         # own rules where the strip says so; its width is every rule's.
         self.stream_separator = separator(self, separator_height_px or icon_px)
-        self.output_menu = QMenu(self)
+        self.output_menu = OutputMenu(self)
         self.output_button = icon_button(
             self,
             resources.output_device_icon_path(),

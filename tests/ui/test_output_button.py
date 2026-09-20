@@ -17,7 +17,7 @@ from output_support import (
     marked,
 )
 from playback_support import player, window
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 
 from stellody.domain.outputs import SYSTEM_DEFAULT
@@ -47,11 +47,58 @@ def test_a_press_opens_the_list(choosing) -> None:
     assert lines(sound.output_menu) == expected_lines()
 
 
+def press_over(popup, where: QPoint) -> None:
+    """A press inside the popup's window at a point given on the screen."""
+    QTest.mousePress(popup, Qt.MouseButton.LeftButton, pos=popup.mapFromGlobal(where))
+
+
 def test_a_second_press_closes_it(choosing) -> None:
+    """FR-O20. The real shape of it: the press takes the list down, the click follows.
+
+    Reported by Oliver on 2026-09-20 as a list the button would not close.
+    Reproduced the same day: Qt closes a menu on a press outside it, so the
+    press on the button put the list down and the click behind it opened a
+    fresh one. Pressing the button is therefore how this is asked, since
+    calling the opener twice never involves Qt closing anything and so passed
+    while the application did not.
+    """
+    choosing.show()
     sound = choosing._bottom_tray.sound
     pop_up_above(sound.output_menu, sound.output_button)
+    assert sound.output_menu.isVisible()
+    press_over(sound.output_menu, sound.output_button.mapToGlobal(QPoint(0, 0)))
+    assert not sound.output_menu.isVisible(), "the press closed it"
     pop_up_above(sound.output_menu, sound.output_button)
+    assert not sound.output_menu.isVisible(), "and the click behind it left it down"
+    pop_up_above(sound.output_menu, sound.output_button)
+    assert sound.output_menu.isVisible(), "while a fresh press puts it back up"
+    sound.output_menu.hide()
+
+
+def test_a_press_anywhere_else_closes_it_without_swallowing_the_next(
+    choosing,
+) -> None:
+    """FR-O20: only a press on the button itself is replayed onto it."""
+    choosing.show()
+    sound = choosing._bottom_tray.sound
+    pop_up_above(sound.output_menu, sound.output_button)
+    press_over(sound.output_menu, choosing.mapToGlobal(choosing.rect().topLeft()))
     assert not sound.output_menu.isVisible()
+    pop_up_above(sound.output_menu, sound.output_button)
+    assert sound.output_menu.isVisible(), "the next press is a fresh one"
+    sound.output_menu.hide()
+
+
+def test_choosing_a_line_leaves_the_list_able_to_open_again(choosing) -> None:
+    """FR-O20: a press inside closes nothing, so it is no dismissal."""
+    choosing.show()
+    sound = choosing._bottom_tray.sound
+    pop_up_above(sound.output_menu, sound.output_button)
+    press_over(sound.output_menu, sound.output_menu.mapToGlobal(QPoint(1, 1)))
+    sound.output_menu.hide()
+    pop_up_above(sound.output_menu, sound.output_button)
+    assert sound.output_menu.isVisible()
+    sound.output_menu.hide()
 
 
 def test_system_default_leads_and_is_marked_to_begin_with(choosing) -> None:

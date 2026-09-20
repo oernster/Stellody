@@ -516,6 +516,30 @@ tooltip reads "Choose the output device".
 
 Verified by: `tests/ui/test_output_button.py::test_the_tooltip_names_the_press`
 
+---
+
+**FR-O20 A second press closes the output list**
+
+Priority: Must
+
+Requirement: While the output list is open, when the choose-device button is
+pressed, the bottom strip shall leave the list closed rather than opening it
+again.
+
+Rationale: The volume slider closes on a second press of its own button, so
+the strip keeps one way of closing something a button opened. Qt takes the
+list down on the press itself, then Windows replays that press onto the
+button, whose click would otherwise open a fresh list; the button therefore
+has to tell a replayed click from a first one.
+
+Acceptance: Given the output list open, when the button is pressed, then no
+list is on the screen afterwards; when it is pressed again, then the list
+opens.
+
+Verified by: `tests/ui/test_output_button.py::test_a_second_press_closes_it`,
+`tests/ui/test_output_button.py::test_a_press_anywhere_else_closes_it_without_swallowing_the_next`,
+`tests/ui/test_output_button.py::test_choosing_a_line_leaves_the_list_able_to_open_again`
+
 ### 3.2 Non-functional
 
 **NFR-O-PERF-001 A device change reaches the list in time.** When an output
