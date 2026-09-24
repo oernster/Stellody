@@ -18,6 +18,12 @@ of what they assert.
 interpreter (`venv\Scripts\python.exe`) and stops at the first that fails. It
 sets `QT_QPA_PLATFORM=offscreen` for the run, so no window appears.
 
+**A full run takes about ten minutes.** Measured on 2026-09-24: the 2,114
+tests outside `tests/ui` take about 80 seconds; the 1,468 interface tests take
+the rest, many of them spending most of a second building their window. A run
+that is quiet for several minutes is not stuck. To see it moving, add `-v` to
+a pytest run by hand, which names each test as it starts.
+
 **Read the exit code, never the last line.** The suite is coverage gated, so it
 prints the coverage table last and no summary line of passed and failed; a
 coverage row named after a module such as `errors.py` also reads like a result
@@ -45,9 +51,11 @@ For a count of tests, `python -m pytest --no-cov -q` ends with one.
   `venv\Scripts\python.exe`. `tests/structural/test_environment.py` fails the
   run anywhere else, since checks passing in one environment while the
   application runs in another is a fault this project has actually had.
-- **Set the offscreen platform.** `$env:QT_QPA_PLATFORM = 'offscreen'` in
-  PowerShell. The interface tests build real windows; without it they open on
-  screen and a run from a shell with no desktop can hang.
+- **The offscreen platform is set for you.** `tests/conftest.py` sets
+  `QT_QPA_PLATFORM=offscreen` before any `QApplication` exists, however the
+  suite was started. The interface tests build real windows; before this was
+  in the conftest, a bare `pytest` put each of them on the desktop in turn,
+  every one answering a close with its own quit prompt.
 - **One run at a time.** Two runs of the suite at once fail falsely: at least
   `tests/infrastructure/test_instance.py` and `tests/ui/test_arrow_ring.py`
   collide. A failure met while another run was going is not evidence of
