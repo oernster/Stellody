@@ -1606,11 +1606,16 @@ answered.
 
 One row rather than two is Oliver's ruling of 2026-09-09, made against the
 shipped screen: the pager stood above the row holding Copy, Find in shops and
-Close, so the foot of the dialog read as two feet. The pager carries a stretch
-on each side of itself, so standing it between the controls that act on the
-ticks and the one that leaves is what centres it; no stretch is added beside
-it, since a second would push it off centre. `ui/results_foot.py` builds that
-row, extracted when the dialog reached the danger band.
+Close, so the foot of the dialog read as two feet. The Filter control of
+FR-D54 leads the same row. The pager stands on the middle of the dialog: the
+controls on the left and Close on the right each stand in a side of their own,
+the two sides sharing equally whatever width the pager leaves. Asked for by
+Oliver on 2026-09-24, once Filter joining the left had carried the pager 143
+pixels right of the middle in a dialog 720 wide. Where the left side cannot
+fit in half of what is left, it keeps its width and the pager stands as near
+the middle as that allows; no control is squeezed for the sake of centring.
+`ui/results_foot.py` builds that row, extracted when the dialog reached the
+danger band.
 
 The unusable direction is struck through rather than merely greyed, which is
 the rule the sweep in the discovery dialog and every switch along the foot of
@@ -1628,7 +1633,7 @@ but the last carries every column; given an artist taller than a column, then
 it fills one and shares its page; given a run that found nobody, then there is
 still one page.
 
-Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_shop_choosing.py::test_a_tick_holds_across_pages_and_still_reaches_a_shop`
+Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_results_foot.py`, `tests/ui/test_shop_choosing.py::test_a_tick_holds_across_pages_and_still_reaches_a_shop`
 
 ---
 

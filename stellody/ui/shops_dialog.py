@@ -137,6 +137,17 @@ class ShopsDialog(FirstStopDialog):
         self.said.setText("")
         self._offer_shops()
 
+    def hideEvent(self, event) -> None:
+        """Let the removed shops go once they have been read. FR-S35.
+
+        The one dialog is brought back rather than made again (FR-S44), so
+        the announcement made when it was built would otherwise greet every
+        reopening; said once means gone after the first close.
+        """
+        self.announced.setText("")
+        self.announced.setVisible(False)
+        super().hideEvent(event)
+
     def _offer_shops(self) -> None:
         """A shop can be chosen only while something is ticked. FR-S44."""
         for button in self.shop_buttons.values():

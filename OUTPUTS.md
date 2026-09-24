@@ -29,10 +29,10 @@ recorded here.
 
 Measured on the reference machine on 2026-09-18 unless marked otherwise.
 
-- **The player already takes a device.** `AudioEngine` in
-  `infrastructure/audio.py` accepts a device number and hands it to every
-  stream it opens; the composition root passes none, so today every stream
-  opens on the default. The number is fixed when the engine is built.
+- **The player already takes a device.** `WasapiPlayback` in
+  `infrastructure/audio.py` accepts a device and hands it to every stream it
+  opens; the composition root passes none, so today every stream opens on the
+  default. The device is fixed when the player is built.
 - **A reopen in place already exists.** `Transport._reopen_in_place` in
   `application/transport.py` opens the track in hand again at the same
   position, a paused track staying paused. The exclusive switch uses it.
@@ -573,7 +573,7 @@ names the device. Priority: Must.
 
 ### 3.3 Data
 
-One new setting beside the others in `ui/settings_keys.py`:
+Two new settings beside the others in `ui/settings_keys.py`:
 
 | Setting | Holds | Empty means |
 |---|---|---|
@@ -734,6 +734,6 @@ default with the variable unset, each on demand within one process.
   stream connects, so putting the variable back afterwards leaves the open
   stream where it is; measured, not assumed.
 - **A sink name no sink carries is not an error.** The stream opens on the
-  system default, which is the fallback FR-O12 already asks for.
+  system default, which is the fallback FR-O10 already asks for.
 - **FR-O08 still governs the other route.** A device that cannot be addressed
   or opened is a refusal with a reason, unchanged.

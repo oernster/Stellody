@@ -7,8 +7,8 @@ above it, derived from that tray's own sizes so the two cannot drift apart:
 subordinate to the tray without the artwork becoming too small to read.
 
 The right end holds how the music sounds, then how the queue runs: volume and
-mute, a rule, exclusive output and the equalizer, a rule, then shuffle and
-repeat. Volume and mute stay
+mute, a rule, the output device, exclusive output and the equalizer, a rule,
+then shuffle and repeat. Volume and mute stay
 side by side because the two are one thought: how loud, then whether at all.
 Rescan and repair sit at the left instead, under the library they act on.
 Repair follows rescan because it is the answer to what a rescan finds.

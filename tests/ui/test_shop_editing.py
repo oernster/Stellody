@@ -230,6 +230,17 @@ def test_a_removed_shop_is_announced_once(application) -> None:
     assert again.announced.text() == ""
 
 
+def test_a_dialog_brought_back_does_not_announce_again(application) -> None:
+    """FR-S35 with FR-S44: the one dialog reopened has already said it."""
+    dialog, *_rest = dialog_over(QOBUZ, retired=("Bleep",))
+    dialog.show()
+    assert "Bleep" in dialog.announced.text()
+    dialog.reject()
+    dialog.show()
+    assert dialog.announced.text() == ""
+    assert not dialog.announced.isVisible()
+
+
 def test_putting_back_asks_first(application, monkeypatch) -> None:
     """FR-S37 and FR-S38."""
     answering(monkeypatch, False, [])

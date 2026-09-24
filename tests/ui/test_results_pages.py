@@ -223,16 +223,28 @@ class TestThePager:
 
 
 def _row_holding(dialog: ResultsDialog, widget: QWidget) -> QHBoxLayout | None:
-    """The horizontal row inside the dialog that holds this widget."""
+    """The horizontal row inside the dialog that holds this widget.
+
+    Held at any depth, since the row groups its two sides into layouts of their
+    own so that the pager can stand on the middle (FR-D49).
+    """
     outer = dialog.layout()
     for at in range(outer.count()):
         row = outer.itemAt(at).layout()
-        if row is None:
-            continue
-        for place in range(row.count()):
-            if row.itemAt(place).widget() is widget:
-                return row
+        if row is not None and widget is not None and _holds(row, widget):
+            return row
     return None
+
+
+def _holds(layout, widget: QWidget) -> bool:
+    """Whether this widget stands in the layout or in one nested inside it."""
+    for place in range(layout.count()):
+        item = layout.itemAt(place)
+        if item.widget() is widget:
+            return True
+        if item.layout() is not None and _holds(item.layout(), widget):
+            return True
+    return False
 
 
 class TestOneRowAtTheFoot:

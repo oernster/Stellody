@@ -360,7 +360,7 @@ and prose rules.
 Priority: Must
 
 Requirement: Every module this change touches shall stay at or below 400 lines,
-shall land at 350 or below where it enters the 381 to 399 band, with the domain
+shall land at 350 or below where it enters the 381 to 400 band, with the domain
 and application layers holding 100% branch coverage.
 
 Verification: `.\gate.ps1`, read by exit code.

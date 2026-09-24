@@ -21,7 +21,7 @@ The variable is set around the open alone and put back afterwards. A sink is
 chosen when the stream connects, so a stream already open stays where it is;
 that too was measured rather than assumed. A name no sink carries is not an
 error either: the stream opens on the system default, which is the fallback
-FR-O12 asks for.
+FR-O10 asks for.
 """
 
 from __future__ import annotations

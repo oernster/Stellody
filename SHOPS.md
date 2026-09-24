@@ -13,8 +13,8 @@ number of its own: a document version beside a product version is two numbers
 a reader has to tell apart, only one of them the product's.
 
 It is built. Every requirement below names the test that holds it. FR-S11
-stopped short of its requirement until FR-S42 in Amendment 1 completed it; both
-amendments, in section 6, are built too.
+stopped short of its requirement until FR-S42 in Amendment 1 completed it; all
+three amendments, in section 6, are built too.
 
 ## 1. Introduction
 
@@ -200,9 +200,9 @@ Verified by: `tests/ui/test_shop_choosing.py::test_the_shops_control_waits_for_a
 
 Priority: Must
 
-Requirement: When the shops control is pressed, the results dialog shall open a
-shops dialog listing every configured shop and stating how many albums are
-ticked.
+Requirement: When the shops control is pressed, the results dialog shall show
+its one shops dialog (FR-S44), listing every configured shop and stating how
+many albums are ticked.
 
 Rationale: Ruled by Oliver on 2026-09-08. A press has to choose between shops;
 the choice is worth a screen, since it is also where the count is confirmed
@@ -284,7 +284,7 @@ Rationale: Measured on 2026-09-07: of the shops checked that afternoon, one had
 closed, one had walled its search and one had moved it. A shop list inside the
 application is a release every time that happens; a file is an edit.
 
-Acceptance: Given no shop file, when the shops dialog is opened, then the file
+Acceptance: Given no shop file, when the shops dialog is first opened, then the file
 is written holding the shipped defaults and those shops are listed.
 
 Verified by: `tests/infrastructure/test_shop_file.py::TestTheFirstTime::test_a_missing_file_is_written_with_the_defaults`
@@ -643,7 +643,7 @@ Nothing marked open may be built from.
 ### B. Prioritisation
 
 Must: FR-S01 to FR-S15, every NFR, then FR-S17 to FR-S42 from Amendment 1,
-then FR-S43 from Amendment 2.
+then FR-S43 from Amendment 2, then FR-S44 from Amendment 3.
 Should: nothing this stage.
 Could: nothing this stage.
 Won't, this time: payments, prices, stock, shop APIs, affiliate links, physical
@@ -824,8 +824,10 @@ currently holds, for the first ticked album, in the default browser, without
 saving anything.
 
 Rationale: Ruled by Oliver on 2026-09-13: whether a shop works is judged by
-looking at its page. The shops dialog is only reachable with at least one album
-ticked (FR-S04), so there is always a first album to try.
+looking at its page. The shops dialog opens only with at least one album ticked
+(FR-S04). It can stay open while every tick is cleared (FR-S44); a form opened
+then has no album to try, so Try is disabled until one is ticked and the form
+is opened again.
 
 Acceptance: Given "Kate Bush, Hounds of Love" ticked first and a form holding
 `https://example.com/s?q={artist}`, when Try is pressed, then
@@ -1298,6 +1300,19 @@ read as unfinished.
 
 Verified by: `tests/ui/test_shop_editing.py::test_try_save_and_put_back_wear_their_artwork`,
 `tests/ui/test_guide.py`
+
+---
+
+**Amendment 3, 2026-09-24: the shops dialog follows the ticks.** Taken on
+Oliver's report the same day.
+
+### 6.12 Why
+
+Reported by Oliver against the built application: an album unticked after a
+shop was chosen went on opening in the browser. Every press of the shops
+control also left another dialog standing, so the tabs piled up.
+
+### 6.13 Requirements
 
 ---
 
