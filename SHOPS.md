@@ -1300,3 +1300,27 @@ Verified by: `tests/ui/test_shop_editing.py::test_try_save_and_put_back_wear_the
 `tests/ui/test_guide.py`
 
 ---
+
+**FR-S44 The shops dialog follows the ticks behind it**
+
+Priority: Must
+
+Requirement: While the shops dialog is open, it shall take the albums ticked
+in the results at that moment, stating their number. The shops control shall
+bring back the one shops dialog rather than open another. While nothing
+is ticked, no shop shall be choosable.
+
+Rationale: Reported by Oliver on 2026-09-24. The dialog stays open (FR-S07)
+while the ticks behind it change; it kept the albums ticked when it opened,
+so an album unticked since went on opening. Closing it only hid it, so every
+press of the shops control left one more dialog standing with its own old list;
+the tabs piled up.
+
+Acceptance: Given one album ticked, the shops dialog opened, that album
+unticked and another ticked, when a shop is chosen, then only the second album
+is opened; given the dialog closed and the control pressed again, then the same
+dialog comes back.
+
+Verified by: `tests/ui/test_shop_following.py`
+
+---

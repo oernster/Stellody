@@ -282,6 +282,8 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         self.copy_button.setEnabled(ready)
         self.shops_button.setEnabled(ready)
         self.copy_button.setText(COPY_LABEL)
+        if self.shops is not None:
+            self.shops.follow(self.ticked())
 
     def ticked(self) -> tuple:
         """The albums ticked on screen, in the order they are drawn.
@@ -303,11 +305,21 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
 
         Held on the dialog rather than left as a local, since a dialog nobody
         keeps a name for goes away with the call that made it.
+
+        One shops dialog, brought back on every press rather than made again.
+        Closing it only hides it, so a new one per press left every earlier
+        one standing, each still holding the albums ticked when it opened.
+        FR-S44.
         """
         if self._shopping is None:
             return
-        self.shops = ShopsDialog(self._shopping, self.ticked(), self._mode, self)
+        if self.shops is None:
+            self.shops = ShopsDialog(self._shopping, self.ticked(), self._mode, self)
+        else:
+            self.shops.follow(self.ticked())
         self.shops.show()
+        self.shops.raise_()
+        self.shops.activateWindow()
 
     def reject(self) -> None:
         """Close, letting go of any question still in flight.

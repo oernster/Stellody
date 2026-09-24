@@ -123,6 +123,25 @@ class ShopsDialog(FirstStopDialog):
         self._shortcuts = [self._shortcut(key, offset) for key, offset in _MOVES]
         self._fill()
 
+    def follow(self, wanted: tuple[WantedAlbum, ...]) -> None:
+        """Take the albums ticked now in place of those ticked at opening.
+
+        The dialog stays open (FR-S07) while the ticks behind it go on
+        changing, so a list kept from the moment it opened would send an album
+        somebody has since unticked. What is said about the last press goes
+        too, since it described albums that may no longer be the ones counted.
+        FR-S44.
+        """
+        self._wanted = wanted
+        self.counted.setText(self._counted())
+        self.said.setText("")
+        self._offer_shops()
+
+    def _offer_shops(self) -> None:
+        """A shop can be chosen only while something is ticked. FR-S44."""
+        for button in self.shop_buttons.values():
+            button.setEnabled(bool(self._wanted))
+
     def _counted(self) -> str:
         """How many albums this press is about."""
         words = ASKING_ABOUT if len(self._wanted) == ONE else ASKING_ABOUT_MANY
@@ -199,6 +218,7 @@ class ShopsDialog(FirstStopDialog):
         if not rows:
             empty = NO_SHOPS_YET if self._editing is not None else NO_SHOPS
             self._rows.addWidget(QLabel(empty, self.rows_holder))
+        self._offer_shops()
         self._chain()
 
     def _chain(self) -> None:

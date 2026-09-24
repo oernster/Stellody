@@ -23,6 +23,7 @@ three times is three fixtures the day one of them is changed.
 
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 
@@ -30,6 +31,13 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from stellody.infrastructure import diary
+
+# No test may draw on somebody's screen, however the suite was started. The
+# platform was set only by gate.ps1, so a bare `pytest` put a real window on
+# the desktop for every interface test. Measured on 2026-09-24: Oliver closed
+# them one after another, each answering with its own close prompt. Importing
+# Qt reads nothing; building the QApplication below does, later.
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 FORBIDDEN = "stellody.exe"
 
