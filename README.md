@@ -155,7 +155,9 @@ checks run; if it ever stopped being true the suite would fail.
   answer runs long. From there Find in shops takes the ticked albums to the
   shop you choose, opening that shop's own search for each of them in your
   browser. The shops on offer are yours to add, edit, delete and reorder on the
-  screen where you choose one.
+  screen where you choose one. Closing that screen clears every tick, even one
+  under an artist rolled up or hidden by a filter, so the next round starts
+  from nothing rather than from the last one.
   Nothing is bought here and nothing is streamed: Stellody hands over a search
   and stops.
 - **The videos that came with the album.** A bonus video sits in the album it

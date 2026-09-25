@@ -11,11 +11,12 @@ arrive as numbered amendments with a reason rather than as silent edits.
 
 ### 1.1 Purpose
 
-Stellody plays to whatever the operating system calls its default output and
-follows it when the system moves it (`infrastructure/output_devices.py`). A
-listener who wants the music on the Focusrite while everything else on the
-machine stays on the speakers has no way to say so; they have to move the
-whole system's default, which moves every other application with it.
+Before this, Stellody played to whatever the operating system called its
+default output and followed it when the system moved it
+(`infrastructure/output_devices.py`). A listener who wanted the music on the
+Focusrite while everything else on the machine stayed on the speakers had no
+way to say so; they had to move the whole system's default, which moved every
+other application with it.
 
 This adds a choice of output device to Stellody alone, listing only the
 devices the system can play to, kept current while the application runs.
@@ -31,8 +32,9 @@ Measured on the reference machine on 2026-09-18 unless marked otherwise.
 
 - **The player already takes a device.** `WasapiPlayback` in
   `infrastructure/audio.py` accepts a device and hands it to every stream it
-  opens; the composition root passes none, so today every stream opens on the
-  default. The device is fixed when the player is built.
+  opens; the composition root passed none, so every stream opened on the
+  default. The device was fixed when the player was built; this feature added
+  `WasapiPlayback.use_device`, which sets it for the streams opened after.
 - **A reopen in place already exists.** `Transport._reopen_in_place` in
   `application/transport.py` opens the track in hand again at the same
   position, a paused track staying paused. The exclusive switch uses it.
@@ -595,8 +597,8 @@ case the feature cannot ship without. Won't this time is the out-of-scope list i
 | OQ-O1 | Two outputs share the name `U13ZA (NVIDIA High Definition Audio)` and PortAudio cannot state endpoint identity. Which PortAudio device is which? | Claude | Played a tone through each PortAudio WASAPI output while reading every endpoint's own peak meter. | Answered 2026-09-18; Amendment 2 |
 | OQ-O2 | On Linux, Qt lists PulseAudio or PipeWire outputs while PortAudio may see ALSA devices under other names. Can the two be matched, inside the Flatpak? | Claude | Ran the device probe inside the installed Flatpak; compared the two lists; then played a tone to each sink in turn and read which sink it landed on. | Answered 2026-09-19; Amendment 6. They cannot be matched by name; the device is addressed by sink instead |
 | OQ-O3 | On macOS, do Qt's names match PortAudio's CoreAudio names? | Oliver, on the Mac | The same probe on the Mac. | Answered 2026-09-19: they match; every listed device plays when it is chosen |
-| OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Answered 2026-09-18; Amendment 4 |
 | OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Observed working with the Px7 S3 on 2026-09-19; the timed probe is still open |
+| OQ-O5 | FR-O11 keeps the music playing on the system default when the chosen device disappears; FR-O12 moves it back when the device returns. Oliver ruled on 2026-09-14 (`application/output_following.py`) that a move of the system output PAUSES the music rather than carrying it somewhere without warning, after a track went on through the speakers once headphones connected. Which rule governs the chosen device leaving and returning? | Oliver | A ruling | Answered 2026-09-18; Amendment 4 |
 
 ## 6. The build order this implies
 

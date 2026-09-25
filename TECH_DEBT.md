@@ -54,7 +54,8 @@ name. A name on that list that the walk no longer finds fails the
 suite, so the exemption cannot quietly outlive the script.
 
 **Quitting during a cover lookup leaves the process without unwinding.** A
-search inside a network read is given up within a slice of a second now, so
+search inside a network read is given up within about a second now (`SLICE_S`
+in `infrastructure/cover_search.py`), so
 `leave_at_once` in `composition.py` should never be reached. It stays because
 what no amount of asking covers is a socket that never comes back. Qt ends the
 process over a thread destroyed while running: an abort with a crash report

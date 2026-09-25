@@ -9,6 +9,8 @@ Each test here fails on the code as it stood then.
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from results_support import gaps_with
 from test_results_filter import HOUSE, POWER_UP, REMOTE_PLACES, filterable, tick
 from test_shop_choosing import albums_in, shopping, with_shopping
@@ -43,6 +45,16 @@ def test_the_title_bar_close_clears_them_too(application) -> None:
     albums_in(dialog)[0].setCheckState(0, TICKED)
     dialog.open_shops()
     dialog.shops.close()
+    assert ticks_left(dialog) == []
+
+
+def test_escape_clears_them_too(application) -> None:
+    """Escape closes the shops the way Close does, so it ends the round too."""
+    dialog, _opener, _clipboard = with_shopping((gaps_with(albums=2),))
+    albums_in(dialog)[0].setCheckState(0, TICKED)
+    dialog.open_shops()
+    QTest.keyClick(dialog.shops, Qt.Key.Key_Escape)
+    assert not dialog.shops.isVisible()
     assert ticks_left(dialog) == []
 
 

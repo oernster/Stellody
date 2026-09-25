@@ -1700,6 +1700,10 @@ Rationale: Ruled by Oliver on 2026-09-13. A tick is somebody's decision; a
 filter is only where they are looking. Acting on rows out of sight would send
 albums to a shop without anybody seeing they were going.
 
+Narrowed on 2026-09-25 by FR-S45 in `SHOPS.md`: a tick still outlives a
+filter; it no longer outlives the shops dialog. Closing that dialog clears every
+tick, including one a filter holds back.
+
 Acceptance: Given an album ticked, when a filter withholds it, then Copy leaves
 it out; when the filter is cleared, then it is still ticked.
 

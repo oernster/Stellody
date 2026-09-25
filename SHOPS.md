@@ -14,7 +14,7 @@ a reader has to tell apart, only one of them the product's.
 
 It is built. Every requirement below names the test that holds it. FR-S11
 stopped short of its requirement until FR-S42 in Amendment 1 completed it; all
-three amendments, in section 6, are built too.
+four amendments in section 6 are built too.
 
 ## 1. Introduction
 
@@ -1330,12 +1330,13 @@ Rationale: Reported by Oliver on 2026-09-24. The dialog stays open (FR-S07)
 while the ticks behind it change; it kept the albums ticked when it opened,
 so an album unticked since went on opening. Closing it only hid it, so every
 press of the shops control left one more dialog standing with its own old list;
-the tabs piled up.
+the tabs piled up. Amended by Amendment 4: closing it now also clears every
+tick (FR-S45).
 
 Acceptance: Given one album ticked, the shops dialog opened, that album
 unticked and another ticked, when a shop is chosen, then only the second album
-is opened; given the dialog closed and the control pressed again, then the same
-dialog comes back.
+is opened; given the dialog closed, an album ticked afresh (closing cleared the
+ticks, FR-S45) and the control pressed again, then the same dialog comes back.
 
 Verified by: `tests/ui/test_shop_following.py`
 
@@ -1359,8 +1360,8 @@ yet still counted; so could a tick on an album a filter was holding back.
 
 Priority: Must
 
-Requirement: When the shops dialog is closed, by its Close control, by Escape
-or by the window's own close, every album in the results shall be unticked:
+Requirement: When the shops dialog is closed (by its Close control, by Escape
+or by the window's own close), every album in the results shall be unticked:
 those on screen, those under an artist rolled up and those a filter is holding
 back.
 

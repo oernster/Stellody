@@ -717,7 +717,8 @@ them and no decoder was written. What the reference library holds did not
 change; what a decision about other people's libraries costs did.
 
 **There is a second table; nothing is silently absent.** `UNPLAYABLE_SUFFIXES`
-names the audio this build knows by sight and cannot decode. A folder holding
+names the audio this build knows by sight and will not play: formats it cannot
+decode or cannot prove, plus M4B, which decodes yet is not music. A folder holding
 only those used to yield no listing at all, so its album was not skipped,
 reported or counted: it simply was not there, so a listener looking for one
 they own had no way to tell that from a library that had failed to scan. That
@@ -1388,16 +1389,18 @@ records nothing for is withheld and counted rather than guessed at.
 hiding rows, since pages are dealt by height and hidden rows would leave columns
 half empty. Dealing again throws the rows away, so the ticks and every
 candidate's fetched albums are held by the dialog then written back after each
-deal; Copy and Find in shops still read only the rows on screen. One shops
-dialog serves the results screen: a second press brings it back rather than
+deal; Copy and Find in shops still read only the rows on screen.
+`ui/results_asking.py` was split out of `results_dialog.py` when the genre
+filter arrived, to make the room.
+
+**One shops dialog serves the results screen; closing it ends the round.**
+`ui/shops_dialog.py` is that dialog. A second press brings it back rather than
 making another, while every change of tick is handed to it through `follow`, so
 a dialog left open sends what is ticked now; a shop cannot be chosen while
-nothing is (FR-S44). Closing it ends the round: the results dialog listens for
-its `finished`, which every way out emits, then unticks every row and forgets
-the ticks a filter was holding, so nothing unseen rides into the next round
-(FR-S45).
-`ui/results_asking.py` was split out of `results_dialog.py` by this change to
-make the room.
+nothing is (FR-S44). The results dialog listens for its `finished`, which Close,
+Escape and the title bar all emit, then unticks every row and forgets the ticks
+a filter was holding, so nothing unseen rides into the next round (FR-S45).
+`tests/ui/test_shop_closing.py` holds the clearing for each way out.
 
 **The file records what was asked as well as what was found.** A run's answer
 is meaningless without the genres that scoped it, since those decide which
@@ -1482,8 +1485,8 @@ The pieces sit where every other feature's do:
 the service; the `ReleaseSource` port sits in `stellody/application/ports.py`
 with its siblings; `stellody/infrastructure/update_source.py` is the adapter,
 on stdlib `urllib` rather than a new dependency; `stellody/ui/update_check.py`
-is the controller and the dialogs. Invariant 12 is what keeps the adapter the
-only new way out.
+is the controller and the dialogs. Invariant 12 is what keeps the adapter one of
+the four named ways out.
 
 ## The guide
 
@@ -1995,7 +1998,7 @@ holds it over the real window, each part proved by taking it out.
 | A pause is not an ending; it is caught in both layers | Reported against a real library: pausing a track then pressing play started it from its beginning. `pause` clears the resume and then stops the stream, so a feeder already past its wait writes into a stream that has just been stopped and PortAudio refuses that write. The failure landed in the branch that means "the track ran out", so a pause set `finished`. Everything downstream then followed correctly from a false premise: `play` declines to start a finished session, so the press did nothing; the poll a quarter of a second later took the ending as real; on the last track of a queue it gave the device back, which is what left the press after it reloading the track from nothing. The write is fixed where it goes wrong: a failure while the resume is already clear is a pause landing on the feeder, so the block in hand is dropped and the loop goes back to waiting. The transport carries the second half, because a device cannot tell a hold from an ending under any circumstances: `_held` is set when a listener pauses, cleared when they resume and taken from `playing` at every load, since a track opened without playing is one somebody is sitting on; `advance_if_finished` does nothing while it is set. Both halves were proved by planting their removal, each against a stream that refuses the write its stop landed in the middle of. |
 | Skipping while paused stays paused | Pressing Next while paused started playing, which nobody had asked for. The awkward part is that a track ending arrives through the same method, where playing on is right, while a device that has run out reports itself PAUSED exactly as a paused one does. Whether the move plays is therefore handed in by the caller rather than read off the device: a listener keeps the state they were in, while an ending carries on. Arriving by skipping is also not counted as waiting at a beginning, which is what pressing Back means, so Back after a skip still returns to the start of the track in hand. |
 | The runtime is pinned while the development tools keep their floors | A build of one commit has to be the same build whenever it is made, which a floor cannot promise. It matters more here than in most repositories: the packaged application carries a Nuitka flag written for the way one version of PyAV reaches one submodule, so a PyAV or PySide6 release arriving by itself would change the thing that flag is about, with the suite green throughout because the suite runs against whatever the environment holds. `requirements.txt` therefore pins with `==` and `requirements-dev.txt` reads it before adding the tools, so nothing is pinned in one place and floating in another. The tools stay on floors, since a formatter or a linter moving forward is a change to the checks rather than to what is shipped. A pin nothing checks is a comment, so invariant 20 holds every pin to the version actually installed, proved by planting a pin one patch release out and reading the failure name the offender. |
-| The checks run in the project's own environment | PyAV was installed into the system Python while the application ran from the venv, so the whole gate reported green, 1544 tests at 100% coverage, while M4A could not be played at all. The suite could not have caught it: it was not running on the machine that was broken. A structural test now refuses to pass anywhere but the venv, a second says everything requirements.txt declares is installed there, then `gate.ps1` names the interpreter so the two cannot drift again. |
+| The checks run in the project's own environment | PyAV was installed into the system Python while the application ran from the venv, so the whole gate reported green, 1544 tests at 100% coverage, while M4A could not be played at all. The suite could not have caught it: it was not running on the machine that was broken. Where the project has a venv, a structural test now refuses to pass anywhere else; a second says everything requirements.txt declares is installed there, then `gate.ps1` names the interpreter so the two cannot drift again. |
 | The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
 | The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
 | Ending the application is said out loud, never left to Qt | Quitting when the last window closes is off, which is what lets the cross leave Stellody in the notification area. Nothing then ends the event loop by itself, so every path that means to leave says so. |

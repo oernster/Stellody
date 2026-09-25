@@ -18,9 +18,9 @@ of what they assert.
 interpreter (`venv\Scripts\python.exe`) and stops at the first that fails. It
 sets `QT_QPA_PLATFORM=offscreen` for the run, so no window appears.
 
-**A full run takes about ten minutes.** Measured on 2026-09-24: the 2,114
-tests outside `tests/ui` take about 80 seconds; the 1,468 interface tests take
-the rest, many of them spending most of a second building their window. A run
+**A full run takes about ten minutes.** Timed on 2026-09-24 and counted again
+on 2026-09-25: the 2,114 tests outside `tests/ui` take about 80 seconds; the
+1,477 interface tests take the rest, many of them spending most of a second building their window. A run
 that is quiet for several minutes is not stuck. To see it moving, add `-v` to
 a pytest run by hand, which names each test as it starts.
 
