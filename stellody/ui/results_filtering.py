@@ -145,6 +145,10 @@ class FilteringResults:
                 unticked.add(_album_on(row))
         self._kept = (self._kept - unticked) | ticked
 
+    def _forget_ticks(self) -> None:
+        """Let go of every tick held out of sight as well. FR-S45."""
+        self._kept = set()
+
     def _put_ticks_back(self) -> None:
         """Tick every row just dealt whose album was ticked before."""
         for row in every_row_across(self.pages.trees):

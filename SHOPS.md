@@ -643,7 +643,8 @@ Nothing marked open may be built from.
 ### B. Prioritisation
 
 Must: FR-S01 to FR-S15, every NFR, then FR-S17 to FR-S42 from Amendment 1,
-then FR-S43 from Amendment 2, then FR-S44 from Amendment 3.
+then FR-S43 from Amendment 2, then FR-S44 from Amendment 3, then FR-S45 from
+Amendment 4.
 Should: nothing this stage.
 Could: nothing this stage.
 Won't, this time: payments, prices, stock, shop APIs, affiliate links, physical
@@ -1337,5 +1338,44 @@ is opened; given the dialog closed and the control pressed again, then the same
 dialog comes back.
 
 Verified by: `tests/ui/test_shop_following.py`
+
+---
+
+**Amendment 4, 2026-09-25: closing the shops clears the ticks.** Taken on
+Oliver's report the same day.
+
+### 6.14 Why
+
+Reported by Oliver against the built application: after a round of shopping,
+every album ticked for it stayed ticked, so the next round began by unticking
+them one at a time. A tick under an artist rolled up could not be seen at all
+yet still counted; so could a tick on an album a filter was holding back.
+
+### 6.15 Requirements
+
+---
+
+**FR-S45 Closing the shops dialog clears every tick**
+
+Priority: Must
+
+Requirement: When the shops dialog is closed, by its Close control, by Escape
+or by the window's own close, every album in the results shall be unticked:
+those on screen, those under an artist rolled up and those a filter is holding
+back.
+
+Rationale: Reported by Oliver on 2026-09-25. A round of shopping is finished
+when its dialog closes; ticks that outlive it are work to undo by hand before
+the next. A tick nobody can see is worse, since it would be sent with the
+next round unnoticed. This narrows FR-D56: a tick still outlives a filter; it no
+longer outlives the close of the shops dialog.
+
+Acceptance: Given two albums ticked (one under an artist then rolled up) with
+the shops dialog opened, when it is closed, then nothing is ticked and neither
+Copy nor Find in shops is enabled. Given an album ticked and then withheld by a
+filter, when the shops dialog is closed and the filter cleared, then nothing is
+ticked.
+
+Verified by: `tests/ui/test_shop_closing.py`
 
 ---

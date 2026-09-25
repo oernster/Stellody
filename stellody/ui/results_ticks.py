@@ -143,6 +143,22 @@ def ticked_albums(trees: Sequence[QTreeWidget]) -> tuple[WantedAlbum, ...]:
     )
 
 
+def untick_all(trees: Sequence[QTreeWidget]) -> None:
+    """Untick every album, whether its artist is open or rolled up. FR-S45.
+
+    The lists stay quiet while it happens, so one clear is one change to
+    whoever listens rather than one per album; the caller says so once after.
+    """
+    for tree in trees:
+        was = tree.blockSignals(True)
+        try:
+            for row in every_row(tree):
+                if is_tickable(row) and row.checkState(0) is TICKED:
+                    row.setCheckState(0, UNTICKED)
+        finally:
+            tree.blockSignals(was)
+
+
 def anything_ticked(trees: Sequence[QTreeWidget]) -> bool:
     """Whether there is anything to look up at all."""
     return any(

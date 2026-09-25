@@ -74,7 +74,7 @@ from stellody.ui.results_room import (
     DIALOG_WIDTH_PX,
     opening_size,
 )
-from stellody.ui.results_ticks import anything_ticked, ticked_albums
+from stellody.ui.results_ticks import anything_ticked, ticked_albums, untick_all
 from stellody.ui.results_top import ResultsTop
 from stellody.ui.shops_dialog import ShopsDialog
 from stellody.ui.theme import Mode, palette_for
@@ -315,11 +315,27 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
             return
         if self.shops is None:
             self.shops = ShopsDialog(self._shopping, self.ticked(), self._mode, self)
+            # Every way out of it ends in `done`, so `finished` hears Close,
+            # Escape and the title bar alike.
+            self.shops.finished.connect(self.clear_ticks)
         else:
             self.shops.follow(self.ticked())
         self.shops.show()
         self.shops.raise_()
         self.shops.activateWindow()
+
+    def clear_ticks(self, _result: int = 0) -> None:
+        """Untick everything once the shops close, seen or not. FR-S45.
+
+        Reported by Oliver on 2026-09-25: the ticks outlived the round they
+        were made for, so the next round began by unticking by hand. A tick
+        under a rolled-up artist or held back by a filter could not even be
+        seen to be unticked. The held-back ones go first, so clearing
+        the filter afterwards brings none of them back.
+        """
+        self._forget_ticks()
+        untick_all(self.pages.trees)
+        self._ticks_changed()
 
     def reject(self) -> None:
         """Close, letting go of any question still in flight.

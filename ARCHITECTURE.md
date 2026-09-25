@@ -1392,7 +1392,10 @@ deal; Copy and Find in shops still read only the rows on screen. One shops
 dialog serves the results screen: a second press brings it back rather than
 making another, while every change of tick is handed to it through `follow`, so
 a dialog left open sends what is ticked now; a shop cannot be chosen while
-nothing is (FR-S44).
+nothing is (FR-S44). Closing it ends the round: the results dialog listens for
+its `finished`, which every way out emits, then unticks every row and forgets
+the ticks a filter was holding, so nothing unseen rides into the next round
+(FR-S45).
 `ui/results_asking.py` was split out of `results_dialog.py` by this change to
 make the room.
 

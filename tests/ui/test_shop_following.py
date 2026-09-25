@@ -49,6 +49,8 @@ def test_a_second_press_brings_back_the_one_dialog(application) -> None:
     ticked_one_then_the_other(dialog)
     first = dialog.shops
     first.reject()
+    # Closing clears the ticks (FR-S45), so the second round ticks afresh.
+    albums_in(dialog)[1].setCheckState(0, TICKED)
     dialog.open_shops()
     assert dialog.shops is first
     assert dialog.shops.isVisible()

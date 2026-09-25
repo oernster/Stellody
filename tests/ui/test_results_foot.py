@@ -15,13 +15,14 @@ from __future__ import annotations
 
 from results_support import gaps_with, made
 
+from stellody.ui.theme import HALF
+
 # Where the pager may stand from the true middle and still read as on it:
 # half a pixel of rounding either way, twice over for the two edges it spans.
 WITHIN_PX = 1
 # Room beyond the least that centring needs, so the check is not made on the
 # very edge of where centring becomes possible.
 SPARE_PX = 100
-HALF = 2
 
 
 def _pager_middle(dialog) -> float:
