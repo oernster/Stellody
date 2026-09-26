@@ -29,7 +29,12 @@ from stellody.application.discovery_ports import SourceFailed
 from stellody.application.gathering import REFUSED_EVERY_PASS
 from stellody.application.passing import PASS_PAUSE_SECONDS, QUIET_PASSES
 from stellody.application.values import DiscoveryProgress, RunOutcome
-from stellody.domain.discovery import ReleaseGroup, SimilarArtist, held_by_artist
+from stellody.domain.discovery import (
+    ReleaseGroup,
+    SimilarArtist,
+    held_by_artist,
+    held_for,
+)
 
 # How many times the run is allowed to ask whether it should stop before the
 # answer becomes yes. Two, so the stop lands inside a wait rather than at the
@@ -312,4 +317,27 @@ def test_what_each_artist_is_already_held_to_have() -> None:
     """Built once for a run, since an album reads the same way every time."""
     albums = (make_album("U2", "The Joshua Tree"), make_album("U2", "Achtung Baby"))
     held = held_by_artist(albums)
-    assert len(held["U2"]) == 2
+    assert len(held_for(held, "U2")) == 2
+
+
+def test_one_artist_spelled_two_ways_is_asked_about_once() -> None:
+    """Reported on 2026-09-26: each spelling had the other's album offered back."""
+    catalogue = Catalogue(
+        albums={
+            "dennis de laat": (
+                ReleaseGroup(title="First"),
+                ReleaseGroup(title="Second"),
+                ReleaseGroup(title="Third"),
+            )
+        }
+    )
+    run, _, _, _ = make_run(catalogue)
+    library = (
+        make_album("Dennis De Laat", "First"),
+        make_album("Dennis de Laat", "Second"),
+    )
+    report = run.run(library, ROCK, nothing, never)
+    assert catalogue.identified == ["Dennis De Laat"]
+    assert [(gaps.artist, [a.title for a in gaps.albums]) for gaps in report.gaps] == [
+        ("Dennis De Laat", ["Third"])
+    ]

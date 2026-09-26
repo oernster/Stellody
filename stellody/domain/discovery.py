@@ -19,7 +19,7 @@ opposite of finding what is missing.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from stellody.domain.album import Album
 from stellody.domain.genres import chosen_in
@@ -160,14 +160,30 @@ def held_by_artist(albums: tuple[Album, ...]) -> dict[str, frozenset[ReleaseMatc
     """What each album artist is already held to have, ready to compare.
 
     Built once for a whole run rather than per artist, since an album is read
-    the same way however many times it is asked about.
+    the same way however many times it is asked about. Keyed by
+    `comparison_key`, so an artist filed under two spellings holds everything
+    filed under either: reported on 2026-09-26, "Dennis De Laat" and "Dennis
+    de Laat" each had the other's album offered back. Read through `held_for`.
     """
     held: dict[str, set[ReleaseMatch]] = {}
     for album in albums:
-        held.setdefault(album.identity.album_artist, set()).add(
+        held.setdefault(comparison_key(album.identity.album_artist), set()).add(
             matched(album.identity.title)
         )
     return {artist: frozenset(found) for artist, found in held.items()}
+
+
+def names_beyond(names: tuple[str, ...], others: tuple[str, ...]) -> tuple[str, ...]:
+    """The names that are none of the others, however either is spelled."""
+    known = {comparison_key(other) for other in others}
+    return tuple(name for name in names if comparison_key(name) not in known)
+
+
+def held_for(
+    held: dict[str, frozenset[ReleaseMatch]], artist: str
+) -> frozenset[ReleaseMatch]:
+    """What this artist is held to have, however their name is spelled."""
+    return held.get(comparison_key(artist), frozenset())
 
 
 def still_to_ask(
@@ -229,6 +245,10 @@ def source_artists(
         return ()
     narrowing = Narrowing(field=AlbumField.GENRE, wanted=ticked)
     found: list[str] = []
+    # One artist spelled two ways is asked about once, under the spelling met
+    # first: the catalogue answers the same for both, so asking twice only
+    # showed the same answer twice. Reported on 2026-09-26.
+    seen: set[str] = set()
     for album in narrowed_to(albums, narrowing):
         if not album.identity.is_compilation:
             named: tuple[str, ...] = (album.identity.album_artist,)
@@ -237,52 +257,11 @@ def source_artists(
         else:
             named = ()
         for artist in named:
-            if artist not in found and not is_various_artists(artist):
+            key = comparison_key(artist)
+            if key not in seen and not is_various_artists(artist):
+                seen.add(key)
                 found.append(artist)
     return tuple(found)
-
-
-@dataclass(frozen=True, slots=True)
-class FilteredAnswer:
-    """What a genre filter leaves of an answer; how many it could not judge."""
-
-    gaps: tuple[Gaps, ...]
-    unjudged: int = 0
-
-
-def filtered_answer(
-    gaps: tuple[Gaps, ...],
-    library: tuple[Album, ...],
-    remembered: dict[str, tuple[str, ...]],
-    picked: tuple[str, ...],
-) -> FilteredAnswer:
-    """The answer as a genre filter leaves it. FR-D54, FR-D55.
-
-    A source artist is judged by the library, through the same rule that made
-    them a source artist: whoever a run over the picked genres would ask about
-    keeps their albums. Ruled by Oliver on 2026-09-13, so nobody he holds is
-    ever withheld for want of a catalogue genre. A candidate is judged by what
-    the candidate genre cache records, since they are not in the library at all;
-    one it records nothing for cannot be judged, so it is withheld and counted once.
-    """
-    if not picked:
-        return FilteredAnswer(gaps=gaps)
-    wanted = set(picked)
-    holding = set(source_artists(library, picked, compilations=True))
-    unjudged: set[str] = set()
-    kept: list[Gaps] = []
-    for gap in gaps:
-        artists: list[SimilarArtist] = []
-        for candidate in gap.artists:
-            named = set(catalogue_genres(remembered.get(candidate.identifier, ())))
-            if not named:
-                unjudged.add(candidate.identifier or candidate.name)
-            elif named & wanted:
-                artists.append(candidate)
-        albums = gap.albums if gap.artist in holding else ()
-        if albums or artists:
-            kept.append(replace(gap, albums=albums, artists=tuple(artists)))
-    return FilteredAnswer(gaps=tuple(kept), unjudged=len(unjudged))
 
 
 def held_matches(albums: tuple[Album, ...]) -> frozenset[ReleaseMatch]:

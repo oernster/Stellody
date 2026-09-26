@@ -76,6 +76,8 @@ from stellody.domain.discovery import (
     albums_missing,
     artists_missing,
     held_by_artist,
+    held_for,
+    names_beyond,
     source_artists,
 )
 from stellody.domain.matching import ReleaseMatch
@@ -164,7 +166,7 @@ class Discovery:
         # The names only a compilation put in front of the run: the one kind of
         # name that may be taken apart when nobody is found under the whole of
         # it. An album artist is the listener's own filing and stays whole.
-        credits = frozenset(artists) - frozenset(source_artists(albums, ticked))
+        credits = frozenset(names_beyond(artists, source_artists(albums, ticked)))
         # Read once and handed to both halves. The first half counts the
         # candidates it meets that are NOT in here, since those are exactly
         # what the second half will have to ask about; reading it twice would
@@ -244,7 +246,7 @@ class Discovery:
                 try:
                     gaps = self._about(
                         artist,
-                        held.get(artist, frozenset()),
+                        held_for(held, artist),
                         everyone,
                         wanted,
                         cancelled,

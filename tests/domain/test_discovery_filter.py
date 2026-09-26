@@ -9,12 +9,8 @@ from __future__ import annotations
 from factories import make_track
 
 from stellody.domain.album import Album
-from stellody.domain.discovery import (
-    Gaps,
-    ReleaseGroup,
-    SimilarArtist,
-    filtered_answer,
-)
+from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.discovery_filter import filtered_answer
 from stellody.domain.identity import AlbumIdentity
 
 HOUSE = ("House",)

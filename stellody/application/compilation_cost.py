@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 from stellody.application.remembering import IDENTIFIERS, CatalogueMemory, Clock
 from stellody.domain.album import Album
-from stellody.domain.discovery import source_artists
+from stellody.domain.discovery import names_beyond, source_artists
 from stellody.domain.estimating import REQUESTS_PER_SOURCE_ARTIST
 
 
@@ -43,11 +43,13 @@ class Pricing:
 
     def of(self, ticked: tuple[str, ...]) -> Cost:
         """What including compilations adds for these ticked genres."""
-        already = set(source_artists(self.albums, ticked))
         added = tuple(
             name
-            for name in source_artists(self.albums, ticked, compilations=True)
-            if name not in already and name not in self.answered
+            for name in names_beyond(
+                source_artists(self.albums, ticked, compilations=True),
+                source_artists(self.albums, ticked),
+            )
+            if name not in self.answered
         )
         return Cost(
             names=len(added),

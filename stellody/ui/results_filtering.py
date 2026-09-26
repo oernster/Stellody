@@ -29,7 +29,8 @@ from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QDialog, QPushButton
 
 from stellody.domain.album import Album
-from stellody.domain.discovery import Gaps, filtered_answer
+from stellody.domain.discovery import Gaps
+from stellody.domain.discovery_filter import filtered_answer
 from stellody.domain.shopping import WantedAlbum
 from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.results_pages import ResultsPages
