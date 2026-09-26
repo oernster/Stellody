@@ -98,7 +98,9 @@ class HeldRun:
         self.released = threading.Event()
         self.stopped = threading.Event()
 
-    def run(self, albums, ticked, report, cancelled, compilations=False) -> RunReport:
+    def run(
+        self, albums, ticked, report, cancelled, compilations=False, years=None
+    ) -> RunReport:
         """Hold until somebody stops the run or the test lets go of it."""
         self.began.set()
         while not self.released.wait(ASK_SLICE_S):

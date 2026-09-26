@@ -1198,6 +1198,12 @@ every candidate surviving the genre filter, roughly doubling a second stage that
 is already the longer half. Ruled by Oliver the same day: pay it only for the
 ones somebody actually opens.
 
+Amended on 2026-09-26: while years are set, FR-D63 asks this during the run for
+the candidates that survive the genre filter, since otherwise nothing can say
+whether they released anything inside the years. It asks through the catalogue
+memory, so expanding such a candidate afterwards reads what the run was told.
+With no years set, the run still asks nothing about a candidate's releases.
+
 Acceptance: Given a collapsed candidate artist, when it is expanded, then that
 artist's offered releases appear beneath it; given the run that produced the
 file, then it issued no request about that artist's releases.
@@ -1901,6 +1907,255 @@ Verified by: `tests/domain/test_estimating.py::TestThePace::test_one_sample_is_n
 
 ---
 
+#### Release years (amendment, 2026-09-26)
+
+Asked for by Oliver on 2026-09-26: a run may be told which years the music it
+offers was released in, so the same library can answer "what recent music am I
+missing" or "what from the 1980s should be here". **The years scope what a run
+offers, never what it learns from.** A 1977 album in the library is source
+material for a run asking about 2020 onwards exactly as for any other run.
+
+Settled with Oliver on the same day: a candidate artist is checked during the
+run rather than on expanding; the years are not remembered between dialogs;
+a plausible year runs from 1900 to the year after the current one.
+
+Measured the same day against MusicBrainz, over one artist's 61 release groups:
+the browse the run already makes carries `first-release-date` on every entry,
+stated as a year, a year and month or a full date; 10 of the 61 stated an empty
+string. So a release group with no year is ordinary rather than rare.
+
+---
+
+**FR-D58 Choosing the years to look in**
+
+Priority: Must
+
+Requirement: The discovery dialog shall offer two optional year fields, from
+and to, each empty when the dialog opens.
+
+Rationale: Two optional bounds cover every case asked for: after a year, before
+one, between two and any. Empty on opening for the reason the genre ticks are:
+what to look for is decided afresh each time, while whether compilations are
+included is a standing preference and is remembered (FR-D51). Nothing new is
+persisted.
+
+Acceptance: Given the dialog opens, then both fields are empty; given 1980 is
+typed in from and 1989 in to, when Find is pressed, then the run is started with
+the years 1980 to 1989 inclusive.
+
+Verified by: `tests/ui/test_discovery_years.py::TestTheFields`, `tests/ui/test_discovery_years.py::test_the_runner_hands_the_years_to_the_run`
+
+---
+
+**FR-D59 Years that cannot be used are refused, not corrected**
+
+Priority: Must
+
+Requirement: If a year field holds anything other than a four digit year from
+1900 to the year after the current one (or the from year is later than the to
+year), then the discovery dialog shall say which field is wrong and why, with
+Find disabled.
+
+Rationale: A range quietly clamped or ignored answers a question nobody asked.
+The ceiling is read from the clock rather than written down, so it cannot go
+stale; it is a year ahead so a record already announced can be asked for.
+
+Acceptance: Given 1990 in from and 1980 in to, then the dialog says the from
+year is later than the to year and Find is disabled; given 198 in from, then it
+says that is not a year.
+
+Verified by: `tests/domain/test_release_years.py::TestReadingTypedYears`, `tests/ui/test_discovery_years.py::TestRefusing`
+
+---
+
+**FR-D60 The years scope what is offered, never who is asked**
+
+Priority: Must
+
+Requirement: While years are set, the discovery service shall choose its source
+artists exactly as it does with no years set.
+
+Rationale: The distinction the whole feature rests on. The library is what
+discovery learns from; the years constrain only what it may hand back.
+
+Acceptance: Given a library holding only a 1977 album by a source artist whose
+catalogue offers an unheld album first released in 2021, when a run over the
+years 2020 onwards completes, then that 2021 album is offered.
+
+Verified by: `tests/application/test_discovering_by_year.py::TestTheLibraryStillTeaches::test_an_old_album_leads_to_a_new_one`, proved on 2026-09-26 to fail with the library filtered by the years
+
+---
+
+**FR-D61 A candidate album's year is its first release**
+
+Priority: Must
+
+Requirement: While years are set, the discovery service shall offer a candidate
+album only where the year of the release group's first release lies inside them,
+both bounds included.
+
+Rationale: The release group's first release is the original's year, which is
+the reading section 3.5 already relies on: a remaster's tag carries the
+remaster's year while the release group carries the original's. A 2023 reissue
+of a 1977 album is therefore a 1977 album, which is what somebody asking for
+recent music means. The year is read by `year_of`, the one place a year is read.
+
+Acceptance: Given years 1980 to 1989, then albums first released in 1980 and in
+1989 are offered while ones first released in 1979 and in 1990 are not.
+
+Verified by: `tests/domain/test_release_years.py::TestOfferingByYear`, `tests/application/test_discovering_by_year.py::TestAlbumsByYear`
+
+---
+
+**FR-D62 A candidate album with no stated year is not offered while years are set**
+
+Priority: Must
+
+Requirement: If a candidate album's release group states no first release year,
+then while years are set the discovery service shall not offer it.
+
+Rationale: No year is invented to make a candidate fit. Offering what cannot be
+shown to lie inside the range would silently break the range that was asked for;
+with no years set the album is offered as before.
+
+Acceptance: Given years 2020 onwards and an album stating no first release date,
+then the album is not offered; given no years, then it is.
+
+Verified by: `tests/domain/test_release_years.py::TestAdmitting::test_no_year_does_not_fit_a_bounded_range`, `tests/application/test_discovering_by_year.py::TestAlbumsByYear::test_no_years_offers_what_it_always_did`
+
+---
+
+**FR-D63 A candidate artist is offered only with an album inside the years**
+
+Priority: Must
+
+Requirement: While years are set, after the candidates have been narrowed by
+genre, the discovery service shall ask the catalogue what each remaining
+candidate artist released and shall keep only those with an offered album inside
+the years.
+
+Rationale: A candidate artist arrives with no dates at all, so without asking,
+the run would offer artists who released nothing in the years asked about.
+Asked only while years are set and only about the candidates that survived the
+genre filter; asked through the catalogue memory, so each answer is paid for once
+a month and expanding that artist later costs nothing. A candidate the catalogue
+could not be asked about cannot be shown to fit, so is not offered; nor is one
+who carries no identifier. The progress is reported on the second bar, named
+"Checking years", since a third bar would not fit the slot the two share.
+Known limit: the first stage's projection (FR-D37) sizes only the styles stage,
+so while years are set the time said during the first stage leaves this one
+out; once it begins, its own pace is measured as FR-D35 says.
+
+Acceptance: Given years 2020 onwards and two candidates, one whose only album
+was first released in 1975 and one with an album first released in 2022, then
+only the second is offered; given no years, then no albums are asked for any
+candidate.
+
+Verified by: `tests/application/test_discovering_by_year.py::TestCandidatesByYear`, `tests/application/test_discovering_by_year.py::TestWhenACandidateCannotBeDated`, `tests/ui/test_discovery_years.py::TestTheBars`
+
+---
+
+**FR-D64 The answer says which years it was asked for**
+
+Priority: Must
+
+Requirement: When a run with years set completes, the discovery file shall
+record the years beside the ticked genres and the results screen shall say them
+on the line naming what the run looked in.
+
+Rationale: FR-D41 for the new question. An answer scoped to the 1980s that did
+not say so reads as a library with nothing missing from any other decade.
+
+Acceptance: Given a completed run over Rock for 1980 to 1989, when the results
+open, then the line reads that it looked in one genre, Rock, released 1980 to
+1989.
+
+Verified by: `tests/infrastructure/test_release_dates_kept.py::TestTheDiscoveryFile`, `tests/ui/test_discovery_years.py::TestTheResultsSayTheYears`
+
+---
+
+**FR-D65 An expanded candidate shows only albums inside the years**
+
+Priority: Must
+
+Requirement: When a candidate artist is expanded in the results of a run that
+had years set, the results screen shall show only that artist's offered albums
+inside those years.
+
+Rationale: FR-D31 fetches a candidate's albums on demand; without the years
+those would reintroduce exactly the records the run was asked to leave out.
+
+Acceptance: Given a run for 2020 onwards, when a candidate is expanded whose
+albums were first released in 1975 and in 2022, then only the 2022 album shows.
+
+Verified by: `tests/application/test_discovering_by_year.py::TestExpandingByYear`
+
+---
+
+**FR-D66 What is carried over keeps to the years**
+
+Priority: Must
+
+Requirement: When an earlier answer is carried over for an artist this run
+failed on (FR-D46), the discovery service shall carry only the albums inside
+this run's years; it shall carry that artist's candidate artists only where the
+earlier run was asked for the same years.
+
+Rationale: A carried answer was found under whatever the earlier run asked. Its
+albums carry their dates, so they can be held to the new years; its candidate
+artists were checked against the earlier years, so they are kept only where
+those were the same.
+
+Acceptance: Given an earlier answer with no years holding albums first released
+in 1975 and in 2022 plus one candidate artist, when a run for 2020 onwards fails
+on that artist, then only the 2022 album is carried and no candidate artist is.
+
+Verified by: `tests/application/test_discovering_by_year.py::TestCarryingOverByYear`
+
+---
+
+**FR-D67 A remembered answer with no dates in it is asked again**
+
+Priority: Must
+
+Requirement: If the catalogue memory holds an artist's albums written before
+release dates were kept, then the discovery service shall ask the catalogue
+again rather than reuse them.
+
+Rationale: An album remembered without its date would read as having no year,
+so a run with years set would drop it for want of something the catalogue does
+state. Asking again once costs one request per artist; after that the dates are
+remembered with everything else.
+
+Acceptance: Given a catalogue memory entry whose albums carry no date field,
+when the memory is read, then that entry is absent while the rest are kept.
+
+Verified by: `tests/infrastructure/test_release_dates_kept.py::TestTheCatalogueMemory`
+
+---
+
+**FR-D68 An offered album says the year it first came out**
+
+Priority: Must
+
+Requirement: Where the catalogue states a first release year for an offered
+album, the results dialog shall show that year after the album's title.
+
+Rationale: Asked for by Oliver on 2026-09-26, once he had run a search by year.
+The year is the same one the range is judged by (FR-D61), so what is shown
+agrees with what was kept. Nothing is added where no year is stated, since a
+guessed year would say something false. What a shop is searched for and what
+Copy puts on the clipboard stay the bare title: the title rides on the row as
+data rather than being read back out of the words on it.
+
+Acceptance: Given an offered album "Tripwires" first released in 2019, then
+its row reads "Tripwires (2019)"; when it is ticked, then the album handed to
+the shops is titled "Tripwires".
+
+Verified by: `tests/ui/test_discovery_years.py::TestAnAlbumRowSaysItsYear`
+
+---
+
 ### 3.2 Non-functional requirements
 
 ---
@@ -2319,7 +2574,7 @@ that is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D57 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D68 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
@@ -2328,7 +2583,9 @@ Won't, this time, recorded so it is not re-proposed: NFR-PERF-002, withdrawn on
 anybody is going to time; any purchase path; ranking candidates by anything
 beyond what a source states; remembering across runs what was offered and
 rejected; reopening a past run's results from the menu, which FR-D28 makes cheap
-to add later and which nobody has asked for yet.
+to add later and which nobody has asked for yet; year presets, decade buttons
+or a slider beside the two fields of FR-D58; narrowing a finished answer by
+year on the results screen, where FR-D54 narrows by genre.
 
 ## 5. Open questions
 

@@ -79,7 +79,13 @@ def test_entries_of_the_wrong_shape_are_dropped_rather_than_carried(
         json.dumps(
             {
                 "identifiers": "not a mapping",
-                "albums": {WOLF: [{"title": "Kept"}, {"nothing": "usable"}, "junk"]},
+                "albums": {
+                    WOLF: [
+                        {"title": "Kept", "released": ""},
+                        {"nothing": "usable"},
+                        "junk",
+                    ]
+                },
                 "similar": {WOLF: [{"name": "Muddy Waters", "identifier": "mw"}, 7]},
             }
         ),

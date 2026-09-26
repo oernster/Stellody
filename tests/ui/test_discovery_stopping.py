@@ -262,7 +262,9 @@ class Wedged:
     def __init__(self) -> None:
         self.let_go = threading.Event()
 
-    def run(self, _albums, _ticked, _report, _cancelled, compilations=False):
+    def run(
+        self, _albums, _ticked, _report, _cancelled, compilations=False, years=None
+    ):
         """Sit there until the test says otherwise."""
         self.let_go.wait(WEDGED_LIMIT_S)
         return RunReport(outcome=RunOutcome.COMPLETED)
@@ -303,7 +305,7 @@ class Briefly:
     def __init__(self) -> None:
         self.began = threading.Event()
 
-    def run(self, albums, ticked, report, cancelled, compilations=False):
+    def run(self, albums, ticked, report, cancelled, compilations=False, years=None):
         """Work for a while, noticing a cancel the way a real run does."""
         self.began.set()
         deadline = time.monotonic() + BRIEF_RUN_S

@@ -26,7 +26,7 @@ nothing a filter could decide with.
 from __future__ import annotations
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QDialog, QPushButton, QTreeWidgetItem
+from PySide6.QtWidgets import QDialog, QPushButton
 
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, filtered_answer
@@ -34,17 +34,12 @@ from stellody.domain.shopping import WantedAlbum
 from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.results_pages import ResultsPages
 from stellody.ui.results_ticks import (
-    ARTIST_ROLE,
     TICKED,
+    album_on,
     every_row_across,
     is_tickable,
 )
 from stellody.ui.theme import Palette
-
-
-def _album_on(row: QTreeWidgetItem) -> WantedAlbum:
-    """The album a tickable row stands for."""
-    return WantedAlbum(artist=row.data(0, ARTIST_ROLE), title=row.text(0))
 
 
 class FilteringResults:
@@ -140,9 +135,9 @@ class FilteringResults:
             if not is_tickable(row):
                 continue
             if row.checkState(0) is TICKED:
-                ticked.add(_album_on(row))
+                ticked.add(album_on(row))
             else:
-                unticked.add(_album_on(row))
+                unticked.add(album_on(row))
         self._kept = (self._kept - unticked) | ticked
 
     def _forget_ticks(self) -> None:
@@ -152,5 +147,5 @@ class FilteringResults:
     def _put_ticks_back(self) -> None:
         """Tick every row just dealt whose album was ticked before."""
         for row in every_row_across(self.pages.trees):
-            if is_tickable(row) and _album_on(row) in self._kept:
+            if is_tickable(row) and album_on(row) in self._kept:
                 row.setCheckState(0, TICKED)

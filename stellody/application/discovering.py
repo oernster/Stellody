@@ -42,6 +42,7 @@ from stellody.application.candidate_genres import (
     CandidateGenres,
     ProgressReport,
 )
+from stellody.application.candidate_years import CandidateYears
 from stellody.application.discovery_ports import (
     CatalogueSource,
     GenreMemory,
@@ -78,6 +79,7 @@ from stellody.domain.discovery import (
     source_artists,
 )
 from stellody.domain.matching import ReleaseMatch
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.domain.text import credit_parts, is_various_artists
 
 # How many similar artists to ask for. Settled in PLAN.md and confirmed on
@@ -106,11 +108,14 @@ class Discovery:
         report: ProgressReport,
         cancelled: CancelledCheck,
         compilations: bool = False,
+        years: ReleaseYears = ANY_YEAR,
     ) -> RunReport:
         """Ask about every artist inside the ticked genres; say what was found.
 
         With `compilations`, the artists credited on compilations inside those
-        genres are asked about too. FR-D05, FR-D51.
+        genres are asked about too. FR-D05, FR-D51. With `years`, only music
+        released inside them is offered; who is asked about is unchanged.
+        FR-D58 to FR-D63.
 
         Asked through what is already remembered rather than of the services
         directly, so a question answered on some earlier day is not asked
@@ -139,7 +144,7 @@ class Discovery:
                 similarity=RememberingSimilarity(
                     self.similarity, kept, self.now, self.recall
                 ),
-            )._asked(albums, ticked, report, cancelled, compilations)
+            )._asked(albums, ticked, report, cancelled, compilations, years)
         finally:
             self.recall.remember(kept)
 
@@ -150,6 +155,7 @@ class Discovery:
         report: ProgressReport,
         cancelled: CancelledCheck,
         compilations: bool = False,
+        years: ReleaseYears = ANY_YEAR,
     ) -> RunReport:
         """The run itself, with the memory already standing in front of it."""
         artists = source_artists(albums, ticked, compilations)
@@ -169,7 +175,7 @@ class Discovery:
         # mean the same whichever stage happened to be asking them.
         silence = Silence()
         gathered, ending = self._gathered(
-            albums, artists, credits, ticked, report, cancelled, known, silence
+            albums, artists, credits, (ticked, years), report, cancelled, known, silence
         )
         if ending is not None:
             return ending
@@ -178,14 +184,26 @@ class Discovery:
         )
         if isinstance(kept, RunReport):
             return kept
-        return replace(gathered, outcome=RunOutcome.COMPLETED, gaps=kept, ticked=ticked)
+        # Last, so only the candidates the genres kept are asked about. FR-D63.
+        kept = CandidateYears(self.catalogue, self.pause).narrowed(
+            kept, years, report, cancelled, silence
+        )
+        if isinstance(kept, RunReport):
+            return kept
+        return replace(
+            gathered,
+            outcome=RunOutcome.COMPLETED,
+            gaps=kept,
+            ticked=ticked,
+            years=years,
+        )
 
     def _gathered(
         self,
         albums: tuple[Album, ...],
         artists: tuple[str, ...],
         credits: frozenset[str],
-        ticked: tuple[str, ...],
+        wanted: tuple[tuple[str, ...], ReleaseYears],
         report: ProgressReport,
         cancelled: CancelledCheck,
         known: dict[str, tuple[str, ...]],
@@ -198,6 +216,9 @@ class Discovery:
         in here are a stop and a connection that has gone; a single question
         nothing answered is neither of those and is asked again on a later
         pass.
+
+        `wanted` is the ticked genres with the years: the two things an
+        offered album is held to.
         """
         held = held_by_artist(albums)
         everyone = tuple(held)
@@ -225,7 +246,7 @@ class Discovery:
                         artist,
                         held.get(artist, frozenset()),
                         everyone,
-                        ticked,
+                        wanted,
                         cancelled,
                     )
                 except RunCancelled:
@@ -280,7 +301,7 @@ class Discovery:
         artist: str,
         held: frozenset[ReleaseMatch],
         everyone: tuple[str, ...],
-        ticked: tuple[str, ...],
+        wanted: tuple[tuple[str, ...], ReleaseYears],
         cancelled: CancelledCheck,
     ) -> Gaps | Ambiguity | None:
         """What one artist turned out to be missing.
@@ -307,6 +328,6 @@ class Discovery:
         )
         return Gaps(
             artist=artist,
-            albums=albums_missing(held, offered, ticked),
+            albums=albums_missing(held, offered, *wanted),
             artists=artists_missing(everyone, similar),
         )

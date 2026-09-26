@@ -63,6 +63,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from stellody.application.shopping import Shopping
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, ReleaseGroup
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui.dialogs import FirstStopDialog, title_label
 from stellody.ui.results_asking import AskingResults
 from stellody.ui.results_filtering import FilteringResults
@@ -108,6 +109,7 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         library: tuple[Album, ...] = (),
         remembered: dict[str, tuple[str, ...]] | None = None,
         parent: QWidget | None = None,
+        years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__(parent)
         self._asking = asking
@@ -142,7 +144,7 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         # The key and the busy strip together, since both explain the screen
         # rather than acting on it. Named here as well so what reads them does
         # not have to know which widget they ended up in.
-        self.top = ResultsTop(self._colour, ticked, self)
+        self.top = ResultsTop(self._colour, ticked, self, years)
         self.key = self.top.key
         self.asking_bar = self.top.bar
         outer.addWidget(self.top)

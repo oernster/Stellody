@@ -26,7 +26,8 @@ from stellody.domain.genres import chosen_in
 from stellody.domain.matching import ReleaseKind, ReleaseMatch, matched
 from stellody.domain.narrowing import Narrowing, narrowed_to
 from stellody.domain.overrides import AlbumField
-from stellody.domain.text import comparison_key, is_various_artists
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
+from stellody.domain.text import comparison_key, is_various_artists, year_of
 
 # The kinds worth offering. A plain album states none of them, so an empty set
 # is the ordinary case. A record whose kinds are not all in here is left alone:
@@ -44,15 +45,24 @@ class ReleaseGroup:
     into the catalogue happens here rather than at the boundary, so a source
     that states nothing and a source that states something unrecognised are the
     same case and are handled once.
+
+    `released` is the first release date the catalogue stated, as it stated
+    it; empty where it stated none. FR-D61.
     """
 
     title: str
     kinds: tuple[ReleaseKind, ...] = ()
     genres: tuple[str, ...] = ()
+    released: str = ""
 
     def __post_init__(self) -> None:
         if not self.title.strip():
             raise ValueError("an offered album needs a title")
+
+    @property
+    def year(self) -> int | None:
+        """The year this album was first released; None where nobody said."""
+        return year_of(self.released)
 
     @property
     def match(self) -> ReleaseMatch:
@@ -111,11 +121,13 @@ class LastRun:
 
     A file written before the genres were recorded carries none, which reads
     as an empty tuple rather than as a failure. Nothing about the gaps changes;
-    what is absent is only the line saying what was asked for.
+    what is absent is only the line saying what was asked for. The years the
+    run was asked for travel the same way and for the same reason. FR-D64.
     """
 
     gaps: tuple[Gaps, ...] = ()
     ticked: tuple[str, ...] = ()
+    years: ReleaseYears = ANY_YEAR
 
 
 def catalogue_genres(stated: tuple[str, ...]) -> tuple[str, ...]:
@@ -282,11 +294,13 @@ def albums_missing(
     held: frozenset[ReleaseMatch],
     offered: tuple[ReleaseGroup, ...],
     ticked: tuple[str, ...],
+    years: ReleaseYears = ANY_YEAR,
 ) -> tuple[ReleaseGroup, ...]:
     """The offered albums that are worth showing and are not already held.
 
     Order is the catalogue's own, since it arrived in whatever order the
-    catalogue thought best and this has no better opinion.
+    catalogue thought best and this has no better opinion. The years apply to
+    the album offered, never to what the library holds. FR-D60, FR-D61.
     """
     return tuple(
         group
@@ -294,11 +308,13 @@ def albums_missing(
         if group.is_offered
         and group.match not in held
         and wanted_by(group.genres, ticked)
+        and years.admits(group.year)
     )
 
 
 def everything_offered(
     released: tuple[ReleaseGroup, ...],
+    years: ReleaseYears = ANY_YEAR,
 ) -> tuple[ReleaseGroup, ...]:
     """What a candidate artist has worth showing, all of it unheld. FR-D31.
 
@@ -311,9 +327,13 @@ def everything_offered(
     on purpose.
 
     The offering rule is the one test that survives, because a hits package or
-    a mixed set is noise wherever it turns up.
+    a mixed set is noise wherever it turns up. The years are the other: a run
+    asked about the 1980s showing a candidate's 2020s on expanding would hand
+    back what it was asked to leave out. FR-D65.
     """
-    return tuple(group for group in released if group.is_offered)
+    return tuple(
+        group for group in released if group.is_offered and years.admits(group.year)
+    )
 
 
 def artists_missing(

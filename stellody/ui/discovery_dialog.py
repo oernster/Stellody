@@ -29,6 +29,7 @@ whole dialog can be driven with nothing behind it.
 
 from __future__ import annotations
 
+import datetime
 from collections.abc import Callable
 
 from PySide6.QtCore import QSize
@@ -36,6 +37,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWi
 
 from stellody.application.compilation_cost import Cost
 from stellody.domain.estimating import SECONDS_PER_MINUTE, rounded_minutes
+from stellody.domain.release_years import ReleaseYears, YearRefusal
 from stellody.shared import resources
 from stellody.ui.dialogs import (
     CLOSE_ICON,
@@ -47,6 +49,7 @@ from stellody.ui.dialogs import (
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.ringed_check import RingedCheckBox
+from stellody.ui.year_fields import YearFields, refusal_words
 
 TITLE = "Discover new music"
 FIND_LABEL = "Find"
@@ -110,8 +113,15 @@ def cost_sentence(cost: Cost) -> str:
     return COST.format(names=names, time=said)
 
 
-def _start_nothing(_genres: tuple[str, ...], _compilations: bool) -> None:
+def _start_nothing(
+    _genres: tuple[str, ...], _compilations: bool, _years: ReleaseYears
+) -> None:
     """A dialog handed no run to start starts nothing."""
+
+
+def _this_year() -> int:
+    """The current year, which the latest year worth asking about follows."""
+    return datetime.datetime.now(datetime.UTC).astimezone().year
 
 
 def _keep_nothing(_included: bool) -> None:
@@ -123,14 +133,18 @@ class DiscoveryDialog(FirstStopDialog):
 
     def __init__(
         self,
-        start: Callable[[tuple[str, ...], bool], None] = _start_nothing,
+        start: Callable[[tuple[str, ...], bool, ReleaseYears], None] = _start_nothing,
         parent: QWidget | None = None,
         compilations: bool = False,
         cost: Callable[[tuple[str, ...]], Cost] | None = None,
         remember: Callable[[bool], None] = _keep_nothing,
+        this_year: int | None = None,
     ) -> None:
         super().__init__(parent)
         self._start = start
+        # Read once as the dialog opens, since the latest year worth asking
+        # about follows it; handed in by a test standing in another year.
+        self._this_year = _this_year() if this_year is None else this_year
         # What including compilations would add for a set of ticks; None where
         # the window has no memory to price it from, so no line is shown
         # rather than a guess. FR-D52.
@@ -161,6 +175,13 @@ class DiscoveryDialog(FirstStopDialog):
         self.cost_line.setWordWrap(True)
         self.cost_line.setHidden(cost is None)
         outer.addWidget(self.cost_line)
+        outer.addSpacing(APART_PX)
+        # Which years to offer music from, both optional and empty on every
+        # opening. After the genres, since those choose who is asked; these
+        # only choose what comes back. FR-D58.
+        self.years = YearFields(self)
+        self.years.changed.connect(self._ticks_changed)
+        outer.addWidget(self.years)
         outer.addSpacing(APART_PX)
         self.message = QLabel(RESTING, self)
         self.message.setWordWrap(True)
@@ -206,8 +227,16 @@ class DiscoveryDialog(FirstStopDialog):
         ticked the only thing left to offer is clearing. Read off the boxes
         rather than remembered, since a listener ticking the last one by hand
         moves it without touching this.
+
+        Years that cannot be used take the action away too and say why in
+        the message line, where the dialog already talks. FR-D59.
         """
-        self.find_button.setEnabled(bool(self.chosen()))
+        reading = self.years.reading(self._this_year)
+        refused = isinstance(reading, YearRefusal)
+        self.message.setText(
+            refusal_words(reading, self._this_year) if refused else RESTING
+        )
+        self.find_button.setEnabled(bool(self.chosen()) and not refused)
         everything = self.grid.all_ticked()
         self.select_button.setText(CLEAR_LABEL if everything else SELECT_ALL_LABEL)
         # The picture says the same thing the words do. Clearing is the sweep
@@ -249,9 +278,11 @@ class DiscoveryDialog(FirstStopDialog):
 
         Guarded rather than merely disabled: the action is reachable from the
         keyboard while it is off, so a run over nothing could otherwise ask two
-        public catalogues about nobody.
+        public catalogues about nobody. Years that cannot be used are guarded
+        the same way, so a range nobody asked for is never run.
         """
-        if not self.chosen():
+        years = self.years.reading(self._this_year)
+        if not self.chosen() or isinstance(years, YearRefusal):
             return
-        self._start(self.chosen(), self.compilations.isChecked())
+        self._start(self.chosen(), self.compilations.isChecked(), years)
         self.accept()

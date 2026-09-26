@@ -41,6 +41,7 @@ from stellody.application.remembering import (
     RememberingCatalogue,
 )
 from stellody.domain.discovery import ReleaseGroup, everything_offered
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 
 
 def never_stopped() -> bool:
@@ -63,13 +64,17 @@ class Expansion:
     now: Clock = time.time
 
     def releases_of(
-        self, identifier: str, cancelled: CancelledCheck = never_stopped
+        self,
+        identifier: str,
+        cancelled: CancelledCheck = never_stopped,
+        years: ReleaseYears = ANY_YEAR,
     ) -> tuple[ReleaseGroup, ...]:
         """Everything worth showing by an artist the library holds nothing by.
 
-        The offering rule is applied here and nothing else is: there is no held
-        set to compare against, while the ticked genres already chose this
-        artist rather than choosing which of their records may be seen.
+        The offering rule and the run's years are applied here and nothing
+        else is: there is no held set to compare against, while the ticked
+        genres already chose this artist rather than choosing which of their
+        records may be seen. FR-D65.
 
         A refusal after every attempt, a source that cannot be reached and a
         stop all arrive as the exceptions the ports declare. They are not
@@ -85,7 +90,8 @@ class Expansion:
                     self.pause,
                     identifier,
                     patience=PATIENCE_FOR_ONE_ARTIST,
-                )
+                ),
+                years,
             )
         finally:
             self.recall.remember(kept)

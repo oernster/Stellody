@@ -24,12 +24,14 @@ from stellody.application.discovery_ports import DiscoveryResults, GenreMemory
 from stellody.application.expanding import Expansion
 from stellody.application.shopping import Shopping
 from stellody.application.values import DiscoveryProgress, RunReport
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui import standing_in
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_endings import STOPPED, SettlingDiscovery, WriteDiscovery
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.expansion_worker import ExpansionRunner
 from stellody.ui.results_dialog import ResultsDialog
+from stellody.ui.results_words import released_in
 from stellody.ui.run_estimate import RunEstimate
 from stellody.ui.settings_keys import FALSE, SETTING_DISCOVER_COMPILATIONS, TRUE
 from stellody.ui.standing_in import say_nothing
@@ -151,7 +153,10 @@ class Discovering(SettlingDiscovery):
             self._discovery_dialog = None
 
     def begin_discovery(
-        self, ticked: tuple[str, ...], compilations: bool = False
+        self,
+        ticked: tuple[str, ...],
+        compilations: bool = False,
+        years: ReleaseYears = ANY_YEAR,
     ) -> None:
         """Start a run over the artists inside these genres.
 
@@ -163,7 +168,7 @@ class Discovering(SettlingDiscovery):
         if self._discovery is None:
             return
         if not self._discovery_runner.start(
-            self._discovery, self._all_albums, ticked, compilations
+            self._discovery, self._all_albums, ticked, compilations, years
         ):
             self.statusBar().showMessage(STILL_STOPPING)
             return
@@ -179,6 +184,7 @@ class Discovering(SettlingDiscovery):
         widened = ", compilations included" if compilations else ""
         self._discovery_note(
             f"a discovery run started over {len(ticked)} genres{widened}"
+            f"{released_in(years)}"
         )
         show_discovery_running(self._tray.discover_button, True)
 
@@ -301,7 +307,7 @@ class Discovering(SettlingDiscovery):
         asking = (
             None
             if self._expansion is None
-            else ExpansionRunner(self._expansion, note=self._note)
+            else ExpansionRunner(self._expansion, note=self._note, years=answer.years)
         )
         dialog = ResultsDialog(
             answer.gaps,
@@ -312,6 +318,7 @@ class Discovering(SettlingDiscovery):
             # earlier, so what the screen says it looked in is what the run it
             # is showing actually looked in.
             ticked=answer.ticked,
+            years=answer.years,
             # What the Filter control judges by: the library as it stands and
             # what earlier runs learned candidates play. FR-D54.
             library=self._all_albums,

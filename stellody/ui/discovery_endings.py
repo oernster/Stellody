@@ -65,7 +65,7 @@ class SettlingDiscovery:
             or self._discovery_results is None
         ):
             return report
-        return carried_over(report, self._discovery_results.last_run().gaps)
+        return carried_over(report, self._discovery_results.last_run())
 
     def _settled(self, report: RunReport) -> tuple[str, bool, bool]:
         """What to tell somebody about a run that ended; what to open for it.

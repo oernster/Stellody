@@ -41,6 +41,8 @@ MOST_PAGES = 20
 # The primary types worth offering. A single is not a record somebody goes
 # looking for; everything else is not an album at all.
 PRIMARY_WANTED = frozenset({"album", "ep"})
+# Where a release group states when its first edition came out.
+FIRST_RELEASE = "first-release-date"
 # What the service calls a secondary type, in the vocabulary the domain uses.
 # A type absent from here is carried as OTHER rather than dropped, so a kind
 # nobody anticipated is excluded by the offering rule instead of passing as a
@@ -173,6 +175,10 @@ def _groups(entries: list[dict]) -> list[ReleaseGroup]:
                 title=title,
                 kinds=_kinds_of(entry),
                 genres=_named(entry, "genres"),
+                # The release group's earliest release, as stated: a year, a
+                # year and month or a whole date; empty where it states none.
+                # Measured on 2026-09-26. FR-D61.
+                released=str(entry.get(FIRST_RELEASE) or "").strip(),
             )
         )
     return found

@@ -14,6 +14,7 @@ typed again here.
 
 from __future__ import annotations
 
+from stellody.application.values import DiscoveryStage
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
@@ -23,6 +24,7 @@ from stellody.ui.discovery_dialog import (
     INCLUDE_COMPILATIONS_LABEL,
     SELECT_ALL_ICON,
 )
+from stellody.ui.discovery_progress import STAGE_NAMES
 from stellody.ui.guide_pictures import img
 from stellody.ui.results_foot import (
     COPY_ICON,
@@ -45,6 +47,7 @@ from stellody.ui.shop_rows import (
     PUT_BACK_LABEL,
 )
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
+from stellody.ui.year_fields import FROM_LABEL, TO_LABEL
 
 
 def _asking_html() -> str:
@@ -62,6 +65,15 @@ def _asking_html() -> str:
         "artists on its tracks are asked about instead. The line beneath the "
         "box says how many of them have not been looked up before and roughly "
         "what that adds; the first time, it can be many minutes.</p>"
+        f"<p><b>Years.</b> <b>{FROM_LABEL}</b> and <b>{TO_LABEL}</b> take a "
+        "year each; either may be left empty. They decide what is offered, "
+        "not who is asked about: a 1977 album you hold can still lead to a "
+        "record from 2025. An album is judged by the year it first came out, "
+        "so a recent reissue of an old record counts as old. One whose year "
+        "the catalogue does not state is left out while years are set. The "
+        "suggested artists are then checked too, which shows on the second "
+        f"bar as <b>{STAGE_NAMES[DiscoveryStage.DATING]}</b> and can add "
+        "minutes the first time.</p>"
         "<p><b>While it runs.</b> Two bars appear beside the button, one for "
         "each half of the run: the first asks what the artists you already "
         "hold have released and who resembles them, the second asks what each "

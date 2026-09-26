@@ -29,6 +29,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget
 
 from stellody.application.values import PERCENT
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui.results_words import (
     LEGEND_ALBUM,
     LEGEND_CANDIDATE,
@@ -62,6 +63,7 @@ class ResultsTop(QWidget):
         colour: Palette,
         ticked: tuple[str, ...] = (),
         parent: QWidget | None = None,
+        years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__(parent)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -72,7 +74,7 @@ class ResultsTop(QWidget):
         # about the rows: what was asked comes before how to read the answer.
         # Absent rather than empty where the file carries no genres, so a run
         # written by an older Stellody costs a line rather than showing a blank.
-        self.looked_in = self._looked_in_line(ticked)
+        self.looked_in = self._looked_in_line(ticked, years)
         self.withheld = self._wrapped("")
         self.withheld.hide()
         if self.looked_in is not None:
@@ -104,7 +106,9 @@ class ResultsTop(QWidget):
         line.setWordWrap(True)
         return line
 
-    def _looked_in_line(self, ticked: tuple[str, ...]) -> QLabel | None:
+    def _looked_in_line(
+        self, ticked: tuple[str, ...], years: ReleaseYears
+    ) -> QLabel | None:
         """The genres this run was scoped to; None where the file names none.
 
         The names are drawn in the ordinary text colour rather than in either
@@ -113,7 +117,7 @@ class ResultsTop(QWidget):
         artists. Wrapped for the reason the key is: eleven genres is an
         ordinary run and a list running off the edge is a list nobody can read.
         """
-        words = looked_in(ticked)
+        words = looked_in(ticked, years)
         if not words:
             return None
         return self._wrapped(words)

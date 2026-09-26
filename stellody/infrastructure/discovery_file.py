@@ -36,10 +36,18 @@ from stellody.application.carrying_over import carried_over
 from stellody.application.values import RunReport
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
 
 DISCOVERY_NAME = "discovered.json"
+# Where an album's first release date is kept. Its absence from an entry is
+# itself information: the entry was written before dates were. FR-D67.
+RELEASED = "released"
+# Where a run's years are kept, beside its genres. FR-D64.
+YEARS = "years"
+EARLIEST = "earliest"
+LATEST = "latest"
 CACHE_NAME = "artist-genres.json"
 CACHE_JOURNAL_NAME = "artist-genres.record"
 
@@ -70,6 +78,7 @@ def album_as(group: ReleaseGroup) -> dict:
         "title": group.title,
         "kinds": [str(kind) for kind in group.kinds],
         "genres": list(group.genres),
+        RELEASED: group.released,
     }
 
 
@@ -108,6 +117,7 @@ def _as_written(report: RunReport) -> dict:
         # question nobody wrote down, which is exactly what the results screen
         # was reported as failing to say.
         "ticked": list(report.ticked),
+        YEARS: {EARLIEST: report.years.earliest, LATEST: report.years.latest},
     }
 
 
@@ -140,7 +150,7 @@ def write(report: RunReport) -> pathlib.Path:
     """
     if not report.is_writable:
         raise ValueError("this run has nothing to write")
-    settled = carried_over(report, read().gaps)
+    settled = carried_over(report, read())
     where = discovery_path()
     _written(where, _as_written(settled))
     return where
@@ -180,7 +190,42 @@ def album_from(entry: object) -> ReleaseGroup | None:
         title=title,
         kinds=tuple(_kind_of(str(kind)) for kind in _listed(entry, "kinds")),
         genres=tuple(str(genre) for genre in _listed(entry, "genres")),
+        released=str(entry.get(RELEASED) or ""),
     )
+
+
+def _bound(held: dict, key: str) -> int | None:
+    """One bound of the years a file names; None where it names none.
+
+    Anything else there is refused rather than skipped, so a damaged pair is
+    never read as half of itself: a range narrowed on one side only is a
+    question nobody asked.
+    """
+    found = held.get(key)
+    if found is None:
+        return None
+    if isinstance(found, int) and not isinstance(found, bool):
+        return found
+    raise ValueError(f"{key} is not a year")
+
+
+def years_from(held: object) -> ReleaseYears:
+    """The years a file says its run was asked for; every year where none.
+
+    A file written before years were recorded names none, which is what that
+    run asked for. Neither a bound that is not a year nor a pair the wrong way
+    round can have been written by a run, so either reads as no years rather
+    than failing the whole file.
+    """
+    if not isinstance(held, dict):
+        return ANY_YEAR
+    stated = held.get(YEARS)
+    if not isinstance(stated, dict):
+        return ANY_YEAR
+    try:
+        return ReleaseYears(_bound(stated, EARLIEST), _bound(stated, LATEST))
+    except ValueError:
+        return ANY_YEAR
 
 
 def artist_from(entry: object) -> SimilarArtist | None:
@@ -235,7 +280,7 @@ def read() -> LastRun:
                 ),
             )
         )
-    return LastRun(gaps=tuple(found), ticked=ticked)
+    return LastRun(gaps=tuple(found), ticked=ticked, years=years_from(held))
 
 
 class FileDiscoveryResults:

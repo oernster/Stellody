@@ -27,7 +27,9 @@ class Started:
     def __init__(self) -> None:
         self.runs: list[tuple[tuple[str, ...], bool]] = []
 
-    def __call__(self, genres: tuple[str, ...], compilations: bool) -> None:
+    def __call__(
+        self, genres: tuple[str, ...], compilations: bool, years: object = None
+    ) -> None:
         """Record the genres and whether compilations were included."""
         self.runs.append((genres, compilations))
 
@@ -122,7 +124,7 @@ class Recording:
     def __init__(self) -> None:
         self.included: list[bool] = []
 
-    def run(self, albums, ticked, report, cancelled, compilations=False):
+    def run(self, albums, ticked, report, cancelled, compilations=False, years=None):
         """Note the choice, then end as a run that found nothing."""
         self.included.append(compilations)
         return RunReport(outcome=RunOutcome.COMPLETED)

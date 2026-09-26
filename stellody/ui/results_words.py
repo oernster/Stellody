@@ -27,6 +27,7 @@ from stellody.application.discovery_ports import (
     SourceUnavailable,
 )
 from stellody.domain.discovery import Gaps
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 
 # What each kind of row is called, in the fewest words that still say it. The
 # candidate's word appears on every candidate row, since that is the row that
@@ -110,6 +111,23 @@ GENRE = "genre"
 GENRES = "genres"
 GENRES_APART = ", "
 LOOKED_IN = "Looked in {count}: {genres}"
+# An album row: the title, then the year it first came out. FR-D68.
+ALBUM_ROW = "{title} ({year})"
+# What the run's years add to that line, where it had any. FR-D64.
+RELEASED_BETWEEN = "; released {earliest} to {latest}"
+RELEASED_FROM = "; released {earliest} or later"
+RELEASED_UNTIL = "; released {latest} or earlier"
+
+
+def released_in(years: ReleaseYears) -> str:
+    """The years a run was asked for, as the end of the looked-in line."""
+    if years.earliest is not None and years.latest is not None:
+        return RELEASED_BETWEEN.format(earliest=years.earliest, latest=years.latest)
+    if years.earliest is not None:
+        return RELEASED_FROM.format(earliest=years.earliest)
+    if years.latest is not None:
+        return RELEASED_UNTIL.format(latest=years.latest)
+    return ""
 
 
 def counted(count: int, single: str, several: str) -> str:
@@ -130,6 +148,17 @@ def source_row(found: Gaps) -> str:
     return SOURCE_ROW.format(artist=found.artist, counts=COUNTS_APART.join(counts))
 
 
+def album_row(title: str, year: int | None) -> str:
+    """An album, with the year it first came out where the catalogue said.
+
+    Nothing is added where it did not: a blank pair of brackets says less
+    than no brackets, while a guessed year would say something false.
+    """
+    if year is None:
+        return title
+    return ALBUM_ROW.format(title=title, year=year)
+
+
 def candidate_row(name: str, albums: int | None = None) -> str:
     """A candidate artist, named as one.
 
@@ -145,8 +174,12 @@ def candidate_row(name: str, albums: int | None = None) -> str:
     return CANDIDATE_ROW.format(artist=name, counts=counts)
 
 
-def looked_in(ticked: tuple[str, ...]) -> str:
+def looked_in(ticked: tuple[str, ...], years: ReleaseYears = ANY_YEAR) -> str:
     """What the run was asked to look in; nothing at all where it is unknown.
+
+    The years follow the genres where the run had any, since an answer scoped
+    to one decade that did not say so reads as a library missing nothing from
+    any other.
 
     The genres are said in the file's own order, which is the order they were
     handed over, rather than sorted here: two orderings of one list is two
@@ -160,7 +193,7 @@ def looked_in(ticked: tuple[str, ...]) -> str:
         return ""
     return LOOKED_IN.format(
         count=counted(len(ticked), GENRE, GENRES), genres=GENRES_APART.join(ticked)
-    )
+    ) + released_in(years)
 
 
 # What the pager under the answer says. The position is words rather than a

@@ -33,19 +33,32 @@ from stellody.domain.shopping import WantedAlbum
 
 # Where an album row keeps the artist it belongs to.
 ARTIST_ROLE = Qt.ItemDataRole.UserRole + 2
+# Where an album row keeps its bare title. The row's text says the year too,
+# which is for a person; what a shop is searched for is the title alone.
+TITLE_ROLE = Qt.ItemDataRole.UserRole + 3
 UNTICKED = Qt.CheckState.Unchecked
 TICKED = Qt.CheckState.Checked
 
 
-def make_tickable(item: QTreeWidgetItem, artist: str) -> QTreeWidgetItem:
-    """Give an album row a box and the artist it belongs to.
+def make_tickable(item: QTreeWidgetItem, artist: str, title: str) -> QTreeWidgetItem:
+    """Give an album row a box, the artist it belongs to and its bare title.
 
     Answers the row so this reads inline where the row is built.
     """
     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
     item.setCheckState(0, UNTICKED)
     item.setData(0, ARTIST_ROLE, artist)
+    item.setData(0, TITLE_ROLE, title)
     return item
+
+
+def album_on(row: QTreeWidgetItem) -> WantedAlbum:
+    """The album a tickable row stands for, read from what rides on it.
+
+    Never from the row's text, which says the year beside the title: read
+    from there, every shop would be searched for "Tripwires (2019)".
+    """
+    return WantedAlbum(artist=row.data(0, ARTIST_ROLE), title=row.data(0, TITLE_ROLE))
 
 
 def is_tickable(item: QTreeWidgetItem) -> bool:
@@ -137,7 +150,7 @@ def ticked_albums(trees: Sequence[QTreeWidget]) -> tuple[WantedAlbum, ...]:
     can check against the screen.
     """
     return tuple(
-        WantedAlbum(artist=row.data(0, ARTIST_ROLE), title=row.text(0))
+        album_on(row)
         for row in every_row_across(trees)
         if is_tickable(row) and row.checkState(0) is TICKED
     )

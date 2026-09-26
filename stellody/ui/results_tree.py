@@ -26,7 +26,7 @@ from stellody.ui.results_ticks import (
     is_tickable,
     make_tickable,
 )
-from stellody.ui.results_words import candidate_row, source_row
+from stellody.ui.results_words import album_row, candidate_row, source_row
 from stellody.ui.theme import Palette
 
 # Where a candidate artist's identifier is kept, so an answer arriving later
@@ -111,10 +111,11 @@ def album_item(album: ReleaseGroup, artist: str, colour: Palette) -> QTreeWidget
 
     The artist rides on the row as data: the row itself says only a title;
     the row above it says a name plus two counts, so reading an artist
-    back off the tree would mean parsing what was written for a human.
+    back off the tree would mean parsing what was written for a human. The
+    title rides on it too, since the row now says the year beside it.
     """
-    item = coloured(QTreeWidgetItem([album.title]), colour.text)
-    return make_tickable(item, artist)
+    item = coloured(QTreeWidgetItem([album_row(album.title, album.year)]), colour.text)
+    return make_tickable(item, artist, album.title)
 
 
 def candidate_item(

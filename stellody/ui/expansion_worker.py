@@ -25,6 +25,7 @@ from collections.abc import Callable
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 from stellody.application.expanding import Expansion
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui.results_words import plainly
 from stellody.ui.standing_in import say_nothing
 
@@ -48,11 +49,13 @@ class ExpansionWorker(QObject):
         expansion: Expansion,
         identifier: str,
         note: Note = say_nothing,
+        years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__()
         self._expansion = expansion
         self._identifier = identifier
         self._note = note
+        self._years = years
         self._cancelled = False
 
     def cancel(self) -> None:
@@ -69,7 +72,7 @@ class ExpansionWorker(QObject):
         """
         try:
             releases = self._expansion.releases_of(
-                self._identifier, lambda: self._cancelled
+                self._identifier, lambda: self._cancelled, self._years
             )
         except Exception as error:  # noqa: BLE001 - reported, never swallowed
             # The machine's account goes to the log and the person's account
@@ -96,10 +99,14 @@ class ExpansionRunner(QObject):
         expansion: Expansion,
         parent: QObject | None = None,
         note: Note = say_nothing,
+        years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__(parent)
         self._expansion = expansion
         self._note = note
+        # The years the answer being shown was asked for, so an expanded
+        # candidate shows only what the run was asked about. FR-D65.
+        self._years = years
         self._asking: dict[str, tuple[QThread, ExpansionWorker]] = {}
 
     def asking_about(self, identifier: str) -> bool:
@@ -111,7 +118,7 @@ class ExpansionRunner(QObject):
         if identifier in self._asking:
             return False
         thread = QThread(self)
-        worker = ExpansionWorker(self._expansion, identifier, self._note)
+        worker = ExpansionWorker(self._expansion, identifier, self._note, self._years)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.ready.connect(self._on_ready)

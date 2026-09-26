@@ -17,6 +17,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from stellody.application.discovering import Discovery
 from stellody.application.values import DiscoveryProgress, RunReport
 from stellody.domain.album import Album
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 
 # Long enough for the request in flight when the cancel arrives, short enough
 # that a run wedged on an unresponsive service cannot hold the quit for ever.
@@ -44,12 +45,14 @@ class DiscoveryWorker(QObject):
         albums: tuple[Album, ...],
         ticked: tuple[str, ...],
         compilations: bool = False,
+        years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__()
         self._discovery = discovery
         self._albums = albums
         self._ticked = ticked
         self._compilations = compilations
+        self._years = years
         self._cancelled = False
 
     def cancel(self) -> None:
@@ -71,6 +74,7 @@ class DiscoveryWorker(QObject):
                 self.progressed.emit,
                 lambda: self._cancelled,
                 compilations=self._compilations,
+                years=self._years,
             )
         except Exception as error:  # noqa: BLE001 - reported, never swallowed
             self.failed.emit(str(error))
@@ -105,12 +109,13 @@ class DiscoveryRunner(QObject):
         albums: tuple[Album, ...],
         ticked: tuple[str, ...],
         compilations: bool = False,
+        years: ReleaseYears = ANY_YEAR,
     ) -> bool:
         """Begin a run; False when one is already going."""
         if self._thread is not None:
             return False
         thread = QThread(self)
-        worker = DiscoveryWorker(discovery, albums, ticked, compilations)
+        worker = DiscoveryWorker(discovery, albums, ticked, compilations, years)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.progressed.connect(self._on_progress)

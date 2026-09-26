@@ -37,7 +37,7 @@ from stellody.application.remembering import (
     similar_key,
 )
 from stellody.application.values import RunOutcome, RunReport, SourceFailure
-from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 
 ROCK = ("Rock",)
 WOLF = "wolf-id"
@@ -184,7 +184,7 @@ class TestCarryingAnAnswerOver:
 
     def test_a_run_that_failed_at_nothing_keeps_its_own_answer(self) -> None:
         report = RunReport(outcome=RunOutcome.COMPLETED, gaps=(Gaps(artist="U2"),))
-        carried = carried_over(report, (Gaps(artist="Elbow"),))
+        carried = carried_over(report, LastRun(gaps=(Gaps(artist="Elbow"),)))
         assert carried.gaps == (Gaps(artist="U2"),), "and takes nothing else on"
 
     def test_the_artists_come_out_in_one_order_however_they_went_in(self) -> None:
@@ -196,7 +196,7 @@ class TestCarryingAnAnswerOver:
             gaps=(Gaps(artist="Wire"), Gaps(artist="Aztec Camera")),
             failed=(SourceFailure(artist="Móż", reason="refused"),),
         )
-        carried = carried_over(report, (Gaps(artist="Móż"),))
+        carried = carried_over(report, LastRun(gaps=(Gaps(artist="Móż"),)))
         assert [gaps.artist for gaps in carried.gaps] == [
             "Aztec Camera",
             "Móż",
@@ -210,7 +210,7 @@ class TestCarryingAnAnswerOver:
             gaps=(Gaps(artist="Elbow"),),
             failed=(SourceFailure(artist="U2", reason="refused"),),
         )
-        carried = carried_over(report, (known,))
+        carried = carried_over(report, LastRun(gaps=(known,)))
         assert carried.gaps == (Gaps(artist="Elbow"), known)
         assert carried.failed == (), "there is nothing left to report"
 
@@ -219,7 +219,7 @@ class TestCarryingAnAnswerOver:
             outcome=RunOutcome.COMPLETED,
             failed=(SourceFailure(artist="U2", reason="refused"),),
         )
-        carried = carried_over(report, ())
+        carried = carried_over(report, LastRun())
         assert carried.gaps == ()
         assert [entry.artist for entry in carried.failed] == ["U2"]
 

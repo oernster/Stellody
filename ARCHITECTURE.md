@@ -1200,6 +1200,13 @@ stage rather than one bar for the run: a single bar back at a tenth is either
 bad news or ordinary progress with nothing to say which, while a full bar above
 a climbing one states where the run is at a glance.
 
+**A run asked for some years only has a third stage.** It asks what each
+candidate kept by the second stage released, so those with nothing inside the
+years can go (`application/candidate_years.py`, FR-D63). It has no bar of its
+own: it follows the second, so it takes that bar over under its own name
+(`SHARES_BAR` in `ui/discovery_progress.py`). The years scope what a run
+offers, never whom it asks about; `source_artists` never sees them.
+
 **Genre is what makes the reach outward acceptable, rather than a convenience.**
 A run names the subset of artists somebody ticked, never an inventory of what
 they own. That is the whole of the difference between this and a recommender,

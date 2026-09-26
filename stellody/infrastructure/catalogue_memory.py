@@ -39,6 +39,7 @@ from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
 from stellody.infrastructure.discovery_file import (
+    RELEASED,
     album_as,
     album_from,
     artist_as,
@@ -86,6 +87,23 @@ def _albums(found: object) -> tuple[ReleaseGroup, ...]:
     )
 
 
+def _dated(found: object) -> bool:
+    """Whether an albums answer was written by a Stellody that kept dates.
+
+    One that did not is left out rather than read, so it is asked for again:
+    read, its albums would have no year, which a run with years set takes to
+    mean the catalogue stated none. FR-D67.
+
+    Only entries that read as albums are judged, so one damaged entry costs
+    itself rather than the answer it sits in.
+    """
+    return all(
+        RELEASED in entry
+        for entry in _listed(found)
+        if isinstance(entry, dict) and album_from(entry) is not None
+    )
+
+
 def _similar(found: object) -> tuple[SimilarArtist, ...]:
     """One similarity answer, with anything unreadable left out of it."""
     return tuple(
@@ -111,6 +129,7 @@ def _kept(held: object) -> Recollection:
         albums={
             str(identifier): _albums(found)
             for identifier, found in _mapping(held, ALBUMS).items()
+            if _dated(found)
         },
         similar={
             str(question): _similar(found)
@@ -163,7 +182,7 @@ def _put(kept: Recollection, kind: str, key: str, answer: object) -> bool:
     """
     if kind == IDENTIFIERS:
         kept.identifiers[key] = _identifiers(answer)
-    elif kind == ALBUMS:
+    elif kind == ALBUMS and _dated(answer):
         kept.albums[key] = _albums(answer)
     elif kind == SIMILAR:
         kept.similar[key] = _similar(answer)

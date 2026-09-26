@@ -57,9 +57,15 @@ RESTING = "Music discovery"
 STAGE_NAMES = {
     DiscoveryStage.LOOKING_UP: "Looking up",
     DiscoveryStage.NARROWING: "Checking styles",
+    DiscoveryStage.DATING: "Checking years",
 }
-# The order they happen in, which is the order they are stacked in.
+# The order they happen in, which is the order the bars are stacked in.
 STAGE_ORDER = (DiscoveryStage.LOOKING_UP, DiscoveryStage.NARROWING)
+# A stage with no bar of its own, drawn on the bar named here under its own
+# name. Checking years happens only while years are set and comes after the
+# styles, so it takes the second bar over rather than squeezing a third into a
+# slot built for two. FR-D63.
+SHARES_BAR = {DiscoveryStage.DATING: DiscoveryStage.NARROWING}
 # Named against the artist rather than the count, since the count is already
 # drawn and the name is the thing that will not fit.
 LOOKING_AT = "{stage}: {artist} ({done} of {total})"
@@ -261,7 +267,8 @@ class DiscoveryBars(QWidget):
 
     def rest(self) -> None:
         """Say what the space is for, with nothing under way."""
-        for bar in self.bars.values():
+        for stage, bar in self.bars.items():
+            bar.label = STAGE_NAMES[stage]
             bar.rest()
         self._say(RESTING)
 
@@ -272,9 +279,11 @@ class DiscoveryBars(QWidget):
         the second half is itself the news that the first half finished, since
         the run does not announce the ending of one stage separately.
         """
-        for stage in STAGE_ORDER[: STAGE_ORDER.index(progress.stage)]:
+        drawn_on = SHARES_BAR.get(progress.stage, progress.stage)
+        for stage in STAGE_ORDER[: STAGE_ORDER.index(drawn_on)]:
             self.bars[stage].finish()
-        self.bars[progress.stage].show_percent(progress.percent, brief)
+        self.bars[drawn_on].label = STAGE_NAMES[progress.stage]
+        self.bars[drawn_on].show_percent(progress.percent, brief)
         self._say(
             LOOKING_AT.format(
                 stage=STAGE_NAMES[progress.stage],

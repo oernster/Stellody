@@ -15,6 +15,7 @@ from enum import StrEnum
 from stellody.domain.discovery import Gaps
 from stellody.domain.health import LibraryIssue
 from stellody.domain.ordering import TrackCandidate
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.domain.track import TrackSource
 
 
@@ -207,6 +208,9 @@ class DiscoveryStage(StrEnum):
 
     LOOKING_UP = "looking-up"
     NARROWING = "narrowing"
+    # Only while years are set: what the candidates left after narrowing
+    # released, so those with nothing inside the years can go. FR-D63.
+    DATING = "dating"
 
 
 @dataclass(frozen=True, slots=True)
@@ -281,6 +285,8 @@ class RunReport:
     # readable: the file is written from this and the results screen says it
     # back, so the two cannot come from different places and disagree.
     ticked: tuple[str, ...] = ()
+    # The years the run offered music from, carried for the same reason.
+    years: ReleaseYears = ANY_YEAR
 
     @property
     def is_writable(self) -> bool:
