@@ -65,6 +65,7 @@ than code.
 | Shop | A digital music retailer, named by a row in the shop list. |
 | Template | A shop's search address holding an `{artist}` placeholder, an `{album}` placeholder or both. |
 | Ticked | An album whose tick box in the results dialog is checked. |
+| Title | An album's bare title. The results row reads "Title (year)" (FR-D68); a shop is still searched for the bare title and Copy puts the bare title on the clipboard: both read the artist and the title the row carries as data, never the row's text. Held by `tests/ui/test_discovery_years.py::TestAnAlbumRowSaysItsYear::test_a_shop_is_asked_for_the_title_alone`. |
 | Opening | Handing an address to the operating system's default browser. |
 
 Nothing here is ever a track. A run deals in artists and albums; so does this.

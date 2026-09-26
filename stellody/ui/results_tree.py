@@ -109,10 +109,10 @@ def coloured(item: QTreeWidgetItem, colour: str) -> QTreeWidgetItem:
 def album_item(album: ReleaseGroup, artist: str, colour: Palette) -> QTreeWidgetItem:
     """One album the library does not hold, with a box to tick it by.
 
-    The artist rides on the row as data: the row itself says only a title;
-    the row above it says a name plus two counts, so reading an artist
-    back off the tree would mean parsing what was written for a human. The
-    title rides on it too, since the row now says the year beside it.
+    The artist rides on the row as data, since the row above it says a name
+    plus two counts and reading an artist back off the tree would mean
+    parsing what was written for a human. The bare title rides on it too,
+    since the row says the year beside it.
     """
     item = coloured(QTreeWidgetItem([album_row(album.title, album.year)]), colour.text)
     return make_tickable(item, artist, album.title)

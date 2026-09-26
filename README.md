@@ -39,6 +39,17 @@ as it found it.
 That is not a promise on a page. It is checked by the test suite every time the
 checks run; if it ever stopped being true the suite would fail.
 
+## Who it is for
+
+Somebody with a collection of music files on their own computer, ripped or
+bought over the years, who wants it played well and left exactly as it is.
+
+It is not for anybody after a streaming service or a tag editor. It does not
+stream, does not copy your CDs, does not sync to a phone and will not
+reorganise your files by rewriting them. It will point your browser at a shop
+selling what you are missing; it sells nothing itself, holds no account with
+any shop and takes nothing from a sale.
+
 ## What you get
 
 - **A wall of album covers**, else a plain list, whichever suits you. Click a
@@ -141,7 +152,11 @@ checks run; if it ever stopped being true the suite would fail.
 - **What your collection is missing.** Discovery sits at the right end of the
   top tray, beside the appearance toggle and Help. Tick the genres worth
   looking in and Stellody asks two public music catalogues what those artists
-  made that you do not hold, along with who else sounds like them. Tick the box
+  made that you do not hold, along with who else sounds like them. Fill in
+  Released from and to (any year from 1900 to next year) to be offered only
+  albums first released inside those years; one whose catalogue entry states
+  no year is left out while years are set. The years narrow what it offers,
+  never which of your artists it asks about. Tick the box
   for compilations and it asks about the artists on their tracks too, saying
   first roughly how many minutes that adds. It reports as it goes, says roughly
   how long is left and stops the moment you ask it to or quit Stellody. Where it
@@ -150,8 +165,9 @@ checks run; if it ever stopped being true the suite would fail.
   with gaps in it never reads like a complete one. Every answer is kept the
   moment it arrives, so a run stopped or cut short loses nothing it had already
   paid for and a second attempt asks only for the rest. What it finds opens as
-  a list you can read and tick, dealt across the width of the screen and turned
-  a page at a time, then narrowed to some of the genres it looked in when the
+  a list you can read and tick, each album named with the year it first came
+  out where the catalogue states one, dealt across the width of the screen
+  and turned a page at a time, then narrowed to some of the genres it looked in when the
   answer runs long. From there Find in shops takes the ticked albums to the
   shop you choose, opening that shop's own search for each of them in your
   browser. The shops on offer are yours to add, edit, delete and reorder on the
@@ -217,11 +233,6 @@ The [features page](https://stellody.co.uk/features.html) has the lot.
   size it is built at, so the whole window fits a 13 inch 4K screen at 300%
   scaling. To choose a different size, set the `QT_SCALE_FACTOR` environment
   variable before starting Stellody; it uses yours rather than its own.
-- **It is a player, nothing more.** It does not stream, does not copy your CDs,
-  does not sync to a phone and will not reorganise your files by rewriting
-  them. It will point your browser at a shop selling what you are missing; it
-  sells nothing itself, holds no account with any shop and takes nothing from a
-  sale.
 - **It reads; it never repairs.** It tidies muddled labelling in its own view
   and lets you keep that, though it will never rewrite the files themselves:
   that is the whole point rather than a limitation. A control that cannot do
@@ -254,8 +265,9 @@ Five things reach outside your computer at all, so here are all five:
   details to include and which similarity algorithm to use) plus a user agent
   naming Stellody, its version and the project's contact address. The language
   asked for is fixed at any, rather than your computer's own: not your
-  library, not a count of it, not a word about you or your machine. Tick
-  nothing and nothing leaves.
+  library, not a count of it, not a word about you or your machine. The years
+  you choose are not sent either: an album's year is read from the answer that
+  comes back. Tick nothing and nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
   a run found, choose a shop and Stellody gives the browser one search address
   per album, carrying the artist, the title or both as that shop's address
@@ -281,6 +293,18 @@ where in the track it fell. Beside it, `stellody-startup.log` holds the
 reason when Stellody could not start. Neither is ever sent anywhere; either can
 be deleted whenever you like.
 
+## Stack
+
+| Concern | Choice |
+|---|---|
+| Language | Python 3.13 |
+| Interface | PySide6 |
+| Tags | mutagen |
+| Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
+| Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux |
+| Store | SQLite |
+| Packaging | Nuitka on Windows and macOS, Flatpak on Linux |
+
 ## Installing
 
 **Windows.** Download the setup program and run it. It installs just for you, so
@@ -303,10 +327,37 @@ of them: Stellody never writes to a music file, so on Linux it is not given the
 means to. Beyond that it asks for sound, the screen and the network, the last
 for the things listed under Your privacy.
 
+## Running from source
+
+Create a virtual environment named `venv` at the repository root, then activate
+it before installing; that is the interpreter the gate runs with.
+
+```
+python -m venv venv
+python -m pip install -r requirements-dev.txt
+python main.py
+```
+
+## Tests
+
+```
+.\gate.ps1
+```
+
+Runs black, flake8, ruff and the test suite with the project's own virtual
+environment (`venv\Scripts\python.exe`), stopping at the first that fails. The
+suite gates at 100% branch coverage over the domain and application layers.
+
+## Building
+
+Each platform builds on itself: `python buildexe.py` then
+`python buildinstaller.py` on Windows, `python builddmg.py` on macOS and
+`./build_flatpak.sh` on Linux.
+
 ## For developers
 
 [`DEVELOPMENT.md`](DEVELOPMENT.md) is how to run, test and build Stellody from
-source on Windows, macOS and Linux, then how the website is published;
+source on Windows, macOS and Linux in full, then how the website is published;
 [`TESTING.md`](TESTING.md) is how the tests are run and written.
 [`ARCHITECTURE.md`](ARCHITECTURE.md) states the invariants first, each linked to
 the test that enforces it. [`PLAN.md`](PLAN.md) holds the open work plus what is
@@ -318,7 +369,7 @@ the three formats proved by a generated fixture; [`OUTPUTS.md`](OUTPUTS.md)
 specifies choosing the output device. Each requirement names the test that
 proves it.
 
-## Supporting the project
+## Supporting Stellody
 
 Stellody is free and stays free. There is no paid tier, no licence key and no
 feature held back behind a donation. If it has replaced something you were

@@ -8,10 +8,10 @@ everything between a box somebody clicks and the list the shops are opened for.
 candidate artist with nothing fetched has no albums to look up, so neither kind
 of artist row gets a box. SHOPS.md FR-S01 and FR-S02.
 
-**Each album row carries the artist it belongs to.** The row itself says only a
-title; the row above it now says a name plus two counts, so reading an
-artist back off the tree would mean parsing what was written for a human. It is
-put on the row as data when the row is built instead.
+**Each album row carries the artist it belongs to and its bare title.** The row
+says the title with its year; the row above it says a name plus two counts, so
+reading either back off the tree would mean parsing what was written for a
+human. Both are put on the row as data when the row is built instead.
 """
 
 from __future__ import annotations

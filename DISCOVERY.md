@@ -297,14 +297,25 @@ in a quarter of a second with the same report. A name meaning nobody in
 particular is never worth a request, so it is dropped whether or not
 compilations are included.
 
+Amended on 2026-09-26, reported by Oliver: a run answered for "Dennis De Laat"
+and for "Dennis de Laat" as two artists. Measured the same day, it was worse
+than a heading shown twice: each spelling was compared only with the albums
+filed under itself, so an album held under one was offered back under the
+other, breaking FR-D11. Two names that differ only in case or spacing are now
+one source artist, asked about once under the spelling met first; what they
+hold is compared as one, on the same `comparison_key` FR-D13 compares artists
+on.
+
 Acceptance: Given an album whose probed tag names nothing and whose album edit
 states Reggae, when Reggae alone is ticked, then that album's artist is a source
 artist. Given a compilation in Reggae whose tracks credit Dilby and Tinlicker,
 when Reggae is ticked with compilations included, then Dilby and Tinlicker are
 source artists while Various Artists is not; with compilations left out, none of
-the three is.
+the three is. Given albums "First" by Dennis De Laat and "Second" by Dennis de
+Laat, when the catalogue offers First, Second and Third, then one source artist
+is asked about and only Third is offered.
 
-Verified by: `tests/application/test_discovery.py::test_sources_read_the_resolved_genre`, `tests/domain/test_stating_an_album.py::TestWhoADiscoveryAsksAbout::test_a_genre_stated_over_an_untagged_album_decides`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_is_asked_about_by_its_track_credits`, `tests/domain/test_discovery_gaps.py::test_a_compilation_left_out_asks_about_nobody`, `tests/domain/test_discovery_gaps.py::test_various_artists_is_never_a_source_artist`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_outside_the_ticks_is_not_asked_about`
+Verified by: `tests/application/test_discovery.py::test_one_artist_spelled_two_ways_is_asked_about_once`, `tests/domain/test_one_artist_two_spellings.py`, `tests/application/test_discovery.py::test_sources_read_the_resolved_genre`, `tests/domain/test_stating_an_album.py::TestWhoADiscoveryAsksAbout::test_a_genre_stated_over_an_untagged_album_decides`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_is_asked_about_by_its_track_credits`, `tests/domain/test_discovery_gaps.py::test_a_compilation_left_out_asks_about_nobody`, `tests/domain/test_discovery_gaps.py::test_various_artists_is_never_a_source_artist`, `tests/domain/test_discovery_gaps.py::test_an_included_compilation_outside_the_ticks_is_not_asked_about`
 
 ---
 
@@ -585,9 +596,10 @@ Verified by: `tests/domain/test_discovery_gaps.py::test_unstated_genre_is_kept_a
 
 Priority: Must
 
-Requirement: The toolbar shall carry one progress bar per stage of a run,
-stacked in the order the stages happen and each labelled with the name of its
-stage. While a run is under way each bar shall show how far through its own
+Requirement: The toolbar shall carry one progress bar for each of the two
+stages every run has, stacked in the order the stages happen and each labelled
+with the name of its stage; the third stage, run only while years are set, is
+drawn on the second bar under its own name (FR-D63). While a run is under way each bar shall show how far through its own
 stage the run is as a percentage; a stage that has finished shall be left full
 and a stage that has not begun shall show no percentage at all. On hover the
 pair shall name the stage and the artist currently being asked about, with that
@@ -690,8 +702,9 @@ Priority: Must
 Requirement: When a run completes, the discovery service shall replace the
 single discovery file, whose `gaps` object is keyed by source artist with each
 value holding that artist's candidate albums and candidate artists. Beside
-`gaps` the file carries the artists left unresolved, ambiguous or failed and the
-genres the run was scoped to.
+`gaps` the file carries the artists left unresolved, ambiguous or failed, the
+genres the run was scoped to and the years it was asked for (FR-D64), both
+bounds empty where none were set.
 
 Rationale: A file rather than a screen, because this stage exists to produce the
 resource the later stages consume. One file replaced rather than a directory of
@@ -1206,7 +1219,7 @@ With no years set, the run still asks nothing about a candidate's releases.
 
 Acceptance: Given a collapsed candidate artist, when it is expanded, then that
 artist's offered releases appear beneath it; given the run that produced the
-file, then it issued no request about that artist's releases.
+file had no years set, then it issued no request about that artist's releases.
 
 Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`, `tests/application/test_expanding.py::test_everything_that_artist_made_is_offered`, `tests/application/test_expanding.py::test_a_hits_package_is_still_noise`, `tests/application/test_discovery_narrowing.py::test_a_run_never_asks_what_a_candidate_released`
 
@@ -2042,7 +2055,7 @@ a month and expanding that artist later costs nothing. A candidate the catalogue
 could not be asked about cannot be shown to fit, so is not offered; nor is one
 who carries no identifier. The progress is reported on the second bar, named
 "Checking years", since a third bar would not fit the slot the two share.
-Known limit: the first stage's projection (FR-D37) sizes only the styles stage,
+Known limit: the first stage's projection (FR-D37) sizes only the second stage,
 so while years are set the time said during the first stage leaves this one
 out; once it begins, its own pace is measured as FR-D35 says.
 
@@ -2067,8 +2080,7 @@ Rationale: FR-D41 for the new question. An answer scoped to the 1980s that did
 not say so reads as a library with nothing missing from any other decade.
 
 Acceptance: Given a completed run over Rock for 1980 to 1989, when the results
-open, then the line reads that it looked in one genre, Rock, released 1980 to
-1989.
+open, then the line reads `Looked in 1 genre: Rock; released 1980 to 1989`.
 
 Verified by: `tests/infrastructure/test_release_dates_kept.py::TestTheDiscoveryFile`, `tests/ui/test_discovery_years.py::TestTheResultsSayTheYears`
 
@@ -2454,9 +2466,11 @@ a User-Agent naming the application, which NFR-PRIV-003 covers.
 ### 3.4 Data
 
 The discovery file is one JSON object. Its `gaps` member maps each source artist
-to what that artist is missing: candidate albums and candidate artists. The
-other members, `unresolved`, `ambiguous`, `failed` and `ticked`, carry the four
-things named below.
+to what that artist is missing: candidate albums and candidate artists. Each
+album carries its first release date under `released`, empty where the
+catalogue stated none.
+The other members, `unresolved`, `ambiguous`, `failed`, `ticked` and `years`,
+carry the five things named below.
 
 Settled 2026-09-06: **one file, beside the database in Stellody's own data
 directory, replaced by every completed run.** Not a directory of dated files,
@@ -2465,9 +2479,10 @@ candidate offered once and owned since. A run therefore states what is missing
 at the moment it finished, which is the only claim it can honestly make.
 
 Its JSON shape, written by `infrastructure/discovery_file.py`, is constrained by
-FR-D18 and by the four things the file carries beside the results: the artists
+FR-D18 and by the five things the file carries beside the results: the artists
 that could not be resolved (FR-D08), the ambiguous ones (FR-D09), the failures
-(FR-D22) and the genres the run was scoped to (FR-D41).
+(FR-D22), the genres the run was scoped to (FR-D41) and the years it was asked
+for (FR-D64).
 
 The genres were added on 2026-09-08. Until then the file was an answer to a
 question nobody had written down, so a run over Folk and a run over Rock

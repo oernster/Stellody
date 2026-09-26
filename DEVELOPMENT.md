@@ -19,7 +19,11 @@ publish its website. What the product does and why is in
 
 ## Running from source
 
+Create a virtual environment named `venv` at the repository root, then activate
+it before installing; that is the interpreter `gate.ps1` runs every check with.
+
 ```
+python -m venv venv
 python -m pip install -r requirements-dev.txt
 python main.py
 ```

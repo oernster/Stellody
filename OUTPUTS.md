@@ -212,7 +212,7 @@ Acceptance: Given the reference machine with the Focusrite inputs, the OBSBOT
 microphone and Stereo Mix present, when the list is shown, then none of them
 appears in it.
 
-Verified by: `tests/infrastructure/test_output_list.py::test_the_list_is_read_from_the_outputs_alone`, plus a demonstration on the reference machine.
+Verified by: `tests/infrastructure/test_output_list.py::TestTheRealList::test_the_list_is_read_from_the_outputs_alone`, plus a demonstration on the reference machine.
 
 ---
 
@@ -273,7 +273,7 @@ Acceptance: Given a track playing at 1:30 on the speakers, when the Focusrite
 is chosen, then the track goes on from 1:30 on the Focusrite; given a track
 paused at 1:30, then it is still paused at 1:30, now on the Focusrite.
 
-Verified by: `tests/application/test_choosing_an_output.py::test_choosing_reopens_in_place`, `tests/application/test_choosing_an_output.py::test_a_paused_track_stays_paused`
+Verified by: `tests/application/test_choosing_an_output.py::TestChoosing::test_choosing_reopens_in_place`, `tests/application/test_choosing_an_output.py::TestChoosing::test_a_paused_track_stays_paused`
 
 ---
 
@@ -293,7 +293,7 @@ Acceptance: Given the Focusrite held exclusively by another application, when
 it is chosen, then the music plays on the system default and the status line
 names the Focusrite with the reason the device gave.
 
-Verified by: `tests/application/test_choosing_an_output.py::test_a_refusal_falls_back_to_the_default`, `tests/ui/test_output_messages.py::test_a_refusal_is_said`
+Verified by: `tests/application/test_choosing_an_output.py::TestARefusal::test_a_refusal_falls_back_to_the_default`, `tests/ui/test_output_messages.py::test_a_refusal_is_said`
 
 ---
 
@@ -330,7 +330,7 @@ and a track plays, then it plays on the system default, the status line says
 the Bathys is not connected and the list still names the Bathys, with System
 default ticked (Amendment 5).
 
-Verified by: `tests/application/test_choosing_an_output.py::test_a_missing_choice_plays_on_the_default`, `tests/ui/test_output_messages.py::test_a_missing_device_is_said_once`
+Verified by: `tests/application/test_choosing_an_output.py::TestAMissingChoice::test_a_missing_choice_plays_on_the_default`, `tests/ui/test_output_messages.py::test_a_missing_device_is_said_once`
 
 ---
 
@@ -443,7 +443,7 @@ Focusrite, then the next track plays on the Focusrite. Given a track playing
 on the speakers, when the Px7 connects and becomes the default, then the track
 plays on through the Px7 from where it was, with no press.
 
-Verified by: `tests/infrastructure/test_output_devices.py`, `tests/application/test_choosing_an_output.py::test_the_default_is_followed`, `tests/application/test_a_device_arriving.py`, `tests/ui/test_output_composition.py::test_whether_the_default_left_reaches_the_transport`
+Verified by: `tests/infrastructure/test_output_devices.py`, `tests/application/test_choosing_an_output.py::TestTheSystemMovingItsDefault::test_the_default_is_followed`, `tests/application/test_a_device_arriving.py`, `tests/ui/test_output_composition.py::test_whether_the_default_left_reaches_the_transport`
 
 ---
 

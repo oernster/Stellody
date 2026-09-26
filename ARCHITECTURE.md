@@ -30,6 +30,7 @@ write new ones is in [`TESTING.md`](TESTING.md).
 | 19 | No test holds the machinery to reach the network, except the named few that open nothing beyond this machine. | `tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network` |
 | 20 | Every runtime pin in `requirements.txt` is the version installed in the environment the suite runs in. | `tests/structural/test_environment.py` |
 | 21 | No audio file of a format proved by a generated fixture sits in the tree. | `tests/structural/test_no_committed_audio.py` |
+| 22 | Halving is stated once: `HALF` is defined in `stellody/ui/theme.py` and in no other module of the package or of the suite. | `tests/structural/test_half_has_one_home.py::test_half_is_defined_only_in_the_theme` |
 
 Invariants 1 and 2 are the reason this project exists. The library that
 Stellody was built for was damaged by a player that wrote tags back into the
@@ -618,7 +619,8 @@ carries a whole instant, `2003-08-05T12:00:00Z`, which read straight out put the
 timestamp on the row beside the genre. Taking the first four characters happens
 to work on both and is not the general answer, since a date is not always
 written year first. `year_of` in `stellody/domain/text.py` is the one place that
-decides; both the album pane and the row text read it from there. The tag
+decides; the album pane, the row text, the identity handle and a catalogue's
+release dates all read it from there. The tag
 itself is kept exactly as the file wrote it, which invariant 1 requires anyway.
 
 **What a format does not state is reported as absent, never invented.** Measured
@@ -1200,12 +1202,27 @@ stage rather than one bar for the run: a single bar back at a tenth is either
 bad news or ordinary progress with nothing to say which, while a full bar above
 a climbing one states where the run is at a glance.
 
-**A run asked for some years only has a third stage.** It asks what each
-candidate kept by the second stage released, so those with nothing inside the
-years can go (`application/candidate_years.py`, FR-D63). It has no bar of its
-own: it follows the second, so it takes that bar over under its own name
-(`SHARES_BAR` in `ui/discovery_progress.py`). The years scope what a run
-offers, never whom it asks about; `source_artists` never sees them.
+**A run asked for some years only has a third stage.** The years are two
+optional fields in the Discover new music dialog (`ui/year_fields.py`), read by
+`read_years` in `domain/release_years.py` into a `ReleaseYears`: both bounds
+inclusive, from 1900 to the year after the current one. A year outside that or
+a range the wrong way round is refused and said rather than corrected. The
+third stage asks what each candidate kept by the second stage released, so
+those with nothing inside the years can go (`application/candidate_years.py`,
+FR-D63). It asks through the same catalogue memory an expansion does, so an
+answer paid for here makes expanding that candidate free; with no years set it
+asks nothing at all. It has no bar of its own: it follows the second, so it
+takes that bar over under its own name, "Checking years" (`SHARES_BAR` in
+`ui/discovery_progress.py`).
+
+The years scope what a run offers, never whom it asks about; `source_artists`
+never sees them. An album is judged by its release group's first release date,
+which `infrastructure/catalogue.py` reads under `FIRST_RELEASE` and
+`ReleaseGroup.year` turns into a year through `year_of`. An album whose date
+nobody stated cannot be shown to fit, so it is left out while years are set.
+`albums_missing` and `everything_offered` in `domain/discovery.py` both ask
+`ReleaseYears.admits`, so an expanded candidate shows only albums inside the
+years as well (FR-D65).
 
 **Genre is what makes the reach outward acceptable, rather than a convenience.**
 A run names the subset of artists somebody ticked, never an inventory of what
@@ -1284,7 +1301,11 @@ pass, so an estimate built on the permitted rate would read as confident while
 being wrong by minutes on exactly the runs where somebody needs it. The second
 stage is projected from the candidates the first has turned up, because covering
 only the first stage would understate the wait by the larger half of it. Under
-two finished units it says nothing rather than swinging.
+two finished units it says nothing rather than swinging. While years are set
+the projection still sizes the second stage alone, so what is said during the
+first leaves the third stage out; once the third begins, its own pace is read
+as any stage's is, the reading starting afresh at every change of stage
+(`ui/run_estimate.py`). `DISCOVERY.md` records that limit under FR-D63.
 
 **Colour never carries the meaning alone.** Source artists and candidate artists
 are drawn apart; every row also states its kind in words. That was reported
@@ -1391,7 +1412,7 @@ library: judged by the genres on the listener's own albums, so nobody the
 library holds is withheld for want of a catalogue genre. A candidate is not in
 the library, so the memory above is all there is to judge them by; one it
 records nothing for is withheld and counted rather than guessed at.
-`filtered_answer` in `domain/discovery.py` is that rule.
+`filtered_answer` in `domain/discovery_filter.py` is that rule.
 `ui/results_filtering.py` deals the pages again from what it leaves rather than
 hiding rows, since pages are dealt by height and hidden rows would leave columns
 half empty. Dealing again throws the rows away, so the ticks and every
@@ -1399,6 +1420,15 @@ candidate's fetched albums are held by the dialog then written back after each
 deal; Copy and Find in shops still read only the rows on screen.
 `ui/results_asking.py` was split out of `results_dialog.py` when the genre
 filter arrived, to make the room.
+
+**A row says the year an album first came out; a shop is asked for the title
+alone.** `album_row` in `ui/results_words.py` writes the title with the year
+after it in brackets (FR-D68); where the catalogue stated no date it writes the
+title alone. The bare title rides on the row under `TITLE_ROLE` beside the artist,
+set by `make_tickable` in `ui/results_ticks.py`. `album_on` there is its one
+reader, used by `ticked_albums` and by `ui/results_filtering.py` as it holds
+the ticks across a deal; read off the row's text instead, every shop would be
+searched for the year as well.
 
 **One shops dialog serves the results screen; closing it ends the round.**
 `ui/shops_dialog.py` is that dialog. A second press brings it back rather than
@@ -1417,7 +1447,10 @@ results screen reads both in ONE reading, for the reason the estimate takes one
 reading of the pace: a file replaced between two reads would put one run's
 question above another run's answer. Reading the genres from the ticks handed
 over when the run started would be the same fault by a different route, since
-the screen is built from the file rather than from the run.
+the screen is built from the file rather than from the run. The years a run was
+limited to are kept beside its genres for the same reason, under `years`
+(FR-D64); the results screen names them on the line saying what the run looked
+in. A file written before years were kept reads as every year.
 
 **An answer says who it could not be given for.** Three questions can end
 without a usable one: the source refuses, the catalogue holds nobody under a
@@ -1445,8 +1478,12 @@ failed to reach.
 **A run may correct what is known but may not take it away.** An artist a run
 cannot reach keeps the answer an earlier run got for it, rather than the file
 being replaced by a worse one; only an artist THIS run failed on is carried
-over, so an artist no longer in the library still falls away.
-`application/carrying_over.py` is the whole rule and is pure, which is what
+over, so an artist no longer in the library still falls away. What is carried
+keeps to this run's years (FR-D66): `carried_over` is handed the earlier run as
+a `LastRun`, holds the albums it carries to the years now asked for, each
+carrying its date, then carries that artist's candidate artists only where the
+earlier run was asked for the same years, since they were judged against those
+alone. `application/carrying_over.py` is the whole rule and is pure, which is what
 lets the file writer stay about files. The window reads the same rule before
 it speaks: `_carried` in `ui/discovery_endings.py` passes a finished run's
 report through `carried_over`, so the sentence and the shortfall button never
@@ -1792,8 +1829,9 @@ Flatpak's PortAudio, built against ALSA with no PulseAudio host API, lists
 `default`, `pulse` and the hardware, so not one name appears on both sides and
 every choice was refused. Qt's identity for a device there IS the sink's own
 name, which the sound server answers to. So on any platform that is neither
-Windows nor macOS, `open_named` opens the stream on PortAudio's `pulse` device
-with `PULSE_SINK` naming the chosen sink (`infrastructure/pulsesink.py`), held
+Windows nor macOS, `open_named` in `infrastructure/output_list.py` opens the
+stream on PortAudio's `pulse` device with `PULSE_SINK` naming the chosen sink
+(the routing is `infrastructure/pulsesink.py`), held
 for that open alone and put back afterwards, since a sink is chosen as a stream
 connects. A machine with no sound server has no `pulse` device and falls back
 to the match by name; a sink name nothing carries opens on the default.
@@ -2038,7 +2076,7 @@ holds it over the real window, each part proved by taking it out.
 | A dialog's native window exists before anything sizes it | Measured on Windows across a wide primary at 100 percent scaling beside 13 inch panels at 250 and 300 percent: a dialog sized before its native window existed opened at its width multiplied by the panel's scale whenever that product passed the primary's physical width, which is how the discovery results screen came to open across all four displays. `FirstStopDialog.__init__` in `stellody/ui/dialogs.py` therefore calls `self.winId()` before a subclass sizes itself on every platform but Wayland, so every dialog built on it has its window first; on Wayland, making the window early was measured on 2026-09-17 to corrupt the window behind it; `makes_window_early` is that rule. The offscreen platform has one screen at one scale and cannot show the wrong size, so what the suite pins is the precondition: `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` asserts that each dialog `stellody/ui` builds on `FirstStopDialog` has its window before it is shown. |
 | A prompt waved away decides nothing | The close prompt set its answer to the offered default the moment it was built, so being dismissed reported exactly what choosing Minimise to tray reported and the caller could not tell them apart: the cross on it minimised the window, while with the remember box ticked it wrote that non-answer down as the standing behaviour. The answer now starts at ASK, which is the word the settings already use for nobody has said; only a button moves it off that. A non-answer takes the whole press back: the window neither leaves nor hides, nothing is written. |
 | The waiting after a refusal is spent on a pass, never on one artist | Measured on 2026-09-08 over the whole library: MusicBrainz refused 45 of 82 asks with "the MusicBrainz web server is currently busy", which is its load rather than our rate, so pacing more slowly would not have helped. A run that waited each refusal out where it stood spent nine seconds a request against a pace of 1.1 and reported three hours remaining. It asks once more on the spot and then puts that artist back for a later pass, so the waiting happens during the next artist's turn and costs nothing; each pass is smaller than the one before. `application/passing.py` is the bookkeeping and asks nothing itself, which is what makes when to stop testable on its own. |
-| A run asks a catalogue only what it has never been told | Two runs over one library gave different answers, because a run remembered nothing and so asked MusicBrainz everything again every time: measured on 2026-09-08, 27 requests in 65 seconds with 21 refused, which turned seven source artists into one. What either catalogue says is now kept in `catalogue-memory.json` and read before anything is asked, so the answer is a property of the library rather than of how a service felt that minute. `application/remembering.py` holds the rule and owns no file; `infrastructure/catalogue_memory.py` holds the file and owns no rule. An answer stands for thirty days and is then asked about again, which is Oliver's own statement of what is wanted: the same run should differ over weeks, because the catalogues change; it should not differ over five minutes, because they do not. A refresh that is refused costs nothing, since that artist is carried over from the file like any other failure. Saving lays the copy being saved over what the file already holds, keeping the later answer to each question (`merged`), since a run, its price and an expansion can each hold a copy at once; saving one whole used to put back whatever the others had learned since it was taken. `composition.py` makes one `FileCatalogueMemory` for all three, so its lock is the one lock over the file. |
+| A run asks a catalogue only what it has never been told | Two runs over one library gave different answers, because a run remembered nothing and so asked MusicBrainz everything again every time: measured on 2026-09-08, 27 requests in 65 seconds with 21 refused, which turned seven source artists into one. What either catalogue says is now kept in `catalogue-memory.json` and read before anything is asked, so the answer is a property of the library rather than of how a service felt that minute. `application/remembering.py` holds the rule and owns no file; `infrastructure/catalogue_memory.py` holds the file and owns no rule. An answer stands for thirty days and is then asked about again, which is Oliver's own statement of what is wanted: the same run should differ over weeks, because the catalogues change; it should not differ over five minutes, because they do not. A refresh that is refused costs nothing, since that artist is carried over from the file like any other failure. Saving lays the copy being saved over what the file already holds, keeping the later answer to each question (`merged`), since a run, its price and an expansion can each hold a copy at once; saving one whole used to put back whatever the others had learned since it was taken. `composition.py` makes one `FileCatalogueMemory` for all three, so its lock is the one lock over the file. An albums answer written before release dates were kept is left out as the memory is read, from the file and from its running record alike, so it is asked for again (`_dated` in `infrastructure/catalogue_memory.py`, FR-D67): read, its albums would carry no year and a run with years set would drop every one of them. |
 | The answer is turned a page at a time, with every page built up front | Three columns of a whole library are three lists nobody reaches the end of; a scrollbar says how much is left without saying where in the answer somebody is. A page now fills every one of its columns, the depth following the height exactly as the columns follow the width, so a laptop panel gets a shorter page rather than the same page with more in it. Filling every column rather than refusing to overflow one is Oliver's ruling of 2026-09-09, made against the first paged whole-library run, where some pages drew three columns and others drew one: measured from that answer, 215 artists run from 1 row to 109 with a median of 23 against a column of 30, so an artist taller than a column is the ordinary case and a page that will not overflow one cannot be filled. A column holding a tall artist scrolls instead, which is one artist's worth of scrolling rather than the library's; that answer went from 99 pages to 42, every one but the last carrying three columns. Every page is built when the dialog opens and kept: a tick is held by the row it is on, so building a page on the way to it would quietly drop whatever was ticked on the one left behind; what is ticked is what the shop controls are for. Nothing is fetched either way. `ui/results_room.py` holds the arithmetic and draws nothing, `results_pages.py` puts the pages on screen and `results_pager.py` is the two controls; the row height is stated rather than measured, since the offscreen platform reports no font families and being wrong costs a scrollbar rather than an error. The pager stands in the SAME row as the shop controls and the way out, which is `results_foot.py`: Oliver ruled on 2026-09-09 that two stacked rows beneath the answer read as two feet. That extraction is also what took the dialog back out of the 381 to 400 danger band. |
 | Every block the device ran dry before it arrived is written to the diary | Reported by Oliver on 2026-09-16: static during playback while a Nuitka build of another project held all 24 cores, then again on the installed build between 2:22 and 2:50 of one track. The cause was not known at first. The first version of `stellody/infrastructure/dropouts.py` trusted PortAudio's underflow answer and wrote nothing through that run; measured afterwards on the same shared WASAPI stream, the answer stayed no after the device was left for 0.2, 0.5 and 1.0 seconds against a 23 ms buffer. Its test had passed against a fake stream, which is how a blind instrument shipped. The watch now reads the room in the buffer instead: a started stream has the whole buffer free (1036 frames on that device) and the room was measured moving between 53 and 815 frames while writes kept up, then back to the whole buffer after every gap. A write that finds the whole buffer free follows a device with nothing left to play. Each one is noted with where in the track it happened and how long the feeder was away from the device, split into reading, shaping and waiting to run, since each points at a different cause. `tests/infrastructure/test_dropouts.py` starves the machine's real output device on purpose and requires the watch to see it; that test and the feeder test were proved by planting a watch that cannot see an empty buffer. A silent reproduction on that machine, the shipped engine decoding noise at volume 0 with a busy process on each of the 24 cores, saw no dropouts in 20 seconds, so saturating the processors alone does not reproduce it; a build's disk and memory load is not ruled out. The visualiser's measuring moved to `stellody/infrastructure/metering.py` in the first change to keep `audio.py` out of the danger band. The first report through that watch was one empty buffer 13 seconds before the app was closed, with the feeder away 1 ms, while Oliver heard static in that window. That pointed at a gap the check between writes cannot see: a write of 4096 frames into a 23 ms buffer needs the thread woken every twenty milliseconds until the block is in, so a late wake leaves the device dry mid-write. It is now caught by arithmetic, since a device cannot play faster than real time: a write that took longer than the audio it carried plus the audio already buffered held a silence of the difference. The clock is `perf_counter`, as `monotonic` moves in 15.6 ms steps on Windows. Checked on the real device: every tenth write split by a 200 ms stall gave 17 dry spells of 161 to 181 ms and no note for the writes between; holding the read lock for 300 ms three times gave three notes. The same silent reproduction with the watch complete, with the process also dropped to idle priority under the 24 busy cores, still saw nothing. The diary then named it: under a Nuitka build, 32 dropouts in 16 seconds, 30 of them silences of 4 to 46 ms inside a write, with 0 ms reading and 0 ms shaping, so the feeder was woken tens of milliseconds late against a 23 ms queue. The fix is the queue: `stellody/infrastructure/buffering.py` asks every stream for two blocks: shared and exclusive on Windows, the direct stream on macOS, the mixer everywhere. Measured on the same device through the shipped opener: shared opened 195 ms (8633 frames), exclusive 209 ms (9216 frames), writes a steady 94 ms and stopping 0 ms. `lead_frames` now counts that queue, so the position and the pictures are put back by it; `tests/infrastructure/test_buffering.py` requires the real device to grant two blocks and the lead to count them, each proved by planting its removal. Heard afterwards under a build: the static was gone. Not yet heard: whether a seek is noticeably later now that up to 195 ms is queued rather than 23. The other platforms' mixer path takes the same request unmeasured. That run's diary still carried 61 notes, each naming a 40 ms buffer, which exposed a fault in the watch rather than in playback: it read the buffer's size from the room at every start; a queue survives a stop, measured at 374 frames free on a restart against 8633 on a fresh start. A resume that found part of the buffer still queued taught the watch a buffer a fifth of its size, so a buffer merely part empty read as dry. The size is now read once per stream, on its first start; `tests/infrastructure/test_dropouts.py` holds a pause and a resume against a queue that survives the stop and failed before that change. The same measurement settles what a pause does to the queue: it is kept, so a resume does not skip. |
 | One dropped connection no longer ends a run; a run of them still does | Reported by Oliver on 2026-09-09. A run of fifty minutes over his whole library ended on its first answer of nothing at all, which was a single ListenBrainz request closed after 64 milliseconds: measured from that night's diary, the only one in 7252 lines. The judgement that continuing with no network is many slow ways of saying so was right; the proof it was reading was one sample. An artist nothing answered about now goes round again exactly as a refused one does; the run gives up on the connection only after five questions in a row have been met with nothing, with anything at all answering in between starting that count again. The count is one for the whole run rather than one a half, since the connection is one thing; `Silence` in `application/gathering.py` holds it. Being sure is cheap here: the run paces itself at about a second a question. |
