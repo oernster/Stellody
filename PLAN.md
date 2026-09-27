@@ -117,7 +117,9 @@ somebody decides on one.
   it; the update check asks GitHub about Stellody, sending nothing whatever
   about the machine asking; a discovery run names the artists inside the genres
   somebody ticked, which is a subset they chose rather than an inventory of
-  what they own. Handing an address to a browser is not another, whether it
+  what they own; for a name the catalogue knows under several artists it also
+  sends up to three titles held under that name, to tell which one is meant.
+  Handing an address to a browser is not another, whether it
   goes to the donation page or to a shop: the address goes outward and the
   browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the

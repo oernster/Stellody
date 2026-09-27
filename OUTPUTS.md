@@ -97,7 +97,8 @@ Out, so that none of it is argued twice:
 
 ### 1.6 References
 
-- `ARCHITECTURE.md`, the exclusive output section and invariant 12.
+- `ARCHITECTURE.md`: invariant 12, the section "Reaching the sound device"
+  (which covers exclusive output) and the section "Choosing the output device".
 - `infrastructure/output_devices.py`, the measurements of 2026-09-14.
 - `FORMATS.md`, for the house form this follows.
 
@@ -399,7 +400,7 @@ Acceptance: Given Stellody running with the list open, when the Bathys
 connects, then the Bathys appears in the list; when it disconnects, then it
 leaves the list unless it is the choice (FR-O14).
 
-Verified by: `tests/ui/test_output_list_follows.py::test_a_new_device_appears`, `tests/ui/test_output_list_follows.py::test_a_removed_device_leaves`, plus a demonstration with the Bathys on the reference machine.
+Verified by: `tests/ui/test_output_list_follows.py::test_a_new_device_appears`, `tests/ui/test_output_list_follows.py::test_a_removed_device_leaves`, plus the live test of 2026-09-19 with the Px7 S3 (A-O02).
 
 ---
 
@@ -548,7 +549,8 @@ Verified by: `tests/ui/test_output_button.py::test_a_second_press_closes_it`,
 device connects or disconnects, the output list shall reflect it within 2
 seconds of the operating system's own Sound settings showing the change,
 measured on the reference machine by connecting and disconnecting the Bathys
-five times with the list open. Priority: Must.
+five times with the list open. Not yet measured: that is the timed probe of
+OQ-O4, which is still open. Priority: Must.
 
 **NFR-O-PERF-002 Keeping the list current never interrupts the music.** While
 a track plays, a change to the device list shall not take PortAudio's list
@@ -557,7 +559,8 @@ again, unless the change is one FR-O11 or FR-O12 acts on. Verified by
 which counts calls to the rescan. Priority: Must.
 
 **NFR-O-PRIV-001 Nothing leaves the machine.** Device names and identities
-are held in Stellody's own settings and log alone. Held by the existing
+are held in Stellody's own settings alone; neither of its logs records them.
+Held by the existing
 invariant 12 test, which this change must leave green. Priority: Must.
 
 **NFR-O-MAINT-001 The house limits hold.** Domain and application keep 100%

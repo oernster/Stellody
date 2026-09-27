@@ -152,7 +152,11 @@ any shop and takes nothing from a sale.
 - **What your collection is missing.** Discovery sits at the right end of the
   top tray, beside the appearance toggle and Help. Tick the genres worth
   looking in and Stellody asks two public music catalogues what those artists
-  made that you do not hold, along with who else sounds like them. Fill in
+  made that you do not hold, along with who else sounds like them. A name the
+  catalogues know under several artists is settled by who is credited on titles
+  you hold under it; a name found under nobody, an album artist's as much as a
+  track's, is asked about again by each artist it joins with an ampersand, a
+  comma, a spaced slash or Featuring. Fill in
   Released from and to (any year from 1900 to next year) to be offered only
   albums first released inside those years; one whose catalogue entry states
   no year is left out while years are set. The years narrow what it offers,
@@ -263,9 +267,13 @@ Five things reach outside your computer at all, so here are all five:
   format, how many results to return, where a following page starts, which
   release types to list, which
   details to include and which similarity algorithm to use) plus a user agent
-  naming Stellody, its version and the project's contact address. The language
-  asked for is fixed at any, rather than your computer's own: not your
-  library, not a count of it, not a word about you or your machine. The years
+  naming Stellody, its version and the project's contact address. Where
+  MusicBrainz knows one of those names under several artists, up to three
+  titles you hold under it go out as well, each an album or track title cut at
+  its first bracket, asking who is credited on it; that is how the right one is
+  told apart. The language asked for is fixed at any, rather than your
+  computer's own: not your library as a whole, not a count of it, not a word
+  about you or your machine. The years
   you choose are not sent either: an album's year is read from the answer that
   comes back. Tick nothing and nothing leaves.
 - **Reaching a shop**, which hands an address to your web browser. Tick albums
@@ -288,7 +296,7 @@ the library database: `%LOCALAPPDATA%\Stellody` on Windows,
 on macOS. A Linux flatpak keeps its own copy of that directory under
 `~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no audio and
 nothing about you; during a discovery run it notes each address asked, which
-carries the artist names sent. A playback dropout is noted there too, with
+carries the artist names and any titles sent. A playback dropout is noted there too, with
 where in the track it fell. Beside it, `stellody-startup.log` holds the
 reason when Stellody could not start. Neither is ever sent anywhere; either can
 be deleted whenever you like.

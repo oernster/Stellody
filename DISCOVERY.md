@@ -5,7 +5,7 @@ not hold. It was written before any code, because the milestone was explicitly
 undesigned and a feature
 generated from a loose description is a feature debugged rather than built.
 
-It is built. One diagnostic in section 6 is not yet met; that section says so.
+It is built. One diagnostic in section 6 is not yet met; it says so.
 Where this document and the code disagree, this
 document is amended rather than quietly diverged from; every requirement below
 names the test that holds it, so a claim here is checkable against the suite.
@@ -57,7 +57,7 @@ One meaning per term, for the life of the document.
 | **Catalogue genre** | A name in `stellody.domain.genres.GENRES`, main or style. |
 | **Resolved genre** | An album's genre as the library shows it: the probed tag with any album edit laid over it. Never the raw `sources.genre` column. |
 | **Ticked genres** | The catalogue genres selected in the discovery dialog. |
-| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while compilations are included, each track credit on it instead. Never "Various Artists" itself. |
+| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while compilations are included, each track credit on it instead. Also each artist a name joins, once the catalogue finds nobody under the whole name (FR-D53). Never "Various Artists" itself. |
 | **Compilation** | A held album whose album artist names various artists rather than a person, as `AlbumIdentity.is_compilation` decides. |
 | **Track credit** | One of a track's artists, split exactly as the library splits them for playback. |
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
@@ -118,7 +118,7 @@ HTTPS connection during a run. Everything else the application already assumes.
 |---|---|---|---|
 | A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Oliver | Answered |
 | A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Oliver | Answered |
-| A-03 | A listener accepts that a run names their source artists to two public catalogues. | Oliver | ruled 2026-09-06, accepted with genre scoping |
+| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements
 
@@ -359,8 +359,8 @@ Rationale: Ruled by Oliver on 2026-09-13: a tick box whose consequence is not
 stated invites a run of unknown length. The minutes are arithmetic rather than a
 prediction, which is what NFR-PERF-002 leaves standing: two paced requests to
 identify an artist then read its releases, at 1.1 seconds each. A busy
-catalogue, the candidates a run then narrows and the artists FR-D53 adds all
-make a real run longer; the words name a busy catalogue and call the figure a
+catalogue, the candidates a run then narrows, the titles FR-D09 puts and the
+artists FR-D53 adds all make a real run longer; the words name a busy catalogue and call the figure a
 pace rather than a forecast.
 
 Acceptance: Given compilations in a ticked genre crediting three artists nobody
@@ -688,7 +688,8 @@ once the first amendment turned out to have fixed only how it looked, then
 amended once more when the request in flight stopped being a floor.
 
 The run is asked whether it is still wanted before EVERY request rather than
-once an artist. One artist costs three requests, each of which may take the full
+once an artist. One artist costs three requests (up to three more where FR-D09
+settles its name), each of which may take the full
 twenty second timeout and may be attempted twice, so a run consulted once an
 artist could go on for minutes after being told to stop. The waits between
 attempts are sliced as well, so a stop lands inside one rather than at the end
@@ -1455,8 +1456,9 @@ Priority: Must
 
 Requirement: The discovery service shall keep what each catalogue answered,
 against the question that was asked; it shall ask a catalogue for an artist's
-identity, releases or similar artists only where that answer is not kept or was
-kept more than thirty days ago; what a candidate plays is kept without a limit.
+identity, releases or similar artists (or who is credited on a held title,
+FR-D09) only where that answer is not kept or was kept more than thirty days
+ago; what a candidate plays is kept without a limit.
 A run shall write down what it learned however that run ended. Where a run
 cannot reach a source about an artist an earlier run answered for, the discovery
 file shall keep the earlier answer and shall record no failure for that artist;
@@ -2211,13 +2213,17 @@ Verified by: `tests/ui/test_discovery_years.py::TestAnAlbumRowSaysItsYear`
 
 Priority: Must
 
-Requirement: A discovery run shall send nothing but three kinds of value,
+Requirement: A discovery run shall send nothing but four kinds of value,
 together with the application's own User-Agent: the names of artists drawn from
-the ticked genres; the catalogue identifiers the sources answered with, for
-those artists or for the candidates the similarity source suggested; fixed
-values each client states for itself, being the response format, a result
-limit, where a following page starts, the release types, the genres inclusion
-and the similarity algorithm.
+the ticked genres (or the artists such a name joins, FR-D53), less any trailing
+Discogs number; the catalogue identifiers the sources answered with, for
+those artists or for the candidates the similarity source suggested; where
+MusicBrainz knows a name under several artists, up to three album or track
+titles the library holds under that name, each cut at its first bracket and
+sent to MusicBrainz alone beside that name (FR-D09); fixed values each client
+states for itself, being the response format, a result limit, where a
+following page starts, the release types, the genres inclusion and the
+similarity algorithm.
 The headers carry only where the request goes, the User-Agent, the transport's
 own terms and a language fixed at any (`ACCEPT_LANGUAGE` in
 `infrastructure/fetching.py`).
@@ -2231,10 +2237,13 @@ the machine it came from.
 
 Verification:
 `tests/infrastructure/test_what_leaves_the_machine.py::test_a_field_holds_the_name_the_identifier_or_a_constant`
-puts every question both catalogue clients can ask through a recording fetcher
-and asserts each field holds the artist name, the identifier or a constant the
-client states for itself. Proved to bite on 2026-09-13 by planting an extra
-field in `infrastructure/catalogue.py`. The headers are read where they arrive,
+puts the identity, releases, genres, credit and similarity questions through a
+recording fetcher and asserts each field holds the artist name (alone or beside
+a held title), the identifier or a constant the client states for itself.
+Proved to bite on 2026-09-13 by planting an extra field in
+`infrastructure/catalogue.py`; the credit question (FR-D09) was added on
+2026-09-27 and proved the same day by planting an extra field on it, then a
+title carrying more than was held. The headers are read where they arrive,
 on a loopback service:
 `tests/infrastructure/test_fetching.py::TestAskingAService::test_no_header_says_anything_about_the_listener`
 failed on `en-GB,*` before the language was fixed.
@@ -2254,8 +2263,10 @@ the feature that introduces one by accident.
 Verification:
 `tests/infrastructure/test_what_leaves_the_machine.py::test_every_field_sent_is_one_its_address_is_allowed`
 with `::test_every_address_asked_is_one_the_allowed_set_names` hold every
-request against a fixed allowed set of addresses and fields, so a field added
-later fails rather than passing unnoticed.
+request the test asks against a fixed allowed set of addresses and fields, so a
+field added to one of those questions fails rather than passing unnoticed. A
+new question is caught only once the test asks it; every question a run can
+put, the FR-D09 credit question included, is asked there.
 `::test_nothing_sent_names_the_listener_or_the_machine` reads each request
 against this machine's name, the user name and the home directory.
 
@@ -2470,9 +2481,10 @@ handed a place of its own.
 
 ### 3.3 External interfaces
 
-**The catalogue source** answers three questions: the identifier for an artist
-name; the albums an artist made with their stated genres; the genres an artist
-is said to play. **The similarity source** answers one: the artists similar to
+**The catalogue source** answers four questions: the identifier for an artist
+name; the artists credited on a held album or track title under a name, which
+settles a name several artists share (FR-D09); the albums an artist made with
+their stated genres; the genres an artist is said to play. **The similarity source** answers one: the artists similar to
 an identifier.
 
 Both are reached through interfaces declared in the application layer, so the
@@ -2617,7 +2629,9 @@ hits package of an artist already held is noise rather than a discovery.
 
 **What the rule does not do**, so it is not mistaken for covered: it does not
 fold `&` to `and` and it does not strip diacritics, because `normalise` keeps
-both deliberately and no miss caused by either has been observed. It is also
+both deliberately and no miss caused by either has been observed. Artist names
+are another matter: FR-D08 matches them to a catalogue on `catalogue_key`,
+which does set accents aside; album titles are not matched that way. It is also
 untested against titles as MusicBrainz spells them. The one live run, over
 Blues and Folk on 2026-09-08, was read by a person rather than held by a test;
 that is one more reason the smallest genres are run first.

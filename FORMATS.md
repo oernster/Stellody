@@ -350,8 +350,9 @@ Rationale: The README honesty rule, applied to the weaker evidence standard
 this document adopts. A reader assuming "supported" means "tested against my
 files" would be assuming something nobody has checked.
 
-Verification: inspection, plus the existing structural sweep for version data
-and prose rules.
+Verification: inspection, plus `tests/structural/test_no_dashes.py`, which
+holds every Markdown file to the rule on dashes. No test checks the README for
+version data or for the other prose rules.
 
 ---
 

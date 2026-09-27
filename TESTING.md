@@ -21,7 +21,7 @@ sets `QT_QPA_PLATFORM=offscreen` for the run, so no window appears.
 **A full run takes about ten minutes.** Timed on 2026-09-24, when the tests
 outside `tests/ui` took about 80 seconds and the interface tests the rest, many
 of them spending most of a second building their window. Counted by collection
-on 2026-09-26: 3,672 tests, of which 1,499 are interface tests and 2,173 are
+on 2026-09-27: 3,731 tests, of which 1,499 are interface tests and 2,232 are
 not. A run that is quiet for several minutes is not stuck. To see it moving, add `-v` to
 a pytest run by hand, which names each test as it starts.
 

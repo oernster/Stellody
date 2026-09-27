@@ -1351,7 +1351,9 @@ Oliver's report the same day.
 Reported by Oliver against the built application: after a round of shopping,
 every album ticked for it stayed ticked, so the next round began by unticking
 them one at a time. A tick under an artist rolled up could not be seen at all
-yet still counted; so could a tick on an album a filter was holding back.
+yet still counted. A tick on an album a filter was holding back was out of
+sight too; it was not sent while hidden (FR-D56) but came back when the filter
+cleared.
 
 ### 6.15 Requirements
 
