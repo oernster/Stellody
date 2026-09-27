@@ -26,7 +26,25 @@ _LEADING_ARTICLE = re.compile(r"^(?:the|a|an)\s+", re.IGNORECASE)
 _ARTIST_SEPARATORS = re.compile(r"\s*(?:;|/|\b(?:feat|ft|vs)\b\.?)\s*", re.IGNORECASE)
 # What joins the artists inside one credit. FR-D53. A comma before the last
 # ampersand is typed by hand in some tags, so ", &" is one join rather than two.
-_CREDIT_JOINS = re.compile(r"\s*(?:,\s*&|,|&)\s*")
+# "Featuring" and its short forms join a guest to the artist, which is how
+# "Rone Featuring Noga Erez" reached nobody whole: measured on 2026-09-27, six
+# of the twenty-two names a run could not find were joined that way.
+_CREDIT_JOINS = re.compile(
+    r"\s*(?:,\s*&|,|&|\s(?:featuring|feat\.?|ft\.)\s)\s*", re.IGNORECASE
+)
+# The number a Discogs-sourced tag keeps after a name it shares with somebody
+# else, as in "JOBE (10)". It is Discogs' own filing and means nothing to any
+# other catalogue, which knows the artist under the bare name.
+_DISCOGS_NUMBER = re.compile(r"\s*\(\d+\)$")
+# Every dash a catalogue writes where a tag types a hyphen: U+2010 to U+2015
+# plus the minus sign, U+2212. MusicBrainz files Jerome Isma-Ae with U+2010 as
+# the hyphen, which no keyboard types. Named by code point, since the house
+# keeps every dash-like character out of its source.
+_FIRST_DASH, _LAST_DASH, _MINUS = 0x2010, 0x2015, 0x2212
+_DASHES = {point: "-" for point in (*range(_FIRST_DASH, _LAST_DASH + 1), _MINUS)}
+# Where a title's first bracket opens: what follows is a mix, an edition or a
+# remixer, which a search for the title itself is better without.
+_FIRST_BRACKET = re.compile(r"\s*[(\[].*$")
 _FILENAME_ORDINAL = re.compile(
     r"^\s*(?:(?P<disc>\d{1,2})\s*[-_.]\s*)?(?P<track>\d{1,3})\s*[-_.\s]"
 )
@@ -58,6 +76,35 @@ def normalise(value: str) -> str:
 def comparison_key(value: str) -> str:
     """A case-insensitive key for deciding whether two names are the same."""
     return normalise(value).casefold()
+
+
+def catalogue_name(name: str) -> str:
+    """The name to ask a catalogue for: the tag's own, less a Discogs number."""
+    return _DISCOGS_NUMBER.sub("", normalise(name)) or normalise(name)
+
+
+def catalogue_key(name: str) -> str:
+    """A key for deciding whether a catalogue's name is the one a tag wrote.
+
+    Looser than `comparison_key`, which decides whether two names in the
+    library are one artist and must stay as strict as the listener's own
+    filing. A tag typed on a keyboard loses the accents and the typographic
+    dashes a catalogue keeps: measured on 2026-09-27, "Hernan Cattaneo" never
+    equalled "Hernán Cattáneo", so an artist the catalogue holds was
+    reported as unknown.
+    """
+    decomposed = unicodedata.normalize("NFKD", catalogue_name(name))
+    bare = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return comparison_key(bare.translate(_DASHES))
+
+
+def bare_title(title: str) -> str:
+    """A title up to its first bracket; the whole title where that is empty.
+
+    What a search is given, since the tags write the mix into the title twice
+    over, as in "Galaxy (Mixed) Mixed", which a catalogue matches to nothing.
+    """
+    return _FIRST_BRACKET.sub("", normalise(title)) or normalise(title)
 
 
 def sort_key(value: str) -> str:

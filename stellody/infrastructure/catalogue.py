@@ -20,13 +20,21 @@ Nothing here opens a connection. It says what to ask and reads what came back;
 from __future__ import annotations
 
 from stellody.application.choosing_covers import Wanted, always_wanted
+from stellody.domain.credit_evidence import Evidence, EvidenceKind
 from stellody.domain.discovery import ReleaseGroup
 from stellody.domain.matching import ReleaseKind
-from stellody.domain.text import comparison_key
+from stellody.domain.text import catalogue_key, catalogue_name
 from stellody.infrastructure.fetching import Fetcher
 
 ARTIST_URL = "https://musicbrainz.org/ws/2/artist"
 RELEASE_GROUP_URL = "https://musicbrainz.org/ws/2/release-group"
+RECORDING_URL = "https://musicbrainz.org/ws/2/recording"
+# Where each kind of held title is looked for: the address, the search field
+# the title goes in and the key the answer lists its matches under.
+SEARCHED: dict[EvidenceKind, tuple[str, str, str]] = {
+    EvidenceKind.ALBUM: (RELEASE_GROUP_URL, "releasegroup", "release-groups"),
+    EvidenceKind.TRACK: (RECORDING_URL, "recording", "recordings"),
+}
 # How many artists a name search may answer with. Only exact matches are kept,
 # so this is the width of the net rather than the number offered to anybody.
 NAME_LIMIT = 25
@@ -109,19 +117,47 @@ class MusicBrainz:
         answer = self._fetch.json(
             ARTIST_URL,
             {
-                "query": f'artist:"{_escaped(name)}"',
+                "query": f'artist:"{_escaped(catalogue_name(name))}"',
                 "fmt": "json",
                 "limit": str(NAME_LIMIT),
             },
             wanted,
         )
-        sought = comparison_key(name)
+        sought = catalogue_key(name)
         return tuple(
             str(entry["id"])
             for entry in _entries(answer, "artists")
-            if entry.get("id")
-            and comparison_key(str(entry.get("name") or "")) == sought
+            if entry.get("id") and catalogue_key(str(entry.get("name") or "")) == sought
         )
+
+    def credited(
+        self, evidence: Evidence, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
+        """Every artist credited on a title of this name by this artist name.
+
+        An album is searched as a release group and a track as a recording;
+        every artist in every credit answered is returned, in order, once.
+        """
+        url, field, key = SEARCHED[evidence.kind]
+        answer = self._fetch.json(
+            url,
+            {
+                "query": (
+                    f'{field}:"{_escaped(evidence.title)}"'
+                    f' AND artist:"{_escaped(catalogue_name(evidence.artist))}"'
+                ),
+                "fmt": "json",
+                "limit": str(NAME_LIMIT),
+            },
+            wanted,
+        )
+        found: dict[str, None] = {}
+        for entry in _entries(answer, key):
+            for credit in _entries(entry, "artist-credit"):
+                artist = credit.get("artist")
+                if isinstance(artist, dict) and artist.get("id"):
+                    found.setdefault(str(artist["id"]), None)
+        return tuple(found)
 
     def albums_of(
         self, identifier: str, wanted: Wanted = always_wanted

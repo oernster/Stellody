@@ -29,7 +29,9 @@ import threading
 
 from stellody.application.remembering import (
     ALBUMS,
+    CREDITED,
     IDENTIFIERS,
+    KINDS,
     SIMILAR,
     Recollection,
     merged,
@@ -135,10 +137,17 @@ def _kept(held: object) -> Recollection:
             str(question): _similar(found)
             for question, found in _mapping(held, SIMILAR).items()
         },
+        credited={
+            str(question): _identifiers(found)
+            for question, found in _mapping(held, CREDITED).items()
+        },
+        # Only the stamps of questions still asked, so a section retired by a
+        # rename (see IDENTIFIERS) leaves nothing of itself behind.
         written_at={
             str(question): float(when)
             for question, when in _mapping(held, "written_at").items()
             if isinstance(when, (int, float))
+            and str(question).split(":", 1)[0] in KINDS
         },
     )
 
@@ -155,6 +164,7 @@ def _as_written(kept: Recollection) -> dict:
             question: [artist_as(artist) for artist in found]
             for question, found in kept.similar.items()
         },
+        CREDITED: {question: list(found) for question, found in kept.credited.items()},
         "written_at": dict(kept.written_at),
     }
 
@@ -186,6 +196,8 @@ def _put(kept: Recollection, kind: str, key: str, answer: object) -> bool:
         kept.albums[key] = _albums(answer)
     elif kind == SIMILAR:
         kept.similar[key] = _similar(answer)
+    elif kind == CREDITED:
+        kept.credited[key] = _identifiers(answer)
     else:
         return False
     return True

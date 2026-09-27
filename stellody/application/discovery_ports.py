@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from stellody.application.choosing_covers import Wanted, always_wanted
+from stellody.domain.credit_evidence import Evidence
 from stellody.domain.discovery import LastRun, ReleaseGroup, SimilarArtist
 
 
@@ -79,6 +80,16 @@ class CatalogueSource(Protocol):
 
         More than one is not an error here: it is the answer; the decision
         about what to do with it belongs above rather than inside a client.
+        """
+        ...
+
+    def credited(
+        self, evidence: Evidence, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
+        """Every artist credited on this held title under this name. FR-D09.
+
+        Every one the catalogue names rather than the one wanted: which of
+        them settles an ambiguity is decided above, as it is for `identify`.
         """
         ...
 

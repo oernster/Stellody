@@ -98,8 +98,8 @@ def test_a_note_of_a_kind_this_stellody_does_not_know_is_skipped() -> None:
 
 def test_a_note_missing_its_key_or_its_stamp_is_skipped(data_dir) -> None:
     catalogue_memory.journal_path().write_text(
-        '{"kind": "identifiers", "when": 1.0}\n'
-        '{"kind": "identifiers", "key": "U2"}\n',
+        f'{{"kind": "{IDENTIFIERS}", "when": 1.0}}\n'
+        f'{{"kind": "{IDENTIFIERS}", "key": "U2"}}\n',
         encoding="utf-8",
     )
     assert catalogue_memory.remembered().identifiers == {}

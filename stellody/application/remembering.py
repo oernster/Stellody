@@ -48,6 +48,7 @@ from stellody.application.discovery_ports import (
     CatalogueSource,
     SimilaritySource,
 )
+from stellody.domain.credit_evidence import Evidence
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 
 # How long an answer stands before it is asked about again. A month rather
@@ -63,13 +64,24 @@ MEMORY_LIFE_S = MEMORY_LIFE_DAYS * SECONDS_A_DAY
 # test can stand a month away from now without waiting one.
 Clock = Callable[[], float]
 
-# The three questions a catalogue is asked, named once. They are the keys the
+# The questions a catalogue is asked, named once. They are the keys the
 # recollection holds its answers under, the prefix each answer's stamp carries
 # and the word a noted answer names itself by, so a file can put an answer back
 # where it came from. Three places that must agree, hence one name each.
-IDENTIFIERS = "identifiers"
+#
+# Identities were filed as "identifiers" until 2026-09-27, when the rule for
+# which catalogue name matches a tag stopped ignoring only case (FR-D08). The
+# answers given under the old rule are wrong under the new one: "Hernan
+# Cattaneo" was remembered as nobody. So they are filed under a new name and
+# the old section is never read again, which costs the next run one identity
+# question per artist rather than leaving the old answers standing for a month.
+IDENTIFIERS = "identities"
 ALBUMS = "albums"
 SIMILAR = "similar"
+CREDITED = "credited"
+# Every kind a recollection holds, so a stamp for a kind no longer asked about
+# can be told apart from one that is and left behind.
+KINDS = (IDENTIFIERS, ALBUMS, SIMILAR, CREDITED)
 # When an answer with no stamp reads as written: before anything was, so it
 # is asked about again and gives way to any answer that says when it came.
 UNSTAMPED = 0.0
@@ -93,6 +105,8 @@ class Recollection:
     identifiers: dict[str, tuple[str, ...]] = field(default_factory=dict)
     albums: dict[str, tuple[ReleaseGroup, ...]] = field(default_factory=dict)
     similar: dict[str, tuple[SimilarArtist, ...]] = field(default_factory=dict)
+    # Who a catalogue credited on a held title, by `Evidence.question`.
+    credited: dict[str, tuple[str, ...]] = field(default_factory=dict)
     # When each answer was written down, by the question it answers, kept in
     # one place rather than beside each answer so the three shapes above stay
     # what they are. A question with no stamp is one written by a Stellody
@@ -127,12 +141,14 @@ def merged(standing: Recollection, kept: Recollection) -> Recollection:
         identifiers=dict(standing.identifiers),
         albums=dict(standing.albums),
         similar=dict(standing.similar),
+        credited=dict(standing.credited),
         written_at=dict(standing.written_at),
     )
     for kind, answers, into in (
         (IDENTIFIERS, kept.identifiers, result.identifiers),
         (ALBUMS, kept.albums, result.albums),
         (SIMILAR, kept.similar, result.similar),
+        (CREDITED, kept.credited, result.credited),
     ):
         for key, answer in answers.items():
             stamp = stamp_for(kind, key)
@@ -240,6 +256,17 @@ class RememberingCatalogue:
             return self.kept.identifiers[name]
         found = self.catalogue.identify(name, wanted)
         self._kept(IDENTIFIERS, name, self.kept.identifiers, found)
+        return found
+
+    def credited(
+        self, evidence: Evidence, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
+        """Who is credited on a held title, from memory where it is known."""
+        question = evidence.question
+        if self._standing(CREDITED, question, self.kept.credited):
+            return self.kept.credited[question]
+        found = self.catalogue.credited(evidence, wanted)
+        self._kept(CREDITED, question, self.kept.credited, found)
         return found
 
     def albums_of(

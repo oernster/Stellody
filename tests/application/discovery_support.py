@@ -16,6 +16,7 @@ from stellody.application.discovery_ports import (
 )
 from stellody.application.values import DiscoveryProgress
 from stellody.domain.album import Album
+from stellody.domain.credit_evidence import Evidence
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
@@ -76,8 +77,13 @@ class Catalogue:
         unheard: int = 0,
         too_slow: int = 0,
         genre_trouble: Exception | None = None,
+        credits: dict[str, tuple[str, ...]] | None = None,
     ) -> None:
         self._identities = identities or {}
+        # Who is credited on a held title, by the title alone: a fake only
+        # ever holds one artist's name per title.
+        self._credits = credits or {}
+        self.credits_asked: list[Evidence] = []
         self._albums = albums or {}
         self._genres = genres or {}
         self._raises = raises
@@ -114,6 +120,14 @@ class Catalogue:
         if self._raises is not None:
             raise self._raises
         return self._identities.get(name, (name.lower(),))
+
+    def credited(
+        self, evidence: Evidence, wanted: Wanted = always_wanted
+    ) -> tuple[str, ...]:
+        """Who is credited on this title, as this fake was told."""
+        self.credits_asked.append(evidence)
+        self.wanted.append(wanted)
+        return self._credits.get(evidence.title, ())
 
     def albums_of(
         self, identifier: str, wanted: Wanted = always_wanted

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from stellody.application.remembering import (
     ALBUMS,
+    CREDITED,
     IDENTIFIERS,
     SIMILAR,
     Recollection,
@@ -62,13 +63,15 @@ def test_an_unstamped_answer_nobody_else_holds_is_kept_unstamped() -> None:
 
 
 def test_every_kind_of_answer_is_laid_together() -> None:
-    """Albums and similar artists are merged exactly as identifiers are."""
-    kept = Recollection(albums={"x": ()}, similar={"y": ()})
+    """Albums, similar artists and credits are merged as identifiers are."""
+    kept = Recollection(albums={"x": ()}, similar={"y": ()}, credited={"z": ()})
     kept.written_at[stamp_for(ALBUMS, "x")] = EARLY
     kept.written_at[stamp_for(SIMILAR, "y")] = EARLY
+    kept.written_at[stamp_for(CREDITED, "z")] = EARLY
     together = merged(Recollection(), kept)
     assert together.albums == {"x": ()}
     assert together.similar == {"y": ()}
+    assert together.credited == {"z": ()}
 
 
 def test_neither_side_is_changed() -> None:

@@ -11,7 +11,11 @@ import json
 
 import pytest
 
-from stellody.application.remembering import Recollection, similar_key
+from stellody.application.remembering import (
+    IDENTIFIERS,
+    Recollection,
+    similar_key,
+)
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure import catalogue_memory, paths
@@ -44,6 +48,7 @@ def _full() -> Recollection:
                 SimilarArtist(name="Muddy Waters", identifier="mw-id"),
             )
         },
+        credited={"track|howlin' wolf|smokestack lightnin'": (WOLF,)},
         written_at={f"albums:{WOLF}": 1_700_000_000.0},
     )
 
@@ -78,7 +83,7 @@ def test_entries_of_the_wrong_shape_are_dropped_rather_than_carried(
     catalogue_memory.memory_path().write_text(
         json.dumps(
             {
-                "identifiers": "not a mapping",
+                IDENTIFIERS: "not a mapping",
                 "albums": {
                     WOLF: [
                         {"title": "Kept", "released": ""},

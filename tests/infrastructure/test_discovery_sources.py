@@ -12,11 +12,13 @@ from __future__ import annotations
 import pytest
 
 from stellody.application.choosing_covers import Wanted, always_wanted
+from stellody.domain.credit_evidence import Evidence, EvidenceKind
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure.catalogue import (
     ARTIST_URL,
     GROUP_LIMIT,
     MOST_PAGES,
+    RECORDING_URL,
     RELEASE_GROUP_URL,
     MusicBrainz,
 )
@@ -132,6 +134,57 @@ class TestIdentifyingAnArtist:
     def test_an_answer_of_the_wrong_shape_names_nobody(self, body: object) -> None:
         """A service that changed shape answers nothing, rather than raising."""
         assert MusicBrainz(fetching(body)).identify("U2") == ()
+
+    def test_a_name_typed_without_its_accents_is_the_artist(self) -> None:
+        """Measured on 2026-09-27: this artist was reported as unknown. FR-D08."""
+        body = {"artists": [{"id": "hc", "name": "Hernán Cattáneo"}]}
+        assert MusicBrainz(fetching(body)).identify("Hernan Cattaneo") == ("hc",)
+
+    def test_a_discogs_number_is_left_out_of_the_search(self) -> None:
+        fetch = fetching({"artists": [{"id": "jobe", "name": "JOBE"}]})
+        assert MusicBrainz(fetch).identify("JOBE (10)") == ("jobe",)
+        assert "(10)" not in fetch.parameters[0]["query"]
+
+
+class TestWhoIsCreditedOnATitle:
+    """What a catalogue credits on a held title, for settling a shared name."""
+
+    def test_an_album_is_searched_as_a_release_group(self) -> None:
+        body = {
+            "release-groups": [
+                {"artist-credit": [{"artist": {"id": "anyma-milleri"}}]},
+                {"artist-credit": [{"artist": {"id": "anyma-milleri"}}, "junk"]},
+            ]
+        }
+        fetch = fetching(body)
+        piece = Evidence(EvidenceKind.ALBUM, "Genesys", "Anyma")
+        assert MusicBrainz(fetch).credited(piece) == ("anyma-milleri",)
+        assert fetch.addresses == [RELEASE_GROUP_URL]
+        assert 'releasegroup:"Genesys"' in fetch.parameters[0]["query"]
+
+    def test_a_track_is_searched_as_a_recording(self) -> None:
+        body = {
+            "recordings": [
+                {
+                    "artist-credit": [
+                        {"artist": {"id": "giorgia"}},
+                        {"artist": {"id": "avalon"}},
+                    ]
+                }
+            ]
+        }
+        fetch = fetching(body)
+        piece = Evidence(EvidenceKind.TRACK, "You Caress", "Avalon")
+        assert MusicBrainz(fetch).credited(piece) == ("giorgia", "avalon")
+        assert fetch.addresses == [RECORDING_URL]
+        assert 'artist:"Avalon"' in fetch.parameters[0]["query"]
+
+    @pytest.mark.parametrize(
+        "body", [[], {"recordings": "no"}, {"recordings": [{"artist-credit": 3}]}]
+    )
+    def test_an_answer_of_the_wrong_shape_credits_nobody(self, body: object) -> None:
+        piece = Evidence(EvidenceKind.TRACK, "Circles", "Nero")
+        assert MusicBrainz(fetching(body)).credited(piece) == ()
 
 
 class TestWhatAnArtistReleased:

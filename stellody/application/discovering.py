@@ -64,6 +64,7 @@ from stellody.application.remembering import (
     RememberingCatalogue,
     RememberingSimilarity,
 )
+from stellody.application.settling import settled
 from stellody.application.values import (
     Ambiguity,
     DiscoveryProgress,
@@ -71,6 +72,11 @@ from stellody.application.values import (
     RunReport,
 )
 from stellody.domain.album import Album
+from stellody.domain.credit_evidence import (
+    Evidence,
+    evidence_by_artist,
+    evidence_for,
+)
 from stellody.domain.discovery import (
     Gaps,
     albums_missing,
@@ -223,6 +229,7 @@ class Discovery:
         offered album is held to.
         """
         held = held_by_artist(albums)
+        evidence = evidence_by_artist(albums)
         everyone = tuple(held)
         gathered = Gathering(passes=Passes(artists), known=known)
         done = 0
@@ -246,7 +253,7 @@ class Discovery:
                 try:
                     gaps = self._about(
                         artist,
-                        held_for(held, artist),
+                        (held_for(held, artist), evidence_for(evidence, artist)),
                         everyone,
                         wanted,
                         cancelled,
@@ -301,7 +308,7 @@ class Discovery:
     def _about(
         self,
         artist: str,
-        held: frozenset[ReleaseMatch],
+        holding: tuple[frozenset[ReleaseMatch], tuple[Evidence, ...]],
         everyone: tuple[str, ...],
         wanted: tuple[tuple[str, ...], ReleaseYears],
         cancelled: CancelledCheck,
@@ -309,14 +316,25 @@ class Discovery:
         """What one artist turned out to be missing.
 
         None where the catalogue does not know the name at all; an `Ambiguity`
-        where it knows too many, since neither is a gap and both are worth
-        telling a listener about.
+        where it knows too many and the library's own titles cannot say which
+        is meant, since neither is a gap and both are worth telling a
+        listener about. FR-D09.
+
+        `holding` is what the library holds under the name twice over: the
+        albums, to leave out of what is offered; the titles, to settle a name
+        several artists share.
         """
+        held, evidence = holding
         identifiers = asked(self.catalogue.identify, cancelled, self.pause, artist)
         if not identifiers:
             return None
         if len(identifiers) > 1:
-            return Ambiguity(artist=artist, identifiers=identifiers)
+            meant = settled(
+                self.catalogue, identifiers, evidence, cancelled, self.pause
+            )
+            if meant is None:
+                return Ambiguity(artist=artist, identifiers=identifiers)
+            identifiers = (meant,)
         # Three requests are made about one artist. Each is asked about
         # separately inside `_asked`, so a stop between any two of them is
         # honoured rather than waiting for the artist to be finished with.

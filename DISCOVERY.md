@@ -377,8 +377,9 @@ Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_ye
 Priority: Must
 
 Requirement: Where a track credit taken from a compilation reaches nobody in the
-catalogue and names several artists joined by an ampersand or a comma, the
-discovery service shall take each of those artists as a source artist in the
+catalogue and names several artists joined by an ampersand, a comma or
+"Featuring" (with its short forms "feat." and "ft."), the discovery service
+shall take each of those artists as a source artist in the
 same run. That credit shall not then be reported as unrecognised; a part that
 reaches nobody shall be. A part that is already a source artist shall not be
 asked about twice.
@@ -389,13 +390,15 @@ which split would be two names meaning nobody. It falls back to the parts
 because a credit such as ODESZA & Bettye LaVette may reach nobody whole while
 naming two artists a catalogue can each be asked about. An album artist is left
 whole, since the name somebody filed an album under is theirs to decide.
+"Featuring" was added on 2026-09-27: six of the 22 names a run could not find
+were credits such as "Rone Featuring Noga Erez".
 
 Acceptance: Given a compilation credit "ODESZA & Bettye LaVette" the catalogue
 does not know while it knows both artists, when the run asks, then ODESZA and
 Bettye LaVette are each asked about and the credit is not reported as
 unrecognised. Given "Eli & Fur" known whole, then no part of it is asked about.
 
-Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_comes_apart`, `tests/domain/test_text.py::test_a_credit_naming_one_artist_has_no_parts`, `tests/application/test_discovering_compilations.py::test_an_unrecognised_credit_is_asked_about_by_its_parts`, `tests/application/test_discovering_compilations.py::test_a_recognised_credit_is_not_split`, `tests/application/test_discovering_compilations.py::test_a_part_nobody_knows_is_reported_unrecognised`, `tests/application/test_discovering_compilations.py::test_a_part_already_asked_about_is_not_asked_again`, `tests/application/test_discovering_compilations.py::test_an_album_artist_nobody_knows_is_not_split`
+Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_comes_apart`, `tests/domain/test_text.py::test_a_credit_naming_one_artist_has_no_parts`, `tests/application/test_discovering_compilations.py::test_an_unrecognised_credit_is_asked_about_by_its_parts`, `tests/application/test_discovering_compilations.py::test_a_recognised_credit_is_not_split`, `tests/application/test_discovering_compilations.py::test_a_part_nobody_knows_is_reported_unrecognised`, `tests/application/test_discovering_compilations.py::test_a_part_already_asked_about_is_not_asked_again`, `tests/application/test_discovering_compilations.py::test_an_album_artist_nobody_knows_is_not_split`, `tests/domain/test_catalogue_names.py::test_a_featured_guest_comes_apart`, `tests/domain/test_catalogue_names.py::test_featuring_inside_a_word_is_not_a_join`
 
 ---
 
@@ -438,16 +441,30 @@ Priority: Must
 
 Requirement: If the catalogue source returns no identifier for a source artist,
 then the discovery service shall record that artist as unresolved, continue with
-the next artist and make no further request about them.
+the next artist and make no further request about them. A catalogue name shall
+count as the source artist's where the two agree once case, accents and
+typographic dashes are set aside; a trailing Discogs number such as "(10)"
+shall be left out of the name asked for.
 
 Rationale: A library holds names a catalogue does not; a run that stops on
-the first of them is a run that never finishes.
+the first of them is a run that never finishes. The matching rule is looser
+than the library's own because a tag is typed on a keyboard: measured on
+2026-09-27, "Hernan Cattaneo", "Andre Sobota" and "Jerome Isma-Ae" were each
+reported unknown while MusicBrainz held them as "Hernán Cattáneo", "André
+Sobota" and "Jerome Isma-Ae" written with U+2010. The library's own key stays
+strict, since two spellings on the shelf are the listener's filing.
+
+Identity answers kept by the catalogue memory before this rule were matched on
+case alone, so the memory files identities under a new section and the old one
+is never read again (`IDENTIFIERS` in `application/remembering.py`). The next
+run asks once more about every name; nothing else is asked again.
 
 Acceptance: Given a source whose identity lookup returns nothing, when the run
 completes, then that artist appears in the run's unresolved list and the run's
-exit is normal.
+exit is normal. Given the tag "Hernan Cattaneo" and a catalogue answering
+"Hernán Cattáneo", then that artist is identified.
 
-Verified by: `tests/application/test_discovery.py::test_unknown_artist_is_recorded`
+Verified by: `tests/application/test_discovery.py::test_unknown_artist_is_recorded`, `tests/domain/test_catalogue_names.py::test_a_typed_name_matches_what_the_catalogue_writes`, `tests/domain/test_catalogue_names.py::test_the_library_key_stays_strict`, `tests/domain/test_catalogue_names.py::test_a_discogs_number_is_not_asked_for`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_a_name_typed_without_its_accents_is_the_artist`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_a_discogs_number_is_left_out_of_the_search`, `tests/infrastructure/test_remembered_credits.py::test_the_retired_section_is_not_read`
 
 ---
 
@@ -456,20 +473,34 @@ Verified by: `tests/application/test_discovery.py::test_unknown_artist_is_record
 Priority: Must
 
 Requirement: If the catalogue source returns more than one identifier for a
-source artist's name, then the discovery service shall record that artist as
-ambiguous, name every candidate identifier in the run's report and make no
-further request about them.
+source artist's name, then the discovery service shall put up to three titles
+the library holds under that name to the catalogue as "who is credited on
+this": held albums first, then held tracks. Where the first title crediting any
+of them credits exactly one, that artist shall be taken as the source artist.
+Otherwise the discovery service shall record that artist as ambiguous, name
+every candidate identifier in the run's report and make no further request
+about them.
 
 Rationale: Choosing between two bands of the same name on a listener's behalf
 would put an entire discography under the wrong heading, silently. Reporting the
-ambiguity is honest; guessing at it is not.
+ambiguity is honest; guessing at it is not. A title on the listener's own shelf
+is not a guess, though: only one of the namesakes made it. Reported by Oliver on
+2026-09-27: Anyma was never shown as an artist held, because MusicBrainz knows
+a second Anyma. Measured the same day, 36 of a library's source artists were
+ambiguous; a probe of this rule against the live catalogue, searching the full
+tagged titles rather than the bare ones the run now searches, settled 25. The Wash, Leonardo and Matador
+stayed ambiguous because two namesakes were credited on the same title, which
+is a real ambiguity. The answers are kept by the catalogue memory, so two runs
+settle a name the same way. The rule lives in `application/settling.py`.
 
 Acceptance: Given an identity lookup returning two artists whose names both
-match the source artist's name exactly on its normalised comparison key, when
-the run completes, then that artist is reported ambiguous with both identifiers
-named and no album request was made for them.
+match the source artist's name on the catalogue key, when the run completes,
+then: where a held title credits one of them, that one is the source artist
+and its albums are asked for; where a held title credits both (or no held title
+credits either), that artist is reported ambiguous with both identifiers named
+and no album request was made for them.
 
-Verified by: `tests/application/test_discovery.py::test_ambiguous_name_is_reported`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_two_exact_matches_are_both_returned`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_a_ranked_near_miss_is_not_the_artist`
+Verified by: `tests/application/test_discovery.py::test_ambiguous_name_is_reported`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_two_exact_matches_are_both_returned`, `tests/infrastructure/test_discovery_sources.py::TestIdentifyingAnArtist::test_a_ranked_near_miss_is_not_the_artist`, `tests/application/test_settling_ambiguity.py`, `tests/domain/test_credit_evidence.py`, `tests/infrastructure/test_discovery_sources.py::TestWhoIsCreditedOnATitle`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown::test_a_credit_is_asked_for_once_then_remembered`
 
 ---
 

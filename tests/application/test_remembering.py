@@ -29,14 +29,17 @@ from discovery_support import (
 from stellody.application.carrying_over import carried_over
 from stellody.application.discovering import Discovery
 from stellody.application.remembering import (
+    IDENTIFIERS,
     MEMORY_LIFE_S,
     NothingKept,
     Recollection,
     RememberingCatalogue,
     RememberingSimilarity,
     similar_key,
+    stamp_for,
 )
 from stellody.application.values import RunOutcome, RunReport, SourceFailure
+from stellody.domain.credit_evidence import Evidence, EvidenceKind
 from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
 
 ROCK = ("Rock",)
@@ -113,7 +116,9 @@ class TestTwoRunsOverOneLibrary:
 
 class TestAskingOnlyWhatIsUnknown:
     def test_an_identity_already_known_is_not_asked_for(self) -> None:
-        kept = _stamped(Recollection(identifiers={"U2": ("u2-id",)}), "identifiers:U2")
+        kept = _stamped(
+            Recollection(identifiers={"U2": ("u2-id",)}), stamp_for(IDENTIFIERS, "U2")
+        )
         catalogue = Catalogue()
         found = RememberingCatalogue(catalogue, kept, _now).identify("U2")
         assert found == ("u2-id",)
@@ -125,6 +130,17 @@ class TestAskingOnlyWhatIsUnknown:
         assert RememberingCatalogue(catalogue, kept).identify("U2") == ("u2-id",)
         assert catalogue.identified == ["U2"]
         assert kept.identifiers == {"U2": ("u2-id",)}
+
+    def test_a_credit_is_asked_for_once_then_remembered(self) -> None:
+        """Two runs settle a shared name the same way. FR-D09."""
+        kept = Recollection()
+        piece = Evidence(EvidenceKind.ALBUM, "Genesys", "Anyma")
+        catalogue = Catalogue(credits={"Genesys": ("anyma-id",)})
+        remembering = RememberingCatalogue(catalogue, kept, _now)
+        assert remembering.credited(piece) == ("anyma-id",)
+        assert remembering.credited(piece) == ("anyma-id",)
+        assert catalogue.credits_asked == [piece]
+        assert kept.credited == {piece.question: ("anyma-id",)}
 
     def test_albums_already_known_are_not_asked_for(self) -> None:
         held = (ReleaseGroup(title="Pop"),)
@@ -285,7 +301,7 @@ class TestAnAnswerIsKeptTheMomentItArrives:
         keeper = Keeping()
         catalogue = Catalogue(identities={"U2": ("u2-id",)})
         RememberingCatalogue(catalogue, keeper.kept, _now, keeper).identify("U2")
-        assert keeper.noted == [("identifiers", "U2", ("u2-id",), NOW)]
+        assert keeper.noted == [(IDENTIFIERS, "U2", ("u2-id",), NOW)]
 
     def test_an_albums_answer_is_noted_as_it_is_answered(self) -> None:
         keeper = Keeping()
@@ -304,7 +320,10 @@ class TestAnAnswerIsKeptTheMomentItArrives:
     def test_an_answer_that_came_from_memory_is_not_noted_again(self) -> None:
         """It is already written down; noting it would say the same thing."""
         keeper = Keeping(
-            _stamped(Recollection(identifiers={"U2": ("u2-id",)}), "identifiers:U2")
+            _stamped(
+                Recollection(identifiers={"U2": ("u2-id",)}),
+                stamp_for(IDENTIFIERS, "U2"),
+            )
         )
         RememberingCatalogue(Catalogue(), keeper.kept, _now, keeper).identify("U2")
         assert keeper.noted == []
@@ -317,11 +336,11 @@ class TestAnAnswerIsKeptTheMomentItArrives:
             (make_album("U2", "The Joshua Tree"),), ROCK, nothing, never
         )
         assert [kind for kind, _key, _answer, _when in keeper.noted] == [
-            "identifiers",
+            IDENTIFIERS,
             "albums",
             "similar",
         ]
 
     def test_a_run_with_nowhere_to_keep_anything_still_runs(self) -> None:
         """The null memory answers `note` by dropping it, like the rest."""
-        NothingKept().note("identifiers", "U2", ("u2-id",), NOW)
+        NothingKept().note(IDENTIFIERS, "U2", ("u2-id",), NOW)
