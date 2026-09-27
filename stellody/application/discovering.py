@@ -331,8 +331,9 @@ class Discovery:
             if meant is None:
                 return Ambiguity(artist=artist, identifiers=identifiers)
             identifiers = (meant,)
-        # Three requests are made about one artist. Each is asked about
-        # separately inside `_asked`, so a stop between any two of them is
+        # Three requests are made about one artist, plus up to MOST_EVIDENCE
+        # more where its name had to be settled. Each is asked through `asked`
+        # on its own, so a stop between any two of them is
         # honoured rather than waiting for the artist to be finished with.
         offered = asked(self.catalogue.albums_of, cancelled, self.pause, identifiers[0])
         similar = asked(

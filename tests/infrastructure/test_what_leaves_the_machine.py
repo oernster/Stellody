@@ -17,24 +17,36 @@ import pathlib
 import platform
 
 from stellody.application.choosing_covers import Wanted, always_wanted
+from stellody.domain.credit_evidence import Evidence, EvidenceKind
 from stellody.infrastructure.catalogue import (
     ARTIST_URL,
     GROUP_LIMIT,
     NAME_LIMIT,
+    RECORDING_URL,
     RELEASE_GROUP_URL,
     MusicBrainz,
 )
 from stellody.infrastructure.similarity import ALGORITHM, SIMILAR_URL, ListenBrainz
 
 NAME = "Kate Bush"
+# A title the listener holds under that name. FR-D09 puts one to the
+# catalogue, bare, only for a name several artists share.
+TITLE = "Hounds of Love"
 IDENTIFIER = "4b585938-f271-45e2-b19a-91c634b5e396"
 # How many similar artists are asked for. Only has to be a number here.
 MOST = 10
 
 # The one field allowed to carry an artist's name, spelled the way the
-# catalogue's search syntax wraps it; the fields allowed to carry an identifier.
+# catalogue's search syntax wraps it, alone or with a held title beside it
+# (FR-D09); the fields allowed to carry an identifier.
 NAME_FIELD = "query"
-NAME_AS_ASKED = f'artist:"{NAME}"'
+NAMES_AS_ASKED = frozenset(
+    {
+        f'artist:"{NAME}"',
+        f'releasegroup:"{TITLE}" AND artist:"{NAME}"',
+        f'recording:"{TITLE}" AND artist:"{NAME}"',
+    }
+)
 IDENTIFIER_FIELDS = frozenset({"artist", "artist_mbids"})
 # Every other field, with every value it may hold. None of these depends on
 # anything the run was given, so none can carry the library or the listener.
@@ -53,7 +65,10 @@ FULL_PAGE = {"release-groups": [{"title": "t", "primary-type": "Album"}] * GROUP
 # one address that takes it there, which is still the identifier and no more.
 ALLOWED = {
     ARTIST_URL: frozenset({"query", "fmt", "limit"}),
-    RELEASE_GROUP_URL: frozenset({"artist", "type", "inc", "fmt", "limit", "offset"}),
+    RELEASE_GROUP_URL: frozenset(
+        {"artist", "query", "type", "inc", "fmt", "limit", "offset"}
+    ),
+    RECORDING_URL: frozenset({"query", "fmt", "limit"}),
     f"{ARTIST_URL}/{IDENTIFIER}": frozenset({"inc", "fmt"}),
     SIMILAR_URL: frozenset({"artist_mbids", "algorithm"}),
 }
@@ -84,6 +99,8 @@ def asked() -> list[tuple[str, dict[str, str]]]:
     catalogue.albums_of(IDENTIFIER)
     catalogue.identify(NAME)
     catalogue.genres_of(IDENTIFIER)
+    for kind in EvidenceKind:
+        catalogue.credited(Evidence(kind, TITLE, NAME))
     ListenBrainz(fetch).similar_to(IDENTIFIER, MOST)
     return fetch.asked
 
@@ -108,11 +125,11 @@ def test_every_field_sent_is_one_its_address_is_allowed() -> None:
 
 
 def test_a_field_holds_the_name_the_identifier_or_a_constant() -> None:
-    """NFR-PRIV-001: nothing goes out beyond names and identifiers."""
+    """NFR-PRIV-001: nothing beyond names, identifiers and held titles."""
     for address, fields in asked():
         for field, value in fields.items():
             if field == NAME_FIELD:
-                assert value == NAME_AS_ASKED, (address, field, value)
+                assert value in NAMES_AS_ASKED, (address, field, value)
             elif field in IDENTIFIER_FIELDS:
                 assert value == IDENTIFIER, (address, field, value)
             else:

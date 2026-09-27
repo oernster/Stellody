@@ -136,9 +136,9 @@ class Gathering:
     def unknown(self, artist: str, parts: tuple[str, ...] = ()) -> None:
         """A name the catalogue reached nobody under, else the artists it joins.
 
-        A compilation credit nobody is found under is asked about by its parts
-        in this same pass; the credit is then not unrecognised, since each
-        artist it names is still asked about. FR-D53.
+        A name nobody is found under, album artist or compilation credit, is
+        asked about by its parts in this same pass; the name is then not
+        unrecognised, since each artist it joins is still asked about. FR-D53.
         """
         if parts:
             self.passes.add(parts)
