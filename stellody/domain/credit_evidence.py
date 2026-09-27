@@ -72,8 +72,9 @@ def evidence_by_artist(albums: tuple[Album, ...]) -> EvidenceIndex:
     Built once for a run, as `held_by_artist` is. Albums first because an
     album is filed by the listener and so is the stronger statement; tracks
     after, since an artist met only through a compilation has nothing else.
-    A track is filed under its whole credit and under each part of it, since
-    FR-D53 may have taken that credit apart to find the name being settled.
+    An album or a track is filed under its whole artist and under each part
+    of it, since FR-D53 may have taken that name apart to find the one being
+    settled.
     """
     by_album: dict[str, dict[tuple[EvidenceKind, str], Evidence]] = {}
     by_track: dict[str, dict[tuple[EvidenceKind, str], Evidence]] = {}
@@ -81,7 +82,8 @@ def evidence_by_artist(albums: tuple[Album, ...]) -> EvidenceIndex:
         artist = album.identity.album_artist
         if not is_various_artists(artist):
             title = bare_title(album.identity.title)
-            _added(by_album, Evidence(EvidenceKind.ALBUM, title, artist))
+            for name in (artist, *credit_parts(artist)):
+                _added(by_album, Evidence(EvidenceKind.ALBUM, title, name))
         for track in album.tracks:
             title = bare_title(track.title)
             for credit in track.artists:

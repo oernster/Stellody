@@ -253,6 +253,12 @@ ALIASES: dict[str, tuple[str, ...]] = {
     # Ruled by Oliver: the album it sits on is house, which is what the rest
     # of its tags say; Discogs has no Indie Dance style to reach for.
     "indie dance": ("House",),  # 3 files
+    # Ruled by Oliver on 2026-09-27, from what MusicBrainz states for similar
+    # artists rather than from a file tag. Unrecognised, they withheld every
+    # candidate stating them from a house and techno run: Dirtyloud was
+    # offered nobody, since James Egbert and Noisia read as Electronic alone.
+    "electro house": ("House",),  # 2 candidates
+    "ambient techno": ("Techno",),  # 5 candidates, The Field among them
     # Ruled by Oliver: crossover is classical meeting popular music, so it
     # states both mains rather than asking for a name of its own. The album it
     # sits on agrees, its only other tagged track carrying `pop`.

@@ -56,6 +56,12 @@ def test_a_part_of_a_credit_holds_the_track() -> None:
     assert found == (Evidence(EvidenceKind.TRACK, "You Caress", "Avalon"),)
 
 
+def test_a_part_of_an_album_artist_holds_the_album() -> None:
+    albums = (_album("Seb Fontaine / John Kelly", "Perfecto", ("Intro", "Nobody")),)
+    found = evidence_for(evidence_by_artist(albums), "John Kelly")
+    assert found == (Evidence(EvidenceKind.ALBUM, "Perfecto", "John Kelly"),)
+
+
 def test_a_compilation_is_not_evidence_for_various_artists() -> None:
     albums = (_album("Various Artists", "Adapt", ("One", "Somebody")),)
     assert evidence_for(evidence_by_artist(albums), "Various Artists") == ()

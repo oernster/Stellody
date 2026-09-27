@@ -28,9 +28,11 @@ _ARTIST_SEPARATORS = re.compile(r"\s*(?:;|/|\b(?:feat|ft|vs)\b\.?)\s*", re.IGNOR
 # ampersand is typed by hand in some tags, so ", &" is one join rather than two.
 # "Featuring" and its short forms join a guest to the artist, which is how
 # "Rone Featuring Noga Erez" reached nobody whole: measured on 2026-09-27, six
-# of the twenty-two names a run could not find were joined that way.
+# of the twenty-two names a run could not find were joined that way. A solidus
+# joins only with a space on each side, as in "Seb Fontaine / John Kelly": bare,
+# it belongs to names such as AC/DC.
 _CREDIT_JOINS = re.compile(
-    r"\s*(?:,\s*&|,|&|\s(?:featuring|feat\.?|ft\.)\s)\s*", re.IGNORECASE
+    r"\s*(?:,\s*&|,|&|\s/\s|\s(?:featuring|feat\.?|ft\.)\s)\s*", re.IGNORECASE
 )
 # The number a Discogs-sourced tag keeps after a name it shares with somebody
 # else, as in "JOBE (10)". It is Discogs' own filing and means nothing to any

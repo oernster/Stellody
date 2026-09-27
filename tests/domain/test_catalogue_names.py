@@ -88,3 +88,15 @@ def test_a_featured_guest_comes_apart(credit: str, parts: tuple[str, ...]) -> No
 
 def test_featuring_inside_a_word_is_not_a_join() -> None:
     assert credit_parts("Defeat Featurette") == ()
+
+
+def test_a_spaced_solidus_is_a_join() -> None:
+    assert credit_parts("Seb Fontaine / John Kelly / Graeme Park") == (
+        "Seb Fontaine",
+        "John Kelly",
+        "Graeme Park",
+    )
+
+
+def test_a_bare_solidus_belongs_to_the_name() -> None:
+    assert credit_parts("AC/DC") == ()

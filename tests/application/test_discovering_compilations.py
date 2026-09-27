@@ -1,4 +1,4 @@
-"""FR-D53: a compilation credit nobody is found under is asked about by its parts.
+"""FR-D53: a name nobody is found under is asked about by its parts.
 
 Driven against the same hand-written catalogues as every other run test, so
 what is asserted is which questions are asked and in what order.
@@ -63,12 +63,21 @@ def test_a_part_already_asked_about_is_not_asked_again() -> None:
     assert catalogue.identified == ["Dilby", "Dilby & Tinlicker", "Tinlicker"]
 
 
-def test_an_album_artist_nobody_knows_is_not_split() -> None:
-    """The name an album is filed under is the listener's, so it stays whole."""
-    catalogue = Catalogue(identities={"Simon & Garfunkel": UNKNOWN})
-    report = run_over((make_album("Simon & Garfunkel", "Bookends"),), catalogue)
+def test_an_album_artist_nobody_knows_is_asked_about_by_its_parts() -> None:
+    """Ruled by Oliver on 2026-09-27: "Seb Fontaine / John Kelly / Graeme Park"
+    reached nobody whole and named three artists nobody was asking about."""
+    whole = "Seb Fontaine / John Kelly / Graeme Park"
+    catalogue = Catalogue(identities={whole: UNKNOWN})
+    report = run_over((make_album(whole, "Perfecto Presents"),), catalogue)
+    assert catalogue.identified == [whole, "Seb Fontaine", "John Kelly", "Graeme Park"]
+    assert report.unresolved == ()
+
+
+def test_an_album_artist_known_whole_is_not_split() -> None:
+    """Asked whole first, so a duo named with an ampersand stays one duo."""
+    catalogue = Catalogue()
+    run_over((make_album("Simon & Garfunkel", "Bookends"),), catalogue)
     assert catalogue.identified == ["Simon & Garfunkel"]
-    assert report.unresolved == ("Simon & Garfunkel",)
 
 
 def test_a_run_leaving_compilations_out_asks_nothing_of_them() -> None:

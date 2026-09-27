@@ -83,7 +83,6 @@ from stellody.domain.discovery import (
     artists_missing,
     held_by_artist,
     held_for,
-    names_beyond,
     source_artists,
 )
 from stellody.domain.matching import ReleaseMatch
@@ -169,10 +168,6 @@ class Discovery:
         artists = source_artists(albums, ticked, compilations)
         if not artists:
             return RunReport(outcome=RunOutcome.NOTHING_TO_ASK)
-        # The names only a compilation put in front of the run: the one kind of
-        # name that may be taken apart when nobody is found under the whole of
-        # it. An album artist is the listener's own filing and stays whole.
-        credits = frozenset(names_beyond(artists, source_artists(albums, ticked)))
         # Read once and handed to both halves. The first half counts the
         # candidates it meets that are NOT in here, since those are exactly
         # what the second half will have to ask about; reading it twice would
@@ -183,7 +178,7 @@ class Discovery:
         # mean the same whichever stage happened to be asking them.
         silence = Silence()
         gathered, ending = self._gathered(
-            albums, artists, credits, (ticked, years), report, cancelled, known, silence
+            albums, artists, (ticked, years), report, cancelled, known, silence
         )
         if ending is not None:
             return ending
@@ -210,7 +205,6 @@ class Discovery:
         self,
         albums: tuple[Album, ...],
         artists: tuple[str, ...],
-        credits: frozenset[str],
         wanted: tuple[tuple[str, ...], ReleaseYears],
         report: ProgressReport,
         cancelled: CancelledCheck,
@@ -288,7 +282,9 @@ class Discovery:
                 silence.ended()
                 done += 1
                 if gaps is None:
-                    parts = credit_parts(artist) if artist in credits else ()
+                    # Any name, album artist or credit, is taken apart once
+                    # nobody is found under the whole of it. FR-D53.
+                    parts = credit_parts(artist)
                     gathered.unknown(
                         artist, tuple(p for p in parts if not is_various_artists(p))
                     )

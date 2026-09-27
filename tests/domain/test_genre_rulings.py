@@ -133,6 +133,16 @@ class TestTheRulingsOnTheRest:
         Discogs has no Indie Dance style to reach for."""
         assert genres.chosen_in("indie dance") == ("Electronic", "House")
 
+    def test_electro_house_is_house(self) -> None:
+        """Stated by MusicBrainz for James Egbert and Noisia, who were withheld
+        from a house run as Electronic alone; Dirtyloud was offered nobody."""
+        assert genres.chosen_in("electro house") == ("Electronic", "House")
+
+    def test_ambient_techno_is_techno(self) -> None:
+        """Stated by MusicBrainz for The Field and four more, withheld from a
+        techno run until this was ruled."""
+        assert genres.chosen_in("ambient techno") == ("Electronic", "Techno")
+
     def test_classical_crossover_is_classical_and_pop(self) -> None:
         """1 file, Alexis Ffrench's `Truth`, whose only other tagged track
         carries `pop`. Crossover is classical meeting popular music."""

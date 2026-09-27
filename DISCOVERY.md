@@ -372,15 +372,15 @@ Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_ye
 
 ---
 
-**FR-D53 A credit nobody is found under is asked about by its parts**
+**FR-D53 A name nobody is found under is asked about by its parts**
 
 Priority: Must
 
-Requirement: Where a track credit taken from a compilation reaches nobody in the
-catalogue and names several artists joined by an ampersand, a comma or
-"Featuring" (with its short forms "feat." and "ft."), the discovery service
-shall take each of those artists as a source artist in the
-same run. That credit shall not then be reported as unrecognised; a part that
+Requirement: Where a source artist's name (an album artist or a track credit
+taken from a compilation) reaches nobody in the catalogue and names several
+artists joined by an ampersand, a comma, a solidus with a space on each side
+or "Featuring" (with its short forms "feat." and "ft."), the discovery service
+shall take each of those artists as a source artist in the same run. That credit shall not then be reported as unrecognised; a part that
 reaches nobody shall be. A part that is already a source artist shall not be
 asked about twice.
 
@@ -388,8 +388,12 @@ Rationale: Ruled by Oliver on 2026-09-13. The whole credit is asked first
 because an ampersand does not always join two people: Eli & Fur is one duo,
 which split would be two names meaning nobody. It falls back to the parts
 because a credit such as ODESZA & Bettye LaVette may reach nobody whole while
-naming two artists a catalogue can each be asked about. An album artist is left
-whole, since the name somebody filed an album under is theirs to decide.
+naming two artists a catalogue can each be asked about. An album artist was
+left whole until Oliver ruled otherwise on 2026-09-27: "Seb Fontaine / John
+Kelly / Graeme Park" and "Across Boundaries, Chris Stussy, Locklead" reached
+nobody whole while naming artists nobody was then asking about. The whole name
+is still asked first, so a duo known whole stays one. A bare solidus is not a
+join, since it belongs to names such as AC/DC.
 "Featuring" was added on 2026-09-27: six of the 22 names a run could not find
 were credits such as "Rone Featuring Noga Erez".
 
@@ -398,7 +402,7 @@ does not know while it knows both artists, when the run asks, then ODESZA and
 Bettye LaVette are each asked about and the credit is not reported as
 unrecognised. Given "Eli & Fur" known whole, then no part of it is asked about.
 
-Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_comes_apart`, `tests/domain/test_text.py::test_a_credit_naming_one_artist_has_no_parts`, `tests/application/test_discovering_compilations.py::test_an_unrecognised_credit_is_asked_about_by_its_parts`, `tests/application/test_discovering_compilations.py::test_a_recognised_credit_is_not_split`, `tests/application/test_discovering_compilations.py::test_a_part_nobody_knows_is_reported_unrecognised`, `tests/application/test_discovering_compilations.py::test_a_part_already_asked_about_is_not_asked_again`, `tests/application/test_discovering_compilations.py::test_an_album_artist_nobody_knows_is_not_split`, `tests/domain/test_catalogue_names.py::test_a_featured_guest_comes_apart`, `tests/domain/test_catalogue_names.py::test_featuring_inside_a_word_is_not_a_join`
+Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_comes_apart`, `tests/domain/test_text.py::test_a_credit_naming_one_artist_has_no_parts`, `tests/application/test_discovering_compilations.py::test_an_unrecognised_credit_is_asked_about_by_its_parts`, `tests/application/test_discovering_compilations.py::test_a_recognised_credit_is_not_split`, `tests/application/test_discovering_compilations.py::test_a_part_nobody_knows_is_reported_unrecognised`, `tests/application/test_discovering_compilations.py::test_a_part_already_asked_about_is_not_asked_again`, `tests/application/test_discovering_compilations.py::test_an_album_artist_nobody_knows_is_asked_about_by_its_parts`, `tests/application/test_discovering_compilations.py::test_an_album_artist_known_whole_is_not_split`, `tests/domain/test_catalogue_names.py::test_a_spaced_solidus_is_a_join`, `tests/domain/test_catalogue_names.py::test_a_bare_solidus_belongs_to_the_name`, `tests/domain/test_catalogue_names.py::test_a_featured_guest_comes_apart`, `tests/domain/test_catalogue_names.py::test_featuring_inside_a_word_is_not_a_join`
 
 ---
 
