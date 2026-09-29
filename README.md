@@ -383,7 +383,7 @@ Stellody is free and stays free. There is no paid tier, no licence key and no
 feature held back behind a donation. If it has replaced something you were
 paying for, a donation supports its maintenance and continued development.
 
-<a href="https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"><img src="docs/donate.png" alt="Donate to Stellody" width="120"></a>
+<a href="https://www.paypal.com/ncp/payment/A7PWRKSKXHBGC"><img src="docs/donate.png" alt="Donate to Stellody" width="120"></a>
 
 ## Licence
 

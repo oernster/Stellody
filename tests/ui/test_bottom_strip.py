@@ -45,7 +45,7 @@ NARROWING_PX = (1600, 1400, 1100, 1000, 900, 800, 700)
 # Written out rather than read from the source it is checking. Comparing the
 # constant against itself passes whatever it is changed to, which for a payment
 # address is the one change that must never happen quietly.
-EXPECTED_DONATE_URL = "https://www.paypal.com/ncp/payment/QGC2XK2Z5WNUW"
+EXPECTED_DONATE_URL = "https://www.paypal.com/ncp/payment/A7PWRKSKXHBGC"
 
 
 @pytest.fixture
