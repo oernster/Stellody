@@ -46,8 +46,10 @@ from stellody.application.candidate_years import CandidateYears
 from stellody.application.discovery_ports import (
     CatalogueSource,
     GenreMemory,
+    NoSeries,
     NothingRemembered,
     RunCancelled,
+    SeriesSource,
     SimilaritySource,
     SourceFailed,
     SourceRefused,
@@ -64,6 +66,8 @@ from stellody.application.remembering import (
     RememberingCatalogue,
     RememberingSimilarity,
 )
+from stellody.application.remembering_series import RememberingSeries
+from stellody.application.series_stage import SeriesStage
 from stellody.application.settling import settled
 from stellody.application.values import (
     Ambiguity,
@@ -87,6 +91,7 @@ from stellody.domain.discovery import (
 )
 from stellody.domain.matching import ReleaseMatch
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
+from stellody.domain.series import series_albums
 from stellody.domain.text import credit_parts, is_various_artists
 
 # How many similar artists to ask for. Settled in PLAN.md and confirmed on
@@ -104,6 +109,8 @@ class Discovery:
     pause: Pause
     memory: GenreMemory = field(default_factory=NothingRemembered)
     recall: CatalogueMemory = field(default_factory=NothingKept)
+    # Asked about the other volumes of a compilation. FR-D69.
+    series: SeriesSource = field(default_factory=NoSeries)
     # What a remembered answer's age is measured against. Injected for the
     # reason the pause is: a test standing a month from now must not wait one.
     now: Clock = time.time
@@ -151,6 +158,7 @@ class Discovery:
                 similarity=RememberingSimilarity(
                     self.similarity, kept, self.now, self.recall
                 ),
+                series=RememberingSeries(self.series, kept, self.now, self.recall),
             )._asked(albums, ticked, report, cancelled, compilations, years)
         finally:
             self.recall.remember(kept)
@@ -166,7 +174,8 @@ class Discovery:
     ) -> RunReport:
         """The run itself, with the memory already standing in front of it."""
         artists = source_artists(albums, ticked, compilations)
-        if not artists:
+        # A compilation crediting nobody askable still has its series. FR-D69.
+        if not artists and not (compilations and series_albums(albums, ticked)):
             return RunReport(outcome=RunOutcome.NOTHING_TO_ASK)
         # Read once and handed to both halves. The first half counts the
         # candidates it meets that are NOT in here, since those are exactly
@@ -182,6 +191,17 @@ class Discovery:
         )
         if ending is not None:
             return ending
+        if compilations:
+            series = SeriesStage(self.catalogue, self.series, self.pause).found(
+                albums, gathered.gaps, (ticked, years), report, cancelled, silence
+            )
+            if isinstance(series, RunReport):
+                return series
+            gathered = replace(
+                gathered,
+                gaps=gathered.gaps + series[0],
+                failed=gathered.failed + series[1],
+            )
         kept = CandidateGenres(self.catalogue, self.pause, self.memory).narrowed(
             gathered.gaps, ticked, report, cancelled, known, silence
         )

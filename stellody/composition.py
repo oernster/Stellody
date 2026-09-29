@@ -46,6 +46,7 @@ from stellody.infrastructure.artwork import FileArtwork
 from stellody.infrastructure.audio import WasapiPlayback
 from stellody.infrastructure.browsing import SystemBrowser, SystemClipboard
 from stellody.infrastructure.catalogue import MusicBrainz
+from stellody.infrastructure.catalogue_series import MusicBrainzSeries
 from stellody.infrastructure.courtesy import REQUEST_GAP_S, Gate
 from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
@@ -176,6 +177,9 @@ def build_window(
             # service felt like that minute. Shared with the expansion below,
             # so an artist opened once is known to the next run as well.
             recall=recall,
+            # The other volumes of a compilation, asked through the same gate
+            # as the catalogue since it is the same host. FR-D69.
+            series=MusicBrainzSeries(Fetcher(gate)),
         ),
         write_discovery=discovery_file.write,
         # What including compilations would add to a run, priced before it is

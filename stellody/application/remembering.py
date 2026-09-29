@@ -50,6 +50,7 @@ from stellody.application.discovery_ports import (
 )
 from stellody.domain.credit_evidence import Evidence
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+from stellody.domain.series import Series
 
 # How long an answer stands before it is asked about again. A month rather
 # than a day, since what a catalogue holds about an artist who released a
@@ -79,9 +80,14 @@ IDENTIFIERS = "identities"
 ALBUMS = "albums"
 SIMILAR = "similar"
 CREDITED = "credited"
+# The three series questions: which series a title is in, what a series holds
+# and what a search for a stem answers. FR-D69, FR-D70.
+SERIES_OF = "series-of"
+SERIES = "series"
+TITLED = "titled"
 # Every kind a recollection holds, so a stamp for a kind no longer asked about
 # can be told apart from one that is and left behind.
-KINDS = (IDENTIFIERS, ALBUMS, SIMILAR, CREDITED)
+KINDS = (IDENTIFIERS, ALBUMS, SIMILAR, CREDITED, SERIES_OF, SERIES, TITLED)
 # When an answer with no stamp reads as written: before anything was, so it
 # is asked about again and gives way to any answer that says when it came.
 UNSTAMPED = 0.0
@@ -107,6 +113,9 @@ class Recollection:
     similar: dict[str, tuple[SimilarArtist, ...]] = field(default_factory=dict)
     # Who a catalogue credited on a held title, by `Evidence.question`.
     credited: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    series_of: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    series: dict[str, Series] = field(default_factory=dict)
+    titled: dict[str, tuple[ReleaseGroup, ...]] = field(default_factory=dict)
     # When each answer was written down, by the question it answers, kept in
     # one place rather than beside each answer so the three shapes above stay
     # what they are. A question with no stamp is one written by a Stellody
@@ -142,6 +151,9 @@ def merged(standing: Recollection, kept: Recollection) -> Recollection:
         albums=dict(standing.albums),
         similar=dict(standing.similar),
         credited=dict(standing.credited),
+        series_of=dict(standing.series_of),
+        series=dict(standing.series),
+        titled=dict(standing.titled),
         written_at=dict(standing.written_at),
     )
     for kind, answers, into in (
@@ -149,6 +161,9 @@ def merged(standing: Recollection, kept: Recollection) -> Recollection:
         (ALBUMS, kept.albums, result.albums),
         (SIMILAR, kept.similar, result.similar),
         (CREDITED, kept.credited, result.credited),
+        (SERIES_OF, kept.series_of, result.series_of),
+        (SERIES, kept.series, result.series),
+        (TITLED, kept.titled, result.titled),
     ):
         for key, answer in answers.items():
             stamp = stamp_for(kind, key)
@@ -213,6 +228,35 @@ class NothingKept:
         """Drop it, deliberately."""
 
 
+@dataclass(frozen=True, slots=True)
+class Asking:
+    """Where one kind of answer is recalled from and noted to."""
+
+    kept: Recollection
+    keeper: CatalogueMemory
+    now: Clock
+    kind: str
+
+
+def recalled[Answer](
+    asking: Asking, key: str, held: dict, ask: Callable[[], Answer]
+) -> Answer:
+    """The remembered answer while it stands; else asked, then written down.
+
+    In hand and on the disk in the same breath, so a run that dies between
+    this answer and the next keeps this one. One home for the rule, since the
+    catalogue and the series source both keep their answers this way.
+    """
+    if asking.kept.holds(asking.kind, key, held, asking.now()):
+        return held[key]
+    found = ask()
+    when = asking.now()
+    held[key] = found
+    asking.kept.written_at[stamp_for(asking.kind, key)] = when
+    asking.keeper.note(asking.kind, key, found, when)
+    return found
+
+
 def similar_key(identifier: str, most: int) -> str:
     """How a request for similar artists is remembered.
 
@@ -235,49 +279,36 @@ class RememberingCatalogue:
     # them. A caller with nowhere to keep anything leaves it alone.
     keeper: CatalogueMemory = field(default_factory=NothingKept)
 
-    def _standing(self, kind: str, key: str, held: dict) -> bool:
-        """Whether this answer is both known and still young enough to use."""
-        return self.kept.holds(kind, key, held, self.now())
-
-    def _kept(self, kind: str, key: str, held: dict, found: object) -> None:
-        """Write an answer down, with when it was written.
-
-        In hand and on the disk in the same breath, so a run that dies between
-        this answer and the next keeps this one.
-        """
-        when = self.now()
-        held[key] = found
-        self.kept.written_at[stamp_for(kind, key)] = when
-        self.keeper.note(kind, key, found, when)
-
     def identify(self, name: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
         """Who this name means, from memory where it is already known."""
-        if self._standing(IDENTIFIERS, name, self.kept.identifiers):
-            return self.kept.identifiers[name]
-        found = self.catalogue.identify(name, wanted)
-        self._kept(IDENTIFIERS, name, self.kept.identifiers, found)
-        return found
+        return recalled(
+            Asking(self.kept, self.keeper, self.now, IDENTIFIERS),
+            name,
+            self.kept.identifiers,
+            lambda: self.catalogue.identify(name, wanted),
+        )
 
     def credited(
         self, evidence: Evidence, wanted: Wanted = always_wanted
     ) -> tuple[str, ...]:
         """Who is credited on a held title, from memory where it is known."""
-        question = evidence.question
-        if self._standing(CREDITED, question, self.kept.credited):
-            return self.kept.credited[question]
-        found = self.catalogue.credited(evidence, wanted)
-        self._kept(CREDITED, question, self.kept.credited, found)
-        return found
+        return recalled(
+            Asking(self.kept, self.keeper, self.now, CREDITED),
+            evidence.question,
+            self.kept.credited,
+            lambda: self.catalogue.credited(evidence, wanted),
+        )
 
     def albums_of(
         self, identifier: str, wanted: Wanted = always_wanted
     ) -> tuple[ReleaseGroup, ...]:
         """What this artist released, from memory where it is already known."""
-        if self._standing(ALBUMS, identifier, self.kept.albums):
-            return self.kept.albums[identifier]
-        found = self.catalogue.albums_of(identifier, wanted)
-        self._kept(ALBUMS, identifier, self.kept.albums, found)
-        return found
+        return recalled(
+            Asking(self.kept, self.keeper, self.now, ALBUMS),
+            identifier,
+            self.kept.albums,
+            lambda: self.catalogue.albums_of(identifier, wanted),
+        )
 
     def genres_of(
         self, identifier: str, wanted: Wanted = always_wanted
@@ -305,13 +336,9 @@ class RememberingSimilarity:
         self, identifier: str, most: int, wanted: Wanted = always_wanted
     ) -> tuple[SimilarArtist, ...]:
         """Who resembles this artist, from memory where it is already known."""
-        question = similar_key(identifier, most)
-        stamp = stamp_for(SIMILAR, question)
-        if question in self.kept.similar and self.kept.standing(stamp, self.now()):
-            return self.kept.similar[question]
-        found = self.similarity.similar_to(identifier, most, wanted)
-        when = self.now()
-        self.kept.similar[question] = found
-        self.kept.written_at[stamp] = when
-        self.keeper.note(SIMILAR, question, found, when)
-        return found
+        return recalled(
+            Asking(self.kept, self.keeper, self.now, SIMILAR),
+            similar_key(identifier, most),
+            self.kept.similar,
+            lambda: self.similarity.similar_to(identifier, most, wanted),
+        )

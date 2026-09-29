@@ -48,6 +48,8 @@ RELEASED = "released"
 YEARS = "years"
 EARLIEST = "earliest"
 LATEST = "latest"
+# Whether an entry names a series rather than an artist. FR-D74.
+SERIES = "series"
 CACHE_NAME = "artist-genres.json"
 CACHE_JOURNAL_NAME = "artist-genres.record"
 
@@ -101,6 +103,7 @@ def _as_written(report: RunReport) -> dict:
             gaps.artist: {
                 "albums": [album_as(group) for group in gaps.albums],
                 "artists": [artist_as(artist) for artist in gaps.artists],
+                SERIES: gaps.series,
             }
             for gaps in report.gaps
         },
@@ -278,6 +281,7 @@ def read() -> LastRun:
                     )
                     if candidate is not None
                 ),
+                series=entry.get(SERIES) is True,
             )
         )
     return LastRun(gaps=tuple(found), ticked=ticked, years=years_from(held))

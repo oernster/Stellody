@@ -60,6 +60,10 @@ One meaning per term, for the life of the document.
 | **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while compilations are included, each track credit on it instead. Also each artist a name joins, once the catalogue finds nobody under the whole name (FR-D53). Never "Various Artists" itself. |
 | **Compilation** | A held album whose album artist names various artists rather than a person, as `AlbumIdentity.is_compilation` decides. |
 | **Track credit** | One of a track's artists, split exactly as the library splits them for playback. |
+| **Placeholder artist** | An album artist the catalogue identifies as exactly one artist who has released no album and no EP. MusicBrainz's "Global Underground", described there as an artist used to tag GU DJ mixes, is the measured case. |
+| **Series album** | A held album inside the ticked genres, while compilations are included, that is a compilation or is filed under a placeholder artist. |
+| **Series stem** | A title cut at its first bracket, its first " / " and its first " - ", then with a trailing number marker taken off: "#7", "No. 7", "Vol. 7", "Volume 7", "Part 7" or a bare "7". "Global Underground: Afterhours 4 - Ibiza / Unmixed" has the stem "Global Underground: Afterhours" and the number 4. |
+| **Series** | A named run of release groups the catalogue groups together. A catalogue series (MusicBrainz's own); where a series album belongs to none, every release group whose series stem equals that album's instead. |
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
 | **Candidate artist** | An artist a source gives as similar to a source artist, whom the library does not hold. |
 | **Release key** | The value two albums are judged the same album on, defined in section 3.5. The title alone, normalised, with edition qualifiers removed and the year deliberately absent. |
@@ -2205,6 +2209,157 @@ Verified by: `tests/ui/test_discovery_years.py::TestAnAlbumRowSaysItsYear`
 
 ---
 
+**FR-D69 A series album is asked about by the series it belongs to**
+
+Priority: Must
+
+Requirement: While compilations are included, when a run reaches a series
+album, the discovery service shall offer each entry of that album's catalogue
+series that the library does not hold.
+
+Rationale: Reported by Oliver on 2026-09-29, looking at "Global Underground (0
+albums)" in the results of a run over Deep House, House, Progressive House and
+Tech House. Measured the same day: MusicBrainz knows a "Global Underground"
+artist with no release groups at all, so asking it for albums answered nothing;
+the albums themselves are credited to Various Artists. What MusicBrainz does
+hold is a release group series for Adapt, Select, Afterhours, Nubreed and
+others, listing every entry in order. A compilation's natural neighbours are
+the other volumes of it, which asking about artists can never reach.
+
+Acceptance: Given held albums "Global Underground: Adapt #2" and "Global
+Underground: Adapt #6" credited to Various Artists, with compilations included,
+when the catalogue places both in the series "Global Underground: Adapt" of six
+entries, then that series is offered with Adapt, Adapt #3, Adapt #4 and Adapt
+#5 and nothing else.
+
+Verified by: `tests/application/test_discovering_series.py::test_a_compilation_brings_its_series`
+
+---
+
+**FR-D70 A series album in no catalogue series is matched by its stem**
+
+Priority: Must
+
+Requirement: If a series album belongs to no catalogue series, then the
+discovery service shall offer each release group whose series stem equals the
+album's series stem and which the library does not hold.
+
+Rationale: Measured on 2026-09-29: "Global Underground: Unique" sits in no
+MusicBrainz series, while a title search finds Unique, Unique #2 and Unique #3.
+Ruled by Oliver the same day: the catalogue series first, the stem second.
+
+Acceptance: Given held "Global Underground: Unique #2" filed under the
+placeholder artist "Global Underground", with compilations included and no
+catalogue series for it, when a title search answers Unique, Unique #2, Unique
+#3 and "Global Underground: Uniqueness", then Unique and Unique #3 are offered
+under "Global Underground: Unique".
+
+Verified by: `tests/application/test_discovering_series.py::test_no_series_falls_back_to_the_stem`, `tests/domain/test_series.py`
+
+---
+
+**FR-D71 A series entry is judged held on its stem and number**
+
+Priority: Must
+
+Requirement: The discovery service shall treat a series entry as held where
+any held album has either the same series stem and number or the same release
+key (section 3.5), whoever that album is filed under.
+
+Rationale: Measured from the tags on 2026-09-29: the library writes "Global
+Underground: Select #7 / Unmixed" and "Global Underground: Afterhours 4 -
+Ibiza / Unmixed", which the release key does not reduce to the catalogue's
+title, so the release key alone would offer back what is on the shelf. FR-D11
+outranks completeness. The artist is ignored because one series is filed under
+"Various", "Various Artists" and "Global Underground" in the same library.
+
+Acceptance: Given held "Global Underground: Select #7 / Unmixed", when the
+series offers "Global Underground: Select #7", then it is not offered.
+
+Verified by: `tests/domain/test_series.py::TestHeld`
+
+---
+
+**FR-D72 A series offers every kind of record in it**
+
+Priority: Must
+
+Requirement: The discovery service shall offer a series entry whatever kinds
+the catalogue states for it, inside the ticked genres and the run's years.
+
+Rationale: The offering rule (FR-D10) leaves out compilations and DJ mixes,
+because by an artist already held they are noise. Measured on 2026-09-29, every
+Global Underground entry is typed Compilation, DJ-mix or both, so that rule
+would leave every series empty. The rule for artists is unchanged.
+
+Acceptance: Given a series entry typed Compilation and DJ-mix, first released in
+2018, when the run has no years set, then it is offered.
+
+Verified by: `tests/domain/test_series.py::TestMissing`
+
+---
+
+**FR-D73 A series question that fails is said, not hidden**
+
+Priority: Must
+
+Requirement: If a question about a series album is refused through every ask,
+times out or fails, then the discovery service shall record that album's title
+as a failure of the run and carry on with the next series album.
+
+Rationale: The same judgement FR-D20 makes about artists: a series nobody could
+look up is exactly the one somebody would read as complete. The silence rule of
+FR-D22 holds too, since the connection is one thing.
+
+Acceptance: Given a catalogue that refuses every series question, when a run
+reaches "Global Underground: Adapt #2", then the report names that title among
+its failures and the run completes.
+
+Verified by: `tests/application/test_discovering_series.py::test_a_refused_series_is_a_failure`
+
+---
+
+**FR-D74 A series is shown as a series**
+
+Priority: Must
+
+Requirement: The results dialog shall show each offered series as a heading
+naming the series, the word "series" and its count of albums, with the missing
+entries beneath it.
+
+Rationale: A series is not an artist, so a heading reading like one tells a
+listener they hold somebody they do not. The name, the flag and the entries are
+written to the discovery file, so the heading survives the file being read
+back (FR-D28). An entry's shop artist is "Various Artists", which is how the
+catalogue credits the series measured; it is Claude's choice rather than a
+ruling and stands until Oliver says otherwise.
+
+Acceptance: Given the Adapt series with four missing entries, when the results
+open, then a heading reads "Global Underground: Adapt (series, 4 albums)".
+
+Verified by: `tests/ui/test_results_series.py`, `tests/infrastructure/test_discovery_file.py::test_a_series_survives_the_file`
+
+---
+
+**FR-D75 A heading with nothing under it is not shown**
+
+Priority: Must
+
+Requirement: The results dialog shall leave out any heading with no album and
+no similar artist beneath it.
+
+Rationale: Ruled by Oliver on 2026-09-29, over "Global Underground (0
+albums)": a heading with nothing under it says nothing a listener can act on.
+The discovery file still records it, so what was asked stays on record.
+
+Acceptance: Given an answer holding "Global Underground" with nothing found and
+"Giza Djs" with three albums, when the results open, then only "Giza Djs" is
+shown.
+
+Verified by: `tests/ui/test_results_series.py::test_an_empty_heading_is_left_out`
+
+---
+
 ### 3.2 Non-functional requirements
 
 ---
@@ -2638,7 +2793,7 @@ that is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D68 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D75 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
@@ -2649,7 +2804,11 @@ beyond what a source states; remembering across runs what was offered and
 rejected; reopening a past run's results from the menu, which FR-D28 makes cheap
 to add later and which nobody has asked for yet; year presets, decade buttons
 or a slider beside the two fields of FR-D58; narrowing a finished answer by
-year on the results screen, where FR-D54 narrows by genre.
+year on the results screen, where FR-D54 narrows by genre; asking about the
+series of an album filed under its DJ (such as "Global Underground #47: Joseph
+Capriati - Montreal"), which reaches that DJ as an artist and is left there;
+counting series questions in the price of FR-D52, which stays a pace for the
+artists it names.
 
 ## 5. Open questions
 

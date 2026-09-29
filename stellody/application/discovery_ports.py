@@ -19,6 +19,7 @@ from typing import Protocol
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.credit_evidence import Evidence
 from stellody.domain.discovery import LastRun, ReleaseGroup, SimilarArtist
+from stellody.domain.series import Series
 
 
 class DiscoveryError(RuntimeError):
@@ -104,6 +105,47 @@ class CatalogueSource(Protocol):
     ) -> tuple[str, ...]:
         """What this artist is said to play; empty where nothing is said."""
         ...
+
+
+class SeriesSource(Protocol):
+    """Knows which series a compilation belongs to and what else is in it.
+
+    FR-D69, FR-D70. Its own port rather than three more questions on the
+    catalogue's, so a run given nothing to ask about series has a null object
+    to hold rather than a catalogue that must answer questions it never gets.
+    """
+
+    def series_of(self, title: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
+        """The series a release group of exactly this title belongs to."""
+        ...
+
+    def series(self, identifier: str, wanted: Wanted = always_wanted) -> Series:
+        """One series, named, with every release group in it."""
+        ...
+
+    def titled(
+        self, stem: str, wanted: Wanted = always_wanted
+    ) -> tuple[ReleaseGroup, ...]:
+        """The release groups a search for this stem answers with."""
+        ...
+
+
+class NoSeries:
+    """A series source that knows of none, for a run given nothing to ask."""
+
+    def series_of(self, title: str, wanted: Wanted = always_wanted) -> tuple[str, ...]:
+        """No series, because none is asked about."""
+        return ()
+
+    def series(self, identifier: str, wanted: Wanted = always_wanted) -> Series:
+        """Never reached: `series_of` names no series to ask about."""
+        raise SourceFailed(f"no series source to ask about {identifier}")
+
+    def titled(
+        self, stem: str, wanted: Wanted = always_wanted
+    ) -> tuple[ReleaseGroup, ...]:
+        """Nothing, because nothing is asked."""
+        return ()
 
 
 class SimilaritySource(Protocol):

@@ -35,6 +35,7 @@ from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 SIMILAR = "similar artist"
 ALBUM = "album"
 ALBUMS = "albums"
+SERIES = "series"
 # A source artist, with what was found for it. Both counts, since a row saying
 # only its albums leaves the artists beneath it unexplained.
 SOURCE_ROW = "{artist} ({counts})"
@@ -45,7 +46,9 @@ SIMILAR_WITH_ALBUMS = "{similar}, {albums}"
 
 # The three lines under the title. Each is drawn in the colour it describes,
 # except the last, which describes everything else.
-LEGEND_SOURCE = "Blue: an artist you hold. Under it, albums by them you do not."
+LEGEND_SOURCE = (
+    "Blue: an artist or a series you hold. Under it, albums from it you do not."
+)
 LEGEND_CANDIDATE = (
     "Amber: a similar artist you hold nothing by. Open one to fetch its albums."
 )
@@ -143,6 +146,9 @@ def source_row(found: Gaps) -> str:
     of its own children unaccounted for.
     """
     counts = [counted(len(found.albums), ALBUM, ALBUMS)]
+    if found.series:
+        # A series is not an artist, so its heading says which it is. FR-D74.
+        counts.insert(0, SERIES)
     if found.artists:
         counts.append(counted(len(found.artists), SIMILAR, f"{SIMILAR}s"))
     return SOURCE_ROW.format(artist=found.artist, counts=COUNTS_APART.join(counts))

@@ -32,12 +32,16 @@ from stellody.application.remembering import (
     CREDITED,
     IDENTIFIERS,
     KINDS,
+    SERIES,
+    SERIES_OF,
     SIMILAR,
+    TITLED,
     Recollection,
     merged,
     stamp_for,
 )
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+from stellody.domain.series import Series
 from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
 from stellody.infrastructure.discovery_file import (
@@ -50,6 +54,9 @@ from stellody.infrastructure.discovery_file import (
 
 MEMORY_NAME = "catalogue-memory.json"
 JOURNAL_NAME = "catalogue-memory.record"
+# Where a series answer keeps its name and its entries.
+SERIES_NAME = "name"
+SERIES_ALBUMS = "albums"
 
 
 def memory_path() -> pathlib.Path:
@@ -106,6 +113,24 @@ def _dated(found: object) -> bool:
     )
 
 
+def _series(found: object) -> Series | None:
+    """One series answer; None where it is unreadable or undated (FR-D67)."""
+    if not isinstance(found, dict) or not _dated(found.get(SERIES_ALBUMS)):
+        return None
+    name = str(found.get(SERIES_NAME) or "").strip()
+    if not name:
+        return None
+    return Series(name=name, entries=_albums(found.get(SERIES_ALBUMS)))
+
+
+def _series_as(series: Series) -> dict:
+    """One series in the shape the file and the record carry it."""
+    return {
+        SERIES_NAME: series.name,
+        SERIES_ALBUMS: [album_as(album) for album in series.entries],
+    }
+
+
 def _similar(found: object) -> tuple[SimilarArtist, ...]:
     """One similarity answer, with anything unreadable left out of it."""
     return tuple(
@@ -141,6 +166,20 @@ def _kept(held: object) -> Recollection:
             str(question): _identifiers(found)
             for question, found in _mapping(held, CREDITED).items()
         },
+        series_of={
+            str(title): _identifiers(found)
+            for title, found in _mapping(held, SERIES_OF).items()
+        },
+        series={
+            str(identifier): series
+            for identifier, found in _mapping(held, SERIES).items()
+            if (series := _series(found)) is not None
+        },
+        titled={
+            str(stem): _albums(found)
+            for stem, found in _mapping(held, TITLED).items()
+            if _dated(found)
+        },
         # Only the stamps of questions still asked, so a section retired by a
         # rename (see IDENTIFIERS) leaves nothing of itself behind.
         written_at={
@@ -165,18 +204,26 @@ def _as_written(kept: Recollection) -> dict:
             for question, found in kept.similar.items()
         },
         CREDITED: {question: list(found) for question, found in kept.credited.items()},
+        SERIES_OF: {title: list(found) for title, found in kept.series_of.items()},
+        SERIES: {key: _series_as(found) for key, found in kept.series.items()},
+        TITLED: {
+            stem: [album_as(album) for album in found]
+            for stem, found in kept.titled.items()
+        },
         "written_at": dict(kept.written_at),
     }
 
 
-def _answer_as(kind: str, answer: object) -> list:
+def _answer_as(kind: str, answer: object) -> list | dict:
     """One answer in the shape the running record carries it.
 
     The same shapes the file uses, one answer at a time rather than all of
     them, so what the record holds can be read straight back into a
     recollection.
     """
-    if kind == ALBUMS:
+    if kind == SERIES and isinstance(answer, Series):
+        return _series_as(answer)
+    if kind in (ALBUMS, TITLED):
         return [album_as(album) for album in answer]
     if kind == SIMILAR:
         return [artist_as(artist) for artist in answer]
@@ -198,6 +245,12 @@ def _put(kept: Recollection, kind: str, key: str, answer: object) -> bool:
         kept.similar[key] = _similar(answer)
     elif kind == CREDITED:
         kept.credited[key] = _identifiers(answer)
+    elif kind == SERIES_OF:
+        kept.series_of[key] = _identifiers(answer)
+    elif kind == SERIES and (series := _series(answer)) is not None:
+        kept.series[key] = series
+    elif kind == TITLED and _dated(answer):
+        kept.titled[key] = _albums(answer)
     else:
         return False
     return True

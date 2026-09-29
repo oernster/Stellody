@@ -19,6 +19,7 @@ from PySide6.QtGui import QBrush, QColor, QFocusEvent, QKeyEvent
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
+from stellody.domain.text import VARIOUS_ARTISTS
 from stellody.ui.results_ticks import (
     TICKED,
     UNTICKED,
@@ -149,8 +150,11 @@ def source_item(found: Gaps, colour: Palette, rows: CandidateRows) -> QTreeWidge
     list and a name alone leaves a reader to work out which is which.
     """
     item = coloured(QTreeWidgetItem([source_row(found)]), colour.source_artist)
+    # A series names nobody, so a shop is asked for its entries under the
+    # credit the catalogue gives them. FR-D74.
+    artist = VARIOUS_ARTISTS if found.series else found.artist
     for album in found.albums:
-        item.addChild(album_item(album, found.artist, colour))
+        item.addChild(album_item(album, artist, colour))
     for candidate in found.artists:
         item.addChild(candidate_item(candidate, colour, rows))
     return item

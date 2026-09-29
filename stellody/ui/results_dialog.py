@@ -63,6 +63,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from stellody.application.shopping import Shopping
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, ReleaseGroup
+from stellody.domain.discovery_filter import worth_showing
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui.dialogs import FirstStopDialog, title_label
 from stellody.ui.results_asking import AskingResults
@@ -112,6 +113,8 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__(parent)
+        # A heading with nothing under it is left off the screen. FR-D75.
+        gaps = worth_showing(gaps)
         self._asking = asking
         # A dialog given none offers neither control, the same shape as a
         # window with no cover chooser: there and disabled rather than absent.

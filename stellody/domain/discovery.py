@@ -94,11 +94,16 @@ class SimilarArtist:
 
 @dataclass(frozen=True, slots=True)
 class Gaps:
-    """What one source artist turned out to be missing."""
+    """What one source artist turned out to be missing.
+
+    Where `series` is set, `artist` names a series of compilations rather than
+    anybody; the albums are its missing volumes. FR-D69, FR-D74.
+    """
 
     artist: str
     albums: tuple[ReleaseGroup, ...] = ()
     artists: tuple[SimilarArtist, ...] = ()
+    series: bool = False
 
     @property
     def is_empty(self) -> bool:
