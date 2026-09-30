@@ -367,12 +367,22 @@ catalogue, the candidates a run then narrows, the titles FR-D09 puts and the
 artists FR-D53 adds all make a real run longer; the words name a busy catalogue and call the figure a
 pace rather than a forecast.
 
+Amended on 2026-09-29, asked for by Oliver: the price also counts the series
+FR-D69 would look up, named apart from the artists. A series is counted once
+where any held album of it in the ticked genres has no standing answer to which
+series it is in, at three paced requests: a title search, a group lookup, then
+one read of the series or one search for its stem. A placeholder artist is
+recognised from the catalogue memory; one no run has asked about yet cannot be,
+so its series are priced from the second run on. The statement reads, for
+example, "3 artists and 2 series on compilations in these genres have not been
+looked up yet".
+
 Acceptance: Given compilations in a ticked genre crediting three artists nobody
 has looked up, when the dialog shows, then it states three artists with the
 minutes asking about them adds; given all three already looked up, then it
 states that nothing new would be asked.
 
-Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_yet_looked_up_are_counted`, `tests/application/test_compilation_cost.py::test_an_answer_past_its_life_is_counted_again`, `tests/application/test_compilation_cost.py::test_a_credit_a_run_would_ask_about_anyway_costs_nothing`, `tests/application/test_compilation_cost.py::test_the_time_is_priced_at_the_permitted_pace`, `tests/ui/test_discovery_compilations.py::test_the_cost_follows_the_ticks`, `tests/ui/test_discovery_compilations.py::test_nothing_new_to_ask_says_so`
+Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_yet_looked_up_are_counted`, `tests/application/test_compilation_cost.py::test_an_answer_past_its_life_is_counted_again`, `tests/application/test_compilation_cost.py::test_a_credit_a_run_would_ask_about_anyway_costs_nothing`, `tests/application/test_compilation_cost.py::test_the_time_is_priced_at_the_permitted_pace`, `tests/ui/test_discovery_compilations.py::test_the_cost_follows_the_ticks`, `tests/ui/test_discovery_compilations.py::test_nothing_new_to_ask_says_so`, `tests/application/test_compilation_cost.py::test_a_series_is_priced_once_however_many_volumes_are_held`, `tests/application/test_compilation_cost.py::test_a_placeholder_the_memory_knows_brings_its_series`, `tests/ui/test_discovery_compilations.py::test_the_sentence_names_the_series_too`
 
 ---
 
@@ -2806,9 +2816,7 @@ to add later and which nobody has asked for yet; year presets, decade buttons
 or a slider beside the two fields of FR-D58; narrowing a finished answer by
 year on the results screen, where FR-D54 narrows by genre; asking about the
 series of an album filed under its DJ (such as "Global Underground #47: Joseph
-Capriati - Montreal"), which reaches that DJ as an artist and is left there;
-counting series questions in the price of FR-D52, which stays a pace for the
-artists it names.
+Capriati - Montreal"), which reaches that DJ as an artist and is left there.
 
 ## 5. Open questions
 

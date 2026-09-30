@@ -101,6 +101,16 @@ def test_the_sentence_names_one_artist_and_a_short_wait_plainly() -> None:
     assert "314 artists" in many
 
 
+def test_the_sentence_names_the_series_too() -> None:
+    """A series is not an artist, so it is counted in its own words."""
+    both = cost_sentence(Cost(names=3, seconds=SECONDS_PER_MINUTE * 2, series=2))
+    alone = cost_sentence(Cost(names=0, seconds=SECONDS_PER_MINUTE / 2, series=1))
+    assert both.startswith(
+        "3 artists and 2 series on compilations in these genres have not"
+    )
+    assert alone.startswith("One series on compilations in these genres has not")
+
+
 def test_the_choice_is_remembered_between_openings(application, monkeypatch) -> None:
     """FR-D51: it opens as it was last left."""
     window = make_window(application)

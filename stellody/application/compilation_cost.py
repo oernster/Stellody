@@ -12,6 +12,13 @@ about it again.
 
 **The memory is read once for each dialog.** It is megabytes on disk, while a
 sweep of the genre grid moves every box and each asks for a new price.
+
+**The series are priced as well.** Ticking the box also asks about the other
+volumes of each compilation (FR-D69), so a series is counted once where any
+held album of it has no standing answer. A placeholder artist is recognised
+from the memory; one never asked about until now cannot be, since only the run
+itself learns that the name released nothing, so its series are priced from
+the second run on.
 """
 
 from __future__ import annotations
@@ -19,18 +26,28 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from stellody.application.remembering import IDENTIFIERS, CatalogueMemory, Clock
+from stellody.application.remembering import (
+    ALBUMS,
+    IDENTIFIERS,
+    SERIES_OF,
+    CatalogueMemory,
+    Clock,
+    Recollection,
+)
 from stellody.domain.album import Album
 from stellody.domain.discovery import names_beyond, source_artists
-from stellody.domain.estimating import REQUESTS_PER_SOURCE_ARTIST
+from stellody.domain.estimating import REQUESTS_PER_SERIES, REQUESTS_PER_SOURCE_ARTIST
+from stellody.domain.series import series_albums, series_place
+from stellody.domain.text import comparison_key
 
 
 @dataclass(frozen=True, slots=True)
 class Cost:
-    """How many names ticking the box adds; the seconds asking about them takes."""
+    """What ticking the box adds: names, series; the seconds asking takes."""
 
     names: int
     seconds: float
+    series: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +57,10 @@ class Pricing:
     albums: tuple[Album, ...]
     answered: frozenset[str]
     request_gap_s: float
+    # Names the memory shows to be placeholder artists, by `comparison_key`.
+    placeholders: frozenset[str] = frozenset()
+    # Held titles whose series question has a standing answer.
+    placed: frozenset[str] = frozenset()
 
     def of(self, ticked: tuple[str, ...]) -> Cost:
         """What including compilations adds for these ticked genres."""
@@ -51,10 +72,35 @@ class Pricing:
             )
             if name not in self.answered
         )
-        return Cost(
-            names=len(added),
-            seconds=len(added) * REQUESTS_PER_SOURCE_ARTIST * self.request_gap_s,
+        series = self._series(ticked)
+        requests = (
+            len(added) * REQUESTS_PER_SOURCE_ARTIST + series * REQUESTS_PER_SERIES
         )
+        return Cost(
+            names=len(added), seconds=requests * self.request_gap_s, series=series
+        )
+
+    def _series(self, ticked: tuple[str, ...]) -> int:
+        """How many series hold an album nobody has asked the series of."""
+        stems = {
+            place.stem
+            for album in series_albums(self.albums, ticked, self.placeholders)
+            if album.identity.title not in self.placed
+            and (place := series_place(album.identity.title)) is not None
+        }
+        return len(stems)
+
+
+def _placeholders(kept: Recollection, at: float) -> frozenset[str]:
+    """The names remembered as one artist with no album and no EP."""
+    return frozenset(
+        comparison_key(name)
+        for name, identities in kept.identifiers.items()
+        if kept.holds(IDENTIFIERS, name, kept.identifiers, at)
+        and len(identities) == 1
+        and kept.holds(ALBUMS, identities[0], kept.albums, at)
+        and not kept.albums[identities[0]]
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,5 +121,13 @@ class CompilationCost:
             if kept.holds(IDENTIFIERS, name, kept.identifiers, at)
         )
         return Pricing(
-            albums=albums, answered=answered, request_gap_s=self.request_gap_s
+            albums=albums,
+            answered=answered,
+            request_gap_s=self.request_gap_s,
+            placeholders=_placeholders(kept, at),
+            placed=frozenset(
+                title
+                for title in kept.series_of
+                if kept.holds(SERIES_OF, title, kept.series_of, at)
+            ),
         )

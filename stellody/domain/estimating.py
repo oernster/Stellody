@@ -39,6 +39,10 @@ MINIMUM_SAMPLES = 2
 # states is a floor.
 REQUESTS_PER_SOURCE_ARTIST = 2
 REQUESTS_PER_CANDIDATE = 1
+# A series not yet looked up: a title search plus a group lookup to learn which
+# series it is in, then one read of that series or one search for its stem.
+# FR-D52, FR-D69. Measured against MusicBrainz on 2026-09-29.
+REQUESTS_PER_SERIES = 3
 SECONDS_PER_MINUTE = 60
 
 
