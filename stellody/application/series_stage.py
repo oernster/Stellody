@@ -1,9 +1,9 @@
 """The series stage of a run: the other volumes of each held compilation.
 
-FR-D69 to FR-D73. Runs only while compilations are included: after the
-library's own artists have been asked about; before any candidate is narrowed.
-what it adds are albums, not artists, so the narrowing has nothing to do to
-them.
+FR-D69 to FR-D73. Runs only while other volumes of series are included
+(FR-D85): after the library's own artists have been asked about; before any
+candidate is narrowed. What it adds are albums, not artists, so the narrowing
+has nothing to do to them.
 
 **A placeholder is found from answers already in hand.** An artist whose
 answer offered no album is asked again who they are and what they released;

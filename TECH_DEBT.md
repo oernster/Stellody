@@ -65,7 +65,7 @@ released.
 **`installer/` reads `stellody.shared`, `stellody.ui` and
 `stellody.infrastructure`.** That is the setup program being a client of the
 application rather than a layer of it. Nothing under `stellody/` imports back,
-which is now invariant 14, enforced by
+which is invariant 14, enforced by
 `test_the_application_never_imports_the_setup_program` in
 `tests/structural/test_layers.py`. One identity, one theme and one licence
 viewer is the point of it.

@@ -298,9 +298,9 @@ class DiscoveryBars(QWidget):
         Every earlier stage that reported is left full rather than untouched:
         a report from a later stage is itself the news that the earlier one
         finished, since the run does not announce the ending of one stage
-        separately. One that never reported is left at rest: a run with
-        compilations left out never checks series; a full bar would say it
-        had. FR-D83.
+        separately. One that never reported is left at rest: a run with other
+        volumes of series left out never checks series; a full bar would say
+        it had. FR-D83.
         """
         drawn_on = SHARES_BAR.get(progress.stage, progress.stage)
         for stage in STAGE_ORDER[: STAGE_ORDER.index(drawn_on)]:

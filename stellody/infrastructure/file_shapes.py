@@ -124,9 +124,12 @@ def years_from(held: object) -> ReleaseYears:
 def including_from(held: object) -> Including:
     """What a file says its run widened to; the defaults where it says nothing.
 
-    A file written before the choices were recorded names none, which reads as
-    what such a run did. Each choice is read on its own, so one that is not a
-    yes or no falls back alone rather than taking the others with it. FR-D85.
+    A file written before the choices were recorded names none, so it reads as
+    the defaults: the artists' own albums with DJ mixes offered. That is not
+    quite what such a run did, since no run before FR-D80 offered mixes; an
+    older answer expanded now can offer mixes its run never looked at. Each
+    choice is read on its own, so one that is not a yes or no falls back alone
+    rather than taking the others with it. FR-D85.
     """
     stated = held.get(INCLUDING) if isinstance(held, dict) else None
     if not isinstance(stated, dict):

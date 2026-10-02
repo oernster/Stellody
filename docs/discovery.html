@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stellody discovery: the music you do not own yet</title>
-  <meta name="description" content="How Stellody uses the collection you already own to find the records you do not: what it asks MusicBrainz and ListenBrainz, compilations and series, years, stopping, filtering the answer and taking it to a shop.">
+  <meta name="description" content="How Stellody uses the collection you already own to find the records you do not: what it asks MusicBrainz and ListenBrainz, compilations, series and DJ mixes, years, stopping, filtering the answer and taking it to a shop.">
   <link rel="canonical" href="https://stellody.co.uk/discovery.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Stellody">
   <meta property="og:url" content="https://stellody.co.uk/discovery.html">
   <meta property="og:title" content="Stellody discovery: the music you do not own yet">
-  <meta property="og:description" content="How Stellody uses the collection you already own to find the records you do not: what it asks MusicBrainz and ListenBrainz, compilations and series, years, stopping, filtering the answer and taking it to a shop.">
+  <meta property="og:description" content="How Stellody uses the collection you already own to find the records you do not: what it asks MusicBrainz and ListenBrainz, compilations, series and DJ mixes, years, stopping, filtering the answer and taking it to a shop.">
   <meta property="og:image" content="https://stellody.co.uk/stellody-512.png">
   <meta property="og:image:alt" content="Stellody app icon">
   <meta property="og:locale" content="en_GB">
@@ -21,7 +21,7 @@
     "@context": "https://schema.org",
     "@type": "WebPage",
     "name": "Stellody discovery: the music you do not own yet",
-    "description": "How Stellody uses the collection you already own to find the records you do not: what it asks MusicBrainz and ListenBrainz, compilations and series, years, stopping, filtering the answer and taking it to a shop.",
+    "description": "How Stellody uses the collection you already own to find the records you do not: what it asks MusicBrainz and ListenBrainz, compilations, series and DJ mixes, years, stopping, filtering the answer and taking it to a shop.",
     "url": "https://stellody.co.uk/discovery.html",
     "primaryImageOfPage": "https://stellody.co.uk/stellody-512.png",
     "isPartOf": {"@type": "WebSite", "@id": "https://stellody.co.uk/#site",
@@ -76,26 +76,38 @@
       <p>The genres you tick decide which of your artists are named, so what goes out is a subset you
       chose rather than an inventory of everything you own. What goes out is those artist names; up
       to three album or track titles you hold under a name several artists share, to tell which one
-      you mean; while compilations are included, the titles of those compilations and the series
-      names read from them; the identifiers the catalogue gives back for all of these and for the
+      you mean; while Other volumes of series is ticked, the titles of the compilations you hold in
+      those genres and the series names read from them; the identifiers the catalogue gives back for all of these and for the
       similar artists it suggests; the fixed
       settings each request states for itself plus a user agent naming Stellody, its version and the
       project's contact address. The language asked for is fixed at any rather than your computer's
       own: no collection, no counts, nothing about you or your machine.</p>
+      <p>Select all ticks all 57 genre boxes in one press; once every one is ticked it offers Clear
+      instead.</p>
     </div>
     <div class="feat">
-      <h3>Compilations, if you want them</h3>
-      <p>A compilation filed under Various Artists is one name that means nobody, so by default it adds
-      nothing. Tick the box for compilations and the search asks about the artists on their tracks
-      instead, still only in the genres you ticked; a line beneath the box says how many of those
-      artists and series have never been looked up and roughly how many minutes they add.</p>
-      <p>A ticked box also finds the other volumes of each series you hold. Hold Global Underground:
-      Adapt #2 and #6; the answer offers the four you are missing under a heading of their own,
-      marked as a series. The series comes from MusicBrainz, topped up by albums whose title differs
-      only by the volume number, which also covers a compilation in no series and volumes newer
-      than the series list. An album filed under a name
-      that only labels a series, as Global Underground does, is treated the same way. Nothing you
-      already hold is offered back, whoever it is filed under.</p>
+      <h3>Compilations, series and DJ mixes</h3>
+      <p>Under Include, three boxes say what else a search takes in. Each works on its own; the
+      dialog remembers how you left them and the answer keeps them, so an artist you open from it
+      later obeys the same choices.</p>
+      <p><strong>Artists on compilations.</strong> A compilation filed under Various Artists is one
+      name that means nobody, so left clear it adds nothing. Tick it and the search asks about the
+      artists on the tracks instead, still only in the genres you ticked.</p>
+      <p><strong>Other volumes of series.</strong> Hold Global Underground: Adapt #2 and #6; the
+      answer offers the four you are missing under a heading of their own, marked as a series. A
+      compilation filed under the DJ who mixed it counts too, so Fabric 99: Sasha leads to the rest
+      of Fabric. A number before a colon is read as the volume, which is how your Global Underground
+      #45 meets the catalogue's Global Underground 045. The series comes from MusicBrainz, topped up
+      by albums whose title differs only by the volume number, which also covers a compilation in no
+      series and volumes newer than the series list. An album filed under a name that only labels a
+      series, as Global Underground does, is treated the same way. Nothing you already hold is
+      offered back, whoever it is filed under.</p>
+      <p><strong>DJ mixes.</strong> Ticked to begin with: an artist's own list then includes the
+      mixes they made, such as Sasha's Involver. A plain compilation or a greatest hits package is
+      never offered. Clear it to leave the mixes out.</p>
+      <p>While either of the first two is ticked, a line beneath the boxes says how many artists and
+      series in the ticked genres have never been looked up (the series of a compilation filed under
+      a DJ among them) and roughly how many minutes they add.</p>
       <p>A name holding several artists, such as a compilation credit or the name an album is filed
       under, is looked up whole first; each artist in it is looked up only if nobody answers to the
       whole.</p>
@@ -104,7 +116,7 @@
       <h3>From the years you choose</h3>
       <p>Two optional fields, released from and to, limit what a search offers to music from those
       years: after a year, before one, between two or any. They decide what comes back, never what is
-      learned from, so a 1977 album on your shelf can still lead to a record released last year.</p>
+      learned from, so an old album on your shelf can still lead to a record released last year.</p>
       <p>A record counts from the year it first came out, so a new reissue of an old album is old. One
       whose year the catalogue does not state is left out while years are set. A similar artist is
       offered only if they released something inside them.</p>
@@ -112,10 +124,15 @@
     <div class="feat">
       <h3>It says how it is getting on</h3>
       <p>A search takes minutes, because the catalogues ask to be questioned slowly and Stellody keeps
-      to that. Three bars in the toolbar show how far it has got: the first while your own artists are
-      looked up, the middle one while the other volumes of your compilations are found, the last while
-      the similar artists are checked for style (then, when years are set, for when they released). Hovering names who is being asked about; the time remaining is written
-      both on the bar and along the foot of the window.</p>
+      to that. Three bars beside the button that started it show how far it has got, each named for
+      its stage: Looking up while your own artists are looked up; Checking series while the other
+      volumes of your series are found; Checking styles while the similar artists are checked for
+      what they play, then Checking years on that same bar when years are set. A stage that does not
+      run leaves its bar empty, as Checking series does with its box clear.</p>
+      <p>Hovering names who is being asked about. The time left for the whole search is written at
+      the end of the moving bar and along the foot of the window: while your artists are looked up
+      it already counts the series still to come; while series are found it counts the style checks
+      after them.</p>
     </div>
     <div class="feat">
       <h3>Stop means stop</h3>
@@ -125,7 +142,8 @@
     </div>
     <div class="feat">
       <h3>What it found, read plainly</h3>
-      <p>Artists you hold are shown in one colour with the albums by them you do not underneath;
+      <p>Artists and series you hold are shown in one colour with the albums from them you do not
+      hold underneath;
       artists you hold nothing by are shown in another; opening one fetches its records then. Every
       line also says in words which kind it is, so the colours are never carrying the meaning alone.
       Each album carries the year it first came out beside its title.</p>
@@ -140,10 +158,14 @@
       a shop is everything you picked out wherever you picked it.</p>
     </div>
     <div class="feat">
-      <h3>Narrow a long answer by genre</h3>
+      <h3>Narrow a long answer by kind and genre</h3>
       <p>A search over a whole library can answer with thousands of albums. A Filter button under the
-      answer offers the genres that search looked in; tick some and the pages are dealt again from what
-      is left. An artist you hold stays where one of your own albums by them sits under a picked genre.</p>
+      answer opens Filter the answer. Its Show row comes first: Albums, DJ mixes, Series and Similar
+      artists, all ticked to begin with. Clear one to hide that kind of thing, with or without a genre
+      ticked; a heading left with nothing under it is not shown.</p>
+      <p>Below that sit the genres that search looked in; tick some and the pages are dealt again from
+      what is left. An artist you hold stays where one of your own albums by them sits under a picked
+      genre; a series stays where a volume you hold under a picked genre carries its name.</p>
       <p>A similar artist stays where an earlier search recorded what they play, counting only the
       genres they mostly play: a few votes on MusicBrainz calling a pop singer electronic do not put
       her under Electronic. One MusicBrainz says
@@ -240,7 +262,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.11.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.12.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>

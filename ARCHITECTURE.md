@@ -1241,20 +1241,23 @@ the two specifications this was built from, each requirement naming the test
 that proves it. What follows is the structure those requirements landed in, so
 neither document repeats the other.
 
-**A run is two stages and the second is the longer one.** The first asks, for
-every artist inside the ticked genres, what that artist released and who
-resembles them; the second asks what each of those suggested artists plays, so
-the ticks can be applied to them too. The toolbar therefore carries one bar per
-stage rather than one bar for the run: a single bar back at a tenth is either
-bad news or ordinary progress with nothing to say which, while a full bar above
-a climbing one states where the run is at a glance.
+**A run is staged and the candidates' stage is the longest.** The first asks,
+for every artist inside the ticked genres, what that artist released and who
+resembles them; while series are included a second looks up the series of the
+compilations held (below); the last asks what each of those suggested artists
+plays, so the ticks can be applied to them too. The toolbar therefore carries
+one bar per stage rather than one bar for the run, three in all: "Looking up",
+"Checking series" and "Checking styles", stacked in `STAGE_ORDER` in
+`ui/discovery_progress.py` (FR-D83). A single bar back at a tenth is either bad
+news or ordinary progress with nothing to say which, while a full bar above a
+climbing one states where the run is at a glance.
 
-**A run asked for some years only has a third stage.** The years are two
+**A run asked for some years only has one stage more.** The years are two
 optional fields in the Discover new music dialog (`ui/year_fields.py`), read by
 `read_years` in `domain/release_years.py` into a `ReleaseYears`: both bounds
 inclusive, from 1900 to the year after the current one. A year outside that or
-a range the wrong way round is refused and said rather than corrected. The
-third stage asks what each candidate kept by the second stage released, so
+a range the wrong way round is refused and said rather than corrected. That
+stage asks what each candidate kept by the styles stage released, so
 those with nothing inside the years can go (`application/candidate_years.py`,
 FR-D63). It asks through the same catalogue memory an expansion does, so an
 answer paid for here makes expanding that candidate free; with no years set it
@@ -1281,10 +1284,12 @@ answer.
 receives the artist names inside the ticks, plus the catalogue identifiers it
 answered with. For a name several artists share it also receives up to
 `MOST_EVIDENCE` (three) held album or track titles, each beside that name
-(`credited` in `infrastructure/catalogue.py`, FR-D09). While compilations are
+(`credited` in `infrastructure/catalogue.py`, FR-D09). While series are
 included it also receives the titles of held compilations and of albums filed
 under a placeholder artist, each cut at its first bracket, spaced solidus or
-spaced dash, plus their series stems (`infrastructure/catalogue_series.py`).
+spaced dash, plus their series stems (`infrastructure/catalogue_series.py`);
+for a held album an artist's discography types as a compilation it sends back
+the catalogue's own title rather than the library's (FR-D82).
 ListenBrainz receives a MusicBrainz identifier with the fixed name of the
 similarity algorithm asked for, nothing more.
 
@@ -1358,13 +1363,20 @@ stale phrase the guide was corrected for.
 **The estimate is read off the run rather than off the configured gap.** A run
 meets refusals; each costs a second ask on the spot and then a place in a later
 pass, so an estimate built on the permitted rate would read as confident while
-being wrong by minutes on exactly the runs where somebody needs it. The second
-stage is projected from the candidates the first has turned up, because covering
-only the first stage would understate the wait by the larger half of it. Under
-two finished units it says nothing rather than swinging. While years are set
-the projection still sizes the second stage alone, so what is said during the
-first leaves the third stage out; once the third begins, its own pace is read
-as any stage's is, the reading starting afresh at every change of stage
+being wrong by minutes on exactly the runs where somebody needs it. Every bar's
+time is the whole run's. While the artists are looked up, the series still to
+look up are priced from that stage's pace, scaled by what each costs the
+catalogue against an artist; the candidates' stage is projected from the
+candidates turned up so far (`looking_up_seconds_left` in
+`domain/estimating.py`); while the series are looked up, the candidates are
+known and priced from the series stage's own pace (`series_seconds_left`,
+FR-D84). Covering only the stage in hand would understate the wait by the
+larger part of it. The series are counted before anything is asked;
+`Ahead` in `application/reporting_ahead.py` stamps what lies ahead onto each
+report, since no stage can see the ones after it. Under two finished units it
+says nothing rather than swinging. No projection sizes the years stage, so what
+is said before it begins leaves it out; once it begins, its own pace is read as
+any stage's is, the reading starting afresh at every change of stage
 (`ui/run_estimate.py`). `DISCOVERY.md` records that limit under FR-D63.
 
 **Colour never carries the meaning alone.** Source artists and candidate artists
@@ -1385,22 +1397,25 @@ artists, so a compilation contributed "Various Artists" in place of its 24 track
 credits; that one name was already answered from memory, so four runs over four
 days finished in a quarter of a second with an identical report.
 `source_artists` in `domain/discovery.py` now reads a compilation's track
-credits when the dialog's box is ticked and nothing of it otherwise, never
-"Various Artists" itself. The box is off by default because 21 compilations
-carry 314 credits never looked up, which at the permitted pace is minutes of
-asking. `application/compilation_cost.py` prices exactly that before a run,
-plus the series the box also reaches (below), from the same memory and at the
-same gap the run uses, so the price is arithmetic rather than a forecast;
-FR-D36 still owns every estimate made during a run.
+credits when the dialog's box for them is ticked (`Including.credits`) and
+nothing of it otherwise, never "Various Artists" itself. The box is off by
+default because 21 compilations carry 314 credits never looked up, which at the
+permitted pace is minutes of asking. `application/compilation_cost.py` prices
+exactly that before a run, plus the series while their own box is ticked
+(below), from the same memory and at the same gap the run uses, so the price is
+arithmetic rather than a forecast; FR-D36 still owns every estimate made during
+a run. Select all moves every genre box at once, so `_sweeping` in
+`ui/discovery_dialog.py` holds the price back until the sweep is done and
+works it out once rather than once per box.
 `application/candidate_genres.py` and `ui/discovery_endings.py` were split out
 of the two `discovering.py` modules by this change, each of which stood one
 line short of the danger band.
 
-**A compilation's neighbours are its other volumes, so the box also asks after
+**A compilation's neighbours are its other volumes, so a second box asks after
 the series.** Reported by Oliver on 2026-09-29: a run over four house genres
 answered "Global Underground (0 albums)", because MusicBrainz knows that name as
 one artist with no albums, used only to tag DJ mixes filed under Various Artists
-and grouped into series. While compilations are included, each held compilation
+and grouped into series. While series are included, each held compilation
 inside the ticks and each album filed under a placeholder artist is looked up by
 its series (FR-D69 to FR-D73), as is each held album the catalogue types as a
 compilation, whoever it is filed under (FR-D82). The pieces sit where every other feature's do:
@@ -1429,7 +1444,7 @@ compilation, whoever it is filed under (FR-D82). The pieces sit where every othe
   a plain album of that title is theirs too (FR-D82).
 - `application/series_stage.py` holds `SeriesStage`, which `Discovery` runs
   after the artist half and before any candidate is narrowed, only while
-  compilations are included. A placeholder is found from answers already in
+  series are included. A placeholder is found from answers already in
   hand: an artist whose answer offered no album is asked again who they are and
   what they released, both answered from the run's own memory; one
   identity with no album or EP is a placeholder. A compilation filed under an
@@ -1484,8 +1499,21 @@ standing answer, at `REQUESTS_PER_SERIES` in `domain/estimating.py`, four
 requests; a placeholder is recognised only from the memory, so its series are
 priced from the second run on (FR-D52). `tests/domain/test_series.py`,
 `tests/application/test_discovering_series.py`,
+`tests/application/test_discovering_filed_compilations.py`,
 `tests/infrastructure/test_series_kept.py` and
 `tests/ui/test_results_series.py` hold it.
+
+**A DJ mix is offered in an artist's list; a hits package is not.**
+MusicBrainz files a mix as Compilation plus DJ-mix, so `ReleaseGroup.is_offered`
+in `domain/discovery.py` sets `MIX_KINDS` aside wherever DJ-mix is stated and
+judges what is left as before; a compilation that is no mix stays out (FR-D80).
+The third box takes mixes back out: `offered_with` answers for the run's choice
+in `albums_missing`, `everything_offered` and `application/carrying_over.py`,
+while `Expansion.releases_of` is handed the choice the run was made with,
+carried by `ExpansionRunner` and its worker, so expanding a candidate keeps to
+it (FR-D85).
+`tests/domain/test_discovery_gaps.py` and `tests/application/test_expanding.py`
+hold it.
 
 **A name nobody is found under is asked about by its parts.** `credit_parts` in
 `domain/text.py` takes a name apart at an ampersand, a comma, a solidus with a
@@ -1620,6 +1648,17 @@ candidate's fetched albums are held by the dialog then written back after each
 deal; Copy and Find in shops still read only the rows on screen.
 `ui/results_asking.py` was split out of `results_dialog.py` when the genre
 filter arrived, to make the room.
+
+**The answer is narrowed by kind as well as by genre.** The answer's filter
+carries a "Show:" row of four boxes, albums, DJ mixes, series and similar
+artists, all ticked to begin with (FR-D86). `Showing` and `shown` in
+`domain/showing.py` are the rule and are pure: a series heading is kept or
+dropped whole; under an artist a DJ mix answers to its own box while every
+other album answers to the albums box; a heading left with nothing under it is
+dropped, for the reason FR-D75 gives. `ui/results_filter.py` draws the row
+beside the genres; `ui/results_filtering.py` applies it to what
+`filtered_answer` leaves before the pages are dealt.
+`tests/domain/test_showing.py` and `tests/ui/test_results_showing.py` hold it.
 
 **A row says the year an album first came out; a shop is asked for the title
 alone.** `album_row` in `ui/results_words.py` writes the title with the year
@@ -2079,6 +2118,14 @@ platform's output is a cleaner nobody dares run.
 then copies `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png` and
 `stellody-512.png` into `docs/` byte for byte, so new artwork cannot leave the
 site wearing the old mark.
+
+**The site's stylesheets and scripts are addressed by their content.** GitHub
+Pages lets a browser keep a stylesheet for ten minutes, so a fresh page could
+arrive beside stale CSS. `stamp_version.py`, which writes the version from
+`VERSION` into `docs/`, therefore gives every local stylesheet or script link a
+`?v=` of a hash over that file's bytes, with CRLF folded to LF so a Windows
+checkout and the blob GitHub serves agree. A changed file is a new address; an
+unchanged one leaves every page as it was.
 
 **Nuitka compiles on both Windows and macOS**, which is one set of packaging
 surprises rather than two. The PyAV workaround is the worked example: PyAV

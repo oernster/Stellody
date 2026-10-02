@@ -27,9 +27,10 @@ public catalogues what is missing around it and writes the answer down as data.
 ### 1.2 Scope
 
 In scope: a toolbar button, a dialog carrying the genre catalogue, a run that
-looks up the artists inside the ticked genres (with compilations included, also
-the series those genres' compilations belong to), a JSON file holding what it found
-and a dialog showing what that file holds when a run completes.
+looks up the artists inside the ticked genres (where the dialog's Include boxes
+ask for them, also the artists credited on those genres' compilations and the
+other volumes of the series their compilations belong to), a JSON file holding
+what it found and a dialog showing what that file holds when a run completes.
 
 Out of scope, stated first so it is a past decision rather than a future
 argument:
@@ -58,12 +59,12 @@ One meaning per term, for the life of the document.
 | **Catalogue genre** | A name in `stellody.domain.genres.GENRES`, main or style. |
 | **Resolved genre** | An album's genre as the library shows it: the probed tag with any album edit laid over it. Never the raw `sources.genre` column. |
 | **Ticked genres** | The catalogue genres selected in the discovery dialog. |
-| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while compilations are included, each track credit on it instead. Also each artist a name joins, once the catalogue finds nobody under the whole name (FR-D53). Never "Various Artists" itself. |
+| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while artists on compilations are included (FR-D51), each track credit on it instead. Also each artist a name joins, once the catalogue finds nobody under the whole name (FR-D53). Never "Various Artists" itself. |
 | **Compilation** | A held album whose album artist names various artists rather than a person, as `AlbumIdentity.is_compilation` decides. |
 | **Track credit** | One of a track's artists, split exactly as the library splits them for playback. |
 | **Placeholder artist** | An album artist the catalogue identifies as exactly one artist who has released no album and no EP. MusicBrainz's "Global Underground", described there as an artist used to tag GU DJ mixes, is the measured case. |
-| **Series album** | A held album inside the ticked genres, while compilations are included, that is a compilation or is filed under a placeholder artist. |
-| **Series stem** | A title cut at its first bracket, its first " / " and its first " - ", then with a trailing number marker taken off: "#7", "No. 7", "Vol. 7", "Volume 7", "Part 7", "Pt. 7", a bare "7" or a number word from "One" to "Twenty" ("Select Ten" is volume 10). Stems are compared on `comparison_key`. "Global Underground: Afterhours 4 - Ibiza / Unmixed" has the stem "Global Underground: Afterhours" and the number 4. |
+| **Series album** | A held album inside the ticked genres, while other volumes of series are included (FR-D85), that is a compilation or is filed under a placeholder artist. FR-D82 also sends to the series search an album filed under an artist whose discography types it as Compilation or DJ-mix, by the catalogue's own title for it. |
+| **Series stem** | A title cut at its first bracket, its first " / " and its first " - ", then with whatever follows a number and a colon taken off where FR-D81 reads that number as the volume, else with a trailing number marker taken off: "#7", "No. 7", "Vol. 7", "Volume 7", "Part 7", "Pt. 7", a bare "7" or a number word from "One" to "Twenty" ("Select Ten" is volume 10). Stems are compared on `comparison_key`. "Global Underground: Afterhours 4 - Ibiza / Unmixed" has the stem "Global Underground: Afterhours" and the number 4. |
 | **Series** | A named run of release groups the catalogue groups together: a catalogue series (MusicBrainz's own), topped up with every release group whose series stem equals the series album's; where that album belongs to no catalogue series, those release groups alone, named by the stem. |
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
 | **Candidate artist** | An artist a source gives as similar to a source artist, whom the library does not hold. |
@@ -123,7 +124,7 @@ HTTPS connection during a run. Everything else the application already assumes.
 |---|---|---|---|
 | A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Oliver | Answered |
 | A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Oliver | Answered |
-| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. While compilations are included, a run also names to MusicBrainz the titles of series albums inside the ticked genres, each cut at its first bracket, spaced solidus or spaced dash, then each such title's series stem, whether or not the title sits in a catalogue series (FR-D69, FR-D70); the ruling predates that as well and does not cover it. | Oliver | ruled 2026-09-06, accepted with genre scoping |
+| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. While other volumes of series are included (FR-D85), a run also names to MusicBrainz the titles of series albums inside the ticked genres, each cut at its first bracket, spaced solidus or spaced dash, then each such title's series stem, whether or not the title sits in a catalogue series (FR-D69, FR-D70); for an album filed under an artist (FR-D82) the title sent is the catalogue's own title for it. The ruling predates that as well and does not cover it. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements
 
@@ -283,8 +284,8 @@ Priority: Must
 
 Requirement: When a run starts, the discovery service shall take as its source
 artists the album artists of every held album that is not a compilation and
-whose resolved genre names at least one ticked genre. Where compilations are
-included (FR-D51), it shall also take every track credit of each compilation
+whose resolved genre names at least one ticked genre. Where artists on
+compilations are included (FR-D51), it shall also take every track credit of each compilation
 whose resolved genre names at least one ticked genre. It shall never take
 "Various Artists" as a source artist.
 
@@ -315,8 +316,8 @@ on.
 Acceptance: Given an album whose probed tag names nothing and whose album edit
 states Reggae, when Reggae alone is ticked, then that album's artist is a source
 artist. Given a compilation in Reggae whose tracks credit Dilby and Tinlicker,
-when Reggae is ticked with compilations included, then Dilby and Tinlicker are
-source artists while Various Artists is not; with compilations left out, none of
+when Reggae is ticked with artists on compilations included, then Dilby and
+Tinlicker are source artists while Various Artists is not; with them left out, none of
 the three is. Given albums "First" by Dennis De Laat and "Second" by Dennis de
 Laat, when the catalogue offers First, Second and Third, then one source artist
 is asked about and only Third is offered.
@@ -329,10 +330,14 @@ Verified by: `tests/application/test_discovery.py::test_one_artist_spelled_two_w
 
 Priority: Must
 
-Requirement: The discovery dialog shall carry a tick box reading "Include
-compilations (Various Artists)" between the genres and its buttons. It shall be
-unticked the first time the dialog opens. After that it shall open as it was
-last left; its state shall be handed to the run with the ticked genres.
+Requirement: The discovery dialog shall carry a tick box reading "Artists on
+compilations (Various Artists)", the first of the Include boxes of FR-D85,
+between the genres and its buttons. It shall be unticked the first time the
+dialog opens. After that it shall open as it was last left; its state shall be
+handed to the run with the ticked genres.
+
+Amended on 2026-10-02 by FR-D85: this was one box reading "Include
+compilations (Various Artists)", which also ran the series stage of FR-D69.
 
 Rationale: Ruled by Oliver on 2026-09-13. Measured from the tags of his library
 that day: 21 compilations carry 348 distinct track credits, 314 of them never
@@ -343,10 +348,10 @@ what keep a run naming a subset somebody chose.
 
 Acceptance: Given the dialog opened for the first time, then the box is
 unticked. Given it ticked, when Find is pressed, then the run is handed the
-ticked genres with compilations included. Given the dialog left with the box
+ticked genres with artists on compilations included. Given the dialog left with the box
 ticked, when it is opened again, then the box is ticked.
 
-Verified by: `tests/ui/test_discovery_compilations.py::test_compilations_start_left_out`, `tests/ui/test_discovery_compilations.py::test_the_run_is_told_whether_compilations_are_included`, `tests/ui/test_discovery_compilations.py::test_the_choice_is_remembered_between_openings`, `tests/ui/test_discovery_compilations.py::test_the_box_is_a_stop_between_the_genres_and_the_buttons`
+Verified by: `tests/ui/test_discovery_compilations.py::test_three_boxes_start_as_a_run_that_widens_to_nothing`, `tests/ui/test_discovery_compilations.py::test_the_run_is_told_what_else_to_take_in`, `tests/ui/test_discovery_compilations.py::test_the_choices_are_remembered_between_openings`, `tests/ui/test_discovery_compilations.py::test_the_boxes_sit_between_the_genres_and_the_buttons`
 
 ---
 
@@ -354,10 +359,12 @@ Verified by: `tests/ui/test_discovery_compilations.py::test_compilations_start_l
 
 Priority: Must
 
-Requirement: Beneath the tick box of FR-D51, the discovery dialog shall state
-how many track credits on compilations inside the ticked genres a run would
-newly look up, with the minutes that adds at the request pace NFR-PERF-001
-permits. It shall restate both whenever a genre is ticked or unticked. A credit
+Requirement: Beneath the Include boxes (FR-D85), while the first of them is
+ticked, the discovery dialog shall state how many track credits on compilations
+inside the ticked genres a run would newly look up, with the minutes that adds
+at the request pace NFR-PERF-001 permits. It shall restate both whenever a
+genre or a box is ticked or unticked; a press of the control of FR-D44 shall
+restate them once, after every genre has moved, rather than once a genre. A credit
 counts as newly looked up unless a run leaving compilations out would already
 ask about it or the catalogue memory holds a standing answer for it.
 
@@ -379,12 +386,18 @@ so its series are priced from the second run on. The statement reads, for
 example, "3 artists and 2 series on compilations in these genres have not been
 looked up yet".
 
+Amended on 2026-10-02 with FR-D85: the artists are priced only while their box
+is ticked and the series only while theirs is; with neither ticked nothing is
+said, since DJ mixes cost no request. Select all prices once because,
+measured that day over Oliver's library, a sweep of 57 boxes priced 57 times
+and froze the dialog for 4.1 seconds.
+
 Acceptance: Given compilations in a ticked genre crediting three artists nobody
 has looked up, when the dialog shows, then it states three artists with the
 minutes asking about them adds; given all three already looked up, then it
 states that nothing new would be asked.
 
-Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_yet_looked_up_are_counted`, `tests/application/test_compilation_cost.py::test_an_answer_past_its_life_is_counted_again`, `tests/application/test_compilation_cost.py::test_a_credit_a_run_would_ask_about_anyway_costs_nothing`, `tests/application/test_compilation_cost.py::test_the_time_is_priced_at_the_permitted_pace`, `tests/ui/test_discovery_compilations.py::test_the_cost_follows_the_ticks`, `tests/ui/test_discovery_compilations.py::test_nothing_new_to_ask_says_so`, `tests/application/test_compilation_cost.py::test_a_series_is_priced_once_however_many_volumes_are_held`, `tests/application/test_compilation_cost.py::test_a_placeholder_the_memory_knows_brings_its_series`, `tests/ui/test_discovery_compilations.py::test_the_sentence_names_the_series_too`
+Verified by: `tests/application/test_compilation_cost.py::test_only_names_not_yet_looked_up_are_counted`, `tests/application/test_compilation_cost.py::test_an_answer_past_its_life_is_counted_again`, `tests/application/test_compilation_cost.py::test_a_credit_a_run_would_ask_about_anyway_costs_nothing`, `tests/application/test_compilation_cost.py::test_the_time_is_priced_at_the_permitted_pace`, `tests/ui/test_discovery_compilations.py::test_the_cost_follows_the_ticks`, `tests/ui/test_discovery_compilations.py::test_nothing_new_to_ask_says_so`, `tests/application/test_compilation_cost.py::test_a_series_is_priced_once_however_many_volumes_are_held`, `tests/application/test_compilation_cost.py::test_a_placeholder_the_memory_knows_brings_its_series`, `tests/ui/test_discovery_compilations.py::test_the_sentence_names_the_series_too`, `tests/ui/test_discovery_compilations.py::test_the_price_is_asked_for_the_boxes_ticked`, `tests/ui/test_discovery_compilations.py::test_nothing_costly_ticked_says_nothing`, `tests/ui/test_discovery_compilations.py::test_select_all_prices_once_rather_than_once_a_box`
 
 ---
 
@@ -427,7 +440,7 @@ Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_co
 Priority: Must
 
 Requirement: If the ticked genres yield no source artists, nor any series album
-while compilations are included, then the window shall say so in its status
+while other volumes of series are included, then the window shall say so in its status
 bar, make no request and write no file.
 
 Rationale: Ticking a genre nothing in the library carries is an ordinary thing
@@ -573,7 +586,7 @@ shall request the ten artists the similarity source considers most similar to
 them.
 
 Rationale: Ten was confirmed on 2026-09-06 as the shipped figure. It is a named
-constant (`SIMILAR_WANTED` in `application/discovering.py`) rather than a
+constant (`SIMILAR_WANTED` in `application/artist_stage.py`) rather than a
 literal, since it is a decision about how much to offer rather than a fact about
 anything.
 
@@ -655,7 +668,7 @@ checking years, run only while years are set, is drawn on the styles bar under
 its own name (FR-D63). While a run is under way each bar shall show how far through its own
 stage the run is as a percentage; a stage that has finished shall be left full
 and a stage that has not begun shall show no percentage at all. On hover the
-pair shall name the stage and the artist currently being asked about, with that
+bars shall name the stage and the artist currently being asked about, with that
 artist's place in the stage (one more than the number completed) and the
 stage's total.
 
@@ -765,8 +778,8 @@ single discovery file, whose `gaps` object is keyed by source artist with each
 value holding that artist's candidate albums and candidate artists; an offered
 series (FR-D69) is keyed by its name and marked as a series (FR-D74). Beside
 `gaps` the file carries the artists left unresolved, ambiguous or failed, the
-genres the run was scoped to and the years it was asked for (FR-D64), both
-bounds empty where none were set.
+genres the run was scoped to, the years it was asked for (FR-D64; both bounds
+empty where none were set) and what the Include boxes took in (FR-D85).
 
 Rationale: A file rather than a screen, because this stage exists to produce the
 resource the later stages consume. One file replaced rather than a directory of
@@ -1828,8 +1841,9 @@ Verified by: `tests/ui/test_results_filter.py::test_a_withheld_tick_is_left_out_
 
 Priority: Must
 
-Requirement: While no genre is ticked in the chooser FR-D54 opens, its Filter
-control shall be disabled, unless the chooser opened with a filter on.
+Requirement: While no genre is ticked in the chooser FR-D54 opens and every
+kind of FR-D86 is ticked, its Filter control shall be disabled, unless the
+chooser opened with a filter on.
 
 Rationale: Reported by Oliver on 2026-09-13: the chooser offered Filter with
 nothing ticked, as though there were something to filter by. With nothing
@@ -1842,7 +1856,7 @@ Filter is disabled; when a genre is ticked, then it is enabled; when Clear is
 pressed, then it is disabled again. Given the chooser opened on a filter, when
 Clear is pressed, then Filter is still enabled.
 
-Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`, `tests/ui/test_filter_controls.py::test_clearing_every_tick_takes_filtering_away_again`, `tests/ui/test_filter_controls.py::test_a_filter_already_on_can_still_be_taken_off`
+Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`, `tests/ui/test_filter_controls.py::test_clearing_every_tick_takes_filtering_away_again`, `tests/ui/test_filter_controls.py::test_a_filter_already_on_can_still_be_taken_off`, `tests/ui/test_results_showing.py::test_a_kind_left_out_is_enough_to_filter_by`
 
 ---
 
@@ -1926,7 +1940,8 @@ Requirement: While a discovery run is under way, the window shall show an
 estimate of the time remaining for the whole run in BOTH of two places. In the
 status bar it shall be a sentence rounded to the nearest minute, saying less
 than a minute where the estimate is under sixty seconds. At the right hand end
-of the discovery bar it shall be an abbreviated form of that same estimate.
+of the bar of the stage under way (FR-D16) it shall be an abbreviated form of
+that same estimate.
 Both shall be answered from one reading of the pace.
 
 Rationale: Reported by Oliver on 2026-09-07: a small run took a minute or two
@@ -1946,7 +1961,7 @@ disagree across a rounding.
 
 Acceptance: Given a run under way with an estimate available, when the status
 bar is read, then it names a whole number of minutes or says less than a
-minute; when the discovery bar is read, then its right hand end carries the
+minute; when the moving bar is read, then its right hand end carries the
 same estimate abbreviated, drawn clear of the stage name.
 
 Verified by: `tests/ui/test_run_estimate.py::TestNamingTheTimeLeft::test_the_status_bar_names_the_time_left`, `tests/ui/test_discovery_bar.py::test_it_writes_how_long_is_left_at_the_right_hand_end_of_the_moving_bar`, `tests/ui/test_discovery_bar.py::test_the_time_and_the_stage_are_never_drawn_over_each_other`, `tests/ui/test_discovery_bar.py::test_the_time_is_actually_drawn_on_the_bar`
@@ -2041,8 +2056,8 @@ and to, each empty when the dialog opens.
 
 Rationale: Two optional bounds cover every case asked for: after a year, before
 one, between two and any. Empty on opening for the reason the genre ticks are:
-what to look for is decided afresh each time, while whether compilations are
-included is a standing preference and is remembered (FR-D51). Nothing new is
+what to look for is decided afresh each time, while what the Include boxes
+take in is a standing preference and is remembered (FR-D51, FR-D85). Nothing new is
 persisted.
 
 Acceptance: Given the dialog opens, then both fields are empty; given 1980 is
@@ -2265,8 +2280,8 @@ Verified by: `tests/ui/test_discovery_years.py::TestAnAlbumRowSaysItsYear`
 
 Priority: Must
 
-Requirement: While compilations are included, when a run reaches a series
-album, the discovery service shall offer each entry of that album's catalogue
+Requirement: While other volumes of series are included (FR-D85), when a run
+reaches a series album, the discovery service shall offer each entry of that album's catalogue
 series that the library does not hold.
 
 Rationale: Reported by Oliver on 2026-09-29, looking at "Global Underground (0
@@ -2279,7 +2294,7 @@ others, listing every entry in order. A compilation's natural neighbours are
 the other volumes of it, which asking about artists can never reach.
 
 Acceptance: Given held albums "Global Underground: Adapt #2" and "Global
-Underground: Adapt #6" credited to Various Artists, with compilations included,
+Underground: Adapt #6" credited to Various Artists, with series included,
 when the catalogue places both in the series "Global Underground: Adapt" of six
 entries, then that series is offered with Adapt, Adapt #3, Adapt #4 and Adapt
 #5 and nothing else.
@@ -2308,7 +2323,7 @@ once, compared on its stem and number (FR-D71): the two answers differed only
 in the kinds one stated; "Select #9" was shown twice.
 
 Acceptance: Given held "Global Underground: Unique #2" filed under the
-placeholder artist "Global Underground", with compilations included and no
+placeholder artist "Global Underground", with series included and no
 catalogue series for it, when a title search answers Unique, Unique #2, Unique
 #3 and "Global Underground: Uniqueness", then Unique and Unique #3 are offered
 under "Global Underground: Unique".
@@ -2349,8 +2364,8 @@ the catalogue states for it, inside the ticked genres and the run's years.
 Rationale: The offering rule (section 3.5) leaves out compilations, because by
 an artist already held they are noise. Measured on 2026-09-29, every Global
 Underground entry is typed Compilation, DJ-mix or both, so that rule would
-leave every series empty. The rule for artists offers a DJ mix (FR-D80) but no
-other compilation.
+leave every series empty. The rule for artists offers a DJ mix (FR-D80) while
+DJ mixes are included (FR-D85) but no other compilation.
 
 Acceptance: Given a series entry typed Compilation and DJ-mix, first released in
 2018, when the run has no years set, then it is offered.
@@ -2612,7 +2627,8 @@ Requirement: Where a release group states the DJ-mix secondary type, the
 discovery service shall treat a Compilation type beside it as no bar to
 offering it; it shall offer the release group wherever its remaining types are
 all offered types (Live, Remix, Demo). A release group stating Compilation
-without DJ-mix shall stay excluded.
+without DJ-mix shall stay excluded. A DJ mix is offered this way only while DJ
+mixes are included (FR-D85, `ReleaseGroup.offered_with`).
 
 Rationale: Reported by Oliver on 2026-10-02: a run over the house genres
 offered no dance compilations beyond Global Underground. Measured that day
@@ -2670,8 +2686,8 @@ Verified by: `tests/domain/test_series.py::TestTheStem::test_a_number_before_a_c
 
 Priority: Must
 
-Requirement: While compilations are included, for each held album inside the
-ticked genres filed under an artist who is neither Various Artists nor a
+Requirement: While other volumes of series are included (FR-D85), for each held
+album inside the ticked genres filed under an artist who is neither Various Artists nor a
 placeholder, the discovery service shall settle that artist as FR-D09 does.
 Where one identity results, it shall look the album up in that artist's
 discography: by its release key, kinds aside, else by its numbered place in a
@@ -2720,7 +2736,7 @@ drawn on the artists bar it left that bar's percentage and time meaning two
 different things in turn. Measured the same day: the slot is 91 pixels, so
 three bars are 27 each against a 16 pixel line of Segoe UI at 9 points, which
 was why the earlier note that a third would not fit was withdrawn. A run with
-compilations left out checks no series; a full bar would say it had.
+series left out (FR-D85) checks no series; a full bar would say it had.
 
 Acceptance: Given a run reaching the series stage, then the artists bar reads
 full and the series bar counts the series titles; given a run that goes from
@@ -2735,8 +2751,8 @@ Verified by: `tests/ui/test_results_series.py::test_the_series_stage_has_a_bar_o
 
 Priority: Must
 
-Requirement: While compilations are included, the discovery service shall
-count, as a run starts and from the catalogue memory alone, the series the
+Requirement: While other volumes of series are included (FR-D85), the
+discovery service shall count, as a run starts and from the catalogue memory alone, the series the
 series stage will have to look up (FR-D52's count, extended to the compilations
 of FR-D82); it shall carry that count on every report while artists are looked up.
 The time said then shall add those series at the first stage's own pace, scaled
@@ -2744,7 +2760,7 @@ by `REQUESTS_PER_SERIES` against `REQUESTS_PER_SOURCE_ARTIST`. While series are
 checked, each report shall carry the number of candidates the styles stage will
 ask about; the time said shall add them at the series stage's pace, scaled
 by `REQUESTS_PER_CANDIDATE` against `REQUESTS_PER_SERIES`. The price beneath the
-compilations box shall count the same series.
+Include boxes shall count the same series.
 
 Rationale: Reported by Oliver on 2026-10-02 after a run over every genre: the
 time on the first bar was off. Read from the code that day: the first stage's
@@ -2844,10 +2860,11 @@ for those artists, for the candidates the similarity source suggested or for
 the release groups and series a series question found; where MusicBrainz knows a
 name under several artists, up to three album or track titles the library holds
 under that name, each cut at its first bracket and sent to MusicBrainz alone
-beside that name (FR-D09); while compilations are included, the titles of
-series albums inside the ticked genres (each cut at its first bracket, spaced
-solidus or spaced dash) with the series stem of each such title, each sent to
-MusicBrainz alone (FR-D69, FR-D70); fixed values
+beside that name (FR-D09); while other volumes of series are included, the
+titles of series albums inside the ticked genres (for an album filed under an
+artist, the catalogue's own title for it, FR-D82), each cut at its first
+bracket, spaced solidus or spaced dash, with the series stem of each such
+title, each sent to MusicBrainz alone (FR-D69, FR-D70); fixed values
 each client states for itself, being the response format, a result limit, where
 a following page starts, the release types, the genres inclusion, the relations
 asked for and the similarity algorithm.
@@ -3115,8 +3132,8 @@ handed a place of its own.
 **The catalogue source** answers four questions: the identifier for an artist
 name; the artists credited on a held album or track title under a name, which
 settles a name several artists share (FR-D09); the albums an artist made with
-their stated genres; the genres an artist is said to play. While compilations
-are included it answers three more about series (FR-D69, FR-D70), through its
+their stated genres; the genres an artist is said to play. While other volumes
+of series are included it answers three more about series (FR-D69, FR-D70), through its
 own client in `infrastructure/catalogue_series.py`: which series a held title's
 release group belongs to; what one series holds, in order; which release groups
 a search for a series stem finds. **The similarity source** answers one: the
@@ -3152,8 +3169,10 @@ to what that artist is missing: candidate albums and candidate artists. Each
 album carries its first release date under `released`, empty where the
 catalogue stated none. An entry naming a series rather than an artist carries
 `series` set true (FR-D74).
-The other members, `unresolved`, `ambiguous`, `failed`, `ticked` and `years`,
-carry the five things named below.
+The other members, `unresolved`, `ambiguous`, `failed`, `ticked`, `years` and
+`including`, carry the six things named below. `including` holds `credits`,
+`series` and `mixes` as true or false; a file without it reads as the first two
+false and `mixes` true (FR-D85).
 
 Settled 2026-09-06: **one file, beside the database in Stellody's own data
 directory, replaced by every completed run.** Not a directory of dated files,
@@ -3162,10 +3181,10 @@ candidate offered once and owned since. A run therefore states what is missing
 at the moment it finished, which is the only claim it can honestly make.
 
 Its JSON shape, written by `infrastructure/discovery_file.py`, is constrained by
-FR-D18 and by the five things the file carries beside the results: the artists
+FR-D18 and by the six things the file carries beside the results: the artists
 that could not be resolved (FR-D08), the ambiguous ones (FR-D09), the failures
-(FR-D22), the genres the run was scoped to (FR-D41) and the years it was asked
-for (FR-D64).
+(FR-D22), the genres the run was scoped to (FR-D41), the years it was asked
+for (FR-D64) and what its Include boxes took in (FR-D85).
 
 The genres were added on 2026-09-08. Until then the file was an answer to a
 question nobody had written down, so a run over Folk and a run over Rock
@@ -3240,7 +3259,8 @@ release group's identity for matching is its release key together with its
 secondary types, so a live album never suppresses the studio album of the same
 name and is never suppressed by it. Offered: primary type Album and EP, plus the
 secondary types Live, Remix and Demo, which are genuinely different records,
-plus a DJ-mix whether or not it also states Compilation (FR-D80). Excluded:
+plus a DJ-mix whether or not it also states Compilation, while DJ mixes are
+included (FR-D80, FR-D85). Excluded:
 every other secondary type, Compilation without DJ-mix among them, since a hits
 package of an artist already held is noise rather than a discovery.
 
@@ -3286,9 +3306,7 @@ beyond what a source states; remembering across runs what was offered and
 rejected; reopening a past run's results from the menu, which FR-D28 makes cheap
 to add later and which nobody has asked for yet; year presets, decade buttons
 or a slider beside the two fields of FR-D58; narrowing a finished answer by
-year on the results screen, where FR-D54 narrows by genre; asking about the
-series of an album filed under its DJ (such as "Global Underground #47: Joseph
-Capriati - Montreal"), which reaches that DJ as an artist and is left there.
+year on the results screen, where FR-D54 narrows by genre.
 
 ## 5. Open questions
 

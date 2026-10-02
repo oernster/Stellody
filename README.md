@@ -162,19 +162,26 @@ any shop and takes nothing from a sale.
   Released from and to (any year from 1900 to next year) to be offered only
   albums first released inside those years; one whose catalogue entry states
   no year is left out while years are set. The years narrow what it offers,
-  never which of your artists it asks about. Tick the box
-  for compilations and it asks about the artists on their tracks too, saying
-  first roughly how many minutes that adds. With that box ticked it also finds
+  never which of your artists it asks about. Under Include, three boxes
+  say what else a run takes in, each on its own. Artists on compilations
+  asks about the artists on their tracks too. Other volumes of series finds
   the volumes missing from a series you collect, such as Global Underground:
-  Adapt. Each compilation you hold is looked up by the series the catalogue
-  files it in and by the start of its title, which also finds volumes the
-  catalogue's series list does not carry yet; so is each album filed under a
-  name the catalogue knows as one artist who made no album or EP, such as
-  "Global Underground". A volume you already hold is left out whoever it is
-  filed under. The rest are listed under a heading naming the series with how
-  many albums it offers; one goes to a shop under Various Artists. It reports
-  as it goes, says roughly how long is left and stops the moment you ask it
-  to or quit Stellody. A genre the catalogue states for an artist or an
+  Adapt. DJ mixes, ticked to begin with, offers the mixes an artist made
+  among their albums. Ticking either of the first two says first roughly how
+  many minutes it adds. Each compilation you hold is looked up by the series
+  the catalogue files it in and by the start of its title, which also finds
+  volumes the catalogue's series list does not carry yet; so is each album
+  filed under a name the catalogue knows as one artist who made no album or
+  EP, such as "Global Underground", as is an album filed under its DJ that
+  the catalogue calls a compilation or a DJ mix, such as a Fabric volume. A
+  number before a colon is read as the volume, so "Global Underground #45:
+  Danny Tenaglia" meets the catalogue's "045". A volume you already hold is
+  left out whoever it is filed under. The rest are listed under a heading
+  naming the series with how many albums it offers; one goes to a shop under
+  Various Artists. Three bars in the top tray, Looking up, Checking series
+  and Checking styles, show how far each stage of a run has got. It says
+  roughly how long is left with the series counted; it stops the moment you
+  ask it to or quit Stellody. A genre the catalogue states for an artist or an
   album counts only where it has at least two votes there and at least half
   the votes of the leading genre; where none reaches two votes, every one is
   kept. Where it could not get a usable answer about somebody and holds none
@@ -185,7 +192,9 @@ any shop and takes nothing from a sale.
   rest. What it finds opens as a list you can read and tick, each album named
   with the year it first came out where the catalogue states one, dealt
   across the width of the screen and turned a page at a time, then narrowed
-  to some of the genres it looked in when the answer runs long. A similar
+  to some of the genres it looked in when the answer runs long. The filter
+  that narrows it has a Show row too, keeping or hiding albums, DJ mixes,
+  series and similar artists by kind. A similar
   artist the catalogue gives no genre is judged there by the genres your own
   albums carry for the artist it was suggested for, even where that artist is
   one name in a joint credit. From there Find in shops takes the ticked albums to the
@@ -225,7 +234,9 @@ any shop and takes nothing from a sale.
 The [features page](https://stellody.co.uk/features.html) has the overview,
 with a page each for [discovery](https://stellody.co.uk/discovery.html), the
 [library](https://stellody.co.uk/library.html) and
-[playback and sound](https://stellody.co.uk/playback.html).
+[playback and sound](https://stellody.co.uk/playback.html), plus
+[the technical page](https://stellody.co.uk/technical.html) on how its claims
+are kept true.
 
 ## Before you download
 
@@ -295,11 +306,14 @@ Five things reach outside your computer at all, so here are all five:
   MusicBrainz knows one of those names under several artists, up to three
   titles you hold under it go out, each an album or track title cut at its
   first bracket, asking who is credited on it; that is how the right one is
-  told apart. While compilations are ticked, the title of each compilation
-  inside the ticked genres goes out, as does that of each album filed under a
-  name MusicBrainz knows as one artist with no album or EP; each is cut at its
+  told apart. While Other volumes of series is ticked, the title of each
+  compilation inside the ticked genres goes out, as does that of each album
+  filed under a name MusicBrainz knows as one artist with no album or EP; so
+  does the title MusicBrainz itself gives an album you hold under its artist
+  where it lists that album as a compilation or a DJ mix. Each is cut at its
   first bracket, spaced slash or spaced dash, then sent a second time with its
-  volume number taken off, to search for the series by name.
+  volume number and anything after it taken off, to search for the series by
+  name.
   The language asked for is fixed at any, rather than your computer's own.
   Nothing else goes: not your library as a whole, not a count of it, not a word
   about you or your machine. The years
@@ -321,8 +335,8 @@ It does not encrypt anything at rest: the store holds notes about your library,
 not secrets. It also keeps a plain-text account of its own comings and goings,
 named `stellody-diary.log` and written in Stellody's own data directory beside
 the library database: `%LOCALAPPDATA%\Stellody` on Windows,
-`~/.local/share/stellody` on Linux and `~/Library/Application Support/Stellody`
-on macOS. A Linux flatpak keeps its own copy of that directory under
+`~/Library/Application Support/Stellody` on macOS and `~/.local/share/stellody`
+on Linux. A Linux flatpak keeps its own copy of that directory under
 `~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no audio and
 nothing about you; during a discovery run it notes each address asked, which
 carries the artist names and any titles sent. A playback dropout is noted there too, with
@@ -400,6 +414,8 @@ source on Windows, macOS and Linux in full, then how the website is published;
 the test that enforces it. [`PLAN.md`](PLAN.md) holds the open work plus what is
 deliberately excluded. [`TECH_DEBT.md`](TECH_DEBT.md) says what is still open
 internally, what is deliberately left and what only looks like debt.
+[`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md) sets out the decisions the
+product rests on, with what each one gains and what it costs.
 [`DISCOVERY.md`](DISCOVERY.md) and [`SHOPS.md`](SHOPS.md) are the two
 specifications discovery was built from; [`FORMATS.md`](FORMATS.md) specifies
 the three formats proved by a generated fixture; [`OUTPUTS.md`](OUTPUTS.md)
