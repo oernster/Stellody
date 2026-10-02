@@ -64,7 +64,7 @@ One meaning per term, for the life of the document.
 | **Placeholder artist** | An album artist the catalogue identifies as exactly one artist who has released no album and no EP. MusicBrainz's "Global Underground", described there as an artist used to tag GU DJ mixes, is the measured case. |
 | **Series album** | A held album inside the ticked genres, while compilations are included, that is a compilation or is filed under a placeholder artist. |
 | **Series stem** | A title cut at its first bracket, its first " / " and its first " - ", then with a trailing number marker taken off: "#7", "No. 7", "Vol. 7", "Volume 7", "Part 7", "Pt. 7", a bare "7" or a number word from "One" to "Twenty" ("Select Ten" is volume 10). Stems are compared on `comparison_key`. "Global Underground: Afterhours 4 - Ibiza / Unmixed" has the stem "Global Underground: Afterhours" and the number 4. |
-| **Series** | A named run of release groups the catalogue groups together. A catalogue series (MusicBrainz's own); where a series album belongs to none, every release group whose series stem equals that album's instead. |
+| **Series** | A named run of release groups the catalogue groups together: a catalogue series (MusicBrainz's own), topped up with every release group whose series stem equals the series album's; where that album belongs to no catalogue series, those release groups alone, named by the stem. |
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
 | **Candidate artist** | An artist a source gives as similar to a source artist, whom the library does not hold. |
 | **Release key** | The value two albums are judged the same album on, defined in section 3.5. The title alone, normalised, with edition qualifiers removed and the year deliberately absent. |
@@ -123,7 +123,7 @@ HTTPS connection during a run. Everything else the application already assumes.
 |---|---|---|---|
 | A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Oliver | Answered |
 | A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Oliver | Answered |
-| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. While compilations are included, a run also names to MusicBrainz the titles of series albums inside the ticked genres, cut at its first bracket, spaced solidus or spaced dash, then that title's series stem where it sits in no catalogue series (FR-D69, FR-D70); the ruling predates that as well and does not cover it. | Oliver | ruled 2026-09-06, accepted with genre scoping |
+| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. While compilations are included, a run also names to MusicBrainz the titles of series albums inside the ticked genres, each cut at its first bracket, spaced solidus or spaced dash, then each such title's series stem, whether or not the title sits in a catalogue series (FR-D69, FR-D70); the ruling predates that as well and does not cover it. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements
 
@@ -1278,11 +1278,19 @@ whether they released anything inside the years. It asks through the catalogue
 memory, so expanding such a candidate afterwards reads what the run was told.
 With no years set, the run still asks nothing about a candidate's releases.
 
+A row never opens onto nothing, since an empty row reads as one still loading.
+A candidate the similarity source named without an identifier is asked about
+by nobody; it says "The catalogue did not say which artist this is". One the
+catalogue answered with nothing worth offering says "No albums worth offering".
+
 Acceptance: Given a collapsed candidate artist, when it is expanded, then that
 artist's offered releases appear beneath it; given the run that produced the
-file had no years set, then it issued no request about that artist's releases.
+file had no years set, then it issued no request about that artist's releases;
+given a candidate with no identifier, when it is expanded, then no request is
+made and the row says the catalogue did not say which artist it is; given an
+answer offering nothing, then the row says so.
 
-Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`, `tests/application/test_expanding.py::test_everything_that_artist_made_is_offered`, `tests/application/test_expanding.py::test_a_hits_package_is_still_noise`, `tests/application/test_discovery_narrowing.py::test_a_run_never_asks_what_a_candidate_released`
+Verified by: `tests/ui/test_opening_a_candidate.py::test_expanding_a_candidate_asks_for_their_albums`, `tests/ui/test_opening_a_candidate.py::test_a_candidate_the_catalogue_could_not_name_says_so`, `tests/ui/test_opening_a_candidate.py::test_a_candidate_with_nothing_to_offer_says_that_rather_than_nothing`, `tests/application/test_expanding.py::test_everything_that_artist_made_is_offered`, `tests/application/test_expanding.py::test_a_hits_package_is_still_noise`, `tests/application/test_discovery_narrowing.py::test_a_run_never_asks_what_a_candidate_released`
 
 ---
 
@@ -1744,8 +1752,8 @@ there is to judge them by.
 
 Amended on 2026-09-29 with the series of FR-D69: a series is not in the library
 under its own name, so it is judged by the stems of the held albums in the
-picked genres. A series reached by its stem (FR-D70) is named by that stem and
-so is judged exactly; a catalogue series whose name differs from every held
+picked genres. A series reached by its stem alone (FR-D70) is named by that
+stem and so is judged exactly; a catalogue series whose name differs from every held
 stem is withheld while a filter is on.
 
 Acceptance: Given an answer holding a House source artist and a Rock one, when
@@ -2612,8 +2620,8 @@ name under several artists, up to three album or track titles the library holds
 under that name, each cut at its first bracket and sent to MusicBrainz alone
 beside that name (FR-D09); while compilations are included, the titles of
 series albums inside the ticked genres (each cut at its first bracket, spaced
-solidus or spaced dash) with the series stem of any such title that sits in no
-catalogue series, each sent to MusicBrainz alone (FR-D69, FR-D70); fixed values
+solidus or spaced dash) with the series stem of each such title, each sent to
+MusicBrainz alone (FR-D69, FR-D70); fixed values
 each client states for itself, being the response format, a result limit, where
 a following page starts, the release types, the genres inclusion, the relations
 asked for and the similarity algorithm.
@@ -2846,7 +2854,7 @@ HTTP server on the loopback address, in
 `tests/infrastructure/fetching_support.py`, because what Qt makes of a status
 and a silence is what they exist to test. A fake reply would only test the fake.
 None of those requests leaves the machine, which is the property the rationale
-is about. Seven test modules are permitted the machinery, with their reasons, in
+is about. Six test modules are permitted the machinery, with their reasons, in
 `TESTS_PERMITTED`.
 
 Verification:

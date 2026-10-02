@@ -38,8 +38,7 @@ made a stray text file read as a missing album once already.
 100% branch over `stellody.domain` and `stellody.application`, the layers
 reachable with no filesystem, no clock and no audio device. The rest is not
 gated and the suite does not measure it by default. That is a decision
-recorded in
-`ARCHITECTURE.md`, not an omission: a gate over code needing a real device, a
+recorded in `ARCHITECTURE.md`, not an omission: a gate over code needing a real device, a
 real library and the Windows shell would either be a number nobody can hold or a
 suite full of mocks standing in for the very things worth testing.
 
@@ -57,10 +56,11 @@ suite, so the exemption cannot quietly outlive the script.
 search inside a network read is given up within about a second now (`SLICE_S`
 in `infrastructure/cover_search.py`), so
 `leave_at_once` in `composition.py` should never be reached. It stays because
-what no amount of asking covers is a socket that never comes back. Qt ends the
-process over a thread destroyed while running: an abort with a crash report
-rather than the exit code the quit meant. Everything durable is already put away
-by the time it is reached, the store closed and the claim released.
+what no amount of asking covers is a socket that never comes back. Without it,
+Qt ends the process over a thread destroyed while running: an abort with a
+crash report rather than the exit code the quit meant. Everything durable is
+already put away by the time it is reached, the store closed and the claim
+released.
 
 **`installer/` reads `stellody.shared`, `stellody.ui` and
 `stellody.infrastructure`.** That is the setup program being a client of the

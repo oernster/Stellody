@@ -143,9 +143,11 @@ any shop and takes nothing from a sale.
   muddled, state the artist, the title, the date or the genre yourself and
   Stellody remembers it. A single song takes its own title, artist, disc number
   and track number the same way, even one song of an album saved as one long
-  file. Genres come from a settled list of twenty-one headings
-  with their styles under them, so the same music cannot end up under three
-  spellings of one word. Your files are read for this and never written.
+  file. Genres come from a settled list of twenty-one headings with their
+  styles under them, so the same music cannot end up under three spellings of
+  one word. Each heading folds its styles away behind an arrow; the headings
+  you leave open are remembered, separately for each screen that shows the
+  list. Your files are read for this and never written.
 - **Show me only the folk.** Narrow the wall of covers to the genres you ask
   for, including the albums that state none at all, then clear it in one press.
   Every tick widens what is shown, so asking for two genres shows both.
@@ -172,15 +174,21 @@ any shop and takes nothing from a sale.
   filed under. The rest are listed under a heading naming the series with how
   many albums it offers; one goes to a shop under Various Artists. It reports
   as it goes, says roughly how long is left and stops the moment you ask it
-  to or quit Stellody. Where it could not get a usable answer about somebody and holds none from an earlier
-  run, it says so and counts them, with the names one press away, so an answer
-  with gaps in it never reads like a complete one. Every answer is kept the
-  moment it arrives, so a run stopped or cut short loses nothing it had already
-  paid for and a second attempt asks only for the rest. What it finds opens as
-  a list you can read and tick, each album named with the year it first came
-  out where the catalogue states one, dealt across the width of the screen
-  and turned a page at a time, then narrowed to some of the genres it looked in when the
-  answer runs long. From there Find in shops takes the ticked albums to the
+  to or quit Stellody. A genre the catalogue states for an artist or an
+  album counts only where it has at least two votes there and at least half
+  the votes of the leading genre; where none reaches two votes, every one is
+  kept. Where it could not get a usable answer about somebody and holds none
+  from an earlier run, it says so and counts them, with the names one press
+  away, so an answer with gaps in it never reads like a complete one. Every
+  answer is kept the moment it arrives, so a run stopped or cut short loses
+  nothing it had already paid for and a second attempt asks only for the
+  rest. What it finds opens as a list you can read and tick, each album named
+  with the year it first came out where the catalogue states one, dealt
+  across the width of the screen and turned a page at a time, then narrowed
+  to some of the genres it looked in when the answer runs long. A similar
+  artist the catalogue gives no genre is judged there by the genres your own
+  albums carry for the artist it was suggested for, even where that artist is
+  one name in a joint credit. From there Find in shops takes the ticked albums to the
   shop you choose, opening that shop's own search for each of them in your
   browser. The shops on offer are yours to add, edit, delete and reorder on the
   screen where you choose one. Closing that screen clears every tick, even one
@@ -259,6 +267,10 @@ with the internet switched off.
 Five things reach outside your computer at all, so here are all five:
 
 - **Looking for album art**, only ever when you ask, one album at a time.
+  MusicBrainz is sent that album's artist and title, asking which releases
+  match; the Cover Art Archive is then asked for the pictures of each release
+  by the identifier MusicBrainz gave back. Each request carries the same user
+  agent a discovery run sends.
 - **Checking for a new version**, a few seconds after Stellody starts and once
   a day while it runs. It sends nothing about you or
   your music, not even which version you have: the request names the program

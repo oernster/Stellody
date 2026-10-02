@@ -896,11 +896,18 @@ the mains into three columns in catalogue order; each main is a `GenreGroup`
 (`genre_group.py`) holding an arrow, its box, a count of ticked styles shown
 while folded and its styles, hidden until the arrow opens them. The arrow is
 made before its box, so Qt's focus chain puts it just before its main on the
-ring and a folded style is off the ring because it is hidden. What is open is
-kept per dialog through `Folds` (`genre_folds.py`), one setting each in
-`settings_keys.py`. After a fold the grid invalidates its layouts and tells
-each widget from the group up that its geometry changed, then fits the dialog;
-measured, either step alone leaves the open height asked for.
+ring and a folded style is off the ring because it is hidden. A main with no
+styles shows no arrow yet keeps its room, so every main's box starts at the
+same place. What is open is kept per dialog through `Folds` (`genre_folds.py`)
+under one of four keys in `settings_keys.py`, `SETTING_GENRES_OPEN_DISCOVERY`,
+`SETTING_GENRES_OPEN_LIBRARY_FILTER`, `SETTING_GENRES_OPEN_ANSWER_FILTER` and
+`SETTING_GENRES_OPEN_TAG_EDITOR`, since a run's question and an album's
+description open different categories; a stored name that is no longer a main
+is passed over. After a fold `_keep_folds` invalidates every layout in the
+grid, calls `updateGeometry` on each widget from the folded group up, then
+`adjustSize` on the dialog; measured on 2026-10-02, either step alone left the
+open height asked for. `tests/ui/test_genre_folding.py` holds it, the room
+given back by `test_folding_gives_the_room_back`.
 
 **Discogs' spellings, with the shape ruled on here.** Taking a published
 vocabulary means the names are ones a listener has seen before and that a tag
@@ -915,7 +922,9 @@ about a tag written any of several ways. It lives in
 `stellody/domain/genre_rulings.py` since 2026-10-01, when FR-D77's rulings
 outgrew one module; `genres.ALIASES` still answers for it. No key in it is a
 catalogue name in any case, so a name always means itself and the bare `dance`
-tag is the Dance main. It is a table of decisions, so it
+tag is the Dance main;
+`tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_no_alias_is_keyed_on_a_catalogue_name`
+holds that. It is a table of decisions, so it
 grows by somebody making one rather than by pattern. The wild includes what
 MusicBrainz states for a discovery candidate as well as what a file's tag says:
 "electro house" and "ambient techno", ruled on 2026-09-27, had withheld every
@@ -927,9 +936,12 @@ alone have styles of their own now. What MusicBrainz states is also
 weighed before any of this is read: `believed` in `domain/genre_votes.py`
 drops a genre with a single vote beside one with two or more (FR-D76), since
 crowd tags gave Nirvana "electronic" and Snoop Dogg "house" once each; it also
-drops a genre with under half the leading genre's votes, since Lady Gaga's six
-votes for "electronic" against 24 for pop put her under an Electronic filter.
-The catalogue client applies it to every genre list it reads. The candidate
+drops a genre with under half the leading genre's votes (ruled on 2026-10-02),
+since Lady Gaga's six votes for "electronic" against 24 for pop put her under
+an Electronic filter. Where no genre has two votes every one is kept, so a
+little-tagged artist is not left with none. `_genres` in
+`infrastructure/catalogue.py` applies it to every genre list that client reads;
+`tests/domain/test_genre_votes.py` holds both rules. The candidate
 genre cache is renamed whenever the rule changes (`candidate-genres-2.json`
 now), so each candidate is asked once more.
 
@@ -1394,7 +1406,8 @@ its series (FR-D69 to FR-D73). The pieces sit where every other feature's do:
 
 - `domain/series.py` is the rule and is pure. `volume_title` cuts a title at its
   first bracket, spaced solidus or spaced dash; `series_stem` then takes a
-  trailing volume number off; `series_place` answers a `SeriesPlace` of the
+  trailing volume number off, in digits or as a word up to twenty
+  (`NUMBER_WORDS`), since the catalogue titles the tenth Select "Select Ten"; `series_place` answers a `SeriesPlace` of the
   stem, compared by `comparison_key`, with the number. A series entry is held
   when `HeldSeries` finds either its release match or its place on the shelf,
   whoever the album is filed under (FR-D71), since the library writes
@@ -1417,8 +1430,9 @@ its series (FR-D69 to FR-D73). The pieces sit where every other feature's do:
   so one series is asked about once however many of its volumes are held. An
   album nobody could answer about is a failure named by its title (FR-D73);
   the run's one `Silence` counts across this stage as across the others. It
-  has no bar of its own: it reports under the first stage, so the first bar
-  carries it.
+  reports as a stage of its own, `DiscoveryStage.SERIES`, yet has no bar of
+  its own: `SHARES_BAR` draws it on the first bar under its own name,
+  "Checking series", as the years stage takes over the second.
 - `application/discovery_ports.py` holds the `SeriesSource` port beside
   `CatalogueSource`, with `NoSeries` as the null object `Discovery` defaults
   to, so a run built without a series source asks nothing about series.
@@ -1563,9 +1577,14 @@ recognised for is judged by the heading it sits under (FR-D78, ruled on
 2026-10-01 when 615 of 1,996 candidates had no genre on MusicBrainz at all):
 the catalogue genres of the held albums crediting that artist (as album artist
 or on a track); for a series heading, those of the held volumes sharing its
-stem. Only
-where those name nothing either is the candidate withheld and counted.
-`filtered_answer` in `domain/discovery_filter.py` is that rule.
+stem. A heading is matched to a credit by each part of a joint credit as well
+as by the whole (`_keys_of`, through `credit_parts`), since a run asks about
+every part of a credit no catalogue knows whole: measured on 2026-10-02, all
+43 headings whose candidates were held back for want of a genre were such
+parts, `DJ Tennis` of `Moat, Kyozo, & DJ Tennis`. Only where those name
+nothing either is the candidate withheld and counted, once.
+`filtered_answer` in `domain/discovery_filter.py` is that rule, held by
+`tests/domain/test_judged_by_their_source.py`.
 `ui/results_filtering.py` deals the pages again from what it leaves rather than
 hiding rows, since pages are dealt by height and hidden rows would leave columns
 half empty. Dealing again throws the rows away, so the ticks and every
@@ -2203,7 +2222,7 @@ holds it over the real window, each part proved by taking it out.
 | Ending the application is said out loud, never left to Qt | Quitting when the last window closes is off, which is what lets the cross leave Stellody in the notification area. Nothing then ends the event loop by itself, so every path that means to leave says so. |
 | A file's shape is measured once and shared by its tracks | A cue-sheet album is one file holding many tracks, so measuring per track would decode the same file once for every track cut from it. `stellody/application/shapes.py` slices one measurement; the record is keyed by a digest of the file's path rather than by the path itself, since a music folder's names are arbitrary where a filesystem's are not. |
 | A bucket holds how loud it is, not its loudest sample | Reported against a real library: the shape showed maximum height for whole stretches of music. It was measuring the loudest single sample in each bucket; a bucket was then a file divided by two thousand, some 120 milliseconds for an ordinary track. The loudest sample in any 120 milliseconds carrying a drum or a sustained note sits within a few percent of the whole track's peak, so drawn against its own loudest point almost everything reached the top. Measured over three unlike records, AC/DC remastered, Adele and Air's Moon Safari: the median bucket was 0.92 of the track's loudest, between 35 and 46 percent of buckets drew at 99 percent of full height and over half at 90. Air is a gentle 1998 record, which is what rules out mastering as the explanation; it was the statistic. The same three measure as loudness to a median of 0.47 to 0.68 with a tenth of one percent at the top, which is a shape rather than a smear. A transient still survives the drawing, since a column covering several buckets takes the loudest of them. The guard is a file carrying one full scale sample in every otherwise quiet bucket: the old statistic answers 1.0000 for every bucket of it and the new one 0.1037. Kept records are invalidated by a format version, since a peak envelope drawn as loudness would be the old shape wearing the new name. |
-| The resolution belongs to the music, not to the file | Reported against a real library once the statistic above was fixed: the shape drew as wide blocks at close to constant height. The count was fixed at two thousand buckets a file, which is about a tenth of a second for an ordinary track while a cue-sheet album of 55.7 minutes holding nine tracks got 1671 milliseconds; its 3:20 opening track took 120 buckets and drew across some 1990 pixels as blocks 16.6 pixels wide. A bucket is therefore stated in time as 100 milliseconds; the count follows from how much music there is, floored at two thousand so a short file is still measured finely and capped at sixty thousand so one long recording cannot run away with the cache. Measured after: that opening track gets exactly 2000 buckets at 0.99 pixels each, a median drawn height of 0.60 with 1.7 percent of it at 90 percent or more; the album's whole record is 224 kilobytes and takes 4.5 seconds to measure. Kept records are invalidated by the format version moving to 3, since a record measured at the old resolution would redraw at the wrong width. The guard is `buckets_for` under four cases, proved by planting a fixed count back into it and reading two of them fail. |
+| The resolution belongs to the music, not to the file | Reported against a real library once the statistic above was fixed: the shape drew as wide blocks at close to constant height. The count was fixed at two thousand buckets a file, which is about a tenth of a second for an ordinary track while a cue-sheet album of 55.7 minutes holding nine tracks got 1671 milliseconds; its 3:20 opening track took 120 buckets and drew across some 1990 pixels as blocks 16.6 pixels wide. A bucket is therefore stated in time as 100 milliseconds; the count follows from how much music there is, floored at two thousand so a short file is still measured finely and capped at sixty thousand so one long recording cannot run away with the cache. Measured after: that opening track gets exactly 2000 buckets at 0.99 pixels each, a median drawn height of 0.60 with 1.7 percent of it at 90 percent or more; the album's whole record is 224 kilobytes and takes 4.5 seconds to measure. Kept records are invalidated by `FORMAT_VERSION` in `stellody/infrastructure/waveform.py` moving to 3, since a record measured at the old resolution would redraw at the wrong width. The guard is `buckets_for` in `stellody/domain/waveform.py` (`BUCKET_MILLISECONDS`, `LEAST_BUCKETS`, `MOST_BUCKETS`) under four cases in `tests/domain/test_envelope.py`, proved by planting a fixed count back into it and reading two of them fail. |
 | Levels are rounded where they are measured, not on the way to the record | A measurement differing from its own record by a rounding would redraw slightly differently after a restart, for no reason anybody could see. Four places also holds a record to roughly a third of the size, measured at 13.6 against 34.1 kilobytes on a track at the two thousand buckets a file carried then. |
 | A cover is read by one module and kept by another | The module that can open music files should not also be the one encoding and writing them. `infrastructure/covers.py` opens audio and reads a picture out of it, nothing more; `infrastructure/artwork.py` decodes, scales and writes without importing a tag library at all. That is what lets the second be granted permission to write without granting it to anything holding a tag library, which invariant 1 then enforces rather than merely describes. |
 | A cover is kept against the album's identity, not a path | A rescan after a folder rename reuses the picture instead of reading it again. What it was read from is recorded beside it and checked against that file's size and modification time, so a cover replaced on disk is still read afresh. |

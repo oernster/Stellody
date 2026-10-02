@@ -4,8 +4,8 @@ How Stellody is tested: running the checks, reading what they say, the rules a
 run by hand has to follow and how a new test or guard is written. The rules
 themselves are in `ARCHITECTURE.md`, each invariant linked to the test that
 enforces it; `DISCOVERY.md`, `SHOPS.md`, `FORMATS.md` and `OUTPUTS.md` name the
-test behind every requirement. This file is how to work with those tests, not a second copy
-of what they assert.
+test behind every requirement. This file is how to work with those tests, not
+a second copy of what they assert.
 
 ## Running the checks
 
@@ -20,13 +20,14 @@ sets `QT_QPA_PLATFORM=offscreen` for the run, so no window appears.
 
 **A full run takes about ten minutes.** Timed on 2026-09-24, when the tests
 outside `tests/ui` took about 80 seconds and the interface tests the rest, many
-of them spending most of a second building their window. Counted by collection:
-3,801 tests, of which 1,505 are interface tests and 2,296 are not. A run that is quiet for several minutes is not stuck. To see it moving, add `-v` to
-a pytest run by hand, which names each test as it starts.
+of them spending most of a second building their window. Counted by collection
+on 2026-10-02: 3,931 tests, of which 1,541 are interface tests and 2,390 are
+not. A run that is quiet for several minutes is not stuck. To see it moving,
+add `-v` to a pytest run by hand, which names each test as it starts.
 
 **Read the exit code, never the last line.** The suite is coverage gated, so it
 prints the coverage table last and no summary line of passed and failed; a
-coverage row named after a module such as `errors.py` also reads like a result
+coverage row named after a module such as `passing.py` also reads like a result
 to anybody searching the text. `gate.ps1` reads `$LASTEXITCODE` after every
 step and throws on anything but nought. Running a step by hand, do the same.
 For a count of tests without running them, `python -m pytest --co -q --no-cov`
@@ -132,8 +133,8 @@ for code nobody has written yet. The suite in `tests/structural/`:
 | `test_rings.py` | no checkbox ships without a ring |
 | `test_no_committed_audio.py` | no audio file of a widened format in the tree |
 
-**A guard is not trusted until it has been seen to fail.** Every new guard is proved by planting the violation it
-exists to catch and reading the failure, then restoring the tree in a
+**A guard is not trusted until it has been seen to fail.** Every new guard is
+proved by planting the violation it exists to catch and reading the failure, then restoring the tree in a
 `finally` block so an interrupted proof cannot leave the plant behind. A test
 written for a defect is run before the fix, where it has to fail for the
 reason named, not merely fail. The proof is recorded where the rule is

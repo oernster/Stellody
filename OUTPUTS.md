@@ -594,7 +594,8 @@ asked its name; without it FR-O10 could only say "a device is missing".
 ## 4. Prioritisation
 
 Every functional requirement is a Must: the feature is small; each one is a
-case the feature cannot ship without. Won't this time is the out-of-scope list in section 1.4.
+case the feature cannot ship without. Won't this time is the out-of-scope list
+in section 1.4.
 
 ## 5. Open questions
 
@@ -714,8 +715,8 @@ both devices still present, carries the music on as an arrival does.
   track in hand to it where it was and keep it playing; a paused track stays
   paused. This replaces the rule of 2026-09-14 for that case alone.
 - **A device leaving still pauses.** Where the previous default is gone, as
-  where the stream was interrupted, the pause stands: music never goes to the speakers
-  without a press (FR-O11, Amendment 4).
+  where the stream was interrupted, the pause stands: music never goes to the
+  speakers without a press (FR-O11, Amendment 4).
 - **Nothing switches to a device never chosen.** Only the listener's own choice
   is ever returned to automatically.
 

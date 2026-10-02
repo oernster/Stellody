@@ -223,16 +223,17 @@ Priority: Must
 
 Requirement: When a shop is chosen in the shops dialog, the shops dialog shall
 open that shop's search address for each ticked album in the listener's default
-browser.
+browser, then say in the dialog how many searches it opened at that shop.
 
 Rationale: The whole point. One address per album rather than one address for
 all of them, since no shop searches for several albums at once.
 
 Acceptance: Given two albums ticked and Qobuz chosen, when the shop is chosen,
 then two addresses are opened, each being Qobuz's search for one of those
-albums.
+albums; the dialog then says it opened 2 searches at Qobuz.
 
-Verified by: `tests/ui/test_shop_dialog.py::test_choosing_a_shop_opens_one_search_an_album`
+Verified by: `tests/ui/test_shop_dialog.py::test_choosing_a_shop_opens_one_search_an_album`,
+`tests/ui/test_shop_dialog.py::test_it_says_what_it_just_opened`
 
 ---
 
@@ -270,7 +271,7 @@ Acceptance: Given six albums ticked, when a shop is chosen and the question is
 answered no, then nothing is opened; when it is answered yes, then six
 addresses are opened.
 
-Verified by: `tests/ui/test_shop_dialog.py::test_a_large_number_of_tabs_is_asked_about_first`, `tests/ui/test_shop_dialog.py::test_a_refused_confirmation_opens_nothing`
+Verified by: `tests/ui/test_shop_dialog.py::test_a_large_number_of_tabs_is_asked_about_first`, `tests/ui/test_shop_dialog.py::test_a_refused_confirmation_opens_nothing`, `tests/ui/test_shop_dialog.py::test_a_handful_is_not_asked_about`
 
 ---
 
@@ -823,8 +824,10 @@ Verified by: `tests/domain/test_shop_list.py::TestTheForm::test_a_name_already_u
 Priority: Must
 
 Requirement: When Try is pressed, the shop form shall open the address it
-currently holds, for the first ticked album, in the default browser, without
-saving anything.
+currently holds, for the first ticked album in the order the results draw them,
+in the default browser, without saving anything. If the address breaks one of
+FR-S20's address rules, then the form shall open nothing and shall say which
+beside the address field; the name need not be filled in to try a shop.
 
 Rationale: Ruled by Oliver on 2026-09-13: whether a shop works is judged by
 looking at its page. The shops dialog opens only with at least one album ticked
@@ -836,7 +839,8 @@ Acceptance: Given "Kate Bush, Hounds of Love" ticked first and a form holding
 `https://example.com/s?q={artist}`, when Try is pressed, then
 `https://example.com/s?q=Kate%20Bush` is opened and the file is unchanged.
 
-Verified by: `tests/ui/test_shop_editing.py::test_try_opens_the_first_ticked_album`
+Verified by: `tests/ui/test_shop_editing.py::test_try_opens_the_first_ticked_album`,
+`tests/ui/test_shop_editing.py::test_a_try_with_a_broken_address_opens_nothing`
 
 ---
 

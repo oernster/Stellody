@@ -62,8 +62,7 @@ somebody decides on one.
 - **The formats still reported rather than played.** Monkey's Audio,
   Musepack, DSD and TAK stay named in `UNPLAYABLE_SUFFIXES` and reported rather
   than played, along with CAF, `.m4b` and `.tta`. This entry once covered WMA
-  and WavPack too, on
-  the ground that not one file of any of them existed in the reference library,
+  and WavPack too, on the ground that not one file of any of them existed in the reference library,
   so writing decoders was a decision about other people's libraries. Measured
   on 2026-09-09, that ground was wrong about the cost rather than about the
   libraries: the FFmpeg already inside PyAV decodes every one of them and
@@ -122,12 +121,11 @@ somebody decides on one.
   While compilations are included it also sends the title of each compilation
   inside the ticked genres, plus that of each album filed under a name the
   catalogue knows as one artist with no album or EP. Each is cut at its first
-  bracket, spaced slash or spaced dash; where the catalogue files it in no
-  series, its stem goes out without the volume number. That is how the
-  missing volumes of a series are found.
-  Handing an address to a browser is not another, whether it
-  goes to the donation page or to a shop: the address goes outward and the
-  browser does the asking.
+  bracket, spaced slash or spaced dash, then sent a second time without its
+  volume number, whether or not the catalogue files it in a series. That is
+  how the missing volumes of a series are found. Handing an address to a
+  browser is not another, whether it goes to the donation page or to a shop:
+  the address goes outward and the browser does the asking.
 - **Encryption at rest.** The store holds library metadata, not secrets; the
   README says so plainly.
 - **Repairing the files themselves.** Accepting a correction records it in
@@ -156,9 +154,8 @@ somebody decides on one.
   requantise it as well; one on macOS (`infrastructure/coreaudio.py`) is fed
   floating point and would be scaled. Exclusive output is the switch a
   listener presses to have the file's samples reach the device untouched,
-  which a levelling gain would undo on every measured album. Scaled is enough to break the promise
-  either way. This application
-  exists because another player altered somebody's files; handing the device
+  which a levelling gain would undo on every measured album. Scaled is enough
+  to break the promise either way. This application exists because another player altered somebody's files; handing the device
   exactly what the file holds is that same promise, so spending it to save
   reaching for the volume once a record is a poor trade. It reopens for somebody
   who listens by shuffling across the library rather than by playing records
