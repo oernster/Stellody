@@ -101,7 +101,9 @@ accepted corrections as well.
 `docs/` is the site, served by GitHub Pages at
 [stellody.co.uk](https://stellody.co.uk/), which is the canonical host. Version
 tokens in it are stamped from `VERSION` by `stamp_version.py`, which the Windows
-and macOS build scripts call, so the site is never hand-versioned. The Flatpak
+and macOS build scripts call, so the site is never hand-versioned. It also puts
+a content hash on every local stylesheet and script link (`styles.css?v=<hash>`)
+so a browser cannot pair a fresh page with a stale cached stylesheet. The Flatpak
 build does not stamp the site; run the script directly after a bump made
 without building on either of the other two.
 
