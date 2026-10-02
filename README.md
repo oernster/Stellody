@@ -68,7 +68,7 @@ any shop and takes nothing from a sale.
   by as much as it lifts, so a loud record never clips; music plays quieter
   with such a curve on, while a curve that only cuts keeps its level. Switched
   off it adds nothing of its own, handing each block back untouched; at full
-  volume nothing else in Stellody touches the samples either. Volume, mute,
+  volume with mute off nothing else in Stellody touches the samples either. Volume, mute,
   the output device, exclusive output and the equalizer sit together at the
   right end of the bottom strip, ahead of shuffle and repeat.
 - **Exclusive output, for the track exactly as the file holds it.** One press
@@ -76,8 +76,10 @@ any shop and takes nothing from a sale.
   mixer out of the way, which is the only way it can be bit perfect. Pressing
   it reopens the song in hand where it was; a paused song stays paused. Beside
   the playing time sits what the device actually took: the mode, the rate, the
-  depth plus "bit perfect" where that is true. Bit perfect also needs the volume at
-  100% and the equalizer off, since either one alters the samples. It is
+  depth plus "bit perfect" where that is true. Bit perfect also needs the
+  volume at 100% with mute off plus the equalizer off or flat, since anything
+  else alters the samples; the line drops the claim the moment one of those
+  moves and gives it back when all of them hold again. It is
   offered only for a song the device can take untouched: not for a lossy song
   such as an MP3, which has nothing to deliver untouched, nor at a rate the
   device does not take. A Bluetooth headphone taking 48 kHz alone cannot have a

@@ -140,8 +140,8 @@ address a discovery run asked; it is never sent anywhere.
 
 Music files are opened for reading only. A wrong tag is corrected inside
 Stellody's own store and reported; the file is left exactly as it was. Two
-structural tests hold this; the Linux build is only granted read access
-to the home folder.
+structural tests hold this; the Linux build is granted read access only,
+never write.
 
 - **Rather than:** repairing tags on disk.
 - **Gains:** Stellody cannot damage a collection somebody spent years curating.
@@ -174,8 +174,8 @@ physical thing wins.
 ### Raw tags stored, the album worked out on loading
 
 The store keeps the tags as read. Rules and accepted corrections are applied
-each time the library loads, in layers: raw tags, automatic rules, then
-corrections the listener accepted.
+each time the library loads, in layers: raw tags, what the listener stated by
+hand, automatic rules, then corrections the listener accepted.
 
 - **Rather than:** storing the corrected result.
 - **Gains:** an improved rule reaches the whole library without a rescan;
@@ -186,7 +186,8 @@ corrections the listener accepted.
 ### Corrections accepted in bulk, undone in bulk
 
 The health view's findings can be accepted all at once, an album at a time or
-one at a time; anything accepted can be reset at the same three sizes.
+one at a time; anything accepted can be reset for the whole library, an album
+or one field of an album.
 
 - **Rather than:** one finding at a time, which is not a workflow over a
   hundred or more findings.
@@ -204,8 +205,8 @@ again.
 
 ### A lossy copy beside its lossless original is not a second album
 
-Where a lossless file and a lossy one share a disc, a track number and a
-length, the lossy one is set aside.
+Where a lossless file and a lossy one share a disc and a track number and run
+about the same length, the lossy one is set aside.
 
 - **Rather than:** pairing on the track number alone, which cannot tell a copy
   from a live version.
@@ -228,8 +229,8 @@ file; a whole file is simply the slice that covers it all.
 
 A bit depth, a date or a genre the file does not state is held as unknown
 rather than filled with a plausible default. Where the display needs a name,
-the folder name or a placeholder stands in and the gap is reported as an
-issue.
+the folder name or a placeholder stands in; a missing title, album artist or
+track number is reported as an issue.
 
 - **Rather than:** a tidy interface full of invented values.
 - **Gains:** nothing is claimed (bit-perfect output, an exact date) on the
@@ -239,8 +240,9 @@ issue.
 ### An unreachable drive is not a deleted library
 
 A scan checks that the music folder can be reached before it starts and stops
-without changing anything when it cannot. Within a reachable folder, a file no
-longer found is marked absent, never deleted.
+without changing anything when it cannot. Within a reachable library, a folder
+no longer found has its files marked absent, never deleted; a folder still
+there is simply read again.
 
 - **Rather than:** walking whatever is there and recording the difference.
 - **Gains:** unplugging a drive costs nothing; plugging it back restores the
@@ -272,8 +274,8 @@ small, in Stellody's own directory.
 
 A format is played only when a test file in it can be generated and played end
 to end. Formats that cannot be proved that way are reported in the library's
-health view rather than played, alongside a few left out on other grounds (no
-tags, audiobooks).
+health view rather than played, alongside a few left out on other grounds
+(audiobooks; files that state too little to be read).
 
 - **Rather than:** playing everything the decoder happens to open.
 - **Gains:** every playable path is tested; no audio files are committed to
@@ -386,7 +388,7 @@ another sample rate; a shuffled album starting again.
 Back returns to the start of the track and waits; pressed again from there it
 goes to the previous track. Next always moves on, even when one track is set
 to repeat. Shuffle begins with the track in hand and never reopens on the track
-that just ended. Skipping keeps playing or paused as it was; a pause is never
+that just ended; under shuffle, Back never leaves the track in hand. Skipping keeps playing or paused as it was; a pause is never
 read as an ending. Volume starts at three quarters.
 
 - **Rather than:** double-press timing windows, which proved the wrong model;
@@ -409,8 +411,8 @@ at its own size in the library area and fills the window only when asked.
 Output is queued two blocks deep.
 
 - **Rather than:** the shortest possible queue.
-- **Gains:** dropouts under load stopped (measured, from dozens in a few
-  seconds to none).
+- **Gains:** the static heard under load is gone (measured before the change
+  at 32 dropouts in 16 seconds).
 - **Costs:** a little more delay between a press and the sound changing.
 
 ### A hand-written equalizer
@@ -464,8 +466,8 @@ drawn from peaks, nearly every moment of a track sat close to its loudest.
 ### Ask what is missing from the listener's own collection
 
 Discovery starts from the albums the listener owns, inside the genres they
-tick. It asks public catalogues what those artists and their neighbours have
-released that is not on the shelf.
+tick. It asks public catalogues what those artists have released that is not
+on the shelf and which artists resemble them.
 
 - **Rather than:** a listening history or a behavioural profile.
 - **Gains:** no account and no profile; every suggestion can be traced to an
@@ -495,8 +497,8 @@ cases. Tick nothing and nothing leaves.
 ### Polite and slow by design
 
 Requests to MusicBrainz are paced a little below its published limit, through
-one gate shared by everything that asks it. A refusal is retried on a later
-pass rather than waited out on the spot.
+one gate shared by everything that asks it. A refusal gets one quick second
+ask, then waits for a later pass rather than being waited out on the spot.
 
 - **Rather than:** asking faster; giving each part of the program its own
   pace.
@@ -516,8 +518,8 @@ arrives.
 
 ### A partial answer is still an answer
 
-An artist that could not be asked about is retried on a later pass. Others are
-recorded and the run carries on. The answer says separately how many could
+An artist a busy catalogue refused is retried on a later pass; any other
+failure is recorded and the run carries on. The answer says separately how many could
 not be asked, were not recognised or shared a name. Five questions in a row
 met with silence end the run as unavailable; the previous answer is kept.
 
@@ -532,8 +534,8 @@ found nothing still opens its results to say why.
 
 ### Shared names: abstain rather than guess
 
-An artist is identified only by an exact name match. Where several artists
-share the name, up to three titles the listener holds decide which is meant.
+An artist is identified only by a match on the name itself (case, accents and
+dashes set aside), never by a ranking. Where several artists share the name, up to three titles the listener holds decide which is meant.
 If that does not settle it, the name is reported as ambiguous.
 
 - **Rather than:** taking the top-ranked match.
@@ -544,11 +546,13 @@ If that does not settle it, the name is reported as ambiguous.
 ### Years narrow what is offered, never who is asked
 
 A year range filters the albums offered by their first release. It never
-filters which of the listener's own artists are asked about.
+filters which of the listener's own artists are asked about. A suggested
+artist who cannot be shown to have released inside the range is not offered.
 
 - **Rather than:** filtering the library by the same years.
 - **Gains:** an old album on the shelf can still lead to a new release.
-- **Costs:** none recorded.
+- **Costs:** while years are set, each suggested artist costs a question
+  during the run.
 
 ### A run is priced before it starts
 
@@ -574,7 +578,8 @@ says nothing until there is enough to measure.
 ### A genre needs real support
 
 A genre the catalogue states for an artist counts only with at least two votes
-and at least half the votes of the artist's leading genre.
+and at least half the votes of the artist's leading genre. An artist whose
+genres all carry a single vote keeps them all.
 
 - **Rather than:** every stated genre counting equally.
 - **Gains:** a genre filter means what it says; a single stray tag no longer
@@ -585,7 +590,7 @@ and at least half the votes of the artist's leading genre.
 
 A similar artist the catalogue gives no genre is judged by the genres of the
 listener's albums by the artist it was suggested for. Where that gives nothing
-either, it is marked unknown rather than dropped.
+either, the filter holds it back and says how many it could not judge.
 
 - **Rather than:** dropping every artist the catalogue has not tagged.
 - **Gains:** most such artists become reachable through the filters.
@@ -613,23 +618,26 @@ list, topped up by a search for titles that differ only by volume number.
 
 ### Never offer back what is owned
 
-An album the listener holds is never suggested, whoever it is filed under. An
-album is the same album whatever the year of the pressing: a remaster is the
+An album the listener holds under an artist is never suggested for that
+artist, however the name is spelled; a series volume held anywhere is never
+suggested. An album is the same album whatever the year of the pressing: a remaster is the
 album it remasters, while a live recording is an album of its own.
 
 - **Rather than:** completeness at the risk of suggesting what is already on
   the shelf.
-- **Gains:** every suggestion is something new.
-- **Costs:** none recorded.
+- **Gains:** a suggestion is not something already on the shelf under that
+  name.
+- **Costs:** an album held under a different name can still be suggested.
 
 ### Pay only for what is opened
 
 A suggested artist's albums are fetched when the listener opens them, not
-during the run.
+during the run. With a year range set the run has already asked, so opening
+is answered from memory.
 
 - **Rather than:** fetching every candidate's albums up front.
 - **Gains:** runs are far shorter.
-- **Costs:** opening an artist takes a few seconds.
+- **Costs:** opening an artist not asked about before waits on the catalogue.
 
 ### A run works in the background; stop means stop
 
@@ -642,17 +650,19 @@ the tray does not.
 - **Rather than:** a modal run, a confirmation on stop or resumable runs.
 - **Gains:** listening is never blocked; stop is instant; no reconciling a
   half run against a library that has changed since.
-- **Costs:** a stray press loses the run; stopping costs the time spent.
+- **Costs:** a stray press loses the run, though what it learned is remembered
+  so the next run asks little again.
 
 ### One answer, kept with its question
 
 Each run replaces a single answer file, which records what was asked (genres,
 years, choices) as well as what was found.
 
-- **Rather than:** dated files that need tidying; merging answers.
+- **Rather than:** dated files that need tidying.
 - **Gains:** the answer on screen always matches the question that produced
   it; expanding later obeys the same choices.
-- **Costs:** an earlier answer is gone once a new run completes.
+- **Costs:** an earlier answer is replaced once a new run completes, except
+  for artists that run could not reach.
 
 ### The answer is read a page at a time
 
@@ -664,8 +674,8 @@ turning pages.
 - **Rather than:** one long scrolling list; a window left open beside the
   main one.
 - **Gains:** a long answer reads like a book; nothing ticked is lost.
-- **Costs:** a large answer takes a moment to lay out; the longest names are
-  shortened to fit.
+- **Costs:** a large answer takes a moment to lay out; the longest rows do
+  not fit a column whole.
 
 ### The catalogues are credited as they ask
 
@@ -742,11 +752,12 @@ standard Qt scale setting overrides it.
 ### One home for every colour
 
 Every colour is defined once, in light and dark sets, with the accent taken
-from the application's own artwork; contrast is checked by test.
+from the application's own artwork; contrast is checked by test wherever colour carries text or
+meaning.
 
 - **Rather than:** colours written where they are used.
 - **Gains:** the two appearances stay consistent; a colour that cannot be read
-  fails the suite rather than shipping.
+  there fails the suite rather than shipping.
 - **Costs:** a new colour has to earn its place in the palette.
 
 ### Two views of one library
@@ -783,7 +794,7 @@ hands over to the copy already running.
 
 ### Nothing promises what is not built
 
-No control may say a feature is coming. A structural sweep forbids it.
+No control may say a feature is coming. A sweep of every control forbids it.
 
 - **Rather than:** disabled buttons for planned features.
 - **Gains:** everything on screen works.
@@ -826,10 +837,11 @@ The help guide uses the same pictures as the controls it explains.
 
 ### A window that does not fit is maximised
 
-The window remembers its size and opens maximised on a first run. A window too
-large for the screen opens maximised rather than being shrunk or moved.
+The window remembers its size (held to the screen it opens on) and opens
+maximised on a first run. A window that still overhangs the screen once shown,
+because of its frame, is maximised rather than nudged aside.
 
-- **Rather than:** nudging or resizing it.
+- **Rather than:** nudging it back onto the screen.
 - **Gains:** nothing opens partly off the screen.
 - **Costs:** none recorded.
 
@@ -865,7 +877,8 @@ registry. On Linux the Flatpak may read the home folder but not write it.
 Install, update, repair and removal are one bespoke program wearing the
 application's own look. It reads the application's shared code but never opens
 the library database; it leaves a note for the application instead. It checks
-the whole payload before writing anything; removing Stellody keeps the
+that every file in the payload lands inside the install folder before
+unpacking any; removing Stellody keeps the
 listener's data unless asked otherwise.
 
 - **Rather than:** a generic installer.
@@ -897,7 +910,7 @@ commercial licence for Stellody's own code is offered separately.
 ### A website written for the listener
 
 The website explains what Stellody does for somebody who will use it: no
-repository links, build instructions or dependency lists. It carries no dates.
+links into the source, build instructions or dependency lists. It carries no dates.
 
 - **Rather than:** a developer's project page.
 - **Gains:** the people deciding whether to install it find what they need.
@@ -958,8 +971,9 @@ place; everything else reads or is generated from it.
 
 ### Threads are owned
 
-Every thread that outlives its errand is held until it ends; every signal is
-received by a slot of an interface object, never a loose function.
+Every thread that outlives its errand is held until it ends. An answer coming
+back from a worker thread is received by a method of an object on the
+interface thread, never a loose function that would run on the worker's.
 
 - **Rather than:** fire-and-forget threads.
 - **Gains:** quitting never pulls the ground from under a thread still

@@ -1759,6 +1759,14 @@ queues there either way. What the guard actually catches is a worker that shows
 the answer itself instead of handing it back, which was verified by planting
 exactly that.
 
+**An answer with nowhere to go is dropped.** The window can close while a
+question is out, taking the controller with it; the worker's emit then raised
+on a thread nothing catches, which ended it with "Signal source has been
+deleted". `_run` in `stellody/ui/update_check.py` now drops that answer where
+`shiboken6.isValid` says the controller has gone and raises anything else.
+Asking first would not do, since the controller can go between the asking and
+the emit. `tests/ui/test_update_check_after_close.py` reproduces it.
+
 **Skip silences a prompt, not the question.** The tag is written into
 Stellody's own settings and that release never prompts again, while the next
 one prompts normally. A check somebody asks for ignores the skip entirely and
@@ -1885,9 +1893,10 @@ A switch on the bottom strip between the output device and the equalizer sets
 it was, since a mode belongs to a stream rather than to something a running
 stream can be told. The choice is written down under `output_mode` and is what
 every later track asks for. What the device granted is a different fact and is
-shown separately, beside the clock, by `ui/stream_words.py` reading
-`PlaybackPort.report`: the mode, the rate, the depth and whether it is bit
-perfect. That line says what was opened, never what was asked for.
+shown separately, beside the clock, by `ui/stream_words.py`: the mode, the
+rate and the depth read off `PlaybackPort.report`, then bit perfect only where
+`SoundSettings.bit_perfect` says so, since the volume and the curve decide that
+too (below). That line says what was opened, never what was asked for.
 
 **The switch is offered only for a song the device in use can take.** Ruled by
 Oliver on 2026-09-18, in two steps: first for a lossy file, which states no

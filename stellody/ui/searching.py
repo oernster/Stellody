@@ -48,8 +48,9 @@ class Searching:
         """Take what a load or a scan produced, then show it as asked.
 
         Normalising the text is done here, once, rather than on every
-        keystroke: measured, it is 9.2 milliseconds against 0.24 for the pass
-        that uses it; the answer cannot change between keystrokes.
+        keystroke: measured over 8,450 tracks, it is 10.2 milliseconds against
+        about 1.3 for the pass that uses it; the answer cannot change between
+        keystrokes.
 
         Where the covers are read from is said here too, for the same reason
         and once for the same whole library. A load or a scan is the only
