@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pathlib
 import sqlite3
+from collections.abc import Iterator
 
 import pytest
 
@@ -19,13 +20,18 @@ FOLDER = "H:/FLACMusic/Yoav/Charmed & Strange"
 
 
 @pytest.fixture
-def connection(tmp_path: pathlib.Path) -> sqlite3.Connection:
-    """A store's own database, opened again the way the cleaner sees it."""
+def connection(tmp_path: pathlib.Path) -> Iterator[sqlite3.Connection]:
+    """A store's own database, opened again the way the cleaner sees it.
+
+    Closed afterwards: left open, it is reclaimed whenever the collector next
+    runs and warns there, against whichever test happens to be running then.
+    """
     store = SqliteLibraryStore(str(tmp_path / "library.db"))
     store.close()
     opened = sqlite3.connect(str(tmp_path / "library.db"))
     opened.row_factory = sqlite3.Row
-    return opened
+    yield opened
+    opened.close()
 
 
 def write_dates(connection: sqlite3.Connection, *dates: str) -> None:

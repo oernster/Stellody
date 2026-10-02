@@ -8,6 +8,7 @@ the folder the music sits in.
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Iterator
 
 import pytest
 
@@ -18,8 +19,11 @@ FOLDER = "H:/FLACMusic/Sasha/Involver"
 
 
 @pytest.fixture
-def store(tmp_path: pathlib.Path) -> SqliteLibraryStore:
-    return SqliteLibraryStore(str(tmp_path / "library.db"))
+def store(tmp_path: pathlib.Path) -> Iterator[SqliteLibraryStore]:
+    """A fresh store, closed afterwards rather than left for collection."""
+    made = SqliteLibraryStore(str(tmp_path / "library.db"))
+    yield made
+    made.close()
 
 
 def an_edit(field: AlbumField, value: str, folder: str = FOLDER) -> AlbumEdit:

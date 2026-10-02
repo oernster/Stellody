@@ -16,6 +16,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
 from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
+from update_support import CURRENT, Settings
 
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.application.values import ReleaseAsset, ReleaseInfo, UpdateStatus
@@ -31,7 +32,6 @@ from stellody.ui.update_check import (
     offer_text,
 )
 
-CURRENT = "0.5.0"
 NEWER = "0.6.0"
 PAGE = "https://github.com/oernster/stellody/releases/tag/v0.6.0"
 FILE_URL = "https://example.test/StellodySetup.exe"
@@ -62,21 +62,6 @@ def _newer() -> ReleaseInfo:
         page_url=PAGE,
         assets=(ReleaseAsset("StellodySetup.exe", FILE_URL),),
     )
-
-
-class Settings:
-    """The two settings calls the controller is given, recorded."""
-
-    def __init__(self, stored: str = "") -> None:
-        self.values = {SETTING_SKIPPED_UPDATE: stored} if stored else {}
-
-    def get(self, key: str, default: str = "") -> str:
-        """What is stored under a key, else the default."""
-        return self.values.get(key, default)
-
-    def set(self, key: str, value: str) -> None:
-        """Write a value down, as the real store does."""
-        self.values[key] = value
 
 
 @pytest.fixture
