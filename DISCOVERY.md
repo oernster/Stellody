@@ -2345,10 +2345,11 @@ Priority: Must
 Requirement: The discovery service shall offer a series entry whatever kinds
 the catalogue states for it, inside the ticked genres and the run's years.
 
-Rationale: The offering rule (section 3.5) leaves out compilations and DJ mixes,
-because by an artist already held they are noise. Measured on 2026-09-29, every
-Global Underground entry is typed Compilation, DJ-mix or both, so that rule
-would leave every series empty. The rule for artists is unchanged.
+Rationale: The offering rule (section 3.5) leaves out compilations, because by
+an artist already held they are noise. Measured on 2026-09-29, every Global
+Underground entry is typed Compilation, DJ-mix or both, so that rule would
+leave every series empty. The rule for artists offers a DJ mix (FR-D80) but no
+other compilation.
 
 Acceptance: Given a series entry typed Compilation and DJ-mix, first released in
 2018, when the run has no years set, then it is offered.
@@ -2599,6 +2600,107 @@ answer's filter, a main with nothing on offer is not shown and a main offered
 without its styles shows no arrow.
 
 Verified by: `tests/ui/test_genre_folding.py`, `tests/ui/test_genre_grid.py::TestWhatItOffers::test_three_columns_is_the_ruling`, `tests/ui/test_genre_grid.py::TestWhatItOffers::test_the_groups_read_down_then_across_in_catalogue_order`
+
+---
+
+**FR-D80 A DJ mix is offered**
+
+Priority: Must
+
+Requirement: Where a release group states the DJ-mix secondary type, the
+discovery service shall treat a Compilation type beside it as no bar to
+offering it; it shall offer the release group wherever its remaining types are
+all offered types (Live, Remix, Demo). A release group stating Compilation
+without DJ-mix shall stay excluded.
+
+Rationale: Reported by Oliver on 2026-10-02: a run over the house genres
+offered no dance compilations beyond Global Underground. Measured that day
+from his last answer: of about 27,800 albums offered, the only 46 compilations
+or mixes came through series headings, since the offering rule dropped every
+mix credited to an artist. MusicBrainz files a mix as Compilation plus DJ-mix
+(29 of the 32 mixes in that answer said both), so excluding Compilation
+excluded the mix with it. Ruled by Oliver the same day: a DJ's mix is worth
+offering. A hits package is not, which is why Compilation alone still
+excludes. The rule is `ReleaseGroup.is_offered` in `domain/discovery.py`.
+
+Acceptance: Given an artist whose discography holds "Involver" as Compilation
+plus DJ-mix, "Fundacion" as DJ-mix and "Live at Fabric" as DJ-mix plus Live,
+then all three are offered; given "Greatest Hits" as Compilation alone, then
+it is not; given a DJ-mix also stating Soundtrack or an unrecognised type,
+then it is not; expanding a candidate offers its mixes on the same rule.
+
+Verified by: `tests/domain/test_discovery_gaps.py::test_a_dj_mix_is_a_discovery`, `tests/domain/test_discovery_gaps.py::test_a_dj_mix_of_an_unknown_kind_is_still_left_alone`, `tests/domain/test_discovery_gaps.py::test_a_candidates_dj_mix_is_offered_on_expanding`, `tests/domain/test_discovery_gaps.py::test_a_hits_package_is_not_a_discovery`
+
+---
+
+**FR-D81 A number before a colon is a volume**
+
+Priority: Must
+
+Requirement: Where a title's volume title holds a number, written in digits
+and not reading as a year, followed by a colon and further words, with a
+letter before the number, the discovery service shall read that number as the
+volume and the words before it as the series stem. Otherwise a number ending
+the volume title shall be the volume, as before.
+
+Rationale: Measured on 2026-10-02 from Oliver's library and the catalogue's
+remembered answers: the library holds "Global Underground #45: Danny Tenaglia
+- Brooklyn" where MusicBrainz writes "Global Underground 045: Danny Tenaglia
+in Brooklyn"; fabric numbers its mixes "Fabric 99: Sasha" (99th of the
+series, released 2018-06-22). Read whole, neither side named a volume, so the
+two never met. Over all 68,173 titles held or remembered, 1,273 change; of
+the 619 held, 7 do, 6 of them the mixes meant. A year is excluded because
+"Sónar 2011: Selected and Mixed by Agoria" is one mix of that year. Known
+misreadings that remain: "Mixmag Presents Hot Since 82" reads as volume 82;
+the many "KISS Alive 35: <venue>" recordings share volume 35. Each only
+matters inside a series search.
+
+Acceptance: Given "Global Underground #45: Danny Tenaglia - Brooklyn" and
+"Global Underground 045: Danny Tenaglia in Brooklyn", then both are volume 45
+of "Global Underground"; given "Fabric 99: Sasha", then volume 99 of
+"Fabric"; given "Sónar 2011: Selected and Mixed by Agoria" or "2001: A Space
+Odyssey", then the whole title is the stem and no volume is read.
+
+Verified by: `tests/domain/test_series.py::TestTheStem::test_a_number_before_a_colon_is_the_volume`, `tests/domain/test_series.py::TestTheStem::test_a_year_before_a_colon_is_not_a_volume`, `tests/domain/test_series.py::TestTheStem::test_a_number_with_no_name_before_it_is_not_a_volume`
+
+---
+
+**FR-D82 A compilation filed under an artist brings its series**
+
+Priority: Must
+
+Requirement: While compilations are included, for each held album inside the
+ticked genres filed under an artist who is neither Various Artists nor a
+placeholder, the discovery service shall settle that artist as FR-D09 does.
+Where one identity results, it shall look the album up in that artist's
+discography: by its release key, kinds aside, else by its numbered place in a
+series. Where the release group found states Compilation or DJ-mix while no
+release group of that artist without either kind shares the album's release
+key, the service shall ask about that release group's title by series as
+FR-D70 does. A stem search answered for an unnumbered title shall keep only
+release groups that state a volume number.
+
+Rationale: Reported by Oliver on 2026-10-02. Measured that day: of his 201
+electronic albums only 16 are filed under Various Artists; Fabric 97, Balance
+029, Northern Exposure 2 and four numbered Global Underground mixes are filed
+under the DJ, so none was asked about by series. Each artist's discography is
+already in the run's memory, typed, so this costs no request. A hits package
+counts, ruled by Oliver the same day, since "Back to Mine" is a series typed
+Compilation alone. "Led Zeppelin" and "Metallica" each share their title with a
+compilation, hence the plain album winning. A stem search for "The Planets"
+answers with every orchestra's recording, hence only volumes beside an
+unnumbered title. Over Oliver's library, 30 held albums are sent to the series
+search by this from names that need no settling.
+
+Acceptance: Given "Global Underground #45: Danny Tenaglia - Brooklyn" held
+under Danny Tenaglia, whose discography holds "Global Underground 045: Danny
+Tenaglia in Brooklyn" as Compilation plus DJ-mix, then that title is asked
+which series it belongs to and the series' other volumes are offered; given a
+name with two identities the library cannot settle, then nothing is asked;
+given "Led Zeppelin" held where the artist released an album and a
+compilation of that title, then nothing is asked.
+
+Verified by: `tests/application/test_discovering_filed_compilations.py`, `tests/domain/test_series.py::TestFiledUnderAnArtist`, `tests/domain/test_series.py::TestSharingAStem::test_beside_an_unnumbered_title_only_volumes_are_kept`
 
 ---
 
@@ -3013,9 +3115,10 @@ and secondary types, which are stated data rather than a string parsed by us. A
 release group's identity for matching is its release key together with its
 secondary types, so a live album never suppresses the studio album of the same
 name and is never suppressed by it. Offered: primary type Album and EP, plus the
-secondary types Live, Remix and Demo, which are genuinely different records.
-Excluded: every other secondary type, Compilation and DJ-mix among them, since a
-hits package of an artist already held is noise rather than a discovery.
+secondary types Live, Remix and Demo, which are genuinely different records,
+plus a DJ-mix whether or not it also states Compilation (FR-D80). Excluded:
+every other secondary type, Compilation without DJ-mix among them, since a hits
+package of an artist already held is noise rather than a discovery.
 
 **What the library measured, which is why each table looks as it does.**
 
@@ -3048,7 +3151,7 @@ that is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D79 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D82 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

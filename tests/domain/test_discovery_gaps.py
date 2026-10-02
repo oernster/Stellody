@@ -192,6 +192,33 @@ def test_a_hits_package_is_not_a_discovery() -> None:
     assert [group.title for group in missing] == ["Rarities"]
 
 
+def test_a_dj_mix_is_a_discovery() -> None:
+    """FR-D80: a mix is a set somebody made, however MusicBrainz marks it."""
+    mix = (ReleaseKind.COMPILATION, ReleaseKind.DJ_MIX)
+    offered = (
+        ReleaseGroup(title="Involver", kinds=mix),
+        ReleaseGroup(title="Fundacion", kinds=(ReleaseKind.DJ_MIX,)),
+        ReleaseGroup(
+            title="Live at Fabric", kinds=(ReleaseKind.DJ_MIX, ReleaseKind.LIVE)
+        ),
+    )
+    missing = albums_missing(frozenset(), offered, ("House",))
+    assert [group.title for group in missing] == [
+        "Involver",
+        "Fundacion",
+        "Live at Fabric",
+    ]
+
+
+def test_a_dj_mix_of_an_unknown_kind_is_still_left_alone() -> None:
+    """FR-D80 lifts only the compilation mark; any other kind still excludes."""
+    offered = (
+        ReleaseGroup(title="Sessions", kinds=(ReleaseKind.DJ_MIX, ReleaseKind.OTHER)),
+        ReleaseGroup(title="Score", kinds=(ReleaseKind.DJ_MIX, ReleaseKind.SOUNDTRACK)),
+    )
+    assert albums_missing(frozenset(), offered, ("House",)) == ()
+
+
 def test_candidate_albums_respect_the_ticks() -> None:
     """Ticking Folk and receiving a comedy record is the filter failing."""
     offered = (
@@ -256,6 +283,17 @@ def test_a_hits_package_is_still_noise() -> None:
     )
     kept = everything_offered(released)
     assert [group.title for group in kept] == ["A Record", "At The Apollo"]
+
+
+def test_a_candidates_dj_mix_is_offered_on_expanding() -> None:
+    """FR-D80 holds for a candidate as for an artist already held."""
+    released = (
+        ReleaseGroup(
+            title="Transitions",
+            kinds=(ReleaseKind.COMPILATION, ReleaseKind.DJ_MIX),
+        ),
+    )
+    assert [group.title for group in everything_offered(released)] == ["Transitions"]
 
 
 def test_an_artist_with_nothing_offers_nothing() -> None:

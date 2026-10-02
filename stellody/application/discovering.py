@@ -68,7 +68,7 @@ from stellody.application.remembering import (
 )
 from stellody.application.remembering_series import RememberingSeries
 from stellody.application.series_stage import SeriesStage
-from stellody.application.settling import settled
+from stellody.application.settling import meant
 from stellody.application.values import (
     Ambiguity,
     DiscoveryProgress,
@@ -341,16 +341,11 @@ class Discovery:
         several artists share.
         """
         held, evidence = holding
-        identifiers = asked(self.catalogue.identify, cancelled, self.pause, artist)
+        identifiers = meant(self.catalogue, artist, evidence, cancelled, self.pause)
         if not identifiers:
             return None
         if len(identifiers) > 1:
-            meant = settled(
-                self.catalogue, identifiers, evidence, cancelled, self.pause
-            )
-            if meant is None:
-                return Ambiguity(artist=artist, identifiers=identifiers)
-            identifiers = (meant,)
+            return Ambiguity(artist=artist, identifiers=identifiers)
         # Three requests are made about one artist, plus up to MOST_EVIDENCE
         # more where its name had to be settled. Each is asked through `asked`
         # on its own, so a stop between any two of them is

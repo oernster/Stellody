@@ -16,6 +16,8 @@ from stellody.domain.release_years import ReleaseYears
 from stellody.domain.series import (
     Series,
     SeriesPlace,
+    artist_filed,
+    catalogued_compilation,
     held_series,
     merged_entries,
     series_albums,
@@ -30,6 +32,8 @@ from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 HOUSE = ("House",)
 ADAPT = "Global Underground: Adapt"
 UNIQUE = "Global Underground: Unique"
+GU = "Global Underground"
+MIX = (ReleaseKind.COMPILATION, ReleaseKind.DJ_MIX)
 
 
 def held(artist: str, title: str, genre: str = "House") -> Album:
@@ -109,6 +113,31 @@ class TestTheStem:
         assert volume_title("Global Underground: Select #7 / Unmixed") == (
             "Global Underground: Select #7"
         )
+
+    @pytest.mark.parametrize(
+        ("title", "stem", "number"),
+        [
+            ("Global Underground #45: Danny Tenaglia - Brooklyn", GU, 45),
+            ("Global Underground 045: Danny Tenaglia in Brooklyn", GU, 45),
+            ("Fabric 99: Sasha", "Fabric", 99),
+            ("Balance 029: James Zabiela", "Balance", 29),
+            ("Journeys by DJ, Volume 4: Silky Mix", "Journeys by DJ", 4),
+        ],
+    )
+    def test_a_number_before_a_colon_is_the_volume(
+        self, title: str, stem: str, number: int
+    ) -> None:
+        """FR-D81: the library's and the catalogue's spellings meet."""
+        assert series_stem(title) == stem
+        assert series_place(title) == SeriesPlace(stem=stem.casefold(), number=number)
+
+    def test_a_year_before_a_colon_is_not_a_volume(self) -> None:
+        """Two mixes of one year are two records, not one volume."""
+        title = "Sónar 2011: Selected and Mixed by Agoria"
+        assert series_stem(title) == title
+
+    def test_a_number_with_no_name_before_it_is_not_a_volume(self) -> None:
+        assert series_stem("2001: A Space Odyssey") == "2001: A Space Odyssey"
 
     def test_a_series_needs_a_name(self) -> None:
         with pytest.raises(ValueError):
@@ -204,6 +233,61 @@ class TestWhichAlbumsAreSeriesAlbums:
         assert series_albums((held("Various", ADAPT),), ()) == ()
 
 
+class TestFiledUnderAnArtist:
+    """FR-D82: a compilation filed under the DJ, as the catalogue types it."""
+
+    def test_the_albums_series_albums_leaves(self) -> None:
+        albums = (
+            held("Various Artists", f"{ADAPT} #2"),
+            held("Sasha", "Fabric 99: Sasha"),
+            held("Sasha", "Involver", "Rock"),
+        )
+        assert [a.identity.title for a in artist_filed(albums, HOUSE)] == [
+            "Fabric 99: Sasha"
+        ]
+
+    def test_matched_by_its_title(self) -> None:
+        released = (group("Fabric 99: Sasha", "2018", *MIX),)
+        assert catalogued_compilation("Fabric 99: Sasha", released) == (
+            "Fabric 99: Sasha"
+        )
+
+    def test_matched_by_its_volume_where_the_titles_differ(self) -> None:
+        released = (
+            group("Global Underground 017: Danny Tenaglia in London", "", *MIX),
+            group("Global Underground 045: Danny Tenaglia in Brooklyn", "", *MIX),
+        )
+        held_title = "Global Underground #45: Danny Tenaglia - Brooklyn"
+        assert catalogued_compilation(held_title, released) == (
+            "Global Underground 045: Danny Tenaglia in Brooklyn"
+        )
+
+    def test_a_hits_package_counts(self) -> None:
+        """Ruled on 2026-10-02: Back to Mine is typed Compilation alone."""
+        released = (group("Back to Mine: Morcheeba", "", ReleaseKind.COMPILATION),)
+        assert catalogued_compilation("Back to Mine: Morcheeba", released) == (
+            "Back to Mine: Morcheeba"
+        )
+
+    def test_a_plain_album_is_not_one(self) -> None:
+        released = (group("Settle"), group("Caracal", "", ReleaseKind.LIVE))
+        assert catalogued_compilation("Settle", released) is None
+        assert catalogued_compilation("Caracal", released) is None
+
+    def test_a_studio_album_sharing_a_compilations_title_is_not_one(self) -> None:
+        """Measured on 2026-10-02: "Led Zeppelin" names both."""
+        released = (
+            group("Led Zeppelin", "1969"),
+            group("Led Zeppelin", "1990", ReleaseKind.COMPILATION),
+        )
+        assert catalogued_compilation("Led Zeppelin", released) is None
+        assert catalogued_compilation("Led Zeppelin", released[::-1]) is None
+
+    def test_an_album_the_catalogue_never_released_is_not_one(self) -> None:
+        released = (group("Fabric 99: Sasha", "", *MIX),)
+        assert catalogued_compilation("Involver", released) is None
+
+
 class TestSharingAStem:
     """FR-D70: the fallback keeps exactly the titles sharing a stem."""
 
@@ -219,6 +303,13 @@ class TestSharingAStem:
         )
         found = sharing_stem(answered, f"{UNIQUE} #2")
         assert [g.title for g in found] == [UNIQUE, f"{UNIQUE} #2", f"{UNIQUE} #3"]
+
+    def test_beside_an_unnumbered_title_only_volumes_are_kept(self) -> None:
+        """FR-D82: other orchestras' "The Planets" are no volumes of it."""
+        answered = (group("The Planets"), group("The Planets"), group("Planets 2"))
+        assert sharing_stem(answered, "The Planets") == ()
+        numbered = (group(f"{UNIQUE} #2"), group(UNIQUE))
+        assert [g.title for g in sharing_stem(numbered, UNIQUE)] == [f"{UNIQUE} #2"]
 
     def test_a_title_naming_no_series_shares_nothing(self) -> None:
         assert sharing_stem((group("1999"),), "1999") == ()

@@ -31,10 +31,16 @@ from stellody.domain.text import comparison_key, is_various_artists, year_of
 
 # The kinds worth offering. A plain album states none of them, so an empty set
 # is the ordinary case. A record whose kinds are not all in here is left alone:
-# a hits package or a mixed set by an artist already held is noise rather than
-# a discovery; an unrecognised kind is excluded by the same test rather
-# than needing a list of its own.
+# a hits package by an artist already held is noise rather than a discovery; an
+# unrecognised kind is excluded by the same test rather than needing a list of
+# its own.
 OFFERED_KINDS = frozenset({ReleaseKind.LIVE, ReleaseKind.REMIX, ReleaseKind.DEMO})
+# What a DJ mix may state beside the kinds offered. FR-D80. MusicBrainz files a
+# mix as Compilation plus DJ-mix: measured on 2026-10-02, 29 of the 32 mixes in
+# Oliver's last answer said both. The mix is the record; the compilation mark
+# only says it is made of other people's tracks. The same two kinds mark a held
+# album as one to ask about by series (`catalogued_compilation`, FR-D82).
+MIX_KINDS = frozenset({ReleaseKind.DJ_MIX, ReleaseKind.COMPILATION})
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,8 +77,15 @@ class ReleaseGroup:
 
     @property
     def is_offered(self) -> bool:
-        """Whether this kind of record is one worth putting in front of anybody."""
-        return set(self.kinds) <= OFFERED_KINDS
+        """Whether this kind of record is one worth putting in front of anybody.
+
+        A DJ mix is: it is a set somebody made, not a package of what they
+        already made. FR-D80. A compilation that is no mix stays noise.
+        """
+        kinds = set(self.kinds)
+        if ReleaseKind.DJ_MIX in kinds:
+            kinds -= MIX_KINDS
+        return kinds <= OFFERED_KINDS
 
     @property
     def states_no_genre(self) -> bool:
@@ -310,8 +323,8 @@ def everything_offered(
     would hide the rest of a discography from somebody who went looking for it
     on purpose.
 
-    The offering rule is the one test that survives, because a hits package or
-    a mixed set is noise wherever it turns up. The years are the other: a run
+    The offering rule is the one test that survives, because a hits package is
+    noise wherever it turns up. The years are the other: a run
     asked about the 1980s showing a candidate's 2020s on expanding would hand
     back what it was asked to leave out. FR-D65.
     """

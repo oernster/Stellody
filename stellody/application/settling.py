@@ -27,6 +27,27 @@ from stellody.domain.credit_evidence import Evidence, settled_by
 MOST_EVIDENCE = 3
 
 
+def meant(
+    catalogue: CatalogueSource,
+    name: str,
+    evidence: tuple[Evidence, ...],
+    cancelled: CancelledCheck,
+    pause: Pause,
+) -> tuple[str, ...]:
+    """Who a held name means: nobody, the one settled, else every namesake.
+
+    One home for the question, since both the artist stage and the series
+    stage ask it (FR-D09, FR-D82). Several back means the library's titles
+    could not say which.
+    """
+    identifiers = asked(catalogue.identify, cancelled, pause, name)
+    if len(identifiers) > 1:
+        one = settled(catalogue, identifiers, evidence, cancelled, pause)
+        if one is not None:
+            return (one,)
+    return identifiers
+
+
 def settled(
     catalogue: CatalogueSource,
     identifiers: tuple[str, ...],

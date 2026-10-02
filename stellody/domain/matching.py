@@ -143,7 +143,9 @@ DISTINGUISHING = frozenset(KIND_WORDS) | frozenset(
 _BRACKETED = re.compile(r"\s*(?:\((?P<round>[^()]*)\)|\[(?P<square>[^\[\]]*)\])\s*$")
 _DASHED = re.compile(r"\s+-\s+(?P<dash>[^-]+)\s*$")
 _WORDS = re.compile(r"[0-9a-z]+")
-_YEAR = re.compile(r"^(?:1[89]|20)\d{2}$")
+# A word that reads as a year. Public because a series volume is told from a
+# year by it too (`domain/series.py`).
+YEAR_LIKE = re.compile(r"^(?:1[89]|20)\d{2}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,7 +197,7 @@ def _is_edition(words: list[str]) -> bool:
     if words[-1] in TERMINAL_WORDS:
         return True
     allowed = EDITION_WORDS | CONNECTIVES
-    if any(word not in allowed and not _YEAR.match(word) for word in words):
+    if any(word not in allowed and not YEAR_LIKE.match(word) for word in words):
         return False
     return any(word in EDITION_WORDS for word in words)
 

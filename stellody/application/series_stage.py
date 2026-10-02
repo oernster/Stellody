@@ -12,6 +12,13 @@ no request. One identity with no release group at all is a name used to tag
 compilations rather than anybody: measured on 2026-09-29, MusicBrainz says so
 of "Global Underground" in as many words.
 
+**So is a compilation filed under an artist.** FR-D82. Measured on
+2026-10-02: of the library's electronic albums only 16 are filed under Various
+Artists, while Fabric 97, Balance 029 and four numbered Global Underground
+mixes are filed under the DJ. The catalogue already said what each of those
+artists released, typed, so a held album it calls a compilation is searched
+by the catalogue's own title: "#45" never finds "045".
+
 **One series is asked about once, however many of it are held.** A held album
 whose stem and number are already among the entries of a series found is
 answered by that series, so six volumes of Adapt cost one search each for the
@@ -37,6 +44,7 @@ from stellody.application.discovery_ports import (
 )
 from stellody.application.gathering import Silence
 from stellody.application.ports import CancelledCheck
+from stellody.application.settling import meant
 from stellody.application.values import (
     DiscoveryProgress,
     DiscoveryStage,
@@ -44,11 +52,14 @@ from stellody.application.values import (
     SourceFailure,
 )
 from stellody.domain.album import Album
+from stellody.domain.credit_evidence import evidence_by_artist, evidence_for
 from stellody.domain.discovery import Gaps, ReleaseGroup
 from stellody.domain.release_years import ReleaseYears
 from stellody.domain.series import (
     Series,
     SeriesPlace,
+    artist_filed,
+    catalogued_compilation,
     held_series,
     merged_entries,
     series_albums,
@@ -95,13 +106,17 @@ class SeriesStage:
         ticked, years = wanted
         try:
             placeholders = self._placeholders(gathered, cancelled)
+            catalogued = self._catalogued(albums, ticked, placeholders, cancelled)
         except RunCancelled:
             return CANCELLED
-        reached = series_albums(albums, ticked, placeholders)
+        filed = series_albums(albums, ticked, placeholders)
+        # Each title once, in the order met. FR-D82.
+        reached = tuple(
+            dict.fromkeys((*(a.identity.title for a in filed), *catalogued))
+        )
         held = held_series(albums)
         found = _Found()
-        for done, album in enumerate(reached):
-            title = album.identity.title
+        for done, title in enumerate(reached):
             report(
                 DiscoveryProgress(
                     artist=title,
@@ -162,6 +177,48 @@ class SeriesStage:
         # meet under one heading. FR-D70.
         name = catalogued[0].name if catalogued else stem
         return (*catalogued, Series(name=name, entries=sharing_stem(groups, title)))
+
+    def _catalogued(
+        self,
+        albums: tuple[Album, ...],
+        ticked: tuple[str, ...],
+        placeholders: frozenset[str],
+        cancelled: CancelledCheck,
+    ) -> tuple[str, ...]:
+        """The catalogue's titles for held compilations filed under an artist.
+
+        FR-D82. Every album artist inside the ticks was asked about earlier
+        in this run, so both questions are answered from its recollection. A
+        name the library cannot settle gives nothing here; neither does a
+        question that fails. The artist stage has already reported either.
+        """
+        evidence = evidence_by_artist(albums)
+        by_artist: dict[str, list[str]] = {}
+        for album in artist_filed(albums, ticked, placeholders):
+            artist = album.identity.album_artist
+            by_artist.setdefault(artist, []).append(album.identity.title)
+        found: list[str] = []
+        for artist, titles in by_artist.items():
+            try:
+                identifiers = meant(
+                    self.catalogue,
+                    artist,
+                    evidence_for(evidence, artist),
+                    cancelled,
+                    self.pause,
+                )
+                if len(identifiers) != 1:
+                    continue
+                released = asked(
+                    self.catalogue.albums_of, cancelled, self.pause, identifiers[0]
+                )
+            except (SourceFailed, SourceUnavailable):
+                continue
+            for title in titles:
+                named = catalogued_compilation(title, released)
+                if named is not None:
+                    found.append(named)
+        return tuple(found)
 
     def _placeholders(
         self, gathered: tuple[Gaps, ...], cancelled: CancelledCheck

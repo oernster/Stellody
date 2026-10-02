@@ -22,8 +22,8 @@ import re
 from dataclasses import dataclass
 
 from stellody.domain.album import Album
-from stellody.domain.discovery import ReleaseGroup, wanted_by
-from stellody.domain.matching import ReleaseMatch, matched
+from stellody.domain.discovery import MIX_KINDS, ReleaseGroup, wanted_by
+from stellody.domain.matching import YEAR_LIKE, ReleaseMatch, matched
 from stellody.domain.narrowing import Narrowing, narrowed_to
 from stellody.domain.overrides import AlbumField
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
@@ -73,6 +73,20 @@ _NUMBER = re.compile(
     r"(?P<number>\d+|" + "|".join(NUMBER_WORDS) + r")$",
     re.IGNORECASE,
 )
+# A volume number inside a title, then a colon and whoever mixed it. FR-D81.
+# Measured on 2026-10-02: the library holds "Global Underground #45: Danny
+# Tenaglia - Brooklyn" where MusicBrainz writes "Global Underground 045: Danny
+# Tenaglia in Brooklyn"; fabric numbers its mixes "Fabric 99: Sasha". Digits
+# only, since "One: A Story" names no volume; never a year, since "Sónar 2011:
+# Mixed by Agoria" is one mix of that year rather than its 2011th volume.
+_INNER = re.compile(
+    r"^(?P<stem>.*?)[\s,]*(?:#|\b(?:no|vol|volume|part|pt)\b\.?)?\s*\b"
+    r"(?P<number>\d+)\s*:\s*\S",
+    re.IGNORECASE,
+)
+# What a stem needs to name anything: a letter. "2001: A Space Odyssey" has
+# none before its colon, so it is read as a title rather than a volume.
+_LETTER = re.compile(r"[^\W\d_]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,25 +123,40 @@ def volume_title(title: str) -> str:
     return _TAIL.sub("", normalise(title))
 
 
+def _split(title: str) -> tuple[str, int | None]:
+    """A title's series stem as written, plus its volume number if it has one.
+
+    A number followed by a colon and a name is the volume, whatever follows;
+    else a number ending the volume title is. FR-D81.
+    """
+    volume = volume_title(title)
+    inner = _INNER.match(volume)
+    if inner is not None:
+        stem = inner.group("stem").strip(" :,")
+        number = inner.group("number")
+        if _LETTER.search(stem) and not YEAR_LIKE.match(number):
+            return stem, int(number)
+    found = _NUMBER.search(volume)
+    stem = _NUMBER.sub("", volume).strip(" :,")
+    return stem, None if found is None else _volume(found.group("number"))
+
+
 def series_stem(title: str) -> str:
     """The part of a title naming its series, as written; empty for none.
 
-    The volume title with a trailing volume number taken off. A title that is
-    only a number has no stem, since "1999" names no series.
+    The volume title with its volume number taken off, with whatever follows
+    a number inside it. A title that is only a number has no stem, since
+    "1999" names no series.
     """
-    return _NUMBER.sub("", volume_title(title)).strip(" :,")
+    return _split(title)[0]
 
 
 def series_place(title: str) -> SeriesPlace | None:
     """Where this title sits in its series; None where it names none."""
-    stem = series_stem(title)
+    stem, number = _split(title)
     if not stem:
         return None
-    found = _NUMBER.search(volume_title(title))
-    return SeriesPlace(
-        stem=comparison_key(stem),
-        number=None if found is None else _volume(found.group("number")),
-    )
+    return SeriesPlace(stem=comparison_key(stem), number=number)
 
 
 def _volume(written: str) -> int:
@@ -197,21 +226,91 @@ def series_albums(
     those names by `comparison_key`. Nothing ticked is nothing to ask about,
     for the reason `source_artists` gives.
     """
-    if not ticked:
-        return ()
-    narrowing = Narrowing(field=AlbumField.GENRE, wanted=ticked)
     return tuple(
         album
-        for album in narrowed_to(albums, narrowing)
-        if is_various_artists(album.identity.album_artist)
-        or comparison_key(album.identity.album_artist) in placeholders
+        for album in _inside(albums, ticked)
+        if _filed_under_nobody(album, placeholders)
     )
+
+
+def artist_filed(
+    albums: tuple[Album, ...],
+    ticked: tuple[str, ...],
+    placeholders: frozenset[str] = frozenset(),
+) -> tuple[Album, ...]:
+    """The held albums inside the ticks that `series_albums` leaves: those
+    filed under somebody. Any of them may still be a compilation. FR-D82."""
+    return tuple(
+        album
+        for album in _inside(albums, ticked)
+        if not _filed_under_nobody(album, placeholders)
+    )
+
+
+def _inside(albums: tuple[Album, ...], ticked: tuple[str, ...]) -> tuple[Album, ...]:
+    """The held albums inside the ticks; none where nothing is ticked."""
+    if not ticked:
+        return ()
+    return narrowed_to(albums, Narrowing(field=AlbumField.GENRE, wanted=ticked))
+
+
+def _filed_under_nobody(album: Album, placeholders: frozenset[str]) -> bool:
+    """Whether this album's artist is Various Artists or a placeholder."""
+    artist = album.identity.album_artist
+    return is_various_artists(artist) or comparison_key(artist) in placeholders
+
+
+def catalogued_compilation(
+    title: str, released: tuple[ReleaseGroup, ...]
+) -> str | None:
+    """The catalogue's title for this held album where it is a compilation.
+
+    FR-D82. `released` is everything the album artist released, as the
+    catalogue answered. The album is the release group whose key matches
+    its title, kinds aside; else the one in the same numbered place of the
+    same series, since "Global Underground #45: Danny Tenaglia - Brooklyn"
+    and "Global Underground 045: Danny Tenaglia in Brooklyn" share no key.
+    It counts where that group states Compilation or DJ-mix, a hits package
+    included: ruled by Oliver on 2026-10-02, since "Back to Mine" is a series
+    typed so. None where nothing matches or what matches is no compilation.
+
+    **A plain album of the same title is the album held.** Measured on
+    2026-10-02: "Led Zeppelin" and "Metallica" each share their title with a
+    compilation of that artist's, which would otherwise send a studio album
+    looking for a series.
+    """
+    key = matched(title).key
+    place = series_place(title)
+    numbered = place if place is not None and place.number is not None else None
+    found: str | None = None
+    for group in released:
+        compilation = bool(set(group.kinds) & MIX_KINDS)
+        if group.match.key == key:
+            if not compilation:
+                return None
+            found = found or group.title
+        elif compilation and numbered is not None:
+            if series_place(group.title) == numbered:
+                found = found or group.title
+    return found
 
 
 def sharing_stem(
     groups: tuple[ReleaseGroup, ...], title: str
 ) -> tuple[ReleaseGroup, ...]:
-    """The release groups whose series stem is this title's. FR-D70."""
+    """The volumes of this title's series a stem search answered. FR-D70.
+
+    A volume is a release group of the same stem stating a number. One
+    stating none counts only where this title is itself numbered, since it is
+    then the series' first volume, as "Global Underground: Unique" is beside
+    "Unique #2". Beside an unnumbered title it is merely another album of
+    the same name: a search for "The Planets", measured on 2026-10-02,
+    answers with every orchestra's recording. FR-D82.
+
+    Kinds cannot tell the two apart: MusicBrainz states none for "Global
+    Underground: Unique" and none for Van Halen's "Balance", so the latter
+    can still reach the Balance series. A known limit, not a rule.
+    """
     wanted = series_place(title)
     if wanted is None:
         return ()
@@ -220,6 +319,7 @@ def sharing_stem(
         for group in groups
         if (place := series_place(group.title)) is not None
         and place.stem == wanted.stem
+        and (place.number is not None or wanted.number is not None)
     )
 
 

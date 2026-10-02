@@ -1402,26 +1402,42 @@ answered "Global Underground (0 albums)", because MusicBrainz knows that name as
 one artist with no albums, used only to tag DJ mixes filed under Various Artists
 and grouped into series. While compilations are included, each held compilation
 inside the ticks and each album filed under a placeholder artist is looked up by
-its series (FR-D69 to FR-D73). The pieces sit where every other feature's do:
+its series (FR-D69 to FR-D73), as is each held album the catalogue types as a
+compilation, whoever it is filed under (FR-D82). The pieces sit where every other feature's do:
 
 - `domain/series.py` is the rule and is pure. `volume_title` cuts a title at its
   first bracket, spaced solidus or spaced dash; `series_stem` then takes a
   trailing volume number off, in digits or as a word up to twenty
-  (`NUMBER_WORDS`), since the catalogue titles the tenth Select "Select Ten"; `series_place` answers a `SeriesPlace` of the
-  stem, compared by `comparison_key`, with the number. A series entry is held
+  (`NUMBER_WORDS`), since the catalogue titles the tenth Select "Select Ten".
+  A number before a colon and a name is the volume too, so "Fabric 99: Sasha"
+  is volume 99 of Fabric and "Global Underground #45: Danny Tenaglia" meets the
+  catalogue's "Global Underground 045: Danny Tenaglia in Brooklyn"; a year
+  there never is (`YEAR_LIKE`, shared with `matching.py`) (FR-D81).
+  `series_place` answers a `SeriesPlace` of the stem, compared by
+  `comparison_key`, with the number. A series entry is held
   when `HeldSeries` finds either its release match or its place on the shelf,
   whoever the album is filed under (FR-D71), since the library writes
   "Global Underground: Select #7 / Unmixed" where the catalogue writes the title
   alone. `series_albums` picks what is asked about; `series_missing` offers
   every kind of entry, compilations and DJ mixes included, once each and in
   catalogue order, while the genres and the years still apply (FR-D72);
-  `sharing_stem` keeps the search results whose stem is the title's.
+  `sharing_stem` keeps the search results whose stem is the title's, an
+  unnumbered one only beside a numbered title, since beside an unnumbered one
+  it is merely another album of that name. `artist_filed` picks the albums
+  `series_albums` leaves; `catalogued_compilation` answers the catalogue's own
+  title for one the artist's discography types Compilation or DJ-mix, unless
+  a plain album of that title is theirs too (FR-D82).
 - `application/series_stage.py` holds `SeriesStage`, which `Discovery` runs
   after the artist half and before any candidate is narrowed, only while
   compilations are included. A placeholder is found from answers already in
   hand: an artist whose answer offered no album is asked again who they are and
   what they released, both answered from the run's own memory; one
-  identity with no album or EP is a placeholder. Each title is asked which
+  identity with no album or EP is a placeholder. A compilation filed under an
+  artist is found the same way: that artist's name is settled through
+  `settling.meant` (the one home the artist half uses too); their
+  remembered discography says which held albums are compilations; each is
+  searched by the catalogue's title rather than the library's (FR-D82). Each
+  title is asked which
   catalogue series it belongs to, then its stem is searched as well, which is
   the only answer for a title in no series and tops up one whose list lags the
   catalogue (FR-D70). Entries meet under one heading on `merged_entries`, which
