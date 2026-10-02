@@ -27,9 +27,26 @@ class TestTagsRuledToMeanAGenre:
                 assert name in genres.GENRES, alias
 
     def test_no_alias_is_keyed_on_a_catalogue_name(self) -> None:
-        """That would let an alias quietly redirect a name to another box."""
+        """That would let an alias quietly redirect a name to another box.
+
+        Matching ignores case, so a name in any case is that name and nothing
+        else: ruled by Oliver on 2026-10-01, which retired the one exception,
+        `dance` read as Electronic."""
         names = {name.casefold() for name in genres.GENRES}
-        assert names.isdisjoint(genres.ALIASES)
+        assert not names & set(genres.ALIASES)
+
+    def test_every_catalogue_name_in_its_own_spelling_reads_back_as_itself(
+        self,
+    ) -> None:
+        """What a ticked box writes must read back as that box, ruling or no."""
+        for name in genres.GENRES:
+            assert name in genres.chosen_in(name), name
+
+    def test_the_rulings_still_answer_from_where_they_always_did(self) -> None:
+        """Moved to their own module on 2026-10-01; one table, two addresses."""
+        from stellody.domain import genre_rulings
+
+        assert genres.ALIASES is genre_rulings.ALIASES
 
     def test_every_alias_is_keyed_on_its_folded_form(self) -> None:
         """A key that is not folded can never be reached by the lookup."""
@@ -37,8 +54,8 @@ class TestTagsRuledToMeanAGenre:
             assert alias == alias.casefold()
 
     def test_an_alias_is_matched_whatever_its_case(self) -> None:
-        assert genres.chosen_in("DANCE") == ("Electronic",)
-        assert genres.chosen_in("dance") == ("Electronic",)
+        assert genres.chosen_in("ALTERNATIVE") == ("Rock", "Alternative Rock")
+        assert genres.chosen_in("alternative") == ("Rock", "Alternative Rock")
 
     def test_the_hip_hop_tag_reaches_the_catalogue(self) -> None:
         """415 files carry `Hip-Hop/Rap` and 26 `hip hop / rap`, measured."""
@@ -49,10 +66,11 @@ class TestTagsRuledToMeanAGenre:
         """35 files tagged `hip hop` match the catalogue name outright."""
         assert genres.chosen_in("hip hop") == ("Hip Hop",)
 
-    def test_the_bare_dance_tag_states_electronic_and_no_more(self) -> None:
-        """873 files. Discogs has no Dance style and one is not invented to
-        hold a tag that says no more than electronic."""
-        assert genres.chosen_in("dance") == ("Electronic",)
+    def test_the_bare_dance_tag_is_the_dance_main_in_any_case(self) -> None:
+        """873 files. Read as Electronic until Dance became a main; ruled by
+        Oliver on 2026-10-01 to be Dance, whatever its case."""
+        for spelling in ("dance", "DANCE", "Dance"):
+            assert genres.chosen_in(spelling) == ("Dance",), spelling
 
     def test_alternative_alone_is_the_rock_kind(self) -> None:
         """479 files, every one of them a rock record."""
@@ -74,35 +92,38 @@ class TestTheDanceSubTaxonomy:
 
     One person's own `dance-<style>` and `house-<style>` naming, three albums
     and a single. Each names its style outright now the catalogue has two
-    levels; each states Electronic through it.
+    levels; each states that style's main through it. Since Electronic was
+    split on 2026-10-01 (FR-D77) the main is House, Techno & Electro or Dance.
     """
 
     @pytest.mark.parametrize(
-        ("tag", "style"),
+        ("tag", "expected"),
         (
-            ("dance-trance", "Trance"),
-            ("dance-techno", "Techno"),
-            ("dance-house", "House"),
-            ("house-melodic", "House"),
-            ("House", "House"),
-            ("indie dance", "House"),
-            ("dance-house-progressive", "Progressive House"),
-            ("house-progressive house", "Progressive House"),
-            ("dance-house-deep", "Deep House"),
-            ("dance-house-acid", "Acid House"),
-            ("dance-house-disco", "Disco"),
-            ("dance-electro", "Electro"),
+            ("dance-trance", ("Techno & Electro", "Trance")),
+            ("dance-techno", ("Techno & Electro", "Techno")),
+            ("dance-electro", ("Techno & Electro", "Electro")),
+            ("dance-house", ("House",)),
+            ("house-melodic", ("House",)),
+            ("House", ("House",)),
+            ("indie dance", ("House",)),
+            ("dance-house-progressive", ("House", "Progressive House")),
+            ("house-progressive house", ("House", "Progressive House")),
+            ("dance-house-deep", ("House", "Deep House")),
+            ("dance-house-acid", ("House", "Acid House")),
+            ("dance-house-disco", ("Dance", "Disco")),
         ),
     )
-    def test_each_reaches_its_style_and_electronic(self, tag: str, style: str) -> None:
-        assert genres.chosen_in(tag) == ("Electronic", style)
+    def test_each_reaches_its_style_and_main(
+        self, tag: str, expected: tuple[str, ...]
+    ) -> None:
+        assert genres.chosen_in(tag) == expected
 
     def test_the_one_compound_value_reaches_through_its_other_half(self) -> None:
         """`minimal` names nothing and is left to, as an unknown word should
         be; the album still reaches the catalogue through the half that does.
         """
         assert genres.chosen_in("dance-house-tech / minimal") == (
-            "Electronic",
+            "House",
             "Tech House",
         )
 
@@ -131,17 +152,139 @@ class TestTheRulingsOnTheRest:
     def test_indie_dance_is_house(self) -> None:
         """3 files on Helsloot's `Never Tried`, whose other tags are house.
         Discogs has no Indie Dance style to reach for."""
-        assert genres.chosen_in("indie dance") == ("Electronic", "House")
+        assert genres.chosen_in("indie dance") == ("House",)
 
     def test_electro_house_is_house(self) -> None:
         """Stated by MusicBrainz for James Egbert and Noisia, who were withheld
-        from a house run as Electronic alone; Dirtyloud was offered nobody."""
-        assert genres.chosen_in("electro house") == ("Electronic", "House")
+        from a house run as Electronic alone; Dirtyloud was offered nobody.
+        House is a main since 2026-10-01, so it states that alone."""
+        assert genres.chosen_in("electro house") == ("House",)
 
     def test_ambient_techno_is_techno(self) -> None:
         """Stated by MusicBrainz for The Field and four more, withheld from a
         techno run until this was ruled."""
-        assert genres.chosen_in("ambient techno") == ("Electronic", "Techno")
+        assert genres.chosen_in("ambient techno") == ("Techno & Electro", "Techno")
+
+    @pytest.mark.parametrize(
+        ("stated", "expected"),
+        (
+            ("drum and bass", ("Electronic", "Drum n Bass")),
+            ("liquid funk", ("Electronic", "Drum n Bass")),
+            ("vocal trance", ("Techno & Electro", "Trance")),
+            ("indie rock", ("Rock", "Alternative Rock")),
+            ("indie pop", ("Pop", "Indie Pop")),
+            ("dubstep", ("Electronic", "Dubstep")),
+            ("uk garage", ("Electronic", "UK Garage")),
+            ("trip hop", ("Dance", "Downtempo")),
+            ("electronica", ("Dance", "Electronica")),
+            ("downtempo", ("Dance", "Downtempo")),
+            ("ambient", ("Electronic", "Ambient")),
+            ("indietronica", ("Dance", "Electronica")),
+        ),
+    )
+    def test_the_names_a_filter_withheld_on_2026_09_30(
+        self, stated: str, expected: tuple[str, ...]
+    ) -> None:
+        """74 similar artists stated only names nothing here recognised; ruled
+        by Oliver. Those once ruled Electronic alone have a style of their own
+        since 2026-10-01 (FR-D77), so they still stay out of a House or Techno
+        filter while a filter for their own style keeps them."""
+        assert genres.chosen_in(stated) == expected
+
+
+class TestTheRulingsOf2026_10_01:
+    """FR-D77: 155 of 1,996 similar artists in Oliver's whole-library answer
+    stated only names nothing here recognised. Each name below was ruled."""
+
+    @pytest.mark.parametrize(
+        ("stated", "expected"),
+        (
+            ("edm", ("Dance", "EDM")),
+            ("eurodance", ("Dance", "Eurodance")),
+            ("big beat", ("Electronic", "Big Beat")),
+            ("italo dance", ("Dance", "Italo Dance")),
+            ("dance-pop", ("Dance", "Dance-Pop")),
+            ("hi-nrg", ("Dance", "Hi-NRG")),
+            ("nu skool breaks", ("Dance", "Breakbeat")),
+            ("breakbeat hardcore", ("Dance", "Breakbeat")),
+            ("future bass", ("Dance", "EDM")),
+            ("trap edm", ("Dance", "EDM")),
+            ("rave", ("Dance",)),
+            ("club", ("Dance",)),
+            ("new rave", ("Dance",)),
+            ("minimal techno", ("Techno & Electro", "Minimal Techno")),
+            ("ebm", ("Techno & Electro", "EBM")),
+            ("electro-industrial", ("Techno & Electro", "EBM")),
+            ("aggrotech", ("Techno & Electro", "EBM")),
+            ("witch house", ("Electronic",)),
+            ("detroit techno", ("Techno & Electro", "Techno")),
+            ("microhouse", ("House",)),
+            ("hip house", ("House",)),
+            ("euro house", ("House",)),
+            ("goa trance", ("Techno & Electro", "Trance")),
+            ("electroclash", ("Techno & Electro", "Electro")),
+            ("synth-pop", ("Pop", "Synth-pop")),
+            ("synthpop", ("Pop", "Synth-pop")),
+            ("futurepop", ("Pop", "Synth-pop")),
+            ("bitpop", ("Pop", "Electropop")),
+            ("new wave", ("Pop", "New Wave")),
+            ("dream pop", ("Pop", "Dream Pop")),
+            ("k-pop", ("Pop", "K-Pop")),
+            ("pop rock", ("Pop", "Pop Rock")),
+            ("psychedelic pop", ("Pop",)),
+            ("folk pop", ("Pop",)),
+            ("death metal", ("Rock", "Heavy Metal")),
+            ("mathcore", ("Rock", "Heavy Metal")),
+            ("post-punk", ("Punk",)),
+            ("psychobilly", ("Punk",)),
+            ("acid jazz", ("Jazz",)),
+            ("lounge", ("Jazz",)),
+            ("mpb", ("World",)),
+            ("tropicália", ("World",)),
+            ("jùjú", ("World",)),
+            ("grime", ("Hip Hop",)),
+            ("trap metal", ("Hip Hop",)),
+        ),
+    )
+    def test_each_reaches_what_it_was_ruled_to(
+        self, stated: str, expected: tuple[str, ...]
+    ) -> None:
+        assert genres.chosen_in(stated) == expected
+
+    def test_the_bare_dance_tag_is_the_dance_main(self) -> None:
+        """873 library files carry it; ruled on 2026-10-01 that a name matched
+        whatever its case means that name, so they move from Electronic."""
+        assert genres.chosen_in("dance") == ("Dance",)
+        assert genres.chosen_in("DANCE") == ("Dance",)
+
+    def test_the_dance_main_written_by_a_tick_reads_back_as_itself(self) -> None:
+        """No ruling stands between the name and its box."""
+        assert genres.chosen_in(genres.stated_as(("Dance",))) == ("Dance",)
+        assert genres.chosen_in(genres.stated_as(("Disco",))) == ("Dance", "Disco")
+
+    @pytest.mark.parametrize(
+        ("stored", "expected"),
+        (
+            ("Electronic; House", ("Electronic", "House")),
+            ("Electronic; Deep House", ("Electronic", "House", "Deep House")),
+            ("Electronic; Techno", ("Electronic", "Techno & Electro", "Techno")),
+            ("Electronic; Disco", ("Dance", "Disco", "Electronic")),
+        ),
+    )
+    def test_a_value_stored_before_the_split_reads_as_written(
+        self, stored: str, expected: tuple[str, ...]
+    ) -> None:
+        """What a style's tick wrote while Electronic held every style. The
+        stored Electronic stays and the style's new main is added; nothing is
+        rewritten, so the album still answers an Electronic filter."""
+        assert genres.chosen_in(stored) == expected
+
+    @pytest.mark.parametrize(
+        "stated", ("progressive rock", "new age", "spoken word", "neo soul")
+    )
+    def test_names_not_ruled_are_left_unrecognised(self, stated: str) -> None:
+        """Rock kinds, soul, new age and spoken word were not ruled that day."""
+        assert genres.chosen_in(stated) == ()
 
     def test_classical_crossover_is_classical_and_pop(self) -> None:
         """1 file, Alexis Ffrench's `Truth`, whose only other tagged track

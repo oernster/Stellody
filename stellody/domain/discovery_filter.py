@@ -8,6 +8,7 @@ and of nothing but its result.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 
 from stellody.domain.album import Album
@@ -17,10 +18,11 @@ from stellody.domain.discovery import (
     catalogue_genres,
     source_artists,
 )
+from stellody.domain.genres import chosen_in
 from stellody.domain.narrowing import Narrowing, narrowed_to
 from stellody.domain.overrides import AlbumField
 from stellody.domain.series import series_place
-from stellody.domain.text import comparison_key
+from stellody.domain.text import comparison_key, credit_parts
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +50,46 @@ def _series_held(library: tuple[Album, ...], picked: tuple[str, ...]) -> set[str
     return {place.stem for place in places if place is not None}
 
 
+def _keys_of(names: Iterable[str]) -> set[str]:
+    """Each name compared, plus each artist a joint credit names.
+
+    The run asks about every part of a credit no catalogue knows whole (see
+    `credit_parts`), so a heading can be one part of a credit the library holds.
+    Measured on 2026-10-02: all 43 headings whose candidates were held back for
+    want of a genre were such parts, `DJ Tennis` of `Moat, Kyozo, & DJ Tennis`.
+    """
+    return {
+        comparison_key(name)
+        for whole in names
+        for name in (whole, *credit_parts(whole))
+    }
+
+
+def _held_genres(
+    library: tuple[Album, ...],
+) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """The catalogue genres the library holds per artist and per series. FR-D78.
+
+    An album counts for its album artist and for every artist credited on its
+    tracks, so a source reached through a compilation credit has a genre too;
+    it counts for its series where its title has a stem. Both keyed compared,
+    since that is how a heading is matched to the library everywhere else.
+    """
+    by_artist: dict[str, set[str]] = {}
+    by_series: dict[str, set[str]] = {}
+    for album in library:
+        named = set(chosen_in(album.genre))
+        if not named:
+            continue
+        credited = (album.identity.album_artist, *album.artists)
+        for key in _keys_of(credited):
+            by_artist.setdefault(key, set()).update(named)
+        place = series_place(album.identity.title)
+        if place is not None:
+            by_series.setdefault(place.stem, set()).update(named)
+    return by_artist, by_series
+
+
 def filtered_answer(
     gaps: tuple[Gaps, ...],
     library: tuple[Album, ...],
@@ -60,8 +102,15 @@ def filtered_answer(
     them a source artist: whoever a run over the picked genres would ask about
     keeps their albums. Ruled by Oliver on 2026-09-13, so nobody he holds is
     ever withheld for want of a catalogue genre. A candidate is judged by what
-    the candidate genre cache records, since they are not in the library at all;
-    one it records nothing for cannot be judged, so it is withheld and counted once.
+    the candidate genre cache records, since they are not in the library at all.
+
+    **A candidate MusicBrainz gives no recognised genre is judged by who it
+    was suggested for.** Ruled by Oliver on 2026-10-01 (FR-D78): of 1,996
+    similar artists in his whole-library answer, 615 had no genre at all on
+    MusicBrainz and were withheld for it. Such a candidate takes the genres
+    the library holds for the heading it sits under, judged per heading. Only
+    where the heading's albums name no catalogue genre either is it withheld
+    and counted, once, as one the filter could not judge.
 
     A series keeps its albums where a held album inside the picked genres has
     that series' name as its stem, which is how a series reached by its stem
@@ -70,20 +119,22 @@ def filtered_answer(
     if not picked:
         return FilteredAnswer(gaps=gaps)
     wanted = set(picked)
-    holding = {
-        comparison_key(artist)
-        for artist in source_artists(library, picked, compilations=True)
-    }
+    holding = _keys_of(source_artists(library, picked, compilations=True))
     series = _series_held(library, picked)
+    by_artist, by_series = _held_genres(library)
     unjudged: set[str] = set()
     kept: list[Gaps] = []
     for gap in gaps:
+        held = (by_series if gap.series else by_artist).get(
+            comparison_key(gap.artist), set()
+        )
         artists: list[SimilarArtist] = []
         for candidate in gap.artists:
             named = set(catalogue_genres(remembered.get(candidate.identifier, ())))
-            if not named:
+            judged_by = named or held
+            if not judged_by:
                 unjudged.add(candidate.identifier or candidate.name)
-            elif named & wanted:
+            elif judged_by & wanted:
                 artists.append(candidate)
         keeping = series if gap.series else holding
         albums = gap.albums if comparison_key(gap.artist) in keeping else ()

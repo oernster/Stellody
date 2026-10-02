@@ -37,7 +37,12 @@ from stellody.application.discovery_ports import (
 )
 from stellody.application.gathering import Silence
 from stellody.application.ports import CancelledCheck
-from stellody.application.values import DiscoveryProgress, RunReport, SourceFailure
+from stellody.application.values import (
+    DiscoveryProgress,
+    DiscoveryStage,
+    RunReport,
+    SourceFailure,
+)
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, ReleaseGroup
 from stellody.domain.release_years import ReleaseYears
@@ -45,6 +50,7 @@ from stellody.domain.series import (
     Series,
     SeriesPlace,
     held_series,
+    merged_entries,
     series_albums,
     series_missing,
     series_place,
@@ -96,7 +102,14 @@ class SeriesStage:
         found = _Found()
         for done, album in enumerate(reached):
             title = album.identity.title
-            report(DiscoveryProgress(artist=title, done=done, total=len(reached)))
+            report(
+                DiscoveryProgress(
+                    artist=title,
+                    done=done,
+                    total=len(reached),
+                    stage=DiscoveryStage.SERIES,
+                )
+            )
             place = series_place(title)
             if place is None or place in found.covered:
                 continue
@@ -125,26 +138,30 @@ class SeriesStage:
         found: _Found,
         cancelled: CancelledCheck,
     ) -> tuple[Series, ...]:
-        """The series this title belongs to, by the catalogue else by stem.
+        """The series this title belongs to, by the catalogue and by stem.
 
-        A title in no catalogue series is matched by its stem instead, which
-        is how "Global Underground: Unique" is reached: measured on
-        2026-09-29, MusicBrainz places it in no series. FR-D70.
+        The stem is searched whether or not the catalogue names a series. With
+        none it is the only answer: measured on 2026-09-29, MusicBrainz places
+        "Global Underground: Unique" in no series. With one it tops the series
+        up: measured on 2026-09-30, the Select series ends at "Select Ten"
+        while a search finds #11, ruled worth offering by Oliver. FR-D70.
         """
         found.covered.add(place)
         named = asked(self.source.series_of, cancelled, self.pause, title)
-        if named:
-            fresh = tuple(one for one in named if one not in found.asked_for)
-            found.asked_for.update(fresh)
-            return tuple(
-                asked(self.source.series, cancelled, self.pause, one) for one in fresh
-            )
+        fresh = tuple(one for one in named if one not in found.asked_for)
+        found.asked_for.update(fresh)
+        catalogued = tuple(
+            asked(self.source.series, cancelled, self.pause, one) for one in fresh
+        )
         stem = series_stem(title)
         if stem in found.asked_for:
-            return ()
+            return catalogued
         found.asked_for.add(stem)
         groups = asked(self.source.titled, cancelled, self.pause, stem)
-        return (Series(name=stem, entries=sharing_stem(groups, title)),)
+        # Filed under the catalogue's name where there is one, so both answers
+        # meet under one heading. FR-D70.
+        name = catalogued[0].name if catalogued else stem
+        return (*catalogued, Series(name=name, entries=sharing_stem(groups, title)))
 
     def _placeholders(
         self, gathered: tuple[Gaps, ...], cancelled: CancelledCheck
@@ -181,10 +198,5 @@ def _record(found: _Found, series: Series, missing: tuple[ReleaseGroup, ...]) ->
     if not missing:
         return
     earlier = found.gaps.get(series.name)
-    albums = (
-        missing
-        if earlier is None
-        else earlier.albums
-        + tuple(group for group in missing if group not in earlier.albums)
-    )
+    albums = merged_entries(() if earlier is None else earlier.albums, missing)
     found.gaps[series.name] = Gaps(artist=series.name, albums=albums, series=True)

@@ -5,14 +5,19 @@ Real widgets on the offscreen platform; nothing is shown.
 
 from __future__ import annotations
 
+from PySide6.QtWidgets import QWidget
 from results_support import gaps_with, made, rows_under
 
+from stellody.application.values import DiscoveryProgress, DiscoveryStage
 from stellody.domain.discovery import Gaps, ReleaseGroup
 from stellody.domain.text import VARIOUS_ARTISTS
+from stellody.ui.discovery_progress import STAGE_NAMES, DiscoveryBars
 from stellody.ui.results_ticks import album_on
 from stellody.ui.results_words import LEGEND_SOURCE, SERIES, source_row
 
 ADAPT = "Global Underground: Adapt"
+# Two stacked bars' worth of height; only has to fit them.
+BARS_HEIGHT_PX = 40
 
 
 def adapt_with(count: int) -> Gaps:
@@ -54,3 +59,20 @@ def test_an_empty_heading_is_left_out(application) -> None:
 
 def test_the_key_names_a_series_too() -> None:
     assert "series" in LEGEND_SOURCE
+
+
+def test_the_series_stage_names_itself_on_the_first_bar(application) -> None:
+    """Reported by Oliver on 2026-10-01: back at the window during the series
+    stage, the first bar read as a run gone back to nothing, since the stage
+    counted from nought under the first stage's name."""
+    holder = QWidget()
+    bars = DiscoveryBars(holder, BARS_HEIGHT_PX)
+    bars.show_progress(DiscoveryProgress(artist="Dilby", done=9, total=10))
+    bars.show_progress(
+        DiscoveryProgress(artist=ADAPT, done=0, total=40, stage=DiscoveryStage.SERIES)
+    )
+    assert bars.looking_up.wanted == f"{STAGE_NAMES[DiscoveryStage.SERIES]} 0%"
+    assert STAGE_NAMES[DiscoveryStage.SERIES] == "Checking series"
+    assert not bars.checking_styles.wanted.endswith("%")
+    bars.rest()
+    assert bars.looking_up.label == STAGE_NAMES[DiscoveryStage.LOOKING_UP]

@@ -62,11 +62,14 @@ def test_an_artist_with_nothing_left_is_not_shown() -> None:
 
 
 def test_candidates_with_no_genre_are_counted_as_withheld() -> None:
-    """Counted once each, however many source artists they were offered under."""
+    """Counted once each, however many source artists they were offered under.
+
+    Under headings the library names no genre for, since a heading that does
+    judges them since FR-D78: see `test_judged_by_their_source`."""
     quiet = SimilarArtist(name="Nobody Knows", identifier="unremembered")
     silent = SimilarArtist(name="Nor Them", identifier="also-unremembered")
     answer = (
-        Gaps(artist="Tinlicker", artists=(quiet, silent)),
-        Gaps(artist="AC/DC", artists=(quiet,)),
+        Gaps(artist="Unheld", artists=(quiet, silent)),
+        Gaps(artist="Also Unheld", artists=(quiet,)),
     )
     assert filtered_answer(answer, LIBRARY, REMEMBERED, HOUSE).unjudged == 2

@@ -23,7 +23,9 @@ class TestTheCatalogue:
         Folk, World and Country stand alone, as do Funk, Soul and Contemporary
         R&B. Comedy is a main rather than Discogs' Non-Music; Punk answers to
         nothing above it rather than sitting under Rock; Rap stands beside Hip
-        Hop rather than under it. Country, Punk and
+        Hop rather than under it; Dance, House and Techno & Electro are mains
+        since Electronic was split on 2026-10-01 (FR-D77); the bare `dance`
+        tag is the Dance main. Country, Punk and
         Reggae carry no tag at all and are offered on a ruling."""
         assert genres.MAINS == (
             "Blues",
@@ -31,10 +33,12 @@ class TestTheCatalogue:
             "Comedy",
             "Contemporary R&B",
             "Country",
+            "Dance",
             "Electronic",
             "Folk",
             "Funk",
             "Hip Hop",
+            "House",
             "Jazz",
             "Pop",
             "Punk",
@@ -43,6 +47,7 @@ class TestTheCatalogue:
             "Rock",
             "Soul",
             "Soundtrack",
+            "Techno & Electro",
             "World",
         )
 
@@ -155,7 +160,9 @@ class TestWhichBoxesATagTicks:
         the word Classical is in it.
         """
         assert genres.chosen_in("Progressive Rock") == ()
-        assert genres.chosen_in("Acid Jazz") == ()
+        # `Acid Jazz` stood here until it was ruled Jazz on 2026-10-01
+        # (FR-D77); `Free Jazz` holds the name the same way and is not ruled.
+        assert genres.chosen_in("Free Jazz") == ()
 
     def test_a_value_naming_nothing_in_the_catalogue_ticks_nothing(self) -> None:
         assert genres.chosen_in("Skiffle") == ()
@@ -164,9 +171,10 @@ class TestWhichBoxesATagTicks:
 
 class TestAStyleStatesItsMain:
     def test_a_style_brings_its_main_with_it(self) -> None:
-        """An album marked Trance IS electronic, so a filter for Electronic
-        has to find it without being told what the kinds of it are."""
-        assert genres.chosen_in("Trance") == ("Electronic", "Trance")
+        """An album marked Trance IS techno and electro music, so a filter for
+        that main has to find it without being told what the kinds of it are.
+        Electronic until the split of 2026-10-01 (FR-D77)."""
+        assert genres.chosen_in("Trance") == ("Techno & Electro", "Trance")
 
     def test_a_main_can_be_stated_on_its_own(self) -> None:
         """For a record that is electronic and nothing more specific."""
@@ -178,7 +186,11 @@ class TestAStyleStatesItsMain:
         assert genres.chosen_in("Heavy Metal") == ("Rock", "Heavy Metal")
 
     def test_two_styles_of_one_main_bring_it_once(self) -> None:
-        assert genres.chosen_in("Trance; House") == ("Electronic", "House", "Trance")
+        assert genres.chosen_in("Trance; Techno") == (
+            "Techno & Electro",
+            "Techno",
+            "Trance",
+        )
 
     def test_with_mains_adds_nothing_to_a_main_alone(self) -> None:
         assert genres.with_mains(("Pop",)) == ("Pop",)
@@ -186,7 +198,7 @@ class TestAStyleStatesItsMain:
     def test_writing_a_style_writes_its_main_too(self) -> None:
         """The stored value says both things the tick meant, so nothing has
         to re-derive the main every time the value is read."""
-        assert genres.stated_as(("Trance",)) == "Electronic; Trance"
+        assert genres.stated_as(("Trance",)) == "Techno & Electro; Trance"
 
 
 class TestWritingItDown:
@@ -208,11 +220,11 @@ class TestWritingItDown:
         assert genres.stated_as(("Skiffle",)) == ""
 
     def test_what_is_written_reads_back_as_what_was_chosen(self) -> None:
-        chosen = ("Blues", "Electronic", "Trance", "Pop")
+        chosen = ("Blues", "Electronic", "Ambient", "Pop")
         assert genres.chosen_in(genres.stated_as(chosen)) == (
             "Blues",
             "Electronic",
-            "Trance",
+            "Ambient",
             "Pop",
         )
 

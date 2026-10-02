@@ -17,9 +17,9 @@ once would otherwise hold nothing at all, which is a filter that punishes the
 second tick.
 
 **A style is not its main here.** `chosen_in` already states the main of every
-style an album carries, so an album marked Trance answers to Electronic without
-this knowing what a style is. What it must NOT do is widen the ASK: ticking
-Trance means trance, not everything electronic, which is why the dialog that
+style an album carries, so an album marked Trance answers to Techno & Electro
+without this knowing what a style is. What it must NOT do is widen the ASK:
+ticking Trance means trance, not all of that main, which is why the dialog that
 feeds this leaves the main alone as a style is ticked.
 
 **"Not stated" is not a genre.** More than a tenth of the library carries no

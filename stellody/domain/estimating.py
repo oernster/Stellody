@@ -40,9 +40,10 @@ MINIMUM_SAMPLES = 2
 REQUESTS_PER_SOURCE_ARTIST = 2
 REQUESTS_PER_CANDIDATE = 1
 # A series not yet looked up: a title search plus a group lookup to learn which
-# series it is in, then one read of that series or one search for its stem.
-# FR-D52, FR-D69. Measured against MusicBrainz on 2026-09-29.
-REQUESTS_PER_SERIES = 3
+# series it is in, one read of that series, then one search for its stem to
+# find volumes the series does not list yet. FR-D52, FR-D69, FR-D70. Measured
+# against MusicBrainz on 2026-09-29 and 2026-09-30.
+REQUESTS_PER_SERIES = 4
 SECONDS_PER_MINUTE = 60
 
 

@@ -52,6 +52,7 @@ def test_everything_asking_musicbrainz_waits_at_one_gate(window) -> None:
     run_gate = window._discovery.catalogue._fetch._gate
     assert window._expansion.catalogue._fetch._gate is run_gate
     assert window._chooser._search._gate is run_gate, "the cover search's too"
+    assert window._discovery.series._fetch._gate is run_gate, "the series' too"
 
 
 def test_everything_keeping_catalogue_answers_shares_one_memory(window) -> None:

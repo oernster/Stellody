@@ -76,16 +76,19 @@
     else sounds like them.
   </p>
   <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/discovered.png" width="1726" height="998" alt="The What the last discovery run found window, opened across a wide screen. A line at the top says the search looked in 4 genres (Deep House, House, Progressive House and Tech House) released 2024 to 2026. Under it a key names the three kinds of row: an artist you hold, drawn in blue, with albums by them you do not underneath; a similar artist you hold nothing by, drawn in amber, which fetches its albums when opened; every other line, which is an album title. The key states outright that nothing in the list is a track. The answer is dealt into three columns of artists, Dino Lenny with 4 albums and Eli &amp; Fur with 5 albums and 5 similar artists among them. Every album has a tick box with the year it first came out beside its title: Dreamscapes (2024) and Dreams at Dusk, Part II (2026) are both ticked. Darlyn Vlys is the row the keyboard is on, ringed in green. One row runs under the columns: Filter, Copy and Find in shops at the left, then Previous and Next with the words Page 2 of 8 between them, then Close at the right.">
+    <img src="screenshots/discovered.png" width="1722" height="995" alt="The What the last discovery run found window, opened across a wide screen. A line at the top says the search looked in 57 genres and lists them; the next says the answer is filtered to Electronic, Drum n Bass, UK Garage, Deep House, Progressive House, Tech House, Techno and Trance, with nothing held back. Under it a key names the three kinds of row: an artist or a series you hold, drawn in blue, with albums from it you do not hold underneath; a similar artist you hold nothing by, drawn in amber, which fetches its albums when opened; every other line, which is an album title. A strip reads Open an amber artist to fetch its albums. The answer is dealt into three columns, among them Aaron Suiss with 2 albums, Adana Twins with 12 albums and 8 similar artists listed in amber beneath them; Acid Pauli has 18 albums and 10 similar artists. Every album has a tick box with the year it first came out beside its title. Nothing is ticked, so Copy and Find in shops are outlined in red and shut off. One row runs under the columns: Filter, Copy and Find in shops at the left, then Previous and Next with the words Page 2 of 51 between them, Next ringed in green, then Close at the right.">
   </div>
-  <p class="shot-caption">What the search found, turned a page at a time. Blue is an artist you hold; amber is one you do not. Every line says which it is in words. Each album carries the year it first came out.</p>
+  <p class="shot-caption">What the search found, turned a page at a time. Blue is an artist or a series you hold; amber is an artist you do not. Every line says which it is in words. Each album carries the year it first came out.</p>
 
   <div class="features-grid" style="margin-top:2.5rem;">
     <div class="feat">
       <h3>You choose what it looks at</h3>
       <p>The genres you tick decide which of your artists are named, so what goes out is a subset you
-      chose rather than an inventory of everything you own. What goes out is those artist names, the
-      identifiers the catalogue gives back for them and for the similar artists it suggests, the fixed
+      chose rather than an inventory of everything you own. What goes out is those artist names; up
+      to three album or track titles you hold under a name several artists share, to tell which one
+      you mean; while compilations are included, the titles of those compilations and the series
+      names read from them; the identifiers the catalogue gives back for all of these and for the
+      similar artists it suggests; the fixed
       settings each request states for itself plus a user agent naming Stellody, its version and the
       project's contact address. The language asked for is fixed at any rather than your computer's
       own: no collection, no counts, nothing about you or your machine.</p>
@@ -95,7 +98,14 @@
       <p>A compilation filed under Various Artists is one name that means nobody, so by default it adds
       nothing. Tick the box for compilations and the search asks about the artists on their tracks
       instead, still only in the genres you ticked; a line beneath the box says how many of those
-      artists have never been looked up and roughly how many minutes they add.</p>
+      artists and series have never been looked up and roughly how many minutes they add.</p>
+      <p>A ticked box also finds the other volumes of each series you hold. Hold Global Underground:
+      Adapt #2 and #6; the answer offers the four you are missing under a heading of their own,
+      marked as a series. The series comes from MusicBrainz, topped up by albums whose title differs
+      only by the volume number, which also covers a compilation in no series and volumes newer
+      than the series list. An album filed under a name
+      that only labels a series, as Global Underground does, is treated the same way. Nothing you
+      already hold is offered back, whoever it is filed under.</p>
       <p>A name holding several artists, such as a compilation credit or the name an album is filed
       under, is looked up whole first; each artist in it is looked up only if nobody answers to the
       whole.</p>
@@ -144,8 +154,9 @@
       <p>A search over a whole library can answer with thousands of albums. A Filter button under the
       answer offers the genres that search looked in; tick some and the pages are dealt again from what
       is left. An artist you hold stays where one of your own albums by them sits under a picked genre.</p>
-      <p>A similar artist stays where an earlier search recorded what they play, else is held back with a
-      line saying how many. Filtering never takes a tick away, while Copy and Find in shops act only on
+      <p>A similar artist stays where an earlier search recorded what they play. One MusicBrainz says
+      nothing about is judged by the artist you hold it was suggested for. It is held back only where
+      neither gives a genre, with a line saying how many. Filtering never takes a tick away, while Copy and Find in shops act only on
       the ticked albums you can see.</p>
     </div>
     <div class="feat">
@@ -200,7 +211,7 @@
   </div>
 
   <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/discover.png" width="627" height="672" alt="The Discover new music window: the same genre catalogue the filter uses, laid out in three columns of tick boxes, with the styles indented under the mains that carry them. Four Electronic styles are ticked: Deep House, House, Progressive House and Tech House. Beneath the genres Include compilations (Various Artists) is ticked, with a line saying every artist on compilations in these genres has been looked up already. Below that, Released from 2024 to 2026. A last line says to tick the genres then press Find; the window closes and the toolbar reports on the search. Select all sits at the bottom left; Close and Find sit at the bottom right.">
+    <img src="screenshots/discover.png" width="618" height="643" alt="The Discover new music window: the same genre catalogue the filter uses, in three columns of tick boxes. Every genre that has styles carries an arrow beside it that folds them away. Electronic, House and Techno &amp; Electro are open, with their styles indented beneath them: Dubstep, Jungle and UK Garage ticked under Electronic; Deep House, Progressive House and Tech House under House; Techno and Trance under Techno &amp; Electro. Dance, Pop and Rock are folded. Beneath the genres Include compilations (Various Artists) is ticked, with a line saying 4 series on compilations in these genres have not been looked up yet, under a minute more at the pace MusicBrainz allows. Below that, Released from 2020 to 2026, the second year ringed in green. A last line says to tick the genres then press Find; the window closes and the toolbar reports on the search. Select all sits at the bottom left; Close and Find sit at the bottom right.">
   </div>
   <p class="shot-caption">Tick what to look in; add years to be offered music from those alone. Find closes this window; the search then reports from the toolbar.</p>
 
@@ -379,10 +390,13 @@
   </p>
   <div class="features-grid">
     <div class="feat">
-      <h3>Eighteen genres, sixteen styles under them</h3>
-      <p>Thirty-four boxes in all, in alphabetical order. An album can carry several at once. The names
-      are Discogs' own, so they are ones you have seen before and ones a label written by another program
-      has a chance of matching.</p>
+      <h3>Twenty-one genres, thirty-six styles under them</h3>
+      <p>Fifty-seven boxes in all, in alphabetical order. An album can carry several at once. The names
+      follow Discogs' spellings where Discogs has them, so they are ones you have seen before and ones a label written by another
+      program has a chance of matching. Electronic is split into Dance, Electronic, House and Techno &amp; Electro,
+      with styles for the names MusicBrainz gives
+      the artists a search suggests. Each genre's styles fold away behind an arrow, so the list fits
+      a laptop screen; every dialog offering it remembers which you left open.</p>
     </div>
     <div class="feat">
       <h3>Ticking more shows more</h3>
@@ -391,8 +405,8 @@
     </div>
     <div class="feat">
       <h3>A style means that style</h3>
-      <p>Tick Trance and you get trance, not everything electronic. Tick Electronic and you get the lot,
-      trance included, because Stellody already knows which main each style belongs to.</p>
+      <p>Tick Deep House and you get deep house, not every kind of house. Tick House and you get the lot,
+      deep house included, because Stellody already knows which main each style belongs to.</p>
     </div>
     <div class="feat">
       <h3>Albums with no genre are reachable</h3>
@@ -699,7 +713,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.10.1<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.11.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>

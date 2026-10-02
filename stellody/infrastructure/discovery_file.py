@@ -50,8 +50,12 @@ EARLIEST = "earliest"
 LATEST = "latest"
 # Whether an entry names a series rather than an artist. FR-D74.
 SERIES = "series"
-CACHE_NAME = "artist-genres.json"
-CACHE_JOURNAL_NAME = "artist-genres.record"
+# Renamed whenever the rule in `domain/genre_votes.py` changes, so what was
+# kept under the old rule is never read again and each candidate is asked
+# anew: `artist-genres.json` held single-vote strays (2026-10-01);
+# `candidate-genres.json` held genres under half the leading votes (2026-10-02).
+CACHE_NAME = "candidate-genres-2.json"
+CACHE_JOURNAL_NAME = "candidate-genres-2.record"
 
 
 def discovery_path() -> pathlib.Path:

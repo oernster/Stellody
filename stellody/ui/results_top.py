@@ -165,7 +165,10 @@ class ResultsTop(QWidget):
         self.bar.setRange(0, 0)
         self.bar.setFormat(asking_about(names))
 
-    def say_withheld(self, count: int) -> None:
-        """Say how many candidates a filter could not judge; nothing at none."""
-        self.withheld.setText(withheld(count) if count else "")
-        self.withheld.setHidden(not count)
+    def say_withheld(self, picked: tuple[str, ...], count: int) -> None:
+        """Say what a filter is set to and what it could not judge.
+
+        Nothing at all while no filter is on.
+        """
+        self.withheld.setText(withheld(picked, count) if picked else "")
+        self.withheld.setHidden(not picked)

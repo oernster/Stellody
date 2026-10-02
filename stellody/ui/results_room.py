@@ -182,8 +182,7 @@ def dealt_into_columns(
     down a column is still the order the run answered in. Dealt by height
     rather than in equal counts, since one artist can carry fifteen albums
     while the next carries one: a count-by-count fill would leave one column
-    twice the length of another. The same rule the genre grid deals its groups
-    by.
+    twice the length of another.
 
     Answers places rather than the artists themselves, so a caller can still
     say what it holds in the order it was handed them.

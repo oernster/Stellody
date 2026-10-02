@@ -18,6 +18,7 @@ from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.shopping import Shop, WantedAlbum
+from stellody.shared.version import APP_NAME
 from stellody.ui.palette import Mode
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.results_filter import ResultsFilterDialog
@@ -34,7 +35,9 @@ UNJUDGED = 2
 REMEMBERED = {HOUSE_ACT.identifier: ("house",)}
 POWER_UP = WantedAlbum(artist="AC/DC", title="Power Up")
 REMOTE_PLACES = WantedAlbum(artist="Tinlicker", title="Remote Places")
-SOURCES = (REMOTE_PLACES.artist, POWER_UP.artist)
+# A heading the library holds nothing for, so it names no genre either. FR-D78.
+NOBODY_HELD = "Nobody Held"
+SOURCES = (REMOTE_PLACES.artist, POWER_UP.artist, NOBODY_HELD)
 
 
 def held(artist: str, genre: str) -> Album:
@@ -56,8 +59,10 @@ ANSWER = (
     Gaps(
         artist=POWER_UP.artist,
         albums=(ReleaseGroup(title=POWER_UP.title),),
-        artists=(QUIET, SILENT),
     ),
+    # Under a heading the library holds nothing for, so neither MusicBrainz
+    # nor the artist they were suggested for gives them a genre. FR-D78.
+    Gaps(artist=NOBODY_HELD, artists=(QUIET, SILENT)),
 )
 
 
@@ -182,9 +187,28 @@ def test_the_withheld_count_is_said_while_filtering(application) -> None:
     assert dialog.top.withheld.isHidden()
     dialog.filter_to(HOUSE)
     assert not dialog.top.withheld.isHidden()
-    assert dialog.top.withheld.text() == withheld(UNJUDGED)
+    assert dialog.top.withheld.text() == withheld(HOUSE, UNJUDGED)
     dialog.filter_to(())
     assert dialog.top.withheld.isHidden()
+
+
+def test_the_line_names_the_genres_before_what_it_held_back() -> None:
+    """Reported by Oliver on 2026-09-30: "402 similar artists whose genre is
+    not known" read as though the genres he had picked were unknown."""
+    said = withheld(("Deep House", "House"), 402)
+    assert said.startswith("Filtered to Deep House, House: 402 similar artists")
+    assert "neither MusicBrainz nor the artist they were suggested for" in said
+    assert withheld(("House",), 0) == "Filtered to House"
+
+
+def test_the_line_says_the_source_gave_nothing_either() -> None:
+    """Since FR-D78 the heading judges a candidate MusicBrainz gives nothing,
+    so one is held back only where both are silent: the line says both."""
+    said = withheld(HOUSE, UNJUDGED)
+    assert said.endswith(
+        f"held back, since neither MusicBrainz nor the artist they were "
+        f"suggested for gives a genre {APP_NAME} recognises"
+    )
 
 
 def test_a_withheld_tick_is_left_out_of_copy(application) -> None:

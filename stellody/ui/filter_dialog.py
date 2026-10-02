@@ -24,14 +24,15 @@ from stellody.domain.narrowing import Narrowing
 from stellody.domain.overrides import AlbumField
 from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.filter_controls import filter_controls, offer_apply
+from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.ringed_check import RingedCheckBox
 
 TITLE = "Filter by genre"
 SHOW_LABEL = "Show"
 UNSTATED_LABEL = "Albums that state no genre"
-# Wide enough for the catalogue's three columns of boxes without the longest
-# name wrapping, which is the same measurement the album panel is built to.
+# The least the dialog is drawn at. The grid widens it past this rather than
+# any box being clipped, should a category's open styles need more room.
 DIALOG_WIDTH_PX = 700
 # The gap that rules the box apart from the catalogue above it. Without it the
 # box sits directly under the last column of genres and reads as one more of
@@ -46,6 +47,7 @@ class FilterDialog(FirstStopDialog):
         self,
         asked: Narrowing | None = None,
         parent: QWidget | None = None,
+        folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
         asked = asked or Narrowing()
@@ -54,7 +56,7 @@ class FilterDialog(FirstStopDialog):
         outer = QVBoxLayout(self)
         # Opened holding what is already being asked for, so a filter is
         # adjusted rather than rebuilt every time the dialog is opened.
-        self.grid = GenreGrid("", self, manner=ASKING)
+        self.grid = GenreGrid("", self, manner=ASKING, folds=folds)
         for name in asked.wanted:
             self.grid.boxes[name].setChecked(True)
         outer.addWidget(self.grid)

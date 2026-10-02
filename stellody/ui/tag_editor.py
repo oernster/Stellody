@@ -43,6 +43,7 @@ from stellody.domain.overrides import AlbumField, OverrideField
 from stellody.domain.track import Track
 from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import FirstStopDialog
+from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import GenreGrid
 
 DIALOG_WIDTH_PX = 520
@@ -100,10 +101,12 @@ class TagEditor(FirstStopDialog):
         tracks: tuple[Track, ...],
         parent: QWidget | None = None,
         holding: Album | None = None,
+        folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Edit tags")
         self.setMinimumWidth(DIALOG_WIDTH_PX)
+        self._folds = folds
         self._editing = editing
         self._album = album
         self._tracks = tracks
@@ -158,7 +161,7 @@ class TagEditor(FirstStopDialog):
         for field in ALBUM_FIELDS:
             shown = album_shown_for(self._holding, field)
             box: QLineEdit | GenreGrid = (
-                GenreGrid(shown, self)
+                GenreGrid(shown, self, folds=self._folds)
                 if field is AlbumField.GENRE
                 else QLineEdit(shown, self)
             )

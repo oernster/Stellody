@@ -27,7 +27,8 @@ public catalogues what is missing around it and writes the answer down as data.
 ### 1.2 Scope
 
 In scope: a toolbar button, a dialog carrying the genre catalogue, a run that
-looks up the artists inside the ticked genres, a JSON file holding what it found
+looks up the artists inside the ticked genres (with compilations included, also
+the series those genres' compilations belong to), a JSON file holding what it found
 and a dialog showing what that file holds when a run completes.
 
 Out of scope, stated first so it is a past decision rather than a future
@@ -62,7 +63,7 @@ One meaning per term, for the life of the document.
 | **Track credit** | One of a track's artists, split exactly as the library splits them for playback. |
 | **Placeholder artist** | An album artist the catalogue identifies as exactly one artist who has released no album and no EP. MusicBrainz's "Global Underground", described there as an artist used to tag GU DJ mixes, is the measured case. |
 | **Series album** | A held album inside the ticked genres, while compilations are included, that is a compilation or is filed under a placeholder artist. |
-| **Series stem** | A title cut at its first bracket, its first " / " and its first " - ", then with a trailing number marker taken off: "#7", "No. 7", "Vol. 7", "Volume 7", "Part 7" or a bare "7". "Global Underground: Afterhours 4 - Ibiza / Unmixed" has the stem "Global Underground: Afterhours" and the number 4. |
+| **Series stem** | A title cut at its first bracket, its first " / " and its first " - ", then with a trailing number marker taken off: "#7", "No. 7", "Vol. 7", "Volume 7", "Part 7", "Pt. 7", a bare "7" or a number word from "One" to "Twenty" ("Select Ten" is volume 10). Stems are compared on `comparison_key`. "Global Underground: Afterhours 4 - Ibiza / Unmixed" has the stem "Global Underground: Afterhours" and the number 4. |
 | **Series** | A named run of release groups the catalogue groups together. A catalogue series (MusicBrainz's own); where a series album belongs to none, every release group whose series stem equals that album's instead. |
 | **Candidate album** | An album a source gives for a source artist that the library does not hold. |
 | **Candidate artist** | An artist a source gives as similar to a source artist, whom the library does not hold. |
@@ -122,7 +123,7 @@ HTTPS connection during a run. Everything else the application already assumes.
 |---|---|---|---|
 | A-01 | RESOLVED 2026-09-08. A run over Blues and Folk against the live services returned artists, albums and similar artists, with no credential anywhere in the application. | Oliver | Answered |
 | A-02 | RESOLVED 2026-09-08, as far as one run can. The labs similar-artists endpoint answered for every source artist in that run. It is still a labs endpoint; OQ-07 settled that it gets no fallback anyway. | Oliver | Answered |
-| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. | Oliver | ruled 2026-09-06, accepted with genre scoping |
+| A-03 | A listener accepts that a run names their source artists to two public catalogues. Since FR-D09 settles a name MusicBrainz knows under several artists, a run also names to MusicBrainz up to three album or track titles held under that name; the ruling recorded here predates that and was made about names alone. While compilations are included, a run also names to MusicBrainz the titles of series albums inside the ticked genres, cut at its first bracket, spaced solidus or spaced dash, then that title's series stem where it sits in no catalogue series (FR-D69, FR-D70); the ruling predates that as well and does not cover it. | Oliver | ruled 2026-09-06, accepted with genre scoping |
 
 ## 3. Requirements
 
@@ -243,9 +244,10 @@ whichever of the two a press would do, read from the boxes rather than from the
 last press it received. Pressing it shall not close the dialog and shall start
 no run.
 
-Rationale: Asked for by Oliver on 2026-09-08. The catalogue holds 34 boxes, so
-asking about a whole library meant 34 presses; that is the kind of tidying a
-dialog should do for somebody. A push button rather than a 35th tick box,
+Rationale: Asked for by Oliver on 2026-09-08. The catalogue held 34 boxes then
+(57 since FR-D77), so asking about a whole library meant 34 presses; that is
+the kind of tidying a dialog should do for somebody. A push button rather than
+one more tick box,
 placed where the filter dialog's Clear already sits, because a tick box here
 would read as one more genre and would be swept by its own sweep.
 
@@ -370,8 +372,8 @@ pace rather than a forecast.
 Amended on 2026-09-29, asked for by Oliver: the price also counts the series
 FR-D69 would look up, named apart from the artists. A series is counted once
 where any held album of it in the ticked genres has no standing answer to which
-series it is in, at three paced requests: a title search, a group lookup, then
-one read of the series or one search for its stem. A placeholder artist is
+series it is in, at four paced requests: a title search, a group lookup, one
+read of the series, then one search for its stem (FR-D70). A placeholder artist is
 recognised from the catalogue memory; one no run has asked about yet cannot be,
 so its series are priced from the second run on. The statement reads, for
 example, "3 artists and 2 series on compilations in these genres have not been
@@ -424,8 +426,9 @@ Verified by: `tests/domain/test_text.py::test_a_credit_naming_several_artists_co
 
 Priority: Must
 
-Requirement: If the ticked genres yield no source artists, then the window
-shall say so in its status bar, make no request and write no file.
+Requirement: If the ticked genres yield no source artists, nor any series album
+while compilations are included, then the window shall say so in its status
+bar, make no request and write no file.
 
 Rationale: Ticking a genre nothing in the library carries is an ordinary thing
 to do; the library holds a worked example: one artist, Smetana, is reachable by
@@ -435,7 +438,7 @@ Acceptance: Given a genre no held album names, when the action button is
 pressed, then the status bar reports that nothing in the library matches, no
 request is made and no file is written.
 
-Verified by: `tests/application/test_discovery.py::test_no_sources_makes_no_request`, `tests/ui/test_discovery_wiring.py::test_nothing_to_ask_says_so`
+Verified by: `tests/application/test_discovery.py::test_no_sources_makes_no_request`, `tests/ui/test_discovery_wiring.py::test_nothing_to_ask_says_so`; the series album exception by `tests/application/test_discovering_series.py::test_a_compilation_brings_its_series`, whose compilations credit nobody but Various Artists and whose run still completes
 
 ---
 
@@ -672,12 +675,19 @@ with the second climbing is plainly further on than the first climbing with the
 second empty. They occupy the height the single bar had, so the tray does not
 grow and the centred transport does not move.
 
+Amended on 2026-10-01, reported by Oliver: while compilations are included the
+series stage of FR-D69 runs between the two halves; it reported on the first
+bar under the first half's name, counting from nought. Coming back to the
+window during it, he read a run that had gone back to the start. It now takes
+the first bar over under its own name, "Checking series", exactly as checking
+years takes the second (FR-D63).
+
 Acceptance: Given a run over three source artists, when the second is reached,
 then the first bar reads one third and the pair names that artist on hover;
 given the run reaches its second stage, then the first bar is left full and the
 second counts against the number of candidates to be asked about.
 
-Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery_narrowing.py::test_the_second_half_of_a_run_reports_as_it_goes`
+Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery_narrowing.py::test_the_second_half_of_a_run_reports_as_it_goes`, `tests/ui/test_results_series.py::test_the_series_stage_names_itself_on_the_first_bar`, `tests/application/test_discovering_series.py::test_the_stage_says_how_far_it_has_got`
 
 ---
 
@@ -751,7 +761,8 @@ Priority: Must
 
 Requirement: When a run completes, the discovery service shall replace the
 single discovery file, whose `gaps` object is keyed by source artist with each
-value holding that artist's candidate albums and candidate artists. Beside
+value holding that artist's candidate albums and candidate artists; an offered
+series (FR-D69) is keyed by its name and marked as a series (FR-D74). Beside
 `gaps` the file carries the artists left unresolved, ambiguous or failed, the
 genres the run was scoped to and the years it was asked for (FR-D64), both
 bounds empty where none were set.
@@ -1470,9 +1481,9 @@ Priority: Must
 
 Requirement: The discovery service shall keep what each catalogue answered,
 against the question that was asked; it shall ask a catalogue for an artist's
-identity, releases or similar artists (or who is credited on a held title,
-FR-D09) only where that answer is not kept or was kept more than thirty days
-ago; what a candidate plays is kept without a limit.
+identity, releases or similar artists (also who is credited on a held title as
+FR-D09 asks; also the series questions of FR-D69 and FR-D70) only where that
+answer is not kept or was kept more than thirty days ago; what a candidate plays is kept without a limit.
 A run shall write down what it learned however that run ended. Where a run
 cannot reach a source about an artist an earlier run answered for, the discovery
 file shall keep the earlier answer and shall record no failure for that artist;
@@ -1716,8 +1727,9 @@ library's filter artwork, offering only the genres the run looked in. While any
 is picked, it shall show a source artist's albums only where the library holds
 an album in a picked genre filed under that artist or crediting them on a
 compilation. It shall show a candidate artist only where the candidate genre
-cache records a genre for them naming a picked genre. A source artist with
-nothing left to show shall not be shown. The control shall stay pressed in while
+cache records a genre for them naming a picked genre. It shall show an offered
+series (FR-D69) only where a held album in a picked genre has that series' name
+as its series stem. A source artist with nothing left to show shall not be shown. The control shall stay pressed in while
 a filter is on; the pages shall be dealt again from what is shown. The filter
 shall not be remembered between openings.
 
@@ -1727,14 +1739,20 @@ artist is judged by the genres he stated on his own albums, since FR-D05 means
 every source artist holds one, so nobody he holds is ever withheld for want of a
 genre. Judging each missing album by the catalogue's genre instead would have
 withheld 2128 of those 5279, measured from his answer that day. A candidate is
-not in the library, so the candidate genre cache (`artist-genres.json`) is all
+not in the library, so the candidate genre cache (`candidate-genres-2.json`) is all
 there is to judge them by.
+
+Amended on 2026-09-29 with the series of FR-D69: a series is not in the library
+under its own name, so it is judged by the stems of the held albums in the
+picked genres. A series reached by its stem (FR-D70) is named by that stem and
+so is judged exactly; a catalogue series whose name differs from every held
+stem is withheld while a filter is on.
 
 Acceptance: Given an answer holding a House source artist and a Rock one, when
 House alone is picked, then only the House artist is shown and the pages are
 dealt from them; when the filter is cleared, both are shown again.
 
-Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_everything`, `tests/domain/test_discovery_filter.py::test_a_source_artist_shows_by_the_genres_held`, `tests/domain/test_discovery_filter.py::test_a_candidate_shows_by_its_remembered_genres`, `tests/domain/test_discovery_filter.py::test_an_artist_with_nothing_left_is_not_shown`, `tests/ui/test_results_filter.py::test_only_the_genres_looked_in_are_offered`, `tests/ui/test_results_filter.py::test_the_filter_stays_pressed_in_while_on`, `tests/ui/test_results_filter.py::test_the_pages_are_dealt_from_what_is_shown`
+Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_everything`, `tests/domain/test_discovery_filter.py::test_a_source_artist_shows_by_the_genres_held`, `tests/domain/test_discovery_filter.py::test_a_candidate_shows_by_its_remembered_genres`, `tests/domain/test_discovery_filter.py::test_an_artist_with_nothing_left_is_not_shown`, `tests/ui/test_results_filter.py::test_only_the_genres_looked_in_are_offered`, `tests/ui/test_results_filter.py::test_the_filter_stays_pressed_in_while_on`, `tests/ui/test_results_filter.py::test_the_pages_are_dealt_from_what_is_shown`, `tests/domain/test_series.py::TestOnScreen::test_a_filter_keeps_a_series_held_in_the_picked_genres`, `tests/domain/test_series.py::TestOnScreen::test_a_filter_withholds_a_series_held_elsewhere`
 
 ---
 
@@ -1742,19 +1760,35 @@ Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_e
 
 Priority: Must
 
-Requirement: While a filter is on, the results dialog shall state how many
-candidate artists are withheld because the candidate genre cache records no
-genre for them that Stellody's genre catalogue recognises.
+Requirement: While a filter is on, the results dialog shall name the genres it
+is set to, then state how many candidate artists are withheld because neither
+the candidate genre cache nor the library's albums for the heading they sit
+under (FR-D78) record a genre for them that Stellody's genre catalogue
+recognises.
 
 Rationale: Measured on 2026-09-13: 260 of 1112 candidates in Oliver's answer
 have no remembered genre. A filter cannot judge them; rows that vanish without a
 word read as rows that were never found.
 
-Acceptance: Given two candidates with no remembered genre, when any genre is
-picked, then the dialog says two are withheld; when the filter is cleared, then
-it says nothing about withholding.
+Amended on 2026-09-30, reported by Oliver: "Withheld by the filter: 402 similar
+artists whose genre is not known" read as though the genres he had picked were
+the thing not known. The line now says what the filter is set to first, then
+why the rest is held back. Measured from his answer the same day: of 1031
+candidates, 328 had no genre stated by MusicBrainz at all and 74 stated only
+names nothing here recognised; the rulings he made that day on 12 of those
+names in `domain/genres.py` brought the 74 down to 26.
 
-Verified by: `tests/domain/test_discovery_filter.py::test_candidates_with_no_genre_are_counted_as_withheld`, `tests/ui/test_results_filter.py::test_the_withheld_count_is_said_while_filtering`
+Amended on 2026-10-01 with FR-D78: a candidate MusicBrainz gives nothing
+recognised is judged by the heading it sits under, so one is held back only
+where that heading's albums name nothing recognised either. The line says both.
+
+Acceptance: Given two candidates with no remembered genre under a heading the
+library holds no album for, when House is picked, then the dialog reads
+"Filtered to House: 2 similar artists held back, since neither MusicBrainz nor
+the artist they were suggested for gives a genre Stellody recognises"; when the
+filter is cleared, then it says nothing.
+
+Verified by: `tests/domain/test_discovery_filter.py::test_candidates_with_no_genre_are_counted_as_withheld`, `tests/ui/test_results_filter.py::test_the_withheld_count_is_said_while_filtering`, `tests/ui/test_results_filter.py::test_the_line_names_the_genres_before_what_it_held_back`, `tests/ui/test_results_filter.py::test_the_line_says_the_source_gave_nothing_either`, `tests/domain/test_genre_rulings.py`
 
 ---
 
@@ -1840,8 +1874,7 @@ except on Wayland, where doing so corrupts the window behind it.
 
 Dealt by height rather than in equal counts because one artist can carry fifteen
 albums while the next carries one, so a count-by-count fill leaves one column
-twice the length of another. It is the rule the genre grid already deals its
-groups by, which is why that helper reads as it does.
+twice the length of another.
 
 The column width is not a number of its own: it is the width the dialog opens at
 on a real 13 inch display divided by the three columns that display is meant to
@@ -2242,21 +2275,28 @@ when the catalogue places both in the series "Global Underground: Adapt" of six
 entries, then that series is offered with Adapt, Adapt #3, Adapt #4 and Adapt
 #5 and nothing else.
 
-Verified by: `tests/application/test_discovering_series.py::test_a_compilation_brings_its_series`
+Verified by: `tests/application/test_discovering_series.py::test_a_compilation_brings_its_series`, `tests/application/test_discovering_series.py::test_one_series_is_asked_about_once`, `tests/application/test_discovering_series.py::test_leaving_compilations_out_asks_about_no_series`, `tests/application/test_discovering_series.py::test_a_person_with_albums_is_no_placeholder`, `tests/application/test_discovering_series.py::test_a_name_reaching_several_artists_is_no_placeholder`
 
 ---
 
-**FR-D70 A series album in no catalogue series is matched by its stem**
+**FR-D70 A series album is also matched by its stem**
 
 Priority: Must
 
-Requirement: If a series album belongs to no catalogue series, then the
-discovery service shall offer each release group whose series stem equals the
-album's series stem and which the library does not hold.
+Requirement: When a run reaches a series album, the discovery service shall
+also offer each release group whose series stem equals the album's series
+stem and which the library does not hold, under the catalogue series' name
+where there is one and under the stem where there is none.
 
 Rationale: Measured on 2026-09-29: "Global Underground: Unique" sits in no
 MusicBrainz series, while a title search finds Unique, Unique #2 and Unique #3.
 Ruled by Oliver the same day: the catalogue series first, the stem second.
+Amended on 2026-09-30, ruled by Oliver: the stem is searched even where a
+catalogue series exists. Measured that day from his run, MusicBrainz's Select
+series ends at "Select Ten" while a title search finds "Select #11", so a
+series list alone lags the catalogue. A volume both answers name is offered
+once, compared on its stem and number (FR-D71): the two answers differed only
+in the kinds one stated; "Select #9" was shown twice.
 
 Acceptance: Given held "Global Underground: Unique #2" filed under the
 placeholder artist "Global Underground", with compilations included and no
@@ -2264,7 +2304,7 @@ catalogue series for it, when a title search answers Unique, Unique #2, Unique
 #3 and "Global Underground: Uniqueness", then Unique and Unique #3 are offered
 under "Global Underground: Unique".
 
-Verified by: `tests/application/test_discovering_series.py::test_no_series_falls_back_to_the_stem`, `tests/domain/test_series.py`
+Verified by: `tests/application/test_discovering_series.py::test_no_series_falls_back_to_the_stem`, `tests/application/test_discovering_series.py::test_a_volume_found_twice_is_offered_once`, `tests/domain/test_series.py::TestOneVolumeOnce`, `tests/domain/test_series.py`
 
 ---
 
@@ -2297,7 +2337,7 @@ Priority: Must
 Requirement: The discovery service shall offer a series entry whatever kinds
 the catalogue states for it, inside the ticked genres and the run's years.
 
-Rationale: The offering rule (FR-D10) leaves out compilations and DJ mixes,
+Rationale: The offering rule (section 3.5) leaves out compilations and DJ mixes,
 because by an artist already held they are noise. Measured on 2026-09-29, every
 Global Underground entry is typed Compilation, DJ-mix or both, so that rule
 would leave every series empty. The rule for artists is unchanged.
@@ -2317,15 +2357,17 @@ Requirement: If a question about a series album is refused through every ask,
 times out or fails, then the discovery service shall record that album's title
 as a failure of the run and carry on with the next series album.
 
-Rationale: The same judgement FR-D20 makes about artists: a series nobody could
+Rationale: The same judgement FR-D22 makes about artists: a series nobody could
 look up is exactly the one somebody would read as complete. The silence rule of
-FR-D22 holds too, since the connection is one thing.
+FR-D20 holds too, since the connection is one thing: a question answered with
+nothing counts towards the five in a row that end a run. Unlike an artist
+(FR-D21), a series album is not put back for a later pass.
 
 Acceptance: Given a catalogue that refuses every series question, when a run
 reaches "Global Underground: Adapt #2", then the report names that title among
 its failures and the run completes.
 
-Verified by: `tests/application/test_discovering_series.py::test_a_refused_series_is_a_failure`
+Verified by: `tests/application/test_discovering_series.py::test_a_refused_series_is_a_failure`, `tests/application/test_discovering_series.py::test_a_failed_series_question_is_a_failure_too`, `tests/application/test_discovering_series.py::test_one_silence_is_a_failure_rather_than_an_ending`, `tests/application/test_discovering_series.py::test_a_run_of_silences_ends_the_run`
 
 ---
 
@@ -2347,7 +2389,7 @@ ruling and stands until Oliver says otherwise.
 Acceptance: Given the Adapt series with four missing entries, when the results
 open, then a heading reads "Global Underground: Adapt (series, 4 albums)".
 
-Verified by: `tests/ui/test_results_series.py`, `tests/infrastructure/test_discovery_file.py::test_a_series_survives_the_file`
+Verified by: `tests/ui/test_results_series.py::test_a_series_heading_says_it_is_one`, `tests/ui/test_results_series.py::test_a_series_entry_goes_to_the_shops_under_various_artists`, `tests/infrastructure/test_series_kept.py::test_a_series_survives_the_file`
 
 ---
 
@@ -2366,7 +2408,189 @@ Acceptance: Given an answer holding "Global Underground" with nothing found and
 "Giza Djs" with three albums, when the results open, then only "Giza Djs" is
 shown.
 
-Verified by: `tests/ui/test_results_series.py::test_an_empty_heading_is_left_out`
+Verified by: `tests/ui/test_results_series.py::test_an_empty_heading_is_left_out`, `tests/domain/test_series.py::TestOnScreen::test_an_empty_heading_is_not_worth_showing`
+
+---
+
+**FR-D76 A genre with one vote or under half the leading votes is not believed**
+
+Priority: Must
+
+Requirement: Where a catalogue states a genre with fewer than two votes beside
+one with two or more, the discovery service shall not count it among that
+artist's or that album's genres. Nor shall it count a genre with fewer than
+half the votes of that artist's or that album's leading genre.
+
+Rationale: Reported by Oliver on 2026-09-30: a filter for six house and techno
+styles still showed AC/DC, Adele, 50 Cent and Aerosmith. Measured the same
+day, each was shown through a similar artist carrying a stray tag. MusicBrainz
+gives Nirvana grunge with 67 votes and alternative rock with 30 beside
+"electronic" and "psytrance" with one each; Snoop Dogg hip hop with 21 beside
+"house" and "drum and bass" with one each. Read as equals, those let almost
+anybody through a filter. Ruled by Oliver that day: a single vote is a stray,
+unless every genre an artist has is one, when all are kept rather than leaving
+the artist with nothing a filter can judge. The rule is `believed` in
+`domain/genre_votes.py`; the catalogue client applies it to every genre list
+it reads. The candidate genre cache kept before it (`artist-genres.json`) is
+not read again; its answers are asked for once more.
+
+Amended on 2026-10-02: Lady Gaga showed under an Electronic filter. Measured
+from MusicBrainz that day, she carries pop with 24 votes, dance-pop 20 and
+electropop 17, beside electronic with 6, which is no stray. Ruled by Oliver
+that day: a genre needs at least half the leading genre's votes
+(`LEADING_SHARE`). The leading genre always stays. Nirvana's alternative rock,
+30 against grunge's 67, goes as well. The cache kept under the earlier rule
+(`candidate-genres.json`) is not read again; its answers are asked for once
+more, under `candidate-genres-2.json`.
+
+Acceptance: Given MusicBrainz answering Nirvana with grunge 67 and electronic
+1, then Nirvana's genres are grunge alone; given an artist with techno 1 and
+house 1, then both are kept; given Lady Gaga with pop 24, dance-pop 20,
+electropop 17 and electronic 6, then her genres are pop, dance-pop and
+electropop, so an Electronic filter does not show her.
+
+Verified by: `tests/domain/test_genre_votes.py`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_a_genre_voted_for_once_beside_real_ones_is_dropped`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_an_album_s_genres_are_held_to_the_same_rule`
+
+---
+
+**FR-D77 The catalogue holds the genres similar artists are stated with**
+
+Priority: Must
+
+Requirement: The genre catalogue shall carry these mains in place of the
+single Electronic, each with these styles: Dance (Breakbeat, Dance-Pop, Disco,
+Downtempo, EDM, Electronica, Eurodance, Hi-NRG, Italo Dance); Electronic
+(Ambient, Big Beat, Drum n Bass, Dubstep, Jungle, UK Garage); House (Acid
+House, Deep House, Progressive House, Tech House); Techno & Electro (EBM,
+Electro, Minimal Techno, Techno, Trance). Pop shall carry Britpop, Dream Pop,
+Electropop, Indie Pop, K-Pop, New Wave, Pop Rock and Synth-pop. When a genre
+name MusicBrainz states matches one of the names ruled on 2026-10-01, the
+discovery service shall read it as the catalogue genre it was ruled to mean.
+The bare tag `dance`, in any case, shall state the Dance main. A genre value stored
+before this catalogue shall be read as written, with nothing rewritten. Every
+dialog that offers the catalogue shall show a tick box for every genre in it.
+
+Rationale: Measured on 2026-10-01 from Oliver's whole-library answer: of 1,996
+similar artists a genre filter held back 771. 155 of those stated only names
+the catalogue did not recognise: 141 distinct names carried between them.
+Ruled by Oliver that day: the mains and styles above; the kinds of heavy metal,
+punk, jazz, world music and hip hop MusicBrainz stated, each to its main; a
+handful of spellings to the style they name (`synthpop` to Synth-pop,
+`microhouse` to House, `electro-industrial` to EBM). Rock subgenres, R&B, soul,
+folk, country, blues, reggae, production music, new age, poetry and spoken
+word were not ruled and stay unrecognised.
+
+**Where the lines between the four fall is Oliver's ruling of that day, not a
+definition.** Electronic keeps ambient, bass and breaks music. House and
+Techno & Electro are the club families, split out because Electronic had grown
+too large to read. Dance is chart and festival dance music, song-led. The bare
+`dance` tag, carried by about 873 library files, is the Dance main: Oliver
+ruled that a name is matched whatever its case, so those files move from
+Electronic to Dance and no ruling is keyed on a catalogue name. A ruling that
+names House now states the House main alone, since House is a main rather than
+a style. Names ruled to Electronic alone on 2026-09-30 that are styles now
+(dubstep, electronica, downtempo, ambient, uk garage) match outright; trip hop
+now states Downtempo and indietronica Electronica. The rulings moved from
+`domain/genres.py` to `domain/genre_rulings.py`, still answered for by
+`genres.ALIASES`.
+
+**What a value stored before the split reads as.** A style's tick used to write
+Electronic beside it. Measured on 2026-10-01 with `chosen_in`: `Electronic;
+House` reads as Electronic and House; `Electronic; Deep House` as Electronic,
+House and Deep House; `Electronic; Techno` as Electronic, Techno & Electro and
+Techno; `Electronic; Disco` as Dance, Disco and Electronic. The stored
+Electronic stays and the style's new main is added; nothing is rewritten. So an
+Electronic filter no longer shows house or techno unless an album states
+Electronic itself, as every album ticked before the split does.
+
+The catalogue went from 34 names to 57: 21 mains and 36 styles, with Dance at
+ten boxes the tallest group. Every box open, the grid needed five columns to
+fit a 13 inch laptop and made the tag editor 1246 wide, which is why its
+categories now fold: see FR-D79.
+
+Acceptance: Given MusicBrainz stating `dubstep`, then the candidate reads as
+Electronic and Dubstep; given `goa trance`, then Techno & Electro and Trance;
+given `microhouse`, then House alone; given `trip hop`, then Dance and
+Downtempo; given `death metal`, then Rock and Heavy Metal; given `acid jazz`,
+then Jazz; given `dance` or `DANCE`, then Dance alone; given a box ticked for Dance,
+then the stored value reads back as Dance; given the stored `Electronic;
+House`, then Electronic and House. Every one of the 57 genres has a box in the
+discovery dialog, the library filter, the answer's filter and the tag editor.
+
+Verified by: `tests/domain/test_genre_rulings.py::TestTheRulingsOf2026_10_01`, `tests/domain/test_genre_rulings.py::TestTheRulingsOf2026_10_01::test_a_value_stored_before_the_split_reads_as_written`, `tests/domain/test_genre_rulings.py::TestTheRulingsOf2026_10_01::test_the_bare_dance_tag_is_the_dance_main`, `tests/domain/test_genre_rulings.py::TestTheDanceSubTaxonomy`, `tests/domain/test_genre_rulings.py::TestTheRulingsOnTheRest::test_the_names_a_filter_withheld_on_2026_09_30`, `tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_every_catalogue_name_in_its_own_spelling_reads_back_as_itself`, `tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_no_alias_is_keyed_on_a_catalogue_name`, `tests/domain/test_genres.py::TestTheCatalogue::test_it_holds_the_mains_that_were_settled`, `tests/ui/test_genre_grid.py::test_every_dialog_holding_the_grid_offers_every_genre`
+
+---
+
+**FR-D78 An untagged candidate is judged by who it was suggested for**
+
+Priority: Must
+
+Requirement: While a genre filter is on, where the candidate genre cache
+records no genre the catalogue recognises for a candidate artist, the results
+dialog shall judge that candidate by the catalogue genres of the held albums
+belonging to the heading it sits under: albums whose album artist or any track
+artist compares equal to the heading's artist (a joint credit the run took
+apart counts for each artist it names, FR-D53); for a series heading, albums
+whose series stem compares equal to the heading's name. The candidate shall be
+shown where those genres meet the picked genres and filtered out where they do
+not. Only where those albums name no catalogue genre either shall the candidate
+be withheld and counted under FR-D55. A candidate under several headings shall
+be judged under each on its own.
+
+Rationale: Measured on 2026-10-01 from Oliver's whole-library answer: of 771
+similar artists a genre filter held back, 615 had no genre at all on
+MusicBrainz. A sample of 20 of them found only 1 with even a tag. Asking
+again would not help; MusicBrainz has nothing to say about them. Ruled by
+Oliver that day: such an artist was suggested because it resembles an artist
+he holds, so the genres he holds for that artist are the best evidence there
+is. The rule is `filtered_answer` in `domain/discovery_filter.py`.
+
+Acceptance: Given an untagged candidate under a heading whose held album is
+House, when House is picked, then the candidate is shown and nothing is held
+back; under a heading held as Rock, then it is filtered out and not counted;
+under a heading whose albums state only `Skiffle`, then it is counted as held
+back; under the series heading Global Underground with "Global Underground #7
+/ Unmixed" held as House, then it is shown; under Lane 8, credited on a
+Various Artists album held as House, then it is shown; under DJ Tennis, held
+only as "Moat, Kyozo, & DJ Tennis" in House, then it is shown and DJ Tennis
+keeps its albums. Measured on 2026-10-02 over Oliver's library and last
+answer, filtered to seven electronic genres: 115 held back before this, none
+after.
+
+Verified by: `tests/domain/test_judged_by_their_source.py::test_an_untagged_candidate_shows_under_a_house_source`, `tests/domain/test_judged_by_their_source.py::test_an_untagged_candidate_under_a_rock_source_is_filtered_out`, `tests/domain/test_judged_by_their_source.py::test_judged_per_heading_where_one_candidate_sits_under_two`, `tests/domain/test_judged_by_their_source.py::test_counted_unjudged_where_the_source_names_no_genre_either`, `tests/domain/test_judged_by_their_source.py::test_a_series_heading_is_judged_by_the_volumes_held`, `tests/domain/test_judged_by_their_source.py::test_a_track_credit_on_a_compilation_judges_too`, `tests/domain/test_judged_by_their_source.py::test_a_recognised_genre_of_its_own_still_judges_first`, `tests/domain/test_judged_by_their_source.py::test_a_heading_split_from_a_joint_credit_judges_by_that_credit`, `tests/domain/test_judged_by_their_source.py::test_a_heading_split_from_a_joint_credit_keeps_its_albums`
+
+---
+
+**FR-D79 The genre grid's categories fold**
+
+Priority: Must
+
+Requirement: The genre grid shall lay the catalogue's mains out in three
+columns, in catalogue order down each column. Each main that carries styles
+shall show an arrow before its box; a press of the arrow (a click, Enter or
+Space) shall show or hide that main's styles. Every category shall start folded
+the first time a dialog is opened. Each of the four dialogs holding the grid
+shall remember on its own which categories were left open and open them again
+next time. While a category is folded, a count of its ticked styles shall show
+beside the main's name. A dialog shall give back the room a category took once
+it is folded again.
+
+Rationale: Ruled by Oliver on 2026-10-01. With every box showing, the 57 genre
+catalogue needed five columns and made the tag editor 1246 wide; he withdrew
+that layout to save the room. Folded, the discovery dialog opens 700 wide,
+its least width. The count keeps a style ticked and then folded away from
+being a choice nobody can see. The arrow is a stop on the keyboard ring just
+before its main, so a folded category is passed in two steps rather than ten.
+
+Acceptance: Given a dialog never opened before, then every category is folded
+and no style shows; when the arrow beside Dance is pressed, then Dance's nine
+styles show under it; given Dubstep ticked with Electronic folded, then
+`(1)` shows beside Electronic; given Dance left open in the library filter,
+when it is opened again, then Dance is open there and nowhere else; in the
+answer's filter, a main with nothing on offer is not shown and a main offered
+without its styles shows no arrow.
+
+Verified by: `tests/ui/test_genre_folding.py`, `tests/ui/test_genre_grid.py::TestWhatItOffers::test_three_columns_is_the_ruling`, `tests/ui/test_genre_grid.py::TestWhatItOffers::test_the_groups_read_down_then_across_in_catalogue_order`
 
 ---
 
@@ -2378,17 +2602,21 @@ Verified by: `tests/ui/test_results_series.py::test_an_empty_heading_is_left_out
 
 Priority: Must
 
-Requirement: A discovery run shall send nothing but four kinds of value,
+Requirement: A discovery run shall send nothing but five kinds of value,
 together with the application's own User-Agent: the names of artists drawn from
 the ticked genres (or the artists such a name joins, FR-D53), less any trailing
-Discogs number; the catalogue identifiers the sources answered with, for
-those artists or for the candidates the similarity source suggested; where
-MusicBrainz knows a name under several artists, up to three album or track
-titles the library holds under that name, each cut at its first bracket and
-sent to MusicBrainz alone beside that name (FR-D09); fixed values each client
-states for itself, being the response format, a result limit, where a
-following page starts, the release types, the genres inclusion and the
-similarity algorithm.
+Discogs number; the catalogue identifiers the sources answered with, whether
+for those artists, for the candidates the similarity source suggested or for
+the release groups and series a series question found; where MusicBrainz knows a
+name under several artists, up to three album or track titles the library holds
+under that name, each cut at its first bracket and sent to MusicBrainz alone
+beside that name (FR-D09); while compilations are included, the titles of
+series albums inside the ticked genres (each cut at its first bracket, spaced
+solidus or spaced dash) with the series stem of any such title that sits in no
+catalogue series, each sent to MusicBrainz alone (FR-D69, FR-D70); fixed values
+each client states for itself, being the response format, a result limit, where
+a following page starts, the release types, the genres inclusion, the relations
+asked for and the similarity algorithm.
 The headers carry only where the request goes, the User-Agent, the transport's
 own terms and a language fixed at any (`ACCEPT_LANGUAGE` in
 `infrastructure/fetching.py`).
@@ -2408,7 +2636,11 @@ a held title), the identifier or a constant the client states for itself.
 Proved to bite on 2026-09-13 by planting an extra field in
 `infrastructure/catalogue.py`; the credit question (FR-D09) was added on
 2026-09-27 and proved the same day by planting an extra field on it, then a
-title carrying more than was held. The headers are read where they arrive,
+title carrying more than was held. The three series questions of FR-D69 and
+FR-D70 (`infrastructure/catalogue_series.py`) were added on 2026-09-30, with a
+held title's volume title and its stem as the only values allowed in the query;
+proved the same day by planting the whole held title, tail included, which
+failed two of the four tests. The headers are read where they arrive,
 on a loopback service:
 `tests/infrastructure/test_fetching.py::TestAskingAService::test_no_header_says_anything_about_the_listener`
 failed on `en-GB,*` before the language was fixed.
@@ -2430,8 +2662,8 @@ Verification:
 with `::test_every_address_asked_is_one_the_allowed_set_names` hold every
 request the test asks against a fixed allowed set of addresses and fields, so a
 field added to one of those questions fails rather than passing unnoticed. A
-new question is caught only once the test asks it; every question a run can
-put, the FR-D09 credit question included, is asked there.
+new question is caught only once the test asks it. The FR-D09 credit question
+and the three series questions of FR-D69 and FR-D70 are asked there.
 `::test_nothing_sent_names_the_listener_or_the_machine` reads each request
 against this machine's name, the user name and the home directory.
 
@@ -2614,7 +2846,7 @@ HTTP server on the loopback address, in
 `tests/infrastructure/fetching_support.py`, because what Qt makes of a status
 and a silence is what they exist to test. A fake reply would only test the fake.
 None of those requests leaves the machine, which is the property the rationale
-is about. Six test modules are permitted the machinery, each with its reason, in
+is about. Seven test modules are permitted the machinery, with their reasons, in
 `TESTS_PERMITTED`.
 
 Verification:
@@ -2649,8 +2881,12 @@ handed a place of its own.
 **The catalogue source** answers four questions: the identifier for an artist
 name; the artists credited on a held album or track title under a name, which
 settles a name several artists share (FR-D09); the albums an artist made with
-their stated genres; the genres an artist is said to play. **The similarity source** answers one: the artists similar to
-an identifier.
+their stated genres; the genres an artist is said to play. While compilations
+are included it answers three more about series (FR-D69, FR-D70), through its
+own client in `infrastructure/catalogue_series.py`: which series a held title's
+release group belongs to; what one series holds, in order; which release groups
+a search for a series stem finds. **The similarity source** answers one: the
+artists similar to an identifier.
 
 Both are reached through interfaces declared in the application layer, so the
 choice below is an infrastructure decision and is reversible without touching a
@@ -2680,7 +2916,8 @@ a User-Agent naming the application, which NFR-PRIV-003 covers.
 The discovery file is one JSON object. Its `gaps` member maps each source artist
 to what that artist is missing: candidate albums and candidate artists. Each
 album carries its first release date under `released`, empty where the
-catalogue stated none.
+catalogue stated none. An entry naming a series rather than an artist carries
+`series` set true (FR-D74).
 The other members, `unresolved`, `ambiguous`, `failed`, `ticked` and `years`,
 carry the five things named below.
 
@@ -2803,7 +3040,7 @@ that is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D75 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D79 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

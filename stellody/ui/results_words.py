@@ -28,6 +28,7 @@ from stellody.application.discovery_ports import (
 )
 from stellody.domain.discovery import Gaps
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
+from stellody.shared.version import APP_NAME
 
 # What each kind of row is called, in the fewest words that still say it. The
 # candidate's word appears on every candidate row, since that is the row that
@@ -223,12 +224,26 @@ def where_in_the_answer(showing: int, pages: int) -> str:
 # Said while a filter is on, about the candidates it could not judge. Counted
 # rather than listed: 260 of 1112 in Oliver's answer on 2026-09-13, which is a
 # number worth knowing where the names would be a list nobody reads. FR-D55.
-WITHHELD = "Withheld by the filter: {count} whose genre is not known"
+# What a filter is set to, then what it held back and why. The genres come
+# first: reported by Oliver on 2026-09-30, the count alone read as though the
+# genres he had picked were the thing not known. FR-D55.
+#
+# Since FR-D78 a candidate MusicBrainz gives nothing is judged by the artist it
+# was suggested for, so only those that heading names nothing for either are
+# held back; the sentence says both, ruled by Oliver on 2026-10-01.
+FILTERED_TO = "Filtered to {genres}"
+HELD_BACK = (
+    ": {count} held back, since neither MusicBrainz nor the artist they were "
+    f"suggested for gives a genre {APP_NAME} recognises"
+)
 
 
-def withheld(count: int) -> str:
-    """How many similar artists a filter held back for want of a genre."""
-    return WITHHELD.format(count=counted(count, SIMILAR, f"{SIMILAR}s"))
+def withheld(picked: tuple[str, ...], count: int) -> str:
+    """The genres a filter is set to; what it held back for want of a genre."""
+    said = FILTERED_TO.format(genres=GENRES_APART.join(picked))
+    if count:
+        said += HELD_BACK.format(count=counted(count, SIMILAR, f"{SIMILAR}s"))
+    return said
 
 
 def asking_about(names: tuple[str, ...]) -> str:

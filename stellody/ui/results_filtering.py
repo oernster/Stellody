@@ -32,6 +32,7 @@ from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps
 from stellody.domain.discovery_filter import filtered_answer
 from stellody.domain.shopping import WantedAlbum
+from stellody.ui.genre_folds import Folds
 from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.results_pages import ResultsPages
 from stellody.ui.results_ticks import (
@@ -54,6 +55,7 @@ class FilteringResults:
     pages: ResultsPages
     _colour: Palette
     _room: QSize
+    _folds: Folds | None
 
     def _start_filtering(
         self,
@@ -82,7 +84,9 @@ class FilteringResults:
 
     def filter_dialog(self) -> ResultsFilterDialog:
         """The chooser, offering the run's genres and holding what is picked."""
-        return ResultsFilterDialog(self._looked_in, self._picked, self)
+        return ResultsFilterDialog(
+            self._looked_in, self._picked, self, folds=self._folds
+        )
 
     def open_filter(self) -> None:
         """Ask which genres to show; show them.
@@ -106,7 +110,7 @@ class FilteringResults:
             self._gaps, self._library, self._remembered or {}, picked
         )
         self._deal(shown.gaps)
-        self.top.say_withheld(shown.unjudged)
+        self.top.say_withheld(picked, shown.unjudged)
         self.filter_button.setChecked(bool(picked))
 
     def _deal(self, gaps: tuple[Gaps, ...]) -> None:

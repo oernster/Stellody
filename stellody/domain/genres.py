@@ -69,17 +69,23 @@ both were overruled by Oliver on 2026-09-05. Britpop is a kind of pop and sits
 under Pop, not under Rock. Punk answers to nothing above it and is a main of its
 own, so asking for rock no longer hands somebody punk records.
 
-That leaves Pop carrying one style, which is NOT the case the collapse rule
-above is about: that rule is for a main and a style saying the same thing, as
-Stage & Screen and Soundtrack did. Pop is not Britpop; 1,310 files say Pop
-against one that says Britpop, so the two levels there both mean something.
+**Electronic was split four ways**, ruled by Oliver on 2026-10-01 (FR-D77)
+once it had grown too large to read: House and Techno & Electro are the club
+families taken out as mains; Electronic keeps ambient, bass and breaks music;
+Dance is chart and festival dance music, song-led. Those lines are his rulings
+of that day rather than definitions. Pop gained seven styles in the same
+ruling. Measured that day over his whole-library answer: 155 of 1,996 similar
+artists were held back by a genre filter because MusicBrainz stated only names
+nothing here recognised.
 
-**A style states its main.** Ticking Trance states Electronic too, on writing
-and on reading alike, so a filter for Electronic finds every kind of it
+**A style states its main.** Ticking Trance states Techno & Electro too, on
+writing and on reading alike, so a filter for the main finds every kind of it
 without knowing what the kinds are. A main can be stated alone, which is what
-the bare `dance` tag on 873 files gets: Discogs has no Dance style;
-inventing one to hold a tag that says no more than "electronic" would be
-stating something the file never said.
+the bare `dance` tag on 873 files gets: a name is matched whatever its case, so
+it is the Dance main (ruled on 2026-10-01, moving those files from Electronic).
+No ruling is ever keyed on a catalogue name, so a ticked box always reads back
+as itself. A value stored before the split, such as `Electronic; House`, is
+read as written: nothing is rewritten.
 
 Measured against the library on 2026-09-05: 6,462 audio files, 5,756 carrying
 a genre tag and 705 carrying none, in 43 distinct strings and 38 once case is
@@ -121,14 +127,18 @@ from __future__ import annotations
 
 import re
 
+# Also reachable as `genres.ALIASES`, so a caller reading the rulings through
+# this module keeps working: the table moved, the question did not.
+from stellody.domain.genre_rulings import ALIASES
+
 # The catalogue: each main category with the styles kept under it, both in the
 # order they are offered. Alphabetical throughout, because that is the order
 # they are read in and any other order is an opinion about music that a list of
 # names has no business holding.
 #
-# A main with no styles is not an omission. Blues, Hip Hop, Jazz and Pop are
-# each carried by a bare tag in this library and nothing here divides them
-# further; a style is added when a tag asks for one.
+# A main with no styles is not an omission. Blues, Hip Hop and Jazz are each
+# carried by a bare tag in this library and nothing here divides them further;
+# a style is added when a tag (or a name MusicBrainz states) asks for one.
 CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Blues", ()),
     ("Classical", ()),
@@ -136,26 +146,41 @@ CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Contemporary R&B", ()),
     ("Country", ()),
     (
-        "Electronic",
+        "Dance",
         (
-            "Acid House",
-            "Deep House",
+            "Breakbeat",
+            "Dance-Pop",
             "Disco",
-            "Drum n Bass",
-            "Electro",
-            "House",
-            "Jungle",
-            "Progressive House",
-            "Tech House",
-            "Techno",
-            "Trance",
+            "Downtempo",
+            "EDM",
+            "Electronica",
+            "Eurodance",
+            "Hi-NRG",
+            "Italo Dance",
         ),
+    ),
+    (
+        "Electronic",
+        ("Ambient", "Big Beat", "Drum n Bass", "Dubstep", "Jungle", "UK Garage"),
     ),
     ("Folk", ()),
     ("Funk", ()),
     ("Hip Hop", ()),
+    ("House", ("Acid House", "Deep House", "Progressive House", "Tech House")),
     ("Jazz", ()),
-    ("Pop", ("Britpop",)),
+    (
+        "Pop",
+        (
+            "Britpop",
+            "Dream Pop",
+            "Electropop",
+            "Indie Pop",
+            "K-Pop",
+            "New Wave",
+            "Pop Rock",
+            "Synth-pop",
+        ),
+    ),
     ("Punk", ()),
     ("Rap", ()),
     ("Reggae", ()),
@@ -170,6 +195,7 @@ CATALOGUE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     ("Soul", ()),
     ("Soundtrack", ()),
+    ("Techno & Electro", ("EBM", "Electro", "Minimal Techno", "Techno", "Trance")),
     ("World", ()),
 )
 
@@ -204,81 +230,8 @@ SEPARATOR = "; "
 # hold those too; the solidus is handled as a fallback in `_named_by`.
 _PIECES = re.compile(r";")
 
-# Tags the library carries now or once carried, naming a catalogue genre in
-# other words.
-#
-# Every entry is a RULING rather than a rule: the list grows only when somebody
-# says a particular tag means a particular genre. Nothing is inferred from a
-# name merely containing another, because ticking a box on somebody's behalf
-# leaves them unable to tell which ticks were theirs. A tag that resolves to
-# nothing is visibly reported by the panel rather than silently dropped.
-#
-# Keyed on the folded form, so a tag is matched however it was cased.
-# One tag can mean more than one genre, so each names however many it names.
-# The count beside each is what the reference library held WHEN THAT RULING WAS
-# MADE, kept so a decision can be weighed rather than argued about. It is a
-# record of the evidence rather than a live measurement, so it is not updated as
-# the library grows: re-count before leaning on one to make a fresh ruling.
-ALIASES: dict[str, tuple[str, ...]] = {
-    # Spellings of a catalogue name that the name itself does not match.
-    "hip-hop/rap": ("Hip Hop",),  # 415 files
-    "hip hop / rap": ("Hip Hop",),  # 26 files
-    "drum & bass": ("Drum n Bass",),  # 14 files
-    # The bare tag says electronic and no more, so that is what it states.
-    # Discogs has no Dance style and one is not invented to hold this.
-    "dance": ("Electronic",),  # 873 files
-    # `Alternative` alone is the rock kind here, which is what every album
-    # carrying it is.
-    "alternative": ("Alternative Rock",),  # 479 files
-    "r&b": ("Contemporary R&B",),  # 39 files, ruled: the modern kind
-    "r&b/soul": ("Contemporary R&B",),  # 10 files
-    # One person's private sub-taxonomy, `dance-<style>` and `house-<style>`,
-    # across three albums and a single: 56 files that reached nothing at all
-    # before the styles existed to hold them. Each names its style outright
-    # once the catalogue has two levels; each states Electronic through it.
-    "dance-trance": ("Trance",),  # 16 files
-    "house-melodic": ("House",),  # 9 files
-    "dance-house": ("House",),  # 8 files
-    "dance-house-progressive": ("Progressive House",),  # 7 files
-    "dance-techno": ("Techno",),  # 3 files
-    "house-progressive house": ("Progressive House",),  # 2 files
-    # The whole value is `dance-house-tech / minimal`, which splits in two.
-    # Minimal names nothing here and is left to, as an unknown word should be;
-    # the album still reaches the catalogue through the other half.
-    "dance-house-tech": ("Tech House",),  # the half of 2 files
-    "dance-house-deep": ("Deep House",),  # 2 files
-    "dance-house-acid": ("Acid House",),  # 2 files
-    "dance-house-disco": ("Disco",),  # 1 file
-    "dance-electro": ("Electro",),  # 1 file
-    # Ruled by Oliver: the album it sits on is house, which is what the rest
-    # of its tags say; Discogs has no Indie Dance style to reach for.
-    "indie dance": ("House",),  # 3 files
-    # Ruled by Oliver on 2026-09-27, from what MusicBrainz states for similar
-    # artists rather than from a file tag. Unrecognised, they withheld every
-    # candidate stating them from a house and techno run: Dirtyloud was
-    # offered nobody, since James Egbert and Noisia read as Electronic alone.
-    "electro house": ("House",),  # 2 candidates
-    "ambient techno": ("Techno",),  # 5 candidates, The Field among them
-    # Ruled by Oliver: crossover is classical meeting popular music, so it
-    # states both mains rather than asking for a name of its own. The album it
-    # sits on agrees, its only other tagged track carrying `pop`.
-    "classical crossover": ("Classical", "Pop"),  # 1 file
-    # Names the catalogue used to carry, kept so a genre stated before the
-    # catalogue gained its second level still reads back as what was meant.
-    "metal": ("Heavy Metal",),
-    # Mains that held one style each and collapsed into it; Classical went the
-    # other way and swallowed its own. Kept so a genre stated before the
-    # collapse still reads back as what was meant.
-    "stage & screen": ("Soundtrack",),
-    "modern classical": ("Classical",),
-    # Comedy hung under this until it was made a main of its own, so a genre
-    # stated while it did still reads back as what was meant.
-    "non-music": ("Comedy",),
-    "r&b & soul": ("Contemporary R&B",),
-}
-
 # One place a tag piece is looked up, whether it names a genre outright or
-# names one in other words.
+# names one in other words: the rulings, kept in `genre_rulings`.
 _BY_KEY: dict[str, tuple[str, ...]] = {
     name.casefold(): (name,) for name in GENRES
 } | ALIASES

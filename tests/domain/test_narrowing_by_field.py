@@ -34,7 +34,13 @@ LIBRARY = (ROCK, TRANCE, HOUSE, NOTHING, UNREACHED)
 
 class TestWhatAnAlbumStates:
     def test_a_genre_is_read_as_the_catalogue_names_it_holds(self) -> None:
-        assert stated_values(TRANCE, AlbumField.GENRE) == ("Electronic", "Trance")
+        # Stored as `Trance; Electronic`, so Electronic stays beside the main
+        # Trance has had since the split of 2026-10-01 (FR-D77).
+        assert stated_values(TRANCE, AlbumField.GENRE) == (
+            "Electronic",
+            "Techno & Electro",
+            "Trance",
+        )
 
     def test_a_tag_naming_nothing_in_the_catalogue_states_nothing(self) -> None:
         assert stated_values(UNREACHED, AlbumField.GENRE) == ()

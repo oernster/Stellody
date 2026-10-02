@@ -211,6 +211,11 @@ class DiscoveryStage(StrEnum):
     # Only while years are set: what the candidates left after narrowing
     # released, so those with nothing inside the years can go. FR-D63.
     DATING = "dating"
+    # Only while compilations are included: the other volumes of each series
+    # album, between the artists and their candidates. Its own stage, counted
+    # from nought: reported by Oliver on 2026-10-01, under the first stage's
+    # name the first bar read as a run gone back to nothing. FR-D69.
+    SERIES = "series"
 
 
 @dataclass(frozen=True, slots=True)

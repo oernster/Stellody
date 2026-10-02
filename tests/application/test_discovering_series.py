@@ -26,9 +26,10 @@ from stellody.application.discovery_ports import (
     SourceUnavailable,
 )
 from stellody.application.remembering import Recollection
-from stellody.application.values import RunOutcome, RunReport
+from stellody.application.values import DiscoveryStage, RunOutcome, RunReport
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, ReleaseGroup
+from stellody.domain.matching import ReleaseKind
 from stellody.domain.series import Series
 
 HOUSE = ("House",)
@@ -140,7 +141,11 @@ def test_one_series_is_asked_about_once() -> None:
     """Adapt #6 is already an entry of the series #2 found, so is not asked."""
     series = adapt_catalogue()
     run_over(HELD_ADAPT, series)
-    assert series.asked == [("series_of", f"{ADAPT} #2"), ("series", ADAPT_ID)]
+    assert series.asked == [
+        ("series_of", f"{ADAPT} #2"),
+        ("series", ADAPT_ID),
+        ("titled", ADAPT),
+    ]
 
 
 def test_no_series_falls_back_to_the_stem() -> None:
@@ -249,6 +254,8 @@ def test_the_stage_says_how_far_it_has_got() -> None:
     run_over(HELD_ADAPT, adapt_catalogue(), report=watching)
     named = [progress.artist for progress in watching.seen]
     assert named[-2:] == [f"{ADAPT} #2", f"{ADAPT} #6"]
+    # Its own stage, so the first bar does not read as starting over.
+    assert {p.stage for p in watching.seen[-2:]} == {DiscoveryStage.SERIES}
 
 
 def test_nothing_missing_adds_no_heading() -> None:
@@ -286,6 +293,7 @@ def test_a_second_run_asks_nothing_it_was_told() -> None:
             self.kept = kept
 
     memory, series = Kept(), adapt_catalogue()
+    counted = []
     for _ in range(2):
         Discovery(
             catalogue=Catalogue(),
@@ -294,7 +302,46 @@ def test_a_second_run_asks_nothing_it_was_told() -> None:
             recall=memory,
             series=series,
         ).run(HELD_ADAPT, HOUSE, nothing, never, compilations=True)
-    assert len(series.asked) == 2
+        counted.append(len(series.asked))
+    assert counted[0] > 0
+    assert counted[1] == counted[0]
+
+
+def test_a_volume_found_twice_is_offered_once() -> None:
+    """Measured on 2026-09-30 from Oliver's run: Select #5 reached the catalogue
+    series; Select #10 reached none, since MusicBrainz titles it "Select Ten",
+    so its stem search answered too. Both carry one name, so they met under one
+    heading and #9 was offered twice: the search states its kinds, the series
+    does not. "Select Ten" was offered back although #10 is held."""
+    select = "Global Underground: Select"
+    series = SeriesCatalogue(
+        places={f"{select} #5": ("select",)},
+        series={
+            "select": Series(
+                select,
+                (
+                    ReleaseGroup(title=f"{select} #9", released="2024-02-21"),
+                    ReleaseGroup(title=f"{select} Ten", released="2025-01-30"),
+                ),
+            )
+        },
+        titled=(
+            ReleaseGroup(
+                title=f"{select} #9",
+                kinds=(ReleaseKind.COMPILATION,),
+                released="2024-02-21",
+            ),
+            ReleaseGroup(title=f"{select} Ten", released="2025-01-30"),
+            ReleaseGroup(title=f"{select} #11", released="2026-01-30"),
+        ),
+    )
+    held = (
+        make_album("Global Underground", f"{select} #5", "House"),
+        make_album("Various Artists", f"{select} #10", "House"),
+    )
+    catalogue = Catalogue(identities={"Global Underground": ("gu-tag",)})
+    report = run_over(held, series, catalogue)
+    assert the_series(report) == {select: (f"{select} #9", f"{select} #11")}
 
 
 def test_no_series_source_offers_nothing() -> None:

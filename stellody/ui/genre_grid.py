@@ -7,10 +7,9 @@ exists to end.
 
 **Grouped, because the catalogue has two levels.** Each main category leads its
 own group with its styles indented under it, so Trance is visibly a kind of
-Electronic rather than a name beside it. The groups are dealt into columns by
-height rather than in order, since Electronic carries eleven styles while four
-mains carry none at all; a column-by-column fill would leave one column twice
-the length of another.
+Techno & Electro rather than a name beside it. Each group folds its styles
+away behind an arrow (see `genre_group`), so the groups are dealt into columns
+in catalogue order, the same number to each: folded, every group is one line.
 
 **A style states its main, so the boxes say so as they are ticked.** Ticking a
 style ticks its main; unticking a main unticks its styles. Without that the
@@ -24,12 +23,14 @@ album form hold one dictionary rather than two.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
+    QLayout,
     QVBoxLayout,
     QWidget,
 )
@@ -41,18 +42,14 @@ from stellody.domain.genres import (
     chosen_in,
     stated_as,
 )
+from stellody.ui.genre_folds import Folds
+from stellody.ui.genre_group import GenreGroup
 from stellody.ui.ringed_check import RingedCheckBox
 
-# Three rather than two, measured again after the catalogue was reshaped and
-# still three: its 33 boxes over two columns ask for a panel 829 pixels tall,
-# which falls off a laptop screen. Three brings it to 723; a fourth costs 222
-# more pixels of width and saves 28 of height, since Electronic's twelve boxes
-# are the floor and no number of columns gets under them.
+# Ruled by Oliver on 2026-10-01, when the categories began to fold: five
+# columns of every box open had made the tag editor 1246 wide. Folded, three
+# columns hold the 21 mains seven deep.
 COLUMNS = 3
-# How far a style sits in from the main it belongs to. Enough to read as
-# beneath it rather than beside it, without pushing the longest name out of
-# the dialog.
-INDENT_PX = 18
 
 HINT = "An album can carry several. What you tick replaces what it carries now."
 # Said over the same boxes when they are asking rather than stating. Each tick
@@ -111,20 +108,16 @@ def _mnemonic_safe(name: str) -> str:
 def dealt_into_columns(
     catalogue: tuple[tuple[str, tuple[str, ...]], ...], columns: int
 ) -> tuple[tuple[tuple[str, tuple[str, ...]], ...], ...]:
-    """The groups spread over that many columns, kept as even in height as
-    they go.
+    """The groups spread over that many columns in catalogue order.
 
-    Each group goes to whichever column is shortest at the time, so the order
-    within a column is still the catalogue's. Height is counted in boxes, one
-    for the main plus one per style, since that is what the eye measures.
+    Read down the first column, then the next, as a reader expects of an
+    alphabetical list. The same number to each, since folded every group is
+    one line; the last column takes whatever is left.
     """
-    dealt: list[list[tuple[str, tuple[str, ...]]]] = [[] for _ in range(columns)]
-    heights = [0] * columns
-    for group in catalogue:
-        into = heights.index(min(heights))
-        dealt[into].append(group)
-        heights[into] += 1 + len(group[1])
-    return tuple(tuple(column) for column in dealt)
+    deep = math.ceil(len(catalogue) / columns)
+    return tuple(
+        catalogue[start : start + deep] for start in range(0, len(catalogue), deep)
+    )
 
 
 def _aside(stated: str, ticked: set[str]) -> str:
@@ -148,12 +141,16 @@ class GenreGrid(QWidget):
         value: str = "",
         parent: QWidget | None = None,
         manner: Manner = STATING,
+        folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
         self._manner = manner
+        # Where the open categories are remembered; None remembers nothing.
+        self._folds = folds
         # A container is never a stop on the keyboard ring; the boxes are.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.boxes: dict[str, RingedCheckBox] = {}
+        self.groups: dict[str, GenreGroup] = {}
         ticked = set(chosen_in(value))
 
         outer = QVBoxLayout(self)
@@ -175,30 +172,66 @@ class GenreGrid(QWidget):
 
     def _build_columns(self, ticked: set[str]) -> QHBoxLayout:
         """One column of groups beside another, each group a main and its own."""
+        opened = self._folds.opened() if self._folds is not None else frozenset()
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         for column in dealt_into_columns(CATALOGUE, COLUMNS):
             stack = QVBoxLayout()
             stack.setContentsMargins(0, 0, 0, 0)
             for main, styles in column:
-                stack.addWidget(self._box(main, ticked))
-                for style in styles:
-                    indented = QHBoxLayout()
-                    indented.setContentsMargins(0, 0, 0, 0)
-                    indented.addSpacing(INDENT_PX)
-                    indented.addWidget(self._box(style, ticked))
-                    stack.addLayout(indented)
+                group = GenreGroup(
+                    main,
+                    styles,
+                    lambda name, holder: self._box(name, ticked, holder),
+                    main in opened,
+                    self,
+                )
+                group.folded.connect(lambda which=group: self._keep_folds(which))
+                self.groups[main] = group
+                stack.addWidget(group)
             stack.addStretch()
             row.addLayout(stack)
         return row
 
-    def _box(self, name: str, ticked: set[str]) -> RingedCheckBox:
+    def _box(self, name: str, ticked: set[str], holder: QWidget) -> RingedCheckBox:
         """One tick box, remembered by the name it stands for."""
-        box = RingedCheckBox(_mnemonic_safe(name), self)
+        box = RingedCheckBox(_mnemonic_safe(name), holder)
         box.setChecked(name in ticked)
         box.toggled.connect(lambda on, which=name: self._agree_with(which, on))
         self.boxes[name] = box
         return box
+
+    def _keep_folds(self, folded: GenreGroup) -> None:
+        """Remember what is open; let the dialog take the room it now needs.
+
+        Resized to fit after every fold, since a dialog grows to hold a
+        category opened but never gives the room back on its own. Measured on
+        2026-10-02, a fold left the grid and the dialog asking for the open
+        height until two things were done together: every layout inside the
+        grid invalidated, the nested columns included; then each widget from
+        the folded group up told its geometry changed. Either alone left the
+        old height, as did waiting one pass of the event loop.
+        """
+        if self._folds is not None:
+            self._folds.keep(m for m, g in self.groups.items() if g.is_open())
+        for layout in self.findChildren(QLayout):
+            layout.invalidate()
+        widget: QWidget | None = folded
+        while widget is not None:
+            widget.updateGeometry()
+            widget = widget.parentWidget()
+        self.window().adjustSize()
+
+    def offer_only(self, offered: tuple[str, ...]) -> None:
+        """Hide every box not on offer; an arrow with nothing to open goes too.
+
+        Held here rather than in the dialog that offers less, so the grid
+        decides what its own arrows show.
+        """
+        for name, box in self.boxes.items():
+            box.setHidden(name not in offered)
+        for group in self.groups.values():
+            group.offer_arrow()
 
     def _agree_with(self, name: str, on: bool) -> None:
         """Keep the ticks saying what the value they produce would say.

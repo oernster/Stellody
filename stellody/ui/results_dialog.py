@@ -66,6 +66,7 @@ from stellody.domain.discovery import Gaps, ReleaseGroup
 from stellody.domain.discovery_filter import worth_showing
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui.dialogs import FirstStopDialog, title_label
+from stellody.ui.genre_folds import Folds
 from stellody.ui.results_asking import AskingResults
 from stellody.ui.results_filtering import FilteringResults
 from stellody.ui.results_foot import COPIED, COPY_LABEL, foot_row
@@ -111,8 +112,11 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         remembered: dict[str, tuple[str, ...]] | None = None,
         parent: QWidget | None = None,
         years: ReleaseYears = ANY_YEAR,
+        folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
+        # Where the answer's filter remembers its open genre categories.
+        self._folds = folds
         # A heading with nothing under it is left off the screen. FR-D75.
         gaps = worth_showing(gaps)
         self._asking = asking

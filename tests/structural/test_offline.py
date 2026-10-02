@@ -50,8 +50,10 @@ NETWORK_PERMITTED = frozenset(
         # nothing about the listener or their library; see the module itself.
         "stellody/infrastructure/update_source.py",
         # The one fetcher a discovery run asks its two catalogues through. It
-        # sends artist names and identifiers from the genres a listener ticked,
-        # plus the application's own user agent. Nothing about the machine.
+        # sends artist names and identifiers from the genres a listener ticked;
+        # up to three held titles for a name several artists share; while
+        # compilations are included, held compilation titles with their series
+        # stems; plus the application's own user agent. Nothing about the machine.
         "stellody/infrastructure/fetching.py",
         # The channel a second launch tells the running copy to show itself
         # over. A named pipe on Windows, a socket file the system owns

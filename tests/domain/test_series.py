@@ -17,6 +17,7 @@ from stellody.domain.series import (
     Series,
     SeriesPlace,
     held_series,
+    merged_entries,
     series_albums,
     series_missing,
     series_place,
@@ -91,6 +92,15 @@ class TestTheStem:
         assert series_stem(title) == stem
         assert series_place(title) == SeriesPlace(stem=stem.casefold(), number=number)
 
+    def test_a_number_written_as_a_word_is_that_number(self) -> None:
+        """Measured on 2026-09-30: the catalogue writes "Select Ten"."""
+        assert series_place("Global Underground: Select Ten") == series_place(
+            "Global Underground: Select #10"
+        )
+
+    def test_a_number_word_inside_a_word_is_not_one(self) -> None:
+        assert series_place("Someone") == SeriesPlace(stem="someone")
+
     def test_a_title_that_is_only_a_number_names_no_series(self) -> None:
         assert series_stem("1999") == ""
         assert series_place("1999") is None
@@ -155,6 +165,24 @@ class TestMissing:
     def test_the_genres_apply(self) -> None:
         rock = ReleaseGroup(title=ADAPT, genres=("rock",))
         assert series_missing(Series(ADAPT, (rock,)), held_series(()), HOUSE) == ()
+
+
+class TestOneVolumeOnce:
+    """Measured on 2026-09-30: two answers named Select #9, only one with kinds."""
+
+    def test_the_same_volume_from_two_answers_is_kept_once(self) -> None:
+        plain = group(f"{ADAPT} #9", "2024-02-21")
+        typed = group(f"{ADAPT} #9", "2024-02-21", ReleaseKind.COMPILATION)
+        later = (typed, group(f"{ADAPT} #11"), group(f"{ADAPT} #11"))
+        found = merged_entries((plain,), later)
+        assert [g.title for g in found] == [f"{ADAPT} #9", f"{ADAPT} #11"]
+
+    def test_a_title_naming_no_series_is_kept_once_by_its_release_key(self) -> None:
+        assert merged_entries((group("1999"),), (group("1999"),)) == (group("1999"),)
+
+    def test_a_volume_held_as_a_number_is_held_when_offered_as_a_word(self) -> None:
+        library = held_series((held("Various Artists", f"{ADAPT} #10"),))
+        assert library.holds(group(f"{ADAPT} Ten"))
 
 
 class TestWhichAlbumsAreSeriesAlbums:

@@ -22,6 +22,7 @@ from __future__ import annotations
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.credit_evidence import Evidence, EvidenceKind
 from stellody.domain.discovery import ReleaseGroup
+from stellody.domain.genre_votes import believed
 from stellody.domain.matching import ReleaseKind
 from stellody.domain.text import catalogue_key, catalogue_name
 from stellody.infrastructure.fetching import Fetcher
@@ -84,16 +85,29 @@ def _entries(answer: object, key: str) -> list[dict]:
     return [entry for entry in found if isinstance(entry, dict)]
 
 
-def _named(entry: dict, key: str) -> tuple[str, ...]:
-    """The names inside a list of named things under this key."""
-    found = entry.get(key)
+def _genres(entry: dict) -> tuple[str, ...]:
+    """The genres stated here that are worth believing, by their votes.
+
+    Each genre carries a vote count; one carrying none (else something that
+    is not a count) reads as no votes. A stated name is never dropped for
+    that alone: `believed` keeps everything where nothing has the votes.
+    """
+    found = entry.get("genres")
     if not isinstance(found, list):
         return ()
-    return tuple(
-        str(item.get("name") or "")
+    voted = tuple(
+        (str(item["name"]), _votes(item.get("count")))
         for item in found
         if isinstance(item, dict) and item.get("name")
     )
+    return believed(voted)
+
+
+def _votes(count: object) -> int:
+    """A vote count as stated; nought for anything that is not one."""
+    if isinstance(count, int) and not isinstance(count, bool) and count > 0:
+        return count
+    return 0
 
 
 def _kinds_of(entry: dict) -> tuple[ReleaseKind, ...]:
@@ -195,7 +209,7 @@ class MusicBrainz:
         )
         if not isinstance(answer, dict):
             return ()
-        return _named(answer, "genres")
+        return _genres(answer)
 
 
 def _groups(entries: list[dict]) -> list[ReleaseGroup]:
@@ -210,7 +224,7 @@ def _groups(entries: list[dict]) -> list[ReleaseGroup]:
             ReleaseGroup(
                 title=title,
                 kinds=_kinds_of(entry),
-                genres=_named(entry, "genres"),
+                genres=_genres(entry),
                 # The release group's earliest release, as stated: a year, a
                 # year and month or a whole date; empty where it states none.
                 # Measured on 2026-09-26. FR-D61.

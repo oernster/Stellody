@@ -33,11 +33,44 @@ from stellody.domain.text import comparison_key, is_various_artists, normalise
 # spaced dash, whichever comes first. What follows is a mix, a city or an
 # edition, as in "Afterhours 4 - Ibiza / Unmixed".
 _TAIL = re.compile(r"\s*(?:[(\[]|\s/\s|\s-\s).*$")
+# A volume number written as a word. Measured on 2026-09-30: MusicBrainz titles
+# the tenth Select "Global Underground: Select Ten" where the library holds
+# "Select #10", so the word has to read as the number or the two never meet.
+NUMBER_WORDS = {
+    word: value
+    for value, word in enumerate(
+        (
+            "one",
+            "two",
+            "three",
+            "four",
+            "five",
+            "six",
+            "seven",
+            "eight",
+            "nine",
+            "ten",
+            "eleven",
+            "twelve",
+            "thirteen",
+            "fourteen",
+            "fifteen",
+            "sixteen",
+            "seventeen",
+            "eighteen",
+            "nineteen",
+            "twenty",
+        ),
+        start=1,
+    )
+}
 # The volume number ending a series title, with whatever introduced it. Each
 # marker word must start a word, so "Techno 2" loses "2" rather than "no 2";
-# the number must start one too, so "Mix2" keeps its digit.
+# the number must start one too, so "Mix2" keeps its digit and "Someone" its
+# "one".
 _NUMBER = re.compile(
-    r"[\s:,]*(?:#|\b(?:no|vol|volume|part|pt)\b\.?)?\s*\b(?P<number>\d+)$",
+    r"[\s:,]*(?:#|\b(?:no|vol|volume|part|pt)\b\.?)?\s*\b"
+    r"(?P<number>\d+|" + "|".join(NUMBER_WORDS) + r")$",
     re.IGNORECASE,
 )
 
@@ -91,8 +124,44 @@ def series_place(title: str) -> SeriesPlace | None:
     if not stem:
         return None
     found = _NUMBER.search(volume_title(title))
-    number = int(found.group("number")) if found is not None else None
-    return SeriesPlace(stem=comparison_key(stem), number=number)
+    return SeriesPlace(
+        stem=comparison_key(stem),
+        number=None if found is None else _volume(found.group("number")),
+    )
+
+
+def _volume(written: str) -> int:
+    """A volume number as written: digits, else one of the number words."""
+    return int(written) if written.isdigit() else NUMBER_WORDS[written.casefold()]
+
+
+def entry_key(group: ReleaseGroup) -> SeriesPlace | ReleaseMatch:
+    """What makes two series entries the same volume.
+
+    Its place where the title names one, else its release key. Not the whole
+    record: measured on 2026-09-30, the series and a stem search both answered
+    "Select #9", only one of them stating its kinds, so comparing records
+    offered it twice.
+    """
+    return series_place(group.title) or group.match
+
+
+def merged_entries(
+    earlier: tuple[ReleaseGroup, ...], later: tuple[ReleaseGroup, ...]
+) -> tuple[ReleaseGroup, ...]:
+    """The earlier entries, then each later one that is a volume not yet there.
+
+    Later entries are checked against each other as well, so one answer
+    naming a volume twice still offers it once.
+    """
+    seen = {entry_key(group) for group in earlier}
+    found = list(earlier)
+    for group in later:
+        key = entry_key(group)
+        if key not in seen:
+            seen.add(key)
+            found.append(group)
+    return tuple(found)
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,13 +235,11 @@ def series_missing(
     of compilations is made of nothing else. FR-D72. The genres and the years
     still apply, as they do to any album a run offers.
     """
-    found: list[ReleaseGroup] = []
-    seen: set[ReleaseMatch] = set()
-    for group in series.entries:
-        if group.match in seen or held.holds(group):
-            continue
-        if not wanted_by(group.genres, ticked) or not years.admits(group.year):
-            continue
-        seen.add(group.match)
-        found.append(group)
-    return tuple(found)
+    kept = tuple(
+        group
+        for group in series.entries
+        if not held.holds(group)
+        and wanted_by(group.genres, ticked)
+        and years.admits(group.year)
+    )
+    return merged_entries((), kept)

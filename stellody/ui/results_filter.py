@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from stellody.ui.dialogs import FirstStopDialog
 from stellody.ui.filter_controls import filter_controls, offer_apply
+from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
 
 TITLE = "Filter the answer by genre"
@@ -34,6 +35,7 @@ class ResultsFilterDialog(FirstStopDialog):
         offered: tuple[str, ...] = (),
         picked: tuple[str, ...] = (),
         parent: QWidget | None = None,
+        folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
         self._offered = offered
@@ -41,10 +43,9 @@ class ResultsFilterDialog(FirstStopDialog):
         outer = QVBoxLayout(self)
         # Opened holding what is already picked, so a filter is adjusted
         # rather than rebuilt every time the chooser is opened.
-        self.grid = GenreGrid("", self, manner=ASKING)
+        self.grid = GenreGrid("", self, manner=ASKING, folds=folds)
+        self.grid.offer_only(offered)
         for name, box in self.grid.boxes.items():
-            if name not in offered:
-                box.hide()
             box.setChecked(name in offered and name in picked)
         outer.addWidget(self.grid)
         controls = filter_controls(self, FILTER_LABEL, self.clear)

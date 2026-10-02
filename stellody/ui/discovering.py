@@ -30,10 +30,17 @@ from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_endings import STOPPED, SettlingDiscovery, WriteDiscovery
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.expansion_worker import ExpansionRunner
+from stellody.ui.genre_folds import Folds
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.results_words import released_in
 from stellody.ui.run_estimate import RunEstimate
-from stellody.ui.settings_keys import FALSE, SETTING_DISCOVER_COMPILATIONS, TRUE
+from stellody.ui.settings_keys import (
+    FALSE,
+    SETTING_DISCOVER_COMPILATIONS,
+    SETTING_GENRES_OPEN_ANSWER_FILTER,
+    SETTING_GENRES_OPEN_DISCOVERY,
+    TRUE,
+)
 from stellody.ui.standing_in import say_nothing
 from stellody.ui.tray_metrics import show_discovery_running
 
@@ -145,6 +152,7 @@ class Discovering(SettlingDiscovery):
             compilations=included,
             cost=None if priced is None else priced.pricing(self._all_albums).of,
             remember=self._remember_compilations,
+            folds=Folds(self._settings, SETTING_GENRES_OPEN_DISCOVERY),
         )
         self._discovery_dialog = dialog
         try:
@@ -326,6 +334,7 @@ class Discovering(SettlingDiscovery):
                 None if self._genre_memory is None else self._genre_memory.remembered()
             ),
             parent=self,
+            folds=Folds(self._settings, SETTING_GENRES_OPEN_ANSWER_FILTER),
         )
         if asking is not None:
             # Parented to the dialog once there is one, so what asks the

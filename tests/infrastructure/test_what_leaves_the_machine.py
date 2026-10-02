@@ -26,6 +26,7 @@ from stellody.infrastructure.catalogue import (
     RELEASE_GROUP_URL,
     MusicBrainz,
 )
+from stellody.infrastructure.catalogue_series import SERIES_URL, MusicBrainzSeries
 from stellody.infrastructure.similarity import ALGORITHM, SIMILAR_URL, ListenBrainz
 
 NAME = "Kate Bush"
@@ -35,6 +36,13 @@ TITLE = "Hounds of Love"
 IDENTIFIER = "4b585938-f271-45e2-b19a-91c634b5e396"
 # How many similar artists are asked for. Only has to be a number here.
 MOST = 10
+# A held compilation, as the series questions put it: its volume title, then
+# its stem, with the identifiers the catalogue answers with. FR-D69, FR-D70.
+SERIES_TITLE = "Global Underground: Adapt #2"
+SERIES_HELD = f"{SERIES_TITLE} / Unmixed"
+SERIES_STEM = "Global Underground: Adapt"
+GROUP_ID = "d64b87a5-319b-44f6-b82a-4758b9a63595"
+SERIES_ID = "7a866671-8f7c-40b4-b00c-9f622ea2cc3f"
 
 # The one field allowed to carry an artist's name, spelled the way the
 # catalogue's search syntax wraps it, alone or with a held title beside it
@@ -45,6 +53,9 @@ NAMES_AS_ASKED = frozenset(
         f'artist:"{NAME}"',
         f'releasegroup:"{TITLE}" AND artist:"{NAME}"',
         f'recording:"{TITLE}" AND artist:"{NAME}"',
+        # A held compilation's title up to its tail, then its stem alone.
+        f'releasegroup:"{SERIES_TITLE}"',
+        f'releasegroup:"{SERIES_STEM}"',
     }
 )
 IDENTIFIER_FIELDS = frozenset({"artist", "artist_mbids"})
@@ -54,7 +65,7 @@ FIXED = {
     "fmt": frozenset({"json"}),
     "limit": frozenset({str(NAME_LIMIT), str(GROUP_LIMIT)}),
     "type": frozenset({"album|ep"}),
-    "inc": frozenset({"genres"}),
+    "inc": frozenset({"genres", "series-rels", "release-group-rels"}),
     "algorithm": frozenset({ALGORITHM}),
     # Where the second page starts; asked only after a full first one.
     "offset": frozenset({str(GROUP_LIMIT)}),
@@ -71,6 +82,8 @@ ALLOWED = {
     RECORDING_URL: frozenset({"query", "fmt", "limit"}),
     f"{ARTIST_URL}/{IDENTIFIER}": frozenset({"inc", "fmt"}),
     SIMILAR_URL: frozenset({"artist_mbids", "algorithm"}),
+    f"{RELEASE_GROUP_URL}/{GROUP_ID}": frozenset({"inc", "fmt"}),
+    f"{SERIES_URL}/{SERIES_ID}": frozenset({"inc", "fmt"}),
 }
 
 
@@ -89,6 +102,9 @@ class Recording:
         """Keep the address with its fields; one full page, then nothing."""
         first = not self.asked
         self.asked.append((address, dict(parameters)))
+        if parameters.get(NAME_FIELD) == f'releasegroup:"{SERIES_TITLE}"':
+            # The held volume found, so its series is looked up by id too.
+            return {"release-groups": [{"id": GROUP_ID, "title": SERIES_TITLE}]}
         return FULL_PAGE if address == RELEASE_GROUP_URL and first else {}
 
 
@@ -102,6 +118,10 @@ def asked() -> list[tuple[str, dict[str, str]]]:
     for kind in EvidenceKind:
         catalogue.credited(Evidence(kind, TITLE, NAME))
     ListenBrainz(fetch).similar_to(IDENTIFIER, MOST)
+    series = MusicBrainzSeries(fetch)
+    series.series_of(SERIES_HELD)
+    series.series(SERIES_ID)
+    series.titled(SERIES_STEM)
     return fetch.asked
 
 

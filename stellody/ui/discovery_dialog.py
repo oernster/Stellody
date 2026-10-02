@@ -46,6 +46,7 @@ from stellody.ui.dialogs import (
     title_label,
     wearing,
 )
+from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.ringed_check import RingedCheckBox
@@ -55,10 +56,11 @@ TITLE = "Discover new music"
 FIND_LABEL = "Find"
 CLOSE_LABEL = "Close"
 # One control naming what a press would do, which is the convention both trays
-# already follow. Ticking 34 boxes by hand to ask about a whole library is the
-# kind of tidying a dialog should do for somebody; once they are all ticked the
-# only thing left to want is them gone. A push button rather than a 35th tick
-# box, so it cannot read as one more genre: the same shape the filter dialog's
+# already follow. Ticking every box in the catalogue by hand to ask about a
+# whole library is the kind of tidying a dialog should do for somebody; once
+# they are all ticked the only thing left to want is them gone. A push button
+# rather than one more tick box, so it cannot read as one more genre: the same
+# shape the filter dialog's
 # Clear already has, in the same place.
 SELECT_ALL_LABEL = "Select all"
 CLEAR_LABEL = "Clear"
@@ -72,8 +74,8 @@ RESTING = (
     "Tick the genres to find similar music in, then press Find. "
     "This closes; the toolbar reports on the search."
 )
-# Wide enough for the catalogue's three columns without the longest name
-# wrapping; the same measurement the filter dialog is built to.
+# The least the dialog is drawn at; the grid widens it past this where its
+# open categories need the room, the same as the filter dialog.
 DIALOG_WIDTH_PX = 700
 APART_PX = 12
 # The box that widens a run to the artists on compilations. FR-D51. Named for
@@ -163,6 +165,7 @@ class DiscoveryDialog(FirstStopDialog):
         cost: Callable[[tuple[str, ...]], Cost] | None = None,
         remember: Callable[[bool], None] = _keep_nothing,
         this_year: int | None = None,
+        folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
         self._start = start
@@ -173,7 +176,7 @@ class DiscoveryDialog(FirstStopDialog):
         # the window has no memory to price it from, so no line is shown
         # rather than a guess. FR-D52.
         self._cost = cost
-        # Resolved once rather than per toggle: a sweep moves 34 boxes and each
+        # Resolved once rather than per toggle: a sweep moves every box and each
         # of them asks this control to say what it now offers.
         self._sweep_art = resources.find_asset(SELECT_ALL_ICON)
         self.setWindowTitle(TITLE)
@@ -184,7 +187,7 @@ class DiscoveryDialog(FirstStopDialog):
         self.title = title_label(TITLE, self)
         outer.addWidget(self.title)
         outer.addSpacing(APART_PX)
-        self.grid = GenreGrid("", self, manner=ASKING)
+        self.grid = GenreGrid("", self, manner=ASKING, folds=folds)
         for box in self.grid.boxes.values():
             box.toggled.connect(self._ticks_changed)
         outer.addWidget(self.grid)

@@ -300,6 +300,35 @@ class TestWhatAnArtistPlays:
         body = {"genres": [{"name": ""}, {"count": 3}, "Rock"]}
         assert MusicBrainz(fetching(body)).genres_of("id") == ()
 
+    def test_a_genre_voted_for_once_beside_real_ones_is_dropped(self) -> None:
+        """Nirvana as MusicBrainz answered on 2026-09-30; a count that is not a
+        count reads as no votes at all."""
+        body = {
+            "genres": [
+                {"name": "grunge", "count": 67},
+                {"name": "electronic", "count": 1},
+                {"name": "psytrance", "count": "many"},
+                {"name": "noise rock", "count": True},
+            ]
+        }
+        assert MusicBrainz(fetching(body)).genres_of("id") == ("grunge",)
+
+    def test_an_album_s_genres_are_held_to_the_same_rule(self) -> None:
+        body = {
+            "release-groups": [
+                {
+                    "title": "A Record",
+                    "primary-type": "Album",
+                    "genres": [
+                        {"name": "house", "count": 4},
+                        {"name": "rock", "count": 1},
+                    ],
+                }
+            ]
+        }
+        (album,) = MusicBrainz(fetching(body)).albums_of("id")
+        assert album.genres == ("house",)
+
 
 class TestWhoResemblesWhom:
     """The other half of a run, hence the reason there are two services."""

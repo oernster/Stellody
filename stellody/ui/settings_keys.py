@@ -48,6 +48,12 @@ SETTING_EQ_ENABLED = "equaliser_enabled"
 # left. Remembered because it is a decision about how long to wait, which a
 # listener makes once rather than every time. FR-D51.
 SETTING_DISCOVER_COMPILATIONS = "discover_compilations"
+# Which genre categories each dialog holding the genre grid was left with open:
+# one setting per dialog, since each is opened for a different job.
+SETTING_GENRES_OPEN_DISCOVERY = "genres_open_discovery"
+SETTING_GENRES_OPEN_LIBRARY_FILTER = "genres_open_library_filter"
+SETTING_GENRES_OPEN_ANSWER_FILTER = "genres_open_answer_filter"
+SETTING_GENRES_OPEN_TAG_EDITOR = "genres_open_tag_editor"
 
 # The release tag a listener asked not to be told about again. The exact tag
 # string, since both sides of the comparison come from the same endpoint.

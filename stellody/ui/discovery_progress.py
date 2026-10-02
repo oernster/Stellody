@@ -58,6 +58,7 @@ STAGE_NAMES = {
     DiscoveryStage.LOOKING_UP: "Looking up",
     DiscoveryStage.NARROWING: "Checking styles",
     DiscoveryStage.DATING: "Checking years",
+    DiscoveryStage.SERIES: "Checking series",
 }
 # The order they happen in, which is the order the bars are stacked in.
 STAGE_ORDER = (DiscoveryStage.LOOKING_UP, DiscoveryStage.NARROWING)
@@ -65,7 +66,15 @@ STAGE_ORDER = (DiscoveryStage.LOOKING_UP, DiscoveryStage.NARROWING)
 # name. Checking years happens only while years are set and comes after the
 # styles, so it takes the second bar over rather than squeezing a third into a
 # slot built for two. FR-D63.
-SHARES_BAR = {DiscoveryStage.DATING: DiscoveryStage.NARROWING}
+#
+# Checking series takes the first bar over the same way: it comes after the
+# artists and before their candidates, only while compilations are included.
+# Under its own name, since a bar falling from full to nought under the name it
+# already had reads as a run that has gone back to the start. FR-D69.
+SHARES_BAR = {
+    DiscoveryStage.DATING: DiscoveryStage.NARROWING,
+    DiscoveryStage.SERIES: DiscoveryStage.LOOKING_UP,
+}
 # Named against the artist rather than the count, since the count is already
 # drawn and the name is the thing that will not fit.
 LOOKING_AT = "{stage}: {artist} ({done} of {total})"

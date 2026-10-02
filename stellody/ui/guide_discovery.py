@@ -15,6 +15,7 @@ typed again here.
 from __future__ import annotations
 
 from stellody.application.values import DiscoveryStage
+from stellody.domain.genres import GENRES
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
@@ -64,7 +65,12 @@ def _asking_html() -> str:
         f"out unless <b>{INCLUDE_COMPILATIONS_LABEL}</b> is ticked, when the "
         "artists on its tracks are asked about instead. The line beneath the "
         "box says how many of them have not been looked up before and roughly "
-        "what that adds; the first time, it can be many minutes.</p>"
+        "what that adds; the first time, it can be many minutes. Ticked, it "
+        "also finds the other volumes of each series you hold, such as "
+        "Global Underground: Adapt, listed under a heading marked as a series. "
+        "That shows on the first bar as "
+        f"<b>{STAGE_NAMES[DiscoveryStage.SERIES]}</b>, counted from nought "
+        "once the artists are done.</p>"
         f"<p><b>Years.</b> <b>{FROM_LABEL}</b> and <b>{TO_LABEL}</b> take a "
         "year each; either may be left empty. They decide what is offered, "
         "not who is asked about: a 1977 album you hold can still lead to a "
@@ -80,12 +86,18 @@ def _asking_html() -> str:
         "of those suggested artists plays. Hover the pair to see who is being "
         "asked about and how many are left; the right hand end of the bar "
         "says roughly how long remains, as does the line along the foot of "
-        "the window. Nothing about you is sent, only artist names.</p>"
+        "the window. Nothing about you is sent: artist names, a few of your "
+        "album titles where a name is shared or a compilation is looked up, "
+        "and nothing else of your collection.</p>"
+        "<p>Each genre's styles fold away behind the arrow beside it; press "
+        "the arrow to show them. The dialog remembers which you left open; "
+        "a folded genre says how many of its styles are ticked.</p>"
         "<p>"
         + img(resources.find_asset(SELECT_ALL_ICON))
-        + "The catalogue holds 34 boxes, so the control at the foot of that "
-        "dialog ticks every one of them in a single press. It says which of "
-        "the two things a press would do, offering to clear them all once "
+        + f"The catalogue holds {len(GENRES)} boxes, so the control at the "
+        "foot of that dialog ticks every one of them in a single press. It "
+        "says which of the two things a press would do, offering to clear "
+        "them all once "
         "everything is ticked.</p>"
         f"<p><b>Stopping.</b> While a run is going the button wears a cross "
         f"and its tooltip reads <b>{STOP_DISCOVERY_TOOLTIP}</b>. One press "

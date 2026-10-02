@@ -156,7 +156,7 @@ def test_a_series_outside_the_ticks_costs_nothing() -> None:
 
 
 def test_the_memory_is_read_once_however_often_the_ticks_change() -> None:
-    """The memory is megabytes on disk; a sweep moves 34 boxes."""
+    """The memory is megabytes on disk; a sweep moves every box in the catalogue."""
     memory = Kept()
     pricing = priced((make_compilation("Rock", "Dilby"),), memory)
     pricing.of(ROCK)

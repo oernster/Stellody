@@ -83,7 +83,7 @@ def test_action_needs_a_genre() -> None:
 
 
 def test_the_sweep_ticks_every_genre_in_one_press() -> None:
-    """Ticking 34 boxes by hand to ask about a whole library is a chore."""
+    """Ticking every box by hand to ask about a whole library is a chore."""
     dialog, _ = make_dialog()
     dialog.select_button.click()
     assert set(dialog.chosen()) == set(GENRES)

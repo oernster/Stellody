@@ -16,6 +16,8 @@ from __future__ import annotations
 from stellody.application.editing import TagEditing
 from stellody.domain.album import Album
 from stellody.domain.track import Track
+from stellody.ui.genre_folds import Folds
+from stellody.ui.settings_keys import SETTING_GENRES_OPEN_TAG_EDITOR
 from stellody.ui.tag_editor import TagEditor
 
 
@@ -55,7 +57,12 @@ class EditingTags:
         if self._tag_editing is None or not tracks:
             return
         dialog = TagEditor(
-            self._tag_editing, album.identity.handle, tracks, self, holding=album
+            self._tag_editing,
+            album.identity.handle,
+            tracks,
+            self,
+            holding=album,
+            folds=Folds(self._settings, SETTING_GENRES_OPEN_TAG_EDITOR),
         )
         was = self.library_place()
         dialog.exec()

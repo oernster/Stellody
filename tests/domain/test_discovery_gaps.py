@@ -65,8 +65,9 @@ def test_a_catalogue_genre_is_read_the_way_the_library_reads_it() -> None:
 
 
 def test_a_style_reaches_its_main() -> None:
-    """Trance is electronic, so a run ticking Electronic finds it."""
-    assert "Electronic" in catalogue_genres(("Trance",))
+    """Trance is techno and electro music, so a run ticking that main finds
+    it. Electronic until the split of 2026-10-01 (FR-D77)."""
+    assert "Techno & Electro" in catalogue_genres(("Trance",))
 
 
 def test_what_is_wanted_by_the_ticks() -> None:

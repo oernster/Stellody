@@ -7,18 +7,27 @@ grid rather than a line to type in.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
+from repair_support import MemoryStore
+from tray_support import album
 
+from stellody.application.editing import TagEditing
 from stellody.domain.genres import CATALOGUE, GENRES, MAIN_OF
+from stellody.ui.discovery_dialog import DiscoveryDialog
+from stellody.ui.filter_dialog import FilterDialog
 from stellody.ui.genre_grid import (
     COLUMNS,
     UNSTATED,
     GenreGrid,
     dealt_into_columns,
 )
+from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.ringed_check import RingedCheckBox
+from stellody.ui.tag_editor import TagEditor
 
 
 @pytest.fixture
@@ -35,30 +44,30 @@ class TestWhatItOffers:
         assert sorted(chooser.boxes) == sorted(GENRES)
 
     def test_it_is_laid_out_in_the_columns_that_were_settled(self, grid) -> None:
-        """Three, measured: two made the album panel 852 pixels tall."""
         chooser = grid()
         assert chooser.layout().itemAt(1).layout().count() == COLUMNS
 
-    def test_every_group_stays_whole_and_in_catalogue_order(self) -> None:
-        """A main and its styles are read together, so a group is never
-        split across a column boundary."""
+    def test_three_columns_is_the_ruling(self) -> None:
+        """Ruled by Oliver on 2026-10-01 when the categories began to fold;
+        five columns of every box open had made the tag editor 1246 wide."""
+        assert COLUMNS == 3
+
+    def test_the_groups_read_down_then_across_in_catalogue_order(self) -> None:
+        """A main and its styles are read together, so a group is never split
+        across a column boundary; the catalogue is alphabetical, so the
+        columns are read as one list."""
         dealt = dealt_into_columns(CATALOGUE, COLUMNS)
         placed = [main for column in dealt for main, _styles in column]
-        assert sorted(placed) == sorted(main for main, _s in CATALOGUE)
-        order = [main for main, _styles in CATALOGUE]
-        for column in dealt:
-            where = [order.index(main) for main, _styles in column]
-            assert where == sorted(where)
+        assert placed == [main for main, _styles in CATALOGUE]
 
-    def test_the_columns_are_dealt_by_height_not_in_order(self) -> None:
-        """Electronic carries eleven styles while four mains carry none,
-        so filling one column then the next leaves one twice the other."""
-        heights = [
-            sum(1 + len(styles) for _main, styles in column)
-            for column in dealt_into_columns(CATALOGUE, COLUMNS)
-        ]
-        tallest = max(1 + len(styles) for _main, styles in CATALOGUE)
-        assert max(heights) - min(heights) <= tallest
+    def test_folded_every_column_but_the_last_holds_the_same_number(self) -> None:
+        """Folded, every group is one line, so a column is as tall as it is
+        deep: the 21 mains are seven to a column."""
+        dealt = dealt_into_columns(CATALOGUE, COLUMNS)
+        deep = math.ceil(len(CATALOGUE) / COLUMNS)
+        assert len(dealt) == COLUMNS
+        assert all(len(column) == deep for column in dealt[:-1])
+        assert 0 < len(dealt[-1]) <= deep
 
     def test_exactly_one_ampersand_reaches_the_screen(self, grid) -> None:
         """Never two drawn; never a shortcut quietly taken either.
@@ -125,8 +134,8 @@ class TestWhatItStartsWith:
 
     def test_a_style_starts_its_main_ticked_too(self, grid) -> None:
         """The value it would answer with holds both, so the boxes do."""
-        chooser = grid("Trance")
-        assert chooser.chosen() == ("Electronic", "Trance")
+        chooser = grid("Dubstep")
+        assert chooser.chosen() == ("Electronic", "Dubstep")
 
     def test_a_tag_naming_two_things_ticks_both(self, grid) -> None:
         """`Hip-Hop/Rap` is one tag holding two names, measured."""
@@ -203,48 +212,76 @@ class TestTheTwoLevelsAgreeingWithEachOther:
 
     def test_ticking_a_style_ticks_its_main(self, grid) -> None:
         chooser = grid()
-        chooser.boxes["Trance"].setChecked(True)
+        chooser.boxes["Dubstep"].setChecked(True)
         assert chooser.boxes["Electronic"].isChecked()
-        assert chooser.text() == "Electronic; Trance"
+        assert chooser.text() == "Electronic; Dubstep"
 
     def test_clearing_a_main_clears_its_styles(self, grid) -> None:
-        """An album that is not electronic is not trance either."""
-        chooser = grid("Trance")
+        """An album that is not electronic is not dubstep either."""
+        chooser = grid("Dubstep")
         chooser.boxes["Electronic"].setChecked(False)
-        assert not chooser.boxes["Trance"].isChecked()
+        assert not chooser.boxes["Dubstep"].isChecked()
         assert chooser.text() == ""
 
     def test_clearing_a_style_leaves_its_main_alone(self, grid) -> None:
         """Deliberately not the mirror image: the album may still be
-        electronic after somebody decides it is not specifically trance."""
-        chooser = grid("Trance")
-        chooser.boxes["Trance"].setChecked(False)
+        electronic after somebody decides it is not specifically dubstep."""
+        chooser = grid("Dubstep")
+        chooser.boxes["Dubstep"].setChecked(False)
         assert chooser.boxes["Electronic"].isChecked()
         assert chooser.text() == "Electronic"
 
     def test_clearing_a_main_leaves_another_main_alone(self, grid) -> None:
-        chooser = grid("Trance; Pop")
+        chooser = grid("Dubstep; Pop")
         chooser.boxes["Electronic"].setChecked(False)
         assert chooser.boxes["Pop"].isChecked()
         assert chooser.text() == "Pop"
 
     def test_every_style_is_drawn_in_from_its_main(self, grid) -> None:
         """Indented rather than merely listed, so the two levels are
-        visible rather than something the reader has to know."""
+        visible rather than something the reader has to know. Measured where
+        each box is drawn, with every category open."""
         chooser = grid()
-        columns = chooser.layout().itemAt(1).layout()
-        indented = set()
-        for index in range(columns.count()):
-            stack = columns.itemAt(index).layout()
-            for row in range(stack.count()):
-                nested = stack.itemAt(row).layout()
-                if nested is None:
-                    continue
-                for held in range(nested.count()):
-                    widget = nested.itemAt(held).widget()
-                    if widget is not None:
-                        indented.add(widget.text().replace("&&", "&"))
-        assert indented == set(MAIN_OF)
+        for group in chooser.groups.values():
+            group.set_open(True)
+        chooser.show()
+        for style, main in MAIN_OF.items():
+            drawn = chooser.boxes[style].mapTo(chooser, chooser.rect().topLeft())
+            under = chooser.boxes[main].mapTo(chooser, chooser.rect().topLeft())
+            assert drawn.x() > under.x(), style
+            assert drawn.y() > under.y(), style
+
+
+def _tag_editor() -> TagEditor:
+    held = album()
+    return TagEditor(
+        TagEditing(MemoryStore()), "a1", held.ordered_tracks(), holding=held
+    )
+
+
+@pytest.mark.parametrize(
+    "opened",
+    (
+        lambda: DiscoveryDialog(),
+        lambda: FilterDialog(),
+        lambda: ResultsFilterDialog(GENRES),
+        _tag_editor,
+    ),
+    ids=("discovery", "library filter", "answer filter", "tag editor"),
+)
+def test_every_dialog_holding_the_grid_offers_every_genre(
+    application: QApplication, opened
+) -> None:
+    """57 names since FR-D77 rather than 34: each host builds a box for every
+    one, none hidden by the grid itself, all within the dialog's own width
+    once every category is open. A folded style is reached by its arrow."""
+    dialog = opened()
+    grid = dialog.findChild(GenreGrid)
+    for group in grid.groups.values():
+        group.set_open(True)
+    assert sorted(grid.boxes) == sorted(GENRES)
+    assert all(box.isVisibleTo(dialog) for box in grid.boxes.values())
+    assert dialog.sizeHint().width() >= grid.sizeHint().width()
 
 
 def test_every_box_carries_the_house_ring(application: QApplication) -> None:

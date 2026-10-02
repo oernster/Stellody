@@ -119,6 +119,12 @@ somebody decides on one.
   somebody ticked, which is a subset they chose rather than an inventory of
   what they own; for a name the catalogue knows under several artists it also
   sends up to three titles held under that name, to tell which one is meant.
+  While compilations are included it also sends the title of each compilation
+  inside the ticked genres, plus that of each album filed under a name the
+  catalogue knows as one artist with no album or EP. Each is cut at its first
+  bracket, spaced slash or spaced dash; where the catalogue files it in no
+  series, its stem goes out without the volume number. That is how the
+  missing volumes of a series are found.
   Handing an address to a browser is not another, whether it
   goes to the donation page or to a shop: the address goes outward and the
   browser does the asking.

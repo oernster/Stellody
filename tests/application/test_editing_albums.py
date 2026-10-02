@@ -39,7 +39,7 @@ def an_album(
     *folders: str,
     title: str = "Involver",
     # A tag no ruling covers, so it ticks nothing: House was this once
-    # and the catalogue now offers it as a style of Electronic.
+    # and the catalogue now offers it as a main of its own.
     genre: str = "Progressive Rock",
 ) -> Album:
     return Album(

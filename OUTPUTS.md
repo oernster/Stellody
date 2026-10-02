@@ -559,9 +559,12 @@ again, unless the change is one FR-O11 or FR-O12 acts on. Verified by
 which counts calls to the rescan. Priority: Must.
 
 **NFR-O-PRIV-001 Nothing leaves the machine.** Device names and identities
-are held in Stellody's own settings alone; neither of its logs records them.
-Held by the existing
-invariant 12 test, which this change must leave green. Priority: Must.
+are held in Stellody's own settings alone. No code of Stellody's writes them to
+either of its logs. Qt's own warnings are copied into the diary word for word
+(`infrastructure/qt_messages.py`), so a Qt warning that named a device would
+carry that name there; no test checks for one. That nothing leaves the machine
+is held by the existing invariant 12 test, which this change must leave green.
+Priority: Must.
 
 **NFR-O-MAINT-001 The house limits hold.** Domain and application keep 100%
 branch coverage; every module stays at or below the 400 line cap and out of

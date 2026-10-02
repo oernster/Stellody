@@ -143,7 +143,7 @@ any shop and takes nothing from a sale.
   muddled, state the artist, the title, the date or the genre yourself and
   Stellody remembers it. A single song takes its own title, artist, disc number
   and track number the same way, even one song of an album saved as one long
-  file. Genres come from a settled list of eighteen headings
+  file. Genres come from a settled list of twenty-one headings
   with their styles under them, so the same music cannot end up under three
   spellings of one word. Your files are read for this and never written.
 - **Show me only the folk.** Narrow the wall of covers to the genres you ask
@@ -162,9 +162,17 @@ any shop and takes nothing from a sale.
   no year is left out while years are set. The years narrow what it offers,
   never which of your artists it asks about. Tick the box
   for compilations and it asks about the artists on their tracks too, saying
-  first roughly how many minutes that adds. It reports as it goes, says roughly
-  how long is left and stops the moment you ask it to or quit Stellody. Where it
-  could not get a usable answer about somebody and holds none from an earlier
+  first roughly how many minutes that adds. With that box ticked it also finds
+  the volumes missing from a series you collect, such as Global Underground:
+  Adapt. Each compilation you hold is looked up by the series the catalogue
+  files it in and by the start of its title, which also finds volumes the
+  catalogue's series list does not carry yet; so is each album filed under a
+  name the catalogue knows as one artist who made no album or EP, such as
+  "Global Underground". A volume you already hold is left out whoever it is
+  filed under. The rest are listed under a heading naming the series with how
+  many albums it offers; one goes to a shop under Various Artists. It reports
+  as it goes, says roughly how long is left and stops the moment you ask it
+  to or quit Stellody. Where it could not get a usable answer about somebody and holds none from an earlier
   run, it says so and counts them, with the names one press away, so an answer
   with gaps in it never reads like a complete one. Every answer is kept the
   moment it arrives, so a run stopped or cut short loses nothing it had already
@@ -261,18 +269,24 @@ Five things reach outside your computer at all, so here are all five:
 - **Looking for music you do not own**, only ever when you ask. A discovery run
   names the artists inside the genres you ticked to two public music
   catalogues, MusicBrainz and ListenBrainz, then asks what those artists made
-  that you do not hold. What goes out is those artist names, the MusicBrainz
-  identifiers the catalogues give back for them and for the similar artists
-  they find, the fixed settings each request states for itself (the answer's
-  format, how many results to return, where a following page starts, which
-  release types to list, which
-  details to include and which similarity algorithm to use) plus a user agent
-  naming Stellody, its version and the project's contact address. Where
+  that you do not hold. MusicBrainz is sent those artist names plus the
+  identifiers it gave back for artists, release groups and series.
+  ListenBrainz is sent artist identifiers alone, asking who sounds alike.
+  Every request also carries the fixed settings it states for itself (the
+  answer's format, how many results to return, where a following page starts,
+  which release types to list, which details to include and which similarity
+  algorithm to use) plus a user agent naming Stellody, its version and the
+  project's contact address. Titles you hold go out in two cases only. Where
   MusicBrainz knows one of those names under several artists, up to three
-  titles you hold under it go out as well, each an album or track title cut at
-  its first bracket, asking who is credited on it; that is how the right one is
-  told apart. The language asked for is fixed at any, rather than your
-  computer's own: not your library as a whole, not a count of it, not a word
+  titles you hold under it go out, each an album or track title cut at its
+  first bracket, asking who is credited on it; that is how the right one is
+  told apart. While compilations are ticked, the title of each compilation
+  inside the ticked genres goes out, as does that of each album filed under a
+  name MusicBrainz knows as one artist with no album or EP; each is cut at its
+  first bracket, spaced slash or spaced dash, then sent a second time with its
+  volume number taken off, to search for the series by name.
+  The language asked for is fixed at any, rather than your computer's own.
+  Nothing else goes: not your library as a whole, not a count of it, not a word
   about you or your machine. The years
   you choose are not sent either: an album's year is read from the answer that
   comes back. Tick nothing and nothing leaves.
