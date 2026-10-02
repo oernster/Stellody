@@ -7,7 +7,7 @@ is asserted is the sequence of commands the transport issues.
 from __future__ import annotations
 
 from recording_player import RecordingPlayer
-from transport_support import album_of, track
+from transport_support import HALF_VOLUME, album_of, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import (
@@ -16,9 +16,6 @@ from stellody.domain.playback import (
     PlaybackState,
     RepeatMode,
 )
-
-# Any level that is neither silence nor unity, so the two cannot be confused.
-HALF_VOLUME = 0.5
 
 
 def test_activating_a_track_queues_its_album_and_plays_it() -> None:

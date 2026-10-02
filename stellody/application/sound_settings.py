@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from stellody.application.playback_ports import PlaybackPort
 from stellody.domain.equalising import Equalisation
-from stellody.domain.playback import Loudness
+from stellody.domain.playback import Loudness, bit_perfect_as_played
 
 
 class SoundSettings:
@@ -52,6 +52,18 @@ class SoundSettings:
         """Choose the curve. Nothing already playing is disturbed."""
         self._equalisation = equalisation
         self._player.set_equalisation(equalisation)
+
+    @property
+    def bit_perfect(self) -> bool:
+        """Whether what plays now reaches the device untouched; False with none.
+
+        Asked here because only here are the open stream, the level and the
+        curve all in hand together; the rule itself is the domain's.
+        """
+        report = self._player.report
+        return report is not None and bit_perfect_as_played(
+            report, self._loudness, self._equalisation
+        )
 
     @property
     def levels(self) -> tuple[float, ...]:

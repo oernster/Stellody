@@ -10,6 +10,9 @@ from stellody.domain.album import Album
 from stellody.domain.identity import AlbumIdentity
 from stellody.domain.track import CD_SAMPLE_RATE, Track, TrackSource
 
+# Any level that is neither silence nor unity, so the two cannot be confused.
+HALF_VOLUME = 0.5
+
 
 def track(number: int) -> Track:
     """One ordinary track of an album."""

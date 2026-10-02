@@ -1942,8 +1942,18 @@ different refusal with a different answer, the system default instead of it;
 application.** Volume below unity multiplies the block and casts it back
 (`infrastructure/audio.py`); an equalizer that is switched on shapes it
 (`infrastructure/filtering.py`, which costs nothing while flat). Neither is
-prevented; both are simply not bit perfect. `OutputReport.is_bit_perfect`
-answers for the stream rather than for those.
+prevented; both are simply not bit perfect. The readout says so.
+`OutputReport.is_bit_perfect` answers for the stream as it was opened, which
+the device decides once; `bit_perfect_as_played` in `domain/playback.py`
+adds the level and the curve, which move while it plays. Each test is the
+engine's own condition for leaving a block alone: the audible level at unity
+(a mute is not) and a curve designing no sections at the stream's rate (a
+flat curve switched on designs none, so it keeps the claim).
+`SoundSettings.bit_perfect` asks it with all three in hand and the window
+redraws the line whenever the volume, the mute or the curve moves, rather
+than at the next poll. Found by reading on 2026-10-02, when the line still
+said bit perfect at half volume; `tests/ui/test_bit_perfect_is_earned.py`
+holds it, proved by planting the old rule back (nine failures).
 
 **The route past the mixer differs on every platform; on one there is
 none.** `infrastructure/output.py` answers which module a platform plays

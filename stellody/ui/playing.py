@@ -164,18 +164,29 @@ class Playing:
         """Move on at the end of a track; keep the buttons and the bar honest."""
         self._drive(self._transport.advance_if_finished)
         self._position_bar.show_position(self._transport.position)
-        self._position_bar.show_stream(self._transport.report)
+        self.show_stream()
         self.follow_shape()
         self.follow_plays()
         self.follow_picture()
         self.say_output_refusal()
+
+    def show_stream(self) -> None:
+        """Say what the open stream is and whether it reaches the device as is.
+
+        Called by the switches as well as the poll: the volume and the curve
+        decide the bit perfect claim, so the line is redrawn the moment either
+        moves rather than standing wrong until the next tick of the timer.
+        """
+        self._position_bar.show_stream(
+            self._transport.report, self._transport.bit_perfect
+        )
 
     @Slot(int)
     def seek_to(self, frame: int) -> None:
         """Move within the track in hand, in the listener's own frames."""
         self._drive(lambda: self._transport.seek(frame))
         self._position_bar.show_position(self._transport.position)
-        self._position_bar.show_stream(self._transport.report)
+        self.show_stream()
 
     def _drive(self, action: Callable[[], object]) -> bool:
         """Run one transport command, saying so when it cannot be done.
@@ -291,7 +302,7 @@ class Playing:
             can_start=self._model.track_at(self.highlighted()) is not None,
         )
         self._position_bar.show_position(self._transport.position)
-        self._position_bar.show_stream(self._transport.report)
+        self.show_stream()
         self.follow_song()
         self.follow_output_refusal()
         self.follow_spectrum()

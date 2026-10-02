@@ -170,6 +170,7 @@ class Switches:
         self._transport.set_volume(percent / MAXIMUM_PERCENT)
         self._bottom_tray.set_percent(percent)
         self._settings.set_setting(SETTING_VOLUME, str(percent))
+        self.show_stream()
 
     def restore_volume(self) -> None:
         """Start at the volume last chosen, at the default when none has been.
@@ -209,6 +210,7 @@ class Switches:
         self._transport.set_equalisation(equalisation)
         self._settings.set_setting(SETTING_EQ_GAINS, as_text(equalisation))
         self._remember(SETTING_EQ_ENABLED, equalisation.enabled)
+        self.show_stream()
 
     def toggle_mute(self) -> None:
         """Silence the output, else give it back at the level already chosen."""
@@ -241,6 +243,7 @@ class Switches:
         self._transport.set_muted(muted)
         self._bottom_tray.set_muted(muted)
         self._remember(SETTING_MUTED, muted)
+        self.show_stream()
 
     def _apply_shuffled(self, shuffled: bool) -> None:
         """Set the switch, show it and remember it."""

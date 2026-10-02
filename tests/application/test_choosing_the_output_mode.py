@@ -18,7 +18,7 @@ never quietly changing the choice.
 from __future__ import annotations
 
 from recording_player import RecordingPlayer
-from transport_support import album_of, track
+from transport_support import HALF_VOLUME, album_of, track
 
 from stellody.application.transport import Transport
 from stellody.domain.playback import (
@@ -172,3 +172,20 @@ class TestWhatTheDeviceAnswered:
 
     def test_nothing_open_reports_nothing(self) -> None:
         assert Transport(RecordingPlayer()).report is None
+
+
+class TestWhetherItReachesTheDeviceUntouched:
+    def test_nothing_open_is_not_bit_perfect(self) -> None:
+        assert Transport(RecordingPlayer()).bit_perfect is False
+
+    def test_an_exclusive_native_stream_at_full_volume_is(self) -> None:
+        transport, _player = _playing()
+        transport.set_output_mode(OutputMode.EXCLUSIVE)
+        assert transport.bit_perfect is True
+
+    def test_turning_it_down_is_judged_against_the_stream_in_hand(self) -> None:
+        """The level is the transport's own, so the device need not reopen."""
+        transport, _player = _playing()
+        transport.set_output_mode(OutputMode.EXCLUSIVE)
+        transport.set_volume(HALF_VOLUME)
+        assert transport.bit_perfect is False

@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from stellody.domain.equalising import Equalisation, cascade
 from stellody.domain.track import MILLISECONDS_PER_SECOND
 
 STEREO_CHANNELS = 2
@@ -266,6 +267,28 @@ class Loudness:
     def silenced(self, muted: bool) -> Loudness:
         """The same level, silenced or given back."""
         return Loudness(level=self.level, muted=muted)
+
+
+def bit_perfect_as_played(
+    report: OutputReport, loudness: Loudness, equalisation: Equalisation
+) -> bool:
+    """Whether the samples reach the device exactly as the file holds them.
+
+    `OutputReport.is_bit_perfect` answers for the stream as it was opened; the
+    level and the curve change while it plays, so they are judged here rather
+    than carried on a report the device built once. Found by reading on
+    2026-10-02: the readout said bit perfect at half volume.
+
+    Each test is the engine's own condition for leaving a block alone: the
+    audible level at unity (a mute is not) plus a curve designing no sections
+    at this rate. A curve switched on but flat designs none, so it
+    keeps the claim, as it should: not one sample is touched.
+    """
+    return (
+        report.is_bit_perfect
+        and loudness.audible == UNITY_VOLUME
+        and not cascade(equalisation, report.sample_rate)
+    )
 
 
 def audible_position(reported: PlaybackPosition, lead_frames: int) -> PlaybackPosition:

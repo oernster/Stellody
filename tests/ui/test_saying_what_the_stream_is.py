@@ -45,6 +45,11 @@ def report(
     )
 
 
+def says(opened: OutputReport) -> str:
+    """The line for a stream nothing has altered since it was opened."""
+    return stream_text(opened, bit_perfect=opened.is_bit_perfect)
+
+
 class TestSayingTheRate:
     @pytest.mark.parametrize(
         ("rate", "said"),
@@ -64,21 +69,26 @@ class TestSayingTheRate:
 class TestSayingTheStream:
     def test_nothing_open_says_nothing_at_all(self) -> None:
         """An empty line rather than the words "no stream" taking up room."""
-        assert stream_text(None) == ""
+        assert stream_text(None, bit_perfect=False) == ""
 
     def test_an_exclusive_stream_says_so_with_its_rate_and_depth(self) -> None:
-        assert stream_text(report()) == "exclusive, 44.1 kHz, 24 bit, bit perfect"
+        assert says(report()) == "exclusive, 44.1 kHz, 24 bit, bit perfect"
+
+    def test_the_claim_is_the_verdict_handed_in_not_the_reports(self) -> None:
+        """A stream opened bit perfect and since turned down says no more."""
+        said = stream_text(report(), bit_perfect=False)
+        assert said == "exclusive, 44.1 kHz, 24 bit"
 
     def test_a_shared_stream_is_never_claimed_bit_perfect(self) -> None:
         """The mixer resamples by definition, which is the whole point."""
-        said = stream_text(
+        said = says(
             report(mode=OutputMode.SHARED, depth=MIXER_DEPTH, asked=OutputMode.SHARED)
         )
         assert said == "shared, 44.1 kHz, 32 bit"
 
     def test_a_lossy_file_is_not_claimed_bit_perfect_either(self) -> None:
         """Nothing a device does un-decodes an MP3."""
-        said = stream_text(report(file_depth=NO_DEPTH))
+        said = says(report(file_depth=NO_DEPTH))
         assert "bit perfect" not in said
 
     def test_a_refusal_is_not_reported_here_at_all(self) -> None:
@@ -88,7 +98,7 @@ class TestSayingTheStream:
         mode, so there is nothing left to qualify. The refusal is said once
         along the status line, which `test_the_output_switch.py` holds.
         """
-        said = stream_text(
+        said = says(
             report(
                 mode=OutputMode.SHARED,
                 depth=MIXER_DEPTH,
@@ -103,10 +113,10 @@ class TestSayingTheStream:
         self,
     ) -> None:
         """Both really are the mixer, so both say the mixer and no more."""
-        chosen = stream_text(
+        chosen = says(
             report(mode=OutputMode.SHARED, depth=MIXER_DEPTH, asked=OutputMode.SHARED)
         )
-        fell_back = stream_text(
+        fell_back = says(
             report(
                 mode=OutputMode.SHARED,
                 depth=MIXER_DEPTH,

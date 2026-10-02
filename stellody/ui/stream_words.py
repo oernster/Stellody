@@ -43,8 +43,14 @@ def rate_text(sample_rate: int) -> str:
     return f"{khz:g} kHz"
 
 
-def stream_text(report: OutputReport | None) -> str:
-    """The open stream in one line; nothing at all while none is open."""
+def stream_text(report: OutputReport | None, bit_perfect: bool) -> str:
+    """The open stream in one line; nothing at all while none is open.
+
+    Whether it is bit perfect is handed in rather than read off the report:
+    the report answers for the stream as opened, while the volume and the
+    equalizer can alter it after. `bit_perfect_as_played` in the domain judges
+    all three together; this only says the answer.
+    """
     if report is None:
         return ""
     parts = [
@@ -52,6 +58,6 @@ def stream_text(report: OutputReport | None) -> str:
         rate_text(report.sample_rate),
         f"{report.bit_depth} bit",
     ]
-    if report.is_bit_perfect:
+    if bit_perfect:
         parts.append(BIT_PERFECT)
     return ", ".join(parts)

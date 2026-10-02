@@ -201,9 +201,9 @@ class PositionBar(QWidget):
         """
         self.plays.setText("" if record is None else plays_text(record.plays))
 
-    def show_stream(self, report: OutputReport | None) -> None:
+    def show_stream(self, report: OutputReport | None, bit_perfect: bool) -> None:
         """Say what the open stream is; nothing at all while none is open."""
-        self.stream.setText(stream_text(report))
+        self.stream.setText(stream_text(report, bit_perfect))
 
     def show_position(self, position: PlaybackPosition | None) -> None:
         """Draw where playback has reached; empty when there is nothing to draw.

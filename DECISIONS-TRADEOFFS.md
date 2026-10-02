@@ -349,14 +349,15 @@ song the device can actually take.
 ### Bit-perfect only when the stream proves it
 
 The readout says bit perfect only when exclusive output was granted at the
-file's own rate and depth. What was asked for and what was granted are kept
-apart; a refusal moves the switch back to shared and says why.
+file's own rate and depth with the volume at full, unmuted and with no
+equalizer curve shaping the sound. What was asked for and what was granted are
+kept apart; a refusal moves the switch back to shared and says why.
 
 - **Rather than:** treating "exclusive selected" as success.
-- **Gains:** no claim rests on a request the device did not honour.
-- **Costs:** the readout judges the stream alone. Volume below full and an
-  active equalizer both alter the samples; they are not yet part of that
-  judgement.
+- **Gains:** no claim rests on a request the device did not honour, nor on a
+  stream the volume or the equalizer has since altered.
+- **Costs:** the line changes as the volume moves, so a listener nudging the
+  slider sees the claim come and go.
 
 ### No loudness levelling
 
