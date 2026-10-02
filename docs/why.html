@@ -129,7 +129,7 @@
     a catalogue cannot answer for an artist Stellody says so rather than quietly shortening the list.
   </p>
   <p style="margin-top:1.75rem;">
-    <a class="btn-secondary" href="features.html">How the search works</a>
+    <a class="btn-secondary" href="discovery.html">How the search works</a>
   </p>
 </section>
 
@@ -235,59 +235,13 @@
   <div class="section-label">For anyone who wants the detail</div>
   <h2 class="section-title">Under the bonnet.</h2>
   <p style="max-width:65ch;">
-    You do not need any of this to use Stellody. It is here because the claims above are the kind that are
-    easy to make and hard to check, so this is the working behind them. The code is public and you are
-    welcome to go and look.
+    You do not need any of this to use Stellody. The claims above are the kind that are easy to make and
+    hard to check, so the working behind them has a page of its own: how each rule is held by a test and
+    the measurements behind the way the program is built.
   </p>
-  <div class="features-grid" style="margin-top:2rem;">
-    <div class="feat">
-      <h3>Every guarantee is a test</h3>
-      <p>The rules above are enforced by tests that stop the checks passing. Each of those tests was itself checked
-      by deliberately breaking the rule and watching it fail, because a guard nobody has seen fail is not
-      yet a guard.</p>
-    </div>
-    <div class="feat">
-      <h3>A track is a slice of a file</h3>
-      <p>In the collection Stellody was built against, 162 of 617 albums come from a cue sheet rather
-      than one file per track, 155 of them a single file holding the whole album. That is a main path rather than an edge case, so it is
-      captured once in the core idea instead of special-cased all over the program.</p>
-    </div>
-    <div class="feat">
-      <h3>Search has no index</h3>
-      <p>A full text index was the first plan and measurement refused it: reading the whole library on
-      every keystroke costs a millisecond or two, against the hundred and twenty a typed character
-      allows. An index would also have held the wrong text.</p>
-    </div>
-    <div class="feat">
-      <h3>Folders group, tags name</h3>
-      <p>Grouping albums by their tags was tried against a real collection and failed: it split one Mozart
-      folder into five albums, two holding a single track. A folder boundary is what a ripper actually
-      recorded, so that is what is trusted.</p>
-    </div>
-    <div class="feat">
-      <h3>Measured rather than assumed</h3>
-      <p>Working out the shape drawn along the bottom of the window used to take over three seconds for a
-      long track. Doing the same arithmetic a different way brought it under one; the picture that
-      comes out is identical. That is how things get decided here: time it, then keep the quicker way only
-      where it gives exactly the same answer.</p>
-    </div>
-    <div class="feat">
-      <h3>What a file does not say is not invented</h3>
-      <p>Formats differ in what they will tell you: a FLAC states its bit depth, an MP3 states none. Where
-      a file says nothing, Stellody records that it said nothing rather than filling in a likely number,
-      because a made up figure is impossible to tell later from one the file really carried. That is what
-      lets it refuse to claim a lossy track is bit for bit perfect, whatever it is played through.</p>
-    </div>
-    <div class="feat">
-      <h3>The rules stay clean</h3>
-      <p>The part of Stellody that decides what counts as an album, which tracks belong to it and what it
-      should be called never reaches for your disk, the internet or even the clock.</p>
-      <p>It is handed what it
-      needs and works from that alone, which means it can be tested completely rather than nearly. It is:
-      every one of those decisions is put through a test each time the checks run, so it behaves the
-      same on your machine as on anybody else's.</p>
-    </div>
-  </div>
+  <p style="margin-top:1.75rem;">
+    <a class="btn-secondary" href="technical.html">Read the technical detail</a>
+  </p>
 </section>
 
 <footer>

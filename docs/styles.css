@@ -268,7 +268,25 @@ h1 .accent { color: var(--accent); }
 .section-sub { font-size: 1.025rem; color: var(--subtext1); max-width: 560px; line-height: 1.75; margin-bottom: 3.5rem; }
 
 /* Features grid */
-.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(305px, 1fr)); gap: 1.25rem; }
+/* Column counts stated outright rather than left to auto-fill, so the rule
+   below can know when a last card would sit alone on its row. Each step is
+   where three, then two, cards of at least 305px fit beside the section's
+   own padding. */
+.features-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+@media (min-width: 700px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1020px) {
+  .features-grid { grid-template-columns: repeat(3, 1fr); }
+}
+/* A last card left alone on its row spans it, reading as a closing note
+   rather than a leftover; the same reasoning as .feat-wide below. */
+@media (min-width: 700px) and (max-width: 1019px) {
+  .features-grid > .feat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@media (min-width: 1020px) {
+  .features-grid > .feat:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+}
 .feat {
   background: var(--mantle);
   border: 1px solid var(--surface0);
@@ -308,6 +326,33 @@ h1 .accent { color: var(--accent); }
   .feat-wide { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 }
 .feat h3 { font-size: 0.975rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+/* A card holding several paragraphs shows the break between them. */
+.feat p + p { margin-top: 0.75rem; }
+/* The button that leads from a Features gateway card to its own page sits at
+   the card's foot, so the three line up whatever the length above them. */
+.gateways .feat { display: flex; flex-direction: column; }
+.gateways .feat .feat-cta { margin-top: auto; padding-top: 1.25rem; }
+
+/* Where a detail page sits: its parent, then itself. The section after it
+   gives up most of its top padding, since the trail already opens the page. */
+.crumb {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 0;
+  font-size: 0.82rem;
+  color: var(--overlay1);
+}
+.crumb a { color: var(--accent); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+.crumb + .section { padding-top: 2rem; }
+@media (max-width: 640px) {
+  .crumb { padding: 2rem 1.25rem 0; }
+}
+
+/* The way on from the foot of a detail page: back to its parent, then its
+   siblings. */
+.onward { padding-top: 0; }
+.onward-links { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
 .feat p { font-size: 0.875rem; color: var(--subtext0); line-height: 1.65; }
 
 .divider { max-width: 1100px; margin: 0 auto; height: 1px; background: var(--surface0); }

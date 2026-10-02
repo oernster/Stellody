@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stellody library: how it reads the collection you own</title>
+  <meta name="description" content="How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings and album art.">
+  <link rel="canonical" href="https://stellody.co.uk/library.html">
+  <meta name="theme-color" content="#0d1220">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Stellody">
+  <meta property="og:url" content="https://stellody.co.uk/library.html">
+  <meta property="og:title" content="Stellody library: how it reads the collection you own">
+  <meta property="og:description" content="How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings and album art.">
+  <meta property="og:image" content="https://stellody.co.uk/social-features.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Stellody's list view with an album opened out to its songs">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://stellody.co.uk/social-features.png">
+  <meta name="twitter:image:alt" content="Stellody's list view with an album opened out to its songs">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Stellody library: how it reads the collection you own",
+    "description": "How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings and album art.",
+    "url": "https://stellody.co.uk/library.html",
+    "primaryImageOfPage": "https://stellody.co.uk/social-features.png",
+    "isPartOf": {"@type": "WebSite", "@id": "https://stellody.co.uk/#site",
+                 "name": "Stellody", "url": "https://stellody.co.uk/"},
+    "about": {"@id": "https://stellody.co.uk/#app"},
+    "inLanguage": "en-GB"
+  }
+  </script>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="./">
+    <img src="stellody-512.png" alt="Stellody icon">
+    <span>Stellody</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="btn-primary" href="download.html">Download</a>
+  </div>
+</nav>
+
+<div class="crumb">
+  <a href="features.html">Features</a> <span aria-hidden="true">/</span> Library
+</div>
+
+<section class="section">
+  <div class="section-label">Getting your music in</div>
+  <h2 class="section-title">It reads your collection once</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Add music later without the wait</h3>
+      <p>Choose your music folder once. When you add an album afterwards, press Rescan: Stellody looks
+      only at what has actually changed, so it finishes in a moment rather than reading everything again.</p>
+    </div>
+    <div class="feat">
+      <h3>It tells you what it found</h3>
+      <p>When a scan finishes you get a report rather than a message that vanishes: the new albums by
+      name, how many new tracks came with them, then the totals for your whole collection. Albums that
+      have stopped being found are listed too, since a folder you renamed or moved looks just like one
+      that has gone. A scan that finds nothing new says exactly that.</p>
+    </div>
+    <div class="feat">
+      <h3>One folder, one album</h3>
+      <p>Stellody trusts how your music is actually filed. Sorting by the labels inside the files was
+      tried and it fell apart on classical music, splitting a single Mozart recording into five different
+      albums. Your folders know better, so your folders decide.</p>
+    </div>
+    <div class="feat">
+      <h3>Box sets come back together</h3>
+      <p>A double album filed as CD1 and CD2, else as Disc 1 and Disc 2, shows up as the one record it
+      really is rather than as two strangers sitting next to each other.</p>
+    </div>
+    <div class="feat">
+      <h3>Nothing goes missing quietly</h3>
+      <p>Stellody skips a short, fixed list of folders that operating systems, network drives and version
+      control tools create for themselves. It
+      never guesses that something looks unimportant, because an early version guessed and swallowed two
+      real albums.</p>
+    </div>
+    <div class="feat">
+      <h3>FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A, WMA, WavPack and AAC</h3>
+      <p>A collection built over years is rarely all one format, so Stellody reads the common ones and
+      treats them alike: a folder of MP3s becomes an album exactly as a folder of FLACs does, with the
+      same titles, artists, dates and track numbers read out of whatever each file happens to carry.</p>
+      <p>Cover art stored inside a FLAC, MP3, WAV, AIFF or M4A file is read too, including the cover an M4A
+      keeps in its own Apple atom. What is left, Monkey's Audio and a handful of rarer formats, is named in the health
+      report rather than quietly skipped.</p>
+      <p>WMA, WavPack and AAC arrive on a weaker footing than the rest and it is worth saying which. Every
+      other format here was tested against files somebody owns; there were none of those three, so each is
+      proved against a file the test suite encodes for the purpose. WMA and AAC are lossy, so neither
+      states a bit depth; WavPack is lossless and keeps the depth it states.</p>
+    </div>
+    <div class="feat">
+      <h3>The bonus video comes in too</h3>
+      <p>Albums that shipped a video alongside the songs used to have it left out silently: not a track,
+      not a note in the health report, just absent, so the album quietly held fewer tracks than the disc
+      it came from. Those files now scan as tracks in the albums they belong to and play like any other
+      track, with the controls, the queue and the position bar reaching them exactly as they reach a
+      song.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">When the labelling is muddled</div>
+  <h2 class="section-title">It tells you, then leaves it alone</h2>
+  <p style="max-width:65ch;">
+    Every music file carries labels saying what it is: the track name, its number, the album, the artist.
+    On a collection built over years, some of those go wrong. Stellody works out what was probably meant
+    so your album still reads correctly, tells you what looked odd then leaves your file untouched.
+  </p>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Two songs claiming to be track 4</h3>
+      <p>The number at the front of the file name wins. Whenever labels have gone wrong, the file names
+      themselves have stayed right.</p>
+    </div>
+    <div class="feat">
+      <h3>A disc number that disagrees with the folder</h3>
+      <p>The folder wins. A person named that folder deliberately; the label inside was written by
+      software. One real folder holds songs claiming to be from three different discs.</p>
+    </div>
+    <div class="feat">
+      <h3>The same song title twice</h3>
+      <p>The file name wins again. When something rewrites labels in bulk it tends to copy the title
+      across along with the number.</p>
+    </div>
+    <div class="feat">
+      <h3>You get the full list</h3>
+      <p>Everything Stellody worked around is written down for you in one place, so you can go and correct
+      it properly in whichever program you like.</p>
+    </div>
+    <div class="feat">
+      <h3>Or tell it to keep what it worked out</h3>
+      <p>Accept the whole list in one press or one album at a time; those corrections then stop being
+      reported every time you start. Changed your mind? Take back one group of files, one whole album or
+      the lot, each in a single press; the findings they answered come back. Your files are untouched
+      either way: the decision is kept in Stellody's own records.</p>
+    </div>
+    <div class="feat">
+      <h3>Or say what it should have been</h3>
+      <p>Where a label is simply wrong rather than muddled, state it yourself: the album artist, the
+      title, the date and the genre. What you state is what the album is from then on, over both the
+      labels in the files and anything Stellody would work out for itself.</p>
+      <p>One track can be put right
+      the same way: its title, artist, disc number or track number, even on an album held as one file
+      with a cue sheet. Nothing is written into a
+      music file; it is kept in Stellody's own records like everything else, so it can be taken back at
+      any time.</p>
+    </div>
+    <div class="feat">
+      <h3>Joining two folders by hand</h3>
+      <p>Because a stated label is what an album is recognised by, giving one folder the artist and title
+      another already carries makes them one album. That is the way to join a release your collection
+      happens to hold in two places under two spellings. The joined album keeps the rating held against
+      the one it joined.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Finding your way around</div>
+  <h2 class="section-title">Two ways to look, one way to search</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>A list, else a wall of covers</h3>
+      <p>Read your collection as a tidy list, else browse it as album art in three different sizes. Click
+      a cover and the album opens underneath it with its songs in two columns, taking no more room
+      than they need, so you never lose your place. Click it again to close it.</p>
+    </div>
+    <div class="feat">
+      <h3>Switching keeps your place</h3>
+      <p>Move between the list and the covers and you land where you were. Whatever is playing is picked
+      out in the view you arrive at, with its album already open, exactly as though you had got there
+      that way in the first place.</p>
+    </div>
+    <div class="feat">
+      <h3>Open every album at once</h3>
+      <p>The list shows one row per album, opening to its songs when you press the chevron beside it. One
+      press on the chevron at the left of the Title heading opens all of them; another closes them again.
+      It is instant on a collection of any size.</p>
+    </div>
+    <div class="feat">
+      <h3>It narrows as you type</h3>
+      <p>Open the search box, start typing and your collection narrows with every letter. Close it and
+      everything comes back.</p>
+    </div>
+    <div class="feat">
+      <h3>Instant, however much music you have</h3>
+      <p>Every song in your collection is searched in a millisecond or two, far faster than you can
+      type. There is nothing to build first and nothing to wait for.</p>
+    </div>
+    <div class="feat">
+      <h3>Albums stay whole while you search</h3>
+      <p>Find one song and its album stays as it always looks, with every other track still around it.
+      The song you were after lights up and flashes so your eye goes straight to it.</p>
+    </div>
+  </div>
+  <div class="shot" style="margin-top:2.5rem;">
+    <img src="screenshots/screenshot2.png" width="1720" height="695" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Electronic Opus is open at the foot of the list, showing its tracks with a row of rating stars on each. Flaming June, the track playing, is painted pink on its row. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window reads 613 albums, 8563 tracks at its left and Playing: Flaming June, BT at its right. The two discovery bars sit at rest in the tray above, each labelled with its stage and empty because no search is running. The waveform of the playing track runs along the bottom; beside it the time reads 1:54 of 4:18, then shared, 44.1 kHz, 32 bit. The sleeve size button at the left end of the strip below is outlined in red and shut off, since the list shows no sleeves. The spectrum display sits in the middle of that strip. Volume, mute, the output device, exclusive output and the equalizer are grouped at its right end, then shuffle and repeat.">
+  </div>
+  <p class="shot-caption">The list view, with the play controls across the top and your settings along the bottom.</p>
+</section>
+
+<section class="section">
+  <div class="section-label">Narrowing it down</div>
+  <h2 class="section-title">Genres from a settled list</h2>
+  <p style="max-width:65ch;">
+    Left to itself a collection states dozens of different genre labels, several of them spelling the
+    same idea different ways. Stellody offers a fixed list instead, so what you tick means the same thing
+    every time.
+  </p>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Twenty-one genres, thirty-six styles under them</h3>
+      <p>Fifty-seven boxes in all, in alphabetical order. An album can carry several at once. The names
+      follow Discogs' spellings where Discogs has them, so they are ones you have seen before and ones a label written by another
+      program has a chance of matching. Electronic is split into Dance, Electronic, House and Techno &amp; Electro,
+      with styles for the names MusicBrainz gives
+      the artists a search suggests. Each genre's styles fold away behind an arrow, so the list fits
+      a laptop screen; every dialog offering it remembers which you left open.</p>
+    </div>
+    <div class="feat">
+      <h3>Ticking more shows more</h3>
+      <p>Asking for Rock and Jazz at once gives you both rather than nothing, so every tick widens what
+      is on screen instead of narrowing it to the albums that somehow answer to everything.</p>
+    </div>
+    <div class="feat">
+      <h3>A style means that style</h3>
+      <p>Tick Deep House and you get deep house, not every kind of house. Tick House and you get the lot,
+      deep house included, because Stellody already knows which main each style belongs to.</p>
+    </div>
+    <div class="feat">
+      <h3>Albums with no genre are reachable</h3>
+      <p>There is a box for them, because more than a tenth of a real collection states no genre at all
+      and no other tick could ever reach those albums. An album labelled something the list does not
+      carry is in the same box, for the same reason.</p>
+    </div>
+    <div class="feat">
+      <h3>It works with the search, not against it</h3>
+      <p>A narrowed collection can still be searched and a search can still be narrowed. Neither knows
+      about the other, so the two simply compose.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Keeping your own opinion</div>
+  <h2 class="section-title">Ratings and play counts</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Five stars for a song</h3>
+      <p>The stars sit in a Rating column on every song's row, beside its play count, in the list and in
+      the album open under the covers alike. You can read a whole record's ratings at a glance and rate
+      something without listening to it first. Press a star to rate
+      the song; press the star it already sits on to clear the rating. With a song highlighted, the
+      number keys 1 to 5 rate it and 0 clears it.</p>
+    </div>
+    <div class="feat">
+      <h3>Albums get their own rating</h3>
+      <p>Set from the stars on the album itself, labelled so you cannot mix the two up. Neither is
+      calculated from the other, because one weak track does not make a bad record.</p>
+    </div>
+    <div class="feat">
+      <h3>Only a finished song counts</h3>
+      <p>Skipping through an album adds nothing to your counts, so the numbers mean something. Each song
+      carries its own count on its row, so you can read down an album and see what you keep coming back
+      to.</p>
+    </div>
+    <div class="feat">
+      <h3>Your ratings survive a tidy-up</h3>
+      <p>Rename or move a folder and your stars and counts follow the album rather than getting lost.
+      Neither is ever written into your music files.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Album art</div>
+  <h2 class="section-title">Your covers, plus help finding the rest</h2>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>It uses the artwork you already have</h3>
+      <p>Whether the cover sits beside your music as a picture file or is tucked inside the songs
+      themselves, Stellody finds it and remembers it. An album with no artwork gets a plain square rather
+      than an ugly gap.</p>
+    </div>
+    <div class="feat">
+      <h3>You choose, it never guesses</h3>
+      <p>For an album with no artwork, ask Stellody to go and look. It shows you every cover it found,
+      each labelled with the edition it came from; you pick. It will never quietly attach the wrong
+      sleeve to your favourite record.</p>
+    </div>
+    <div class="feat">
+      <h3>The cover you picked stays picked</h3>
+      <p>Once you have chosen a cover it is yours. Rescanning your collection will not quietly put the old
+      one back.</p>
+    </div>
+    <div class="feat">
+      <h3>Busy is not the same as nothing</h3>
+      <p>The public archives Stellody asks are often busy. It tries several times, waiting a little longer
+      each go, then tells you plainly that it could not get an answer rather than pretending your album
+      has no artwork anywhere.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section onward">
+  <p class="onward-links">
+    <a class="btn-secondary" href="features.html">All features</a>
+    <a class="btn-secondary" href="discovery.html">Discovery</a>
+    <a class="btn-secondary" href="playback.html">Playback &amp; sound</a>
+  </p>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="stellody-512.png" alt="Stellody">
+        <span>Stellody</span>
+      </a>
+      <nav class="footer-links">
+        <a href="./">Home</a>
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/oernster/stellody/releases">Releases</a>
+        <a href="https://github.com/oernster/stellody/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A free, quiet music player for the collection you already own. No cloud, no account.
+      Version <!--VERSION-->1.11.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
+      &copy; Oliver Ernster</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

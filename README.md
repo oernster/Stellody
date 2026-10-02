@@ -222,7 +222,10 @@ any shop and takes nothing from a sale.
   the donation button is on the menu bar too, down to the repeat mode and the
   size of the album art.
 
-The [features page](https://stellody.co.uk/features.html) has the lot.
+The [features page](https://stellody.co.uk/features.html) has the overview,
+with a page each for [discovery](https://stellody.co.uk/discovery.html), the
+[library](https://stellody.co.uk/library.html) and
+[playback and sound](https://stellody.co.uk/playback.html).
 
 ## Before you download
 
