@@ -14,6 +14,7 @@ from stellody.application.discovery_ports import (
     SourceTooSlow,
     SourceUnavailable,
 )
+from stellody.application.remembering import Recollection
 from stellody.application.values import DiscoveryProgress
 from stellody.domain.album import Album
 from stellody.domain.credit_evidence import Evidence
@@ -41,6 +42,24 @@ def make_album(artist: str, title: str, genre: str = "Rock") -> Album:
         tracks=(track,),
         genre=genre,
     )
+
+
+class KeptMemory:
+    """A catalogue memory held in hand, so a second run reads the first's."""
+
+    def __init__(self) -> None:
+        self.kept = Recollection()
+
+    def remembered(self) -> Recollection:
+        """What the runs so far have been told."""
+        return self.kept
+
+    def note(self, kind: str, key: str, answer: object, when: float) -> None:
+        """Kept in hand already; nothing to add."""
+
+    def remember(self, kept: Recollection) -> None:
+        """Hold what a run ended knowing."""
+        self.kept = kept
 
 
 def make_compilation(genre: str, *credits: str) -> Album:

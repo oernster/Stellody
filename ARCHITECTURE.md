@@ -1258,7 +1258,7 @@ third stage asks what each candidate kept by the second stage released, so
 those with nothing inside the years can go (`application/candidate_years.py`,
 FR-D63). It asks through the same catalogue memory an expansion does, so an
 answer paid for here makes expanding that candidate free; with no years set it
-asks nothing at all. It has no bar of its own: it follows the second, so it
+asks nothing at all. It has no bar of its own: it follows the styles, so it
 takes that bar over under its own name, "Checking years" (`SHARES_BAR` in
 `ui/discovery_progress.py`).
 
@@ -1446,15 +1446,27 @@ compilation, whoever it is filed under (FR-D82). The pieces sit where every othe
   so one series is asked about once however many of its volumes are held. An
   album nobody could answer about is a failure named by its title (FR-D73);
   the run's one `Silence` counts across this stage as across the others. It
-  reports as a stage of its own, `DiscoveryStage.SERIES`, yet has no bar of
-  its own: `SHARES_BAR` draws it on the first bar under its own name,
-  "Checking series", as the years stage takes over the second.
+  reports as a stage of its own, `DiscoveryStage.SERIES`, on a bar of its own
+  between the artists and the styles (`STAGE_ORDER`, FR-D83). A run that
+  checks no series leaves that bar at rest rather than full, since
+  `DiscoveryBars.show_progress` fills only an earlier bar that reported.
 - `application/discovery_ports.py` holds the `SeriesSource` port beside
   `CatalogueSource`, with `NoSeries` as the null object `Discovery` defaults
   to, so a run built without a series source asks nothing about series.
   `infrastructure/catalogue_series.py` is the adapter, `MusicBrainzSeries`,
   answering `series_of`, `series` and `titled` over the shared `Fetcher`;
   the composition root builds it over the MusicBrainz gate.
+- What else a run takes in is one value, `Including` in `domain/including.py`
+  (credits, series, mixes; FR-D85), carried from the Discover dialog's three
+  boxes through the worker to `Discovery.run`, written to the discovery file
+  beside the years and read back for expanding. `ui/discovery_choices.py`
+  keeps the boxes between openings, reading the old single box for any never
+  saved. The artist stage lives in `application/artist_stage.py` beside the
+  series stage; `application/reporting_ahead.py` stamps what lies ahead of a
+  stage onto its reports so every bar's time covers the rest of the run
+  (FR-D84). `infrastructure/file_shapes.py` is the one home for how the files
+  carry an album, a candidate, years and choices; `ui/discovery_answer.py` is
+  the results half of the window's discovery.
 - `application/remembering_series.py` holds `RememberingSeries`, which keeps
   those answers exactly as the catalogue's are kept (see the design decision on
   asking a catalogue only what it has never been told).

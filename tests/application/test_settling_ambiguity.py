@@ -21,6 +21,7 @@ from discovery_support import (
 from stellody.application.discovering import Discovery
 from stellody.application.settling import MOST_EVIDENCE
 from stellody.domain.credit_evidence import EvidenceKind
+from stellody.domain.including import WIDEST
 
 MEANT = "anyma-milleri"
 NAMESAKE = "anyma-kubis"
@@ -49,7 +50,7 @@ def test_a_track_settles_an_artist_met_only_on_a_compilation() -> None:
     )
     run = Discovery(catalogue=catalogue, similarity=Similarity(), pause=Waits())
     report = run.run(
-        (make_compilation("Rock", "Bonobo"),), ROCK, nothing, never, compilations=True
+        (make_compilation("Rock", "Bonobo"),), ROCK, nothing, never, including=WIDEST
     )
     assert report.ambiguous == ()
     assert catalogue.albums_asked == ["bonobo-green"]

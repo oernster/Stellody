@@ -21,12 +21,21 @@ from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
 from stellody.ui.dialogs import CLOSE_ICON
 from stellody.ui.discovery_dialog import (
+    CREDITS_LABEL,
     FIND_LABEL,
-    INCLUDE_COMPILATIONS_LABEL,
+    INCLUDE_HEADING,
+    MIXES_LABEL,
     SELECT_ALL_ICON,
+    SERIES_LABEL,
 )
 from stellody.ui.discovery_progress import STAGE_NAMES
 from stellody.ui.guide_pictures import img
+from stellody.ui.results_filter import (
+    ALBUMS_LABEL,
+    ARTISTS_LABEL,
+    SHOW_HEADING,
+    SHOW_SERIES_LABEL,
+)
 from stellody.ui.results_foot import (
     COPY_ICON,
     COPY_LABEL,
@@ -61,29 +70,34 @@ def _asking_html() -> str:
         f"the genres worth looking in, then press <b>{FIND_LABEL}</b>. The dialog "
         "closes: a run takes minutes and is watched from the toolbar rather "
         "than from a dialog sat over everything.</p>"
-        "<p><b>Compilations.</b> An album filed under Various Artists is left "
-        f"out unless <b>{INCLUDE_COMPILATIONS_LABEL}</b> is ticked, when the "
-        "artists on its tracks are asked about instead. The line beneath the "
-        "box says how many of them have not been looked up before and roughly "
-        "what that adds; the first time, it can be many minutes. Ticked, it "
-        "also finds the other volumes of each series you hold, such as "
-        "Global Underground: Adapt, listed under a heading marked as a series. "
-        "That shows on the first bar as "
-        f"<b>{STAGE_NAMES[DiscoveryStage.SERIES]}</b>, counted from nought "
-        "once the artists are done.</p>"
+        f"<p><b>{INCLUDE_HEADING}</b> Three boxes say what else a run takes "
+        f"in. <b>{CREDITS_LABEL}</b> asks about the artists on the tracks of "
+        "an album filed under Various Artists, which is otherwise left out. "
+        f"<b>{SERIES_LABEL}</b> finds the volumes you lack of each series you "
+        "hold, such as Global Underground: Adapt, listed under a heading "
+        "marked as a series; a compilation filed under the DJ who mixed it, "
+        "such as Fabric 97: Tale of Us, counts too. That shows on the middle "
+        f"bar as <b>{STAGE_NAMES[DiscoveryStage.SERIES]}</b> once the artists "
+        "are done; with the box left clear the middle bar stays empty. "
+        f"<b>{MIXES_LABEL}</b> offers the mixes an artist made, such as "
+        "Sasha's Involver; a greatest hits package is never offered. The line "
+        "beneath the boxes says how many artists and series have not been "
+        "looked up before and roughly what that adds; the first time, it can "
+        "be many minutes.</p>"
         f"<p><b>Years.</b> <b>{FROM_LABEL}</b> and <b>{TO_LABEL}</b> take a "
         "year each; either may be left empty. They decide what is offered, "
         "not who is asked about: a 1977 album you hold can still lead to a "
         "record from 2025. An album is judged by the year it first came out, "
         "so a recent reissue of an old record counts as old. One whose year "
         "the catalogue does not state is left out while years are set. The "
-        "suggested artists are then checked too, which shows on the second "
+        "suggested artists are then checked too, which shows on the last "
         f"bar as <b>{STAGE_NAMES[DiscoveryStage.DATING]}</b> and can add "
         "minutes the first time.</p>"
-        "<p><b>While it runs.</b> Two bars appear beside the button, one for "
-        "each half of the run: the first asks what the artists you already "
-        "hold have released and who resembles them, the second asks what each "
-        "of those suggested artists plays. Hover the pair to see who is being "
+        "<p><b>While it runs.</b> Three bars sit beside the button, one for "
+        "each stage of the run: the first asks what the artists you already "
+        "hold have released and who resembles them, the middle one looks for "
+        "the other volumes of your compilations, the last asks what each of "
+        "those suggested artists plays. Hover the bars to see who is being "
         "asked about and how many are left; the right hand end of the bar "
         "says roughly how long remains, as does the line along the foot of "
         "the window. Nothing about you is sent: artist names, a few of your "
@@ -142,10 +156,13 @@ def _answer_html() -> str:
         "of the row beneath the answer, offers the genres that run looked in. "
         "Tick some to see only the artists you hold with an album of your own "
         "filed under one of them, plus the similar artists an earlier run "
-        "found playing one; the button stays pressed in while it is on. In "
-        f"the chooser, <b>{FILTER_LABEL}</b> waits until a genre is ticked; "
-        "where a filter is already on, clearing every tick then pressing it "
-        "takes the filter off. A similar artist whose genre was never found is "
+        "found playing one; the button stays pressed in while it is on. Above "
+        f"the genres, <b>{SHOW_HEADING}</b> {ALBUMS_LABEL}, {MIXES_LABEL}, "
+        f"{SHOW_SERIES_LABEL} and {ARTISTS_LABEL} hide or show each kind of thing, "
+        "with or without a genre ticked. In the chooser, "
+        f"<b>{FILTER_LABEL}</b> waits until something would be hidden; where "
+        "a filter is already on, Clear then pressing it takes the filter off. "
+        "A similar artist whose genre was never found is "
         "left out, with a line at the top saying how many. Ticks are kept "
         f"through it all, while Copy and <b>{SHOPS_LABEL}</b> act only on "
         "ticked albums you can see.</p>"

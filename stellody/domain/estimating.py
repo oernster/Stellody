@@ -73,22 +73,44 @@ def projected_candidates(seen: int, artists_done: int, artists_total: int) -> in
 
 
 def looking_up_seconds_left(
-    done: int, total: int, elapsed_s: float, candidates_seen: int
+    done: int,
+    total: int,
+    elapsed_s: float,
+    candidates_seen: int,
+    series_ahead: int = 0,
 ) -> float | None:
     """Seconds left in the WHOLE run while the first stage is under way.
 
-    Both halves in one number: the artists still to look up, plus the candidates
-    the run has yet to meet and will then have to ask about. The second half is
-    priced from the first half's own pace, scaled by the ratio of what each unit
-    costs the catalogue, since no second-stage unit has happened to measure.
+    Every stage in one number: the artists still to look up, the series still
+    to look up (FR-D84), plus the candidates the run has yet to meet and will
+    then have to ask about. The later stages are priced from the first stage's
+    own pace, scaled by the ratio of what each unit costs the catalogue, since
+    none of their units has happened to measure.
     """
     each = pace(done, elapsed_s)
     if each is None:
         return None
     first = max(total - done, 0) * each
+    series = series_ahead * each * REQUESTS_PER_SERIES / REQUESTS_PER_SOURCE_ARTIST
     expected = projected_candidates(candidates_seen, done, total)
-    second = expected * each * REQUESTS_PER_CANDIDATE / REQUESTS_PER_SOURCE_ARTIST
-    return first + second
+    last = expected * each * REQUESTS_PER_CANDIDATE / REQUESTS_PER_SOURCE_ARTIST
+    return first + series + last
+
+
+def series_seconds_left(
+    done: int, total: int, elapsed_s: float, candidates_ahead: int
+) -> float | None:
+    """Seconds left while the series stage is under way. FR-D84.
+
+    The series still to look up at this stage's own pace, plus the candidates
+    the styles stage will ask about, known by now rather than projected and
+    priced by the same ratio the first stage uses.
+    """
+    each = pace(done, elapsed_s)
+    if each is None:
+        return None
+    last = candidates_ahead * each * REQUESTS_PER_CANDIDATE / REQUESTS_PER_SERIES
+    return max(total - done, 0) * each + last
 
 
 def narrowing_seconds_left(done: int, total: int, elapsed_s: float) -> float | None:

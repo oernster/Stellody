@@ -49,6 +49,8 @@ class CandidateYears:
 
     catalogue: CatalogueSource
     pause: Pause
+    # Whether a DJ mix counts as something released in the years. FR-D85.
+    mixes: bool = True
 
     def narrowed(
         self,
@@ -95,7 +97,7 @@ class CandidateYears:
                     return UNAVAILABLE
                 continue
             silence.ended()
-            if everything_offered(released, years):
+            if everything_offered(released, years, self.mixes):
                 fits.add(identifier)
         return tuple(
             replace(

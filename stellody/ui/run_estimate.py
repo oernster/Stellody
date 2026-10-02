@@ -29,6 +29,7 @@ from stellody.domain.estimating import (
     looking_up_seconds_left,
     narrowing_seconds_left,
     rounded_minutes,
+    series_seconds_left,
 )
 
 # Reads the wall clock. Injected rather than reached for, so a test can drive a
@@ -126,6 +127,14 @@ class RunEstimate:
         """
         if progress.stage is DiscoveryStage.LOOKING_UP:
             return looking_up_seconds_left(
+                progress.done,
+                progress.total,
+                elapsed_s,
+                progress.candidates,
+                progress.series,
+            )
+        if progress.stage is DiscoveryStage.SERIES:
+            return series_seconds_left(
                 progress.done, progress.total, elapsed_s, progress.candidates
             )
         return narrowing_seconds_left(progress.done, progress.total, elapsed_s)

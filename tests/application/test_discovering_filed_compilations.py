@@ -6,12 +6,22 @@ whose fakes it shares.
 
 from __future__ import annotations
 
-from discovery_support import Catalogue, make_album
+from discovery_support import (
+    Catalogue,
+    KeptMemory,
+    Recorder,
+    Similarity,
+    Waits,
+    make_album,
+    never,
+)
 from test_discovering_series import GU, SeriesCatalogue, run_over, the_series
 
-from stellody.application.discovery_ports import SourceFailed
-from stellody.application.values import RunOutcome
-from stellody.domain.discovery import ReleaseGroup
+from stellody.application.discovering import Discovery
+from stellody.application.discovery_ports import NoSeries, SourceFailed
+from stellody.application.values import DiscoveryStage, RunOutcome
+from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+from stellody.domain.including import OWN_ALBUMS, WIDEST, Including
 from stellody.domain.matching import ReleaseKind
 from stellody.domain.series import Series
 
@@ -67,8 +77,57 @@ def test_a_dj_nobody_could_look_up_brings_no_series() -> None:
     assert series.asked == []
 
 
+def test_the_reports_carry_what_lies_ahead() -> None:
+    """FR-D84. The first run's series question fails, so nothing is placed;
+    the second knows the DJ's discography from memory, so its reports while
+    looking up count that one series ahead. Its series reports carry the one
+    candidate the styles stage will ask about."""
+    memory = KeptMemory()
+    similar = Similarity((SimilarArtist(name="Nick Warren", identifier="nw"),))
+    for series in (SeriesCatalogue(raises=SourceFailed("down")), numbered_series()):
+        seen = Recorder()
+        Discovery(
+            catalogue=tenaglia("dt"),
+            similarity=similar,
+            pause=Waits(),
+            recall=memory,
+            series=series,
+        ).run(HELD, ("House",), seen, never, including=WIDEST)
+    looking = [p for p in seen.seen if p.stage is DiscoveryStage.LOOKING_UP]
+    checking = [p for p in seen.seen if p.stage is DiscoveryStage.SERIES]
+    assert looking and all(p.series == 1 for p in looking)
+    assert checking and all(p.candidates == 1 for p in checking)
+
+
 def test_left_out_compilations_bring_no_series() -> None:
     """The box decides, as it does for every series. FR-D51."""
     series = numbered_series()
-    run_over(HELD, series, tenaglia("dt"), compilations=False)
+    run_over(HELD, series, tenaglia("dt"), including=OWN_ALBUMS)
     assert series.asked == []
+
+
+def test_series_need_no_credits() -> None:
+    """FR-D85: the series box works with the artists box left clear."""
+    series = numbered_series()
+    report = run_over(HELD, series, tenaglia("dt"), including=Including(series=True))
+    assert the_series(report) == {GU: (WARREN,)}
+
+
+def test_mixes_left_out_are_not_offered_under_their_dj() -> None:
+    """FR-D85: a DJ's own mix the library lacks stays out with the box clear."""
+    balance = ReleaseGroup(
+        title="Balance 025: Danny Tenaglia",
+        kinds=(ReleaseKind.COMPILATION, ReleaseKind.DJ_MIX),
+    )
+    catalogue = Catalogue(
+        identities={"Danny Tenaglia": ("dt",)}, albums={"dt": (balance,)}
+    )
+    offered = {
+        including.mixes: [
+            album.title
+            for gaps in run_over(HELD, NoSeries(), catalogue, including=including).gaps
+            for album in gaps.albums
+        ]
+        for including in (OWN_ALBUMS, Including(mixes=False))
+    }
+    assert offered == {True: [balance.title], False: []}

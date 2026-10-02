@@ -44,7 +44,7 @@ from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.domain.series import Series
 from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
-from stellody.infrastructure.discovery_file import (
+from stellody.infrastructure.file_shapes import (
     RELEASED,
     album_as,
     album_from,

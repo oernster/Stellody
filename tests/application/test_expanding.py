@@ -171,3 +171,16 @@ def test_the_question_carries_whether_it_is_still_wanted() -> None:
     expansion.releases_of(WOLF)
     handed = catalogue.wanted[0]
     assert handed() is True, "still wanted while nobody has stopped anything"
+
+
+def test_a_run_that_left_mixes_out_leaves_them_out_on_expanding() -> None:
+    """FR-D85: expanding obeys the run's DJ mixes box, as it obeys its years."""
+    catalogue = Releasing(
+        (
+            ReleaseGroup(title="Moanin"),
+            ReleaseGroup(title="Late Night Tales", kinds=(ReleaseKind.DJ_MIX,)),
+        )
+    )
+    expansion, _ = expanding(catalogue)
+    found = expansion.releases_of(WOLF, mixes=False)
+    assert [group.title for group in found] == ["Moanin"]

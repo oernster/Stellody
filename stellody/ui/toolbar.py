@@ -136,7 +136,7 @@ class LibraryTray(QWidget):
         # shown only while a run is under way: appearing would move every
         # button beside it and shift the centred transport with them.
         #
-        # Two bars in the height one used to take, one for each half of a run.
+        # Three bars in the height one used to take, one for each stage of a run.
         # The name is unchanged, since what the window has to say to it is
         # unchanged: here is a report, draw it.
         self.discovery_bar = DiscoveryBars(self, BUTTON_PX)

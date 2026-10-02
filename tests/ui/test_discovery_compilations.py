@@ -1,4 +1,4 @@
-"""FR-D51 and FR-D52: including compilations, chosen and priced in the dialog."""
+"""FR-D51, FR-D52, FR-D85: what else a run takes in, chosen and priced."""
 
 from __future__ import annotations
 
@@ -9,13 +9,18 @@ from stellody.application.compilation_cost import Cost
 from stellody.application.values import RunOutcome, RunReport
 from stellody.domain.estimating import SECONDS_PER_MINUTE
 from stellody.domain.genres import GENRES
+from stellody.domain.including import OWN_ALBUMS, WIDEST, Including
+from stellody.ui.discovery_choices import widened_by
 from stellody.ui.discovery_dialog import (
-    INCLUDE_COMPILATIONS_LABEL,
+    CREDITS_LABEL,
+    MIXES_LABEL,
     NOTHING_NEW,
+    SERIES_LABEL,
     DiscoveryDialog,
     cost_sentence,
 )
 from stellody.ui.discovery_worker import DiscoveryRunner
+from stellody.ui.settings_keys import SETTING_DISCOVER_COMPILATIONS, TRUE
 
 # Two genres ticked, for the cases that need the price to move.
 FIRST, SECOND = GENRES[0], GENRES[1]
@@ -25,39 +30,49 @@ class Started:
     """A start that remembers what each run was handed."""
 
     def __init__(self) -> None:
-        self.runs: list[tuple[tuple[str, ...], bool]] = []
+        self.runs: list[tuple[tuple[str, ...], Including]] = []
 
     def __call__(
-        self, genres: tuple[str, ...], compilations: bool, years: object = None
+        self, genres: tuple[str, ...], including: Including, years: object = None
     ) -> None:
-        """Record the genres and whether compilations were included."""
-        self.runs.append((genres, compilations))
+        """Record the genres and what else was taken in."""
+        self.runs.append((genres, including))
 
 
-def a_minute_a_genre(ticked: tuple[str, ...]) -> Cost:
+def a_minute_a_genre(ticked: tuple[str, ...], including: Including) -> Cost:
     """One new name for every genre ticked, costing a minute each."""
     return Cost(names=len(ticked), seconds=len(ticked) * SECONDS_PER_MINUTE)
 
 
-def test_compilations_start_left_out() -> None:
-    """FR-D51: nothing slow happens unless somebody asks for it."""
+def boxes(dialog: DiscoveryDialog) -> list:
+    """The three boxes, in the order they are drawn."""
+    return [dialog.credits, dialog.series, dialog.mixes]
+
+
+def test_three_boxes_start_as_a_run_that_widens_to_nothing() -> None:
+    """FR-D51: nothing slow happens unless asked for; FR-D80: mixes offered."""
     dialog = DiscoveryDialog()
-    assert dialog.compilations.text() == INCLUDE_COMPILATIONS_LABEL
-    assert not dialog.compilations.isChecked()
+    assert [box.text() for box in boxes(dialog)] == [
+        CREDITS_LABEL,
+        SERIES_LABEL,
+        MIXES_LABEL,
+    ]
+    assert dialog.including() == OWN_ALBUMS
 
 
-def test_the_run_is_told_whether_compilations_are_included() -> None:
-    """The box is part of the question, handed over with the genres."""
+def test_the_run_is_told_what_else_to_take_in() -> None:
+    """The boxes are part of the question, handed over with the genres."""
     started = Started()
     dialog = DiscoveryDialog(start=started)
     dialog.grid.boxes[FIRST].setChecked(True)
-    dialog.compilations.setChecked(True)
+    dialog.series.setChecked(True)
+    dialog.mixes.setChecked(False)
     dialog.find_button.click()
-    assert started.runs == [((FIRST,), True)]
+    assert started.runs == [((FIRST,), Including(series=True, mixes=False))]
 
 
-def test_the_box_is_a_stop_between_the_genres_and_the_buttons() -> None:
-    """Read in the order it is written: what to look in, whether to widen, go."""
+def test_the_boxes_sit_between_the_genres_and_the_buttons() -> None:
+    """Read in the order written: what to look in, what to take in, go."""
     dialog = DiscoveryDialog()
     chain: list[QWidget] = []
     widget = dialog.nextInFocusChain()
@@ -65,23 +80,48 @@ def test_the_box_is_a_stop_between_the_genres_and_the_buttons() -> None:
         chain.append(widget)
         widget = widget.nextInFocusChain()
     last_genre = max(chain.index(box) for box in dialog.grid.boxes.values())
-    box = chain.index(dialog.compilations)
-    assert last_genre < box < chain.index(dialog.select_button)
+    placed = [chain.index(box) for box in boxes(dialog)]
+    assert last_genre < placed[0] < placed[1] < placed[2]
+    assert placed[2] < chain.index(dialog.select_button)
 
 
 def test_the_cost_follows_the_ticks() -> None:
     """FR-D52: every tick changes who would be asked, so it changes the price."""
+    dialog = DiscoveryDialog(cost=a_minute_a_genre, including=WIDEST)
+    dialog.grid.boxes[FIRST].setChecked(True)
+    assert dialog.cost_line.text() == cost_sentence(a_minute_a_genre((FIRST,), WIDEST))
+    dialog.grid.boxes[SECOND].setChecked(True)
+    both = a_minute_a_genre((FIRST, SECOND), WIDEST)
+    assert dialog.cost_line.text() == cost_sentence(both)
+
+
+def test_the_price_is_asked_for_the_boxes_ticked() -> None:
+    """FR-D85: the price is of what the boxes take in, so it is handed them."""
+    asked: list[Including] = []
+
+    def noting(ticked: tuple[str, ...], including: Including) -> Cost:
+        asked.append(including)
+        return Cost(names=1, seconds=SECONDS_PER_MINUTE)
+
+    dialog = DiscoveryDialog(cost=noting, including=Including(credits=True))
+    dialog.grid.boxes[FIRST].setChecked(True)
+    dialog.series.setChecked(True)
+    assert asked[-1] == Including(credits=True, series=True)
+
+
+def test_nothing_costly_ticked_says_nothing() -> None:
+    """DJ mixes cost no request, so with neither costly box there is no price."""
     dialog = DiscoveryDialog(cost=a_minute_a_genre)
     dialog.grid.boxes[FIRST].setChecked(True)
-    assert dialog.cost_line.text() == cost_sentence(a_minute_a_genre((FIRST,)))
-    dialog.grid.boxes[SECOND].setChecked(True)
-    both = a_minute_a_genre((FIRST, SECOND))
-    assert dialog.cost_line.text() == cost_sentence(both)
+    assert dialog.cost_line.text() == ""
 
 
 def test_nothing_new_to_ask_says_so() -> None:
     """A box that would add nothing says so rather than quoting nought minutes."""
-    dialog = DiscoveryDialog(cost=lambda _ticked: Cost(names=0, seconds=0.0))
+    dialog = DiscoveryDialog(
+        cost=lambda _ticked, _including: Cost(names=0, seconds=0.0),
+        including=WIDEST,
+    )
     dialog.grid.boxes[FIRST].setChecked(True)
     assert dialog.cost_line.text() == NOTHING_NEW
 
@@ -111,39 +151,62 @@ def test_the_sentence_names_the_series_too() -> None:
     assert alone.startswith("One series on compilations in these genres has not")
 
 
-def test_the_choice_is_remembered_between_openings(application, monkeypatch) -> None:
-    """FR-D51: it opens as it was last left."""
+def test_the_choices_are_remembered_between_openings(application, monkeypatch) -> None:
+    """FR-D51, FR-D85: the boxes open as they were last left."""
     window = make_window(application)
-    seen: list[bool] = []
+    seen: list[Including] = []
 
     def ticking(dialog: DiscoveryDialog) -> int:
-        """Stand in for the modal wait: note the box, then tick it."""
-        seen.append(dialog.compilations.isChecked())
-        dialog.compilations.setChecked(True)
+        """Stand in for the modal wait: note the boxes, then move them."""
+        seen.append(dialog.including())
+        dialog.credits.setChecked(True)
+        dialog.mixes.setChecked(False)
         return 0
 
     monkeypatch.setattr(DiscoveryDialog, "exec", ticking)
     window.open_discovery()
     window.open_discovery()
-    assert seen == [False, True]
+    assert seen == [OWN_ALBUMS, Including(credits=True, mixes=False)]
+
+
+def test_the_old_box_answers_for_the_two_it_split_into(
+    application, monkeypatch
+) -> None:
+    """A listener who ticked the one box finds both of its halves ticked."""
+    window = make_window(application)
+    window._settings.set_setting(SETTING_DISCOVER_COMPILATIONS, TRUE)
+    seen: list[Including] = []
+    monkeypatch.setattr(
+        DiscoveryDialog, "exec", lambda dialog: seen.append(dialog.including()) or 0
+    )
+    window.open_discovery()
+    assert seen == [WIDEST]
 
 
 class Recording:
-    """A service that notes whether it was asked to include compilations."""
+    """A service that notes what it was asked to take in."""
 
     def __init__(self) -> None:
-        self.included: list[bool] = []
+        self.included: list[Including] = []
 
-    def run(self, albums, ticked, report, cancelled, compilations=False, years=None):
-        """Note the choice, then end as a run that found nothing."""
-        self.included.append(compilations)
+    def run(self, albums, ticked, report, cancelled, including=OWN_ALBUMS, years=None):
+        """Note the choices, then end as a run that found nothing."""
+        self.included.append(including)
         return RunReport(outcome=RunOutcome.COMPLETED)
 
 
-def test_the_runner_hands_the_choice_to_the_run(application) -> None:
-    """From the box to the service, through the thread in between."""
+def test_the_runner_hands_the_choices_to_the_run(application) -> None:
+    """From the boxes to the service, through the thread in between."""
     service = Recording()
     runner = DiscoveryRunner()
-    assert runner.start(service, (), ("Rock",), True)
+    assert runner.start(service, (), ("Rock",), WIDEST)
     runner.wait()
-    assert service.included == [True]
+    assert service.included == [WIDEST]
+
+
+def test_the_diary_says_what_a_run_took_in() -> None:
+    """Written down so a run can be placed against what it was asked."""
+    assert widened_by(OWN_ALBUMS) == ""
+    assert widened_by(Including(series=True, mixes=False)) == (
+        "; with other volumes of series, no DJ mixes"
+    )

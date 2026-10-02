@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 from discovery_support import (
     Catalogue,
+    KeptMemory,
     Recorder,
     Similarity,
     Waits,
@@ -25,10 +26,10 @@ from stellody.application.discovery_ports import (
     SourceFailed,
     SourceUnavailable,
 )
-from stellody.application.remembering import Recollection
 from stellody.application.values import DiscoveryStage, RunOutcome, RunReport
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps, ReleaseGroup
+from stellody.domain.including import OWN_ALBUMS, WIDEST, Including
 from stellody.domain.matching import ReleaseKind
 from stellody.domain.series import Series
 
@@ -86,10 +87,10 @@ def run_over(
     albums: tuple[Album, ...],
     series: object,
     catalogue: Catalogue | None = None,
-    compilations: bool = True,
+    including: Including = WIDEST,
     **more: object,
 ) -> RunReport:
-    """One run over these albums in House, compilations included by default."""
+    """One run over these albums in House, everything taken in by default."""
     service = Discovery(
         catalogue=catalogue or Catalogue(),
         similarity=Similarity(),
@@ -101,7 +102,7 @@ def run_over(
         HOUSE,
         more.get("report", nothing),
         more.get("cancelled", never),
-        compilations=compilations,
+        including=including,
     )
 
 
@@ -182,7 +183,7 @@ def test_a_name_reaching_several_artists_is_no_placeholder() -> None:
 
 def test_leaving_compilations_out_asks_about_no_series() -> None:
     series = adapt_catalogue()
-    run_over((make_album(GU, f"{UNIQUE} #2", "House"),), series, compilations=False)
+    run_over((make_album(GU, f"{UNIQUE} #2", "House"),), series, including=OWN_ALBUMS)
     assert series.asked == []
 
 
@@ -228,7 +229,7 @@ def test_a_stop_during_the_placeholder_check_ends_the_run() -> None:
         HOUSE,
         nothing,
         lambda: bool(similarity.asked),
-        compilations=True,
+        including=WIDEST,
     )
     assert report.outcome is RunOutcome.CANCELLED
 
@@ -278,21 +279,7 @@ def test_two_series_of_one_name_are_one_heading() -> None:
 
 def test_a_second_run_asks_nothing_it_was_told() -> None:
     """Series answers are remembered with every other catalogue answer."""
-
-    class Kept:
-        def __init__(self) -> None:
-            self.kept = Recollection()
-
-        def remembered(self) -> Recollection:
-            return self.kept
-
-        def note(self, kind: str, key: str, answer: object, when: float) -> None:
-            """Kept in hand already; nothing to add."""
-
-        def remember(self, kept: Recollection) -> None:
-            self.kept = kept
-
-    memory, series = Kept(), adapt_catalogue()
+    memory, series = KeptMemory(), adapt_catalogue()
     counted = []
     for _ in range(2):
         Discovery(
@@ -301,7 +288,7 @@ def test_a_second_run_asks_nothing_it_was_told() -> None:
             pause=Waits(),
             recall=memory,
             series=series,
-        ).run(HELD_ADAPT, HOUSE, nothing, never, compilations=True)
+        ).run(HELD_ADAPT, HOUSE, nothing, never, including=WIDEST)
         counted.append(len(series.asked))
     assert counted[0] > 0
     assert counted[1] == counted[0]

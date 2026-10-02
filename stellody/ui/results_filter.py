@@ -16,19 +16,27 @@ Its three controls are the library filter's, pictures and all: see
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+from stellody.domain.showing import EVERYTHING, Showing
 from stellody.ui.dialogs import FirstStopDialog
+from stellody.ui.discovery_dialog import MIXES_LABEL
 from stellody.ui.filter_controls import filter_controls, offer_apply
 from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
+from stellody.ui.ringed_check import RingedCheckBox
 
-TITLE = "Filter the answer by genre"
+TITLE = "Filter the answer"
 FILTER_LABEL = "Filter"
+# The row of kinds above the genres. FR-D86.
+SHOW_HEADING = "Show:"
+ALBUMS_LABEL = "Albums"
+SHOW_SERIES_LABEL = "Series"
+ARTISTS_LABEL = "Similar artists"
 
 
 class ResultsFilterDialog(FirstStopDialog):
-    """Collects which of the run's genres to show; nothing else."""
+    """Collects which kinds and which of the run's genres to show."""
 
     def __init__(
         self,
@@ -36,11 +44,21 @@ class ResultsFilterDialog(FirstStopDialog):
         picked: tuple[str, ...] = (),
         parent: QWidget | None = None,
         folds: Folds | None = None,
+        showing: Showing = EVERYTHING,
     ) -> None:
         super().__init__(parent)
         self._offered = offered
         self.setWindowTitle(TITLE)
         outer = QVBoxLayout(self)
+        # Kinds first, then genres: what sort of thing, then what it plays.
+        row = QHBoxLayout()
+        row.addWidget(QLabel(SHOW_HEADING, self))
+        self.albums = self._kind(ALBUMS_LABEL, showing.albums, row)
+        self.mixes = self._kind(MIXES_LABEL, showing.mixes, row)
+        self.series = self._kind(SHOW_SERIES_LABEL, showing.series, row)
+        self.artists = self._kind(ARTISTS_LABEL, showing.artists, row)
+        row.addStretch()
+        outer.addLayout(row)
         # Opened holding what is already picked, so a filter is adjusted
         # rather than rebuilt every time the chooser is opened.
         self.grid = GenreGrid("", self, manner=ASKING, folds=folds)
@@ -55,14 +73,40 @@ class ResultsFilterDialog(FirstStopDialog):
         outer.addLayout(controls.row)
         offer_apply(
             self.filter_button,
-            self.grid.boxes.values(),
-            lambda: bool(self.picked()),
-            filtering_already=bool(self.picked()),
+            (*self.grid.boxes.values(), *self._kinds()),
+            self._narrowing,
+            filtering_already=self._narrowing(),
         )
 
+    def _kind(self, label: str, ticked: bool, row: QHBoxLayout) -> RingedCheckBox:
+        """One box of the "Show:" row."""
+        box = RingedCheckBox(label, self)
+        box.setChecked(ticked)
+        row.addWidget(box)
+        return box
+
+    def _kinds(self) -> tuple[RingedCheckBox, ...]:
+        """The four kind boxes, in the order drawn."""
+        return (self.albums, self.mixes, self.series, self.artists)
+
+    def _narrowing(self) -> bool:
+        """Whether the boxes as they stand would hide anything."""
+        return bool(self.picked()) or self.showing() != EVERYTHING
+
     def clear(self) -> None:
-        """Untick everything, leaving the chooser open to be asked again."""
+        """No filter at all: no genre ticked, every kind shown. FR-D86."""
         self.grid.set_all(False)
+        for box in self._kinds():
+            box.setChecked(True)
+
+    def showing(self) -> Showing:
+        """The kinds ticked. FR-D86."""
+        return Showing(
+            albums=self.albums.isChecked(),
+            mixes=self.mixes.isChecked(),
+            series=self.series.isChecked(),
+            artists=self.artists.isChecked(),
+        )
 
     def picked(self) -> tuple[str, ...]:
         """The genres ticked, in catalogue order; only ever ones on offer."""

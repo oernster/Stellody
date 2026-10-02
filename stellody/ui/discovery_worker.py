@@ -17,6 +17,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from stellody.application.discovering import Discovery
 from stellody.application.values import DiscoveryProgress, RunReport
 from stellody.domain.album import Album
+from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 
 # Long enough for the request in flight when the cancel arrives, short enough
@@ -44,14 +45,14 @@ class DiscoveryWorker(QObject):
         discovery: Discovery,
         albums: tuple[Album, ...],
         ticked: tuple[str, ...],
-        compilations: bool = False,
+        including: Including = OWN_ALBUMS,
         years: ReleaseYears = ANY_YEAR,
     ) -> None:
         super().__init__()
         self._discovery = discovery
         self._albums = albums
         self._ticked = ticked
-        self._compilations = compilations
+        self._including = including
         self._years = years
         self._cancelled = False
 
@@ -73,7 +74,7 @@ class DiscoveryWorker(QObject):
                 self._ticked,
                 self.progressed.emit,
                 lambda: self._cancelled,
-                compilations=self._compilations,
+                including=self._including,
                 years=self._years,
             )
         except Exception as error:  # noqa: BLE001 - reported, never swallowed
@@ -108,14 +109,14 @@ class DiscoveryRunner(QObject):
         discovery: Discovery,
         albums: tuple[Album, ...],
         ticked: tuple[str, ...],
-        compilations: bool = False,
+        including: Including = OWN_ALBUMS,
         years: ReleaseYears = ANY_YEAR,
     ) -> bool:
         """Begin a run; False when one is already going."""
         if self._thread is not None:
             return False
         thread = QThread(self)
-        worker = DiscoveryWorker(discovery, albums, ticked, compilations, years)
+        worker = DiscoveryWorker(discovery, albums, ticked, including, years)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.progressed.connect(self._on_progress)

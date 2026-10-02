@@ -317,9 +317,7 @@ def test_a_run_that_raises_is_reported_rather_than_silent(application) -> None:
     class Falling:
         """A service that cannot get through a run."""
 
-        def run(
-            self, albums, ticked, report, cancelled, compilations=False, years=None
-        ):
+        def run(self, albums, ticked, report, cancelled, including=None, years=None):
             """Fail the way an unanticipated fault would."""
             raise RuntimeError("the roof fell in")
 

@@ -136,7 +136,7 @@ class RunnerInProgress:
 class Service:
     """A discovery service that is never actually asked anything."""
 
-    def run(self, albums, ticked, report, cancelled, compilations=False, years=None):
+    def run(self, albums, ticked, report, cancelled, including=None, years=None):
         """Stand in for a run; the wiring tests never reach this."""
         return RunReport(outcome=RunOutcome.COMPLETED)
 

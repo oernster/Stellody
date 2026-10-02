@@ -68,13 +68,14 @@ class Expansion:
         identifier: str,
         cancelled: CancelledCheck = never_stopped,
         years: ReleaseYears = ANY_YEAR,
+        mixes: bool = True,
     ) -> tuple[ReleaseGroup, ...]:
         """Everything worth showing by an artist the library holds nothing by.
 
-        The offering rule and the run's years are applied here and nothing
-        else is: there is no held set to compare against, while the ticked
-        genres already chose this artist rather than choosing which of their
-        records may be seen. FR-D65.
+        The offering rule, the run's years and its choice on DJ mixes are
+        applied here and nothing else is: there is no held set to compare
+        against, while the ticked genres already chose this artist rather than
+        choosing which of their records may be seen. FR-D65, FR-D85.
 
         A refusal after every attempt, a source that cannot be reached and a
         stop all arrive as the exceptions the ports declare. They are not
@@ -92,6 +93,7 @@ class Expansion:
                     patience=PATIENCE_FOR_ONE_ARTIST,
                 ),
                 years,
+                mixes,
             )
         finally:
             self.recall.remember(kept)

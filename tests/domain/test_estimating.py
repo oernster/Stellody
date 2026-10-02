@@ -17,6 +17,7 @@ from stellody.domain.estimating import (
     pace,
     projected_candidates,
     rounded_minutes,
+    series_seconds_left,
 )
 
 # A pace of two seconds an artist, which is close to what the gap the terms ask
@@ -105,6 +106,38 @@ class TestWhileLookingUp:
         """Guarded rather than trusted: a negative count would read as time."""
         left = looking_up_seconds_left(
             done=12, total=10, elapsed_s=12 * EACH_S, candidates_seen=0
+        )
+        assert left == pytest.approx(0.0)
+
+
+class TestTheSeriesAhead:
+    """FR-D84: the series stage counted into every time said before it ends."""
+
+    def test_looking_up_covers_the_series_to_come(self) -> None:
+        """Three series at four requests against an artist's two: twelve more
+        seconds at two seconds an artist, on top of the eight artists left."""
+        left = looking_up_seconds_left(
+            done=2, total=6, elapsed_s=2 * EACH_S, candidates_seen=0, series_ahead=3
+        )
+        assert left == pytest.approx(8.0 + 12.0)
+
+    def test_the_series_stage_covers_the_candidates_to_come(self) -> None:
+        """Ten of thirty series at two seconds each leaves forty; eight
+        candidates at a quarter of a series each add four."""
+        left = series_seconds_left(
+            done=10, total=30, elapsed_s=10 * EACH_S, candidates_ahead=8
+        )
+        assert left == pytest.approx(40.0 + 4.0)
+
+    def test_too_little_has_happened_to_say(self) -> None:
+        assert (
+            series_seconds_left(done=1, total=30, elapsed_s=EACH_S, candidates_ahead=8)
+            is None
+        )
+
+    def test_a_stage_past_its_own_total_has_nothing_left_of_it(self) -> None:
+        left = series_seconds_left(
+            done=31, total=30, elapsed_s=31 * EACH_S, candidates_ahead=0
         )
         assert left == pytest.approx(0.0)
 

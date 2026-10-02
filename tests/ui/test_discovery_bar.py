@@ -1,11 +1,12 @@
-"""The two bars in the tray that a discovery run reports to.
+"""The bars in the tray that a discovery run reports to.
 
 They exist because the second half of a run used to report nothing, so a bar
 that had stopped moving was indistinguishable from a hang; they became two on
 2026-09-07, because one bar carrying both halves in turn says how far through
-the current half a run is and nothing whatever about the other.
+the current half a run is and nothing whatever about the other. A third, for
+series, came on 2026-10-02 (FR-D83).
 
-What is asserted here: that each half has its own bar, that a finished half is
+What is asserted here: that each stage has its own bar, that a finished one is
 left full rather than wound back, that the time is written at the right hand
 end of whichever bar is moving, that the time can never land on top of a stage
 name and that neither bar becomes a control.
@@ -84,12 +85,16 @@ def marks_in(picture: QPixmap, where, colour: str) -> int:
     )
 
 
-def test_there_is_a_bar_for_each_half_of_a_run(application) -> None:
-    """The change asked for: one bar said nothing about the other half."""
+def test_there_is_a_bar_for_each_stage_of_a_run(application) -> None:
+    """FR-D16, FR-D83: one bar said nothing about the other stages."""
     bars, _holder = make_bars()
-    assert bars.looking_up.label == "Looking up"
-    assert bars.checking_styles.label == "Checking styles"
-    assert bars.looking_up is not bars.checking_styles
+    stacked = [bars.layout().itemAt(at).widget() for at in range(len(bars.bars))]
+    assert stacked == [bars.looking_up, bars.checking_series, bars.checking_styles]
+    assert [bar.label for bar in stacked] == [
+        "Looking up",
+        "Checking series",
+        "Checking styles",
+    ]
 
 
 def test_at_rest_each_bar_names_itself_and_the_slot_says_what_it_is_for(
@@ -121,14 +126,21 @@ def test_neither_bar_is_ever_a_stop_on_the_ring(application) -> None:
         assert bar.focusPolicy() == Qt.FocusPolicy.NoFocus
 
 
-def test_the_pair_fills_the_slot_one_bar_used_to(application) -> None:
-    """Two bars where one stood, rather than a tray grown taller for them."""
+def test_the_stack_fills_the_slot_one_bar_used_to(application) -> None:
+    """Three bars where one stood, rather than a tray grown taller for them."""
     bars, _holder = make_bars()
     each = stacked_height(BUTTON_PX)
+    count = len(bars.bars)
     assert bars.height() == BUTTON_PX
-    assert bars.looking_up.height() == each
-    assert bars.checking_styles.height() == each
-    assert each * 2 + STACK_GAP_PX <= BUTTON_PX
+    assert all(bar.height() == each for bar in bars.bars.values())
+    assert each * count + STACK_GAP_PX * (count - 1) <= BUTTON_PX
+
+
+def test_each_bar_is_taller_than_its_writing(application) -> None:
+    """Measured on 2026-10-02 against Segoe UI 9: 27 pixels to a 16 line."""
+    bars, _holder = make_bars()
+    for bar in bars.bars.values():
+        assert bar.contentsRect().height() > bar.fontMetrics().height()
 
 
 def test_it_reserves_its_place_whatever_it_is_saying(application) -> None:

@@ -32,6 +32,7 @@ from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps
 from stellody.domain.discovery_filter import filtered_answer
 from stellody.domain.shopping import WantedAlbum
+from stellody.domain.showing import EVERYTHING, Showing, shown
 from stellody.ui.genre_folds import Folds
 from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.results_pages import ResultsPages
@@ -70,6 +71,7 @@ class FilteringResults:
         self._library = library
         self._remembered = remembered
         self._picked: tuple[str, ...] = ()
+        self._showing = EVERYTHING
         # Every album ticked on any rows dealt so far, including rows the
         # filter is holding back right now.
         self._kept: set[WantedAlbum] = set()
@@ -85,7 +87,11 @@ class FilteringResults:
     def filter_dialog(self) -> ResultsFilterDialog:
         """The chooser, offering the run's genres and holding what is picked."""
         return ResultsFilterDialog(
-            self._looked_in, self._picked, self, folds=self._folds
+            self._looked_in,
+            self._picked,
+            self,
+            folds=self._folds,
+            showing=self._showing,
         )
 
     def open_filter(self) -> None:
@@ -98,20 +104,29 @@ class FilteringResults:
         chooser = self.filter_dialog()
         try:
             if chooser.exec() == QDialog.DialogCode.Accepted:
-                self.filter_to(chooser.picked())
+                self.filter_to(chooser.picked(), chooser.showing())
         finally:
-            self.filter_button.setChecked(bool(self._picked))
+            self.filter_button.setChecked(self._narrowed)
             chooser.deleteLater()
 
-    def filter_to(self, picked: tuple[str, ...]) -> None:
-        """Show the answer as these genres leave it; nothing picked is all."""
+    @property
+    def _narrowed(self) -> bool:
+        """Whether a filter, by genre or by kind, is hiding anything."""
+        return bool(self._picked) or self._showing != EVERYTHING
+
+    def filter_to(self, picked: tuple[str, ...], showing: Showing = EVERYTHING) -> None:
+        """Show the answer as these genres and kinds leave it. FR-D54, FR-D86.
+
+        Nothing picked is every genre; every kind ticked is every kind.
+        """
         self._picked = picked
-        shown = filtered_answer(
+        self._showing = showing
+        answer = filtered_answer(
             self._gaps, self._library, self._remembered or {}, picked
         )
-        self._deal(shown.gaps)
-        self.top.say_withheld(picked, shown.unjudged)
-        self.filter_button.setChecked(bool(picked))
+        self._deal(shown(answer.gaps, showing))
+        self.top.say_withheld(picked, answer.unjudged)
+        self.filter_button.setChecked(self._narrowed)
 
     def _deal(self, gaps: tuple[Gaps, ...]) -> None:
         """Build the pages again from these gaps, in the place the old ones held."""

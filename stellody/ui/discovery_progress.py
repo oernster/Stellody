@@ -1,18 +1,19 @@
-"""The two discovery bars in the tray, left of the button that starts a run.
+"""The three discovery bars in the tray, left of the button that starts a run.
 
-**Two bars rather than one, one for each half of a run.** Ruled on 2026-09-07.
-A run has two stages that measure different things: the first asks what each
-artist in the ticked genres released, the second asks what the candidates that
-turned up play. One bar carrying both in turn tells you how far through the
-current half you are and nothing at all about the other, so a bar back at a
-tenth is either terrible news or ordinary progress and there is no way to know
-which. Stacked, the pair says where the run is: the first full and the second
-climbing is plainly further along than the first climbing and the second empty.
+**One bar for each stage of a run.** Ruled on 2026-09-07 for two; a third, for
+series, ruled on 2026-10-02 (FR-D83). The stages measure different things: the
+first asks what each artist in the ticked genres released, the second asks
+after the other volumes of the compilations held, the third asks what the
+candidates that turned up play. One bar carrying them in turn tells you how far
+through the current stage you are and nothing at all about the others, so a bar
+back at a tenth is either terrible news or ordinary progress and there is no
+way to know which. Stacked, they say where the run is: the first full and the
+next climbing is plainly further along than the first climbing.
 
 **They are always there.** A control that appeared when a run started would
 move every button beside it. The tray centres the transport between two
 stretches, so the whole middle of the window would jump at the moment somebody
-pressed Find. The slot is reserved instead: at rest both bars are empty and
+pressed Find. The slot is reserved instead: at rest every bar is empty and
 each carries its own name, which also answers what the space is doing there.
 
 **Each says its stage rather than the artist.** A run names artists like
@@ -47,7 +48,6 @@ from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QProgressBar, QVBoxLayout, QWidget
 
 from stellody.application.values import PERCENT, DiscoveryProgress, DiscoveryStage
-from stellody.ui.theme import HALF
 
 # What the pair says it is for while nothing is under way. On the slot rather
 # than on either bar, since each bar's own writing is its stage.
@@ -60,29 +60,29 @@ STAGE_NAMES = {
     DiscoveryStage.DATING: "Checking years",
     DiscoveryStage.SERIES: "Checking series",
 }
-# The order they happen in, which is the order the bars are stacked in.
-STAGE_ORDER = (DiscoveryStage.LOOKING_UP, DiscoveryStage.NARROWING)
+# The order they happen in, which is the order the bars are stacked in. Series
+# has a bar of its own, ruled by Oliver on 2026-10-02: with compilations filed
+# under a DJ asked about too (FR-D82), it is a stage of its own size. One
+# borrowing the artists' bar left that bar's time saying nothing true. FR-D83.
+STAGE_ORDER = (
+    DiscoveryStage.LOOKING_UP,
+    DiscoveryStage.SERIES,
+    DiscoveryStage.NARROWING,
+)
 # A stage with no bar of its own, drawn on the bar named here under its own
 # name. Checking years happens only while years are set and comes after the
-# styles, so it takes the second bar over rather than squeezing a third into a
-# slot built for two. FR-D63.
-#
-# Checking series takes the first bar over the same way: it comes after the
-# artists and before their candidates, only while compilations are included.
-# Under its own name, since a bar falling from full to nought under the name it
-# already had reads as a run that has gone back to the start. FR-D69.
-SHARES_BAR = {
-    DiscoveryStage.DATING: DiscoveryStage.NARROWING,
-    DiscoveryStage.SERIES: DiscoveryStage.LOOKING_UP,
-}
+# styles, so it takes the styles bar over. FR-D63.
+SHARES_BAR = {DiscoveryStage.DATING: DiscoveryStage.NARROWING}
 # Named against the artist rather than the count, since the count is already
 # drawn and the name is the thing that will not fit.
 LOOKING_AT = "{stage}: {artist} ({done} of {total})"
 # Wide enough for the longest stage name beside a percentage without the text
 # being elided, narrow enough to leave the transport where it was.
 BAR_WIDTH_PX = 170
-# Between the two bars. Enough that they read as two, small enough that the
-# pair still fills the height one bar used to have.
+# Between two bars. Enough that they read as separate, small enough that the
+# stack still fills the height one bar used to have. Measured on 2026-10-02:
+# three bars in the 91 pixel slot are 27 each, against a 16 pixel line of the
+# Windows interface font.
 STACK_GAP_PX = 5
 # Kept off the ends of a bar, so neither piece of writing sits against the
 # groove's own border.
@@ -94,8 +94,9 @@ NOTHING = ""
 
 
 def stacked_height(height_px: int) -> int:
-    """How tall each bar is when two of them fill the slot one used to."""
-    return (height_px - STACK_GAP_PX) // HALF
+    """How tall each bar is when the stack fills the slot one used to."""
+    count = len(STAGE_ORDER)
+    return (height_px - STACK_GAP_PX * (count - 1)) // count
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +175,11 @@ class StageBar(QProgressBar):
             return self.label
         return f"{self.label} {self.value()}%"
 
+    @property
+    def started(self) -> bool:
+        """True once a run has reported to this bar."""
+        return self._started
+
     def rest(self) -> None:
         """Back to naming itself, with nothing under way."""
         self.setValue(0)
@@ -194,9 +200,9 @@ class StageBar(QProgressBar):
         self.update()
 
     def finish(self) -> None:
-        """Left full, because the run has moved on to the other half.
+        """Left full, because the run has moved on to a later stage.
 
-        The whole point of two bars: a stage that is done stays visibly done
+        The whole point of a bar each: a stage that is done stays visibly done
         rather than being wound back to make room for the next one.
         """
         self.show_percent(PERCENT)
@@ -238,7 +244,7 @@ class StageBar(QProgressBar):
 
 
 class DiscoveryBars(QWidget):
-    """Both halves of a run, stacked in the slot one bar used to hold.
+    """Every stage of a run, stacked in the slot one bar used to hold.
 
     The window talks to this rather than to either bar: what it has is a report
     naming a stage; which bar that means is this widget's business.
@@ -265,13 +271,18 @@ class DiscoveryBars(QWidget):
         return self.bars[DiscoveryStage.LOOKING_UP]
 
     @property
+    def checking_series(self) -> StageBar:
+        """The other volumes of the compilations held. FR-D69, FR-D83."""
+        return self.bars[DiscoveryStage.SERIES]
+
+    @property
     def checking_styles(self) -> StageBar:
-        """The second half: what the candidates that turned up play."""
+        """The last stage: what the candidates that turned up play."""
         return self.bars[DiscoveryStage.NARROWING]
 
     @property
     def resting(self) -> bool:
-        """True where no run has reported to either bar."""
+        """True where no run has reported to any bar."""
         return all(bar.wanted == bar.label for bar in self.bars.values())
 
     def rest(self) -> None:
@@ -284,13 +295,17 @@ class DiscoveryBars(QWidget):
     def show_progress(self, progress: DiscoveryProgress, brief: str = NOTHING) -> None:
         """Draw this report on the bar for the stage it came from.
 
-        Every earlier stage is left full rather than untouched: a report from
-        the second half is itself the news that the first half finished, since
-        the run does not announce the ending of one stage separately.
+        Every earlier stage that reported is left full rather than untouched:
+        a report from a later stage is itself the news that the earlier one
+        finished, since the run does not announce the ending of one stage
+        separately. One that never reported is left at rest: a run with
+        compilations left out never checks series; a full bar would say it
+        had. FR-D83.
         """
         drawn_on = SHARES_BAR.get(progress.stage, progress.stage)
         for stage in STAGE_ORDER[: STAGE_ORDER.index(drawn_on)]:
-            self.bars[stage].finish()
+            if self.bars[stage].started:
+                self.bars[stage].finish()
         self.bars[drawn_on].label = STAGE_NAMES[progress.stage]
         self.bars[drawn_on].show_percent(progress.percent, brief)
         self._say(

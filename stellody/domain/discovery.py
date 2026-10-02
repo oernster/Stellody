@@ -23,6 +23,7 @@ from dataclasses import dataclass
 
 from stellody.domain.album import Album
 from stellody.domain.genres import chosen_in
+from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.matching import ReleaseKind, ReleaseMatch, matched
 from stellody.domain.narrowing import Narrowing, narrowed_to
 from stellody.domain.overrides import AlbumField
@@ -87,6 +88,10 @@ class ReleaseGroup:
             kinds -= MIX_KINDS
         return kinds <= OFFERED_KINDS
 
+    def offered_with(self, mixes: bool) -> bool:
+        """Offered, unless it is a DJ mix and mixes were left out. FR-D85."""
+        return self.is_offered and (mixes or ReleaseKind.DJ_MIX not in self.kinds)
+
     @property
     def states_no_genre(self) -> bool:
         """True where the catalogue described this album with nothing usable."""
@@ -146,6 +151,9 @@ class LastRun:
     gaps: tuple[Gaps, ...] = ()
     ticked: tuple[str, ...] = ()
     years: ReleaseYears = ANY_YEAR
+    # What the run widened to; a file written before this reads as nothing
+    # more, mixes offered, which is what such a run did. FR-D85.
+    including: Including = OWN_ALBUMS
 
 
 def catalogue_genres(stated: tuple[str, ...]) -> tuple[str, ...]:
@@ -292,17 +300,19 @@ def albums_missing(
     offered: tuple[ReleaseGroup, ...],
     ticked: tuple[str, ...],
     years: ReleaseYears = ANY_YEAR,
+    mixes: bool = True,
 ) -> tuple[ReleaseGroup, ...]:
     """The offered albums that are worth showing and are not already held.
 
     Order is the catalogue's own, since it arrived in whatever order the
     catalogue thought best and this has no better opinion. The years apply to
-    the album offered, never to what the library holds. FR-D60, FR-D61.
+    the album offered, never to what the library holds. FR-D60, FR-D61. A DJ
+    mix only while mixes are included. FR-D85.
     """
     return tuple(
         group
         for group in offered
-        if group.is_offered
+        if group.offered_with(mixes)
         and group.match not in held
         and wanted_by(group.genres, ticked)
         and years.admits(group.year)
@@ -312,6 +322,7 @@ def albums_missing(
 def everything_offered(
     released: tuple[ReleaseGroup, ...],
     years: ReleaseYears = ANY_YEAR,
+    mixes: bool = True,
 ) -> tuple[ReleaseGroup, ...]:
     """What a candidate artist has worth showing, all of it unheld. FR-D31.
 
@@ -326,10 +337,13 @@ def everything_offered(
     The offering rule is the one test that survives, because a hits package is
     noise wherever it turns up. The years are the other: a run
     asked about the 1980s showing a candidate's 2020s on expanding would hand
-    back what it was asked to leave out. FR-D65.
+    back what it was asked to leave out. FR-D65. So does the run's choice on
+    DJ mixes, for the same reason. FR-D85.
     """
     return tuple(
-        group for group in released if group.is_offered and years.admits(group.year)
+        group
+        for group in released
+        if group.offered_with(mixes) and years.admits(group.year)
     )
 
 

@@ -24,7 +24,8 @@ the second run on.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 
 from stellody.application.remembering import (
     ALBUMS,
@@ -35,9 +36,15 @@ from stellody.application.remembering import (
     Recollection,
 )
 from stellody.domain.album import Album
-from stellody.domain.discovery import names_beyond, source_artists
+from stellody.domain.discovery import ReleaseGroup, names_beyond, source_artists
 from stellody.domain.estimating import REQUESTS_PER_SERIES, REQUESTS_PER_SOURCE_ARTIST
-from stellody.domain.series import series_albums, series_place
+from stellody.domain.including import WIDEST, Including
+from stellody.domain.series import (
+    artist_filed,
+    catalogued_compilation,
+    series_albums,
+    series_place,
+)
 from stellody.domain.text import comparison_key
 
 
@@ -51,28 +58,70 @@ class Cost:
 
 
 @dataclass(frozen=True, slots=True)
+class SeriesCount:
+    """How many series a run will have to look up, from one reading of memory.
+
+    One home for the count, since the dialog prices it (FR-D52) and the run
+    carries it while looking up so the time said covers it (FR-D84).
+    """
+
+    albums: tuple[Album, ...]
+    # Names the memory shows to be placeholder artists, by `comparison_key`.
+    placeholders: frozenset[str] = frozenset()
+    # Titles whose series question has a standing answer.
+    placed: frozenset[str] = frozenset()
+    # What each album artist released, where the memory settles them to one
+    # identity. A name only the library's titles could settle is absent, so
+    # its compilations are not counted: a known undercount. FR-D82.
+    released: Mapping[str, tuple[ReleaseGroup, ...]] = field(default_factory=dict)
+
+    def of(self, ticked: tuple[str, ...]) -> int:
+        """How many series hold an album nobody has asked the series of."""
+        titles = [
+            album.identity.title
+            for album in series_albums(self.albums, ticked, self.placeholders)
+        ]
+        for album in artist_filed(self.albums, ticked, self.placeholders):
+            released = self.released.get(album.identity.album_artist)
+            if released is not None:
+                named = catalogued_compilation(album.identity.title, released)
+                if named is not None:
+                    titles.append(named)
+        stems = {
+            place.stem
+            for title in titles
+            if title not in self.placed and (place := series_place(title)) is not None
+        }
+        return len(stems)
+
+
+@dataclass(frozen=True, slots=True)
 class Pricing:
     """One library over one reading of the memory, priced for any ticks."""
 
     albums: tuple[Album, ...]
     answered: frozenset[str]
     request_gap_s: float
-    # Names the memory shows to be placeholder artists, by `comparison_key`.
-    placeholders: frozenset[str] = frozenset()
-    # Held titles whose series question has a standing answer.
-    placed: frozenset[str] = frozenset()
+    series: SeriesCount
 
-    def of(self, ticked: tuple[str, ...]) -> Cost:
-        """What including compilations adds for these ticked genres."""
-        added = tuple(
-            name
-            for name in names_beyond(
-                source_artists(self.albums, ticked, compilations=True),
-                source_artists(self.albums, ticked),
+    def of(self, ticked: tuple[str, ...], including: Including = WIDEST) -> Cost:
+        """What the boxes ticked add for these ticked genres. FR-D52, FR-D85.
+
+        The artists only while their box is ticked; the series likewise.
+        """
+        added = (
+            tuple(
+                name
+                for name in names_beyond(
+                    source_artists(self.albums, ticked, compilations=True),
+                    source_artists(self.albums, ticked),
+                )
+                if name not in self.answered
             )
-            if name not in self.answered
+            if including.credits
+            else ()
         )
-        series = self._series(ticked)
+        series = self.series.of(ticked) if including.series else 0
         requests = (
             len(added) * REQUESTS_PER_SOURCE_ARTIST + series * REQUESTS_PER_SERIES
         )
@@ -80,15 +129,39 @@ class Pricing:
             names=len(added), seconds=requests * self.request_gap_s, series=series
         )
 
-    def _series(self, ticked: tuple[str, ...]) -> int:
-        """How many series hold an album nobody has asked the series of."""
-        stems = {
-            place.stem
-            for album in series_albums(self.albums, ticked, self.placeholders)
-            if album.identity.title not in self.placed
-            and (place := series_place(album.identity.title)) is not None
-        }
-        return len(stems)
+
+def series_count(
+    kept: Recollection, albums: tuple[Album, ...], at: float
+) -> SeriesCount:
+    """The series count for this library over this reading of the memory."""
+    return SeriesCount(
+        albums=albums,
+        placeholders=_placeholders(kept, at),
+        placed=frozenset(
+            title
+            for title in kept.series_of
+            if kept.holds(SERIES_OF, title, kept.series_of, at)
+        ),
+        released=_released(kept, albums, at),
+    )
+
+
+def _released(
+    kept: Recollection, albums: tuple[Album, ...], at: float
+) -> dict[str, tuple[ReleaseGroup, ...]]:
+    """What each album artist released, where the memory names one of them."""
+    found: dict[str, tuple[ReleaseGroup, ...]] = {}
+    for name in {album.identity.album_artist for album in albums}:
+        identities = kept.identifiers.get(name)
+        if (
+            identities is None
+            or len(identities) != 1
+            or not kept.holds(IDENTIFIERS, name, kept.identifiers, at)
+            or not kept.holds(ALBUMS, identities[0], kept.albums, at)
+        ):
+            continue
+        found[name] = kept.albums[identities[0]]
+    return found
 
 
 def _placeholders(kept: Recollection, at: float) -> frozenset[str]:
@@ -124,10 +197,5 @@ class CompilationCost:
             albums=albums,
             answered=answered,
             request_gap_s=self.request_gap_s,
-            placeholders=_placeholders(kept, at),
-            placed=frozenset(
-                title
-                for title in kept.series_of
-                if kept.holds(SERIES_OF, title, kept.series_of, at)
-            ),
+            series=series_count(kept, albums, at),
         )

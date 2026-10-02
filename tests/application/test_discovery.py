@@ -19,12 +19,13 @@ from discovery_support import (
     nothing,
 )
 
+from stellody.application.artist_stage import SIMILAR_WANTED
 from stellody.application.asking import (
     RETRY_ATTEMPTS,
     RETRY_PAUSE_SECONDS,
 )
 from stellody.application.choosing_covers import Wanted, always_wanted
-from stellody.application.discovering import SIMILAR_WANTED, Discovery
+from stellody.application.discovering import Discovery
 from stellody.application.discovery_ports import SourceFailed
 from stellody.application.gathering import REFUSED_EVERY_PASS
 from stellody.application.passing import PASS_PAUSE_SECONDS, QUIET_PASSES

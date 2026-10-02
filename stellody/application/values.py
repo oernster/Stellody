@@ -14,6 +14,7 @@ from enum import StrEnum
 
 from stellody.domain.discovery import Gaps
 from stellody.domain.health import LibraryIssue
+from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.ordering import TrackCandidate
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.domain.track import TrackSource
@@ -214,7 +215,8 @@ class DiscoveryStage(StrEnum):
     # Only while compilations are included: the other volumes of each series
     # album, between the artists and their candidates. Its own stage, counted
     # from nought: reported by Oliver on 2026-10-01, under the first stage's
-    # name the first bar read as a run gone back to nothing. FR-D69.
+    # name the first bar read as a run gone back to nothing. FR-D69. A bar of
+    # its own since 2026-10-02. FR-D83.
     SERIES = "series"
 
 
@@ -234,9 +236,14 @@ class DiscoveryProgress:
     # How many distinct candidate artists the run has met so far that it does
     # not already know what to make of. Carried because the second stage asks
     # about exactly these, so it is the only reading available of how big that
-    # stage will be while the first one is still running. FR-D37. Nought
-    # during the second stage, where the total is known rather than projected.
+    # stage will be while the first one is still running. FR-D37. During the
+    # series stage it is the count the styles stage will ask about, known by
+    # then (FR-D84). Nought during the styles stage, where it is the total.
     candidates: int = 0
+    # How many series the series stage will have to look up, counted from the
+    # memory as the run starts; carried while looking up, so the time said
+    # then covers the series stage too. FR-D84.
+    series: int = 0
 
     @property
     def percent(self) -> int:
@@ -292,6 +299,8 @@ class RunReport:
     ticked: tuple[str, ...] = ()
     # The years the run offered music from, carried for the same reason.
     years: ReleaseYears = ANY_YEAR
+    # What the run widened to, carried so expanding honours it. FR-D85.
+    including: Including = OWN_ALBUMS
 
     @property
     def is_writable(self) -> bool:

@@ -55,7 +55,7 @@ class Watched:
     def start(
         self,
         genres: tuple[str, ...],
-        compilations: bool = False,
+        including: object = None,
         years: object = None,
     ) -> None:
         """Record what a run was asked to cover."""

@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import json
 import pathlib
+from dataclasses import replace
 
 import pytest
 
 from stellody.application.values import Gaps, RunOutcome, RunReport
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
+from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.matching import ReleaseKind
 from stellody.infrastructure import discovery_file, paths
 
@@ -219,3 +221,24 @@ class TestEntriesThatCannotBeRead:
         found = discovery_file.read().gaps
         assert found[0].albums[0].kinds == (ReleaseKind.OTHER,)
         assert not found[0].albums[0].is_offered
+
+
+class TestWhatTheRunTookIn:
+    """FR-D85: the three choices travel with the answer, so expanding obeys."""
+
+    def test_they_are_read_back_as_written(self) -> None:
+        chosen = Including(credits=True, series=False, mixes=False)
+        discovery_file.write(replace(a_report(), including=chosen))
+        assert discovery_file.read().including == chosen
+
+    def test_a_file_written_before_them_reads_as_the_defaults(self) -> None:
+        put({"gaps": {}})
+        assert discovery_file.read().including == OWN_ALBUMS
+
+    def test_one_choice_of_the_wrong_shape_falls_back_alone(self) -> None:
+        put({"gaps": {}, "including": {"credits": True, "mixes": "no"}})
+        assert discovery_file.read().including == Including(credits=True)
+
+    def test_choices_of_the_wrong_shape_state_nothing(self) -> None:
+        put({"gaps": {}, "including": "everything"})
+        assert discovery_file.read().including == OWN_ALBUMS

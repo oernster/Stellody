@@ -24,22 +24,24 @@ from stellody.application.discovery_ports import DiscoveryResults, GenreMemory
 from stellody.application.expanding import Expansion
 from stellody.application.shopping import Shopping
 from stellody.application.values import DiscoveryProgress, RunReport
+from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.ui import standing_in
+from stellody.ui.discovery_answer import AnsweringDiscovery
+from stellody.ui.discovery_choices import (
+    included_from,
+    remember_including,
+    widened_by,
+)
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.discovery_endings import STOPPED, SettlingDiscovery, WriteDiscovery
 from stellody.ui.discovery_worker import DiscoveryRunner
-from stellody.ui.expansion_worker import ExpansionRunner
 from stellody.ui.genre_folds import Folds
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.results_words import released_in
 from stellody.ui.run_estimate import RunEstimate
 from stellody.ui.settings_keys import (
-    FALSE,
-    SETTING_DISCOVER_COMPILATIONS,
-    SETTING_GENRES_OPEN_ANSWER_FILTER,
     SETTING_GENRES_OPEN_DISCOVERY,
-    TRUE,
 )
 from stellody.ui.standing_in import say_nothing
 from stellody.ui.tray_metrics import show_discovery_running
@@ -51,7 +53,7 @@ STILL_STOPPING = "Still stopping the last run. Try again in a moment."
 WENT_WRONG = "The run stopped: {reason}"
 
 
-class Discovering(SettlingDiscovery):
+class Discovering(AnsweringDiscovery, SettlingDiscovery):
     """Opening the discovery dialog and running what it asks for.
 
     The diary is named here with a default that keeps nothing, so a window
@@ -142,16 +144,13 @@ class Discovering(SettlingDiscovery):
         if self._discovery_runner.running:
             self.stop_discovery()
             return
-        included = (
-            self._settings.get_setting(SETTING_DISCOVER_COMPILATIONS, FALSE) == TRUE
-        )
         priced = self._compilation_cost
         dialog = DiscoveryDialog(
             start=self.begin_discovery,
             parent=self,
-            compilations=included,
+            including=included_from(self._settings),
             cost=None if priced is None else priced.pricing(self._all_albums).of,
-            remember=self._remember_compilations,
+            remember=lambda chosen: remember_including(self._settings, chosen),
             folds=Folds(self._settings, SETTING_GENRES_OPEN_DISCOVERY),
         )
         self._discovery_dialog = dialog
@@ -163,7 +162,7 @@ class Discovering(SettlingDiscovery):
     def begin_discovery(
         self,
         ticked: tuple[str, ...],
-        compilations: bool = False,
+        including: Including = OWN_ALBUMS,
         years: ReleaseYears = ANY_YEAR,
     ) -> None:
         """Start a run over the artists inside these genres.
@@ -176,7 +175,7 @@ class Discovering(SettlingDiscovery):
         if self._discovery is None:
             return
         if not self._discovery_runner.start(
-            self._discovery, self._all_albums, ticked, compilations, years
+            self._discovery, self._all_albums, ticked, including, years
         ):
             self.statusBar().showMessage(STILL_STOPPING)
             return
@@ -189,18 +188,11 @@ class Discovering(SettlingDiscovery):
         # Written down so a complaint Qt makes later can be placed against the
         # run rather than merely against the evening. The catalogues are
         # reached from the run's own thread, which ends when it does.
-        widened = ", compilations included" if compilations else ""
         self._discovery_note(
-            f"a discovery run started over {len(ticked)} genres{widened}"
-            f"{released_in(years)}"
+            f"a discovery run started over {len(ticked)} genres"
+            f"{widened_by(including)}{released_in(years)}"
         )
         show_discovery_running(self._tray.discover_button, True)
-
-    def _remember_compilations(self, included: bool) -> None:
-        """Keep the box as it was left, so the dialog opens that way. FR-D51."""
-        self._settings.set_setting(
-            SETTING_DISCOVER_COMPILATIONS, TRUE if included else FALSE
-        )
 
     def stop_discovery(self) -> None:
         """Ask a running discovery to give up at its next boundary.
@@ -281,74 +273,6 @@ class Discovering(SettlingDiscovery):
     def discovery_failed(self, reason: str) -> None:
         """A run that could not finish says so rather than merely stopping."""
         self._say_about_discovery(WENT_WRONG.format(reason=reason))
-
-    def show_discovery_results(self) -> None:
-        """Open the results on what the discovery file holds.
-
-        **Whatever it holds, including nothing.** A run that found nothing
-        used to open no screen, on the reasoning that an empty dialog says
-        less than a sentence in the status bar. Ruled the other way by Oliver
-        on 2026-09-09, after two whole-library runs ended in one night with
-        nothing in front of him: a run that took an hour reports into a strip
-        nobody is watching; an empty screen at least says what was looked
-        in and what could not be answered about. FR-D33.
-
-        **Modal, ruled by Oliver on 2026-09-08.** It was modeless first, on the
-        reasoning that an answer arriving minutes after the question should not
-        seize the application. What that cost was worse than what it bought:
-        every completed run opened another screen, so runs stacked without
-        limit. Closing the standing one as a new one opened was tried and did
-        not hold in the running application, which is why the structure is
-        being changed rather than the behaviour patched again. A modal screen
-        cannot stack, because the window underneath it cannot start a second
-        run while it is up. That is a guarantee rather than a repair.
-
-        Opened from the completion handler, which is safe here and would not
-        be everywhere: the runner quits its thread and WAITS for it before it
-        announces the report, so there is nothing running behind this loop.
-        `discovery_worker.DiscoveryRunner._on_completed` is where that order
-        is set; the scan summary depends on the same property.
-        """
-        if self._discovery_results is None:
-            return
-        answer = self._discovery_results.last_run()
-        asking = (
-            None
-            if self._expansion is None
-            else ExpansionRunner(self._expansion, note=self._note, years=answer.years)
-        )
-        dialog = ResultsDialog(
-            answer.gaps,
-            asking=asking,
-            shopping=self._shopping,
-            mode=self.theme_mode,
-            # From the file rather than from the ticks handed over minutes
-            # earlier, so what the screen says it looked in is what the run it
-            # is showing actually looked in.
-            ticked=answer.ticked,
-            years=answer.years,
-            # What the Filter control judges by: the library as it stands and
-            # what earlier runs learned candidates play. FR-D54.
-            library=self._all_albums,
-            remembered=(
-                None if self._genre_memory is None else self._genre_memory.remembered()
-            ),
-            parent=self,
-            folds=Folds(self._settings, SETTING_GENRES_OPEN_ANSWER_FILTER),
-        )
-        if asking is not None:
-            # Parented to the dialog once there is one, so what asks the
-            # questions lives exactly as long as the rows the answers go in.
-            asking.setParent(dialog)
-        self._results_dialog = dialog
-        try:
-            dialog.exec()
-        finally:
-            # Let go on the way out however the screen was left, so nothing
-            # holds a dialog somebody has finished with. The same shape the
-            # genre dialog uses.
-            self._results_dialog = None
-            dialog.deleteLater()
 
     def _say_about_discovery(self, message: str) -> None:
         """Put the ending in front of whoever asked for the run.

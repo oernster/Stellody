@@ -34,22 +34,27 @@ import pathlib
 
 from stellody.application.carrying_over import carried_over
 from stellody.application.values import RunReport
-from stellody.domain.discovery import Gaps, LastRun, ReleaseGroup, SimilarArtist
-from stellody.domain.matching import ReleaseKind
-from stellody.domain.release_years import ANY_YEAR, ReleaseYears
+from stellody.domain.discovery import Gaps, LastRun
 from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
+from stellody.infrastructure.file_shapes import (
+    CREDITS,
+    EARLIEST,
+    INCLUDING,
+    LATEST,
+    MIXES,
+    SERIES,
+    YEARS,
+    _listed,
+    album_as,
+    album_from,
+    artist_as,
+    artist_from,
+    including_from,
+    years_from,
+)
 
 DISCOVERY_NAME = "discovered.json"
-# Where an album's first release date is kept. Its absence from an entry is
-# itself information: the entry was written before dates were. FR-D67.
-RELEASED = "released"
-# Where a run's years are kept, beside its genres. FR-D64.
-YEARS = "years"
-EARLIEST = "earliest"
-LATEST = "latest"
-# Whether an entry names a series rather than an artist. FR-D74.
-SERIES = "series"
 # Renamed whenever the rule in `domain/genre_votes.py` changes, so what was
 # kept under the old rule is never read again and each candidate is asked
 # anew: `artist-genres.json` held single-vote strays (2026-10-01);
@@ -71,26 +76,6 @@ def cache_path() -> pathlib.Path:
 def cache_journal_path() -> pathlib.Path:
     """Where a candidate's answer is noted, until the cache catches up."""
     return paths.data_dir() / CACHE_JOURNAL_NAME
-
-
-def album_as(group: ReleaseGroup) -> dict:
-    """One album in the shape every file here carries it.
-
-    One home for the shape, since the discovery file and the catalogue memory
-    both hold albums and a shape written twice is two shapes the day one is
-    changed.
-    """
-    return {
-        "title": group.title,
-        "kinds": [str(kind) for kind in group.kinds],
-        "genres": list(group.genres),
-        RELEASED: group.released,
-    }
-
-
-def artist_as(artist: SimilarArtist) -> dict:
-    """One candidate artist in the shape every file here carries it."""
-    return {"name": artist.name, "identifier": artist.identifier}
 
 
 def _as_written(report: RunReport) -> dict:
@@ -125,6 +110,11 @@ def _as_written(report: RunReport) -> dict:
         # was reported as failing to say.
         "ticked": list(report.ticked),
         YEARS: {EARLIEST: report.years.earliest, LATEST: report.years.latest},
+        INCLUDING: {
+            CREDITS: report.including.credits,
+            SERIES: report.including.series,
+            MIXES: report.including.mixes,
+        },
     }
 
 
@@ -161,88 +151,6 @@ def write(report: RunReport) -> pathlib.Path:
     where = discovery_path()
     _written(where, _as_written(settled))
     return where
-
-
-def _listed(entry: dict, key: str) -> list:
-    """The list under this key; empty where it is anything else."""
-    found = entry.get(key)
-    return found if isinstance(found, list) else []
-
-
-def _kind_of(name: str) -> ReleaseKind:
-    """The kind this name means; OTHER for one this version does not know.
-
-    The same rule the catalogue client applies on the way in, so a file
-    written by a later Stellody is read by an earlier one without a kind it
-    has never heard of being mistaken for a plain album.
-    """
-    try:
-        return ReleaseKind(name)
-    except ValueError:
-        return ReleaseKind.OTHER
-
-
-def album_from(entry: object) -> ReleaseGroup | None:
-    """One album as the file carries it; None where it carries nothing usable.
-
-    A title is required rather than defaulted, since the domain refuses an
-    album without one and a record nobody can name is not one to offer.
-    """
-    if not isinstance(entry, dict):
-        return None
-    title = str(entry.get("title") or "").strip()
-    if not title:
-        return None
-    return ReleaseGroup(
-        title=title,
-        kinds=tuple(_kind_of(str(kind)) for kind in _listed(entry, "kinds")),
-        genres=tuple(str(genre) for genre in _listed(entry, "genres")),
-        released=str(entry.get(RELEASED) or ""),
-    )
-
-
-def _bound(held: dict, key: str) -> int | None:
-    """One bound of the years a file names; None where it names none.
-
-    Anything else there is refused rather than skipped, so a damaged pair is
-    never read as half of itself: a range narrowed on one side only is a
-    question nobody asked.
-    """
-    found = held.get(key)
-    if found is None:
-        return None
-    if isinstance(found, int) and not isinstance(found, bool):
-        return found
-    raise ValueError(f"{key} is not a year")
-
-
-def years_from(held: object) -> ReleaseYears:
-    """The years a file says its run was asked for; every year where none.
-
-    A file written before years were recorded names none, which is what that
-    run asked for. Neither a bound that is not a year nor a pair the wrong way
-    round can have been written by a run, so either reads as no years rather
-    than failing the whole file.
-    """
-    if not isinstance(held, dict):
-        return ANY_YEAR
-    stated = held.get(YEARS)
-    if not isinstance(stated, dict):
-        return ANY_YEAR
-    try:
-        return ReleaseYears(_bound(stated, EARLIEST), _bound(stated, LATEST))
-    except ValueError:
-        return ANY_YEAR
-
-
-def artist_from(entry: object) -> SimilarArtist | None:
-    """One candidate artist as the file carries it; None where unusable."""
-    if not isinstance(entry, dict):
-        return None
-    name = str(entry.get("name") or "").strip()
-    if not name:
-        return None
-    return SimilarArtist(name=name, identifier=str(entry.get("identifier") or ""))
 
 
 def read() -> LastRun:
@@ -288,7 +196,12 @@ def read() -> LastRun:
                 series=entry.get(SERIES) is True,
             )
         )
-    return LastRun(gaps=tuple(found), ticked=ticked, years=years_from(held))
+    return LastRun(
+        gaps=tuple(found),
+        ticked=ticked,
+        years=years_from(held),
+        including=including_from(held),
+    )
 
 
 class FileDiscoveryResults:

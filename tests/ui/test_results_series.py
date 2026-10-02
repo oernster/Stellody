@@ -8,16 +8,15 @@ from __future__ import annotations
 from PySide6.QtWidgets import QWidget
 from results_support import gaps_with, made, rows_under
 
-from stellody.application.values import DiscoveryProgress, DiscoveryStage
+from stellody.application.values import PERCENT, DiscoveryProgress, DiscoveryStage
 from stellody.domain.discovery import Gaps, ReleaseGroup
 from stellody.domain.text import VARIOUS_ARTISTS
-from stellody.ui.discovery_progress import STAGE_NAMES, DiscoveryBars
+from stellody.ui.discovery_progress import DiscoveryBars
 from stellody.ui.results_ticks import album_on
 from stellody.ui.results_words import LEGEND_SOURCE, SERIES, source_row
+from stellody.ui.tray_metrics import BUTTON_PX
 
 ADAPT = "Global Underground: Adapt"
-# Two stacked bars' worth of height; only has to fit them.
-BARS_HEIGHT_PX = 40
 
 
 def adapt_with(count: int) -> Gaps:
@@ -61,18 +60,28 @@ def test_the_key_names_a_series_too() -> None:
     assert "series" in LEGEND_SOURCE
 
 
-def test_the_series_stage_names_itself_on_the_first_bar(application) -> None:
-    """Reported by Oliver on 2026-10-01: back at the window during the series
-    stage, the first bar read as a run gone back to nothing, since the stage
-    counted from nought under the first stage's name."""
+def test_the_series_stage_has_a_bar_of_its_own(application) -> None:
+    """FR-D83, ruled on 2026-10-02. Before it, series borrowed the first bar,
+    which Oliver reported on 2026-10-01 read as a run gone back to nothing."""
     holder = QWidget()
-    bars = DiscoveryBars(holder, BARS_HEIGHT_PX)
+    bars = DiscoveryBars(holder, BUTTON_PX)
     bars.show_progress(DiscoveryProgress(artist="Dilby", done=9, total=10))
     bars.show_progress(
         DiscoveryProgress(artist=ADAPT, done=0, total=40, stage=DiscoveryStage.SERIES)
     )
-    assert bars.looking_up.wanted == f"{STAGE_NAMES[DiscoveryStage.SERIES]} 0%"
-    assert STAGE_NAMES[DiscoveryStage.SERIES] == "Checking series"
+    assert bars.looking_up.wanted == "Looking up 100%"
+    assert bars.checking_series.wanted == "Checking series 0%"
     assert not bars.checking_styles.wanted.endswith("%")
-    bars.rest()
-    assert bars.looking_up.label == STAGE_NAMES[DiscoveryStage.LOOKING_UP]
+
+
+def test_a_run_checking_no_series_leaves_its_bar_at_rest(application) -> None:
+    """Compilations left out: a full series bar would claim work never done."""
+    holder = QWidget()
+    bars = DiscoveryBars(holder, BUTTON_PX)
+    bars.show_progress(DiscoveryProgress(artist="Dilby", done=9, total=10))
+    bars.show_progress(
+        DiscoveryProgress(artist="x", done=0, total=5, stage=DiscoveryStage.NARROWING)
+    )
+    assert bars.looking_up.value() == PERCENT
+    assert not bars.checking_series.started
+    assert bars.checking_series.wanted == "Checking series"

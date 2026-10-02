@@ -99,7 +99,7 @@ class HeldRun:
         self.stopped = threading.Event()
 
     def run(
-        self, albums, ticked, report, cancelled, compilations=False, years=None
+        self, albums, ticked, report, cancelled, including=None, years=None
     ) -> RunReport:
         """Hold until somebody stops the run or the test lets go of it."""
         self.began.set()

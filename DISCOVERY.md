@@ -648,10 +648,11 @@ Verified by: `tests/domain/test_discovery_gaps.py::test_unstated_genre_is_kept_a
 
 Priority: Must
 
-Requirement: The toolbar shall carry one progress bar for each of the two
-stages every run has, stacked in the order the stages happen and each labelled
-with the name of its stage; the third stage, run only while years are set, is
-drawn on the second bar under its own name (FR-D63). While a run is under way each bar shall show how far through its own
+Requirement: The toolbar shall carry three progress bars, one each for looking
+up artists, checking series (FR-D69, FR-D83) and checking styles, stacked in
+the order the stages happen and each labelled with the name of its stage;
+checking years, run only while years are set, is drawn on the styles bar under
+its own name (FR-D63). While a run is under way each bar shall show how far through its own
 stage the run is as a percentage; a stage that has finished shall be left full
 and a stage that has not begun shall show no percentage at all. On hover the
 pair shall name the stage and the artist currently being asked about, with that
@@ -678,16 +679,16 @@ grow and the centred transport does not move.
 Amended on 2026-10-01, reported by Oliver: while compilations are included the
 series stage of FR-D69 runs between the two halves; it reported on the first
 bar under the first half's name, counting from nought. Coming back to the
-window during it, he read a run that had gone back to the start. It now takes
-the first bar over under its own name, "Checking series", exactly as checking
-years takes the second (FR-D63).
+window during it, he read a run that had gone back to the start. It took the
+first bar over under its own name, "Checking series", until FR-D83 gave it a
+bar of its own on 2026-10-02.
 
 Acceptance: Given a run over three source artists, when the second is reached,
-then the first bar reads one third and the pair names that artist on hover;
-given the run reaches its second stage, then the first bar is left full and the
-second counts against the number of candidates to be asked about.
+then the first bar reads one third and the bars name that artist on hover;
+given the run reaches checking styles, then the first bar is left full and the
+styles bar counts against the number of candidates to be asked about.
 
-Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_half_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery_narrowing.py::test_the_second_half_of_a_run_reports_as_it_goes`, `tests/ui/test_results_series.py::test_the_series_stage_names_itself_on_the_first_bar`, `tests/application/test_discovering_series.py::test_the_stage_says_how_far_it_has_got`
+Verified by: `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_stage_of_a_run`, `tests/ui/test_discovery_bar.py::test_reaching_the_second_half_leaves_the_first_bar_full`, `tests/ui/test_discovery_bar.py::test_it_names_the_stage_rather_than_the_artist`, `tests/application/test_discovery_narrowing.py::test_the_second_half_of_a_run_reports_as_it_goes`, `tests/ui/test_results_series.py::test_the_series_stage_has_a_bar_of_its_own`, `tests/application/test_discovering_series.py::test_the_stage_says_how_far_it_has_got`
 
 ---
 
@@ -2145,8 +2146,8 @@ Asked only while years are set and only about the candidates that survived the
 genre filter; asked through the catalogue memory, so each answer is paid for once
 a month and expanding that artist later costs nothing. A candidate the catalogue
 could not be asked about cannot be shown to fit, so is not offered; nor is one
-who carries no identifier. The progress is reported on the second bar, named
-"Checking years", since a third bar would not fit the slot the two share.
+who carries no identifier. The progress is reported on the styles bar, named
+"Checking years", since it follows the styles and is a smaller stage.
 Known limit: the first stage's projection (FR-D37) sizes only the second stage,
 so while years are set the time said during the first stage leaves this one
 out; once it begins, its own pace is measured as FR-D35 says.
@@ -2704,6 +2705,129 @@ Verified by: `tests/application/test_discovering_filed_compilations.py`, `tests/
 
 ---
 
+**FR-D83 Checking series has a bar of its own**
+
+Priority: Must
+
+Requirement: The series stage shall report on a bar of its own, stacked between
+the artists bar and the styles bar. When a later stage reports, each earlier
+bar that has reported shall be left full; an earlier bar that never reported
+shall stay at rest, showing its name and no percentage.
+
+Rationale: Ruled by Oliver on 2026-10-02. With compilations filed under a DJ
+asked about too (FR-D82), the series stage is a stage of its own size;
+drawn on the artists bar it left that bar's percentage and time meaning two
+different things in turn. Measured the same day: the slot is 91 pixels, so
+three bars are 27 each against a 16 pixel line of Segoe UI at 9 points, which
+was why the earlier note that a third would not fit was withdrawn. A run with
+compilations left out checks no series; a full bar would say it had.
+
+Acceptance: Given a run reaching the series stage, then the artists bar reads
+full and the series bar counts the series titles; given a run that goes from
+looking up straight to checking styles, then the series bar still reads
+"Checking series" with no percentage.
+
+Verified by: `tests/ui/test_results_series.py::test_the_series_stage_has_a_bar_of_its_own`, `tests/ui/test_results_series.py::test_a_run_checking_no_series_leaves_its_bar_at_rest`, `tests/ui/test_discovery_bar.py::test_there_is_a_bar_for_each_stage_of_a_run`, `tests/ui/test_discovery_bar.py::test_each_bar_is_taller_than_its_writing`
+
+---
+
+**FR-D84 The time said covers the series stage**
+
+Priority: Must
+
+Requirement: While compilations are included, the discovery service shall
+count, as a run starts and from the catalogue memory alone, the series the
+series stage will have to look up (FR-D52's count, extended to the compilations
+of FR-D82); it shall carry that count on every report while artists are looked up.
+The time said then shall add those series at the first stage's own pace, scaled
+by `REQUESTS_PER_SERIES` against `REQUESTS_PER_SOURCE_ARTIST`. While series are
+checked, each report shall carry the number of candidates the styles stage will
+ask about; the time said shall add them at the series stage's pace, scaled
+by `REQUESTS_PER_CANDIDATE` against `REQUESTS_PER_SERIES`. The price beneath the
+compilations box shall count the same series.
+
+Rationale: Reported by Oliver on 2026-10-02 after a run over every genre: the
+time on the first bar was off. Read from the code that day: the first stage's
+time sized only the styles stage, so the series stage was missing from it; the
+series stage's time left out the styles stage, whose size was known by then.
+FR-D82 made the series stage large enough to matter. A name only the library's
+titles could settle is not counted, since the memory alone cannot say which
+artist it is: a known undercount, as is a first run, before the memory holds
+any discography.
+
+Acceptance: Given two of six artists done in four seconds with three series
+ahead, then the time said is eight seconds for the artists plus twelve for the
+series; given ten of thirty series done in twenty seconds with eight candidates
+ahead, then forty plus four; given a DJ whose remembered discography types a
+held album as a DJ mix, then the price counts one series; none where the
+memory holds two artists of that name.
+
+Verified by: `tests/domain/test_estimating.py::TestTheSeriesAhead`, `tests/application/test_discovering_filed_compilations.py::test_the_reports_carry_what_lies_ahead`, `tests/application/test_compilation_cost.py::test_a_compilation_filed_under_its_dj_is_a_series_to_price`
+
+---
+
+**FR-D85 Three boxes say what else a run takes in**
+
+Priority: Must
+
+Requirement: The Discover dialog shall carry, under the heading "Include:", three
+boxes in place of the one compilations box: "Artists on compilations (Various
+Artists)" (FR-D51), "Other volumes of series" (FR-D69, FR-D82) and "DJ mixes"
+(FR-D80). Each shall act alone: the run shall ask about compilation credits only
+with the first, run the series stage only with the second; it shall offer DJ mixes in
+an artist's own list, on expanding a candidate and among answers carried over
+(FR-D66) only with the third. Series entries are offered whatever the third box
+says, since a series of mixes is made of nothing else. Each box shall open as it
+was last left; where the first two were never saved, the old compilations box
+shall answer for both. The price line shall price only those of the first two
+that are ticked. The run's choices shall be written to the discovery file beside its
+years and read back for expanding; a file without them reads as the first two
+clear and mixes offered.
+
+Rationale: Ruled by Oliver on 2026-10-02, choosing three boxes over two or one.
+The one box meant two things that cost different amounts and are wanted for
+different reasons; with series filed under a DJ now found (FR-D82) and DJ mixes
+offered (FR-D80), each became worth choosing on its own.
+
+Acceptance: Given a fresh dialog, then the boxes read clear, clear, ticked; given
+the series box alone ticked, then the series stage runs and no compilation credit
+is asked about; given the mixes box clear, then a DJ's unheld mix is not offered
+and expanding a candidate offers none; given the old box saved as ticked and the
+new ones never saved, then the first two open ticked.
+
+Verified by: `tests/ui/test_discovery_compilations.py`, `tests/application/test_discovering_filed_compilations.py::test_series_need_no_credits`, `tests/application/test_discovering_filed_compilations.py::test_mixes_left_out_are_not_offered_under_their_dj`, `tests/application/test_expanding.py::test_a_run_that_left_mixes_out_leaves_them_out_on_expanding`, `tests/infrastructure/test_discovery_results.py::TestWhatTheRunTookIn`, `tests/domain/test_discovery_gaps.py::test_dj_mixes_left_out_are_not_offered`
+
+---
+
+**FR-D86 The results filter shows by kind as well as by genre**
+
+Priority: Must
+
+Requirement: Above the genres, the results filter shall carry a "Show:" row of
+four boxes, all ticked when first opened: Albums, DJ mixes, Series and Similar
+artists. A series heading shall be shown only with Series ticked; under an
+artist, a DJ mix only with DJ mixes ticked, any other album only with Albums
+ticked and the similar artists only with Similar artists ticked. A heading left
+with nothing under it shall not be shown (FR-D75). The kinds apply after the
+genres and with no genre ticked. The Filter press shall be offered once either
+the genres or the kinds would hide anything; Clear shall untick every genre and
+tick every kind; the button beneath the answer shall stay pressed in while
+either filter is on.
+
+Rationale: Ruled by Oliver on 2026-10-02: with series and DJ mixes offered in
+number (FR-D80, FR-D82), an answer needs separating by what each thing is.
+
+Acceptance: Given an answer with an artist holding a mix, an album and a
+similar artist plus a series heading, when Series is cleared, then only the
+artist's heading shows; when DJ mixes is cleared, then the artist's mix goes
+while the series keeps its mixes; when only Series is ticked, then only the
+series heading shows; given the chooser opened with no genre ticked, when one
+kind is cleared, then Filter can be pressed.
+
+Verified by: `tests/domain/test_showing.py`, `tests/ui/test_results_showing.py`
+
+---
+
 ### 3.2 Non-functional requirements
 
 ---
@@ -3151,7 +3275,7 @@ that is one more reason the smallest genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D82 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D86 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

@@ -29,12 +29,12 @@ from stellody.ui.results_ticks import TICKED, ticked_albums
 from stellody.ui.results_tree import album_item
 from stellody.ui.results_words import album_row, looked_in
 from stellody.ui.theme import Mode, palette_for
+from stellody.ui.tray_metrics import BUTTON_PX
 from stellody.ui.year_fields import ANY_YEAR_HINT, FAULTS, FIELD_NAMES
 
 GENRE = GENRES[0]
 THIS_YEAR = 2026
 EIGHTIES = ReleaseYears(1980, 1989)
-BARS_HEIGHT_PX = 40
 
 
 class Started:
@@ -44,7 +44,7 @@ class Started:
         self.years: list[ReleaseYears] = []
 
     def __call__(
-        self, genres: tuple[str, ...], compilations: bool, years: ReleaseYears
+        self, genres: tuple[str, ...], including: object, years: ReleaseYears
     ) -> None:
         """Record the years."""
         self.years.append(years)
@@ -147,7 +147,7 @@ class TestTheKeyboard:
         while widget is not dialog and widget not in chain:
             chain.append(widget)
             widget = widget.nextInFocusChain()
-        box = chain.index(dialog.compilations)
+        box = chain.index(dialog.mixes)
         earliest = chain.index(dialog.years.earliest)
         latest = chain.index(dialog.years.latest)
         assert box < earliest < latest < chain.index(dialog.select_button)
@@ -157,9 +157,10 @@ class TestTheKeyboard:
 
 
 class TestTheBars:
-    def test_checking_years_is_drawn_on_the_second_bar(self) -> None:
+    def test_checking_years_is_drawn_on_the_styles_bar(self) -> None:
         holder = QWidget()
-        bars = DiscoveryBars(holder, BARS_HEIGHT_PX)
+        bars = DiscoveryBars(holder, BUTTON_PX)
+        bars.show_progress(DiscoveryProgress(artist="Dilby", done=0, total=2))
         bars.show_progress(
             DiscoveryProgress(
                 artist="New Voice", done=0, total=2, stage=DiscoveryStage.DATING
@@ -169,9 +170,9 @@ class TestTheBars:
         assert bars.checking_styles.label == STAGE_NAMES[DiscoveryStage.DATING]
         assert bars.checking_styles.wanted.startswith(bars.checking_styles.label)
 
-    def test_at_rest_the_second_bar_is_the_styles_again(self) -> None:
+    def test_at_rest_the_styles_bar_is_the_styles_again(self) -> None:
         holder = QWidget()
-        bars = DiscoveryBars(holder, BARS_HEIGHT_PX)
+        bars = DiscoveryBars(holder, BUTTON_PX)
         bars.show_progress(
             DiscoveryProgress(artist="x", done=0, total=1, stage=DiscoveryStage.DATING)
         )
@@ -228,7 +229,7 @@ class Recording:
     def __init__(self) -> None:
         self.years: list[ReleaseYears] = []
 
-    def run(self, albums, ticked, report, cancelled, compilations=False, years=None):
+    def run(self, albums, ticked, report, cancelled, including=None, years=None):
         """Note the years, then end as a run that found nothing."""
         self.years.append(years)
         return RunReport(outcome=RunOutcome.COMPLETED)

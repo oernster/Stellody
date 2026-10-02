@@ -37,6 +37,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWi
 
 from stellody.application.compilation_cost import Cost
 from stellody.domain.estimating import SECONDS_PER_MINUTE, rounded_minutes
+from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.release_years import ReleaseYears, YearRefusal
 from stellody.shared import resources
 from stellody.ui.dialogs import (
@@ -78,10 +79,17 @@ RESTING = (
 # open categories need the room, the same as the filter dialog.
 DIALOG_WIDTH_PX = 700
 APART_PX = 12
-# The box that widens a run to the artists on compilations. FR-D51. Named for
-# what such albums are filed under, since that is what somebody will look for.
-INCLUDE_COMPILATIONS_LABEL = "Include compilations (Various Artists)"
-# What ticking the box would cost, said beneath it. FR-D52. The minutes are
+# The three boxes that say what else a run takes in, under one heading.
+# Ruled by Oliver on 2026-10-02: one box used to mean the first two. FR-D85.
+INCLUDE_HEADING = "Include:"
+# The artists on compilations. FR-D51. Named for what such albums are filed
+# under, since that is what somebody will look for.
+CREDITS_LABEL = "Artists on compilations (Various Artists)"
+# The other volumes of the compilations held. FR-D69, FR-D82.
+SERIES_LABEL = "Other volumes of series"
+# DJ mixes in an artist's own list. FR-D80.
+MIXES_LABEL = "DJ mixes"
+# What ticking the boxes would cost, said beneath them. FR-D52. The minutes are
 # arithmetic at the pace the catalogue permits, so the sentence names what makes
 # a real run longer rather than passing a floor off as a forecast.
 NOTHING_NEW = (
@@ -140,7 +148,7 @@ def cost_sentence(cost: Cost) -> str:
 
 
 def _start_nothing(
-    _genres: tuple[str, ...], _compilations: bool, _years: ReleaseYears
+    _genres: tuple[str, ...], _including: Including, _years: ReleaseYears
 ) -> None:
     """A dialog handed no run to start starts nothing."""
 
@@ -150,8 +158,8 @@ def _this_year() -> int:
     return datetime.datetime.now(datetime.UTC).astimezone().year
 
 
-def _keep_nothing(_included: bool) -> None:
-    """A dialog handed nowhere to remember the box remembers nothing."""
+def _keep_nothing(_including: Including) -> None:
+    """A dialog handed nowhere to remember the boxes remembers nothing."""
 
 
 class DiscoveryDialog(FirstStopDialog):
@@ -159,16 +167,19 @@ class DiscoveryDialog(FirstStopDialog):
 
     def __init__(
         self,
-        start: Callable[[tuple[str, ...], bool, ReleaseYears], None] = _start_nothing,
+        start: Callable[
+            [tuple[str, ...], Including, ReleaseYears], None
+        ] = _start_nothing,
         parent: QWidget | None = None,
-        compilations: bool = False,
-        cost: Callable[[tuple[str, ...]], Cost] | None = None,
-        remember: Callable[[bool], None] = _keep_nothing,
+        including: Including = OWN_ALBUMS,
+        cost: Callable[[tuple[str, ...], Including], Cost] | None = None,
+        remember: Callable[[Including], None] = _keep_nothing,
         this_year: int | None = None,
         folds: Folds | None = None,
     ) -> None:
         super().__init__(parent)
         self._start = start
+        self._remember = remember
         # Read once as the dialog opens, since the latest year worth asking
         # about follows it; handed in by a test standing in another year.
         self._this_year = _this_year() if this_year is None else this_year
@@ -193,11 +204,11 @@ class DiscoveryDialog(FirstStopDialog):
         outer.addWidget(self.grid)
         outer.addSpacing(APART_PX)
         # Built after the genres and before the buttons, which is also where
-        # Tab reaches it: what to look in, whether to widen it, then go.
-        self.compilations = RingedCheckBox(INCLUDE_COMPILATIONS_LABEL, self)
-        self.compilations.setChecked(compilations)
-        self.compilations.toggled.connect(remember)
-        outer.addWidget(self.compilations)
+        # Tab reaches them: what to look in, what else to take in, then go.
+        outer.addWidget(QLabel(INCLUDE_HEADING, self))
+        self.credits = self._choice(CREDITS_LABEL, including.credits, outer)
+        self.series = self._choice(SERIES_LABEL, including.series, outer)
+        self.mixes = self._choice(MIXES_LABEL, including.mixes, outer)
         self.cost_line = QLabel("", self)
         self.cost_line.setWordWrap(True)
         self.cost_line.setHidden(cost is None)
@@ -238,6 +249,27 @@ class DiscoveryDialog(FirstStopDialog):
         self.find_button.clicked.connect(self._find)
         row.addWidget(self.find_button)
         return row
+
+    def _choice(self, label: str, ticked: bool, outer: QVBoxLayout) -> RingedCheckBox:
+        """One of the three boxes, remembered and priced as it is moved."""
+        box = RingedCheckBox(label, self)
+        box.setChecked(ticked)
+        box.toggled.connect(self._choices_changed)
+        outer.addWidget(box)
+        return box
+
+    def including(self) -> Including:
+        """What the three boxes say to take in. FR-D85."""
+        return Including(
+            credits=self.credits.isChecked(),
+            series=self.series.isChecked(),
+            mixes=self.mixes.isChecked(),
+        )
+
+    def _choices_changed(self) -> None:
+        """Keep the boxes as they were left; say what they now cost."""
+        self._remember(self.including())
+        self._price()
 
     def chosen(self) -> tuple[str, ...]:
         """The genres ticked, in catalogue order."""
@@ -281,15 +313,20 @@ class DiscoveryDialog(FirstStopDialog):
         self._price()
 
     def _price(self) -> None:
-        """Say what including compilations would add for the genres now ticked.
+        """Say what the boxes ticked would add for the genres now ticked.
 
-        Nothing is said with nothing ticked, since a run over no genres adds
-        nobody whether or not the box is ticked.
+        Nothing is said with no genre ticked, since a run over no genres adds
+        nobody whatever the boxes say; nor with neither of the first two boxes
+        ticked, since only those cost requests. FR-D85.
         """
         if self._cost is None:
             return
         ticked = self.chosen()
-        self.cost_line.setText(cost_sentence(self._cost(ticked)) if ticked else "")
+        including = self.including()
+        costly = including.credits or including.series
+        self.cost_line.setText(
+            cost_sentence(self._cost(ticked, including)) if ticked and costly else ""
+        )
 
     def _select_or_clear(self) -> None:
         """Tick everything, else clear it where there is nothing left to tick.
@@ -311,5 +348,5 @@ class DiscoveryDialog(FirstStopDialog):
         years = self.years.reading(self._this_year)
         if not self.chosen() or isinstance(years, YearRefusal):
             return
-        self._start(self.chosen(), self.compilations.isChecked(), years)
+        self._start(self.chosen(), self.including(), years)
         self.accept()

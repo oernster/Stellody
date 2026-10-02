@@ -32,10 +32,15 @@ from stellody.domain.discovery import Gaps, LastRun
 
 
 def _kept_to_years(gaps: Gaps, report: RunReport, previous: LastRun) -> Gaps:
-    """An earlier answer as far as this run's years allow it."""
+    """An earlier answer as far as this run's years and DJ mixes allow it."""
     return replace(
         gaps,
-        albums=tuple(album for album in gaps.albums if report.years.admits(album.year)),
+        albums=tuple(
+            album
+            for album in gaps.albums
+            if report.years.admits(album.year)
+            and album.offered_with(report.including.mixes)
+        ),
         artists=gaps.artists if previous.years == report.years else (),
     )
 

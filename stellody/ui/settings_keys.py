@@ -48,6 +48,12 @@ SETTING_EQ_ENABLED = "equaliser_enabled"
 # left. Remembered because it is a decision about how long to wait, which a
 # listener makes once rather than every time. FR-D51.
 SETTING_DISCOVER_COMPILATIONS = "discover_compilations"
+# The three choices that one box split into on 2026-10-02, each as its box was
+# last left. Where the first two were never written, the old box answers for
+# both, since it meant both. FR-D85.
+SETTING_DISCOVER_CREDITS = "discover_credits"
+SETTING_DISCOVER_SERIES = "discover_series"
+SETTING_DISCOVER_MIXES = "discover_mixes"
 # Which genre categories each dialog holding the genre grid was left with open:
 # one setting per dialog, since each is opened for a different job.
 SETTING_GENRES_OPEN_DISCOVERY = "genres_open_discovery"

@@ -299,3 +299,17 @@ def test_a_candidates_dj_mix_is_offered_on_expanding() -> None:
 def test_an_artist_with_nothing_offers_nothing() -> None:
     """A catalogue that answered with nothing is not an error here."""
     assert everything_offered(()) == ()
+
+
+def test_dj_mixes_left_out_are_not_offered() -> None:
+    """FR-D85: the box left clear keeps every mix out, whatever it is marked."""
+    offered = (
+        ReleaseGroup(
+            title="Involver", kinds=(ReleaseKind.COMPILATION, ReleaseKind.DJ_MIX)
+        ),
+        ReleaseGroup(title="Airdrawndagger"),
+    )
+    missing = albums_missing(frozenset(), offered, ("House",), mixes=False)
+    assert [group.title for group in missing] == ["Airdrawndagger"]
+    kept = everything_offered(offered, mixes=False)
+    assert [group.title for group in kept] == ["Airdrawndagger"]

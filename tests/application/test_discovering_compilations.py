@@ -20,17 +20,18 @@ from discovery_support import (
 from stellody.application.discovering import Discovery
 from stellody.application.values import RunOutcome, RunReport
 from stellody.domain.album import Album
+from stellody.domain.including import OWN_ALBUMS, WIDEST, Including
 
 # What the catalogue answers for a name it reaches nobody under.
 UNKNOWN: tuple[str, ...] = ()
 
 
 def run_over(
-    albums: tuple[Album, ...], catalogue: Catalogue, compilations: bool = True
+    albums: tuple[Album, ...], catalogue: Catalogue, including: Including = WIDEST
 ) -> RunReport:
-    """One run over these albums, compilations included unless said otherwise."""
+    """One run over these albums, everything taken in unless said otherwise."""
     service = Discovery(catalogue=catalogue, similarity=Similarity(), pause=Waits())
-    return service.run(albums, ROCK, nothing, never, compilations=compilations)
+    return service.run(albums, ROCK, nothing, never, including=including)
 
 
 def test_an_unrecognised_credit_is_asked_about_by_its_parts() -> None:
@@ -84,6 +85,6 @@ def test_a_run_leaving_compilations_out_asks_nothing_of_them() -> None:
     """Left out is the default; it asks nobody about a compilation."""
     catalogue = Catalogue()
     held = (make_compilation("Rock", "Dilby"),)
-    report = run_over(held, catalogue, compilations=False)
+    report = run_over(held, catalogue, including=OWN_ALBUMS)
     assert report.outcome is RunOutcome.NOTHING_TO_ASK
     assert catalogue.identified == []

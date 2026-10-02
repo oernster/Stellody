@@ -18,7 +18,9 @@ from stellody.application.remembering import (
     Recollection,
 )
 from stellody.domain.album import Album
+from stellody.domain.discovery import ReleaseGroup
 from stellody.domain.estimating import REQUESTS_PER_SERIES, REQUESTS_PER_SOURCE_ARTIST
+from stellody.domain.matching import ReleaseKind
 
 # Any moment will do, so long as every case agrees on it.
 NOW = 1_000_000_000.0
@@ -162,3 +164,29 @@ def test_the_memory_is_read_once_however_often_the_ticks_change() -> None:
     pricing.of(ROCK)
     pricing.of(("Jazz",))
     assert memory.reads == 1
+
+
+def test_a_compilation_filed_under_its_dj_is_a_series_to_price() -> None:
+    """FR-D82, FR-D84: the memory knows the DJ's discography, typed."""
+    mix = ReleaseGroup(title="Fabric 97: Tale of Us", kinds=(ReleaseKind.DJ_MIX,))
+    memory = Recollection(
+        identifiers={"Tale of Us": KNOWN},
+        albums={KNOWN[0]: (mix,)},
+        written_at={
+            f"{IDENTIFIERS}:Tale of Us": NOW,
+            f"{ALBUMS}:{KNOWN[0]}": NOW,
+        },
+    )
+    held = (
+        make_album("Tale of Us", "Fabric 97: Tale of Us"),
+        # Their own album, which the memory does not call a compilation.
+        make_album("Tale of Us", "Endless"),
+        # An artist the memory knows nothing of is no series to price.
+        make_album("Nobody Remembered", "A Record"),
+    )
+    assert priced(held, Kept(memory)).of(ROCK).series == 1
+    unsettled = Recollection(
+        identifiers={"Tale of Us": ("one", "two")},
+        written_at={f"{IDENTIFIERS}:Tale of Us": NOW},
+    )
+    assert priced(held, Kept(unsettled)).of(ROCK).series == 0
