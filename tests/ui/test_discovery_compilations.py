@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from discovery_wiring_support import make_window
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QWidget
 
 from stellody.application.compilation_cost import Cost
 from stellody.application.values import RunOutcome, RunReport
@@ -210,3 +210,19 @@ def test_the_diary_says_what_a_run_took_in() -> None:
     assert widened_by(Including(series=True, mixes=False)) == (
         "; with other volumes of series, no DJ mixes"
     )
+
+
+def test_select_all_prices_once_rather_than_once_a_box() -> None:
+    """Measured on 2026-10-02: 57 prices froze the dialog for 4.1 seconds."""
+    asked: list[tuple[str, ...]] = []
+
+    def counting(ticked: tuple[str, ...], including: Including) -> Cost:
+        asked.append(ticked)
+        return Cost(names=1, seconds=SECONDS_PER_MINUTE)
+
+    dialog = DiscoveryDialog(cost=counting, including=WIDEST)
+    asked.clear()
+    dialog.select_button.click()
+    assert len(asked) == 1
+    assert asked[0] == dialog.chosen()
+    assert QApplication.overrideCursor() is None
