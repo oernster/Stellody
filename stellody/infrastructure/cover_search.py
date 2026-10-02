@@ -1,9 +1,10 @@
 """Looking an album up in MusicBrainz and its art up in the Cover Art Archive.
 
-One of the three modules in Stellody that open a connection, the others being
-the update check and the fetcher a discovery run asks its catalogues through.
-This one is reached only when a listener asks for a cover, never on a scan and
-never on a draw.
+One of the three modules in Stellody that reach past this machine, the others
+being the update check and the fetcher a discovery run asks its catalogues
+through. A fourth holds connection machinery too: the single-instance channel,
+which stays on this machine. This one is reached only when a listener asks for
+a cover, never on a scan and never on a draw.
 
 **Two services, because they are two questions.** MusicBrainz knows which
 releases an album has; the Cover Art Archive knows which pictures a release
