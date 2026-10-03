@@ -39,8 +39,20 @@ def split(value: str) -> tuple[str, ...]:
 
 def stats_of(connection: sqlite3.Connection, folder: str) -> tuple[FileStat, ...]:
     """The recorded file statistics for one folder."""
+    return _stats_in(connection, "files", folder)
+
+
+def sidecars_of(connection: sqlite3.Connection, folder: str) -> tuple[FileStat, ...]:
+    """The recorded cue sheets and pictures for one folder."""
+    return _stats_in(connection, "sidecars", folder)
+
+
+def _stats_in(
+    connection: sqlite3.Connection, table: str, folder: str
+) -> tuple[FileStat, ...]:
+    """One folder's rows of a table holding a path, a name, a size and a time."""
     rows = connection.execute(
-        "SELECT path, file_name, size, mtime FROM files "
+        f"SELECT path, file_name, size, mtime FROM {table} "
         "WHERE folder = ? ORDER BY file_name",
         (folder,),
     )

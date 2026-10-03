@@ -10,11 +10,17 @@ from __future__ import annotations
 
 import re
 
+# Where a marker word may begin: anywhere not straight after a letter or a
+# digit. Without it "SACD 2" read as a disc marker on an album called "SA" and
+# "MiniDisc 2" as one on "Mini". The underscore is deliberately not counted
+# as part of a word here, since "Album_CD1" is a separator and a marker.
+_WORD_START = r"(?<![^\W_])"
+
 # "The Book of Souls CD1", "White Album (Disc 2)", "Box Set [Disk 3]".
 # The literal CD or Disc word is required, so an album whose title merely ends
 # in a number, such as Northern Exposure 2, is never split.
 _DISC_SUFFIX = re.compile(
-    r"^(?P<base>.*?)[\s._-]*[(\[]?\s*(?:CD|Disc|Disk)\s*[.\-_]?\s*"
+    rf"^(?P<base>.*?)[\s._-]*[(\[]?\s*{_WORD_START}(?:CD|Disc|Disk)\s*[.\-_]?\s*"
     r"(?P<number>\d{1,2})\s*[)\]]?$",
     re.IGNORECASE,
 )
@@ -26,7 +32,7 @@ _DISC_SUFFIX = re.compile(
 # above, since a numbered bonus folder matches both and only this one reads it
 # without leaving half the bracket in the album name.
 _BONUS_SUFFIX = re.compile(
-    r"^(?P<base>.*?)[\s._-]*[(\[]?\s*(?:bonus|extra)\s*"
+    rf"^(?P<base>.*?)[\s._-]*[(\[]?\s*{_WORD_START}(?:bonus|extra)\s*"
     r"(?:CD|Disc|Disk)\s*[.\-_]?\s*(?P<number>\d{1,2})?\s*[)\]]?$",
     re.IGNORECASE,
 )

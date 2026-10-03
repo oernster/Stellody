@@ -32,7 +32,15 @@ SUBTYPE_BIT_DEPTHS = {
     "FLOAT": 32,
     "DOUBLE": 64,
 }
-DEFAULT_BIT_DEPTH = 16
+# What a subtype missing from the table states: no depth at all. Vorbis and
+# MPEG are what reach here, decoded by libsndfile but lossy, so nought is the
+# honest answer; it is what `PacketReader` says of the formats it reads.
+NO_STATED_DEPTH = 0
+# The subtypes holding floating point samples rather than integers.
+FLOAT_SUBTYPES = frozenset({"FLOAT", "DOUBLE"})
+# What a float file is read as before it is converted to an integer stream:
+# wide enough to carry a DOUBLE file's samples without rounding them first.
+FLOAT_READ_DTYPE = "float64"
 WORKING_DTYPE = "float32"
 
 # Suffixes libsndfile cannot open, which the packet reader takes instead. Kept
@@ -102,8 +110,13 @@ class SourceReader:
 
     @property
     def bit_depth(self) -> int:
-        """The file's stored depth; the CD depth when the subtype is unknown."""
-        return SUBTYPE_BIT_DEPTHS.get(self._handle.subtype, DEFAULT_BIT_DEPTH)
+        """The file's stored depth; nought when the subtype states none."""
+        return SUBTYPE_BIT_DEPTHS.get(self._handle.subtype, NO_STATED_DEPTH)
+
+    @property
+    def floating(self) -> bool:
+        """Whether the file stores floating point samples."""
+        return self._handle.subtype in FLOAT_SUBTYPES
 
     @property
     def frame_count(self) -> int:
@@ -130,15 +143,22 @@ class SourceReader:
 
         Returns an empty array at the end of the slice, which is how the feeder
         thread learns the track is over.
+
+        A float file wanted as integers is read as floats and converted here.
+        libsndfile 1.2.2 does not scale floats into integers: measured on
+        2026-10-03, a FLOAT WAV at half of full scale read back as nought in
+        both integer types, which played as silence.
         """
         wanted = min(frames, self._frame_count - self.frame)
         if wanted <= 0:
             return np.zeros((0, self.channels), dtype=self._dtype)
+        converting = self.floating and is_integer(self._dtype)
+        dtype = FLOAT_READ_DTYPE if converting else self._dtype
         try:
-            block = self._handle.read(wanted, dtype=self._dtype, always_2d=True)
+            block = self._handle.read(wanted, dtype=dtype, always_2d=True)
         except RuntimeError as error:
             raise DecodeError(f"cannot read {self._source.path}: {error}") from error
-        return block
+        return as_integers(block, self._dtype) if converting else block
 
     def close(self) -> None:
         """Release the file handle. Safe to call more than once."""
@@ -164,6 +184,10 @@ class AudioSource(Protocol):
     @property
     def bit_depth(self) -> int:
         """The stored depth; nought when the format states none."""
+
+    @property
+    def floating(self) -> bool:
+        """Whether the source holds floating point samples."""
 
     @property
     def frame_count(self) -> int:
@@ -221,6 +245,25 @@ def open_source(source: TrackSource, dtype: str = WORKING_DTYPE) -> AudioSource:
             ) from error
         return PacketReader(source, dtype=dtype)
     return SourceReader(source, dtype=dtype)
+
+
+def is_integer(dtype: str) -> bool:
+    """Whether `dtype` is one of the integer sample types."""
+    return np.issubdtype(np.dtype(dtype), np.integer)
+
+
+def as_integers(block: np.ndarray, dtype: str) -> np.ndarray:
+    """Float samples, full scale at one, as `dtype` integers, clipped to range.
+
+    Scaled by the size of the negative half of the range, the convention
+    libsndfile itself reads integers back to floats by, so a file written
+    from integers comes back to the same integers. A sample past full scale,
+    which a float file may hold, stops at the end of the range rather than
+    wrapping round to the other one.
+    """
+    limits = np.iinfo(dtype)
+    scaled = np.round(block * -float(limits.min))
+    return np.clip(scaled, limits.min, limits.max).astype(dtype)
 
 
 def _suffix_of(path: str) -> str:

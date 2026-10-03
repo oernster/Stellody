@@ -71,6 +71,8 @@ def entry(folder_name: str, file_name: str, **overrides: object) -> SourceEntry:
         # The word Disc alone says nothing, so nothing is inferred from it.
         ("Compact Disc", ("Compact Disc", None)),
         ("Bonus Disc", ("Bonus Disc", None)),
+        # The bonus word has to be a word of its own, as the disc word does.
+        ("Superbonus CD", ("Superbonus CD", None)),
     ],
 )
 def test_a_bonus_marker_is_split_off_only_when_it_names_a_disc(

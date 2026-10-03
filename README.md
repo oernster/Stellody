@@ -64,9 +64,10 @@ any shop and takes nothing from a sale.
   with no silence dropped in where the artist never put one.
 - **An equalizer, plus little bars that dance.** Ten sliders from deep bass to
   high treble, with twenty bars along the bottom showing what the music is
-  doing. A curve that lifts any part of the sound first lowers the whole record
-  by as much as it lifts, so a loud record never clips; music plays quieter
-  with such a curve on, while a curve that only cuts keeps its level. Switched
+  doing. A curve that lifts any part of the sound is lowered by its largest
+  lift, which keeps a boost from clipping on ordinary material; it is not a
+  guarantee against every waveform. Music plays quieter with such a curve on,
+  while a curve of cuts alone is not lowered and keeps its level. Switched
   off it adds nothing of its own, handing each block back untouched; at full
   volume with mute off nothing else in Stellody touches the samples either. Volume, mute,
   the output device, exclusive output and the equalizer sit together at the

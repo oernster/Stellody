@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from stellody.application.artwork import AlbumArtSources, sources_for
+from stellody.application.artwork import sources_for
 from stellody.application.ports import (
     CancelledCheck,
     LibraryStore,
@@ -20,20 +19,49 @@ from stellody.application.records import (
     _record_from_file,
     _records_from_cue,
 )
+from stellody.application.scan_report import (
+    ProgressCallback,
+    ScanProgress,
+    ScanReport,
+)
 from stellody.application.values import (
     AudioProperties,
     FolderListing,
     FolderRecord,
     SourceRecord,
 )
-from stellody.domain.album import Album
 from stellody.domain.cue import CueParseError, CueSheet, parse_cue
 from stellody.domain.entries import stated_over
 from stellody.domain.grouping import assemble_albums
 from stellody.domain.health import IssueKind, LibraryIssue
 
 SINGLE_FILE_ALBUM = 1
-PERCENT = 100
+# What the report counts as could not be read: a file, also a whole folder
+# the system would not let the walk open.
+UNREADABLE = frozenset({IssueKind.UNREADABLE_FILE, IssueKind.UNREADABLE_FOLDER})
+# Every character this system separates folders with, so "beneath" can be
+# asked of a path written either way round.
+SEPARATORS = "".join(filter(None, (os.sep, os.altsep)))
+
+
+def _beyond_reach(
+    cached: dict[str, FolderRecord], unlisted: list[str]
+) -> list[FolderRecord]:
+    """Every remembered folder at or beneath one the walk could not list.
+
+    Beneath as well as at, since a walk that cannot open a folder cannot go
+    into the folders inside it either. A neighbour that merely starts with
+    the same letters, "Locked Out" beside "Locked", is not beneath it.
+    """
+    return [
+        record
+        for folder, record in cached.items()
+        if any(
+            folder == refused
+            or (folder.startswith(refused) and folder[len(refused)] in SEPARATORS)
+            for refused in unlisted
+        )
+    ]
 
 
 class LibraryUnreachableError(RuntimeError):
@@ -49,70 +77,6 @@ class LibraryUnreachableError(RuntimeError):
             f"the music folder {root} cannot be reached; nothing in the "
             "library was changed"
         )
-
-
-@dataclass(frozen=True, slots=True)
-class ScanProgress:
-    """How far through a scan is, plus which folder it is reading.
-
-    A library of a few thousand folders spends long enough scanning that a bar
-    with no number on it says only that something is happening. The count is
-    carried here rather than worked out on the interface thread, which has no
-    way of knowing how many folders there are.
-    """
-
-    folder: str
-    done: int = 0
-    total: int = 0
-
-    @property
-    def percent(self) -> int:
-        """How far through, as a whole number; nought when nothing is known."""
-        if self.total <= 0:
-            return 0
-        return round(self.done * PERCENT / self.total)
-
-
-ProgressCallback = Callable[[ScanProgress], None]
-# Asked between folders, so a scan can be given up without waiting for it. A
-# scan of a large library takes long enough that quitting during one is an
-# ordinary thing to do; Qt cannot interrupt a running one from outside.
-
-
-@dataclass(frozen=True, slots=True)
-class ScanReport:
-    """What one scan found, plus how much of it had to be re-read."""
-
-    albums: tuple[Album, ...] = ()
-    issues: tuple[LibraryIssue, ...] = ()
-    art: tuple[AlbumArtSources, ...] = ()
-    folders_probed: int = 0
-    folders_reused: int = 0
-    # Every readable audio file the library holds, NOT the files this scan
-    # opened. A reused folder contributes its remembered files without one of
-    # them being touched, so on a rescan that changed nothing this is the whole
-    # library while nothing at all was read. It was called files_probed, which
-    # said the opposite and was reported to a listener as "Files read".
-    files_in_library: int = 0
-    files_unreadable: int = 0
-    files_absent: int = 0
-    cancelled: bool = False
-
-    @property
-    def track_count(self) -> int:
-        """How many tracks the assembled library holds."""
-        return sum(album.track_count for album in self.albums)
-
-    @property
-    def folders_checked(self) -> int:
-        """Every folder the walk visited, whether or not it had to be re-read.
-
-        A rescan that finds nothing changed still lists every folder and
-        compares every file's size and modification time against the store.
-        Reporting only the folders it re-read says nought, which reads as a
-        scan that did nothing rather than as one that found nothing to do.
-        """
-        return self.folders_probed + self.folders_reused
 
 
 @dataclass(slots=True)
@@ -175,10 +139,14 @@ class ScanLibrary:
         # it has finished, by which time the number is of no use to anybody.
         total = self._walker.count(root)
         done = 0
+        unlisted: list[str] = []
 
         for listing in self._walker.walk(root):
             if cancelled is not None and cancelled():
                 return ScanReport(cancelled=True)
+            if not listing.listed:
+                unlisted.append(listing.folder)
+                continue
             done += 1
             if progress is not None:
                 progress(ScanProgress(listing.folder, done, total))
@@ -193,6 +161,18 @@ class ScanLibrary:
             records.append(record)
             probed_folders += 1
 
+        # What the walk could not reach is kept as it was last found, so it
+        # is never marked absent: a permission the system refused is not an
+        # album somebody deleted.
+        for kept in _beyond_reach(cached, unlisted):
+            records.append(kept)
+            seen.update(kept.signatures)
+        refused = tuple(
+            LibraryIssue(
+                kind=IssueKind.UNREADABLE_FOLDER, album=folder, paths=(folder,)
+            )
+            for folder in unlisted
+        )
         absent = self._store.mark_absent(frozenset(seen))
         # Read after the walk rather than before it, so a correction accepted
         # while a scan was running is honoured by the library it produces.
@@ -208,20 +188,15 @@ class ScanLibrary:
         # re-read at all.
         entries = stated_over(_grouping_entries(records), self._store.all_album_edits())
         albums, issues = assemble_albums(entries, self._store.all_overrides())
+        found = tuple(issue for record in records for issue in record.issues) + refused
         return ScanReport(
             albums=albums,
-            issues=tuple(issue for record in records for issue in record.issues)
-            + issues,
+            issues=found + issues,
             art=sources_for(albums, tuple(records)),
             folders_probed=probed_folders,
             folders_reused=reused_folders,
             files_in_library=sum(len(record.stats) for record in records),
-            files_unreadable=sum(
-                1
-                for record in records
-                for issue in record.issues
-                if issue.kind is IssueKind.UNREADABLE_FILE
-            ),
+            files_unreadable=sum(1 for issue in found if issue.kind in UNREADABLE),
             files_absent=absent,
         )
 
@@ -241,6 +216,10 @@ class ScanLibrary:
         none of them.
         """
         if cached.derivation != DERIVATION:
+            return False
+        # The cue sheets and pictures are compared whole, size and time
+        # included, since they are not files the store tracks one by one.
+        if listing.sidecar_signatures != cached.sidecar_signatures:
             return False
         current = listing.signatures
         if set(current) != set(cached.signatures):
@@ -266,6 +245,14 @@ class ScanLibrary:
             state.probed += 1
             properties[item.path] = read
             state.embedded_art = state.embedded_art or read.has_embedded_art
+        # Files the system would not even give a size for, named as the ones
+        # that would not open are, rather than left out without a word.
+        state.issues.extend(
+            LibraryIssue(
+                kind=IssueKind.UNREADABLE_FILE, album=listing.folder, paths=(path,)
+            )
+            for path in listing.unreadable
+        )
 
         self._name_the_unplayable(listing, state)
         self._collect_sources(listing, properties, state)
@@ -277,6 +264,7 @@ class ScanLibrary:
             has_embedded_art=state.embedded_art,
             issues=tuple(state.issues),
             derivation=DERIVATION,
+            sidecars=listing.sidecars,
         )
 
     @staticmethod

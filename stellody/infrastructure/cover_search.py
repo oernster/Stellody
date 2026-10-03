@@ -11,6 +11,11 @@ releases an album has; the Cover Art Archive knows which pictures a release
 has. A release with no art answers 404 there, which is an ordinary answer
 rather than a failure: it means look at the next release.
 
+**It reaches those two and the archive's stores, nothing else.** A picture
+asked of the Cover Art Archive is redirected to the Internet Archive, which
+serves it from one of its own hosts; those are followed over HTTPS. A redirect
+anywhere else is refused, which reads as a source that could not be reached.
+
 **The terms are honoured rather than hoped for.** MusicBrainz asks for an
 identifying user agent and no more than one request a second; it answers 503
 when that is ignored. Measured on 2026-08-30: two searches sent back to back
@@ -51,9 +56,17 @@ from stellody.infrastructure.courtesy import (
     Gate,
     Waiter,
 )
+from stellody.infrastructure.reach import (
+    COVER_ART_HOST,
+    COVER_REACH,
+    MUSICBRAINZ_HOST,
+    Reach,
+    origin,
+)
+from stellody.infrastructure.update_source import admitted, pinned_opener
 
-SEARCH_URL = "https://musicbrainz.org/ws/2/release"
-ART_URL = "https://coverartarchive.org/release"
+SEARCH_URL = f"{origin(MUSICBRAINZ_HOST)}/ws/2/release"
+ART_URL = f"{origin(COVER_ART_HOST)}/release"
 # How long any one socket operation may block before the question is asked
 # again. It is the cap on how long a cancelled lookup can go unnoticed, so it
 # is well inside the two seconds the window waits for a thread on the way out;
@@ -138,13 +151,20 @@ def _release_label(release: dict) -> str:
 class ArchiveCovers:
     """Searches MusicBrainz, then reads the Cover Art Archive for pictures."""
 
-    def __init__(self, gate: Gate | None = None, opener=None, waiter=None) -> None:
+    def __init__(
+        self,
+        gate: Gate | None = None,
+        opener=None,
+        waiter=None,
+        reach: Reach = COVER_REACH,
+    ) -> None:
         # The pause between asks, injected so a test can watch the backoff grow
         # without waiting through it. It is also what makes a wait something a
         # cancelled search can walk away from: see `Waiter`.
         self._waiter = waiter if waiter is not None else Waiter()
         self._gate = gate if gate is not None else Gate(waiter=self._waiter)
-        self._opener = opener if opener is not None else urllib.request.urlopen
+        self._opener = opener if opener is not None else pinned_opener(reach)
+        self._reach = reach
 
     def search(
         self, artist: str, album: str, wanted: Wanted = always_wanted
@@ -185,7 +205,14 @@ class ArchiveCovers:
         Not gated: the pictures come from the archive's own store rather than
         from the search, while a grid of a dozen thumbnails at a second each
         is a chooser that opens a dozen seconds late.
+
+        The address comes from the archive's own listing, which is a document
+        from the internet: one off the archive's hosts or off HTTPS is never
+        opened. Measured before this was checked: a `file:` address named
+        there was read off this machine's disk.
         """
+        if not admitted(self._reach, url):
+            return None
         try:
             return self._read(url, IMAGE_TIMEOUT_S, wanted)
         except (urllib.error.URLError, OSError, ValueError):

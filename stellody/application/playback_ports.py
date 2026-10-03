@@ -103,6 +103,16 @@ class PlaybackPort(Protocol):
         ...
 
     @property
+    def failure(self) -> str:
+        """Why the open stream stopped by itself; empty while nothing went wrong.
+
+        Not an ending and not a lost device: something on the way to the
+        device failed that nothing expected. The track cannot be resumed, so
+        the transport names it with this reason and moves on.
+        """
+        ...
+
+    @property
     def crossings(self) -> int:
         """How many lined-up sources the device has run into by itself.
 

@@ -28,6 +28,12 @@ import json
 import os
 import pathlib
 
+# What ends one entry. Checked in binary against the final byte alone: text
+# mode on Windows writes a carriage return before it, which leaves that final
+# byte the same on every platform.
+LINE_END = "\n"
+LINE_END_BYTES = b"\n"
+
 
 def note(where: pathlib.Path, entry: dict) -> None:
     """Add one answer to the end of the record; say nothing where it cannot be.
@@ -35,13 +41,33 @@ def note(where: pathlib.Path, entry: dict) -> None:
     Failing to write here is not worth failing a run over: what it costs is
     the safety net; the run itself still ends by writing everything down.
     """
+    line = json.dumps(entry, ensure_ascii=False) + LINE_END
     try:
+        if _ends_mid_line(where):
+            line = LINE_END + line
         with where.open("a", encoding="utf-8") as record:
-            record.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            record.write(line)
             record.flush()
             os.fsync(record.fileno())
     except OSError:
         return
+
+
+def _ends_mid_line(where: pathlib.Path) -> bool:
+    """Whether the record stops part way through a line a dead run began.
+
+    Appending straight on would join this entry to that fragment. The joined
+    line reads as nothing at all; ending the fragment first leaves it to be
+    skipped by itself. A record that is not there yet ends nowhere.
+    """
+    try:
+        with where.open("rb") as record:
+            if record.seek(0, os.SEEK_END) == 0:
+                return False
+            record.seek(-len(LINE_END_BYTES), os.SEEK_END)
+            return record.read() != LINE_END_BYTES
+    except FileNotFoundError:
+        return False
 
 
 def replayed(where: pathlib.Path) -> tuple[dict, ...]:

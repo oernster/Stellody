@@ -143,6 +143,11 @@ class OutputReport:
     sample_rate: int
     bit_depth: int
     fallback_reason: str = ""
+    # Whether the samples reach the stream in the file's own format. False
+    # where they had to be converted on the way, as a floating point file
+    # does to reach an integer stream: no such conversion is exact, whatever
+    # depth the stream has. Found by the audit of 2026-10-03.
+    samples_exact: bool = True
 
     def __post_init__(self) -> None:
         if self.sample_rate <= 0:
@@ -176,11 +181,15 @@ class OutputReport:
         an MP3 decoder is already not what went into the encoder, so no way of
         opening the device can make the claim true. `depth_is_native` is what
         refuses it, since such a file states no depth to be native to.
+
+        Nor is a file whose samples were converted to reach the stream; see
+        `samples_exact`.
         """
         return (
             self.mode is OutputMode.EXCLUSIVE
             and self.rate_is_native
             and self.depth_is_native
+            and self.samples_exact
         )
 
     @property

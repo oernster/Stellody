@@ -35,6 +35,11 @@ class FileStat:
         return (self.size, self.mtime)
 
 
+def signatures_of(stats: tuple[FileStat, ...]) -> dict[str, tuple[int, int]]:
+    """Each file against the pair a rescan compares."""
+    return {item.path: item.signature for item in stats}
+
+
 @dataclass(frozen=True, slots=True)
 class FolderListing:
     """One folder of a music library, as the walker found it."""
@@ -48,6 +53,18 @@ class FolderListing:
     # vanishing: a listener who cannot find an album they own has no way to
     # tell a format Stellody skipped from a library that failed to scan.
     unplayable: tuple[str, ...] = ()
+    # Audio files whose size and time the system would not give. Carried so
+    # each is counted and named as unreadable; dropped, they vanished from the
+    # library with nothing anywhere saying so.
+    unreadable: tuple[str, ...] = ()
+    # The cue sheets and pictures, with their size and time. A rescan compares
+    # them as it compares the audio, because a cue sheet added or corrected
+    # beside music already scanned changes the album as surely as a new track.
+    sidecars: tuple[FileStat, ...] = ()
+    # False for a folder the system would not let the walk list. Such a folder
+    # holds nothing the scan can see, which is NOT the same as holding nothing:
+    # what was found there before is kept rather than reported gone.
+    listed: bool = True
 
     @property
     def signatures(self) -> dict[str, tuple[int, int]]:
@@ -58,7 +75,12 @@ class FolderListing:
         signatures at all, which is what lets it be reused rather than
         re-listed at every scan.
         """
-        return {item.path: item.signature for item in self.audio}
+        return signatures_of(self.audio)
+
+    @property
+    def sidecar_signatures(self) -> dict[str, tuple[int, int]]:
+        """Every cue sheet and picture here against its size and mtime."""
+        return signatures_of(self.sidecars)
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,11 +158,19 @@ class FolderRecord:
     # database written before the question was asked carries; no rule set
     # ever answers to it, so such a folder is always read again.
     derivation: int = 0
+    # The cue sheets and pictures the folder held when it was read, so a
+    # rescan can tell when one has been added, changed or taken away.
+    sidecars: tuple[FileStat, ...] = ()
 
     @property
     def signatures(self) -> dict[str, tuple[int, int]]:
         """Every audio file recorded here against its size and mtime."""
-        return {item.path: item.signature for item in self.stats}
+        return signatures_of(self.stats)
+
+    @property
+    def sidecar_signatures(self) -> dict[str, tuple[int, int]]:
+        """Every cue sheet and picture recorded here against its size and mtime."""
+        return signatures_of(self.sidecars)
 
 
 @dataclass(frozen=True, slots=True)

@@ -13,7 +13,21 @@ which is why the two sections at the foot carry no numbers. A resolved item is
 deleted outright rather than marked done: technical-debt history is not
 technical debt. What a resolution was worth is recorded in the release notes.
 
-There is no open technical debt.
+## 1. The listener's own data shares a file with the scan cache
+
+Ratings and play counts (the `listening` table in `infrastructure/store.py`),
+accepted track corrections (`infrastructure/override_rows.py`) and album edits
+(`infrastructure/album_edit_rows.py`) live in the same SQLite file as the
+library index, which is a cache a rescan rebuilds. A file damaged badly enough
+not to open is set aside whole by `infrastructure/opening.py`, write ahead log
+included, so nothing is lost. The application then starts without any of that
+data, though; the only way back is by hand.
+
+The structural answer is to keep that data in a file of its own, so a damaged
+scan cache cannot take it with it. That is a migration of user data: an
+existing library has to be split in two without losing a row. The format and
+location of the new file are a decision rather than a refactor. Blocked on
+the owner deciding the format and the migration.
 
 ## Looks like debt, not worth touching
 

@@ -57,6 +57,16 @@ def entry(
         ("Future Funk 2", ("Future Funk 2", None)),
         ("Involver", ("Involver", None)),
         ("CD1", ("CD1", None)),
+        ("Album CD 10", ("Album", 10)),
+        ("Album Disc1", ("Album", 1)),
+        ("Album_CD1", ("Album", 1)),
+        ("Album.Disc.2", ("Album", 2)),
+        # The marker has to be a word of its own. Found inside a longer word
+        # it is part of a title: these were split mid-word into an album
+        # called "Brothers in Arms SA" and its like.
+        ("Brothers in Arms SACD 2", ("Brothers in Arms SACD 2", None)),
+        ("Greatest Hits HDCD 1", ("Greatest Hits HDCD 1", None)),
+        ("Sony MiniDisc 2", ("Sony MiniDisc 2", None)),
     ],
 )
 def test_disc_suffixes_are_split_off_without_touching_titles(

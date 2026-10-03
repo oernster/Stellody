@@ -145,6 +145,20 @@ def test_a_truncating_device_is_not_bit_perfect() -> None:
     assert report.is_bit_perfect is False
 
 
+def test_converted_samples_are_not_bit_perfect() -> None:
+    """A float file on an integer stream: native rate and depth, still not exact."""
+    report = OutputReport(
+        request=cd_request(OutputMode.EXCLUSIVE),
+        mode=OutputMode.EXCLUSIVE,
+        sample_rate=CD_SAMPLE_RATE,
+        bit_depth=CD_BIT_DEPTH,
+        samples_exact=False,
+    )
+    assert report.rate_is_native is True
+    assert report.depth_is_native is True
+    assert report.is_bit_perfect is False
+
+
 def test_a_resampled_exclusive_stream_is_not_bit_perfect() -> None:
     request = OutputRequest(
         sample_rate=HIGH_RATE, bit_depth=CD_BIT_DEPTH, mode=OutputMode.EXCLUSIVE

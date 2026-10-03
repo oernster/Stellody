@@ -64,6 +64,9 @@ class RecordingPlayer:
         self.refuses: dict[str, str] = {}
         # Whether the open stream's device went away, as a test says it did.
         self.interrupted = False
+        # Why the open stream stopped by itself, as a test says it did;
+        # empty while nothing has gone wrong. Every load opens a new stream.
+        self.failure = ""
 
     def use_device(self, device: OutputDevice | None) -> None:
         """Record where later streams are to open."""
@@ -102,6 +105,7 @@ class RecordingPlayer:
         if refusal is not None:
             raise OutputRefused(refusal)
         self.crossings = 0
+        self.failure = ""
         self.loaded.append(source)
         self.requests.append(request)
         self.finished = False

@@ -72,6 +72,7 @@ from stellody.infrastructure.courtesy import (
     USER_AGENT,
     Gate,
 )
+from stellody.infrastructure.reach import DISCOVERY_REACH, Reach
 
 # How often a request in flight asks whether anybody still wants it. The same
 # slice the waits between requests are taken in, for the same reason and so
@@ -112,6 +113,11 @@ IDLE_LIMIT_S = HOST_LETS_GO_AFTER_S / 2
 # the privacy note said nothing did. Setting it here is what stops Qt adding
 # its own: the test on the loopback service reads the header that arrives.
 ACCEPT_LANGUAGE = "*"
+# Every redirect is put to `_judged` first: Qt's own policy goes to any host.
+REDIRECT_POLICY_ATTRIBUTE = QNetworkRequest.Attribute.RedirectPolicyAttribute
+VERIFIED_REDIRECTS = QNetworkRequest.RedirectPolicy.UserVerifiedRedirectPolicy
+# Where a reply abandoned for leaving the reach says where it was going.
+REFUSED_PROPERTY = "stellodyRefusedRedirect"
 
 # Handed one line about a request that has just ended. The diary is what fills
 # this in; a test hands in a list instead.
@@ -179,7 +185,9 @@ class Fetcher:
         note: Note = diary.note,
         idle_limit_s: float = IDLE_LIMIT_S,
         clock: Callable[[], float] = time.monotonic,
+        reach: Reach = DISCOVERY_REACH,
     ) -> None:
+        self._reach = reach
         self._gate = gate if gate is not None else Gate()
         self._timeout_s = timeout_s
         # Each asking thread's manager. Reached from every thread that asks
@@ -294,7 +302,25 @@ class Fetcher:
         request = QNetworkRequest(QUrl(url))
         request.setRawHeader(b"User-Agent", USER_AGENT.encode("utf-8"))
         request.setRawHeader(b"Accept-Language", ACCEPT_LANGUAGE.encode("utf-8"))
-        return held.manager.get(request)
+        request.setAttribute(REDIRECT_POLICY_ATTRIBUTE, VERIFIED_REDIRECTS)
+        reply = held.manager.get(request)
+        reply.redirected.connect(lambda target: self._judged(reply, target))
+        return reply
+
+    def _judged(self, reply: QNetworkReply, target: QUrl) -> None:
+        """Let a redirect through only to a host this fetcher may reach.
+
+        Measured on loopback: Qt followed a 302 to another host, re-sent the
+        user agent with its contact address there, then believed the answer. One
+        leaving the reach is abandoned and marked, so it reads as a service
+        that could not be reached rather than as one that was slow.
+        """
+        onward = reply.url().resolved(target)
+        if self._reach.admits(onward.scheme(), onward.host()):
+            reply.redirectAllowed.emit()
+            return
+        reply.setProperty(REFUSED_PROPERTY, onward.toString())
+        reply.abort()
 
     def _waited_on(self, reply: QNetworkReply, wanted: Wanted) -> None:
         """Wait for the reply, giving it up where nobody wants it any more.
@@ -332,8 +358,11 @@ class Fetcher:
             status = reply.attribute(STATUS_ATTRIBUTE)
             trouble = reply.error()
             body = bytes(reply.readAll().data())
+            refused = reply.property(REFUSED_PROPERTY)
         finally:
             reply.deleteLater()
+        if refused:
+            raise SourceUnavailable(f"redirect refused: {refused}")
         if status in REFUSAL_CODES:
             raise RateRefused(f"{status}, saying: {_said(body)}")
         if trouble is QNetworkReply.NetworkError.OperationCanceledError:

@@ -54,6 +54,9 @@ PREROLL_PACKETS = 2
 # The packet length to assume when the codec states none of its own.
 ASSUMED_PACKET_FRAMES = 1024
 
+# The decoder formats holding floating point samples, packed and planar.
+FLOAT_FORMATS = frozenset({"flt", "fltp", "dbl", "dblp"})
+
 
 class PacketReader:
     """One open packet stream, positioned within its own slice.
@@ -82,6 +85,9 @@ class PacketReader:
         self._sample_rate = int(codec.sample_rate or 0)
         self._channels = int(codec.layout.nb_channels)
         self._packet_frames = int(codec.frame_size or ASSUMED_PACKET_FRAMES)
+        self._floating = codec.format is not None and (
+            codec.format.name in FLOAT_FORMATS
+        )
         if self._sample_rate <= 0 or self._channels <= 0:
             self._container.close()
             raise DecodeError(f"{source.path} states no usable audio format")
@@ -138,6 +144,17 @@ class PacketReader:
     def frame_count(self) -> int:
         """How many frames this slice holds."""
         return self._frame_count
+
+    @property
+    def floating(self) -> bool:
+        """Whether the decoder hands back floating point samples.
+
+        Asked of the decoder because nothing else here can be: what the file
+        stores is the probe's business (see `bit_depth`). The resampler scales
+        floats into integers itself, so this decides only whether the stream
+        receives them exactly.
+        """
+        return self._floating
 
     @property
     def frame(self) -> int:

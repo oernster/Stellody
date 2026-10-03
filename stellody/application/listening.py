@@ -7,7 +7,8 @@ query and only tracks somebody has actually listened to or rated are in it, so
 a library nobody has touched costs nothing at all.
 
 Every change is written through immediately. There is no save step to forget
-and nothing is lost to a crash between one and the next.
+and nothing is lost to a crash between one and the next. A change the store
+refuses is not held either.
 """
 
 from __future__ import annotations
@@ -16,6 +17,10 @@ from stellody.application.ports import ListeningStore
 from stellody.domain.listening import Listening
 
 NOTHING = Listening()
+
+
+class ListeningUnwritable(Exception):
+    """The store would not take a rating or a play count, so nothing changed."""
 
 
 class ListeningLog:
@@ -46,7 +51,13 @@ class ListeningLog:
         return self._write(handle, path, self.of(handle).played())
 
     def _write(self, handle: str, path: str, record: Listening) -> Listening:
-        """Hold it and write it, so the two can never disagree."""
-        self._records[handle] = record
+        """Write it, then hold it, so the two can never disagree.
+
+        The store goes first. Held first, a write the store refused left the
+        window showing a rating the disk never had, which vanished at the next
+        start; now a refusal leaves both as they were and reaches whoever
+        asked as `ListeningUnwritable`, for them to say so.
+        """
         self._store.set_listening(handle, path, record)
+        self._records[handle] = record
         return record

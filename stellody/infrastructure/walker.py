@@ -140,18 +140,46 @@ def _art_rank(name: str) -> tuple[int, str]:
     return (len(PREFERRED_ART_STEMS), stem)
 
 
+def _by_path(stat: FileStat) -> str:
+    """Ordering key putting a folder's files in one settled order."""
+    return stat.path
+
+
+def _unlisted(refused: list[str]) -> Iterator[FolderListing]:
+    """One listing for each folder refused since the last call, then forget them."""
+    while refused:
+        yield FolderListing(folder=os.fspath(refused.pop(0)), audio=(), listed=False)
+
+
 class FolderWalker:
     """Yields one listing per folder that contains audio."""
 
     def walk(self, root: str) -> Iterator[FolderListing]:
-        """Walk a library root, deepest detail first within each folder."""
-        for folder, directories, files in os.walk(root):
+        """Walk a library root, deepest detail first within each folder.
+
+        A folder the system will not list is yielded too, marked as not
+        listed. `os.walk` passes over one in silence unless it is handed
+        somewhere to put the error, which made a permission refused on one
+        album read as that album deleted. It reports the refusal while
+        fetching the next folder, so whatever it has reported is yielded
+        before that folder and once more after the last.
+        """
+        refused: list[str] = []
+
+        def note(error: OSError) -> None:
+            # A refusal that names no folder cannot be placed, so the root is
+            # named instead: keeping too much is the safe way to be wrong.
+            refused.append(root if error.filename is None else error.filename)
+
+        for folder, directories, files in os.walk(root, onerror=note):
+            yield from _unlisted(refused)
             directories[:] = sorted(
                 name for name in directories if not _is_skippable_directory(name)
             )
             listing = self._listing(folder, files)
             if listing is not None:
                 yield listing
+        yield from _unlisted(refused)
 
     def reachable(self, root: str) -> bool:
         """Whether the root is a directory that is there right now.
@@ -188,6 +216,7 @@ class FolderWalker:
         tell that from a library that had failed to scan.
         """
         audio: list[FileStat] = []
+        unreadable: list[str] = []
         unplayable: list[str] = []
         cues: list[str] = []
         images: list[str] = []
@@ -200,13 +229,15 @@ class FolderWalker:
                 stat = self._stat(path, name)
                 if stat is not None:
                     audio.append(stat)
+                else:
+                    unreadable.append(path)
             elif suffix in UNPLAYABLE_SUFFIXES:
                 unplayable.append(path)
             elif suffix in CUE_SUFFIXES:
                 cues.append(path)
             elif suffix in IMAGE_SUFFIXES:
                 images.append(path)
-        if not audio and not unplayable:
+        if not audio and not unplayable and not unreadable:
             return None
         images.sort(key=lambda path: _art_rank(os.path.basename(path)))
         return FolderListing(
@@ -215,7 +246,19 @@ class FolderWalker:
             unplayable=tuple(unplayable),
             cue_paths=tuple(cues),
             image_paths=tuple(images),
+            unreadable=tuple(unreadable),
+            sidecars=self._sidecars(cues + images),
         )
+
+    def _sidecars(self, paths: list[str]) -> tuple[FileStat, ...]:
+        """Size and time of each cue sheet and picture, so a rescan sees a change.
+
+        One that will not give them is simply left out. It is still offered to
+        the scan by path, which opens it or says it could not; leaving it out
+        here costs only noticing it change, which nothing could do anyway.
+        """
+        found = (self._stat(path, os.path.basename(path)) for path in paths)
+        return tuple(sorted((stat for stat in found if stat), key=_by_path))
 
     @staticmethod
     def _stat(path: str, name: str) -> FileStat | None:

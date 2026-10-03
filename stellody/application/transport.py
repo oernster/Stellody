@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from stellody.application.ending import Ending, Failure
 from stellody.application.following import Following
 from stellody.application.output_choosing import OutputChoosing
 from stellody.application.output_following import OutputFollowing
@@ -43,7 +44,9 @@ from stellody.domain.track import Track
 PlayedOut = Callable[[Album, Track], None]
 
 
-class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing, OutputChoosing):
+class Transport(
+    SoundSettings, QueueOrder, Stepping, Ending, OutputFollowing, OutputChoosing
+):
     """The transport the window drives: a queue, plus a device to play it on."""
 
     def __init__(
@@ -75,6 +78,8 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing, OutputChoo
         # Whether the system moved its output while a track was open, so the
         # next resume opens it again there rather than on the device left.
         self._output_moved = False
+        # The last track that stopped by itself, until the window takes it.
+        self._failure: Failure | None = None
         self._queue = Queue()
         self._album: Album | None = None
         self._album_order: tuple[Track, ...] = ()
@@ -274,60 +279,6 @@ class Transport(SoundSettings, QueueOrder, Stepping, OutputFollowing, OutputChoo
             return
         self._waiting_at_the_start = False
         self._player.seek(max(0, frame) + self._player.lead_frames)
-
-    def advance_if_finished(self) -> bool:
-        """Move on when the track has played out; True when something changed.
-
-        Two different endings arrive through this one door. The device may
-        have run into the next track by itself, having had it open and
-        decoding before the seam: nothing needs loading there and the only
-        work is to move the queue to where the music already is. Otherwise a
-        track has simply stopped, which is not reported by the device and so
-        is asked about.
-
-        Holding one track is decided HERE rather than in `next`, because the
-        two are different questions asked through the same door: an ending is
-        what repeat is about, while pressing Next is a listener overruling it.
-        Only the first of them replays the track.
-
-        **A track the listener paused is not a track that ended.** The device
-        cannot tell the two apart: the feeder clears the same flag whichever
-        it is, so a hold reports itself exactly as an ending does.
-        Acting on that turned a pause into an ending at the next poll a quarter
-        of a second later: on the last track of a queue it gave the device
-        back, so the press that should have resumed reloaded the track from its
-        beginning instead; in the middle of one it moved silently to the next
-        track while the listener was still sitting on this one.
-        """
-        if self._held:
-            return False
-        crossed = self._following.crossed()
-        if crossed is not None:
-            self._report_played()
-            self._queue = crossed
-            self._waiting_at_the_start = False
-            self._line_up()
-            return True
-        if not self._player.finished:
-            return False
-        self._report_played()
-        if self._repeat is RepeatMode.ONE:
-            self._restart_at(self._queue)
-            return True
-        if not self._queue.has_next and not self._repeat.repeats:
-            self._player.stop()
-            return True
-        # An ending, not a listener: this carries on whatever the device
-        # reports about itself.
-        self._move_on(playing=True)
-        return True
-
-    def _report_played(self) -> None:
-        """Say that the track in hand reached its end, to whoever counts."""
-        finished = self._queue.current
-        album = self._album
-        if finished is not None and album is not None:
-            self._played(album, finished)
 
     def _line_up(self) -> None:
         """Tell the device what to run into when the track in hand ends."""

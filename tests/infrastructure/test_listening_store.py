@@ -8,8 +8,13 @@ every other test here.
 
 from __future__ import annotations
 
+import os
 import pathlib
+import stat
 
+import pytest
+
+from stellody.application.listening import ListeningUnwritable
 from stellody.domain.listening import Listening
 from stellody.infrastructure.store import SqliteLibraryStore
 
@@ -83,3 +88,24 @@ def test_an_existing_database_gains_the_table(tmp_path: pathlib.Path) -> None:
         assert reopened.all_listening()[TRACK].stars == 2
     finally:
         reopened.close()
+
+
+def test_a_file_that_will_not_take_a_write_says_so(tmp_path: pathlib.Path) -> None:
+    """As the port promises, so the log never holds what the disk refused.
+
+    Made read only after it is written, which is how the refusal was measured:
+    SQLite raised its own error, which nothing above the store could name.
+    """
+    database = _database(tmp_path)
+    SqliteLibraryStore(database).close()
+    os.chmod(database, stat.S_IREAD)
+    try:
+        store = SqliteLibraryStore(database)
+        try:
+            with pytest.raises(ListeningUnwritable):
+                store.set_listening(TRACK, PATH, Listening(stars=5))
+            assert store.all_listening() == {}
+        finally:
+            store.close()
+    finally:
+        os.chmod(database, stat.S_IWRITE | stat.S_IREAD)

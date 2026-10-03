@@ -31,7 +31,8 @@ from stellody.infrastructure.cover_search import (
     ArchiveCovers,
 )
 
-PICTURE_URL = "https://example.invalid/front.jpg"
+# On one of the archive's stores, since the client opens no picture elsewhere.
+PICTURE_URL = "https://ia800100.us.archive.org/front.jpg"
 
 
 class Sleeper:

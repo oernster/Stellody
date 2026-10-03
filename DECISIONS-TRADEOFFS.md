@@ -197,11 +197,16 @@ or one field of an album.
 ### A rescan reads only what changed
 
 A folder whose files are unchanged is reused from the store rather than read
-again.
+again. Its music files, cue sheets and pictures all count: each is compared by
+size and time, so a cue sheet or a cover added later is read. A folder the walk
+is refused is not read as gone; its albums are kept and the refusal is counted
+as unreadable.
 
-- **Rather than:** reading every file on every scan.
+- **Rather than:** reading every file on every scan; comparing the music files
+  alone, which once left an album added a cue sheet as one long track for good.
 - **Gains:** a rescan of hundreds of folders takes well under a second.
-- **Costs:** the store must know when a folder's record is out of date.
+- **Costs:** the store must know when a folder's record is out of date; an edit
+  that keeps a file's size and time exactly is not noticed.
 
 ### A lossy copy beside its lossless original is not a second album
 

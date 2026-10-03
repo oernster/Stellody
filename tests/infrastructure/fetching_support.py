@@ -29,6 +29,7 @@ HANG_LIMIT_S = 10.0
 # How long to wait for the serving thread to notice it has been shut down.
 CLOSE_LIMIT_S = 5.0
 OK = 200
+FOUND = 302
 # Long enough that no fetch here can reach it; the timeout is asked about by
 # the one test that is about the timeout.
 NO_TIMEOUT_S = 30.0
@@ -49,6 +50,7 @@ class Service:
         delay_s: float = 0.0,
         hangs: bool = False,
         keeps_alive: bool = False,
+        redirect_to: str | None = None,
     ) -> None:
         self.asked: list[str] = []
         self.agents: list[str] = []
@@ -99,6 +101,14 @@ class Service:
                 if hangs:
                     service._released.wait(HANG_LIMIT_S)
                     return
+                if redirect_to is not None:
+                    # Sent elsewhere, which is how a client is shown to follow
+                    # a redirect only as far as the hosts it was given.
+                    self.send_response(FOUND)
+                    self.send_header("Location", redirect_to)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
                 if delay_s:
                     time.sleep(delay_s)
                 said = text if text is not None else json.dumps(body)
@@ -122,8 +132,15 @@ class Service:
     @property
     def address(self) -> str:
         """Where to ask it something."""
-        host, port = self._server.server_address[:2]
-        return f"http://{host}:{port}/ask"
+        return self.address_as(self._server.server_address[0])
+
+    def address_as(self, host: str) -> str:
+        """The same service under another name for this machine.
+
+        `localhost` and the loopback address reach the same socket while
+        being two different hosts to a client judging where it may go.
+        """
+        return f"http://{host}:{self._server.server_address[1]}/ask"
 
     def close(self) -> None:
         """Let go of everything, releasing a held request first."""

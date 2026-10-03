@@ -32,6 +32,9 @@ FIRST_FRAMES = 10000
 SECOND_FRAMES = 6000
 SETTLE_SECONDS = 5.0
 POLL_SECONDS = 0.01
+# The ramps are mono; a stream opened for two channels writes each frame
+# twice (`Session.fitted`), so the sample-by-sample test opens one for one.
+MONO = 1
 
 
 class RecordingStream:
@@ -128,7 +131,10 @@ def test_the_seam_carries_every_frame_of_both_tracks_and_nothing_else(
     two = _written(tmp_path, "two.wav", second)
 
     player = WasapiPlayback(opener=_opener(stream))
-    player.load(TrackSource(path=one), OutputRequest(sample_rate=RATE, bit_depth=DEPTH))
+    player.load(
+        TrackSource(path=one),
+        OutputRequest(sample_rate=RATE, bit_depth=DEPTH, channels=MONO),
+    )
     assert player.queue_next(TrackSource(path=two)) is True
     player.play()
     _play_out(player)

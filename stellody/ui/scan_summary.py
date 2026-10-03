@@ -132,7 +132,11 @@ def _totals(change: LibraryChange, report: ScanReport) -> str:
         ("Folders re-read", str(report.folders_probed)),
     ]
     if report.files_unreadable:
-        work.append(("Files that could not be read", str(report.files_unreadable)))
+        # Folders as well as files: one the system would not open is counted
+        # here, its albums kept as the last scan found them.
+        work.append(
+            ("Files or folders that could not be read", str(report.files_unreadable))
+        )
     if report.files_absent:
         work.append(("Files no longer there", str(report.files_absent)))
     return (

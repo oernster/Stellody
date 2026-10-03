@@ -10,6 +10,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Mapping
 
+from stellody.application.listening import ListeningUnwritable
 from stellody.application.values import FolderRecord
 from stellody.domain.listening import Listening
 from stellody.domain.overrides import AlbumEdit, Override
@@ -37,6 +38,13 @@ CREATE TABLE IF NOT EXISTS files (
     size      INTEGER NOT NULL,
     mtime     INTEGER NOT NULL,
     present   INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS sidecars (
+    path      TEXT PRIMARY KEY,
+    folder    TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    size      INTEGER NOT NULL,
+    mtime     INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS sources (
     id           INTEGER PRIMARY KEY,
@@ -76,6 +84,7 @@ CREATE TABLE IF NOT EXISTS listening (
     plays  INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS files_by_folder ON files (folder);
+CREATE INDEX IF NOT EXISTS sidecars_by_folder ON sidecars (folder);
 CREATE INDEX IF NOT EXISTS sources_by_folder ON sources (folder);
 CREATE INDEX IF NOT EXISTS issues_by_folder ON issues (folder);
 """
@@ -153,15 +162,23 @@ class SqliteLibraryStore:
         }
 
     def set_listening(self, handle: str, path: str, record: Listening) -> None:
-        """Write one track's rating and play count."""
-        with self._connection:
-            self._connection.execute(
-                "INSERT INTO listening (handle, path, stars, plays) "
-                "VALUES (?, ?, ?, ?) ON CONFLICT(handle) DO UPDATE SET "
-                "path = excluded.path, stars = excluded.stars, "
-                "plays = excluded.plays",
-                (handle, path, record.stars, record.plays),
-            )
+        """Write one track's rating and play count; say so where it cannot be.
+
+        SQLite's own error is named as the port's, since nothing above this
+        layer can name SQLite: a read only file or a full disk otherwise
+        reached the window as an error it had no way to tell from any other.
+        """
+        try:
+            with self._connection:
+                self._connection.execute(
+                    "INSERT INTO listening (handle, path, stars, plays) "
+                    "VALUES (?, ?, ?, ?) ON CONFLICT(handle) DO UPDATE SET "
+                    "path = excluded.path, stars = excluded.stars, "
+                    "plays = excluded.plays",
+                    (handle, path, record.stars, record.plays),
+                )
+        except sqlite3.Error as error:
+            raise ListeningUnwritable(str(error)) from error
 
     def all_overrides(self) -> tuple[Override, ...]:
         """Every correction a listener has accepted."""
@@ -235,6 +252,7 @@ class SqliteLibraryStore:
                 has_embedded_art=bool(row["has_embedded_art"]),
                 issues=folder_rows.issues_of(self._connection, row["folder"]),
                 derivation=row["derivation"],
+                sidecars=folder_rows.sidecars_of(self._connection, row["folder"]),
             )
             for row in folders
         )
@@ -260,6 +278,14 @@ class SqliteLibraryStore:
                 [
                     (item.path, record.folder, item.file_name, item.size, item.mtime)
                     for item in record.stats
+                ],
+            )
+            self._connection.executemany(
+                "INSERT INTO sidecars (path, folder, file_name, size, mtime) "
+                "VALUES (?, ?, ?, ?, ?)",
+                [
+                    (item.path, record.folder, item.file_name, item.size, item.mtime)
+                    for item in record.sidecars
                 ],
             )
             self._connection.executemany(
@@ -309,5 +335,5 @@ class SqliteLibraryStore:
 
     def _clear_folder(self, folder: str) -> None:
         """Remove every row belonging to one folder."""
-        for table in ("issues", "sources", "files", "folders"):
+        for table in ("issues", "sources", "sidecars", "files", "folders"):
             self._connection.execute(f"DELETE FROM {table} WHERE folder = ?", (folder,))

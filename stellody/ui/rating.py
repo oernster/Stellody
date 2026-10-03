@@ -19,13 +19,23 @@ what is highlighted, falling back to the one playing where nothing is.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import QModelIndex
 
+from stellody.application.listening import ListeningUnwritable
 from stellody.domain.album import Album
 from stellody.domain.listening import NO_STARS, album_handle, track_handle
 from stellody.domain.track import Track
 from stellody.ui.palette import Mode
+from stellody.ui.settings_keys import STATUS_TIMEOUT_MS
 from stellody.ui.star_cells import RatingKeys
+
+# Said where the library file will not take a write, in the words the shop
+# list uses for the same thing. Nothing is held that was not written, so
+# "nothing has changed" is true of the screen as well as the disk.
+RATING_NOT_SAVED = "That rating could not be saved, so nothing has changed."
+PLAY_NOT_SAVED = "That play could not be counted, so nothing has changed."
 
 
 class Rating:
@@ -55,7 +65,11 @@ class Rating:
         if track is None or album is None:
             return False
         handle = _handle(album, track)
-        self._listening.rate(handle, track.source.path, stars)
+        self._kept(
+            lambda: self._listening.rate(handle, track.source.path, stars),
+            RATING_NOT_SAVED,
+        )
+        # Redrawn either way: a refused rating is drawn as what is held.
         self._model.redraw_listening(handle)
         return True
 
@@ -75,7 +89,11 @@ class Rating:
         has to go looking for a track a rescan may since have replaced.
         """
         handle = _handle(album, track)
-        self._listening.count_play(handle, track.source.path)
+        if not self._kept(
+            lambda: self._listening.count_play(handle, track.source.path),
+            PLAY_NOT_SAVED,
+        ):
+            return
         self._model.redraw_listening(handle)
         self.follow_plays()
 
@@ -97,11 +115,31 @@ class Rating:
         album = self._shown_album
         if album is None:
             return
-        self._listening.rate(
-            album_handle(album.identity),
-            album.ordered_tracks()[0].source.path,
-            stars,
+        kept = self._kept(
+            lambda: self._listening.rate(
+                album_handle(album.identity),
+                album.ordered_tracks()[0].source.path,
+                stars,
+            ),
+            RATING_NOT_SAVED,
         )
+        if not kept:
+            # The stars already show what was pressed; put back what is held.
+            self.show_album_rating()
+
+    def _kept(self, write: Callable[[], object], refused: str) -> bool:
+        """Make one write; say so on the status line where it was refused.
+
+        Caught here rather than left to rise, since an exception raised inside
+        a Qt slot ends the slot in silence, which is exactly the failure this
+        exists to put into words.
+        """
+        try:
+            write()
+        except ListeningUnwritable:
+            self.statusBar().showMessage(refused, STATUS_TIMEOUT_MS)
+            return False
+        return True
 
     def _shown(self) -> tuple[Album, Track] | None:
         """The album and track the play count is about; None when about none.

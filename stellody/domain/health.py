@@ -22,6 +22,7 @@ class IssueKind(StrEnum):
     MISSING_ALBUM_ARTIST = "missing-album-artist"
     NO_ARTWORK = "no-artwork"
     UNREADABLE_FILE = "unreadable-file"
+    UNREADABLE_FOLDER = "unreadable-folder"
 
 
 # An album that is not there at all leads, since it outranks anything about a
@@ -34,7 +35,8 @@ SEVERITY_ORDER: dict[IssueKind, int] = {
     IssueKind.MISSING_TITLE: 4,
     IssueKind.MISSING_ALBUM_ARTIST: 5,
     IssueKind.UNREADABLE_FILE: 6,
-    IssueKind.NO_ARTWORK: 7,
+    IssueKind.UNREADABLE_FOLDER: 7,
+    IssueKind.NO_ARTWORK: 8,
 }
 
 _SUMMARIES: dict[IssueKind, str] = {
@@ -62,6 +64,13 @@ _SUMMARIES: dict[IssueKind, str] = {
     # second sentence is what the others all say: what Stellody did about it.
     IssueKind.UNREADABLE_FILE: (
         "The file could not be read, so it is not in your library."
+    ),
+    # Apart from the file, because what happens differs: a folder the system
+    # will not open is not taken out of the library. What the last scan found
+    # there stays, since a permission is not an album somebody deleted.
+    IssueKind.UNREADABLE_FOLDER: (
+        "The folder could not be opened, so what the last scan found in it is "
+        "kept as it was. Nothing has been taken out of your library."
     ),
 }
 

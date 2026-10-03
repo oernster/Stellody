@@ -23,6 +23,12 @@ the product name alone. urllib would otherwise send `Python-urllib/<version>`,
 which names the machine's Python; nothing here names the listener, the library
 or the version Stellody is running.
 
+**It goes nowhere else on anybody's say so.** A redirect is followed only to
+the GitHub API over HTTPS; one to any other host or scheme is refused and read
+as no release, the same as a source that could not be reached. Measured on
+loopback before this was added: a 302 to another host was followed with the
+headers re-sent and the answer believed.
+
 **Nothing is trusted about the answer.** Every field is checked for its type
 before it is used and a malformed asset is dropped rather than carried, since
 this is a document from the internet being handed to a dialog that will offer
@@ -33,13 +39,20 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 
 from stellody.application.values import ReleaseAsset, ReleaseInfo
+from stellody.infrastructure.reach import (
+    GITHUB_API_HOST,
+    GITHUB_REACH,
+    Reach,
+    origin,
+)
 from stellody.shared.version import APP_NAME
 
-RELEASES_URL = "https://api.github.com/repos/oernster/stellody/releases/latest"
+RELEASES_URL = f"{origin(GITHUB_API_HOST)}/repos/oernster/stellody/releases/latest"
 ACCEPT_HEADER = "application/vnd.github+json"
 # Stated rather than left to urllib, which would otherwise send its own
 # `Python-urllib/<version>`: that says which Python the machine runs, which
@@ -59,6 +72,43 @@ ASSET_NAME_FIELD = "name"
 ASSET_URL_FIELD = "browser_download_url"
 
 Opener = Callable[..., object]
+
+
+def admitted(reach: Reach, url: str) -> bool:
+    """Whether an address is one this reach may go to."""
+    parts = urllib.parse.urlsplit(url)
+    return reach.admits(parts.scheme, parts.hostname or "")
+
+
+class PinnedRedirects(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect only to a host the client was given.
+
+    urllib follows a redirect to anywhere by default, sending the same headers
+    there and handing back whatever it said. Measured on loopback: the update
+    check and the cover search both did. A redirect elsewhere is refused as an
+    unreachable source, which is how each client already reports one.
+
+    Here because the update check and the cover search both open through
+    urllib and a judge written twice is two judges the day one is edited; the
+    cover search borrows it rather than a fifth module being permitted to hold
+    networking machinery.
+    """
+
+    def __init__(self, reach: Reach) -> None:
+        super().__init__()
+        self._reach = reach
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        """The onward request; a refusal where it leaves the reach."""
+        if not admitted(self._reach, newurl):
+            fp.close()
+            raise urllib.error.URLError(f"redirect refused: {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def pinned_opener(reach: Reach) -> Opener:
+    """An opener that follows redirects only within this reach."""
+    return urllib.request.build_opener(PinnedRedirects(reach)).open
 
 
 def _text(payload: dict, field: str) -> str:
@@ -86,13 +136,19 @@ def _assets(payload: dict) -> tuple[ReleaseAsset, ...]:
 class GitHubReleases:
     """Stellody's own releases, read from the GitHub API and nothing else."""
 
-    def __init__(self, opener: Opener | None = None) -> None:
-        self._open = opener if opener is not None else urllib.request.urlopen
+    def __init__(
+        self,
+        opener: Opener | None = None,
+        address: str = RELEASES_URL,
+        reach: Reach = GITHUB_REACH,
+    ) -> None:
+        self._open = opener if opener is not None else pinned_opener(reach)
+        self._address = address
 
     def latest_release(self) -> ReleaseInfo | None:
         """The newest published release; None when it could not be read."""
         request = urllib.request.Request(
-            RELEASES_URL,
+            self._address,
             headers={"Accept": ACCEPT_HEADER, "User-Agent": USER_AGENT},
         )
         try:

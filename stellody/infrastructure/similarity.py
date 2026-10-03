@@ -24,8 +24,9 @@ from __future__ import annotations
 from stellody.application.choosing_covers import Wanted, always_wanted
 from stellody.domain.discovery import SimilarArtist
 from stellody.infrastructure.fetching import Fetcher
+from stellody.infrastructure.reach import LISTENBRAINZ_LABS_HOST, origin
 
-SIMILAR_URL = "https://labs.api.listenbrainz.org/similar-artists/json"
+SIMILAR_URL = f"{origin(LISTENBRAINZ_LABS_HOST)}/similar-artists/json"
 # Read verbatim off the endpoint on 2026-09-06 and confirmed with a real
 # artist: a wrong value answers 400 rather than falling back to a default, so
 # this is not somewhere to be inventive.

@@ -30,6 +30,12 @@ REFUSED_MESSAGE = (
     "{name} would not open, so the music is playing through the system "
     "default: {reason}"
 )
+# The same refusal at a track boundary, where the next track waits on the
+# default for a press rather than playing there (OQ-O5, ruled 2026-10-03).
+REFUSED_HELD_MESSAGE = (
+    "{name} would not open, so the music is paused. Press play to carry on "
+    "through the system default: {reason}"
+)
 # FR-O10: said once at launch while the choice waits for its device.
 MISSING_MESSAGE = (
     "{name} is not connected, so the music will play through the system "
@@ -103,12 +109,14 @@ class ChoosingOutputs:
 
         Asked after every choice and on the transport's poll, since a refusal
         can come at any open: the next track as well as the choice itself.
+        Where the music is not playing afterwards it is not claimed to be.
         """
         refusal = self._transport.take_refusal()
         if refusal is None:
             return
+        words = REFUSED_MESSAGE if self._transport.playing else REFUSED_HELD_MESSAGE
         self._say_about_output(
-            REFUSED_MESSAGE.format(name=refusal.device.name, reason=refusal.reason)
+            words.format(name=refusal.device.name, reason=refusal.reason)
         )
 
     def show_outputs(self) -> None:

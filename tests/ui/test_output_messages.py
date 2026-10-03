@@ -19,10 +19,12 @@ from output_support import (
 from playback_support import album, player, window
 from recording_player import RecordingPlayer
 
+from stellody.domain.playback import PlaybackState
 from stellody.ui.choosing_outputs import (
     LOST_MESSAGE,
     MISSING_MESSAGE,
     PAUSED_BY_LOSS_MESSAGE,
+    REFUSED_HELD_MESSAGE,
     REFUSED_MESSAGE,
 )
 from stellody.ui.settings_keys import SETTING_OUTPUT_DEVICE, SETTING_OUTPUT_DEVICE_NAME
@@ -56,6 +58,21 @@ def test_a_refusal_at_the_next_track_is_said_by_the_poll(
     _playing(choosing)
     choosing._poll_transport()
     assert _said(choosing) == REFUSED_MESSAGE.format(name=FOCUSRITE.name, reason=REASON)
+
+
+def test_a_refusal_that_held_the_music_says_it_is_paused(
+    choosing, player: RecordingPlayer
+) -> None:
+    """At a seam the default is not played without a press, so it is not claimed."""
+    choosing.choose_output(chose(FOCUSRITE))
+    _playing(choosing)
+    player.finished = True
+    player.state = PlaybackState.PAUSED
+    player.refuses = {FOCUSRITE.identity: REASON}
+    choosing._poll_transport()
+    assert _said(choosing) == REFUSED_HELD_MESSAGE.format(
+        name=FOCUSRITE.name, reason=REASON
+    )
 
 
 def test_a_missing_device_is_said_once(window, devices: Devices) -> None:

@@ -93,6 +93,7 @@ def has_serious_issues(issues: tuple[LibraryIssue, ...]) -> bool:
         IssueKind.DUPLICATE_TRACK_NUMBER,
         IssueKind.DISC_NUMBER_CONFLICT,
         IssueKind.UNREADABLE_FILE,
+        IssueKind.UNREADABLE_FOLDER,
     }
     return any(issue.kind in serious for issue in issues)
 

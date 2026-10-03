@@ -9,8 +9,8 @@ write new ones is in [`TESTING.md`](TESTING.md).
 
 | # | Invariant | Enforced by |
 |---|---|---|
-| 1 | Stellody never writes tags back into a music file. The mutagen write surface is unreachable from any module that can read tags. | `tests/structural/test_readonly.py::test_tag_writing_is_unreachable_from_every_tag_reading_module` |
-| 2 | Only the modules that own Stellody's own state may write to disk. No module on the scanning or probing path writes; what a scan learns is written through the store that owns that state. | `tests/structural/test_readonly.py::test_only_state_owning_modules_write_to_disk` |
+| 1 | Stellody never writes tags back into a music file. The mutagen write surface is unreachable from any module that can read tags. What the test checks: every module importing a tag library (mutagen, soundfile, taglib or PyAV) is scanned for a call to a method named `save`, `delete`, `add_tags` or `add_picture`. | `tests/structural/test_readonly.py::test_tag_writing_is_unreachable_from_every_tag_reading_module` |
+| 2 | Only the modules that own Stellody's own state may write to disk. No module on the scanning or probing path writes; what a scan learns is written through the store that owns that state. What the test checks: outside the permitted modules it refuses a fixed set of write call shapes, namely `open` with a literal write mode, named `os` and `shutil` calls spelled `module.function(...)` plus path methods such as `write_text` and `unlink`; a write spelled another way is not seen. | `tests/structural/test_readonly.py::test_only_state_owning_modules_write_to_disk` |
 | 3 | Layers never import upward. UI and Infrastructure both depend inward, never on each other. | `tests/structural/test_layers.py::test_layers_never_import_upward` |
 | 4 | No Qt, no tag library and no audio library appears below the infrastructure layer. | `tests/structural/test_layers.py::test_domain_and_application_are_framework_free` |
 | 5 | The domain layer touches no filesystem, no network and no scheduler. | `tests/structural/test_layers.py::test_domain_has_no_side_effects` |
@@ -324,7 +324,10 @@ rather than digested again per user, since three spellings of one value is three
 chances for two of them to drift. Beside it sits the SOURCE ADDRESS, which names
 the one file a track-level pin is about, so two files folded into one album are
 never mistaken for each other. Why that is an address rather than a path is
-below.
+below. The handle survives a rename; the address does not, so a track-level pin
+reverts to the automatic value when its folder moves, as an album edit does,
+since album edits are keyed by folder. Ratings and play counts on an album
+nobody edited follow it; this limit is stated on the site rather than solved.
 
 **Two albums that resolve alike are one album; that is a price, stated.** Tags
 alone cannot separate two recordings of one work: a symphony under two

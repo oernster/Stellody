@@ -46,7 +46,7 @@ from stellody.infrastructure.output_list import (
     named_rates,
     open_named,
 )
-from stellody.infrastructure.session import Session
+from stellody.infrastructure.session import Session, as_delivered, opened_to_fit
 
 
 class WasapiPlayback:
@@ -99,6 +99,12 @@ class WasapiPlayback:
         return session is not None and session.interrupted
 
     @property
+    def failure(self) -> str:
+        """Why the open stream stopped by itself; empty while nothing went wrong."""
+        session = self._session
+        return "" if session is None else session.failure
+
+    @property
     def report(self) -> OutputReport | None:
         """What the open stream actually delivers; None when nothing is loaded."""
         session = self._session
@@ -123,10 +129,11 @@ class WasapiPlayback:
         self.stop()
         stream, report, dtype = self._opener(request, self._device)
         try:
-            reader = open_source(source, dtype=dtype)
+            reader = opened_to_fit(source, dtype, report.request.channels)
         except Exception:
             stream.close()
             raise
+        report = as_delivered(report, reader, dtype)
         session = Session(
             reader=reader,
             stream=stream,
@@ -146,7 +153,7 @@ class WasapiPlayback:
     def play(self) -> None:
         """Start or resume. Does nothing when no source is loaded."""
         session = self._session
-        if session is None or session.finished.is_set():
+        if session is None or session.finished.is_set() or session.failure:
             return
         session.stream.start()
         # Read on the stream's first start only, when nothing is queued yet.
@@ -198,7 +205,8 @@ class WasapiPlayback:
         A source whose shape the open stream cannot carry is refused rather
         than joined badly: the stream was opened for one rate and one channel
         count; writing anything else into it would be worse than the gap
-        it was meant to avoid.
+        it was meant to avoid. So is one the open report does not describe;
+        `Session.joins` holds the rule.
         """
         session = self._session
         if session is None:
@@ -211,10 +219,7 @@ class WasapiPlayback:
         except DecodeError:
             return False
         with session.lock:
-            joins = (
-                candidate.sample_rate == session.reader.sample_rate
-                and candidate.channels == session.reader.channels
-            )
+            joins = session.joins(candidate)
             if joins:
                 session.follower = candidate
         if not joins:
@@ -292,56 +297,74 @@ class WasapiPlayback:
         return (block * self._volume).astype(dtype)
 
     def _feed(self, session: Session) -> None:
-        """Read and write blocks until the track ends or the session is torn down."""
+        """Read and write blocks until the track ends or the session is torn down.
+
+        Anything going wrong that `_feed_block` does not expect ends the feeder
+        with the reason kept, never with the thread dying alone. Found by the
+        audit of 2026-10-03: a write the device refused for a reason nothing
+        here caught killed the thread, while the session still read as playing,
+        so the position froze and the queue never moved on. Now the track is
+        held and `failure` says why, which the transport reports and moves on
+        from, as it does any other track that will not play.
+        """
         while True:
             session.resume.wait()
             if session.cancel.is_set():
                 return
-            self.dropouts.reading()
-            with session.lock:
-                block = session.reader.read(self._block_frames)
-                if len(block) == 0 and session.follower is not None:
-                    # The seam. No stop, no reopen and no silence written:
-                    # the very next write carries the following track.
-                    session.reader.close()
-                    session.reader = session.follower
-                    session.follower = None
-                    session.crossings += 1
-                    block = session.reader.read(self._block_frames)
-                filtering = session.filtering
-            if len(block) == 0:
-                session.finished.set()
-                session.resume.clear()
-                continue
             try:
-                self.dropouts.shaping()
-                shaped = filtering.process(block)
-                self.dropouts.writing(
-                    session.stream.write_available,
-                    len(block),
-                    session.reader.frame - len(block),
-                    session.reader.sample_rate,
-                )
-                session.stream.write(self._scaled(shaped, session.dtype))
-                self.dropouts.written()
-                self._meter.measure(shaped)
-            except sounddevice.PortAudioError:
-                # A write that fails while nothing is meant to be playing is a
-                # pause landing on this thread, not a track ending. `pause`
-                # clears the resume before it stops the stream, so a feeder
-                # already past its wait writes into a stream that has just
-                # been stopped and PortAudio refuses it. Calling that an
-                # ending is what made a paused track unresumable: `play`
-                # declines to start a finished session, so the press did
-                # nothing. The poll then gave the device back, which left the
-                # press after it reloading the track from its beginning.
-                # The block in hand is dropped rather than kept, being the one
-                # the device was refusing anyway.
-                if not session.resume.is_set():
-                    continue
-                # Still meant to be playing, so the device went: headphones
-                # switched off, measured 2026-09-19. Not an ending, which moved
-                # the queue on; interrupted, held where it was for the
-                # transport to reopen wherever there is to play to.
-                session.interrupted = True
+                self._feed_block(session)
+            except Exception as error:  # noqa: BLE001 - kept and reported
+                session.failure = str(error) or type(error).__name__
                 session.resume.clear()
+                return
+
+    def _feed_block(self, session: Session) -> None:
+        """Read one block and write it; mark the ending where there is none."""
+        self.dropouts.reading()
+        with session.lock:
+            block = session.reader.read(self._block_frames)
+            if len(block) == 0 and session.follower is not None:
+                # The seam. No stop, no reopen and no silence written:
+                # the very next write carries the following track.
+                session.reader.close()
+                session.reader = session.follower
+                session.follower = None
+                session.crossings += 1
+                block = session.reader.read(self._block_frames)
+            filtering = session.filtering
+        if len(block) == 0:
+            session.finished.set()
+            session.resume.clear()
+            return
+        try:
+            self.dropouts.shaping()
+            shaped = filtering.process(block)
+            self.dropouts.writing(
+                session.stream.write_available,
+                len(block),
+                session.reader.frame - len(block),
+                session.reader.sample_rate,
+            )
+            session.stream.write(session.fitted(self._scaled(shaped, session.dtype)))
+            self.dropouts.written()
+            self._meter.measure(shaped)
+        except sounddevice.PortAudioError:
+            # A write that fails while nothing is meant to be playing is a
+            # pause landing on this thread, not a track ending. `pause`
+            # clears the resume before it stops the stream, so a feeder
+            # already past its wait writes into a stream that has just
+            # been stopped and PortAudio refuses it. Calling that an
+            # ending is what made a paused track unresumable: `play`
+            # declines to start a finished session, so the press did
+            # nothing. The poll then gave the device back, which left the
+            # press after it reloading the track from its beginning.
+            # The block in hand is dropped rather than kept, being the one
+            # the device was refusing anyway.
+            if not session.resume.is_set():
+                return
+            # Still meant to be playing, so the device went: headphones
+            # switched off, measured 2026-09-19. Not an ending, which moved
+            # the queue on; interrupted, held where it was for the
+            # transport to reopen wherever there is to play to.
+            session.interrupted = True
+            session.resume.clear()

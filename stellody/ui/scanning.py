@@ -10,6 +10,8 @@ into; the window owns the state and this owns the sequence.
 
 from __future__ import annotations
 
+import pathlib
+
 from PySide6.QtCore import Slot
 
 from stellody.application.loading import LibraryView
@@ -24,6 +26,22 @@ from stellody.ui.settings_keys import (
     STATUS_TIMEOUT_MS,
     TRUE,
 )
+
+
+def set_aside_message(moved: pathlib.Path) -> str:
+    """What to say once the library file has been set aside whole.
+
+    The file is named in full because what is in it matters: it used to be
+    called an index with a rescan offered, which read as though a rescan put
+    everything back. Ratings, play counts, track corrections and album edits
+    are in that file and nowhere else; a rescan rebuilds the index alone.
+    """
+    return (
+        "The library file would not open, so it was set aside whole as "
+        f"{native_path(str(moved))}. Your ratings, play counts, track "
+        "corrections and album edits are in that file, not in the new one; "
+        "a rescan rebuilds only the library index."
+    )
 
 
 class Scanning:
@@ -52,15 +70,12 @@ class Scanning:
         return view
 
     def report_library_set_aside(self, moved) -> None:
-        """Say that the library index would not open and what became of it.
+        """Say that the library file would not open and what became of it.
 
         Said after the remembered library has been shown, so it is the last
         thing on the status line rather than the first thing overwritten.
         """
-        self.statusBar().showMessage(
-            f"The library index would not open, so it was set aside as "
-            f"{moved.name}. Rescan to build a new one."
-        )
+        self.statusBar().showMessage(set_aside_message(moved))
 
     def _remembered_message(self, view: LibraryView) -> str:
         """What the status line says about a library nobody has just scanned."""

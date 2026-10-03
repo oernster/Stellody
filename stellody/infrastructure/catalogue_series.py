@@ -35,8 +35,9 @@ from stellody.infrastructure.catalogue import (
     _kinds_of,
 )
 from stellody.infrastructure.fetching import Fetcher
+from stellody.infrastructure.reach import MUSICBRAINZ_HOST, origin
 
-SERIES_URL = "https://musicbrainz.org/ws/2/series"
+SERIES_URL = f"{origin(MUSICBRAINZ_HOST)}/ws/2/series"
 # What a relation to a series and to a release group are called there.
 TO_SERIES = "series"
 TO_GROUP = "release_group"

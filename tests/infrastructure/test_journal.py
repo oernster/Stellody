@@ -38,6 +38,25 @@ def test_a_half_written_last_line_costs_only_that_line(record) -> None:
     assert journal.replayed(record) == ({"key": "first"},)
 
 
+def test_a_torn_line_does_not_take_the_next_answers_with_it(record) -> None:
+    """The next run appends after the torn line, never onto the end of it.
+
+    Appended straight on, the first new entry joined the torn fragment on one
+    line that read as nothing, so the answer the next run paid for was lost
+    with the one the dead run never finished.
+    """
+    journal.note(record, {"key": "first"})
+    with record.open("a", encoding="utf-8") as dying:
+        dying.write('{"key": "sec')
+    journal.note(record, {"key": "third"})
+    journal.note(record, {"key": "fourth"})
+    assert journal.replayed(record) == (
+        {"key": "first"},
+        {"key": "third"},
+        {"key": "fourth"},
+    )
+
+
 def test_a_line_holding_something_other_than_an_entry_is_skipped(record) -> None:
     record.write_text('"a bare string"\n{"key": "kept"}\n', encoding="utf-8")
     assert journal.replayed(record) == ({"key": "kept"},)

@@ -18,6 +18,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Slot
 
+from stellody.domain.track import Track
 from stellody.ui.playing_mark import handle_for
 from stellody.ui.settings_keys import STATUS_TIMEOUT_MS, UNPLAYABLE_MESSAGE_MS
 
@@ -25,6 +26,20 @@ from stellody.ui.settings_keys import STATUS_TIMEOUT_MS, UNPLAYABLE_MESSAGE_MS
 # window is not doing arithmetic sixty times a second.
 TRANSPORT_POLL_MS = 250
 OUTPUT_MOVED_MESSAGE = "Paused: the sound output changed. Press play to carry on."
+UNNAMED_FAILURE = "Cannot play that"
+NAMED_FAILURE = "{title} could not be played"
+
+
+def unplayable_words(track: Track | None, reason: str) -> str:
+    """A song that will not play, named with the reason it gave.
+
+    One wording for a track that would not open and for one that stopped by
+    itself, since to a listener they are the same thing.
+    """
+    named = (
+        UNNAMED_FAILURE if track is None else NAMED_FAILURE.format(title=track.title)
+    )
+    return f"{named}: {reason}"
 
 
 class Playing:
@@ -169,6 +184,20 @@ class Playing:
         self.follow_plays()
         self.follow_picture()
         self.say_output_refusal()
+        self.say_playback_failure()
+
+    def say_playback_failure(self) -> None:
+        """Say once that a track stopped by itself, naming it and the reason.
+
+        The transport has already moved on past it, as it does at an ending;
+        the listener is owed the reason, as for a track that will not open.
+        """
+        failure = self._transport.take_failure()
+        if failure is None:
+            return
+        self.statusBar().showMessage(
+            unplayable_words(failure.track, failure.reason), UNPLAYABLE_MESSAGE_MS
+        )
 
     def show_stream(self) -> None:
         """Say what the open stream is and whether it reaches the device as is.
@@ -212,10 +241,9 @@ class Playing:
             failed = self._transport.current
             self._transport.stop()
             self._show_transport()
-            named = "Cannot play that"
-            if failed is not None:
-                named = f"{failed.title} could not be played"
-            self.statusBar().showMessage(f"{named}: {error}", UNPLAYABLE_MESSAGE_MS)
+            self.statusBar().showMessage(
+                unplayable_words(failed, str(error)), UNPLAYABLE_MESSAGE_MS
+            )
             return False
         self._follow_playback()
         self._show_transport()

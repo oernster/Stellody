@@ -6,7 +6,9 @@ what is asserted is the two staying in step rather than SQLite behaving.
 
 from __future__ import annotations
 
-from stellody.application.listening import ListeningLog
+import pytest
+
+from stellody.application.listening import ListeningLog, ListeningUnwritable
 from stellody.domain.listening import Listening
 
 TRACK = "0123456789abcdef"
@@ -107,3 +109,38 @@ class TestWritingIt:
         log = ListeningLog(store)
         log.rate(TRACK, PATH, 2)
         assert store.held[TRACK] == Listening(stars=2)
+
+
+class RefusingStore(RememberingStore):
+    """A store whose file will not take a write, as a read only one will not."""
+
+    def set_listening(self, handle: str, path: str, record: Listening) -> None:
+        raise ListeningUnwritable("attempt to write a readonly database")
+
+
+class TestAWriteTheStoreRefuses:
+    """Memory is changed only once the store has taken the change.
+
+    Measured against a read only database: memory said five stars, the disk
+    said nothing and the window said nothing either, so the rating vanished
+    at the next start with no word of why.
+    """
+
+    def test_the_refusal_reaches_whoever_asked(self) -> None:
+        log = ListeningLog(RefusingStore())
+        with pytest.raises(ListeningUnwritable):
+            log.rate(TRACK, PATH, 5)
+
+    def test_a_refused_rating_is_not_held(self) -> None:
+        log = ListeningLog(RefusingStore({TRACK: Listening(stars=2, plays=3)}))
+        log.load()
+        with pytest.raises(ListeningUnwritable):
+            log.rate(TRACK, PATH, 5)
+        assert log.of(TRACK) == Listening(stars=2, plays=3)
+
+    def test_a_refused_play_is_not_counted(self) -> None:
+        log = ListeningLog(RefusingStore())
+        log.load()
+        with pytest.raises(ListeningUnwritable):
+            log.count_play(TRACK, PATH)
+        assert log.of(TRACK).is_empty

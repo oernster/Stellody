@@ -26,10 +26,11 @@ from stellody.domain.genre_votes import believed
 from stellody.domain.matching import ReleaseKind
 from stellody.domain.text import catalogue_key, catalogue_name
 from stellody.infrastructure.fetching import Fetcher
+from stellody.infrastructure.reach import MUSICBRAINZ_HOST, origin
 
-ARTIST_URL = "https://musicbrainz.org/ws/2/artist"
-RELEASE_GROUP_URL = "https://musicbrainz.org/ws/2/release-group"
-RECORDING_URL = "https://musicbrainz.org/ws/2/recording"
+ARTIST_URL = f"{origin(MUSICBRAINZ_HOST)}/ws/2/artist"
+RELEASE_GROUP_URL = f"{origin(MUSICBRAINZ_HOST)}/ws/2/release-group"
+RECORDING_URL = f"{origin(MUSICBRAINZ_HOST)}/ws/2/recording"
 # Where each kind of held title is looked for: the address, the search field
 # the title goes in and the key the answer lists its matches under.
 SEARCHED: dict[EvidenceKind, tuple[str, str, str]] = {

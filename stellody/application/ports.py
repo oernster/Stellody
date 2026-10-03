@@ -33,7 +33,11 @@ class LibraryWalker(Protocol):
     """Finds the folders of a music library. Never opens an audio file."""
 
     def walk(self, root: str) -> Iterable[FolderListing]:
-        """Yield one listing per folder containing audio."""
+        """Yield one listing per folder containing audio.
+
+        Also one per folder the system would not let it list, marked as not
+        listed, so the scan can tell a refusal from a folder that has gone.
+        """
         ...
 
     def count(self, root: str) -> int:
@@ -155,7 +159,9 @@ class ListeningStore(Protocol):
     def set_listening(self, handle: str, path: str, record: Listening) -> None:
         """Write one track's record, replacing whatever was there.
 
-        The path is recorded beside the handle so a row can be traced back to
+        Raises `ListeningUnwritable` where the record cannot be kept, so the
+        log holding it in memory is never ahead of what was written. The path
+        is recorded beside the handle so a row can be traced back to
         a file by hand. Nothing reads it: the handle is what a record is found
         by, since a path is the one thing about a track that does not survive
         the folder being renamed.

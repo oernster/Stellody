@@ -56,6 +56,13 @@ class OutputFollowing:
 
         Music on a device the listener named is not on the default, so the
         default moving is nothing to it (`OUTPUTS.md`, Amendment 3).
+
+        The track is held whatever the state, which is what ruled out a fall
+        through at a track boundary. Found by the audit of 2026-10-03: a track
+        that has played out reads as paused until the next poll moves the
+        queue on, so a move landing then was let pass and the poll played the
+        next track on the default. Holding it leaves the next track waiting
+        for a press, as OQ-O5 rules (Amendment 4).
         """
         if self._in_use is not None:
             return False
@@ -64,17 +71,19 @@ class OutputFollowing:
             return False
         already = self._output_moved
         self._output_moved = True
+        held = self._held
+        self._held = True
         # The device went away beneath the stream before this report came:
         # measured 2026-09-19, the write fails 0.29 s ahead of Qt. The engine
         # has already held the track, so this move is what stopped the music.
         if self._player.interrupted:
-            self._held = True
             return not already
-        if state is not PlaybackState.PLAYING:
-            return False
-        self._held = True
-        self._player.pause()
-        return True
+        if state is PlaybackState.PLAYING:
+            self._player.pause()
+            return True
+        # Paused: by the listener, who already held it, else at the end of a
+        # track, where this hold is what stops the next one starting.
+        return not held
 
     def _reopen_where_paused(self) -> None:
         """Open the track in hand again where the output now is, then play on.
