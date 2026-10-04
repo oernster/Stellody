@@ -1,6 +1,6 @@
 """One row of the shops dialog, plus the words the shop editor says.
 
-SHOPS.md Amendment 1. A row is a handle to drag it by, the shop's own button,
+SHOPS.md FR-S27 and FR-S41. A row is a handle to drag it by, the shop's own button,
 then an edit control and a delete control, each wearing Oliver's artwork. A row
 that cannot be searched (FR-S42) keeps its place, greyed out with its reason,
 still offering edit and delete so it can be mended or removed.

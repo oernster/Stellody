@@ -44,124 +44,48 @@ intention. Nothing below is sized against the number.
 ## Open work
 
 There is no open planned work. Every milestone this file carried has either
-shipped or been ruled out, so there is nothing here waiting to be built. That
-is a statement about the plan rather than about the product: the section below
-records what was decided against and why, which is the half of a plan that
-stops the same ground being argued twice. A new milestone arrives here when
-somebody decides on one.
+shipped or been ruled out. The section below records what was decided against
+and why, so the same ground is not argued twice. A new milestone arrives here
+when somebody decides on one.
 
 ## Not planned, so that this is not revisited
 
-- **Making the sites findable.** Ruled out by the owner on 2026-09-08, having
-  been raised more than once. Registering the hosts with Search Console and
-  Bing, submitting the sitemap and validating the structured data in the Rich
-  Results Test are all work in a browser rather than in this repository; none
-  of it is wanted. The markup the pages already carry stays as it is; it
-  is simply not chased. This is a decision about reach rather than about the
-  site, so nothing here reopens it.
-- **The formats still reported rather than played.** Monkey's Audio,
-  Musepack, DSD and TAK stay named in `UNPLAYABLE_SUFFIXES` and reported rather
-  than played, along with CAF, `.m4b` and `.tta`. This entry once covered WMA
-  and WavPack too, on the ground that not one file of any of them existed in the reference library,
-  so writing decoders was a decision about other people's libraries. Measured
-  on 2026-09-09, that ground was wrong about the cost rather than about the
-  libraries: the FFmpeg already inside PyAV decodes every one of them and
-  mutagen already reads their tags, so no decoder was ever going to be written.
-  What separates them now is whether a fixture can be generated to prove the
-  path, since FFmpeg can encode only some of what it can decode. The three
-  that can be proved are taken. Monkey's Audio, Musepack, DSD and TAK each
-  reopen the day a fixture can be made for one or a real file is measured. CAF,
-  `.m4b` and `.tta` are out on grounds a fixture does not answer: CAF yields no
-  tags, an audiobook is not music and TrueAudio states no channel count.
-  `FORMATS.md` section 1.4 holds the reason for each.
-- **Streaming, ripping, device syncing and tag writing.** Named in the README as
-  deliberate non-goals. The last of them is enforced by a structural test rather
-  than by intention.
-- **Fetching a music video for a track from an outside service.** Ruled out by
-  the owner on 2026-09-09 after being scoped rather than on a first reading, so
-  the reasoning is recorded here to save scoping it twice. Three findings
-  settled it. C-07 forbids compiling in a credential of any kind, which closes
-  asking a video service which video belongs to a track before its terms are
-  even reached: it is the constraint that already excluded Discogs and Last.fm.
-  The terms of the obvious service permit playback through its own player with
-  its branding intact, so extracting a stream, hiding the player or presenting
-  the content inside this application is a licence liability carried to
-  everyone who forks it. Downloading is forbidden there separately, while the
-  sources that do permit it hold almost no commercial music videos, so that
-  route works and finds nothing. What remains permitted is handing a search
-  address to the browser exactly as a shop link already is, which is a link
-  rather than a feature and does not earn a milestone. Playing a video that is
-  already beside the music on disk is unaffected: that is built and stays.
-- **Concerts near you by artists you hold.** Ruled out by the owner on
-  2026-09-09, the same day it was scoped and for a related reason: it was
-  judged to cause more problems than it solves. What the scoping found is kept
-  here so the judgement is not made twice from scratch. Every concert listing
-  service needs an API key, which C-07 in `DISCOVERY.md` rules out. A key built
-  into the application would be a published key. A key each listener fetches
-  for themselves would not be published; everybody wanting the feature would
-  have to go and get one, so a listing screen would serve the few who had done
-  that and nobody else. The remaining shape that needs no key is handing a gig
-  site's search address to the browser, which is the shops mechanism pointed at
-  other sites and is a link rather than a feature. Two further costs were open
-  when it was dropped: it would send a place as well as artist names, narrowed
-  to a postcode district somebody typed rather than one detected; its answers
-  also go stale in a way a catalogue's do not, so nothing about the thirty day
-  memory could be inherited. It reopens only as a decision about all four
-  together.
+- **Making the sites findable** (Oliver's ruling). Search Console, Bing,
+  sitemap submission and Rich Results validation are browser work outside this
+  repository; the existing markup stays but reach is not chased.
+- **Monkey's Audio, Musepack, DSD and TAK.** Reported rather than played via
+  `UNPLAYABLE_SUFFIXES`, since FFmpeg cannot encode a fixture to prove them;
+  each reopens when a fixture can be made or a real file is measured.
+- **CAF, `.m4b` and `.tta`.** Reported rather than played for reasons a fixture
+  does not answer: CAF yields no tags, an audiobook is not music and TrueAudio
+  states no channel count. `FORMATS.md` section 1.4 holds each reason.
+- **Streaming, ripping, device syncing and tag writing.** Deliberate non-goals
+  named in the README; tag writing is excluded by a structural test.
+- **Fetching a music video for a track from an outside service** (Oliver's
+  ruling). C-07 forbids a compiled-in credential; the obvious service's terms
+  forbid extracting or re-presenting its streams; sources that permit downloads
+  hold almost no commercial videos. A search link would be a link, not a
+  feature. Videos already on disk beside the music still play.
+- **Concerts near you by artists you hold** (Oliver's ruling). Every listing
+  service needs an API key, which C-07 in `DISCOVERY.md` rules out; it would
+  also send a location and its answers go stale. A gig search link would be a
+  link, not a feature.
 - **Anything over the network that carries your library or names you.** No
-  scrobbling, no telemetry, no account, no identifier. Four modules may hold
-  the machinery to connect, each named in invariant 12; three of them leave the
-  machine, since the fourth is the channel a second launch speaks to the copy
-  already running over. The cover chooser reaches only when a listener opens
-  it; the update check asks GitHub about Stellody, sending nothing whatever
-  about the machine asking; a discovery run names the artists inside the genres
-  somebody ticked, which is a subset they chose rather than an inventory of
-  what they own; for a name the catalogue knows under several artists it also
-  sends up to three titles held under that name, to tell which one is meant.
-  While other volumes of series are asked for it also sends the title of each
-  compilation inside the ticked genres, plus that of each album filed under a
-  name the catalogue knows as one artist with no album or EP, plus the
-  catalogue's own title for an album held under its artist that the catalogue
-  lists as a compilation or a DJ mix. Each is cut at its first bracket, spaced
-  slash or spaced dash, then sent a second time without its volume number or
-  anything after it, whether or not the catalogue files it in a series. That is
-  how the missing volumes of a series are found. Handing an address to a
-  browser is not another, whether it goes to the donation page or to a shop:
-  the address goes outward and the browser does the asking.
-- **Encryption at rest.** The store holds library metadata, not secrets; the
-  README says so plainly.
-- **Repairing the files themselves.** Accepting a correction records it in
-  Stellody's own store and shows it on load. It never writes one back; no
-  amount of accepting changes that.
-- **The album pane inserted inline after the sleeve that opened it.** That is
-  what MediaMonkey does and it reads well; a list view cannot insert a row of
-  its own between two rows of the model. It would mean a view written from
-  scratch, losing with it the keyboard reach an item view carries for nothing.
-  The pane sits below the grid instead, which is the same information a row
-  lower down.
-- **Levelling the loudness across albums.** Albums are mastered at whatever
-  level their era chose, so moving between them means reaching for the volume.
-  That is real; it is not worth what it costs here. The decode is not the
-  expensive part, which is the thing most likely to be re-argued:
-  `infrastructure/waveform.py` already reads a track through to measure its
-  shape and already accumulates the sums of squares a loudness figure is built
-  from, so the measurement would ride on a pass that happens anyway. What rules
-  it out is the output. Measured in `infrastructure/audio.py`, a block reaches
-  the device untouched only where the volume is exactly unity; any other figure
-  multiplies the block and casts it back to the sample type the device is fed.
-  A levelling gain is nearly always a reduction, so every album that had been
-  measured would be scaled on the way out. A shared stream is fed floating
-  point, so the block would be scaled without being requantised. An exclusive
-  stream on Windows (`infrastructure/wasapi.py`) is fed integers and would
-  requantise it as well; one on macOS (`infrastructure/coreaudio.py`) is fed
-  floating point and would be scaled. Exclusive output is the switch a
-  listener presses to have the file's samples reach the device untouched,
-  which a levelling gain would undo on every measured album. Scaled is enough
-  to break the promise either way. This application exists because another player altered somebody's files; handing the device
-  exactly what the file holds is that same promise, so spending it to save
-  reaching for the volume once a record is a poor trade. It reopens for somebody
-  who listens by shuffling across the library rather than by playing records
-  through, since that is the pattern it would actually pay off for; it would
-  default to off even then.
+  scrobbling, telemetry, account or identifier. Invariant 12 names the four
+  modules allowed to connect; only three leave the machine, since the instance
+  channel is local. What each sends is set out under Your privacy in
+  `README.md`. Handing an address to the browser (a shop or the donation page)
+  is not a connection Stellody makes.
+- **Encryption at rest.** The store holds library metadata, not secrets.
+- **Repairing the files themselves.** An accepted correction lives in
+  Stellody's own store and is never written back.
+- **The album pane inserted inline after the sleeve that opened it.** A list
+  view cannot insert a row between two model rows; a hand-written view would
+  lose the keyboard reach an item view gives for nothing. The pane sits below.
+- **Levelling the loudness across albums.** The measurement would ride on the
+  waveform pass in `infrastructure/waveform.py`; any gain short of unity
+  scales every block on the way out in `infrastructure/audio.py`, breaking the
+  untouched-samples promise that exclusive output exists for. It reopens only
+  for listeners who shuffle across the library, defaulting to off even then.
 - **A second library root.** One folder, chosen once, rescanned incrementally.
 - **Writing anything at all into the music folder**, cache included.

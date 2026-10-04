@@ -1,6 +1,6 @@
 """A device arriving carries the music on; one leaving still pauses it.
 
-`OUTPUTS.md` Amendment 5, ruled by Oliver on 2026-09-19 after testing the
+`OUTPUTS.md` FR-O15, ruled by Oliver on 2026-09-19 after testing the
 installed build with his Px7 S3 headphones. While System default is the
 choice, the system's default moving to a device while the one it left is still
 listed moves the track in hand there, where it was: playing plays on, paused
@@ -119,7 +119,7 @@ class TestWhatStillPauses:
         assert player.calls == ["pause"]
 
     def test_a_named_device_in_use_ignores_it(self) -> None:
-        """Amendment 3 stands: the music is not on the default at all."""
+        """FR-O15 stands: the music is not on the default at all."""
         transport, player = playing()
         transport.choose_output(chose(FOCUSRITE))
         player.calls.clear()

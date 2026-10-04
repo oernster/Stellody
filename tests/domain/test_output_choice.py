@@ -17,7 +17,7 @@ from stellody.domain.outputs import (
 )
 
 # The reference machine's seven outputs, in Windows' own enumeration order,
-# measured on 2026-09-18 (OUTPUTS.md Amendment 2). Identities are shortened.
+# measured on 2026-09-18 (OUTPUTS.md NFR-O-PORT-001). Identities are shortened.
 MONITOR = "U13ZA (NVIDIA High Definition Audio)"
 FIRST_MONITOR = OutputDevice(identity="{099b6e7b}", name=MONITOR)
 SMALL_MONITOR = OutputDevice(identity="{3a634f65}", name="U13NA (NVIDIA)")
@@ -135,14 +135,14 @@ def test_a_missing_choice_is_still_listed() -> None:
 
 
 def test_a_missing_choice_leaves_the_tick_on_the_system_default() -> None:
-    """Amendment 5: the tick says where the music is going, not what waits."""
+    """FR-O14: the tick says where the music is going, not what waits."""
     entries = listed(REFERENCE, chose(BATHYS))
 
     assert tuple(entry.choice for entry in entries if entry.chosen) == (SYSTEM_DEFAULT,)
 
 
 def test_a_refused_choice_leaves_the_tick_on_the_system_default() -> None:
-    """Amendment 5: listed and connected, yet the music goes elsewhere."""
+    """FR-O06: listed and connected, yet the music goes elsewhere."""
     entries = output_list(REFERENCE, chose(FOCUSRITE), None)
 
     assert tuple(entry.choice for entry in entries if entry.chosen) == (SYSTEM_DEFAULT,)
@@ -173,20 +173,20 @@ NAMES = tuple(device.name for device in REFERENCE)
 
 
 def test_a_repeated_name_is_found_by_position_when_the_orders_agree() -> None:
-    """Amendment 2: the n-th of a name is the opener's n-th of that name."""
+    """NFR-O-PORT-001: the n-th of a name is the opener's n-th of that name."""
     assert opener_position(REFERENCE, FIRST_MONITOR, NAMES) == 0
     assert opener_position(REFERENCE, SECOND_MONITOR, NAMES) == len(NAMES) - 2
 
 
 def test_a_repeated_name_is_refused_when_the_orders_disagree() -> None:
-    """Amendment 2: a guess between namesakes is never made."""
+    """NFR-O-PORT-001: a guess between namesakes is never made."""
     shuffled = NAMES[1:] + NAMES[:1]
 
     assert opener_position(REFERENCE, SECOND_MONITOR, shuffled) is None
 
 
 def test_a_unique_name_is_found_whatever_the_order() -> None:
-    """Amendment 2: a name nobody shares needs no order to be matched."""
+    """NFR-O-PORT-001: a name nobody shares needs no order to be matched."""
     shuffled = tuple(reversed(NAMES))
 
     assert opener_position(REFERENCE, FOCUSRITE, shuffled) == shuffled.index(

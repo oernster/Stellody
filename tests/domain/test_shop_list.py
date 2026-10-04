@@ -1,4 +1,4 @@
-"""The shop list rules: editing it and meeting a release. SHOPS.md Amendment 1."""
+"""The shop list rules: editing it and meeting a release. SHOPS.md FR-S20 to FR-S36."""
 
 from __future__ import annotations
 

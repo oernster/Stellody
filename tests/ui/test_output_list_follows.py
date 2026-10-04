@@ -69,7 +69,7 @@ def test_a_removed_choice_stays_listed_not_connected(
 
 
 def test_the_tick_moves_to_where_the_music_goes(choosing, devices: Devices) -> None:
-    """Amendment 5: System default is ticked while the choice is away."""
+    """FR-O14: System default is ticked while the choice is away."""
     _chose_then_lost(choosing, devices)
     for menu in (choosing._bottom_tray.sound.output_menu, choosing._output_menu):
         ticked = [action.isChecked() for action in menu.actions()]

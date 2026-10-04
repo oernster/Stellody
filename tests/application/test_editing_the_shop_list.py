@@ -1,4 +1,4 @@
-"""Changing the shop list, over a hand-written store. SHOPS.md Amendment 1."""
+"""Changing the shop list, over a hand-written store. SHOPS.md FR-S17 to FR-S37."""
 
 from __future__ import annotations
 

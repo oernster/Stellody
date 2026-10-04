@@ -1,6 +1,6 @@
 """Addressing one sound server sink, which is how Linux reaches a device.
 
-`OUTPUTS.md` Amendment 6. The route itself is asked of this machine where it
+`OUTPUTS.md` NFR-O-PORT-001. The route itself is asked of this machine where it
 is a Linux one, read only: nothing is opened and nothing is played. The
 platform rule and the refusal are driven through stand-ins, since this machine
 cannot be made to be a Mac nor to lose its sound server.
@@ -95,7 +95,7 @@ class TestOpeningOnASink:
     def test_the_stream_is_opened_on_the_sound_server_naming_the_sink(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Amendment 6: the device is addressed rather than matched."""
+        """NFR-O-PORT-001: the device is addressed rather than matched."""
         seen: dict[str, object] = {}
 
         def _open(request: OutputRequest, number: int | None) -> tuple[str, ...]:

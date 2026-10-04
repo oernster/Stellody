@@ -1,4 +1,4 @@
-"""The form a shop is added or edited in. SHOPS.md Amendment 1.
+"""The form a shop is added or edited in. SHOPS.md FR-S17 to FR-S23.
 
 **It will not save a shop that cannot search.** Each problem is said beside the
 field it concerns, so a form wrong in two places says both at once (FR-S20,

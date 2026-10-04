@@ -163,7 +163,7 @@ class Playing:
 
         `left` says the default moved from has gone from the list, which
         pauses; otherwise a device arrived, which carries the music on
-        (`OUTPUTS.md` Amendment 5). The play buttons are pointed at the new
+        (`OUTPUTS.md` FR-O15). The play buttons are pointed at the new
         state here rather than at the next poll, so their faces change as the
         music stops.
         """

@@ -71,7 +71,8 @@ def _top_tray_html() -> str:
         + img(resources.stop_icon_path())
         + img(resources.next_icon_path())
         + "The transport sits in the middle. Back goes to the start of the "
-        "song first, then to the one before it, the way a CD player does.</p>"
+        "song first, then to the one before it; either way it waits there "
+        "until you press play.</p>"
         + row(
             resources.discover_icon_path(),
             "Discover",

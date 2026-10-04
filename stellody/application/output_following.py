@@ -10,7 +10,7 @@ again wherever the output is by then, at the place it was paused.
 A pause the listener made themselves resumes exactly as before, on the stream
 already open. Only a move of the output reopens.
 
-Ruled again by Oliver on 2026-09-19 (`OUTPUTS.md` Amendment 5): a move to a
+Ruled again by Oliver on 2026-09-19 (`OUTPUTS.md` FR-O15): a move to a
 device that arrived, the one left still listed, carries the music on instead.
 """
 
@@ -38,7 +38,7 @@ class OutputFollowing:
         hand is opened there where it was: playing plays on, paused stays
         paused. A stream already interrupted lost its device, so its pause
         stands; music on the default only because the chosen device is away
-        is never carried to one the listener did not choose (Amendment 5).
+        is never carried to one the listener did not choose (FR-O15).
         """
         if not self._choice.follows_default or self._player.interrupted:
             return self.output_moved()
@@ -55,14 +55,14 @@ class OutputFollowing:
         output now is.
 
         Music on a device the listener named is not on the default, so the
-        default moving is nothing to it (`OUTPUTS.md`, Amendment 3).
+        default moving is nothing to it (`OUTPUTS.md` FR-O15).
 
         The track is held whatever the state, which is what ruled out a fall
         through at a track boundary. Found by the audit of 2026-10-03: a track
         that has played out reads as paused until the next poll moves the
         queue on, so a move landing then was let pass and the poll played the
         next track on the default. Holding it leaves the next track waiting
-        for a press, as OQ-O5 rules (Amendment 4).
+        for a press, as OQ-O5 rules (FR-O11).
         """
         if self._in_use is not None:
             return False

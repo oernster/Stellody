@@ -1,5 +1,12 @@
 # Architecture
 
+This file holds the rules the structure keeps and why it is shaped as it is.
+Requirements live in their specifications (`DISCOVERY.md`, `SHOPS.md`,
+`OUTPUTS.md`, `FORMATS.md`); product trade-offs live in
+`DECISIONS-TRADEOFFS.md`; each module's docstring holds its detail. Where a
+constant governs behaviour it is named here rather than quoted, so its value
+has one home.
+
 ## Invariants
 
 Each invariant names the test that enforces it. Every one of these guards has
@@ -32,78 +39,36 @@ write new ones is in [`TESTING.md`](TESTING.md).
 | 21 | No audio file of a format proved by a generated fixture sits in the tree. | `tests/structural/test_no_committed_audio.py` |
 | 22 | Halving is stated once: `HALF` is defined in `stellody/ui/theme.py` and in no other module of the package or of the suite. | `tests/structural/test_half_has_one_home.py::test_half_is_defined_only_in_the_theme` |
 
-Invariants 1 and 2 are the reason this project exists. The library that
+**Invariants 1 and 2 are the reason this project exists.** The library
 Stellody was built for was damaged by a player that wrote tags back into the
-files, duplicating and overwriting metadata across 33 albums. Stellody
-describes a damaged tag; it never repairs one.
+files. Stellody describes a damaged tag; it never repairs one.
 
-Invariant 13 was written after it had already been broken. The repair control
-shipped enabled while its tooltip still said "not built yet": enabling a feature
-and rewording the thing attached to it are two edits and only one was made. It
-is swept rather than checked in the one place it was noticed, for the reason the
-menu bar is swept; it is held by a planted claim plus the original wording put
-back and watched to fail.
+**Invariant 12 holds local-first as a test rather than a promise.** The four
+permitted modules are `stellody/infrastructure/cover_search.py` (reached when
+somebody asks for a cover), `update_source.py` (asks GitHub whether a newer
+Stellody is published), `fetching.py` (the one module a discovery run and an
+expansion ask both catalogues through) and `instance.py` (the channel a second
+launch uses to show the running copy: a named pipe or a local socket file,
+never a way off the machine). The composition root builds all four. The
+catalogue clients `catalogue.py`, `catalogue_series.py` and `similarity.py`
+hold no socket: each is handed the fetcher. The cover search is held to its
+port by `test_the_search_is_reached_only_through_its_port`. Dotted imports are
+matched in full, since every window imports `PySide6` while only
+`PySide6.QtNetwork` reaches out. The count is the point: adding a fifth module
+is an edit somebody has to make and defend.
 
-Invariant 15 came from the same family. Fifteen displayed strings spelled the
-name out: the close prompt, the About dialog, the health report, the repair
-screen and the tag editor, plus the directory the library sits in and the
-system wide names the single-instance guard claims. The setup program was the
-worse half, holding four definitions of its own, one apiece in its actions,
-its registry writer, its process check and its payload builder: four copies
-agree until the day one of them is edited. A rename would have reached
-whichever of them somebody remembered to grep for. Two of those are
-load bearing rather than read, so the change was proved to leave both byte
-identical before anything else: the same `%LOCALAPPDATA%` directory, the same
-three claim names. Comments and docstrings are prose about a module rather
-than text anybody is shown, so the guard leaves them alone.
+**The update check is the one that speaks unasked, so what it sends is
+fixed:** a fixed URL, an Accept header naming GitHub's JSON media type and a
+user agent that is the product name alone. The agent is stated because
+urllib's default would name the machine's Python. Held by
+`tests/infrastructure/test_update_source.py`.
 
-Invariant 14 is the third. It was written because TECH_DEBT.md stated the
-direction as something a layering test enforced while no test mentioned the
-setup program at all: a guarantee nobody was holding, which is worse than one
-nobody had claimed. It is held by planting `import installer` in a domain
-module and watching it fail, with the plant restored and the caches cleared.
-
-Invariant 12 is the second of that kind. A local-first player that quietly talks
-to the internet is not local-first whatever its README says, so the guarantee is
-held by a test rather than by a promise. It permits four modules and no others.
-`stellody/infrastructure/cover_search.py` is reached when somebody asks for a
-cover; `stellody/infrastructure/update_source.py` asks GitHub whether a newer
-Stellody has been published; `stellody/infrastructure/fetching.py` is the one
-module a discovery run asks its two catalogues through; it is also how an
-expanded candidate artist is looked up afterwards;
-`stellody/infrastructure/instance.py` is the channel a second launch tells the
-running copy to show itself over, which is a named pipe or a local socket file
-on this machine rather than a way off it. The composition root builds all four.
-The only other modules naming one are the three catalogue clients,
-`catalogue.py`, `catalogue_series.py` and `similarity.py`, which hold no socket
-of their own: each is handed the fetcher, building a default one only when none
-is given. The cover search is
-held to its port by `test_the_search_is_reached_only_through_its_port`. So the
-reach outward stays a few named things rather than a capability spread through
-the application.
-
-The last of the four was found rather than added. The guard matched a package
-by its top-level name, which is right for `urllib` and useless for
-`PySide6.QtNetwork`, whose top level every window in the application imports.
-So the fetcher's move onto Qt's network stack on 2026-09-07 would have gone
-unwatched; the activation channel turned out to have been holding a local
-socket unseen since it was written. Dotted names are now matched in full, in
-each of the three ways an import can be spelled, every one of them proved by
-planting it.
-
-The count in that test is the point of it. Going from one permitted module to
-two was an edit somebody had to make and defend; a guard written as "the network
-is used sparingly" would have allowed the same change silently. The update check
-is also the only one of the four that speaks without being asked, which is why
-what it sends is worth stating exactly. It carries a fixed URL, an Accept header
-naming GitHub's JSON media type plus a user agent that is the product name and
-nothing more. Not the library, not an identifier, not the running version. The
-agent is stated rather than left to urllib, which would send
-`Python-urllib/<version>` and so name the machine's Python: a fact about the
-listener's computer that a version check has no use for. It is held by
-`tests/infrastructure/test_update_source.py`, proved by dropping the header and
-then by putting the running version into it, each read as a failure. It reads a
-public document about Stellody and compares it locally.
+**Invariant 13 is swept rather than spot-checked**, because a feature enabled
+without its tooltip being reworded is two edits of which one gets made.
+**Invariant 15** exists because copies of the name agree until one is edited;
+comments and docstrings are prose about a module, so the guard leaves them
+alone. **Invariant 14** gives the setup program's direction a test rather than
+a claim.
 
 ## Layers
 
@@ -119,56 +84,40 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain`, `application` and `shared`. |
 | `shared` | Identity: the name, the version read from `VERSION`, the copyright and the donation address, plus asset resolution and the start-hidden flag. | The standard library. |
 
-`stellody/composition.py` is the only composition root; `main.py` is a
-thin entry point that only calls into it. Dependencies are supplied by
-constructor injection; there is no container and no service locator.
+`stellody/composition.py` is the only composition root; `main.py` is a thin
+entry point that only calls into it. Dependencies are supplied by constructor
+injection; there is no container and no service locator.
 
 ## The setup program
 
 `installer/` is a second PySide6 application in the same repository, compiled
-by `buildinstaller.py` around the payload `buildexe.py` produces. It is a
-client of Stellody rather than a layer of it: it reads the identity, the theme
-and the licence viewer out of `stellody.shared` and `stellody.ui`, plus what
-it needs from `stellody.infrastructure`; invariant 14 holds that direction.
-The line cap applies to it exactly
-as to the package.
+by `buildinstaller.py` around the payload `buildexe.py` produces. It reads the
+identity, the theme, the licence viewer and what it needs from
+`stellody.infrastructure`; invariant 14 holds that direction and the line cap
+applies to it as to the package.
 
-One reading of the machine picks the route. `installer/route.py` compares the
-version the Apps list records against the one being installed and returns
-install, update, downgrade, manage or uninstall; manage is where an install
-already at this version is offered repair or reinstall. `installer/actions.py`
-and `installer/registry.py` own everything written, which is per user
-throughout: the files under `%LOCALAPPDATA%\Programs`, the uninstall record and
-the sign-in entry under `HKCU`, so Windows never asks for administrator rights.
-Setup also creates the desktop and Start Menu shortcuts, leaves two handover
-notes in Stellody's own data directory and deletes that directory on uninstall
-only when asked. Beyond those, setup writes its own step log,
-`stellody-setup.log` in the temporary directory, which `installer/steplog.py`
-owns. `installer/performing.py` drives them a step at a time and reports how it
-went, owning the sequence rather than the writing. `installer/app.py` assembles
-the interface; `installer/screens.py`, `installer/shell.py`,
-`installer/footer.py`, `installer/wording.py`, `installer/theme.py` and
-`installer/appearance.py` hold it, one screen to a step. `tests/installer/`
-covers it.
+- `installer/route.py` reads the machine once and picks the route: install,
+  update, downgrade, manage (repair or reinstall at the same version) or
+  uninstall.
+- `installer/actions.py` and `installer/registry.py` own everything written,
+  all per user (`%LOCALAPPDATA%\Programs`, the uninstall record and sign-in
+  entry under `HKCU`), so Windows never asks for administrator rights.
+  `installer/steplog.py` owns setup's own log; `installer/performing.py` owns
+  the sequence rather than the writing.
+- `installer/app.py` assembles the interface from `screens.py`, `shell.py`,
+  `footer.py`, `wording.py`, `theme.py` and `appearance.py`, one screen to a
+  step. `tests/installer/` covers it.
 
-**Setup never opens the library database.** It runs at the one moment that file
-is least safe to touch, having just ended the application by force, so where a
-fresh install has to clear the switches it leaves a marker file for the
-application to act on instead. `stellody/infrastructure/switch_reset.py` is
-both halves of that handover.
-
-**A fresh install, a repair and a reinstall open the window maximised on the
-screen setup was on.** The same kind of handover:
-`stellody/infrastructure/window_reset.py` is a note naming that screen by its
-name and its top left corner, left by `installer/performing.py` through
-`actions.install` and `actions.repair`. Unlike the switches' note it is left on
-a machine with no directory yet, since a screen still has to be named there. The
-composition root takes it, forgets the remembered size through `forget_window`
-then asks `open_on` in `stellody/ui/geometry.py` to lay the window in that
-screen's room before it is shown. An update and a downgrade leave no note, so a
-size left at the last run still comes back. Measured on 2026-09-13 across four
-monitors of mixed scaling: a window laid in a screen's room before it is shown,
-then marked maximised, lands maximised on that screen.
+**Setup never opens the library database.** It runs just after ending the
+application by force, the moment that file is least safe to touch, so it
+leaves notes for the application to act on instead:
+`stellody/infrastructure/switch_reset.py` (clear the switches on a fresh
+install) and `stellody/infrastructure/window_reset.py` (open maximised on the
+screen setup was on, after an install, repair or reinstall). The composition
+root takes the window note, forgets the remembered size through
+`forget_window` and lays the window on that screen through `open_on` in
+`stellody/ui/geometry.py` before it is shown. An update or downgrade leaves no
+note, so the last size comes back.
 
 ## The central abstraction
 
@@ -178,2240 +127,1071 @@ then marked maximised, lands maximised on that screen.
 TrackSource(path, start_frame, end_frame)
 ```
 
-A normal track is `TrackSource("07 Venus.flac")`. A cue-sheet track is
-`TrackSource("album.flac", 18_432_000, 32_532_000)`.
+A normal track is `TrackSource("07 Venus.flac")`; a cue-sheet track is
+`TrackSource("album.flac", 18_432_000, 32_532_000)`. Cue albums are a main path
+in the reference library, not an edge case. Because the distinction is one
+value object, the queue, the transport, shuffle, the amplitude monitor, the
+grid and the album pane are written once and never ask which shape they hold.
 
-162 of the 617 albums in the reference library are built from a cue sheet
-rather than one file per track, 155 of them a single FLAC holding the whole
-album, so this is a main path rather than an edge case. Because the
-distinction is captured in one value object, the queue, the transport and
-shuffle are written once and work for both shapes without knowing which they
-hold. The amplitude monitor inherits the same property: a shape is measured
-for the file, then each track takes its own share of it. The grid of sleeves
-and the album pane under it inherit it too: both are views over the same
-albums, so neither knows which shape a track holds.
+**Two readers satisfy it; nothing above them can tell which.** `AudioSource`
+in `stellody/infrastructure/decode.py` is the shape both answer to;
+`open_source` chooses by suffix and is the only place that knows there are
+two. `SourceReader` covers everything libsndfile addresses by frame.
+`PacketReader` (`packet_decode.py`) covers `PACKET_SUFFIXES`, which arrive as
+timestamped packets; it counts them back into frame positions so cue slices,
+the equalizer, the visualiser and gapless need no change. Three traps in it
+are commented where they are handled: timestamps do not start at nought
+(encoder priming); a seek needs pre-roll; the container is reopened on
+every seek because a used decoder does not come back clean.
 
-**Two readers satisfy it; nothing above them can tell which it holds.**
-`AudioSource` in `stellody/infrastructure/decode.py` is the shape both answer
-to; `open_source` chooses by suffix and is the only place that knows there are
-two. `SourceReader` covers everything libsndfile can address by frame.
-`PacketReader`, in `packet_decode.py`, covers M4A, WMA, WavPack and AAC, which
-arrive as packets carrying timestamps rather than as addressable PCM; it counts
-those back into frame positions so that a cue slice, the equalizer, the
-visualiser and gapless all keep working without a line changed. It covers the
-video files too: .m4v is the same MP4 container with AAC inside, measured by
-pointing the reader at real files off the library unmodified, so a track
-carrying a picture needed no second decoder and no change to the sound path at
-all.
+**The picture is a separate stream that follows the sound.**
+`stellody/infrastructure/video.py` keeps no clock: it asks what moment the
+transport has reached and hands back the frame due then, so the two streams
+cannot drift. It crosses the boundary as `domain/picture.py` (packed RGB, the
+one arrangement both sides can state); `application/pictures.py` holds one
+open for the track in hand; `ui/picturing.py` shows it in the library's own
+area so closing it returns the listener where they were.
 
-**The picture is a separate stream read by a separate module, following the
-sound.** `stellody/infrastructure/video.py` reads the picture and nothing else;
-it keeps no clock, asking instead what moment the transport has reached and
-handing back the frame due then, which is why the two streams cannot drift
-apart: only one of them is keeping time. It crosses the boundary as
-`domain/picture.py`, three bytes a pixel with no padding, which is the one
-arrangement the decoder and the toolkit can both state without either learning
-about the other. `application/pictures.py` holds one open for the track in hand
-and gives it up as the track changes; `ui/picturing.py` shows it in the
-library's own area, so closing it puts the listener back on the view they were
-on, scrolled where they had scrolled to.
-
-Three things there were measured rather than assumed; each is a comment in
-the file next to the code it explains. The timestamps do not start at nought:
-an iTunes AAC file begins at 2112, the encoder priming, so a reader ignoring it
-starts every track 48 milliseconds in. A seek needs pre-roll: landing on the
-packet holding the wanted frame and decoding from there differs from the same
-frame played forward by half of full scale, because the codec is being asked to
-start cold. And the container is genuinely reopened on every seek rather than
-merely seeked, because a decoder that has already decoded does not come back
-clean and an explicit flush of its buffers does not clear it; at the start of a
-track there is no pre-roll to hide that, so it would have reached the speakers.
-Reopening costs under a millisecond against a read block worth ninety.
-
-**PyAV is imported only once a track needs it.** `open_source` imports
-`packet_decode.py`, which imports PyAV, inside the function rather than at the
-top of `decode.py`; `video.py` imports PyAV inside `VideoReader` for the same
-reason. Importing it loads a shared FFmpeg build of some sixty megabytes. A
-library holding nothing that reader takes never pays for it and one holding a
-few pays only when a track from them is opened. The other imports deferred
-into a function are different: `output.py` reaches `wasapi` only on Windows and
-`coreaudio` only on macOS, `output_list.py` reaches `endpoints` only on Windows,
-while `stellody/__init__.py` defers the composition root into `main`.
+**PyAV is imported only once a track needs it**, inside `open_source` and
+inside `VideoReader`, since it loads a large shared FFmpeg build. The other
+deferred imports are platform choices: `output.py` reaches `wasapi` and
+`coreaudio`, `output_list.py` reaches `endpoints`, while
+`stellody/__init__.py` defers the composition root into `main`.
 
 ## Grouping: folders group, tags name and join
 
-**A folder is where an album starts, not where it ends.** Sibling folders whose
-names differ only by a disc marker, `CD1` and `CD2` or `(Disc 1)` and
-`(Disc 2)`, merge into one multi-disc album. Folders anywhere in the library
-whose most common album and album artist tags agree are then folded into one
-album by `fold_by_tags` in `stellody/domain/folding.py`, since the reference
-library keeps an album's audio in one folder and its bonus videos in another.
-The date is left out of that comparison because an album's audio and its
-videos routinely disagree about it. A folder whose tags name no album or no
-album artist is never folded. The tags then supply the album's title, artist,
-date and genre, each taken as the most common value its tracks carry.
+**A folder is where an album starts, not where it ends.** Sibling folders
+differing only by a disc marker merge into one multi-disc album. Folders
+anywhere whose most common album and album artist tags agree are then folded
+into one album by `fold_by_tags` in `stellody/domain/folding.py`, since a
+library may keep an album's audio and its bonus videos apart. The date is left
+out of that comparison (audio and videos disagree about it); a folder naming
+no album or no album artist is never folded. The tags then supply title,
+artist, date and genre as the most common value among the tracks.
 
-Grouping by tags was tried first and measured against the reference library. It
-failed: classical rips frequently carry the composer in the `ALBUM` tag and a
-different `DATE` on every track, which fragmented one Mozart folder into five
-albums, two of them holding a single track. A folder boundary is what a ripper
-actually records, so that is what is trusted. Folding is the narrower use of
-tags that survived: it never splits a folder, it only joins folders that agree.
+Grouping by tags alone was tried and fragmented classical rips, which carry
+the composer in `ALBUM` and a different `DATE` per track. A folder boundary is
+what a ripper actually records, so it is trusted; folding never splits a
+folder, it only joins folders that agree.
 
 ## Resolving damaged metadata
 
-Tags name things. They do not decide structure; where they contradict
-something physical the physical thing wins. Three rules, each measured against
-real damage in the reference library:
+Tags name things; they do not decide structure. Where they contradict
+something physical, the physical thing wins:
 
 | Conflict | Winner | Why |
 |---|---|---|
-| Two tracks in one album claim the same disc and track number | The leading number in the file name | In every observed case of tag damage the file names stayed correct and distinct |
-| A track's `DISCNUMBER` disagrees with a folder named `(Disc 2)` | The folder | One such folder holds tags claiming discs 1, 2 and 3; the folder name was written by a person, the tag by software |
+| Two tracks in one album claim the same disc and track number | The leading number in the file name | In observed tag damage the file names stayed correct and distinct |
+| A track's `DISCNUMBER` disagrees with a folder named `(Disc 2)` | The folder | The folder name was written by a person, the tag by software |
 | A colliding track's title duplicates another's | The file name | A bulk tag overwrite copies the title along with the number |
 
-Every fallback is recorded as a `LibraryIssue` and surfaced in a health
-view, so the user gets a precise list of what to repair in a tagger of their
-own choosing. That view reports; a second screen accepts. Two repair controls
-open it: one on the bottom strip beside the rescan whose findings it answers,
-one pinned at the top of the health dialog. Their tooltip is stated once in
-`stellody/ui/bottom_tray.py` and read from there by the dialog, so the two
-cannot come to say different things about one feature; whether either can act
-is answered once as well, in `can_repair`, so they cannot disagree about that
-either. Both are disabled where there is nothing outstanding to accept and
-nothing already accepted to take back, since the screen would open saying
-nothing. See "Accepting a correction" below.
+Every fallback is recorded as a `LibraryIssue` and surfaced in the health view
+so the listener can repair it in a tagger of their choosing. That view
+reports; a second screen accepts (below). Its two repair controls share one
+tooltip (stated in `stellody/ui/bottom_tray.py`) plus one answer to whether they
+can act, `can_repair`; both are disabled while there is nothing to accept or
+take back.
 
-**A file is reported once for its track number, however many rules touched it.**
-A colliding file whose name carries no leading number used to be reported twice:
-as a duplicate, then as having no track number, although its tag named one. Both
-findings pin the same field, so accepting the album pinned each such file twice.
-`resolve_tracks` now says a number is missing only where the tags carried none;
-`Repairs.pins_for` keeps one pin per album, file and field whatever findings
-name it, so the count `accept` returns is a count of files. Held by
+**A file is reported once for its track number, however many rules touched
+it.** `resolve_tracks` reports a missing number only where the tags carried
+none; `Repairs.pins_for` keeps one pin per album, file and field, so `accept`
+counts files. Held by
 `tests/domain/test_health_and_ordering.py::test_a_colliding_file_with_no_ordinal_is_reported_once`
 and
-`tests/application/test_repairs.py::TestAcceptingAndResetting::test_two_findings_naming_one_file_for_one_field_pin_it_once`,
-both seen to fail before the change.
+`tests/application/test_repairs.py::TestAcceptingAndResetting::test_two_findings_naming_one_file_for_one_field_pin_it_once`.
 
-`stellody/domain/ordering.py` holds the track rules,
-`stellody/domain/grouping.py` the album rules, `stellody/domain/folding.py` the
-rule joining folders that name one album and `stellody/domain/health.py` the
-reporting vocabulary.
+`stellody/domain/ordering.py` holds the track rules, `grouping.py` the album
+rules, `folding.py` the folding rule and `health.py` the reporting vocabulary.
 
 ## Accepting a correction
 
-**Resolution has three layers: the raw tags, the automatic rules, then whatever
-has been accepted on top.** The store holds raw tags and resolves on load, so
-the library already showed corrected values; what was missing was anywhere to
-record that a correction had been ACCEPTED, which is why the same findings were
-recomputed and re-read at every start. `stellody/domain/overrides.py` is that
-record and `assemble_albums` applies it, so a load and a scan get it from one
-place rather than two that could disagree.
+**Resolution has three layers: raw tags, the automatic rules, then what has
+been accepted.** The store holds raw tags and resolves on load.
+`stellody/domain/overrides.py` records what was accepted and
+`assemble_albums` applies it, so a load and a scan get it from one place.
 
-**What is pinned is the value the rule proposed.** Accepting is a listener
-saying "yes, keep that" about a correction Stellody already made, so the library
-does not move when a report is accepted; what changes is that the finding stops
-being reported and the value stops depending on the rule that suggested it. The
-domain will apply a DIFFERENT value and is tested for it, so preferring one of
-your own is a decision rather than a rewrite; the tag editor is what records
-one, through the same table.
+**What is pinned is the value the rule proposed**, so accepting moves nothing
+on screen: the finding stops being reported and the value stops depending on
+the rule. The domain also applies a different value; the tag editor records
+one through the same table.
 
-**An override is keyed by the album's identity handle, with the path
-alongside.** The handle survives a folder rename and a re-rip, which is why
-artwork and ratings already use it; it is stated once as `AlbumIdentity.handle`
-rather than digested again per user, since three spellings of one value is three
-chances for two of them to drift. Beside it sits the SOURCE ADDRESS, which names
-the one file a track-level pin is about, so two files folded into one album are
-never mistaken for each other. Why that is an address rather than a path is
-below. The handle survives a rename; the address does not, so a track-level pin
-reverts to the automatic value when its folder moves, as an album edit does,
-since album edits are keyed by folder. Ratings and play counts on an album
-nobody edited follow it; this limit is stated on the site rather than solved.
+**An override is keyed by the album's identity handle plus a source
+address.** `AlbumIdentity.handle` survives a folder rename or re-rip, which is
+why artwork and ratings use it too. The address names the one source a
+track-level pin is about, so two files folded into one album are never
+confused. A track-level pin reverts to the automatic value when its folder
+moves.
 
-**Two albums that resolve alike are one album; that is a price, stated.** Tags
-alone cannot separate two recordings of one work: a symphony under two
-conductors carries one composer, one title and often one year. They were once
-told apart by the place each was found. Since 2026-09-05 folders naming the
-same album and album artist are folded together instead, for the reason
-[Grouping](#grouping-folders-group-tags-name-and-join) gives, which is the
-common case. The two recordings therefore share a cover,
-an album rating and any accepted correction, while both files stay in the
-album. `tests/domain/test_identity_collisions.py` holds that cost as tests, so
-whoever reverses the decision sees what they are buying back.
-
-Telling apart by place survives only where albums collide without folding,
-which needs a folder whose tags name no album or no album artist.
-`_named_apart` in `stellody/domain/grouping.py` gives each of those the place it
-was found. The separation is appended to what the handle is digested from
-rather than joined in as an empty part, so an album nothing collides with
-digests exactly the run of text it always did. A test pins that digest to its
-literal value, because a refactor that quietly moved it would empty every
-library's ratings with every gate still green.
+**Two albums that resolve alike are one album; that is a stated price.** Tags
+cannot separate two recordings of one work; folders naming the same album
+and album artist fold together for the reason
+[Grouping](#grouping-folders-group-tags-name-and-join) gives. They share a
+cover, an album rating and accepted corrections.
+`tests/domain/test_identity_collisions.py` holds that cost so whoever reverses
+it sees what they buy back. Telling apart by place survives only where albums
+collide without folding: `_named_apart` in `stellody/domain/grouping.py`
+appends the place to what the handle is digested from, so an album nothing
+collides with digests exactly as before. A test pins that digest to its
+literal value, since a refactor moving it would silently empty every
+library's ratings.
 
 **A lossy copy of an album already held lossless is not a second recording.**
-That distinction was not needed while M4A could not be decoded; the moment it
-could, the rule above did real damage. A lossy rip collided with the lossless
-one already in the library, both were told apart, so the album that had been
-there for the library's whole life had its handle moved: its cover, its album
-rating and every track rating under it orphaned by the arrival of a worse copy.
-Three albums in the reference library went that way; the first anyone knew
-of it was a report saying they were no longer found.
+`stellody/domain/duplicates.py` drops a lossy file only where a lossless file
+in the same album claims the same disc and track number AND runs the same
+length within `SAME_RECORDING_MS`. The length is the evidence: a number alone
+cannot tell a copy from a live take at the same number; dropping a file is
+the one irreversible thing the rule does. A missing disc number reads as the
+first disc, since one rip may state a disc where the other states none. Lossy
+and lossless are told apart by a stated bit depth, not a suffix list. The
+lossless album keeps its handle; `TestWhatMustNotChange` in
+`tests/domain/test_lossy_duplicates.py` holds what must not move.
 
-`stellody/domain/duplicates.py` answers it; the exception is narrow on purpose.
-Within one album, once folding has brought its folders together, a lossy file
-is dropped only where a lossless file claims the same disc and track number AND
-runs the same length, to within the two seconds `SAME_RECORDING_MS` allows.
-The Dance held 17 FLAC and 17 M4A of one performance and listed all 34.
+**A finding is silenced only where the whole of it is pinned.** A kind that
+proposes no value is absent from `FIELD_FOR_KIND`; that absence is the
+rule.
 
-The length is not belt and braces; it is the evidence. The first version of
-this rule paired on the number alone, which cannot tell a copy from a variant:
-an album may hold a studio take and a live one at one number, while the lossy
-rip here titled every track "(Live)" where the lossless one did not, which is
-exactly the shape that should stop anybody. Measured, all seventeen pairs
-agreed to within 0.7 seconds and most to within 0.1, which is a lossy encoder's
-padding rather than a different performance. A pair whose lengths disagree is
-two recordings and both are kept, because dropping a file is the one
-irreversible thing the rule does. Two folders holding one album, one rip
-lossless and one lossy, fold into one album where this same rule drops the
-lossy copies. The lossless copy is the one a listener means, so the lossless
-album keeps the handle it had alone. Two lossless
-recordings tagged alike, the case the telling apart was written for, now fold
-into one album holding both, as `TestWhatMustNotChange` in
-`tests/domain/test_lossy_duplicates.py` holds.
+**A finding names the sources it is about, not the names it shows.**
+`LibraryIssue.paths` holds display names; `LibraryIssue.addresses` holds what a
+pin is written against. A cue track's display name is invented by the scan and
+renumbering can change it, while every track of a cue album shares one path,
+so neither a name nor a path can carry a pin. `TrackSource.address` is the bare
+path for a whole file and `path#start_frame` for a slice; a whole file
+addresses exactly as it always did, so no stored pin changed shape.
+`overrides.applied` looks pins up by address; `edits_for` in
+`stellody/application/editing.py` writes the tag editor's values against it
+(`tests/application/test_editing_a_cue_album.py`).
 
-**A stated bit depth is what separates the two kinds, not a list of suffixes.**
-The probe reports no depth for a format that states none, so the distinction is
-one the library already draws and already tests. The pairing reads a missing
-disc number as the first disc, which is not a nicety: measured on the reference
-library, the FLAC rip of The Dance states no disc at all while the M4A beside it
-states disc 1, so compared as written every one of the seventeen pairs missed.
+**The findings and the accepted set are two lists.** An accepted finding
+leaves the report, so it cannot be what is pointed at to take it back. The
+screen lists the accepted set by album and field; reset takes a group, an
+album or the lot; only the lot asks first, being unbounded.
 
-**A finding is silenced only where the whole of it is pinned.** Half an accepted
-finding is still a finding: reporting it would be wrong about what is
-outstanding while dropping it would hide the part nobody answered. A kind that
-proposes no value can never be silenced, because it is absent from
-`FIELD_FOR_KIND`; that absence IS the rule, rather than a second list to
-disagree with the first.
+**A store that cannot be read must not cost the library its assembly.** An
+unknown field or an impossible pinned number is skipped rather than raised:
+one unapplied correction is cheaper than a library that fails at every start.
 
-**A finding names the SOURCES it is about, not the names it shows for them.**
-`LibraryIssue.paths` holds display names while `LibraryIssue.addresses` holds
-what a pin is written against; the second is what the accepting and the
-silencing both read.
-
-It was names until a name turned out not to survive the trip. For a cue album
-the name a track is reported under is one the scan made up,
-`05. Salt in the Wounds`, while the file on disk is one FLAC holding the whole
-record; the ordering rules then RENUMBER a colliding track, so by the moment
-somebody accepted the finding the label it was reported under named nothing.
-Nothing matched, no pin was written and the finding came back at every start
-however many times it was accepted. Reported as Accept everything doing nothing
-at all.
-
-Pinning against the path could not have worked either, for the same shape of
-reason from the other end: every track of a cue album shares one file, so one
-pin would have stamped one track's number onto the whole album. Correcting the
-names alone would have corrupted what is displayed, which is worse than the
-fault being corrected.
-
-**So a source is ADDRESSED rather than pathed.** `TrackSource.address` is the
-bare path for a whole file and `path#start_frame` for a slice, which is the one
-value that separates two tracks living in the same file. A whole file addresses
-exactly as it always did, so every pin written before the rule arrived is found
-where it was left and nothing stored changed shape. `overrides.applied` looks a
-pin up by that address, so a pin cannot reach a track it is not about. The tag
-editor writes against the same value: `edits_for` in
-`stellody/application/editing.py` records `track.source.address`, so a number
-stated for one slice of a cue album reaches that slice alone, as
-`tests/application/test_editing_a_cue_album.py` holds.
-
-**The findings and the accepted set are two lists, not one.** This is forced
-rather than chosen: a finding that has been accepted leaves the report, so it
-cannot also be the thing pointed at to take it back. What the screen offers
-instead is the accepted set grouped by album and field, which is the same unit
-read from the other side, now listed under each album. Reset takes a group, an
-album or the lot. An album is taken back in one press because a rule that
-guessed wrong is wrong about a record, which is the unit a listener thinks in;
-added on 2026-09-13. Only the lot asks first and names the count, being the one
-gesture that undoes an unbounded amount of work in a single press: a group and
-an album are both bounded to one record.
-
-**A store that cannot be read must not cost the library its assembly.** A row
-naming a field this version does not know is skipped; a pinned number that is
-not one or that no track could hold is ignored rather than raised over. The
-asymmetry is the reason: one correction nobody sees applied against a library
-that fails to assemble at every start with no way back in.
-
-**None of it reaches a music file.** An override is Stellody's own state, kept
-in Stellody's own database beside the ratings and the settings. Resetting drops
-a row and lets the automatic rule show through again; there is nothing to
-corrupt, because the raw tags were never altered, which invariants 1 and 2
-enforce rather than describe.
+**None of it reaches a music file.** An override is a row in Stellody's own
+database; invariants 1 and 2 enforce that.
 
 ## Stating what an album is
 
-**A correction accepted and a value stated are different acts, so they are
-different records.** Accepting says "yes, keep what the rule proposed" about a
-value Stellody worked out; stating says what the album IS, over whatever the
-tags claim and whatever any rule would make of them. `Override` is the first
-and `AlbumEdit` in `stellody/domain/overrides.py` is the second.
+**Accepting and stating are different acts, so they are different records.**
+`Override` keeps what a rule proposed; `AlbumEdit` in
+`stellody/domain/overrides.py` says what the album IS.
 
-**A stated value is keyed by the folder, never by the handle.** That keying is
-the whole reason the two are separate types. A handle is a digest of the album
-artist, the title and the year, so an edit to any of those changes the handle:
-an edit keyed by it would answer to the album it had already stopped describing
-and would undo itself at the instant it took effect. A folder is where the
-music actually sits, so it says the same thing before and after.
+**A stated value is keyed by the folder, never the handle.** The handle is a
+digest of artist, title and year, so an edit keyed by it would stop matching
+the moment it took effect.
 
-**Stated values are laid on BEFORE anything is folded.** `stated_over` in
-`stellody/domain/entries.py` rewrites the entries, then assembly runs on the
-result, so a stated artist or title is what the album is IDENTIFIED BY rather
-than a label hung on it afterwards. Doing it the other way round would leave
-the library sorted and folded by tags nobody agreed with while displaying the
-values somebody did.
+**Stated values are laid on before anything is folded.** `stated_over` in
+`stellody/domain/entries.py` rewrites the entries, then assembly runs, so a
+stated artist or title is what the album is identified and sorted by.
+Consequently stating one folder's tags to match another's merges them; the
+merged album takes the rating held against the joined handle.
 
-**Folding is a consequence rather than a feature.** Give one folder the artist
-and title another already carries and both resolve to one handle, which is how
-two disc folders of a single release have always become one album. So stating a
-tag is also the way to merge two folders by hand. The merged album reads the
-rating held against that handle, which means the album edited INTO another
-takes the rating of the one it joined; that is stated here because it is the
-one part of it a listener could be surprised by.
-
-**Four fields are stateable and genre is one of them.** `AlbumField` names the
-album artist, the title, the date and the genre. A genre stated this way is
-what the filter below narrows on, so correcting a tag and being findable by it
-are the same act rather than two.
+**`AlbumField` names the stateable fields:** album artist, title, date and
+genre. A stated genre is what the filter narrows on.
 
 ## Scanning
 
-The walker lists folders, the probe reads tags out of one file and the store
-caches a whole folder's result. A rescan compares each file's size and
-modification time against the store; a folder whose files are all unchanged AND
-whose stored record was written by the rules currently in force is reused
-without opening a single file. On the reference library a cold scan of
-657 folders holding 6,487 music files takes about three and three quarter
-seconds and a rescan a little under half a second.
+The walker lists folders, the probe reads one file's tags and the store caches
+a folder's result. A folder is reused without opening a file only when every
+file's size and modification time is unchanged AND its record was written
+under the rules now in force: `records.DERIVATION` names those rules and
+`_unchanged` requires the record to carry the same value, so a corrected
+derivation rule (how a file becomes records, including cue parsing) reaches
+the whole library on the next scan.
 
-**Every figure describing the library ITSELF comes from one reading, taken
-through the scanner itself rather than counted beside it.** A measurement taken
-during an experiment records the library as it stood that day and says so where
-it appears, which is why the expand-all timing below counts 628 albums rather
-than the 617 stated here: it is a reading of signals taken on another day, not
-a second reading of the library. The walk visits 657 folders
-holding 6,487 music files, which assemble into 617 albums of 8,450 tracks.
-There are more tracks than files because a cue sheet turns one file into many:
-6,272 of those tracks are a whole file while 2,178 are a slice of one. Timed
-twice from cold at 3.75 and 3.77 seconds, with the rescan at 0.46 and 0.47.
-An earlier set of figures was taken while the walk still took FLAC alone and
-was left standing after the walk widened, so the counts in this document
-described a narrower library than the one being scanned; they are replaced
-rather than scaled. The reading was taken with nothing accepted and nothing
-stated, so it is the library as a scan finds it: a listener whose own
-corrections fold two folders together sees slightly fewer albums than this.
+**The store holds raw tag values.** Resolution happens on load, so a corrected
+resolution rule takes effect on the next start without a rescan.
 
-**The store holds raw tag values, not resolved ones.** Resolution happens on
-load, so improving a RESOLUTION rule takes effect on the next start without
-rescanning a library.
-
-**Missing files are flagged, never deleted.** An unplugged drive, a failed
-restore or an interrupted scan must not destroy library metadata, so a file the
-walk no longer finds is marked absent in the store rather than removed from it.
-The two rules that follow keep that honest: a folder whose files are all
-flagged is left out of the library until they come back; a scan that cannot
-reach the music folder at all is refused rather than flagging everything.
-
-**A scan and a load must assemble the same library from the same store.** The
-window measures every scan against the library on screen, which after a
-restart is what `LoadLibrary` in `application/loading.py` assembled, so any
-difference between the two readings is reported as albums arriving and leaving
-on every rescan for ever. Two such differences were found from one real report
-on 2026-09-10, both reproduced before either was fixed. The scan assembled from
-raw tags while the load laid the stated album values over them first, so a
-stated album read as gone and its raw-tagged self as new;
-`tests/application/test_a_rescan_keeps_stated_albums.py` holds that. And the
-load read back folders the last scan had marked absent, so a folder removed
-from disk came back on every start and was named gone on every rescan;
-`load_folders` now leaves out a folder whose every file is absent, held by
-`tests/infrastructure/test_a_vanished_folder_stays_gone.py`. Only whole
-folders need the rule, since a folder the walk still reaches is either reused
-whole or saved afresh.
+**Missing files are flagged, never deleted.** An unplugged drive or
+interrupted scan must not destroy library metadata. A folder whose files are
+all flagged is left out until they return; `load_folders` applies the same
+rule on load (`tests/infrastructure/test_a_vanished_folder_stays_gone.py`).
 
 **A scan whose music folder is not there is refused before it touches
-anything.** Measured on the same day: a root on a disconnected drive walks as
-no folders with no error, so the scan used to mark every file absent, which
-with the rule above would open the next start on an empty library. The walker
-answers `reachable` first and `ScanLibrary` raises `LibraryUnreachableError`
-when it is not, which the worker reports as a failed scan while the library on
-screen stays exactly as it was; `tests/application/test_an_unplugged_drive.py`
-holds it. Both guards were proved by planting the old behaviour back and
-reading the failures.
+anything.** A disconnected root walks as no folders with no error, so the
+walker answers `reachable` first and `ScanLibrary` raises
+`LibraryUnreachableError`; the library on screen stays as it was
+(`tests/application/test_an_unplugged_drive.py`).
 
-**A rule that decides what gets WRITTEN DOWN is the other kind; it needs a
-rescan.** How a file becomes records at all, which is what `records.py` and the
-cue parsing behind it do, runs during the scan and the store then holds its
-answer. Unchanged files were on their own a reason to reuse that answer, so such
-a rule reached only whichever folder somebody happened to touch. Measured on its
-own day, which is why the count differs from the reading above: a correction
-letting a file's own tags answer where a cue sheet says only Unknown had reached
-none of the 659 folders the walk saw then, three days after it landed, because
-not one of those files had changed. `records.DERIVATION` names the rules in
-force, a folder record carries the value it was written under and `_unchanged`
-requires the two to agree, so a corrected rule now reaches a whole library on
-the next scan. A record from a database written before the question was asked
-carries nought, which no rule set answers to, so it is always read again.
+**A scan and a load must assemble the same library from the same store**,
+since the window compares every scan against what `LoadLibrary`
+(`application/loading.py`) assembled; any difference reads as albums arriving
+and leaving at every rescan. Both lay stated values on first
+(`tests/application/test_a_rescan_keeps_stated_albums.py`).
 
-**What the walker skips is named, never guessed.** An earlier version treated a
-leading dot as "hidden" and silently swallowed two real albums, `...And Justice
-for All` and `...Nothing Like The Sun`. It now skips a fixed list of system
-directories plus macOS AppleDouble stubs; nothing else.
+**What the walker skips is named, never guessed:** a fixed list of system
+directories plus macOS AppleDouble stubs. A leading dot is not "hidden", since
+real album folders begin with one.
 
 ## Formats and probing
 
-**Five tag shapes cover every format, measured rather than assumed.** FLAC and
-the Ogg family hand back `(name, value)` pairs already spelled the way the
-resolution rules read them, so those pass through whole and nothing a ripper
-wrote is discarded. MP3, WAV and AIFF hand back ID3 frames keyed by a four
-letter code; iterating one of those yields the codes rather than pairs, so
-`ID3_NAMES` in `stellody/infrastructure/probe.py` translates the frames the
-domain vocabulary actually reads. A frame nobody reads is left alone rather
-than guessed at.
+`FORMATS.md` is the specification for which formats are taken and why; this
+section is how the probe is built around them.
 
-MP4 is the third and it is the one that forced the count up, because the pair
-path does not mislabel its atoms, it raises on them. `MP4_NAMES` renames the
-atoms and `MP4_PAIR_NAMES` handles the two that arrive as a parsed pair of
-integers rather than as the "3/12" text every other format writes; putting them
-back into that form is what keeps one set of resolution rules for every format.
-Its cover lives in an atom carrying no picture type, so `covers.py` presents
-each as a front cover and the existing ordering reduces to size alone.
+**Five tag shapes cover every format.** FLAC and the Ogg family hand back
+pairs already spelled as the resolution rules read them. ID3 (MP3, WAV, AIFF)
+is translated by `ID3_NAMES`; MP4 by `MP4_NAMES` plus `MP4_PAIR_NAMES` for the
+two integer pairs, rewritten as the "3/12" text other formats use; WMA by
+`ASF_NAMES`, matched without regard to case and collected once per name;
+WavPack's APEv2 needs no table. All in
+`stellody/infrastructure/probe.py`; a frame nobody reads is left alone. An MP4
+cover carries no picture type, so `covers.py` treats each as a front cover.
 
-WMA is the fourth and WavPack the fifth, both arriving with the formats
-`FORMATS.md` widened the walk to take. `ASF_NAMES` translates Microsoft's own
-attribute names, matched without regard to case: measured on 2026-09-09, one
-file states its title under both `Title` and `title`, so a value already
-collected under a name is not collected twice. WavPack carries APEv2, which is
-a mapping rather than a list of pairs, so iterating one yields its keys and the
-pair path raises on it exactly as it does on MP4; it needs no table beyond that,
-since `application/tags.py` already reads the spellings APEv2 uses. A raw AAC
-is a stream with no tag block at all, so it states nothing and takes its album
-from its folder as any untagged file does.
+**What a format does not state is reported as absent, never invented.** A file
+stating no bit depth reports nought; a missing frame count is derived from
+length and sample rate. `OPUS_SAMPLE_RATE` records a property of the format,
+since mutagen states no rate for Opus.
 
-**A lossy MP4 states a bit depth it does not have; that one had teeth.**
-Measured on a real AAC file: mutagen reports sixteen bits per sample, because
-the MP4 sample entry carries that number whatever the codec does with it. A
-stated depth is exactly what `is_bit_perfect` tests, so passing it through would
-have badged an AAC track as delivered untouched. `_bit_depth` therefore honours
-the number only for a codec that genuinely stores its samples, which in MP4
-means ALAC. The trap itself is pinned by a test, so the suppression cannot be
-deleted as unnecessary without someone noticing that mutagen still sets it.
+**Nought means unstated, which keeps bit perfect honest.** `OutputRequest` and
+`Track` refuse only a negative depth; `states_depth` separates nought from a
+real value. `depth_is_native` requires a stated depth, so `is_bit_perfect` is
+False for any lossy source; `Track.is_high_resolution` is False wherever
+no depth is stated (otherwise Opus's fixed rate would badge every Opus file).
+`open_output` in `wasapi.py` and `coreaudio.py` declines exclusive mode up
+front with `NO_STATED_DEPTH`, worded once in `portaudio.py`, so the reason
+names the file rather than blaming the device.
 
-**Which families those are is the domain's to say**, in
-`stellody/domain/formats.py`, since it is a fact about formats rather than
-about a tag library. `LOSSY_FAMILIES` names the three whose stated depth is not
-a stored one and `stored_depth` is the one rule; the probe's only part is
-naming the family a file belongs to. The rule believes a stated depth unless
-the family is named, which is the deliberate direction: naming the families to
-be trusted instead would mean a lossless format nobody thought of losing a
-bit-perfect stream it had earned, in silence. WMA and AAC are named there even
-though mutagen states no depth for either as measured on 2026-09-09, because
-both are lossy by definition; a tag library that starts reporting their header
-field therefore changes nothing.
+**Which families are lossy is the domain's to say**: `LOSSY_FAMILIES` and
+`stored_depth` in `stellody/domain/formats.py`. The rule believes a stated
+depth unless the family is named, so a lossless format nobody listed never
+loses bit perfect in silence. `_bit_depth` in the probe honours an MP4 depth
+only for ALAC, because the MP4 sample entry states a depth for AAC too; a test
+pins that mutagen still does so.
 
-**A date tag is read for its year, never sliced.** What a ripper writes there
-has no one shape: a FLAC commonly carries `2003-05-12` while an iTunes rip
-carries a whole instant, `2003-08-05T12:00:00Z`, which read straight out put the
-timestamp on the row beside the genre. Taking the first four characters happens
-to work on both and is not the general answer, since a date is not always
-written year first. `year_of` in `stellody/domain/text.py` is the one place that
-decides; the album pane, the row text, the identity handle and a catalogue's
-release dates all read it from there. The tag
-itself is kept exactly as the file wrote it, which invariant 1 requires anyway.
+**A date tag is read for its year, never sliced.** `year_of` in
+`stellody/domain/text.py` is the one place that decides; the tag itself is
+kept as written.
 
-**What a format does not state is reported as absent, never invented.** Measured
-per format: FLAC states both a bit depth and a total sample count; WAV and AIFF
-state a depth but no count; MP3, Ogg Vorbis and Opus state neither. A file that
-states no depth reports nought rather than a plausible sixteen; a frame count
-absent from the file is derived from its length against its own sample rate.
-Opus is the one constant here: it always decodes at 48 kHz whatever it was
-encoded from and mutagen states no rate for it, so `OPUS_SAMPLE_RATE` records a
-property of the format rather than a number chosen here.
+**`tests/infrastructure/test_scanning_formats.py` scans real files of every
+format end to end** through the real walker, probe and store and back out of a
+reopened store. Unit tests of the probe and of the domain once passed while
+disagreeing about nought, leaving rows a load could not assemble; only an end
+to end scan catches that shape.
 
-**Nought means unstated, which is what keeps bit perfect honest.** A probe
-answering sixteen for a lossy file would be indistinguishable downstream from a
-file that really held sixteen, so nought is the absence of a reading rather
-than a reading of nought. `OutputRequest` refuses only a negative depth, being
-a value no file could state; `states_depth` distinguishes nought from a real
-value and decides whether a stream may be opened exclusively, `depth_is_native`
-requires it and `is_bit_perfect` is therefore False for any lossy source in any
-mode, without the playback rules knowing which formats are lossy.
-`open_output` in `wasapi.py` and in `coreaudio.py` declines exclusive mode up
-front, opening the shared path with `NO_STATED_DEPTH` as its reason rather than
-letting the device refuse, so the reason names the file instead of blaming the
-device. The wording lives once, in `portaudio.py`, which both host modules read
-it from. All
-three rules were proved by planting violations: claiming bit perfect for a
-lossy source, giving a lossy file an invented depth of sixteen, leaving ID3
-frames untranslated.
+**What the walk takes is `AUDIO_SUFFIXES` united with `PICTURE_SUFFIXES`**
+(`PLAYABLE_SUFFIXES`). Whether a suffix carries a picture is the domain's
+(`stellody/domain/track.py`, `TrackSource.carries_picture`), so a bonus video
+is walked, probed and assembled as a song is. The formats proved only by a
+generated fixture are encoded at test time by
+`tests/infrastructure/widened_support.py`; invariant 21 keeps their audio out
+of the tree.
 
-**`Track` draws the same distinction and must.** It carries its own
-`states_depth`, which decides whether a track may exist at all and whether it
-may be called high resolution. It refuses only a negative depth and answers
-`is_high_resolution` False wherever no depth is stated, whatever the rate. Opus
-forces that last rule through the constant rate `OPUS_SAMPLE_RATE` records
-above: a rate test
-alone would badge every Opus file as better than CD on the strength of a
-property of the codec rather than of the recording.
-
-**The two halves of that rule disagreeing is what
-`tests/infrastructure/test_scanning_formats.py` exists to prevent.**
-`OutputRequest` was taught that nought means unstated while `Track` still
-refused it, yet every gate stayed green: the probe tests read a probe, the
-domain tests built a `Track` from real depths, then the branch refusing nought
-was fully covered as intended behaviour. A test of the probe and a test of the
-domain each passed while agreeing about nothing; nothing scanned a lossy file
-the whole way through, so nothing noticed that the library could not be
-assembled at all. The end to end scan is the only shape of test that catches
-it.
-The failure was worse than a refused scan, because folder records are written
-inside the walk and the library is assembled after it: one MP3 put rows in the
-store that `LoadLibrary` then choked on, so every later start failed too. That
-test therefore uses the real walker, the real probe and the real store on real
-files of every format, asserting through to albums and back out of a reopened
-store. It was proved by planting the old rule and watching all six of the cases
-it held then fail; the cases the widened formats added came later.
-
-**The suffix table is decided by what can be read, not by what can be decoded.**
-M4B is the one exception: it reads and decodes, yet stays out because an
-audiobook is not music.
-`AUDIO_SUFFIXES` in the walker holds `.flac .mp3 .ogg .oga .opus .wav .aiff
-.aif .m4a .wma .wv .aac`. CAF is excluded despite libsndfile decoding it,
-because mutagen returns None for a CAF entirely, so such a file would scan into
-an album with no title. Monkey's Audio, Musepack, DSD and TAK are excluded for
-a reason that is about evidence rather than about decoders: the bundled FFmpeg
-decodes all four and can encode none of them, so no fixture can be generated to
-prove the path. TrueAudio encodes and decodes; it is excluded because mutagen
-states no channel count for it, so the probe would have to invent one.
-
-**The last three of that table are proved by a generated fixture**, which is a
-weaker standard than the rest of it and is written down for that reason.
-`FORMATS.md` is the specification; section 1.3 states the non-claim, the README
-states it to a reader and `tests/infrastructure/widened_support.py` encodes the
-fixtures at test time. Nothing of any of the three is committed, which
-`tests/structural/test_no_committed_audio.py` asserts, proved by planting a
-file and reading the failure.
-
-**What the walk takes is that table plus the picture one.** `PLAYABLE_SUFFIXES`
-is `AUDIO_SUFFIXES` united with `PICTURE_SUFFIXES`, which holds `.m4v` and lives
-in `stellody/domain/track.py` rather than beside the walker: whether a suffix
-carries a picture is the domain's to say, so `TrackSource.carries_picture`
-reads it off the path and a source built anywhere answers the same way. So a
-bonus video is walked, probed and assembled exactly as a song is, which is what
-kept the sound path untouched when it arrived.
-
-M4A was the first entry libsndfile cannot open; it is there because a second
-decoder was added for it rather than because the rule bent. What the rule asks
-of it is unchanged: mutagen has to be able to read its tags. It can, as a
-third tag shape the probe was taught. The scope was set by measurement, not by
-appetite: of the 126 folders that then held nothing Stellody could decode, all
-126 were M4A, 1375 files of it; no WMA, APE, WV, MPC or DSD file existed
-anywhere in the library to justify writing more.
-
-WMA, WavPack and AAC arrive on the same footing and cost the packaged build
-nothing, which is what changed the answer: measured on 2026-09-09, the FFmpeg
-already behind `PacketReader` decodes all three, so `PACKET_SUFFIXES` names
-them and no decoder was written. What the reference library holds did not
-change; what a decision about other people's libraries costs did.
-
-**There is a second table; nothing is silently absent.** `UNPLAYABLE_SUFFIXES`
-names the audio this build knows by sight and will not play: formats it cannot
-decode or cannot prove, plus M4B, which decodes yet is not music. A folder holding
-only those used to yield no listing at all, so its album was not skipped,
-reported or counted: it simply was not there, so a listener looking for one
-they own had no way to tell that from a library that had failed to scan. That
-was found by somebody going to look for an album they owned.
-
-The walk now yields such a folder and a scan raises ONE finding for it, naming
-how many files and which formats. One a folder rather than one a file, because a
-library can hold a thousand such tracks and a thousand entries is not a report
-anybody reads; what a listener needs is which albums are missing and why.
-Nothing is opened to say it, the suffix being the whole of what is known. The
-list is NAMED rather than inferred from "not in `AUDIO_SUFFIXES`", since a stray
-text file is not a missing album. The finding proposes no value, so it can never
-be accepted; [Accepting a correction](#accepting-a-correction) says why. The
-unplayable files are left out of a folder's signatures, so a folder
-holding nothing else has none and is reused rather than re-listed at every
-scan.
+**Nothing is silently absent.** `UNPLAYABLE_SUFFIXES` names audio this build
+recognises and will not play. A folder holding only those raises ONE finding
+naming the count and formats (one per folder, not per file, so the report
+stays readable). The list is named rather than inferred, since a stray text
+file is not a missing album. The finding proposes no value, so it can never be
+accepted; unplayable files are left out of a folder's signatures, so such a
+folder is reused rather than re-listed.
 
 ## What a scan reports
 
-**A scan answers the question it was pressed to answer.** The status bar already
-carried a one-line total and keeps it, which is the right weight for something
-nobody asked for; it is the wrong weight for an answer somebody waited on, since
-it leaves the screen a few seconds later and cannot say WHICH albums turned up.
-So a finished scan also opens a report naming what arrived.
+**A scan answers the question it was pressed to answer.** The status bar keeps
+its one-line total; a finished scan also opens a report naming what arrived.
 
-**What changed is a comparison, so it is a domain rule.**
-`stellody/domain/changes.py` compares two readings of a library and says what is
-different; `stellody/ui/scan_summary.py` turns that into a page and shows it.
-The comparison is pure, so what counts as a new album can be tested with nothing
-installed.
+**What changed is a domain rule.** `stellody/domain/changes.py` compares two
+readings; `stellody/ui/scan_summary.py` shows the page. Gone albums are
+reported beside new ones, since a retag reads as one leaving and another
+arriving. A track is counted by its source (slice included), which survives a
+retag.
 
-**An album is new when its identity was not there before; gone albums are
-reported too.** The identity is built from tags, so retagging one album can read
-as an album leaving and another arriving. Reporting only arrivals would describe
-a rename as a discovery, so both halves are shown, with the departures explained
-rather than left to alarm: a folder renamed or removed on disk reads exactly
-the same way and nothing has been deleted. A music folder on a drive that is
-not plugged in never reaches this report, since that scan is refused before
-it starts; see Scanning.
+**Every count is named for what it counts:** `files_in_library` sits under
+the library's heading; `folders_checked` and the folders re-read sit under
+what the scan did.
 
-**A track is counted by its source, not by its title or its number.** A source
-survives a retag while both of the others can be rewritten by one; the slice
-is part of the key rather than the path alone, so a cue-sheet album counts its
-tracks apart instead of collapsing to the one file they share.
+**The window compares what it was showing** rather than asking the store
+again. The runner tears its thread down before emitting, so a modal opened
+from the handler has nothing waiting behind it.
 
-**Every count is named for what it actually counts.** Reported from a real run:
-the report said "Folders read 0" beside "Files read 5101" after a rescan that
-changed nothing. Both were true to the field names and false to the reader. The
-walk had visited 530 folders and compared every file's size and modification
-time; nought was the number it had to open again, so the scan read as having
-done nothing rather than as having found nothing to do. The file count was
-worse: `files_probed` summed the stats of every record including the reused
-ones, so it was the whole library's file count wearing the label of work just
-done, naming five thousand files that were never opened. It is now
-`files_in_library` and sits under the library's own heading, with
-`folders_checked` beside the folders re-read under a separate heading for what
-the scan did. A name that says the opposite of what a field holds is the same
-defect as the depth rule enforced in one place and not the other; this one
-reached a listener rather than a test.
+**The report is measured rather than given a size**, on a detached
+`QTextDocument`, because the view's own document has its width reset by the
+widget. Two traps are not to be re-attempted: `idealWidth()` returns the set
+width, so a second narrowing pass narrows nothing; releasing the height clamp
+after measuring lets the page grow back, so the clamp stays. The view is made
+wider than the text by its own frame (asked of the style), since the viewport
+is what wraps.
 
-**The window compares what it was showing, rather than asking the store again.**
-It holds the previous reading already, so the comparison costs nothing and means
-what the reader means by new: new since what was on screen. The runner tears its
-thread down before it emits its report, so a modal dialog opened from that
-handler has nothing waiting behind it.
+**Qt rich text is not a browser:** no `opacity`; an entity dash renders as
+a real dash, so neither appears. Held by
+`tests/ui/test_scan_summary.py::test_the_report_carries_no_dash_and_no_styling_qt_would_drop`.
 
-**The report is measured rather than given a size.** A scan that changed nothing
-says so in six lines while a scan that found twenty albums needs twenty more, so
-any fixed height is either a cramped page or a great deal of empty dialog under
-a short report, which is what it was. Both dimensions are now taken from the
-content: the page is laid out at the widest it may be, asked what width it
-actually used, then laid out again at that width to be asked its height. The
-tables are sized to their content for the same reason, since at full width every
-number was thrown against the right edge, an inch and a half from the label
-naming it.
-
-**The measurement is taken on a detached `QTextDocument`; it must be.**
-Setting a text width on the view's own document does not hold: the widget puts
-its viewport width back. A widget that has not been shown yet is a few dozen
-pixels wide, so it reported a page 1853 pixels tall against the 278 it really
-is, which clamped every report to the ceiling while looking entirely deliberate.
-Two follow-on traps were found the same way and are recorded here so neither is
-re-attempted. `idealWidth()` returns the text width back once one has been set,
-so a second narrowing pass is a full layout that can never narrow anything.
-Releasing the height clamp after measuring lets the page grow back to fill the
-dialog on show, which is the empty space the measuring exists to remove, so the
-clamp stays.
-
-**The view is made wider than the text by its own frame.** What wraps the text
-is the VIEWPORT rather than the widget, so giving the widget the measured width
-left the viewport narrower than the width the height was measured at, 618
-against 620 as measured, which lets a line wrap that had not wrapped in the
-measurement and puts the report past the height it was given. The frame is asked
-for rather than assumed, since the style decides it. That exactness is what lets
-the padding under the last line be 8 pixels of deliberate breathing room rather
-than the 26 pixel allowance that was really covering the mismatch.
-
-**Qt rich text is not a browser and the report is written for what it has.** It
-supports no `opacity`, so a colour is stated outright rather than faded; an
-entity dash renders as a real dash while being invisible to a text sweep for
-one, so neither may appear. Both are held by
-`tests/ui/test_scan_summary.py::test_the_report_carries_no_dash_and_no_styling_qt_would_drop`,
-proved by planting each in turn.
-
-**A modal report hangs a test suite that completes a scan.**
-`tests/ui/test_launch.py` patches `ScanSummaryDialog.exec` for exactly that
-reason, so any later test that runs a scan to its end has to do the same.
+**A modal report hangs a test that completes a scan**, so
+`tests/ui/test_launch.py` patches `ScanSummaryDialog.exec`; any later test that
+runs a scan to its end must do the same.
 
 ## Searching
 
-**No index, measured rather than assumed.** A full-text table was the first
-plan and the measurement refused it. A pass over the whole library, 617 albums
-of 8,450 tracks, costs a small fraction of the time a typed character allows
-once the text is normalised. An index
-would also hold the WRONG text, since the store keeps raw tags while the
-library shows resolved ones, so a title the resolver corrected would be
-unfindable. It would be empty besides: rows are written only where a folder is
-probed and a rescan reuses every folder that has not changed, so an existing
-library would search nothing until it was scanned cold. SQLite's FTS5 is
-available here and is deliberately unused.
+**No index.** A pass over the whole library costs a fraction of a keystroke
+once text is normalised. An index would also hold the wrong text (the store
+keeps raw tags while the library shows resolved ones) and would be empty for
+any folder a rescan reused. SQLite's FTS5 is deliberately unused.
 
-Normalising is the part that costs, tens of times what the filtering pass does,
-while the answer cannot change between keystrokes; `show_library` in
-`stellody/ui/searching.py` therefore does it once each time a load or a scan
-hands the window its library, with the measurement beside it.
-`stellody/domain/searching.py` is the filter and is pure;
-`stellody/ui/searching.py` holds what a load or a scan produced and puts the
-answer in front of somebody.
+Normalising is the costly part and cannot change between keystrokes, so
+`show_library` in `stellody/ui/searching.py` does it once per load or scan.
+`stellody/domain/searching.py` is the pure filter.
 
-**An album is kept whole.** A phrase that hits one track leaves every track in
-place, so the album reads as it always does. The hit is selected as though it
-were about to play and its row is then flashed, which gives somewhere to look
-rather than a shorter album. Pressing Return asks the same phrase again, since
-somebody who has moved off what it found has nothing they could type to get
-back.
+**An album is kept whole.** A hit is selected as though about to play and its
+row flashed, rather than the album shortened. Return asks the same phrase
+again, so somebody who moved off it can get back.
 
-**A keystroke replaces every row**, which is a model reset. So do inverting
-the album order and rescanning. Three consequences, each measured here rather
-than reasoned about:
-
-- The pane under the sleeves is left rooted at an index that no longer means
-  that album. Untouched it re-roots on the invisible root and lists the whole
-  library down both columns, so what was open is put back by opening it again
-  rather than by leaving it alone.
-- Qt draws a selected row's background from the selection colour and never asks
-  for `BackgroundRole`, so the model's flash brush alone painted nothing on the
-  row a search had just selected. The delegate in `stellody/ui/covering.py`
-  therefore reads that brush, fills the row with it and draws the row as
-  unselected. The writing is never repainted, which is
-  why each appearance carries its own colour: banana yellow at 13.33 to 1 in
-  the light one, a deep amber at 5.10 to 1 in the dark one.
-- `scrollTo` is what opens every level above a row, which a multi-disc album
-  needs since its tracks sit under a disc. Expanding the parent alone leaves
-  the album shut.
+**A keystroke replaces every row (a model reset)**, as do inverting the order
+and rescanning. Consequences: the pane under the sleeves must be reopened
+rather than left alone, else it re-roots on the invisible root; Qt never asks a
+selected row for `BackgroundRole`, so the delegate in `stellody/ui/covering.py`
+paints the flash brush itself (each appearance carries its own flash colour,
+since the writing is never repainted); `scrollTo` is what opens every level
+above a row, which a multi-disc album needs.
 
 ## The genre catalogue and the filter
 
-**A settled list, not the library's own strings.** The reference library states
-43 distinct genre strings, which is a list nobody could tick through and one
-that spells the same idea several ways. So the catalogue
-in `stellody/domain/genres.py` is a fixed 21 mains carrying 36 styles between
-them, 57 boxes in all, alphabetical, with only Dance (9), Pop (8), Electronic
-(6), Techno & Electro (5), House (4) and Rock (4) carrying styles at all. A
-main with no styles is not a gap; it is a main nothing in the reference library
-subdivides. On 2026-10-01 (FR-D77) Electronic was split into Dance,
-Electronic, House and Techno & Electro; styles were added for what
-MusicBrainz states for similar artists rather than for file tags. A value
-stored before the split, such as `Electronic; House`, still reads as written.
+**A settled list, not the library's own strings.** The catalogue in
+`stellody/domain/genres.py` is a fixed set of mains, some carrying styles,
+alphabetical. Spellings follow Discogs so names are familiar and tags from
+other tools can match; the hierarchy is ruled here where Discogs read wrong
+against this library. `DISCOVERY.md` holds the requirements behind it. A value
+stored before a split of the catalogue still reads as written.
 
-**The grid's categories fold (FR-D79).** `stellody/ui/genre_grid.py` deals
-the mains into three columns in catalogue order; each main is a `GenreGroup`
-(`genre_group.py`) holding an arrow, its box, a count of ticked styles shown
-while folded and its styles, hidden until the arrow opens them. The arrow is
-made before its box, so Qt's focus chain puts it just before its main on the
-ring and a folded style is off the ring because it is hidden. A main with no
-styles shows no arrow yet keeps its room, so every main's box starts at the
-same place. What is open is kept per dialog through `Folds` (`genre_folds.py`)
-under one of four keys in `settings_keys.py`, `SETTING_GENRES_OPEN_DISCOVERY`,
-`SETTING_GENRES_OPEN_LIBRARY_FILTER`, `SETTING_GENRES_OPEN_ANSWER_FILTER` and
-`SETTING_GENRES_OPEN_TAG_EDITOR`, since a run's question and an album's
-description open different categories; a stored name that is no longer a main
-is passed over. After a fold `_keep_folds` invalidates every layout in the
-grid, calls `updateGeometry` on each widget from the folded group up, then
-`adjustSize` on the dialog; measured on 2026-10-02, either step alone left the
-open height asked for. `tests/ui/test_genre_folding.py` holds it, the room
-given back by `test_folding_gives_the_room_back`.
+**The grid's categories fold.** `stellody/ui/genre_grid.py` deals mains into
+columns; each is a `GenreGroup` (`genre_group.py`) whose arrow is made before
+its box, so the focus chain reaches the arrow first and a folded style is off
+the ring because it is hidden. A main with no styles keeps the arrow's room so
+boxes align. What is open is kept per dialog by `Folds` (`genre_folds.py`)
+under the `SETTING_GENRES_OPEN_*` keys in `settings_keys.py`. After a fold
+`_keep_folds` invalidates every layout from the group up and then adjusts the
+dialog's size; either step alone leaves the open height. Held by
+`tests/ui/test_genre_folding.py`.
 
-**Discogs' spellings, with the shape ruled on here.** Taking a published
-vocabulary means the names are ones a listener has seen before and that a tag
-written by another tool has a chance of matching. What is NOT taken is the
-hierarchy: Britpop sits under Pop rather than under Rock, Punk and Rap each
-stand as mains of their own, each ruled individually because the published
-answer read wrong against this library rather than because a rule was applied.
+**The alias table is where rulings live.** `ALIASES` in
+`stellody/domain/genre_rulings.py` (re-exported as `genres.ALIASES`) maps
+spellings found in tags and in MusicBrainz onto catalogue entries, read by
+`MAIN_OF` and `chosen_in`. No key is a catalogue name, so a name always means
+itself
+(`tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_no_alias_is_keyed_on_a_catalogue_name`).
+It grows by somebody making a decision, not by pattern.
 
-**The alias table is where those rulings live.** `ALIASES` maps the spellings
-found in the wild onto catalogue entries, so `MAIN_OF` and `chosen_in` answer
-about a tag written any of several ways. It lives in
-`stellody/domain/genre_rulings.py` since 2026-10-01, when FR-D77's rulings
-outgrew one module; `genres.ALIASES` still answers for it. No key in it is a
-catalogue name in any case, so a name always means itself and the bare `dance`
-tag is the Dance main;
-`tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_no_alias_is_keyed_on_a_catalogue_name`
-holds that. It is a table of decisions, so it
-grows by somebody making one rather than by pattern. The wild includes what
-MusicBrainz states for a discovery candidate as well as what a file's tag says:
-"electro house" and "ambient techno", ruled on 2026-09-27, had withheld every
-candidate stating them from a house or techno run. Twelve more followed on
-2026-09-30 from a filtered answer that withheld 74 candidates this way. Eighty
-more followed on 2026-10-01 (FR-D77) from a whole-library answer that held back
-155 candidates for stating only unrecognised names; those once ruled Electronic
-alone have styles of their own now. What MusicBrainz states is also
-weighed before any of this is read: `believed` in `domain/genre_votes.py`
-drops a genre with a single vote beside one with two or more (FR-D76), since
-crowd tags gave Nirvana "electronic" and Snoop Dogg "house" once each; it also
-drops a genre with under half the leading genre's votes (ruled on 2026-10-02),
-since Lady Gaga's six votes for "electronic" against 24 for pop put her under
-an Electronic filter. Where no genre has two votes every one is kept, so a
-little-tagged artist is not left with none. `_genres` in
-`infrastructure/catalogue.py` applies it to every genre list that client reads;
-`tests/domain/test_genre_votes.py` holds both rules. The candidate
-genre cache is renamed whenever the rule changes (`candidate-genres-2.json`
-now), so each candidate is asked once more.
+**What MusicBrainz states is weighed before it is read.** `believed` in
+`stellody/domain/genre_votes.py` drops a genre under `FEWEST_VOTES` unless none
+reaches it, then drops one with under half the leading genre's votes
+(`LEADING_SHARE`), so stray crowd tags do not file an artist under a genre.
+`_genres` in `infrastructure/catalogue.py` applies it to every genre list;
+`tests/domain/test_genre_votes.py` holds it. The candidate genre cache file is
+renamed whenever the rule changes, so each candidate is asked again.
 
-**The filter is pure and takes a FIELD, not a genre.** `Narrowing` and
-`narrowed_to` live in `stellody/domain/narrowing.py`; genre is the only field
-the interface offers today, while artist, title and date are stated in the same
-editor and answer the same question, so they arrive by being passed rather than
-by the module learning about them.
+**The filter is pure and takes a field, not a genre.** `Narrowing` and
+`narrowed_to` live in `stellody/domain/narrowing.py`; other fields arrive by
+being passed rather than by the module learning about them.
 
-**Any, not all.** An album is kept when it carries ANY of the values ticked, so
-each tick widens what is on screen. Ruled by Oliver against a library where an
-album usually carries one genre string: asking for Rock and Jazz at once would
-otherwise hold nothing, which is a filter that punishes the second tick.
-
-**A style is not its main in the ASK.** `chosen_in` already states the main of
-every style an album carries, so an album marked Trance answers to Techno &
-Electro without the filter knowing what a style is. Ticking Trance means trance and
-nothing wider, which is why the dialog leaves the main alone as a style is
-ticked.
-
-**"Not stated" is a box because it has to be reachable.** More than a tenth of
-the library carries no genre tag and an album whose tag names nothing in the
-catalogue is in the same position: no tick could ever reach either. To somebody
-reading the dialog they are one thing, so they are one box.
-
-**The filter runs before the phrase.** Narrowing answers which albums are on
-screen and nothing about how they are arranged, so a filtered library can still
-be searched and a search can still be filtered. The two compose because neither
-knows about the other.
+**Any, not all** (Oliver's ruling): an album is kept when it carries any
+ticked value, so each tick widens. **A style is not its main in the ask**:
+`chosen_in` already reports a style's main, so ticking a style means that
+style alone. **"Not stated" is a box** so untagged and unrecognised albums are
+reachable. **The filter runs before the phrase**; the two compose because
+neither knows about the other.
 
 ## Ratings and play counts
 
-**Neither is attached to an object or to a path.** A scan rebuilds every album
-and every track afresh, so an object cannot be the thing a rating belongs to;
-a path is the one thing about a track that a folder rename destroys. The
-handle is the album's identity with the disc and track number under it,
-digested to sixteen characters, which is what artwork already does and for the
-same reason. `stellody/domain/listening.py` holds both the record and the
-handle.
+**Neither is attached to an object or a path.** A scan rebuilds every object
+and a rename destroys a path. A track's handle is the album identity with the
+disc and track number under it, digested; `stellody/domain/listening.py` holds
+the record and the handle.
 
-**An album is rated apart from its tracks.** The two are different answers, so
-neither is derived from the other: a record with one poor track on it is not a
-poor record. The album's handle is the same digest over its key, plus a part
-that tells two otherwise identical albums apart where one is needed; no track
-can collide with it because no track is numbered nothing. It is set from
-the album pane's own header, where a caption says which rating it is: the two
-controls look alike and sit inches apart, so leaving that to be inferred would
-be leaving it to be got wrong.
+**An album is rated apart from its tracks**, since a record with one poor
+track is not a poor record. Its handle cannot collide with a track's. It is
+set from the album pane's header, captioned so the two rating controls are not
+confused.
 
 **Reaching the end is what counts as a play.** Only the transport can tell an
-ending from a track somebody skipped, so it is the transport that says one
-happened; it hands over the album with the track, since a record is kept
-against an album and since a rescan may already have replaced the track that
-just finished. Nothing goes looking for it afterwards.
+ending from a skip, so it reports the play, handing over the album with the
+track because a rescan may already have replaced the track.
 
-**The whole log is held in memory and written through.** It holds only the
-tracks somebody has actually rated or played, so a library nobody has touched
-costs one empty query; a row that had to ask the disk for its rating would ask
-once per drawn row. Every change is written as it is made, so there is no save
-step to forget.
+**The whole log is held in memory and written through:** a drawn row costs no
+query and there is no save step.
 
-**The count is read down the rows.** A figure on the position row is about one
-track and is gone the moment that track ends, which is the moment a play count
-becomes worth reading. It also sits in a column of its own on each track
-row, where a record can be read down for what somebody keeps returning to.
+**Counts and stars are columns of their own**, `Column.PLAYS` and
+`Column.STARS`, in the library list and the open album's track columns alike,
+one fact to a cell so they align down a record. Cell text lives in
+`stellody/ui/row_text.py`. The model is handed the log; a changed count
+redraws the one row found by `find_handle` in `stellody/ui/nodes.py`. Stars are
+answered under `STARS_ROLE` and drawn by the one `RowCover` delegate, so no row
+carries a widget; `stellody/ui/star_cells.py` holds what a star cell means and
+`stellody/ui/stars.py` holds the drawing, press rule and wording shared with
+the album's rating widget. A double click on stars is consumed so rating never
+starts a track; number keys rate the highlighted track and 0 clears it.
+Pressing the star a rating already sits on takes it back, since nought is the
+absence of a rating. Held by `tests/ui/test_star_column.py`.
 
-**That column is its own rather than a share of the detail cell.** The detail
-cell held both until 2026-09-16, joined by two spaces, so a track reading
-`44 kHz / 24  1 play` started its count in a different place from one reading
-`1 play` and a column of them could align neither; it read as a jumble. One
-fact to a cell is what lets the counts stack, right aligned as the lengths
-beside them are. A track's detail cell now holds the format alone and
-`Column.PLAYS` holds the count, in the library list and in the open album's
-track columns alike. The model is handed the log rather than each row asking
-for it, so a drawn row costs no query; when a count changes the model redraws
-that one row, found by walking the tracks rather than by asking where the track is,
-since that search is retried when it misses and spending it here would take
-the attempt the highlight needs. The cell text itself lives in
-`stellody/ui/row_text.py`, split out of the model when the model reached the
-four hundred line cap.
-
-**A track's stars are a column beside its plays**, `Column.STARS`, in the
-library list and in the open album's track columns alike. They rode on the
-position row until 2026-09-16, following one highlighted track at a time;
-Oliver asked for them where the count already is, so every track says its
-rating while a record is read down and nothing has to be pointed at first.
-The model answers a track's rating under `STARS_ROLE` and the one `RowCover`
-delegate draws it, so no row carries a widget. `stellody/ui/star_cells.py`
-holds what a cell of stars means. A left release on a star rates the track
-with the rule the album's own stars follow (the star already held takes the
-rating back); a double click on the stars is consumed, so rating quickly never
-starts the track. The number keys 1 to 5 rate the highlighted track and 0
-clears it, since Up and Down already walk the rows. The drawing, the press rule
-and the wording live once in `stellody/ui/stars.py` and serve both the column
-and the album's rating widget. `tests/ui/test_star_column.py` drives both
-gestures through the views; the double click and the keys were each proved by
-planting their removal.
-
-**Pressing the star a rating already sits on takes the rating back.** Nought
-is not a sixth rating; it is the absence of one. The gesture that undoes a
-thing should be the gesture that did it, rather than a separate clear nobody
-would find. The keyboard reaches nought directly instead, since a step that
-jumped back to where it started would be a trap: on the album's stars Down
-steps to it; in the track column it is the 0 key named above.
-
-**What is playing is marked in the model and named along the foot.** Reported on
-2026-09-13: once another track was clicked while one played, nothing on screen
-said which was playing, in either view. The list and the album open under the
-sleeves draw from the one `AlbumTreeModel` through the one `RowCover` delegate,
-so the mark is the model's background for that row and reaches both at once.
-`stellody/ui/playing_mark.py` holds the track by its handle, the album's
-identity with the disc and track number under it, which is what the listening
-log uses and for the same reason. A search or a sort rebuilds the rows, so a row
-number would mark whatever landed there next; a scan, a repair or a tag edit
-builds every track afresh while the transport plays on with the one it was
-handed, so an object would mark nothing at all. Reported by Oliver on
-2026-09-17 as the foot naming the playing track with no row marked anywhere,
-then held by `tests/ui/test_the_mark_survives_a_reload.py`. A search flash wins while it pulses; the mark returns
-after it. The delegate fills the brush ahead of the selection, which is why the
-mark is a pink of its own told from the selection by hue. The status bar used to
-say what was playing only after a double click, for six seconds.
-`stellody/ui/now_playing.py` now writes a permanent label, asked for by
-`_show_transport` in `stellody/ui/playing.py`, which every command, every
-failure and every poll passes through, so no route that changes the track can
-leave the mark or the name behind. A stop clears both; a pause keeps them. The
-switches moved to `stellody/ui/switches.py` to make the room in `playing.py`.
+**What is playing is marked in the model and named along the foot.**
+`stellody/ui/playing_mark.py` holds the playing track by handle (a row number
+breaks on a sort, an object on a reload), so the mark reaches both views
+through the one `AlbumTreeModel` and survives a reload
+(`tests/ui/test_the_mark_survives_a_reload.py`). A search flash wins while it
+pulses; the mark is a pink told from the selection by hue.
+`stellody/ui/now_playing.py` writes the permanent label, asked for by
+`_show_transport` in `stellody/ui/playing.py`, which every command, failure and
+poll passes through. A stop clears both; a pause keeps them.
 
 ## Gapless transitions
 
-**The seam is crossed inside the engine, by the feeder thread.** At the
-moment one track ends, the only thing awake is that thread, halfway through
-a run of blocking writes. Nothing can be asked there and nothing can be
-loaded there. So the following source is opened while the current track is
-still playing and the feeder reads straight on into it. The stream is never
-stopped, so the device is handed one unbroken run of blocks.
+**The seam is crossed inside the engine, by the feeder thread.** At the moment
+a track ends nothing else is awake, so the following source is opened while
+the current one plays and the feeder reads straight on; the device gets one
+unbroken run of blocks.
 
-**The transport finds out afterwards, from a count.** A crossing is counted
-rather than signalled, so a poll that was not looking at the moment it
-happened still learns about it; the count belongs to the loaded session, so
-it starts again from nothing at every load and a stopped device cannot read
-as having moved. `stellody/application/following.py` holds both facts.
+**The transport learns afterwards, from a count**, so a poll that missed the
+moment still learns of it; the count belongs to the loaded session.
+`stellody/application/following.py` holds it. What was lined up is kept, so
+the queue lands where the music actually went even if the switches moved.
 
-**What was lined up is kept, not worked out again.** The switches may move
-between lining a track up and the device reaching it, so the queue lands
-where the music actually went rather than where the rules would send it now.
-
-**A follower is lined up only where it cannot change.** A scattered album
-beginning again picks its order at the moment it begins, so there is nothing
-to name in advance and that one seam is deliberately left gapped. Lining up
-the wrong track would be worse than the gap it saved.
-
-**A follower the open stream cannot carry is refused.** The stream was opened
-for one sample rate and one channel count. A source that does not fit needs a
-new device, which is a gap however it is arranged, so it is refused rather
-than written into a stream that would play it at the wrong speed.
+**A follower is lined up only where it cannot change** (a scattered album
+beginning again picks its order then, so that seam stays gapped) **and only
+where the open stream can carry it** (same rate and channel count); otherwise
+a gap is better than the wrong track or the wrong speed.
 
 ## The equalizer
 
-**Designing the filter and applying it are different jobs.** What a band does
-is arithmetic over a frequency and a sample rate, so `domain/equalising.py`
-works out the coefficients and can be tested without an audio device;
-`infrastructure/filtering.py` multiplies samples and knows nothing about
-frequencies. The split is forced as well as wanted: numpy is a framework, so
-it cannot appear below infrastructure at all.
+**Designing the filter and applying it are different jobs.**
+`domain/equalising.py` works out coefficients and is testable without a
+device; `infrastructure/filtering.py` multiplies samples. numpy is a framework,
+so it cannot sit below infrastructure anyway. Hand rolled from the Audio EQ
+Cookbook rather than adding scipy to the build.
 
-**Hand rolled rather than scipy.** A dozen lines of the Audio EQ Cookbook,
-against tens of megabytes added to the packaged build for one function.
+**A band at nought is dropped, not applied**, as is a band at or above half
+the sample rate. A flat equalizer therefore costs nothing and hands the block
+back untouched, keeping an exclusive stream bit perfect.
 
-**A band at nought is dropped, not applied.** A peaking filter at nought
-decibels is exactly the identity, so skipping it is the same answer for none
-of the cost. That is what lets a flat equalizer cost nothing whatever rather
-than little; it also keeps an exclusive stream bit perfect while it is off:
-the block is handed back untouched rather than copied. A band at or above
-half the sample rate is dropped for the same kind of reason, having nothing
-up there to act on.
+**A lift is given room before it is applied.** Volume is applied after the
+filter, so it cannot prevent clipping. `cascade` searches the combined
+response for its largest lift (neighbouring lifts pile up above any one
+slider) and folds that attenuation into the first section; a curve that only
+cuts is left as designed. The visualiser measures after the filter, so it
+shows the same reduction. Held by `tests/domain/test_equalising.py` and
+`tests/infrastructure/test_filtering.py`.
 
-**A lift is given room before it is applied.** Reported by Oliver on
-2026-09-15 as static at the same moments on every play of loud records, gone
-the moment the equalizer was switched off. Measured through the engine's own
-code: the curve on the screen, lifting 31 Hz by eight decibels, 62 Hz by six
-and the top two bands by seven, took Bicep's Saku, limited to a sample peak of
-0.966, to 2.3 times full scale; 898,897 frames of it were clipped at the
-ceiling. Turning the volume down could not
-help, because volume is applied after the filter. `cascade` now searches the
-combined response for the most it lifts any frequency and folds that much
-attenuation into the first section, so the curve keeps its shape while the
-record keeps its level. Neighbouring lifts pile up above any one alone: that
-curve peaks at 9.3 dB where the largest slider says 8, which is why the
-response is searched rather than the sliders read. A curve that only cuts is
-left exactly as designed. The visualiser measures after the filter, so its
-bars sit lower by the same amount while a lifting curve is on; that is what is
-being sent. `tests/domain/test_equalising.py` holds the reported curve to no
-more than 0.05 dB above the ceiling at four rates, judged by a search ten times
-finer than the one that made the room; `tests/infrastructure/test_filtering.py`
-puts a 1 kHz tone at the record's 0.966 peak through the largest lift the
-sliders offer and counts clipped samples.
+**One pass over the samples, not one per band**, since the cost is indexing
+rather than arithmetic.
 
-**One pass over the samples, not one per band.** Measured on a block of 4096
-frames, which is 92.9 milliseconds of audio: ten bands cost 25.4 milliseconds
-walking the array once per section and 6.9 walking it once with every section
-applied to each sample in turn. The cost is the indexing rather than the
-arithmetic, which is also why the samples are taken out to a Python list
-first. A flat equalizer costs nothing measurable at all.
-
-**The curve is kept where the volume is kept.** Coefficients depend on the
-sample rate, so they cannot be worked out until a stream is open; the curve
-is held by the engine so one chosen before anything is loaded still applies
-to whatever is loaded next. It is redesigned at every load and again whenever
-the curve changes while a stream is open, which starts the filter's memory
-afresh.
+**The curve is kept where the volume is kept**, by the engine, so a curve
+chosen before anything loads still applies. It is redesigned at every load and
+whenever it changes while a stream is open.
 
 ## The visualiser
 
-**It shows what the equalizer shapes.** Twenty bars over the ten ISO octave
-centres `equalising.py` already defines, so the bars that move are the band the
-slider lifts. Somebody with the equalizer open while a record plays can then
-see which control owns the sound in front of them. A second set of band edges
-would have been a second vocabulary for one idea.
+**It shows what the equalizer shapes:** two bars to each of the ISO octave
+bands `equalising.py` defines, split at the band's centre, so no second set of
+band edges exists.
 
-**Two bars to each filter, split at the filter's own centre.** Ten bars across
-a few centimetres read as a level meter with gaps rather than as a spectrum. The
-pair covers exactly the octave its filter acts on, the split point is the
-frequency the slider is named for, no edge exists that the equalizer does not
-already have, so the relationship survives the doubling instead of being
-traded for it. Dividing again would need only a different count in one place.
+**Measuring is split from meaning.** `domain/spectrum.py` holds band edges and
+what a magnitude means; `infrastructure/analysing.py` runs the transform on the
+arrays the device is handed.
 
-**Measuring is split from meaning, as designing is split from applying.** What
-a band's edges are and what a magnitude means once measured is arithmetic over
-frequencies, so `domain/spectrum.py` holds it and can be checked with nothing
-installed. The transform reads the arrays the device is being handed, so
-`infrastructure/analysing.py` holds that and calls inward for the meaning.
-
-**It runs AFTER the write, not before it.** The surest way not to delay a
-device is to be reached only once the block has gone. A measurement arriving
-late is a frame nobody misses; a block arriving late is a gap everybody hears.
-That ordering is also what makes it structurally impossible for the display to
+**It runs after the write, not before**, so it can never delay a block or
 alter a sample. `tests/infrastructure/test_watching_the_output.py` compares
-every frame written with the display on against every frame written with it
-off; moving the measurement ahead of the write and touching the block makes it
-fail, which is how that was checked rather than argued.
+every frame written with the display on and off. It measures after the
+equalizer and before the volume, so it shows the music rather than the knob.
 
-**What is measured is after the equalizer and before the volume.** The bands
-are named for the equalizer, so they should show what it did. Volume scales
-every band by the same amount and so says nothing about the music: a display
-that shrank as the volume came down would be reporting the knob.
+**A short block is refused rather than read as silence**, leaving the last
+reading to fall away. **The measurement is handed sideways:** the feeder swaps
+in one whole tuple for the interface thread to take, with no lock, so the
+feeder never waits on a painter. **Two clocks:** measurements land per block
+while the strip repaints faster and lets the domain decide where a bar has
+fallen; bars rise instantly and fall at a fixed rate.
 
-**A short block is refused rather than read as silence.** Every track ends on
-one, since the last read is whatever was left over. Reporting silence for it
-blanked the display at the end of every piece, which is what the end to end
-test found; padding it instead would report a band quieter than the music held,
-which is a measurement that is wrong rather than absent. Refusing leaves the
-last real reading standing to fall away on its own.
-
-**The measurement is handed sideways, not pushed.** The feeder leaves its
-answer where the interface thread can come and take it, as one whole tuple
-swapped in; a reader sees the last measurement or this one, never half of each.
-A lock there would be the feeder waiting on a painter, which is the one thing
-it must never do. A strip that cannot keep up misses measurements rather than
-delaying the sound.
-
-**Two clocks, because the rates differ.** At 44.1 kHz a block carries about 93
-milliseconds of audio, so measurements land some eleven times a second, which is
-slow enough to read as steps. The strip repaints thirty times a second and lets
-the domain decide where a bar has fallen to in between, so the motion is
-continuous while every peak in it was really measured. Bars rise instantly and
-fall at a fixed rate: the transient is the thing worth seeing; a bar that eased
-up to it would arrive after it had gone.
-
-**It has no switch; it is a few centimetres wide.** It was given a band of
-the window and an entry in the Sound menu at first. Both were wrong the same
-way: the band was room taken from the library for something that is a small
-moving thing rather than a feature anybody looks AT, while the entry asked a
-listener to decide about it. It now sits in the middle of the bottom strip,
-held at its middle by `tray_parts.centred_row` as the transport above it is. It
-is simply on.
-Its width is stated in centimetres and worked out against the screen it opens
-on, so the same request means the same size on any display.
-
-**Nothing runs while nothing plays.** The one question left with an answer worth
-having is whether there is anything to draw. The timer runs while the music
-does and stops when it stops. Upstream, the feeder measures a block only once it
-has written it, so a paused or stopped player does no arithmetic for a display
-of nothing. An analyser is still built for each track loaded and the sound
-settings still carry a visualising flag, which the window sets once and nothing
-clears; neither costs anything while no block is being written.
-
-**It shows that it is there before it has anything to show.** It had no ground
-of its own at first, which measured as one flat colour, the window's: turned on
-with nothing playing it was indistinguishable from empty space. It wears the
-surface both trays wear and each bar keeps a low mark on the floor, so silence
-reads as twenty empty bars rather than as an absence.
+**It has no switch.** It sits at the middle of the bottom strip, held there by
+`tray_parts.centred_row`, sized in centimetres against its screen; it draws
+twenty empty bars on the tray surface when silent. Its timer runs only while
+music does; the feeder measures only what it has written.
 
 ## Discovering what the library does not hold
 
-**It is specified before it is described.** `DISCOVERY.md` and `SHOPS.md` hold
-the two specifications this was built from, each requirement naming the test
-that proves it. What follows is the structure those requirements landed in, so
-neither document repeats the other.
+`DISCOVERY.md` and `SHOPS.md` are the specifications, each requirement naming
+its test. This section is the structure they landed in; requirement numbers
+point there for the detail.
 
-**A run is staged and the candidates' stage is the longest.** The first asks,
-for every artist inside the ticked genres, what that artist released and who
-resembles them; while series are included a second looks up the series of the
-compilations held (below); the last asks what each of those suggested artists
-plays, so the ticks can be applied to them too. The toolbar therefore carries
-one bar per stage rather than one bar for the run, three in all: "Looking up",
-"Checking series" and "Checking styles", stacked in `STAGE_ORDER` in
-`ui/discovery_progress.py` (FR-D83). A single bar back at a tenth is either bad
-news or ordinary progress with nothing to say which, while a full bar above a
-climbing one states where the run is at a glance.
+**A run is staged, one bar per stage.** The artist stage asks what each artist
+inside the ticked genres released and who resembles them; while series are
+included a series stage follows; the styles stage asks what each suggested
+artist plays so the ticks apply to them too. `STAGE_ORDER` in
+`ui/discovery_progress.py` stacks the bars (FR-D83). With years set, a years
+stage (`application/candidate_years.py`) follows the styles and takes over
+that bar (`SHARES_BAR`), asking through the same catalogue memory an expansion
+uses.
 
-**A run asked for some years only has one stage more.** The years are two
-optional fields in the Discover new music dialog (`ui/year_fields.py`), read by
-`read_years` in `domain/release_years.py` into a `ReleaseYears`: both bounds
-inclusive, from 1900 to the year after the current one. A year outside that or
-a range the wrong way round is refused and said rather than corrected. That
-stage asks what each candidate kept by the styles stage released, so
-those with nothing inside the years can go (`application/candidate_years.py`,
-FR-D63). It asks through the same catalogue memory an expansion does, so an
-answer paid for here makes expanding that candidate free; with no years set it
-asks nothing at all. It has no bar of its own: it follows the styles, so it
-takes that bar over under its own name, "Checking years" (`SHARES_BAR` in
-`ui/discovery_progress.py`).
+**Years scope what a run offers, never whom it asks about.** `read_years` in
+`domain/release_years.py` builds a `ReleaseYears` from the dialog's two fields
+(`ui/year_fields.py`), refusing rather than correcting a bad range.
+`source_artists` never sees them; `albums_missing` and `everything_offered` in
+`domain/discovery.py` both ask `ReleaseYears.admits`, judged on a release
+group's first release date.
 
-The years scope what a run offers, never whom it asks about; `source_artists`
-never sees them. An album is judged by its release group's first release date,
-which `infrastructure/catalogue.py` reads under `FIRST_RELEASE` and
-`ReleaseGroup.year` turns into a year through `year_of`. An album whose date
-nobody stated cannot be shown to fit, so it is left out while years are set.
-`albums_missing` and `everything_offered` in `domain/discovery.py` both ask
-`ReleaseYears.admits`, so an expanded candidate shows only albums inside the
-years as well (FR-D65).
+**Genre is what makes the reach outward acceptable.** A run asks only about
+what sits inside the ticked genres, never the whole of what somebody owns;
+that is the difference from a recommender, which is why the ticks scope the
+ask rather than filter the answer. Exactly what goes out to MusicBrainz and
+ListenBrainz is stated in `DISCOVERY.md`.
 
-**Genre is what makes the reach outward acceptable, rather than a convenience.**
-A run asks only about what sits inside the ticked genres, never about the whole
-of what somebody owns. That is the whole of the difference between this and a
-recommender, which is why the ticks scope the ask rather than filter the
-answer.
-
-**What goes out is stated exactly, because it is more than names.** MusicBrainz
-receives the artist names inside the ticks, plus the catalogue identifiers it
-answered with. For a name several artists share it also receives up to
-`MOST_EVIDENCE` (three) held album or track titles, each beside that name
-(`credited` in `infrastructure/catalogue.py`, FR-D09). While series are
-included it also receives the titles of held compilations and of albums filed
-under a placeholder artist, each cut at its first bracket, spaced solidus or
-spaced dash, plus their series stems (`infrastructure/catalogue_series.py`);
-for a held album an artist's discography types as a compilation it sends back
-the catalogue's own title rather than the library's (FR-D82).
-ListenBrainz receives a MusicBrainz identifier with the fixed name of the
-similarity algorithm asked for, nothing more.
-
-**Two services, because neither answers both questions.** MusicBrainz has no
-notion of similarity; ListenBrainz takes MusicBrainz identifiers and answers
-with more of them, so the two compose with nothing to translate between.
-Discogs and Last.fm were excluded for one reason stated in `DISCOVERY.md`: both
-need a credential; a credential compiled into a GPL application is a published
-credential.
-
-**Two services added ONE permitted module, not two.** No catalogue client holds
-a socket; all three ask through `infrastructure/fetching.py`, as the prose
-under [Invariants](#invariants) sets out with why the offline guard's count is
-the point of it. A feature reaching two hosts through one module is worth
-writing that way for that reason. `infrastructure/courtesy.py` holds the user
-agent and the pacing for every service reached through `cover_search.py` or
-`fetching.py`, since a gap honoured in one client and forgotten in another is a
-client that gets the whole application refused. The update check states its own
-agent in `update_source.py`. For the same reason the composition root hands the
-run, its series client, an expansion and the cover search one gate for
-MusicBrainz.
-`tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`
-holds all four to it.
+**Two services, one permitted module.** MusicBrainz has no similarity;
+ListenBrainz answers in MusicBrainz identifiers, so they compose with nothing
+to translate. Every catalogue client asks through `infrastructure/fetching.py`
+(see [Invariants](#invariants)). `infrastructure/courtesy.py` holds the user
+agent and pacing for everything reached through `cover_search.py` or
+`fetching.py`; the composition root hands the run, its series client, an
+expansion and the cover search one MusicBrainz gate
+(`tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`).
 
 **A request in flight is killed rather than abandoned; that is why it is on
-Qt.** Nothing portable interrupts a thread waiting on a socket and the wait for
-a response happens inside the call that opens it, so a blocking client made the
-timeout the floor on how fast a stop could be felt. Qt's network stack is event
-driven, so the request is asked every quarter second whether anybody still wants
-its answer. Measured on 2026-09-07 against a server that accepts a connection
-then says nothing: the reply ends in under a millisecond, where the blocking
-client sat until its full twenty second timeout.
+Qt.** Nothing portable interrupts a thread blocked on a socket; Qt's network
+stack is event driven, so a request is asked periodically whether its answer
+is still wanted. `Fetcher` keeps one `QNetworkAccessManager` per asking thread
+under a lock, because a stopped run is abandoned while the next may already be
+asking through the same fetcher; a manager is released when its own thread's
+`finished` is heard. Held by
+`tests/infrastructure/test_a_fetcher_shared_between_runs.py`.
 
-**Each asking thread holds its own access manager.** Qt objects belong to the
-thread that made them, so `Fetcher` keeps one `QNetworkAccessManager` per asking
-thread, in a dictionary touched only under a lock. One manager for whichever
-thread asked last was not enough: a stopped run is abandoned rather than waited
-for, so the next run can be asking through the same fetcher before the old
-thread has ended. Each could then pull the manager from under the other, which
-lost a request or left the old thread never ending. A manager is released when
-its thread's `finished` is heard; that is delivered on the interface thread
-through its event loop rather than on the thread that ended, so the handler is
-told which thread ended instead of letting go of whatever manager is current.
-Held by `tests/infrastructure/test_a_fetcher_shared_between_runs.py`, which
-drives two runs in a fresh process because the fault can take the process with
-it.
+**A stopped run is abandoned rather than waited for**, so a stop is instant;
+late reports are dropped. Quitting is the one place a run is waited for:
+`_leave_for_good` in `stellody/ui/leaving.py` calls the runner's `wait`
+(FR-D24,
+`tests/ui/test_quitting.py::test_quitting_mid_run_stops_the_discovery_run`).
+The button changes its words rather than asking for confirmation; the wording
+lives in `ui/tray_metrics.py`.
 
-**A stopped run is abandoned rather than waited for.** Cutting it loose from the
-window is what makes a stop instant rather than eventual; reports arriving after
-the press are dropped, since a run reports right up to the moment it notices.
-What that costs is the abandoned run's share of the pacing, which is bounded by
-the gap the terms ask for now that its last request dies with it.
+**The estimate is read off the run, not the configured gap**, since refusals
+and retries dominate. Every bar's time is the whole run's: `Ahead` in
+`application/reporting_ahead.py` stamps what lies ahead onto each report;
+`looking_up_seconds_left` and `series_seconds_left` in `domain/estimating.py`
+price later stages from the current pace (FR-D84); `ui/run_estimate.py` reads
+pace afresh at every change of stage. Too few finished units says nothing
+rather than swinging.
 
-Quitting is the one place a run is waited for. `_leave_for_good` in
-`stellody/ui/leaving.py` calls the discovery runner's `wait`, which cancels the
-run in hand then waits on its thread and on every abandoned one. Left alone, a
-run went on asking after the window had gone, on a thread Qt was about to tear
-down. FR-D24, held by
-`tests/ui/test_quitting.py::test_quitting_mid_run_stops_the_discovery_run`.
+**Colour never carries meaning alone:** every row states its kind in words.
 
-**The button carries both meanings, so it says which one it is carrying.** A
-confirmation was tried first and measured doing the opposite of its purpose: a
-trace caught the question answering No while the run carried on, which was the
-whole of a defect reported three times as the stop never stopping. A press on a
-control plainly reading "Stop discovery" needs no checking; what the question
-was really guarding against was a button that gave no sign of having changed
-meaning. The wording is read from `ui/tray_metrics.py` by everything that shows
-it; this document quoted "Stop looking" until 2026-09-09, which is the same
-stale phrase the guide was corrected for.
+**A candidate's albums are fetched when somebody opens them**, not during the
+run, which would add a request per surviving candidate.
 
-**The estimate is read off the run rather than off the configured gap.** A run
-meets refusals; each costs a second ask on the spot and then a place in a later
-pass, so an estimate built on the permitted rate would read as confident while
-being wrong by minutes on exactly the runs where somebody needs it. Every bar's
-time is the whole run's. While the artists are looked up, the series still to
-look up are priced from that stage's pace, scaled by what each costs the
-catalogue against an artist; the candidates' stage is projected from the
-candidates turned up so far (`looking_up_seconds_left` in
-`domain/estimating.py`); while the series are looked up, the candidates are
-known and priced from the series stage's own pace (`series_seconds_left`,
-FR-D84). Covering only the stage in hand would understate the wait by the
-larger part of it. The series are counted before anything is asked;
-`Ahead` in `application/reporting_ahead.py` stamps what lies ahead onto each
-report, since no stage can see the ones after it. Under two finished units it
-says nothing rather than swinging. No projection sizes the years stage, so what
-is said before it begins leaves it out; once it begins, its own pace is read as
-any stage's is, the reading starting afresh at every change of stage
-(`ui/run_estimate.py`). `DISCOVERY.md` records that limit under FR-D63.
-
-**Colour never carries the meaning alone.** Source artists and candidate artists
-are drawn apart; every row also states its kind in words. That was reported
-rather than reasoned: shown blue names, amber names and plain names, the person
-who commissioned the feature asked which lines were albums and which were
-tracks. Nothing in a run is ever a track, which the key can say outright.
-
-**A candidate artist's albums are fetched when somebody opens them.** One
-catalogue request costs at least the gap the terms require, so asking during the
-run would add a request per surviving candidate and roughly double the longer
-stage. Most are never opened; the ones that are pay for themselves.
-
-**A compilation is asked about by the artists on its tracks, only when somebody
-ticks for it.** Reported by Oliver on 2026-09-13: adding a Global Underground
-mix changed nothing a run did. Measured the same day, the run read only album
-artists, so a compilation contributed "Various Artists" in place of its 24 track
-credits; that one name was already answered from memory, so four runs over four
-days finished in a quarter of a second with an identical report.
-`source_artists` in `domain/discovery.py` now reads a compilation's track
-credits when the dialog's box for them is ticked (`Including.credits`) and
-nothing of it otherwise, never "Various Artists" itself. The box is off by
-default because 21 compilations carry 314 credits never looked up, which at the
-permitted pace is minutes of asking. `application/compilation_cost.py` prices
-exactly that before a run, plus the series while their own box is ticked
-(below), from the same memory and at the same gap the run uses, so the price is
-arithmetic rather than a forecast; FR-D36 still owns every estimate made during
-a run. Select all moves every genre box at once, so `_sweeping` in
-`ui/discovery_dialog.py` holds the price back until the sweep is done and
-works it out once rather than once per box.
-`application/candidate_genres.py` and `ui/discovery_endings.py` were split out
-of the two `discovering.py` modules by this change, each of which stood one
-line short of the danger band.
+**A compilation is asked about by its track credits only when ticked**
+(`Including.credits`); "Various Artists" itself is never asked about.
+`application/compilation_cost.py` prices the credits and series before a run,
+from the same memory and pace, so the price is arithmetic. Select all sets
+`_sweeping` in `ui/discovery_dialog.py` so the price is worked out once.
 
 **A compilation's neighbours are its other volumes, so a second box asks after
-the series.** Reported by Oliver on 2026-09-29: a run over four house genres
-answered "Global Underground (0 albums)", because MusicBrainz knows that name as
-one artist with no albums, used only to tag DJ mixes filed under Various Artists
-and grouped into series. While series are included, each held compilation
-inside the ticks and each album filed under a placeholder artist is looked up by
-its series (FR-D69 to FR-D73), as is each held album the catalogue types as a
-compilation, whoever it is filed under (FR-D82). The pieces sit where every other feature's do:
+the series** (FR-D69 to FR-D75, FR-D81, FR-D82):
 
-- `domain/series.py` is the rule and is pure. `volume_title` cuts a title at its
-  first bracket, spaced solidus or spaced dash; `series_stem` then takes a
-  trailing volume number off, in digits or as a word up to twenty
-  (`NUMBER_WORDS`), since the catalogue titles the tenth Select "Select Ten".
-  A number before a colon and a name is the volume too, so "Fabric 99: Sasha"
-  is volume 99 of Fabric and "Global Underground #45: Danny Tenaglia" meets the
-  catalogue's "Global Underground 045: Danny Tenaglia in Brooklyn"; a year
-  there never is (`YEAR_LIKE`, shared with `matching.py`) (FR-D81).
-  `series_place` answers a `SeriesPlace` of the stem, compared by
-  `comparison_key`, with the number. A series entry is held
-  when `HeldSeries` finds either its release match or its place on the shelf,
-  whoever the album is filed under (FR-D71), since the library writes
-  "Global Underground: Select #7 / Unmixed" where the catalogue writes the title
-  alone. `series_albums` picks what is asked about; `series_missing` offers
-  every kind of entry, compilations and DJ mixes included, once each and in
-  catalogue order, while the genres and the years still apply (FR-D72);
-  `sharing_stem` keeps the search results whose stem is the title's, an
-  unnumbered one only beside a numbered title, since beside an unnumbered one
-  it is merely another album of that name. `artist_filed` picks the albums
-  `series_albums` leaves; `catalogued_compilation` answers the catalogue's own
-  title for one the artist's discography types Compilation or DJ-mix, unless
-  a plain album of that title is theirs too (FR-D82).
-- `application/series_stage.py` holds `SeriesStage`, which `Discovery` runs
-  after the artist half and before any candidate is narrowed, only while
-  series are included. A placeholder is found from answers already in
-  hand: an artist whose answer offered no album is asked again who they are and
-  what they released, both answered from the run's own memory; one
-  identity with no album or EP is a placeholder. A compilation filed under an
-  artist is found the same way: that artist's name is settled through
-  `settling.meant` (the one home the artist half uses too); their
-  remembered discography says which held albums are compilations; each is
-  searched by the catalogue's title rather than the library's (FR-D82). Each
-  title is asked which
-  catalogue series it belongs to, then its stem is searched as well, which is
-  the only answer for a title in no series and tops up one whose list lags the
-  catalogue (FR-D70). Entries meet under one heading on `merged_entries`, which
-  keeps one per stem and number (`entry_key`), so a volume both answers name is
-  offered once. A series already found covers every place in it,
-  so one series is asked about once however many of its volumes are held. An
-  album nobody could answer about is a failure named by its title (FR-D73);
-  the run's one `Silence` counts across this stage as across the others. It
-  reports as a stage of its own, `DiscoveryStage.SERIES`, on a bar of its own
-  between the artists and the styles (`STAGE_ORDER`, FR-D83). A run that
-  checks no series leaves that bar at rest rather than full, since
-  `DiscoveryBars.show_progress` fills only an earlier bar that reported.
-- `application/discovery_ports.py` holds the `SeriesSource` port beside
-  `CatalogueSource`, with `NoSeries` as the null object `Discovery` defaults
-  to, so a run built without a series source asks nothing about series.
-  `infrastructure/catalogue_series.py` is the adapter, `MusicBrainzSeries`,
-  answering `series_of`, `series` and `titled` over the shared `Fetcher`;
-  the composition root builds it over the MusicBrainz gate.
-- What else a run takes in is one value, `Including` in `domain/including.py`
-  (credits, series, mixes; FR-D85), carried from the Discover dialog's three
-  boxes through the worker to `Discovery.run`, written to the discovery file
-  beside the years and read back for expanding. `ui/discovery_choices.py`
-  keeps the boxes between openings, reading the old single box for any never
-  saved. The artist stage lives in `application/artist_stage.py` beside the
-  series stage; `application/reporting_ahead.py` stamps what lies ahead of a
-  stage onto its reports so every bar's time covers the rest of the run
-  (FR-D84). `infrastructure/file_shapes.py` is the one home for how the files
-  carry an album, a candidate, years and choices; `ui/discovery_answer.py` is
-  the results half of the window's discovery.
-- `application/remembering_series.py` holds `RememberingSeries`, which keeps
-  those answers exactly as the catalogue's are kept (see the design decision on
-  asking a catalogue only what it has never been told).
+- `domain/series.py` is the pure rule: what a title's series stem and volume
+  are, which entries are held and which are missing.
+- `application/series_stage.py` holds `SeriesStage`, run after the artist
+  stage and before candidates are narrowed, finding placeholders and filed
+  compilations from answers already in hand. The run's one `Silence` counts
+  across every stage; it reports as `DiscoveryStage.SERIES`.
+- `application/discovery_ports.py` holds `SeriesSource` beside
+  `CatalogueSource`, with `NoSeries` as the null object;
+  `infrastructure/catalogue_series.py` (`MusicBrainzSeries`) is the adapter.
+- `domain/including.py` holds `Including` (credits, series, mixes; FR-D85),
+  carried from the dialog through the worker to `Discovery.run` and written to
+  the discovery file. `ui/discovery_choices.py` keeps the boxes;
+  `application/artist_stage.py` is the artist stage;
+  `infrastructure/file_shapes.py` is the one home for the files' shapes;
+  `application/remembering_series.py` keeps series answers as catalogue
+  answers are kept.
 
-A series found with something missing becomes a `Gaps` named by the series,
-with `series` set; `infrastructure/discovery_file.py` writes that flag into
-`discovered.json` (FR-D74). The results screen says the heading is a series
-and asks a shop for its entries under Various Artists. `worth_showing` in
-`domain/discovery_filter.py` leaves every heading with nothing beneath it off
-the screen while the file still holds it (FR-D75). Under the genre filter
-`filtered_answer` keeps a series where a held album inside the picked genres
-has that series' name as its stem; a catalogue series named otherwise is
-withheld. The price counts a series once where any held album of it has no
-standing answer, at `REQUESTS_PER_SERIES` in `domain/estimating.py`, four
-requests; a placeholder is recognised only from the memory, so its series are
-priced from the second run on (FR-D52). `tests/domain/test_series.py`,
-`tests/application/test_discovering_series.py`,
+A series with gaps becomes a `Gaps` with `series` set, written by
+`infrastructure/discovery_file.py`; `worth_showing` in
+`domain/discovery_filter.py` keeps empty headings off screen. Held by
+`tests/domain/test_series.py`, `tests/application/test_discovering_series.py`,
 `tests/application/test_discovering_filed_compilations.py`,
 `tests/infrastructure/test_series_kept.py` and
-`tests/ui/test_results_series.py` hold it.
+`tests/ui/test_results_series.py`.
 
-**A DJ mix is offered in an artist's list; a hits package is not.**
-MusicBrainz files a mix as Compilation plus DJ-mix, so `ReleaseGroup.is_offered`
-in `domain/discovery.py` sets `MIX_KINDS` aside wherever DJ-mix is stated and
-judges what is left as before; a compilation that is no mix stays out (FR-D80).
-The third box takes mixes back out: `offered_with` answers for the run's choice
-in `albums_missing`, `everything_offered` and `application/carrying_over.py`,
-while `Expansion.releases_of` is handed the choice the run was made with,
-carried by `ExpansionRunner` and its worker, so expanding a candidate keeps to
-it (FR-D85).
-`tests/domain/test_discovery_gaps.py` and `tests/application/test_expanding.py`
-hold it.
+**A DJ mix is offered; a hits package is not.** `ReleaseGroup.is_offered`
+sets `MIX_KINDS` aside where DJ-mix is stated (FR-D80); `offered_with` applies
+the mixes box; `Expansion.releases_of` receives the choice the run was
+made with (FR-D85). Held by `tests/domain/test_discovery_gaps.py` and
+`tests/application/test_expanding.py`.
 
-**A name nobody is found under is asked about by its parts.** `credit_parts` in
-`domain/text.py` takes a name apart at an ampersand, a comma, a solidus with a
-space either side or "Featuring" with its short forms, in the same pass
-(FR-D53). The whole name is always asked first, because "Eli & Fur" is one duo
-while "ODESZA & Bettye LaVette" is two artists; `Passes.everyone` is what stops
-a part already queued being asked about twice. A bare solidus is not a join,
-since it belongs to names such as AC/DC. An album artist was left whole until
-Oliver ruled otherwise on 2026-09-27: "Seb Fontaine / John Kelly / Graeme Park"
-reached nobody whole while naming artists nobody was then asking about. So a
-compilation credit and an album artist are now taken apart alike.
+**A name nobody is found under is asked about by its parts.** `credit_parts`
+in `domain/text.py` splits at the joins FR-D53 lists; the whole name is always
+asked first; a bare solidus is not a join. Album artists are split alike
+(Oliver's ruling). `Passes.everyone` stops a part being asked twice.
 
-**A catalogue's name is matched more loosely than the library's own.** A tag is
-typed on a keyboard while a catalogue keeps accents and typographic dashes:
-measured on 2026-09-27, "Hernan Cattaneo" never met "Hernán Cattáneo", so an
-artist the catalogue holds was reported unknown. `catalogue_key` in
-`domain/text.py` sets aside case, accents and those dashes; `catalogue_name`
-leaves a trailing Discogs number such as "(10)" out of the name asked for
-(FR-D08). `comparison_key` stays as strict as it was, since whether two names
-on the shelf are one artist is the listener's own filing. Identities remembered
-under the old rule are wrong under the new one, so `application/remembering.py`
-files them under a new section, `identities`; the old `identifiers` section is
-never read again, which costs the next run one identity question per artist.
+**A catalogue name is matched more loosely than the library's own.**
+`catalogue_key` sets aside case, accents and typographic dashes;
+`catalogue_name` drops a trailing Discogs number (FR-D08). `comparison_key`
+stays strict, since two shelf names being one artist is the listener's
+filing. Identities are remembered under the `identities` section.
 
-**A name several artists share is settled by what the library holds.** An
-identity lookup answering with more than one artist used to end there, since
-choosing on a listener's behalf would file one discography under another
-artist's name. Measured on 2026-09-27 that left 36 of a library's source
-artists unasked, Anyma among them. `evidence_by_artist` in
-`domain/credit_evidence.py` is a pure index of the titles held under each name,
-albums before tracks, filed under a whole name and under each of its parts; it
-is built once a run beside `held_by_artist`. Each title is cut at its first
-bracket by `bare_title` in `domain/text.py`, since a tag writing the mix into
-the title matches nothing. `settled` in `application/settling.py` puts up to
-`MOST_EVIDENCE` of them, three, to the catalogue as "who is credited on this":
-the first title crediting any namesake answers, one credited settling the name
-while two leave it ambiguous as before (FR-D09). That question is `credited` on
-the `CatalogueSource` port in `application/discovery_ports.py`;
-`infrastructure/catalogue.py` answers it with a release group search for an
-album and a recording search for a track, naming every artist credited. Its
-answers are remembered under `CREDITED`, keyed by `Evidence.question`, so two
-runs settle a name the same way.
+**A name several artists share is settled by what the library holds.**
+`evidence_by_artist` in `domain/credit_evidence.py` indexes held titles per
+name; `settled` in `application/settling.py` puts up to `MOST_EVIDENCE` of
+them to the catalogue through `credited` on the `CatalogueSource` port
+(FR-D09). Answers are remembered under `CREDITED`, keyed by
+`Evidence.question`, so two runs settle a name alike.
 
-**Reaching a shop opens no connection at all.** `infrastructure/browsing.py`
-hands an address to whatever the machine opens pages with, which is the same act
-as clicking a link anywhere else; everything after that happens in the browser,
-under the listener's own cookies. It is not in the offline guard's list for that
-reason. What goes out is the shop's own template with an artist and a title put
-into it, which `tests/domain/test_shop_address.py` asserts rather than assumes.
+**Reaching a shop opens no connection.** `infrastructure/browsing.py` hands an
+address to the system's browser, so it is not in the offline guard's list. The
+address is the shop's template with artist and title filled in
+(`tests/domain/test_shop_address.py`).
 
-**The shop list is data because shops move.** Measured across eight shops in one
-afternoon on 2026-09-07: one had closed, one had walled its search and one had
-moved it to a path answering 404. A list compiled into the application is a
-release every time that happens. `shops.json` therefore records the shipped list
-beside the list in use, then `stellody/domain/shop_list.py` settles the two shop
-by shop rather than file by file. A rule over the whole file was right while the
-file could only be changed by hand; once the shops dialog could edit it, nearly
-every file would count as edited somewhere and none would take a correction
-again.
+**The shop list is data because shops move.** `shops.json` records the
+shipped list beside the list in use; `stellody/domain/shop_list.py` settles
+them shop by shop, recognising a shop by name ignoring case. Untouched shipped
+shops follow the release, edits are kept, deletions and renames are recorded
+in `deleted` so a release does not restore them, dropped shops are named in
+`retired`. An unreadable file is replaced by the shipped defaults (FR-S12,
+`tests/infrastructure/test_shop_file.py`). `stellody/application/shop_editing.py`
+writes every change before the dialog shows it.
 
-**A shop is recognised by its name, ignoring case**, since a release carries
-nothing else to know it by. An untouched shipped shop follows the release; an
-edited one keeps the edit; a new shipped shop is added at the bottom. A shipped
-shop somebody deleted is named in the file's `deleted` record, which is what
-stops the next release putting it back; renaming one records the old name there
-for the same reason. A shop the release dropped goes only if it was untouched,
-named in `retired` so the dialog can say so once. A file from before deleting
-was recorded gains no shipped shop it lacks, since it may have lost one by hand
-with nothing written down. A file that cannot be read or whose shops are not a
-list is written over with the shipped defaults, the state a first run installs
-(FR-S12), as `tests/infrastructure/test_shop_file.py` holds.
-`stellody/application/shop_editing.py` writes every change before the dialog
-shows it, so what is on screen is what the file holds.
+**Two albums match when they are the same recording, not the same pressing.**
+`stellody/domain/matching.py` reduces both sides to a key plus a kind,
+symmetrically (the library reads kinds from the title; the catalogue states
+them), on the same `comparison_key` the search uses. The year is deliberately
+absent, since a remaster's tag carries the remaster's year. `AlbumIdentity` is
+untouched, its handle keying artwork and ratings.
 
-**Two albums are the same album when they are the same recording, not the same
-pressing.** A remaster is the same album; a live version is not. Both sides
-arrive as a key plus a kind: the library reads its kinds out of the title then
-takes the qualifier off, while the catalogue takes its kinds as stated data and
-drops a trailing word that only repeats one of them. The rule had to be
-symmetric, since the library holds `Secret World (Live)` where the catalogue
-holds that record as `Secret World Live` with Live also stated as its kind, so
-the two would never have met. `stellody/domain/matching.py` is that rule, built
-on the same `comparison_key` primitive the search uses so the two cannot drift
-on normalisation; `AlbumIdentity` is deliberately untouched, its handle keying
-the artwork cache and every rating.
+**What a candidate plays is remembered between runs**, since the similarity
+source returns no genre and asking per suggestion would multiply requests. A
+remembered answer is still judged against this run's ticks. Only an answer is
+remembered: any failed lookup leaves the candidate unknown
+(`CandidateGenres.narrowed` in `application/candidate_genres.py`,
+`tests/application/test_discovery_narrowing.py`).
 
-**The year is deliberately absent from the key.** A remastered album's tag
-carries the remaster's year while the release group carries the original's, so a
-key holding the year makes every remastered album a false gap.
+**The results can be narrowed by genre, judged differently at each end**
+(FR-D54 to FR-D56, FR-D78). A source artist is judged by the genres on the
+listener's own albums; a candidate by its remembered genres, else by the
+heading it sits under (matched per credit part through `_keys_of`).
+`filtered_answer` in `domain/discovery_filter.py` is the rule
+(`tests/domain/test_judged_by_their_source.py`). `ui/results_filtering.py`
+re-deals the pages rather than hiding rows, holding ticks and fetched albums
+across the deal; `ui/results_asking.py` holds the asking half.
 
-**What a candidate plays is remembered between runs.** The similarity source
-returns identifiers with no genre, so filtering candidates by genre costs one
-lookup each: ten candidates for each of 327 artists is 3,270 requests, which is
-about another hour at the permitted rate. Asking once per artist is what
-keeps it affordable: measured on 2026-09-13 over a whole-library run of 555
-source artists, 5,550 possible lookups came down to 1,350, since the
-well-connected are suggested again and again. An answer already held is
-still judged against the genres ticked, so remembering cannot smuggle a
-candidate past the scope of a run.
+**The answer is narrowed by kind as well** (FR-D86): `Showing` and `shown` in
+`domain/showing.py` are the pure rule, drawn by `ui/results_filter.py`
+(`tests/domain/test_showing.py`, `tests/ui/test_results_showing.py`).
 
-Only an answer is remembered. A lookup that fails in any way, whether too slow,
-refused past its asks, answered with an error or abandoned by a stop, leaves
-that candidate unknown rather than written down as playing nothing, since what
-is remembered here is kept without a limit; an empty answer the catalogue
-actually gave is still remembered. `CandidateGenres.narrowed` in
-`application/candidate_genres.py` is that rule, held by
-`tests/application/test_discovery_narrowing.py`.
-
-**The results can be narrowed by genre, judged differently at each end.** FR-D54
-to FR-D56, ruled by Oliver on 2026-09-13 after a whole-library answer ran to
-5279 albums. A source artist keeps their albums where a run over the picked
-genres would ask about them, which is `source_artists` asked again of the
-library: judged by the genres on the listener's own albums, so nobody the
-library holds is withheld for want of a catalogue genre. A candidate is not in
-the library, so the memory above judges them first. One it records nothing
-recognised for is judged by the heading it sits under (FR-D78, ruled on
-2026-10-01 when 615 of 1,996 candidates had no genre on MusicBrainz at all):
-the catalogue genres of the held albums crediting that artist (as album artist
-or on a track); for a series heading, those of the held volumes sharing its
-stem. A heading is matched to a credit by each part of a joint credit as well
-as by the whole (`_keys_of`, through `credit_parts`), since a run asks about
-every part of a credit no catalogue knows whole: measured on 2026-10-02, all
-43 headings whose candidates were held back for want of a genre were such
-parts, `DJ Tennis` of `Moat, Kyozo, & DJ Tennis`. Only where those name
-nothing either is the candidate withheld and counted, once.
-`filtered_answer` in `domain/discovery_filter.py` is that rule, held by
-`tests/domain/test_judged_by_their_source.py`.
-`ui/results_filtering.py` deals the pages again from what it leaves rather than
-hiding rows, since pages are dealt by height and hidden rows would leave columns
-half empty. Dealing again throws the rows away, so the ticks and every
-candidate's fetched albums are held by the dialog then written back after each
-deal; Copy and Find in shops still read only the rows on screen.
-`ui/results_asking.py` was split out of `results_dialog.py` when the genre
-filter arrived, to make the room.
-
-**The answer is narrowed by kind as well as by genre.** The answer's filter
-carries a "Show:" row of four boxes, albums, DJ mixes, series and similar
-artists, all ticked to begin with (FR-D86). `Showing` and `shown` in
-`domain/showing.py` are the rule and are pure: a series heading is kept or
-dropped whole; under an artist a DJ mix answers to its own box while every
-other album answers to the albums box; a heading left with nothing under it is
-dropped, for the reason FR-D75 gives. `ui/results_filter.py` draws the row
-beside the genres; `ui/results_filtering.py` applies it to what
-`filtered_answer` leaves before the pages are dealt.
-`tests/domain/test_showing.py` and `tests/ui/test_results_showing.py` hold it.
-
-**A row says the year an album first came out; a shop is asked for the title
-alone.** `album_row` in `ui/results_words.py` writes the title with the year
-after it in brackets (FR-D68); where the catalogue stated no date it writes the
-title alone. The bare title rides on the row under `TITLE_ROLE` beside the artist,
-set by `make_tickable` in `ui/results_ticks.py`. `album_on` there is its one
-reader, used by `ticked_albums` and by `ui/results_filtering.py` as it holds
-the ticks across a deal; read off the row's text instead, every shop would be
-searched for the year as well.
+**A row shows the year; a shop is asked for the title alone** (FR-D68).
+`album_row` in `ui/results_words.py` writes the year; the bare title rides
+under `TITLE_ROLE`, set by `make_tickable` and read by `album_on` in
+`ui/results_ticks.py`.
 
 **One shops dialog serves the results screen; closing it ends the round.**
-`ui/shops_dialog.py` is that dialog. A second press brings it back rather than
-making another, while every change of tick is handed to it through `follow`, so
-a dialog left open sends what is ticked now; a shop cannot be chosen while
-nothing is (FR-S44). The results dialog listens for its `finished`, which Close,
-Escape and the title bar all emit, then unticks every row and forgets the ticks
-a filter was holding, so nothing unseen rides into the next round (FR-S45).
-`tests/ui/test_shop_closing.py` holds the clearing for each way out.
+`ui/shops_dialog.py` is reused on a second press and follows tick changes
+through `follow` (FR-S44); its `finished` unticks every row (FR-S45,
+`tests/ui/test_shop_closing.py`).
 
-**The file records what was asked as well as what was found.** A run's answer
-is meaningless without the genres that scoped it, since those decide which
-artists were asked about at all: the same library asked about Folk and asked
-about Rock produces two unlike files; neither said which it was. The
-results screen reads both in ONE reading, for the reason the estimate takes one
-reading of the pace: a file replaced between two reads would put one run's
-question above another run's answer. Reading the genres from the ticks handed
-over when the run started would be the same fault by a different route, since
-the screen is built from the file rather than from the run. The years a run was
-limited to are kept beside its genres for the same reason, under `years`
-(FR-D64); the results screen names them on the line saying what the run looked
-in. A file written before years were kept reads as every year.
+**The file records what was asked as well as what was found:** genres and
+years beside the answer, read in one reading so one run's question never sits
+above another's answer (FR-D64).
 
-**An answer says who it could not be given for.** Three questions can end
-without a usable one: the source refuses, the catalogue holds nobody under a
-name or it holds several artists under it that the library's own titles cannot
-tell apart. All three were recorded and written
-into the file from the beginning; nothing read them back, so a run that could
-not answer for a third of a library said exactly what a clean one said. That is
-the misreading `RunReport` was written to prevent, in its own words. The counts
-now follow the run's own message and the names sit behind a button beside it,
-which is the split `scan_summary` already makes, for the reason
-[What a scan reports](#what-a-scan-reports) gives.
-`stellody/ui/shortfall.py` holds the words, the report and the dialog as text
-apart from any widget, plus the mixin that owns the button. The three kinds are
-counted apart rather than totalled, because they are not the same news: one is
-worth running again later, one is a spelling to look at and one could not be
-settled from the name or from the titles held under it. The button carries its own count, since the status
-bar is shared and playing a track replaces the sentence beside it within
-seconds.
+**An answer says who it could not be given for.** Refused, unknown and
+ambiguous names are counted apart in the run's message, with a button naming
+them; `stellody/ui/shortfall.py` holds the words, the report and the mixin
+owning the button.
 
-**One file, replaced by every completed run.** Not a directory of dated files,
-which becomes a thing to tidy up; not a merge, which would have to rule on a
-candidate offered once and owned since. A run states what is missing at the
-moment it finished, carrying over an earlier answer only for an artist this run
-failed to reach.
-
-**A run may correct what is known but may not take it away.** An artist a run
-cannot reach keeps the answer an earlier run got for it, rather than the file
-being replaced by a worse one; only an artist THIS run failed on is carried
-over, so an artist no longer in the library still falls away. What is carried
-keeps to this run's years (FR-D66): `carried_over` is handed the earlier run as
-a `LastRun`, holds the albums it carries to the years now asked for, each
-carrying its date, then carries that artist's candidate artists only where the
-earlier run was asked for the same years, since they were judged against those
-alone. `application/carrying_over.py` is the whole rule and is pure, which is what
-lets the file writer stay about files. The window reads the same rule before
-it speaks: `_carried` in `ui/discovery_endings.py` passes a finished run's
-report through `carried_over`, so the sentence and the shortfall button never
-call an artist unanswered beside a results screen showing that artist's
-answer. The file is written
-through `infrastructure/atomic.py`, beside the shop list, so a failed write
-leaves the last good copy rather than half of one.
+**One file, replaced by every completed run; a run may correct what is known
+but not take it away.** `carried_over` in `application/carrying_over.py` (pure)
+carries an earlier answer only for an artist this run failed to reach, kept to
+this run's years through a `LastRun` (FR-D66). `_carried` in
+`ui/discovery_endings.py` applies the same rule to the message, so it never
+contradicts the results screen. The file is written through
+`infrastructure/atomic.py`.
 
 ## The update check
 
-**Three answers, kept apart.** There is a newer version, this is the newest
-one, nobody could be reached. The third is not a failure to report on its own:
-a check the clock started says nothing at all unless there is something to
-offer, while a check somebody asked for is owed every one of the three, because
-they are waiting for an answer.
+**Three answers, kept apart:** newer, newest, unreachable. A scheduled check
+speaks only when there is something to offer; a check somebody asked for owes
+all three.
 
-**The endpoint is the guard.** `releases/latest` answers only with a published
-release, never a draft and never a prerelease, so a tag pushed mid-development
-is invisible by that contract rather than by this code remembering to filter
-it. Nothing re-checks those flags afterwards; a check written twice is a check
-that can disagree with itself.
+**The endpoint is the guard.** `releases/latest` returns only a published
+release, never a draft or prerelease, so nothing re-checks those flags.
 
-**A version that cannot be read is not newer.** Comparison is between dotted
-runs of digits and anything else loses rather than raises. The asymmetry is the
-reason: missing an update costs somebody a day, while inventing one tells
-somebody their working copy is stale when it is not.
+**A version that cannot be read is not newer**: inventing an update costs
+more than missing one.
 
-**The question is asked off the interface thread; the answer arrives on it.**
-A plain thread asks, then hands the result back through a signal. Measured on
-this PySide6, a functor connection takes the SENDER as its context and the
-sender is the controller, which lives on the interface thread, so delivery
-queues there either way. What the guard actually catches is a worker that shows
-the answer itself instead of handing it back, which was verified by planting
-exactly that.
+**Asked off the interface thread; answered on it.** A plain thread asks and
+emits a signal. An answer whose controller has gone is dropped where
+`shiboken6.isValid` says so in `_run` in `stellody/ui/update_check.py`
+(`tests/ui/test_update_check_after_close.py`); asking first would race.
 
-**An answer with nowhere to go is dropped.** The window can close while a
-question is out, taking the controller with it; the worker's emit then raised
-on a thread nothing catches, which ended it with "Signal source has been
-deleted". `_run` in `stellody/ui/update_check.py` now drops that answer where
-`shiboken6.isValid` says the controller has gone and raises anything else.
-Asking first would not do, since the controller can go between the asking and
-the emit. `tests/ui/test_update_check_after_close.py` reproduces it.
+**Skip silences a prompt, not the question:** the skipped tag never prompts
+again; an asked-for check ignores the skip.
 
-**Skip silences a prompt, not the question.** The tag is written into
-Stellody's own settings and that release never prompts again, while the next
-one prompts normally. A check somebody asks for ignores the skip entirely and
-reports the newest version anyway.
-
-The pieces sit where every other feature's do:
-`stellody/application/updates.py` holds the comparison, the platform choice and
-the service; the `ReleaseSource` port sits in `stellody/application/ports.py`
-with its siblings; `stellody/infrastructure/update_source.py` is the adapter,
-on stdlib `urllib` rather than a new dependency; `stellody/ui/update_check.py`
-is the controller and the dialogs. Invariant 12 is what keeps the adapter one of
-the four named ways out.
+`stellody/application/updates.py` holds the comparison, platform choice and
+service; `ReleaseSource` sits in `stellody/application/ports.py`;
+`stellody/infrastructure/update_source.py` is the stdlib `urllib` adapter;
+`stellody/ui/update_check.py` is the controller and dialogs.
 
 ## The guide
 
-**It is drawn from the same pictures the window is.** A guide naming the
-furniture in words or with a stand-in glyph gives a second description of the
-window that drifts from it the moment a button changes. `stellody/ui/guide.py`
-resolves every icon through `stellody.shared.resources`, which is the lookup the
-trays themselves use, so a button that gains a new picture gains it here too.
-An icon that cannot be found yields no picture rather than an exception, since a
-missing asset must not be the thing that stops the guide opening. The guide is
-three modules: `guide.py` holds the trays, the dialogs and the rules;
-`stellody/ui/guide_discovery.py` holds the discovery and shops procedure;
-`stellody/ui/guide_pictures.py` holds the helpers both draw their pictures with.
-The discovery section moved out whole on 2026-09-13, when the lines it gained
-would have put `guide.py` in the 381 to 400 band.
+**It is drawn from the same pictures the window is.**
+`stellody/ui/guide.py` resolves every icon through `stellody.shared.resources`,
+the lookup the trays use; a missing icon yields no picture rather than an
+exception. `guide_discovery.py` holds the discovery and shops procedure,
+`guide_pictures.py` the drawing helpers (`INLINE_ICON_PX` sizes pictures larger
+than body text) and `layout_advice.py` the layout section.
 
-**The pictures are drawn larger than the words around them.** At body-text
-size two icons somebody is trying to tell apart read as one smudge, which is the
-whole task this screen exists for; `INLINE_ICON_PX` in `guide_pictures.py`
-states the size once, at 30 pixels.
+**A control the guide does not explain is a failure, found by sweeping rather
+than listing.** `tests/ui/test_guide.py` is parametrised over every resource
+getter minus a named, reasoned set of non-controls; `_named_pictures`
+parses every module in `stellody/ui` for each `.png` it names, with no
+exemptions, since dialogs fetch assets by name through `resources.find_asset`.
+A companion case asserts the scan finds something.
 
-**A tray that gains a control the guide does not explain is a failure.**
-`tests/ui/test_guide.py` is parametrised over every resource getter the module
-defines, minus a named set of icons that are not a control of their own, each
-carrying its reason: the application's own mark, the second face of a control
-already named, the chevron a view draws and the cross composed over another
-picture. So a NEW icon is explained by default and has to be argued out of it
-in front of somebody, which is how a module is granted permission to open a
-connection.
-
-That is a correction rather than a description. The parametrised list used to
-be written the other way round, as the getters to check; this document claimed
-it was walked off the real assets the whole time it was not. The
-discovery button then shipped with no line in the guide at all and every gate
-stayed green, which is the failure the sweep exists to prevent: whoever forgets
-a guide entry forgets the list entry with it. Held now by planting the defect
-that shipped, the guide drawing no discovery icon, then reading the case named
-`discover_icon_path` fail.
-
-**The getters are only half the artwork, which cost a second miss.** A dialog
-asks `resources.find_asset` for a file by name, so nothing in `resources`
-mentions it and a sweep over the getters cannot see it. Six pictures lived in
-that gap: the two paging controls, the sweep that ticks every genre, the two
-shop controls and the Close every dialog wears. Reported by Oliver on
-2026-09-09, who asked why the guide said nothing about the paging, which is
-the same defect as the discovery button arriving by a route the first sweep
-does not cover. The second half is therefore discovered the same way rather
-than listed: `_named_pictures` parses every module in `stellody/ui` and
-collects each `.png` the source names, then asserts the guide draws all of
-them. It carries no exemptions at all, every picture a dialog names being a
-control somebody presses or drags. A companion case asserts the scan finds
-something, since a scan returning nothing would satisfy the sweep while
-checking nothing. Proved
-by taking the paging entry back out of the guide and reading it fail.
-
-**Under the furniture sit the rules no single screen can state.** Files are only
-ever read, folders group while tags name, a correction differs from a stated
-tag, ratings follow the album rather than the file. Each is stated elsewhere in
-this document as a structural decision; the guide is where a listener meets it.
-
-**Beside them sits how a library wants laying out.** Stellody reads a collection
-the way it finds it, so the grouping rules decide what somebody ends up looking
-at; they were visible only in this document and in the code.
-`stellody/ui/layout_advice.py` states them once and both surfaces read it: the
-guide shows the whole section, while somebody who has never chosen a music
-folder is shown a short note BEFORE the picker opens rather than after, so they
-can go and look at what they have. It is offered on the strength of there being
-no library root yet, so it needs nothing written down and never troubles
-somebody changing folders. Both its buttons go on to the picker; one opens the
-guide on the way. A test asserts the guide carries that module's words rather
-than a copy of them, since two statements of one rule are two chances for them
-to disagree.
-
-**Its one added line is why the window shed two modules.** `main_window.py`
-reached the 381 to 400 danger band, so it was reduced rather than shaved:
-`stellody/ui/ring_order.py` took what the keyboard walks and the order it walks
-it in, `stellody/ui/standing_in.py` took the stand-ins a window can be built
-without. Both are cohesive concerns rather than arbitrary slices, which is what
-invariant 8 asks for.
+**Under the furniture sit the rules no single screen can state**, plus how a
+library wants laying out. `stellody/ui/layout_advice.py` states the latter
+once; the guide shows it whole and a first-time listener sees a short note
+before the folder picker opens. A test asserts the guide carries that module's
+words rather than a copy.
 
 ## Reaching the sound device
 
-**One class touches a device; PortAudio is what it speaks to.** That was
-true before Stellody ran anywhere but Windows; what was not true is that the
-module holding it was named for a Windows interface and asked for one by name.
-WASAPI is a host API WITHIN PortAudio, so the split is along that line rather
-than along the platforms: `infrastructure/portaudio.py` is the substrate and
-holds what every platform shares, including the mixer fallback `opened_shared`
-and the plain mixer stream `open_shared`, which CoreAudio opens as well;
-`infrastructure/wasapi.py` and `infrastructure/coreaudio.py` are the two host
-APIs worth asking for by name, each reading its vocabulary from the substrate.
-The direction cannot be the other way round, since a specialisation importing
-the thing it specialises is a cycle waiting to be written.
+**One class touches a device; PortAudio is what it speaks to.** WASAPI is a
+host API within PortAudio, so the split follows that line:
+`infrastructure/portaudio.py` is the substrate holding what every platform
+shares (including `opened_shared` and `open_shared`);
+`infrastructure/wasapi.py` and `infrastructure/coreaudio.py` specialise it.
+The direction cannot reverse without a cycle.
 
-**`infrastructure/output.py` is the whole of what the application knows about
-there being more than one way to open a stream.** Two other platform questions
-are about a chosen device rather than a stream. Where the list of devices comes
-from is answered in `infrastructure/output_list.py` against the same
-`output.WINDOWS`; whether a device is found by name or addressed by sink is
-answered by `routes_by_sink` in `infrastructure/pulsesink.py`. It switches on `sys.platform` rather than on what a
-device reports, because what differs is the INTERFACE rather than the hardware:
-asking a Mac whether it has WASAPI is asking the wrong question. Windows takes
-`wasapi.py`, macOS takes `coreaudio.py` and everything else takes the
-substrate, which is the safe direction for the rule to fail in: a platform
-nobody has thought about plays through its mixer rather than not at all. Both
-host modules are imported inside the call rather than at module scope, so no
-platform loads a module naming a host API it does not have.
+**`infrastructure/output.py` is all the application knows about there being
+more than one way to open a stream.** It switches on `sys.platform`, because
+the interface differs rather than the hardware: Windows takes `wasapi.py`,
+macOS `coreaudio.py`, everything else the substrate, which fails safe to the
+mixer. Both host modules are imported inside the call. Where the device list
+comes from is `infrastructure/output_list.py`; whether a device is addressed
+by sink is `routes_by_sink` in `infrastructure/pulsesink.py`.
 
 **The listener chooses the mode; the strip shows what the device answered.**
-A switch on the bottom strip between the output device and the equalizer sets
-`Transport.set_output_mode`, which reopens the track in hand where it is and as
-it was, since a mode belongs to a stream rather than to something a running
-stream can be told. The choice is written down under `output_mode` and is what
-every later track asks for. What the device granted is a different fact and is
-shown separately, beside the clock, by `ui/stream_words.py`: the mode, the
-rate and the depth read off `PlaybackPort.report`, then bit perfect only where
-`SoundSettings.bit_perfect` says so, since the volume and the curve decide that
-too (below). That line says what was opened, never what was asked for.
+The bottom strip's switch calls `Transport.set_output_mode`, which reopens the
+track in hand where it was, since a mode belongs to a stream. The choice is
+stored under `output_mode`. `ui/stream_words.py` shows what was granted, read
+off `PlaybackPort.report`, saying bit perfect only where
+`SoundSettings.bit_perfect` agrees.
 
-**The switch is offered only for a song the device in use can take.** Ruled by
-Oliver on 2026-09-18, in two steps: first for a lossy file, which states no
-depth and so has nothing to deliver untouched; then for a rate the device does
-not list, after he moved from his speakers to his Focal Bathys (which takes
-48 kHz alone) and saw nothing change. Offering the mode in either case is a
-misleading hi-fi offer. `follow_song` in `ui/switches.py` judges the song in
-hand, else the one play would start, on every refresh: a lossy file, a rate
-missing from what the device lists or a device that lists nothing stands the
-switch down, wearing the house red rounded rectangle with the reason in its
-tooltip, naming the rates the device does take beside the song's own where
-that is the reason. With no song in hand the device is judged against the
-library instead, also his ruling: `lossless_rates` in `domain/album.py` names
-every rate a lossless song is at, worked out once per load or scan in
-`show_library`. A device taking none of them stands the switch down, while
-the right device brings it back. A library not yet loaded answers
-nothing. The Sound menu's entry follows the switch. The CHOICE is
-left exactly as it was, also his ruling, so the next song that can have the
-mode gets it with no press; meanwhile a request is answered by the mixer and the
-readout says shared. `tests/ui/test_no_exclusive_for_a_lossy_song.py` and
-`tests/ui/test_exclusive_follows_the_device.py` hold it, each rule proved by
-planting its removal.
+**The switch is offered only for a song the device in use can take**
+(Oliver's ruling). `follow_song` in `ui/switches.py` stands the switch down for
+a lossy file, a rate the device does not list or a device listing nothing,
+with the reason in the tooltip; with no song in hand the device is judged
+against `lossless_rates` in `domain/album.py`. The choice itself is left alone,
+so the next eligible song gets the mode with no press. Held by
+`tests/ui/test_no_exclusive_for_a_lossy_song.py` and
+`tests/ui/test_exclusive_follows_the_device.py`.
 
-**Which rates a device takes is asked once per device, not once per refresh.**
-`exclusive_rates` in `infrastructure/wasapi.py` asks the driver one rate at a
-time and opens no stream: six rates, each costing one question or two since
-`native_dtype` tries the deeper sample type first, while the window refreshes
-four times a second. `OutputDevices.exclusive_rates` in
-`infrastructure/output_devices.py` therefore keeps the answer, with the device
-it was about, until the output moves or the list of devices changes; a
-different device is asked afresh. The question is put to the device in use, so
-a chosen device is asked about itself rather than the default. After a move PortAudio still means the old device until its list is
-taken again, which closes any stream open, so that is done only while none is:
-with nothing loaded the new device is asked at once, while with a stream open
-the answer is unknown until the next stream opens and takes the list itself.
-Unknown stands nothing down. A Mac is not asked at all, because the flags that
-would answer may disturb a device other programs are using.
+**Which rates a device takes is asked once per device.** `exclusive_rates` in
+`infrastructure/wasapi.py` asks the driver rate by rate without opening a
+stream; `OutputDevices.exclusive_rates` in `infrastructure/output_devices.py`
+keeps the answer for that device until the output moves or the list changes.
+After a move PortAudio still means the old device until its list is taken
+again, which closes any open stream, so the list is retaken only while no
+stream is open: with none open the new device is asked at once; with one open
+the answer is unknown until the next stream opens. Unknown stands nothing
+down. A Mac is not asked, since the probing flags may disturb a device others
+are using.
 
-**A refusal nobody could foresee takes the switch back to shared.** A device
-may still turn down a rate it lists, another application holding it say. That
-request has already been opened through the mixer, so `follow_output_refusal`
-moves the choice with `Transport.stand_down_to_shared`, which leaves the open
-stream alone: reopening it would buy a gap in the music and nothing else.
-Shared is written down and the device's own reason said once along the status
-line. It passes over any song `follow_song` has already stood the switch down
-for, which is what once saved shared over the choice for an MP3 and named the
-song's own rate as refused. A chosen DEVICE refusing to open at all is a
-different refusal with a different answer, the system default instead of it;
-[Choosing the output device](#choosing-the-output-device) sets that out.
+**An unforeseen refusal takes the switch back to shared.** The request has
+already been answered by the mixer, so `follow_output_refusal` moves the
+choice with `Transport.stand_down_to_shared`, leaving the stream alone. It
+passes over a song `follow_song` already stood down for. A chosen device that
+will not open at all is answered differently; see
+[Choosing the output device](#choosing-the-output-device).
 
 **Two things stop an exclusive stream being bit perfect from inside the
-application.** Volume below unity multiplies the block and casts it back
-(`infrastructure/audio.py`); an equalizer that is switched on shapes it
-(`infrastructure/filtering.py`, which costs nothing while flat). Neither is
-prevented; both are simply not bit perfect. The readout says so.
-`OutputReport.is_bit_perfect` answers for the stream as it was opened, which
-the device decides once; `bit_perfect_as_played` in `domain/playback.py`
-adds the level and the curve, which move while it plays. Each test is the
-engine's own condition for leaving a block alone: the audible level at unity
-(a mute is not) and a curve designing no sections at the stream's rate (a
-flat curve switched on designs none, so it keeps the claim).
-`SoundSettings.bit_perfect` asks it with all three in hand and the window
-redraws the line whenever the volume, the mute or the curve moves, rather
-than at the next poll. Found by reading on 2026-10-02, when the line still
-said bit perfect at half volume; `tests/ui/test_bit_perfect_is_earned.py`
-holds it, proved by planting the old rule back (nine failures).
+application:** volume below unity (`infrastructure/audio.py`) and an
+equalizer designing any sections (`infrastructure/filtering.py`).
+`OutputReport.is_bit_perfect` answers for the stream as opened;
+`bit_perfect_as_played` in `domain/playback.py` adds the level and curve, each
+tested by the engine's own condition for leaving a block alone.
+`SoundSettings.bit_perfect` combines them and the window redraws the line when
+volume, mute or curve moves (`tests/ui/test_bit_perfect_is_earned.py`).
 
-**The route past the mixer differs on every platform; on one there is
-none.** `infrastructure/output.py` answers which module a platform plays
-through and `offers_exclusive` answers whether the mode is offered at all.
+**The route past the mixer differs per platform; on one there is none.**
+`offers_exclusive` in `output.py` answers whether the mode is offered.
 
-- **Windows** takes the device itself, through WASAPI in exclusive mode. This
-  is the only one of the three that stops another application reaching the
-  device.
-- **macOS** cannot. Measured on 2026-09-17 by reading the built library:
-  `paMacCorePro` is 0x1, which is exactly `paMacCoreChangeDeviceParameters`.
-  PortAudio exposes no hog mode at all, so nothing here can take a Mac
-  device away from anything else. What `infrastructure/coreaudio.py` does
-  instead is run the device at the track's own rate and refuse the stream
-  rather than let CoreAudio convert, which delivers the samples untouched
-  while another application playing alongside is still mixed in. It is
-  reported as exclusive mode because it is the mode that was asked for and
-  granted; the difference from Windows is this paragraph rather than a second
-  word in the enumeration. Oliver ran it on a Mac on 2026-09-18 and it
-  worked.
-- **Linux is ruled out deliberately**, decided with Oliver on 2026-09-17. The
-  build is a Flatpak, so the sandbox hands over a sound socket rather than a
-  device and there is nothing to take; outside the sandbox it would depend on
-  PipeWire letting go, on PortAudio having been built against ALSA and on a raw
-  device existing to address, which differs between distributions and between
-  machines of one distribution. A mode that worked on some Linux machines and
-  quietly did not on others is worse than one that says up front it is not
-  offered, so the control is disabled there with the reason on it.
+- **Windows** takes the device through WASAPI exclusive mode, the only route
+  that stops other applications reaching it.
+- **macOS** has no hog mode reachable through PortAudio (`paMacCorePro` is the
+  same flag as `paMacCoreChangeDeviceParameters`). `coreaudio.py` instead runs
+  the device at the track's rate and refuses a converting stream, delivering
+  the samples untouched while other applications still mix in. It is reported
+  as exclusive because that is the mode asked for and granted.
+- **Linux is ruled out deliberately** (Oliver's ruling). The Flatpak sandbox
+  hands over a sound socket rather than a device; outside it the route
+  varies by machine; a mode that works on some machines and silently not on
+  others is worse than one disabled with its reason.
 
-Nothing claims to be bit perfect that is not.
+**A device arriving carries the music on; a device leaving pauses it**
+(`OUTPUTS.md` FR-O15). PortAudio takes its device list once per process while
+Qt's `QMediaDevices.audioOutputsChanged` fires on every switch (and on changes
+that move nothing), so `infrastructure/output_devices.py` reports a move only
+when the default's identity changes and retakes PortAudio's list before the
+next stream opens (or when rates are asked with no stream open). The
+composition root opens every stream through it. Each move says whether the
+default left behind is still listed. What a move does is
+`application/output_following.py`'s: with System default chosen and the old
+default still listed, a device has arrived and `output_switched` reopens the
+track there as it was. Otherwise `output_moved` holds an active track (playing
+or paused) and marks the output moved; `Transport.toggle` then reopens the
+track from where it was rather than resuming, until the next load clears the
+mark. A default changed by hand with both devices present reads as an arrival,
+which the ruling accepts.
 
-**A device arriving carries the music on; a device leaving pauses it.**
-Measured on 2026-09-14 with headphones connected after launch: PortAudio takes
-its device list once, so a process left running went on naming the old default
-however often it asked, while Qt's `QMediaDevices.audioOutputsChanged` fired
-within a second of every switch (twice per switch; also for list changes that
-move nothing). `infrastructure/output_devices.py` therefore reports a move only
-when the default's identity differs from the last one seen, then takes
-PortAudio's list again on the way into the next stream, the one moment the
-engine holds none. The composition root opens every stream through it.
-
-Each move says whether the default it left is still listed, read from Qt's own
-list at that moment; that is the one fact the two answers turn on, ruled by
-Oliver on 2026-09-19 after a live test with his Px7 S3 (`OUTPUTS.md`
-Amendment 5). What a move DOES is the application's,
-in `application/output_following.py`. While System default is the choice and
-the default left is still listed, a device has arrived: `output_switched`
-reopens the track in hand there where it was, so playing plays on and paused
-stays paused. Otherwise `output_moved` pauses a playing track; the press that
-resumes opens it again from what was last heard, while a pause the listener
-made resumes on the stream already open. A default changed by hand with both
-devices present reads as an arrival, which the ruling accepts.
-
-**A device switched off fails the stream before Qt says so.** Measured on
-2026-09-19 through the shipped engine: the write fails 0.29 seconds ahead of
-the report. The feeder used to read that failure as the track ending, which
-skipped to the next song. It now marks the session interrupted and holds the
-track (`infrastructure/audio.py`); `output_moved` counts that as the move
-having stopped the music, once. `Transport.toggle` reopens rather than resumes
-an interrupted track. An interrupted stream also keeps its pause when
-the move that follows would otherwise carry the music on.
-
-Music on a device the listener named is not on the default, so a move of the
-default is nothing to it; music on the default only because the chosen device
-is away is never carried to a device nobody chose. The window turns both play
-buttons back to play at once on a pause and says why along the foot.
+**A device switched off fails the stream before Qt says so.** The feeder marks
+the session interrupted and holds the track rather than reading the failure as
+an ending (`infrastructure/audio.py`); `output_moved` counts that as the move
+having stopped the music, once; `Transport.toggle` reopens an interrupted
+track. Music on a device the listener named ignores moves of the default;
+music on the default only because the chosen device is away is never carried
+to a device nobody chose. Held by
 `tests/application/test_following_the_output.py`,
 `tests/application/test_a_device_arriving.py`,
 `tests/infrastructure/test_output_devices.py`,
 `tests/ui/test_pausing_when_the_output_moves.py` and
-`tests/ui/test_output_composition.py` hold it, the last emitting both answers
-through the real wiring.
+`tests/ui/test_output_composition.py`.
 
-`tests/infrastructure/test_portaudio_output.py` asserts the ASKING, which is
-what a machine with no audio hardware can still measure: that no host API
-settings object is passed at all, since one belongs to a single host API and
-handing a WASAPI object to CoreAudio fails the stream outright. Proved by
-planting exactly that. `tests/infrastructure/test_output_switch.py` walks the
-switch under a stated platform, because the Windows branch is the only one that
-runs on the machine the suite is developed on and the other two would otherwise
-ship on a reading of the source alone.
+`tests/infrastructure/test_portaudio_output.py` asserts that no host API
+settings object is passed to the substrate (one belongs to a single host API);
+`tests/infrastructure/test_output_switch.py` walks the platform switch under
+each stated platform, since only the Windows branch runs on the development
+machine.
 
 ## Choosing the output device
 
-**It is specified before it is described.** `OUTPUTS.md` holds the
-requirements, each naming its test, plus the amendments that ruled what the
-first text left open. What follows is where they landed.
+`OUTPUTS.md` holds the requirements; this is where they landed.
 
 **The choice is kept apart from the device in use.** `OutputChoice` in
-`stellody/domain/outputs.py` is an identity and the name the system gave it
-when chosen; an empty identity is System default. The device in use is where
-streams open now. The two differ while the chosen device is missing or has
-refused to open, when the music plays on the default while the choice waits,
-so it can find its device again. The name is kept because a missing device
-cannot be asked for one.
+`stellody/domain/outputs.py` is an identity plus the name the system gave it;
+an empty identity is System default. While the chosen device is missing or has
+refused, music plays on the default and the choice waits. The name is kept
+because a missing device cannot be asked for one.
 
-**Identity decides; the name is what a listener reads.** Windows gives two
-monitors on the reference machine one name, so a choice is stored by endpoint
-identity under `output_device`, beside `output_device_name`. `output_list`
-builds what both lists show: System default first, then every device in the
-system's own order, a repeated name numbered from its second use, a missing
-choice kept last as not connected. The tick follows the device in use rather
-than the choice (Amendment 5), so System default carries it while the choice
-is away or refused.
+**Identity decides; the name is what a listener reads.** Two devices can share
+a name, so the choice is stored under `output_device` with
+`output_device_name` beside it. `output_list` builds both lists: System
+default first, devices in the system's order, repeated names numbered, a
+missing choice last as not connected. The tick follows the device in use
+(FR-O06).
 
-**Windows' own enumeration is read, because PortAudio names no identity.** The
-bundled PortAudio exports no endpoint identity, so a device can only be matched
-to a PortAudio output by name. Measured on 2026-09-18 by playing a tone through
-each PortAudio WASAPI output while reading every endpoint's peak meter:
-PortAudio's outputs come in exactly the order
-`IMMDeviceEnumerator::EnumAudioEndpoints` gives, one for one, while Qt lists
-the same devices default first. So `infrastructure/endpoints.py` reads that
-enumeration over COM through ctypes and `infrastructure/output_list.py` matches
-by position among namesakes. `opener_position` relies on the order only while
-the two lists agree name for name; otherwise a name more than one device
-carries is not guessed at, which makes the open a refusal rather than music on
-the wrong device. The list is Qt's elsewhere, as it is on Windows should the COM
-call fail.
+**Windows' own enumeration is read, because PortAudio names no identity.**
+PortAudio's WASAPI outputs come in the order
+`IMMDeviceEnumerator::EnumAudioEndpoints` gives, so
+`infrastructure/endpoints.py` reads that over COM through ctypes and
+`infrastructure/output_list.py` matches by position among namesakes.
+`opener_position` relies on that order only while the lists agree name for
+name; otherwise a shared name is refused rather than guessed. Elsewhere (or if
+COM fails) the list is Qt's.
 
-**On Linux a device is addressed by its sink, because no name is shared.**
-Measured inside the installed Flatpak on 2026-09-19 (`OUTPUTS.md` Amendment 6):
-Qt lists the sound server's devices under the names a listener knows while the
-Flatpak's PortAudio, built against ALSA with no PulseAudio host API, lists
-`default`, `pulse` and the hardware, so not one name appears on both sides and
-every choice was refused. Qt's identity for a device there IS the sink's own
-name, which the sound server answers to. So on any platform that is neither
-Windows nor macOS, `open_named` in `infrastructure/output_list.py` opens the
-stream on PortAudio's `pulse` device with `PULSE_SINK` naming the chosen sink
-(the routing is `infrastructure/pulsesink.py`), held
-for that open alone and put back afterwards, since a sink is chosen as a stream
-connects. A machine with no sound server has no `pulse` device and falls back
-to the match by name; a sink name nothing carries opens on the default.
-Measured the same day by reading which sink each stream landed on: the
-speakers, then the headphones, then the default with the variable unset.
-`tests/infrastructure/test_pulsesink.py` holds the routing.
+**On Linux a device is addressed by its sink** (NFR-O-PORT-001). The Flatpak's
+PortAudio shares no device names with Qt; Qt's identity there is the
+sink's own name. On any platform that is neither Windows nor macOS,
+`open_named` in `infrastructure/output_list.py` opens PortAudio's `pulse`
+device with `PULSE_SINK` set for that open alone (routing in
+`infrastructure/pulsesink.py`, `tests/infrastructure/test_pulsesink.py`). With
+no `pulse` device it falls back to matching by name.
 
 **What a choice does is the transport's.** `OutputChoosing` in
 `stellody/application/output_choosing.py` is mixed into the transport beside
-`OutputFollowing`. Choosing reopens the track in hand where it was, exactly as
-the exclusive switch does; a queue left stopped is not opened just to be moved.
-A new list from the system answers with `OutputChange`: the chosen device lost
-pauses the track, the same pause a move of the default makes; play then opens
-it on the default (Amendment 4); the device returning takes the track
-back where it is and as it was. A device that refuses to open is answered by
-the default, with a `Refusal` naming the device and its reason kept for the
-window once; the refused device is not asked again until it is chosen again or
-leaves the list and returns, else every later track would open into the same
-refusal.
+`OutputFollowing`. Choosing reopens the track in hand where it was; a stopped
+queue is not opened just to be moved. A new device list answers with
+`OutputChange`: losing the chosen device pauses (play then opens on the
+default, FR-O11); its return takes the track back as it was. A device
+refusing to open is answered by the default with a `Refusal` kept for the
+window once; it is not asked again until chosen again or re-listed.
 
-**The window says what a listener would otherwise have to guess.**
-`stellody/ui/choosing_outputs.py` shows the list, stores the choice and says on
-the status line when a device refused, is missing at launch or disconnected.
-`stellody/ui/output_menu.py` fills both lists, the one the button on the bottom
-strip pops up and the Sound menu's Output device submenu, from one function, so
-the two cannot come to disagree. `OutputDevices` in
-`infrastructure/output_devices.py` emits `listed` for a change to the list,
-ahead of `changed` for a move of the default, so the list is current before a
-move is acted on. Which rates exclusive output is offered at is asked of the
-device in use rather than of the default.
+**The window says what a listener would otherwise guess.**
+`stellody/ui/choosing_outputs.py` shows the list, stores the choice and
+reports refusal, absence at launch and disconnection.
+`stellody/ui/output_menu.py` fills the strip's popup and the Sound menu's
+submenu from one function. `OutputDevices` emits `listed` before `changed`, so
+the list is current before a move is acted on.
 
 ## Shipping to three platforms
 
-**Each platform builds on itself; none of the three cross-compiles.**
-`buildexe.py` with `buildinstaller.py` produce the Windows setup program,
-`builddmg.py` the macOS disk image and `build_flatpak.sh` the Linux Flatpak,
-with `clean_flatpak.sh` uninstalling it and undoing what that one wrote,
-touching the application's own data only when `--purge-data` asks. The three
-output paths are deliberately independent, so a cleaner reaching into a sibling
-platform's output is a cleaner nobody dares run.
+**Each platform builds on itself; none cross-compiles.** `buildexe.py` with
+`buildinstaller.py` (Windows setup), `builddmg.py` (macOS disk image),
+`build_flatpak.sh` (Linux Flatpak), with `clean_flatpak.sh` undoing the last
+and touching application data only under `--purge-data`. Output paths are
+independent so no cleaner reaches a sibling's output.
 
-**The site's icons are copies, made by the same script as the application's.**
-`generate_icons.py` writes the icon set into `assets/` from the master artwork,
-then copies `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png` and
-`stellody-512.png` into `docs/` byte for byte, so new artwork cannot leave the
-site wearing the old mark.
+**The site's icons and assets follow the application.** `generate_icons.py`
+writes the icon set into `assets/` and copies the site's icons into `docs/`
+byte for byte. `stamp_version.py` writes the version from `VERSION` into
+`docs/` and gives every local stylesheet or script link a `?v=` content hash
+(line endings folded), defeating GitHub Pages caching.
 
-**The site's stylesheets and scripts are addressed by their content.** GitHub
-Pages lets a browser keep a stylesheet for ten minutes, so a fresh page could
-arrive beside stale CSS. `stamp_version.py`, which writes the version from
-`VERSION` into `docs/`, therefore gives every local stylesheet or script link a
-`?v=` of a hash over that file's bytes, with CRLF folded to LF so a Windows
-checkout and the blob GitHub serves agree. A changed file is a new address; an
-unchanged one leaves every page as it was.
+**Nuitka compiles on Windows and macOS**, one set of packaging surprises.
+PyAV reaches `av.utils` in a way Nuitka does not follow, so both builds name it
+explicitly.
 
-**Nuitka compiles on both Windows and macOS**, which is one set of packaging
-surprises rather than two. The PyAV workaround is the worked example: PyAV
-reaches one submodule at import time in a way Nuitka does not follow, so both
-builds name `av.utils` explicitly. That is a property of PyAV rather than of
-either platform, which is why the same flag appears in both scripts.
+**PortAudio is built from source in the Flatpak**, since sounddevice bundles
+binaries only for Windows and macOS and the runtime ships none.
 
-**PortAudio is built from source in the Flatpak.** Measured in the installed
-sounddevice: its bundled binaries are reached for Darwin and for Windows only,
-while every other system re-raises "PortAudio library not found". The wheel
-carries no library on Linux and the freedesktop runtime ships none, so nothing
-would have played at all.
+**The Flatpak is granted the home directory read only**, putting the sandbox
+behind invariants 1 and 2.
 
-**The Flatpak is granted the home directory READ ONLY.** Stellody never writes
-to a music file, which invariants 1 and 2 enforce; granting it no way to do so
-puts the sandbox behind the same rule, so on that platform it is not merely
-true, it is unable to be otherwise.
-
-**macOS notarization is not optional.** Gatekeeper rejects a signed but
-unnotarized application, so `builddmg.py` notarizes by default and treats
-building without it as an explicit escape hatch for local testing. Both the
-application and the image are notarized: stapling only the image leaves the
-copied-out application with no local ticket, so Gatekeeper falls back to an
-online check and it will not launch for somebody offline.
+**macOS notarization is not optional.** `builddmg.py` notarizes by default and
+staples both the application and the image, so a copied-out application
+launches offline.
 
 ## Reading panes and the keyboard
 
 **A long page reads itself, then yields at once.** `AutoScroller` in
-`stellody/ui/auto_scroller.py` works on any surface exposing a vertical scroll
-bar and a viewport; the surface becomes its Qt parent, so the two live exactly
-as long as each other. Three dialogs build one over their text: the licence
-viewer and About in `stellody/ui/dialogs.py`, plus the guide in
-`stellody/ui/guide.py`. The health report builds none. Each of the three also
-wraps the same text in a `ReadingPane`, whose stop rules are invariant 11 and
-the design decision that a reading dialog never opens on its own page. A pane
-that is a stop still wears no ring, since invariant 10 rings no text view: Tab
-reaching a long licence hands the keys to the page without outlining it.
+`stellody/ui/auto_scroller.py` works on any surface with a vertical scroll bar
+and a viewport, parented to it so both live equally long. The licence viewer
+and About (`stellody/ui/dialogs.py`) and the guide build one; the health report
+does not. Each also wraps its text in a `ReadingPane` (invariant 11) that wears
+no ring (invariant 10).
 
-**The pace belongs to the class, never to a dialog**, since a surface needing a
-pace of its own would mean the pace is wrong everywhere. One timer ticks every
-`TICK_MS`, 40 milliseconds. A surface opens holding still for
-`START_PAUSE_MS`, 5000 milliseconds, then descends `DOWN_STEP_PX`, one pixel,
-every `DOWN_TICKS_PER_STEP`, two ticks. Reaching the end it holds for
-`BOTTOM_PAUSE_MS`, 5000 milliseconds, so the tail can be finished. It then
-rewinds `UP_STEP_PX`, 15 pixels, a tick, because the way back is not a reading
-pass. At the top it holds for `TOP_PAUSE_MS`, 2000 milliseconds, then goes
-round again. A page that fits its viewport never moves: a tick does nothing
-while the scroll bar has no range, so no hold counts down either.
+**The pace belongs to the class, never a dialog.** One timer ticks every
+`TICK_MS`: an opening hold (`START_PAUSE_MS`), a slow descent (`DOWN_STEP_PX`
+every `DOWN_TICKS_PER_STEP`), a hold at the end (`BOTTOM_PAUSE_MS`), a fast
+rewind (`UP_STEP_PX`), a hold at the top (`TOP_PAUSE_MS`), repeat. A page that
+fits never moves.
 
-**Reading by hand suspends the cycle rather than switching it off.** A wheel
-turn, a mouse press or a key press on the surface or its viewport counts as
-reading by hand; so does pressing, releasing or dragging its scroll bar.
-Focus arriving on the surface or on anything inside it counts too, watched at
-the application because a child never sees the surface's own event filter.
-Each of those hands the page over and starts `RESUME_AFTER_MS`, 2500
-milliseconds, counting down. When it runs out the descent carries on from
-wherever the reader left the page; a reader left at the very end is rewound,
-since that is the only way on.
+**Reading by hand suspends the cycle.** A wheel, mouse or key on the surface,
+its viewport or its scroll bar hands the page over for `RESUME_AFTER_MS`; so
+does focus arriving on it or anything inside it (watched at the application,
+since a child never reaches the surface's filter); then the descent resumes
+where the reader left it. Focus is ignored during the opening hold, so a dialog
+focusing its own text does not count as a reader. A surface under a modal other
+than its own dialog is `frozen`: time and input change nothing. Held by
+`tests/ui/test_auto_scroller.py` (counts derived from the constants),
+`tests/ui/test_dialogs.py::test_the_licence_reads_itself` and
+`tests/ui/test_guide.py::TestTheDialog::test_it_opens_and_can_be_read`; no test
+asserts About has a scroller.
 
-**Two arrivals are not a reader.** A dialog that focuses its own text as it
-opens would otherwise turn the long opening stillness into the short manual
-one, so focus is ignored until the opening hold is spent; the flag clears when
-that hold runs out rather than on the first movement, so a reader arriving in
-between is not missed. A surface under a modal other than its own dialog is
-frozen: while `frozen` answers yes, a tick consumes no time and a suspension
-changes nothing. Two surfaces reading at once compete for the eye; a closing
-dialog also returns its view to the top, which acted on would leave the page
-beneath suspended instead of exactly where it was.
+**Space chooses a row, exactly as Enter does**, by being handed on as Enter
+rather than given a second path. `SpaceChooses` in `stellody/ui/activating.py`
+is an application event filter, built by `wire_the_arrows` in
+`stellody/ui/ring_order.py`. On an unmodified Space delivered to a
+`QAbstractItemView` of the main window that holds the focus
+(`holds_the_focus` in `stellody/ui/ring.py`) and has a current row, it sends
+Return and consumes the Space; otherwise Space passes on. It answers only the
+main window's own views (the library list, the album grid and the two track
+columns), since dialogs' item views answer Space themselves and an Enter would
+tick nothing. What Enter does is the window's: `activate` in
+`stellody/ui/playing.py` for the list and pane, `open_album_at` for the grid.
+Held by `tests/ui/test_space_chooses.py`. Menus answer the other half:
+`RingedMenuBar` in `stellody/ui/menu_bar.py` turns Space on a highlighted item
+into Return, since Windows styles answer `SH_Menu_SpaceActivatesItem` with 0
+(`tests/ui/test_menu_ring.py`).
 
-`tests/ui/test_auto_scroller.py` drives the tick by hand, with every count
-derived from the constants rather than written out: the opening hold, the step
-every second tick, a page that fits, a suspension that resumes, resuming where
-the reader stopped, the rewind from a reader left at the end, the hold at the
-end, the rewind outpacing the descent, the dialog's own opening focus and a
-frozen surface. `tests/ui/test_dialogs.py::test_the_licence_reads_itself`
-asserts the licence's timer is running;
-`tests/ui/test_guide.py::TestTheDialog::test_it_opens_and_can_be_read` asserts
-the guide has a scroller. No test asserts that About has one.
-
-**Space chooses a row, exactly as Enter does.** Measured before it was written:
-Enter opened a track in the library while Space did nothing in the same list,
-because an item view spends Space on its selection rather than on the row.
-`SpaceChooses` in `stellody/ui/activating.py` is an event filter installed on
-the application, built beside the arrow ring by `wire_the_arrows` in
-`stellody/ui/ring_order.py` and parented to the main window. On a Space press
-carrying no modifier it asks the object the key was delivered to three things:
-whether it is a `QAbstractItemView`, whether its own window holds the focus on
-it (`holds_the_focus` in `stellody/ui/ring.py`, since a key nobody consumes is
-offered to the parent next) and whether it has a current row. Where all three
-hold on one of the main window's own views (see below), it sends that view a
-Return press and release, then consumes the Space. Otherwise Space goes on where
-it was going, so a view with nothing current does not swallow it to no effect.
-
-**Space is handed on AS an Enter rather than given a second way of choosing.**
-A view already knows what activating a row means, while the window has already
-said what it wants done about it; a second path to the same place is a second
-path to drift away from it. The views the module names are the library list,
-the album grid and the two track columns beside an open sleeve. What Enter
-then does is the window's: the list's `activated` and the pane's
-`track_activated` both reach `activate` in `stellody/ui/playing.py`, which
-plays the album from the chosen track, toggles play and pause where that track
-is already loaded and plays nothing for an album row; the grid's `activated`
-reaches `open_album_at`, which shows that album in the pane.
-
-**Space answers only the main window's own views.** The filter is installed on
-the application, so it sees a dialog's keys too; it acts only where the view's
-window is the one it was built for. It once answered every item view of every
-window. That broke FR-S15, since Space ticks an album in the discovery results
-and the Enter it was turned into ticked nothing; the shop test covering ticking
-built its dialog with no window behind it, so the filter was never installed
-there and the break went unseen. Reproduced on 2026-09-16. No dialog's view acts
-on the `activated` signal an Enter emits, so nothing was lost by narrowing it;
-the results lists answer Enter and Space themselves, as the next section sets
-out.
-
-`tests/ui/test_space_chooses.py` holds it: Space opens what Enter opens in the
-list and over the sleeves; Space opens something at all in the list, so the
-comparison cannot pass by both keys doing nothing; either key shows a shut
-sleeve's album in the pane; a track column beside a sleeve answers Space; a
-view with no current row is left alone; Space still ticks an album in a results
-dialog opened over the window. The menu bar answers the other half
-itself, since a popup owns the keyboard while it is up: `RingedMenuBar` in
-`stellody/ui/menu_bar.py` hands a highlighted menu item a Return for Space the
-same way, because the Windows styles answer `SH_Menu_SpaceActivatesItem` with
-0. It also opens the title under the cursor on Down, Return, Enter or Space.
-`tests/ui/test_menu_ring.py` holds that half, including
-`test_space_leaves_exactly_what_enter_leaves`.
-
-**The discovery results answer their own keys, as the library list does.** Each
-list is a `ResultsList` in `stellody/ui/results_tree.py`, which sets
-`keeps_horizontal_keys`, so Left and Right shut and open an artist rather than
-stepping the ring. It chooses the current row on Enter or Space: an album is
-ticked or unticked, an artist opened or shut. It chooses itself rather than
-leaving Enter to Qt, which hands it to the dialog's default control and closed
-the dialog. Arriving with nothing current, a list makes its first row current,
-since a list with no current row shows no sign of the focus at all. The dialog
-names its first list as its first stop, because `FirstStopDialog` passes over
-every scroll area so a reading dialog does not open on its page; a list is a
-scroll area to Qt. `_state_ring` in `results_dialog.py` states Tab as the
-lists left to right then the controls as drawn. The current row wears the ring
-while its list has focus through `QTreeWidget#ResultsList::item:focus`, the one
-rule that rings a row for focus (the cover chooser rings a picked tile, which
-is a selection); `tests/ui/test_focus_rings.py` still refuses a ring round
-any view and proves that exemption reaches a row alone. A list is styled before
-a row goes in: filled first, the rows measured before the stylesheet arrived
-kept an unstyled height, so one list read at 18 and 26 pixels. A ticked album
-is drawn through `BoxedTicks` in `results_ticks.py`, since the Windows style
-draws a ticked row as a bare tick with no box: the delegate has the style draw
-its own empty box at the indicator, then the tick again over it, so no picture
-or colour is invented. Ruled by Oliver
-on 2026-09-17 against the installed build; `tests/ui/test_results_keyboard.py`
-holds it over the real window, each part proved by taking it out.
+**The discovery results answer their own keys.** Each list is a `ResultsList`
+in `stellody/ui/results_tree.py` setting `keeps_horizontal_keys`, so Left and
+Right shut and open an artist. Enter or Space chooses the current row (ticks an
+album, opens or shuts an artist) inside the list, since Qt would hand Enter to
+the dialog's default control. `focusInEvent` makes the first row current only
+when focus arrives by Tab or Backtab (`ASKING_FOR_A_PLACE` from
+`stellody/ui/gliding.py`) with nothing current; a click leaves the current row
+and scroll alone, because focus arrives before the press is handled and
+choosing the first row would scroll the list under the pointer.
+`FirstStopDialog` passes over scroll areas, so the results dialog names its
+first list as its first stop. Initial focus is handed over as a Tab.
+`_state_ring` in `results_dialog.py` states the Tab order. The current row is
+ringed through `QTreeWidget#ResultsList::item:focus`, the one rule that rings
+a row for focus. Lists are styled before rows go in, so row heights agree.
+`BoxedTicks` in `results_ticks.py` has the style draw its own empty box under a
+ticked row's tick (the Windows style draws a bare tick; Oliver's ruling).
+Held by `tests/ui/test_results_keyboard.py`.
 
 ## Design decisions
 
 | Decision | Reason |
 |---|---|
-| PySide6 rather than Rust or Go | The requirement is a player that is not buggy. That comes from working where the coverage gate, the structural guards and the delivery lineage already exist. |
-| `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track, which is a main path here; it also offers no equalizer of its own, so the one described below could not have been built on it. |
-| PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | PyAV reaches the decoder directly, which is what lets a cue-sheet slice stay a slice; Qt Multimedia would have brought a second idea of what a track is, which is how a player ends up with two decoders disagreeing. See [The central abstraction](#the-central-abstraction). |
-| The bundled FFmpeg is LGPL, verified rather than assumed | The libraries report "LGPL version 3 or later" from the licence string the build itself computes, read out of the shipped binary. The same build links libx264 and libx265, which are GPL-2.0-or-later and which `avcodec` imports outright, so they cannot be dropped from a package. The decoder lives in `infrastructure`, which is the GPL-3.0 half, so the combination is compatible and the packaged application is distributed as a GPL-3.0 work. Nothing here encodes video; those two arrive as dependencies of a shared build. |
-| A track that will not open is reported, never left as silence | Found on a real machine: a checkout whose requirements were not installed had no decoder for M4A, the exception left the transport entirely and the window did nothing at all. A listener cannot tell that from a press that missed. `PlaybackError` is named in the domain so the application can catch a failure without importing the layer that raised it; `DecodeError` and `OutputUnavailableError` are both that error. It is raised rather than reported: the transport lets it out and the window catches it in one place, which is the only place that can give the device back, put the buttons right and say what happened. Reporting it through a callback was tried and was worse, because the press then read as a success: the window said the track was playing over the top of the message saying it would not, with the device still held open behind a track that never started. An unplugged drive and a default device another program holds arrive the same way; a chosen device that will not open is answered by the default instead, as [Choosing the output device](#choosing-the-output-device) sets out. |
-| A pause is not an ending; it is caught in both layers | Reported against a real library: pausing a track then pressing play started it from its beginning. `pause` clears the resume and then stops the stream, so a feeder already past its wait writes into a stream that has just been stopped and PortAudio refuses that write. The failure landed in the branch that means "the track ran out", so a pause set `finished`. Everything downstream then followed correctly from a false premise: `play` declines to start a finished session, so the press did nothing; the poll a quarter of a second later took the ending as real; on the last track of a queue it gave the device back, which is what left the press after it reloading the track from nothing. The write is fixed where it goes wrong: a failure while the resume is already clear is a pause landing on the feeder, so the block in hand is dropped and the loop goes back to waiting. The transport carries the second half, because a device cannot tell a hold from an ending under any circumstances: `_held` is set when a listener pauses, cleared when they resume and taken from `playing` at every load, since a track opened without playing is one somebody is sitting on; `advance_if_finished` does nothing while it is set. Both halves were proved by planting their removal, each against a stream that refuses the write its stop landed in the middle of. |
-| Skipping while paused stays paused | Pressing Next while paused started playing, which nobody had asked for. The awkward part is that a track ending arrives through the same method, where playing on is right, while a device that has run out reports itself PAUSED exactly as a paused one does. Whether the move plays is therefore handed in by the caller rather than read off the device: a listener keeps the state they were in, while an ending carries on. Arriving by skipping is also not counted as waiting at a beginning, which is what pressing Back means, so Back after a skip still returns to the start of the track in hand. |
-| The runtime is pinned while the development tools keep their floors | A build of one commit has to be the same build whenever it is made, which a floor cannot promise. It matters more here than in most repositories: the packaged application carries a Nuitka flag written for the way one version of PyAV reaches one submodule, so a PyAV or PySide6 release arriving by itself would change the thing that flag is about, with the suite green throughout because the suite runs against whatever the environment holds. `requirements.txt` therefore pins with `==` and `requirements-dev.txt` reads it before adding the tools, so nothing is pinned in one place and floating in another. The tools stay on floors, since a formatter or a linter moving forward is a change to the checks rather than to what is shipped. A pin nothing checks is a comment, so invariant 20 holds every pin to the version actually installed, proved by planting a pin one patch release out and reading the failure name the offender. |
-| The checks run in the project's own environment | PyAV was installed into the system Python while the application ran from the venv, so the whole gate reported green, 1544 tests at 100% coverage, while M4A could not be played at all. The suite could not have caught it: it was not running on the machine that was broken. Where the project has a venv, a structural test now refuses to pass anywhere else; a second says everything requirements.txt declares is installed there, then `gate.ps1` names the interpreter so the two cannot drift again. |
-| The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there answers "is one running" only once that listener is accepting, which is a race at the exact moment it matters. Ownership is a shared memory claim taken under a semaphore; the channel only carries activation. |
-| The ask carries a word rather than being the connection itself | Any process on the machine may open a named pipe, so a connection alone is not evidence that a Stellody wants showing. The word is read before the window moves. |
-| Ending the application is said out loud, never left to Qt | Quitting when the last window closes is off, which is what lets the cross leave Stellody in the notification area. Nothing then ends the event loop by itself, so every path that means to leave says so. |
-| A file's shape is measured once and shared by its tracks | A cue-sheet album is one file holding many tracks, so measuring per track would decode the same file once for every track cut from it. `stellody/application/shapes.py` slices one measurement; the record is keyed by a digest of the file's path rather than by the path itself, since a music folder's names are arbitrary where a filesystem's are not. |
-| A bucket holds how loud it is, not its loudest sample | Reported against a real library: the shape showed maximum height for whole stretches of music. It was measuring the loudest single sample in each bucket; a bucket was then a file divided by two thousand, some 120 milliseconds for an ordinary track. The loudest sample in any 120 milliseconds carrying a drum or a sustained note sits within a few percent of the whole track's peak, so drawn against its own loudest point almost everything reached the top. Measured over three unlike records, AC/DC remastered, Adele and Air's Moon Safari: the median bucket was 0.92 of the track's loudest, between 35 and 46 percent of buckets drew at 99 percent of full height and over half at 90. Air is a gentle 1998 record, which is what rules out mastering as the explanation; it was the statistic. The same three measure as loudness to a median of 0.47 to 0.68 with a tenth of one percent at the top, which is a shape rather than a smear. A transient still survives the drawing, since a column covering several buckets takes the loudest of them. The guard is a file carrying one full scale sample in every otherwise quiet bucket: the old statistic answers 1.0000 for every bucket of it and the new one 0.1037. Kept records are invalidated by a format version, since a peak envelope drawn as loudness would be the old shape wearing the new name. |
-| The resolution belongs to the music, not to the file | Reported against a real library once the statistic above was fixed: the shape drew as wide blocks at close to constant height. The count was fixed at two thousand buckets a file, which is about a tenth of a second for an ordinary track while a cue-sheet album of 55.7 minutes holding nine tracks got 1671 milliseconds; its 3:20 opening track took 120 buckets and drew across some 1990 pixels as blocks 16.6 pixels wide. A bucket is therefore stated in time as 100 milliseconds; the count follows from how much music there is, floored at two thousand so a short file is still measured finely and capped at sixty thousand so one long recording cannot run away with the cache. Measured after: that opening track gets exactly 2000 buckets at 0.99 pixels each, a median drawn height of 0.60 with 1.7 percent of it at 90 percent or more; the album's whole record is 224 kilobytes and takes 4.5 seconds to measure. Kept records are invalidated by `FORMAT_VERSION` in `stellody/infrastructure/waveform.py` moving to 3, since a record measured at the old resolution would redraw at the wrong width. The guard is `buckets_for` in `stellody/domain/waveform.py` (`BUCKET_MILLISECONDS`, `LEAST_BUCKETS`, `MOST_BUCKETS`) under four cases in `tests/domain/test_envelope.py`, proved by planting a fixed count back into it and reading two of them fail. |
-| Levels are rounded where they are measured, not on the way to the record | A measurement differing from its own record by a rounding would redraw slightly differently after a restart, for no reason anybody could see. Four places also holds a record to roughly a third of the size, measured at 13.6 against 34.1 kilobytes on a track at the two thousand buckets a file carried then. |
-| A cover is read by one module and kept by another | The module that can open music files should not also be the one encoding and writing them. `infrastructure/covers.py` opens audio and reads a picture out of it, nothing more; `infrastructure/artwork.py` decodes, scales and writes without importing a tag library at all. That is what lets the second be granted permission to write without granting it to anything holding a tag library, which invariant 1 then enforces rather than merely describes. |
-| A cover is kept against the album's identity, not a path | A rescan after a folder rename reuses the picture instead of reading it again. What it was read from is recorded beside it and checked against that file's size and modification time, so a cover replaced on disk is still read afresh. |
-| One kept size serves every place a cover is drawn | Measured on the reference library, a kept cover is about 30 kilobytes at 512 pixels, against sources whose median is 94 kilobytes and whose largest is 1.3 megabytes. One pixmap then serves both views: it is held at the size the grid draws it and Qt scales it down for a row, so switching view costs no second reading. Changing the grid size does read every sleeve again, out of Stellody's own store rather than out of the music, which is what holds memory to the size chosen instead of to the largest on offer. |
-| A row states its own decoration size | A `QPixmap` in `DecorationRole` sizes the row itself and a view's icon size is never consulted for it. Measured here: a 40 pixel icon size on the tree still gave a 166 pixel album row. `RowCover` states `option.decorationSize` in the delegate instead, which takes it to 46. Only a row carrying a picture is touched, so a track stays the height of the line of text it is. |
-| A shape is drawn as it is read, not when the reading finishes | Reading a file through is the only way to know how loud each bucket of it is, so the wait cannot be avoided; it can be watched instead. The reader offers the shape so far every five seconds of the music, the bar draws it and the picture builds from the left. Measured cold: an ordinary 28 megabyte track put its first picture up at 0.02 seconds and finished at 0.49; a 272 megabyte album FLAC put one up at 0.01 and finished at 8.17. Only the finished measurement is kept, since a part written down would be wrong on every redraw afterwards without ever looking wrong enough to notice. A part and a finish are separate signals: a runner that could not tell them apart let go of its thread on the first part while the reading carried on behind it. |
-| Folding is done by numpy over blocks, not by walking frames | The fold used to step through every frame in Python to find which bucket it belonged to. Measured, that was most of the time: a 60 megabyte track folded in 3.2 seconds a frame at a time and 0.84 vectorised, while a 390 megabyte album FLAC went from 21.8 seconds to 5.3, bit for bit the same answer. |
-| A measurement is given up on, never waited out | Reading a file through takes 0.49 seconds for an ordinary track and 8.17 for a whole album FLAC, measured cold; a measurement already kept comes back in 0.6 milliseconds. The bar follows the highlight, so a step through the library replaces a measurement that is very likely still decoding. Asking its thread to quit does not touch a decode, so letting one go used to block the interface thread for the full two second wait: measured at 2.00 seconds a step. The check is therefore handed down to the reader, which gives up at the next block it reads and keeps nothing; letting go never waits. Measured after: 0.2 milliseconds a step, with a shutdown mid-decode in 0.01 seconds. |
-| The application keeps an account of its own appearances | A window arriving unbidden cannot be traced after the fact: whatever caused it has finished. `stellody/infrastructure/diary.py` records every show with the frames that led to it, every restore with the door that opened, then each step of a shutdown. It found two faults that reading the source had not. It is kept in Stellody's own data directory beside the database, ruled by Oliver on 2026-09-09: it lived in the system's temporary directory until a diary was asked for from the Linux flatpak and there was none to read, a sandboxed application having its own private temporary filesystem that is discarded when it closes. A file whose whole purpose is to be read after the run it describes cannot live somewhere the person running it cannot reach. `startup_log.py` moved with it on the same reasoning and the same day: it had been put in the temporary directory to land beside the setup program's own log, which overlooked that the one report saying why an application never appeared was, on the flatpak, written where nobody could read it and then discarded. Its guard catches `RuntimeError` as well as `OSError`, since asking where the data directory is can itself fail on a machine with no resolvable home; a reporter that throws replaces the fault it was reporting. Both make the directory when they have something to write rather than assuming somebody else has, because the first thing worth recording can happen before anything has opened the database. |
-| Artwork is local first, with a remote chooser somebody opens | Exactly one album in the reference library lacks local art, so an automatic lookup would buy one cover at the price of the local-first guarantee. A chooser keeps that guarantee for anyone who never opens it. It has to be a chooser rather than a fetch because no file in the library carries a MusicBrainz identifier, so a search has nothing exact to match on and could attach the wrong cover without knowing it had. |
-| A chosen cover is kept apart from a read one | A picture somebody chose has no file beside the music to be checked against, so its record carries a chosen marker instead of a size and a modification time. It is therefore never invalidated by a rescan and is preferred to whatever the folder holds, which is the whole point of having gone looking. |
-| The store is asked for a cover whatever an album's own files offer | An album with nowhere local to look is the only kind the chooser is ever offered for; a chosen picture has no file beside the music to be found by. A saving that answered such an album without asking the store therefore cost every chosen picture its next restart: it sat in the cache the whole time while nothing asked for it. `AlbumArt.reading` asks the store regardless of what the candidates say. The property that saving read was deleted with it, so it cannot come back by accident. |
-| The chooser is injected, so a window without it offers nothing | The lookup reaches outward, so it arrives as an adapter behind a port like every other. A window assembled without one has no entry on its menu at all, which is what lets the whole test suite raise that menu with no network in the room. |
-| A refused ask is asked again; a refusal is never reported as an absence | Measured 2026-08-31, MusicBrainz refused 6 of 10 asks for one release at the one a second its own terms request; two asks five seconds apart were refused while a third was answered under three different user agents; the Cover Art Archive answered 4 of 4 in the same minute. So a refusal is neither a rate anybody exceeded nor rare; one ask is not a search: the release search is asked up to five times with a growing pause. What survives all five is carried as a refusal rather than as an empty result, because a service that would not answer has made no claim about the album; "nothing came back for this album" is a claim it never made. Only the search retries; a listing that will not come is one release of several, so the next one is the thing to try. |
-| The rating is one control rather than five buttons | Five buttons would each be a stop in the keyboard ring, so reaching past the rating would take five presses; each would carry a focus ring, which would say there are five controls here rather than one. It is one control holding one value, so it is one stop painting one ring. The stars are drawn rather than assembled. |
-| The transport is told who to report a play to, rather than being given it | One of the few places in this application that sets a collaborator rather than injecting one. Whoever is told has to turn a track into the album it belongs to; the only thing that can is the window, which does not exist when the transport is built. The alternative was a transport that knew about the library it plays out of. |
-| A narrowing keeps every cover already read | Replacing the rows used to drop the whole cover cache, so each keystroke sent every visible sleeve back to the disk. The pane a search opens is filled in that same call, before any read can answer, so it took the placeholder; the placeholder is painted in the pane's own colour, so the album read as having no sleeve at all. A cover belongs to an album rather than to a run of rows, so the cache is now dropped where the SOURCES are replaced, which only a load or a scan does. The pane also takes a sleeve that arrives after it opened, since reading happens on a thread of its own. |
-| A tooltip appears almost at once | Qt holds one back for 700 milliseconds, measured. On a strip of picture buttons the picture is the only name a button has, so that wait means guessing at what each one does. The delay is a style hint rather than a setting, so `stellody/ui/tips.py` is a proxy style answering that one question with 100 milliseconds and every other exactly as the style underneath does. It is built from that style's NAME rather than handed the object, since the application destroys the style it replaces and the proxy would be left holding something already deleted. The same style shows a tip whichever application has focus: Qt shows one only while its window is active, so Stellody hovered behind another application showed none (reported by Oliver on 2026-09-18 as tooltips that came and went). Its `polish` marks every window with `WA_AlwaysShowToolTips` as the window is polished, so the main window and every dialog carry it without a list of windows to keep; `tests/ui/test_tips.py` holds it. |
-| A ring a popup leaves behind is redrawn | Reported by Oliver on 2026-09-19: open the output list then press volume and the output button kept its green ring beside the one volume had earned. Measured on the Windows platform with his own mouse, neither button held the focus or the pointer; the button's last paint came while the pointer was over it, its Leave arrived with the list up and no HoverLeave or paint followed. Qt repaints a hover-drawn control on HoverLeave and withholds that from a window while a popup of another is up, so the ring drawn on the way in stayed on the screen. `stellody/ui/hover_paint.py` is an event filter on the application, parented to the main window beside the arrow keys, that asks for a paint on a Leave arriving under a popup; it answers for every widget marked `WA_Hover`, which is exactly the set Qt would have sent a HoverLeave to, so every button and field in every dialog is covered with no list to keep. Offscreen repaints the window when a popup opens and cannot show the stale picture, so `tests/ui/test_leaving_under_a_popup.py` holds the mechanism: a Leave under a popup asks for a paint. |
-| Every switch says what a press would do, on both strips | One convention for the whole application, arrived at in two steps. The tray above always worked this way, back when it held the view toggle and the mute switch as well as the appearance toggle: the appearance toggle shows the appearance it would move to, the view toggle names the view it would move to and the mute switch is struck through while the sound is on, because that press is the one that silences it. Both of those switches have since moved to the bottom strip and kept the convention. The bottom strip reported its own state instead, on the reasoning that a strip of settings is not a strip of actions. That failed in use: a crossed wheel on a switch doing nothing reads as a refusal rather than as an offer; two strips inches apart also disagreed about what a picture meant. The strip now follows the tray, which is what its own tooltips had always said in words. Repeat's tooltip is the one exception and names the control instead: a two-state switch is fully described by its next press, while three states named one at a time read as a switch stuck the wrong way round. Its picture still names the press, which is the half of the rule that is read at a glance rather than on a hover. |
-| The album pane's play button doubles the tray's, so it toggles with it | Two play buttons on one screen that disagree about what a press does are worse than one. It offered to start the open album whatever was already playing; it wears the pause face while something plays now and pauses on a press, which is the rule the tray's button has always followed. It is told what is playing from the one place that already tells the tray, so the two faces cannot drift apart. The faces agreeing was not enough: the presses still disagreed, which is how a paused track appeared to start again. Pausing was handled here while everything else fell through to starting the open album from its first track, so pressing play on a paused track reloaded rather than resumed; on the first track of an album that is indistinguishable from the track beginning again, which is what was reported. Anything with a track loaded is handed to `toggle_playback` now, the one method that decides what a play press means. Starting the open album is what is left, which is the only thing this button can mean with nothing loaded and the one place it may still differ, the tray having no album to be attached to. `tests/ui/test_both_play_buttons_agree.py` asserts the two answer a press identically, proved by planting the old branch. A third route to the same symptom was reported on 2026-09-17: pausing on the third track, rolling the pane up and back down, then pressing play started the album from the top. An album opened with the highlight on its first track, while the play button means the track highlighted in the view on show, so the pane coming back threw away where the listener was. `_point_at_what_is_in_hand` in `stellody/ui/viewing.py` now opens the album holding the track in hand on that track; any other still opens on its first, so picking a second album and pressing play starts that album. Held by `tests/ui/test_resuming_after_the_pane_comes_back.py`. |
-| The About button became a Help button with a menu under it | A picture button is named by its tooltip alone, so a button that opens several things cannot be named after one of them. Its tooltip is Help and the menu says what each entry does. The menu it drops IS the menu bar's Help menu, handed to the tray by the window, rather than a second menu built alike: the two were once separate, the tray's a shorter list worded apart from the bar's, until Oliver asked on 2026-09-16 for them to match. Sharing the one menu is what stops them drifting apart again. `tests/ui/test_update_check.py` asserts the tray holds the bar's own menu and pins its entries. |
-| A reading dialog never opens on its own page | A dialog opens focused on its first stop, which puts somebody where they can act rather than costing them a press that tells them nothing. A page that overflows is a genuine stop, so it WAS the first stop of every reading dialog: the guide, About, the licences and the health report each opened with the ring drawn round the whole page before anybody had done anything, outlining everything while offering nothing to act on. Reported against the guide and measured across the four, so it was never one dialog's fault. `first_stop` passes over a scrolling region now; the pane keeps its stop, so a long page is still readable from the keyboard; where a pane is all there is, the dialog opens on nothing rather than on it. Held by a sweep over every dialog the package defines, discovered from the source rather than listed, since a list is exactly what let the guide arrive ringed with the suite green. Proved by taking the check back out and watching four of them fail. |
-| A dialog's native window exists before anything sizes it | Measured on Windows across a wide primary at 100 percent scaling beside 13 inch panels at 250 and 300 percent: a dialog sized before its native window existed opened at its width multiplied by the panel's scale whenever that product passed the primary's physical width, which is how the discovery results screen came to open across all four displays. `FirstStopDialog.__init__` in `stellody/ui/dialogs.py` therefore calls `self.winId()` before a subclass sizes itself on every platform but Wayland, so every dialog built on it has its window first; on Wayland, making the window early was measured on 2026-09-17 to corrupt the window behind it; `makes_window_early` is that rule. The offscreen platform has one screen at one scale and cannot show the wrong size, so what the suite pins is the precondition: `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` asserts that each dialog `stellody/ui` builds on `FirstStopDialog` has its window before it is shown. |
-| A prompt waved away decides nothing | The close prompt set its answer to the offered default the moment it was built, so being dismissed reported exactly what choosing Minimise to tray reported and the caller could not tell them apart: the cross on it minimised the window, while with the remember box ticked it wrote that non-answer down as the standing behaviour. The answer now starts at ASK, which is the word the settings already use for nobody has said; only a button moves it off that. A non-answer takes the whole press back: the window neither leaves nor hides, nothing is written. |
-| The waiting after a refusal is spent on a pass, never on one artist | Measured on 2026-09-08 over the whole library: MusicBrainz refused 45 of 82 asks with "the MusicBrainz web server is currently busy", which is its load rather than our rate, so pacing more slowly would not have helped. A run that waited each refusal out where it stood spent nine seconds a request against a pace of 1.1 and reported three hours remaining. It asks once more on the spot and then puts that artist back for a later pass, so the waiting happens during the next artist's turn and costs nothing; each pass is smaller than the one before. `application/passing.py` is the bookkeeping and asks nothing itself, which is what makes when to stop testable on its own. |
-| A run asks a catalogue only what it has never been told | Two runs over one library gave different answers, because a run remembered nothing and so asked MusicBrainz everything again every time: measured on 2026-09-08, 27 requests in 65 seconds with 21 refused, which turned seven source artists into one. What either catalogue says is now kept in `catalogue-memory.json` and read before anything is asked, so the answer is a property of the library rather than of how a service felt that minute. `application/remembering.py` holds the rule and owns no file; `infrastructure/catalogue_memory.py` holds the file and owns no rule. An answer stands for thirty days and is then asked about again, which is Oliver's own statement of what is wanted: the same run should differ over weeks, because the catalogues change; it should not differ over five minutes, because they do not. A refresh that is refused costs nothing, since that artist is carried over from the file like any other failure. Saving lays the copy being saved over what the file already holds, keeping the later answer to each question (`merged`), since a run, its price and an expansion can each hold a copy at once; saving one whole used to put back whatever the others had learned since it was taken. `composition.py` makes one `FileCatalogueMemory` for all three, so its lock is the one lock over the file. An albums answer written before release dates were kept is left out as the memory is read, from the file and from its running record alike, so it is asked for again (`_dated` in `infrastructure/catalogue_memory.py`, FR-D67): read, its albums would carry no year and a run with years set would drop every one of them. Identity answers are kept under `identities`, since the answers first filed under `identifiers` were matched by a rule that changed on 2026-09-27; a stamp naming a section no longer asked about is dropped as the file is read. Who a catalogue credited on a held title is kept as a fourth kind, `credited`, which settles a name several artists share. The series stage adds three more, `series-of`, `series` and `titled` (`SERIES_OF`, `SERIES` and `TITLED`), which `catalogue_memory.py` writes and reads like the rest; a series answer whose entries carry no dates is dropped as it is read, as an albums answer is. The rule of asking lives once, in `recalled` over an `Asking` naming the kind, which `RememberingCatalogue`, `RememberingSimilarity` and `RememberingSeries` all go through. `tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory` holds the run, its price and the expansion to one memory. |
-| The answer is turned a page at a time, with every page built up front | Three columns of a whole library are three lists nobody reaches the end of; a scrollbar says how much is left without saying where in the answer somebody is. A page now fills every one of its columns, the depth following the height exactly as the columns follow the width, so a laptop panel gets a shorter page rather than the same page with more in it. Filling every column rather than refusing to overflow one is Oliver's ruling of 2026-09-09, made against the first paged whole-library run, where some pages drew three columns and others drew one: measured from that answer, 215 artists run from 1 row to 109 with a median of 23 against a column of 30, so an artist taller than a column is the ordinary case and a page that will not overflow one cannot be filled. A column holding a tall artist scrolls instead, which is one artist's worth of scrolling rather than the library's; that answer went from 99 pages to 42, every one but the last carrying three columns. Every page is built when the dialog opens and kept: a tick is held by the row it is on, so building a page on the way to it would quietly drop whatever was ticked on the one left behind; what is ticked is what the shop controls are for. Nothing is fetched either way. `ui/results_room.py` holds the arithmetic and draws nothing, `results_pages.py` puts the pages on screen and `results_pager.py` is the two controls; the row height is stated rather than measured, since the offscreen platform reports no font families and being wrong costs a scrollbar rather than an error. The pager stands in the SAME row as the shop controls and the way out, which is `results_foot.py`: Oliver ruled on 2026-09-09 that two stacked rows beneath the answer read as two feet. That extraction is also what took the dialog back out of the 381 to 400 danger band. |
-| Every block the device ran dry before it arrived is written to the diary | Reported by Oliver on 2026-09-16: static during playback while a Nuitka build of another project held all 24 cores, then again on the installed build between 2:22 and 2:50 of one track. The cause was not known at first. The first version of `stellody/infrastructure/dropouts.py` trusted PortAudio's underflow answer and wrote nothing through that run; measured afterwards on the same shared WASAPI stream, the answer stayed no after the device was left for 0.2, 0.5 and 1.0 seconds against a 23 ms buffer. Its test had passed against a fake stream, which is how a blind instrument shipped. The watch now reads the room in the buffer instead: a started stream has the whole buffer free (1036 frames on that device) and the room was measured moving between 53 and 815 frames while writes kept up, then back to the whole buffer after every gap. A write that finds the whole buffer free follows a device with nothing left to play. Each one is noted with where in the track it happened and how long the feeder was away from the device, split into reading, shaping and waiting to run, since each points at a different cause. `tests/infrastructure/test_dropouts.py` starves the machine's real output device on purpose and requires the watch to see it; that test and the feeder test were proved by planting a watch that cannot see an empty buffer. A silent reproduction on that machine, the shipped engine decoding noise at volume 0 with a busy process on each of the 24 cores, saw no dropouts in 20 seconds, so saturating the processors alone does not reproduce it; a build's disk and memory load is not ruled out. The visualiser's measuring moved to `stellody/infrastructure/metering.py` in the first change to keep `audio.py` out of the danger band. The first report through that watch was one empty buffer 13 seconds before the app was closed, with the feeder away 1 ms, while Oliver heard static in that window. That pointed at a gap the check between writes cannot see: a write of 4096 frames into a 23 ms buffer needs the thread woken every twenty milliseconds until the block is in, so a late wake leaves the device dry mid-write. It is now caught by arithmetic, since a device cannot play faster than real time: a write that took longer than the audio it carried plus the audio already buffered held a silence of the difference. The clock is `perf_counter`, as `monotonic` moves in 15.6 ms steps on Windows. Checked on the real device: every tenth write split by a 200 ms stall gave 17 dry spells of 161 to 181 ms and no note for the writes between; holding the read lock for 300 ms three times gave three notes. The same silent reproduction with the watch complete, with the process also dropped to idle priority under the 24 busy cores, still saw nothing. The diary then named it: under a Nuitka build, 32 dropouts in 16 seconds, 30 of them silences of 4 to 46 ms inside a write, with 0 ms reading and 0 ms shaping, so the feeder was woken tens of milliseconds late against a 23 ms queue. The fix is the queue: `stellody/infrastructure/buffering.py` asks every stream for two blocks: shared and exclusive on Windows, the direct stream on macOS, the mixer everywhere. Measured on the same device through the shipped opener: shared opened 195 ms (8633 frames), exclusive 209 ms (9216 frames), writes a steady 94 ms and stopping 0 ms. `lead_frames` now counts that queue, so the position and the pictures are put back by it; `tests/infrastructure/test_buffering.py` requires the real device to grant two blocks and the lead to count them, each proved by planting its removal. Heard afterwards under a build: the static was gone. Not yet heard: whether a seek is noticeably later now that up to 195 ms is queued rather than 23. The other platforms' mixer path takes the same request unmeasured. That run's diary still carried 61 notes, each naming a 40 ms buffer, which exposed a fault in the watch rather than in playback: it read the buffer's size from the room at every start; a queue survives a stop, measured at 374 frames free on a restart against 8633 on a fresh start. A resume that found part of the buffer still queued taught the watch a buffer a fifth of its size, so a buffer merely part empty read as dry. The size is now read once per stream, on its first start; `tests/infrastructure/test_dropouts.py` holds a pause and a resume against a queue that survives the stop and failed before that change. The same measurement settles what a pause does to the queue: it is kept, so a resume does not skip. |
-| One dropped connection no longer ends a run; a run of them still does | Reported by Oliver on 2026-09-09. A run of fifty minutes over his whole library ended on its first answer of nothing at all, which was a single ListenBrainz request closed after 64 milliseconds: measured from that night's diary, the only one in 7252 lines. The judgement that continuing with no network is many slow ways of saying so was right; the proof it was reading was one sample. An artist nothing answered about now goes round again exactly as a refused one does; the run gives up on the connection only after five questions in a row have been met with nothing, with anything at all answering in between starting that count again. The count is one for the whole run rather than one a half, since the connection is one thing; `Silence` in `application/gathering.py` holds it. Being sure is cheap here: the run paces itself at about a second a question. |
-| Every answer is written down as it arrives, not only when a run ends | Reported by Oliver on 2026-09-09, having left a run going overnight. Both memories were read once at the start of a run and written once at the end, so a run of fifty minutes held 581 answers on a single line of code being reached: a crash, a power cut or a closed window took the lot. So each answer is now appended to a running record the moment it arrives and forced to the disk; each memory is read as its file plus that record; a record is dropped only once its own file holds what it held. `infrastructure/journal.py` owns the appending and no path of its own, exactly as `atomic.py` owns the replacing; `catalogue_memory.py` and `discovery_file.py` each name their own record. An append is chosen over rewriting the whole file because it cannot damage what is already there, so the worst a death mid-write costs is the line being written; the whole file is still written at the end, which is what keeps the record short. |
-| An answer with a hole in it is written, with the hole named in it | It was refused outright until 2026-09-09, on the ground that a file holding whichever artists a service felt like answering about is a different file every time. That reasoning was aimed at a file that stays SILENT about its holes; taking it literally cost Oliver two whole-library runs in one night with nothing shown for either, the second after 54 minutes and 843 requests, because ONE artist was refused twice then timed out. What could not be answered for is now written beside what was, the screen carries the shortfall sentence and the button that names those artists; the next run fills them in without asking about anybody else. The gaps are written in artist order, since an artist carried over would otherwise sit where the carrying put it while the same artist answered for directly sits in library order. |
-| What a failure says on screen is read off its kind, never off its message | A row reading "given up on part way through" followed by a MusicBrainz address is unreadable to whoever is using this and is the only thing worth having to whoever is fixing it, so both are kept apart: the row gets a sentence, the diary gets the class, the message and the artist. It is why a refusal and a timeout are now distinct kinds of failure rather than two messages inside one: Qt reports an abandoned reply the same way whether the wait ran out or somebody stopped wanting it. |
-| The results screen is dealt into columns and stops at a 13 inch display | The answer opened as one tall list at a fixed 700 by 560, so a run over two genres already ran off the foot of the screen while the room to show it sat empty either side. It takes a share of the screen now, dealt across as many columns as that width affords up to three, a column being a third of the width it opens at on a real 13 inch display (FR-D45 in `DISCOVERY.md` holds the measurement), each a list read top to bottom the way the album pane reads an album's tracks. The share is capped at 1920 by 1080, which Oliver ruled on 2026-09-08 to be what a 13 inch display can show: a dialog 3096 pixels wide is one nobody reads across in one go and one that cannot be checked on the machines this has to run on. A real 13 inch panel gives less than that cap (`THIRTEEN_INCH_ROOM`); the cap was kept so a wide monitor opens exactly as it did. The arithmetic is `results_room.py`, which reads a room and answers a size, a count of columns and which artist lands where; it holds no widget, so the interesting widths can be read on a platform reporting an 800 square screen. `results_columns.py` puts the two together and is the only place that knows both. |
-| A control that closes something wears the close picture, not the negative mark | The album pane's close button wore `negative.png`, which is the mark every switch wears LAID OVER its own picture to say it is off. Alone on a control it says nothing about what a press would do; it is also the one picture in the set that means "not this" rather than naming an action. The pane closes, so it now wears what every other Close wears. The mark goes back to being only ever composed over something else, which is what its exemption from the guide sweep already claims of it. |
-| Both genre filters share one row of pictured controls | Ruled by Oliver on 2026-09-13 for the chooser a discovery answer opens: Filter wears the filter picture, Cancel beside it wears that picture struck through with the negative mark, Clear wears the close picture. The library's own filter asks the same question with the same three controls, so it takes the same row; `stellody/ui/filter_controls.py` builds it once for both. Clear is the one control wearing the close picture that does not leave its dialog, which is his ruling rather than an oversight; the guide says so beside the picture. The filtering press is disabled while nothing is ticked, reported by Oliver the same day, except in a chooser opened on a filter: emptying one is the only way a filter comes off, Cancel keeping it. `offer_apply` reads the boxes at every toggle, so Clear and a hand untick move it alike. Held by `tests/ui/test_filter_controls.py`, which compares each picture with the one it should be and walks the enabling. |
-| A three-state switch is told apart by its artwork, never by a fill | A fill behind one unchanging picture says exactly two things, so it could never carry repeat's three. Each state has its own picture instead, made from two files plus a cross composed over one of them at run time rather than a third drawing. The fill was then removed altogether rather than left repeating what the picture already said, in a wash that fought the artwork above it; shuffle lost it at the same time, so one rule reads the whole strip. |
-| Holding one track is decided where an ending is noticed, not in `next` | An ending is the question repeat answers; pressing Next is a listener overruling it. Deciding both in one place would make Next dead under repeat-one, leaving no way off the track but the switch. So `advance_if_finished` replays the track while `next` advances under every mode. |
-| The colours are kept apart from the stylesheet that applies them | What a colour IS and where it is APPLIED are two questions that change for different reasons. `stellody/ui/palette.py` holds every colour value and nothing else; `stellody/ui/theme.py` builds the stylesheet and re-exports both names, so no caller had to learn about the split. The file holding both had reached the line cap, which is what said so out loud. |
-| Where a queue move lands is decided apart from the device | `domain/moving.py` holds what Next, Back and an ending mean under repeat and shuffle, as pure functions of a queue and the two switches. The transport applies the answers rather than working them out, which is what lets the same rule decide both a button press and a seam the engine will cross unattended. Randomness enters as an argument, exactly as time does. |
-| The equalizer switch is kept apart from its sliders | Somebody comparing on against off is asking one question; losing the curve they set up to compare with would answer a different one. The two are stored as two settings for the same reason. |
-| A boost is clipped at the format's ceiling, as the last resort | The curve arrives with room made for its own lift, so a record under the ceiling stays under it; see the equalizer section. What can still reach the ceiling is a sample that arrived over it, which a lossy decoder hands back on a loud master, plus the little a filter overshoots by and the few hundredths of a decibel the peak search can fall short by. The filtering is gathered in floating point and only then put back into the block's own format, because writing an out of range value into an integer array overflows rather than clips, which turns a loud passage into noise instead of a loud passage. |
-| What the library is shown as is one group on the bottom strip | The view toggle and the sleeve size sit together on the bottom strip in `stellody/ui/showing_controls.py`: one child group rather than loose buttons, so their order is stated once and the strip delegates to it. |
-| How the music sounds is one group on the right of the bottom strip | Volume, mute, the output device, exclusive output and the equalizer sit together in `stellody/ui/sound_controls.py`, ruled off from shuffle and repeat, which close the strip. Volume stays immediately left of mute, since the two are one thought: how loud, then whether at all. A rule divides those two from the controls that act on the stream rather than on the level; Oliver stated that order on 2026-09-17. The output device joined them on 2026-09-18, straight after the rule, since which device comes before how it is held (`OUTPUTS.md` FR-O01). The tray above keeps discovery, a rule, the appearance toggle and Help at its right end. |
-| Opening the whole library is a toggle on its heading | Expand all and Collapse all were on the View menu alone, so this is reach rather than capability: the gesture belongs beside the column of albums it acts on. It is one chevron at the left of the Title heading, this application's own artwork so that the toggle is drawn in the same hand as every other control here. A typed triangle was never on offer, since the font a heading lands in is not decided here while a glyph it lacks shows as a box; measured offscreen, the fallback font carries none of the four triangles. Where the artwork cannot be found the style's own arrow is drawn instead, so a checkout missing its assets shows a toggle rather than a gap. Room for it is kept by `QHeaderView::section:first` in the stylesheet, padded by a width DERIVED in `expanding.py` from the picture plus the space either side of it: written as one number it reserved exactly the picture, which left the chevron touching the word beside it. The picture is fitted once per size rather than per paint, the source being over a thousand pixels square against a heading that repaints on every hover. What a press would do is read off the rows rather than remembered, since a listener opening albums by hand moves the tree without touching this; partly open counts as shut, so one press always finishes the job it looks like it would. Replacing a tree's heading also throws away what the tree configured on the one it built, measured as three differences: headings centred rather than left, sections that cannot be dragged and a last section that stretches, so all three are taken from the heading being replaced. The heading is not a keyboard stop and does not become one, the menu being the keyboard route. Proved by planting the press away and by freezing the arrow, each failing its own case. |
-| A change that moves every row is answered once, never per row | What the heading's chevron should say is read off the albums, so every signal saying a row moved costs a walk of all of them. That is right for one album opened by hand and ruinous for a change that opens the lot: `expandAll` reports every row it opens, measured at 8792 signals on a library of 628 albums holding 8164 tracks; answering each of them took 3.72 seconds with the interface thread held throughout, against 0.03 seconds for the same call with nothing listening. The answer is therefore silent for the duration of such a change and asked once at the end, measured after at 0.04 seconds. The View menu goes through the same object for the same reason, so the menu cannot leave the chevron offering to do what it has just done. An earlier note here said `expandAll` emits nothing at all, inferred from a probe against an EMPTY library rather than measured; the freeze that shipped is what a claim taken from the wrong fixture costs. The rule is held by COUNTING the questions rather than by timing them, since a timing that fails on a slow machine is one people learn to ignore. |
-| An album's own chevron is the same picture as the heading's | Qt draws a branch indicator from the platform style, which was the last thing in this window still wearing one. A row says exactly what the heading above it says, about one album rather than all of them, so it is drawn from the same two pictures through `Chevrons`, which loads them once and fits them once per size. `ExpandingTree.drawBranches` answers only for a row with something under it, a track having nothing to open; anything else goes back to the base class. The row's chevron is larger than the heading's, an album row being as tall as the sleeve it carries rather than as tall as a line of text. |
-| A switch of view arrives where the other one was | Only the view on show follows the transport, because the highlight it moves belongs to that view: the tree keeps a current row while the grid keeps one inside the album opened beneath it. The view nobody was looking at therefore knew nothing about what was playing; switching to it arrived at a grid with no album open under it at all. A switch now carries the track the view being left was pointing at, falling back to whatever is playing where it pointed at nothing, so a listener who has browsed away is not dragged back to the music by the act of changing view while one who has touched neither view still lands on it. The arrival takes the same route a press would: the sleeve is PICKED rather than the album opened outright, so the grid travels to it and `_on_album_picked` opens the album underneath, which is what stops an album standing open beneath sleeves that are not it. Proved by planting the carry back out and watching three of its four cases fail. |
-| A window that will not fit the screen is maximised, never nudged | Reported as a focus ring missing its right edge on the Help button, which is the right-most control. Measured on the machine it was reported from: the window was not maximised at all, its content was 3440 wide on a 3440 wide screen and Windows had placed it with that content starting 8 pixels in, so its last 8 columns were off the monitor. The ring sits 6 pixels inside that edge, so it was the first thing lost while the icon beside it survived whole, which is why it read as a painting fault. The cause is a units mismatch: `resize` sets the CONTENT size while `availableGeometry` measures room for a whole window; Windows then charges 8 pixels a side for a resize border it never draws. That cannot be corrected by arithmetic, since Qt does not report it: `frameMargins` answers l0 t31 r0 b0 for the very window Windows gives a rectangle 16 pixels wider. What Qt does report correctly is where the content landed, so `fit_on_screen` compares that against the screen at first show and maximises whatever does not fit; moving it instead would need the same frame width that cannot be read. Proved on the real platform rather than offscreen, which draws no frame and cannot see this defect at all: with the guard planted out the content spans 8 to 3447 and sits outside the screen, with it restored 0 to 3439 and inside. |
-| A window is maximised on the screen its title bar is on, never where most of it lies | Reported on 2026-09-13 across four monitors of mixed scaling: maximised on a 300 percent panel, dragged to the 100 percent screen above it then maximised again by a double click on the title bar, the window went to a panel at the bottom right. Measured with real mouse input on a probe window of Stellody's minimum and default sizes. The minimum width, measured offscreen at 1360, was then wider than that panel's 1280, so the size to restore to never fitted it; dragged up, the window arrived still scaled for 250 percent at 4518 by 2258 pixels against a screen 1440 tall. Windows rescales a window only once most of it has crossed, which this one never did, then maximises onto the monitor holding the largest share of it: a title bar squarely on the top screen maximised the window onto a panel below. `stellody/ui/maximising.py` takes the maximise only where the monitor holding the title bar is not the screen Qt places the window on. It lays the window on that screen at its size to restore to, bounded by the room there, then maximises it; everywhere else Windows keeps the command. `stellody/ui/title_bar.py` is the one module asking Windows anything. Measured after on the same drag with the shipped mixin: the maximise landed on the top screen at its own 96 DPI. `tests/ui/test_maximising.py` holds the decision and the move; the offscreen platform has no title bar, so the Windows half rests on that measurement rather than on the suite. |
-| The top tray decides how narrow the window may be | Every control in it is a fixed size, so the tray's own minimum is the window's; the window's was measured offscreen at 1360 pixels on 2026-09-13, the figure the row above works from. The default width is chosen for the library rather than for the strips, so the minimum is a floor the default is checked against rather than a value it tracks. `tests/ui/test_window_size.py` holds that floor, since nothing else keeps the two in step. |
-| The whole interface is drawn at nine tenths, on every screen | Reported on 2026-09-14 on a 13 inch 4K panel at 300 percent scaling: the right end of the top tray ran off the screen and the strip along the foot sat over the artwork. Measured on that machine, Qt gives the panel 1280 by 752 of room while the window cannot be narrower than 1360, all of it the top tray. Shrinking the tray alone would leave every dialog, font and pane sized beside trays that were no longer that size, so `stellody/ui/interface_scale.py` asks for Qt's own global scale at 0.9 instead. It is asked for before the application is built, since Qt reads it then and never again. The panel then reports 1422 by 836 while its artwork still gets 2.7 real pixels a point. A screen at 100 percent scaling is drawn below one pixel a point, which Oliver looked at on the ultrawide and judged fine. A scale already set in the environment wins, so a different size needs no build. `tests/ui/test_interface_scale.py` carries the window's minimum through the same multiplier in both views and with an album open, against the smallest room; proved by planting a scale of 1.0 and reading 1360 against 1280. `tests/ui/test_launch.py` pins the scale being asked for before the application exists, proved by planting the call after it. |
-| Rescan and repair sit on the bottom strip, not in the tray above | The two strips are split by one question: what is playing against what the library holds. A rescan is asked for when something has been added to the music folder, so it is an errand rather than a control a listener reaches for while listening; repair follows it because it is the answer to what a rescan finds. Repair had been moved up beside rescan on the reasoning that it should follow the control it answers, which was right about the pairing and wrong about the strip; the pair moved down together. A hairline keeps the donate button ruled off from them, so the one control that leaves the application is still not reached by accident. |
-| A rule draws its own line rather than wearing a background | Reported from a real window on 2026-09-18: the rule between mute and exclusive output was missing from a screenshot while the rule after the equalizer was there. Every window is drawn at nine tenths, so a background one pixel wide is nine tenths of a device pixel; measured across ten widths in a row, each rule covered no pixel at one position in ten and vanished, which one depending only on the width of the window. `tray_parts.Rule` is laid out three pixels wide and draws a cosmetic pen down its middle, one device pixel at any scale, including a scale a listener sets for themselves; the colour still arrives from the appearance through the stylesheet. The guard sweeps ten widths in a process started at nine tenths, since Qt reads its scale once: `tests/ui/test_every_rule_is_drawn.py`, proved by planting the one pixel background back and reading the same three rules go missing. |
-| A menu entry that cannot act is disabled, as a button that cannot act is | Expand all and Collapse all belong to the list, which is the nested view; the sleeves are a flat grid of albums with nothing inside them to open. Both entries stayed live there and did nothing when pressed. Every button in the application already answers this rule, wearing a ring that says it cannot be pressed; a menu entry was quietly exempt from it only because it is not a button. `viewing.show_covers` is the one place the view changes, so it is the one place that says what the change means for anything else. |
-| The whole menu bar is swept, rather than the entry that was reported | Two entries breached the rule above and they were found one at a time: Expand all in the sleeves, then Rescan before a music folder had been chosen, which looked ready and answered "Choose a music folder to begin" once pressed. Fixing the reported one leaves the rest unexamined, so `tests/ui/test_menu_sweep.py` states every entry in the bar against the three situations the enabling turns on and asserts that the table IS the bar. An entry added later with nobody having decided where it can act fails there, which is the half that matters: both defects were entries nobody had thought about away from the view they were written in. Rescan is answered where its state is set rather than inside the errand, so the menu entry and the button on the strip cannot disagree. |
-| Every picture button is on the menu bar too | Oliver asked on 2026-09-16 for the buttons to be reachable from the menus: repair and discovery on File; search and filter on an Edit menu of their own between File and View; the sleeves or the list and the sleeve size on View; mute, shuffle and the repeat mode on Sound, joined there on 2026-09-18 by exclusive output beside the equalizer, since the switch arrived after the menus, then by the Output device submenu straight after it; play or pause, stop, previous and next on a Control menu right of Sound, in the order the right click menu offers them. The volume stays off the menus by the same ruling, since a slider is not an entry. The donation button is on no menu either: `open_donation` is wired to the bottom strip alone. The sleeve size and the repeat mode are chosen by name from a submenu rather than stepped through, which is what a menu can do that a button cannot. Every such entry reads its state from what it stands for when its menu opens (`stellody/ui/menu_mirrors.py`): whether it can act is its button's own answer, whether it is ticked is the transport's or the window's. So an entry and its button cannot disagree, whichever of the two was pressed. The Output device submenu is the one exception, refilled by `show_outputs` whenever the devices or the choice change, since it is a list rather than one entry. `tests/ui/test_menu_mirrors.py` changes each state through the window rather than through the entry, since a tick that only follows its own press is the defect being ruled out. |
-| One thing held at the middle of a strip is held by three columns, not two stretches | A stretch either side centres the middle in what the two end groups leave over, which is the middle of the strip only while the groups are the same width. They are not on either strip. The bottom strip's visualiser was found off centre that way first; the top tray's transport stayed on the old shape until Oliver reported it left of centre on a 13 inch 4K screen, measured offscreen as 91 pixels left at 1800 wide and still 42 with the search box open. `tray_parts.centred_row` now lays both strips as three grid columns with the outer two given an equal share of what is spare, so the middle sits at the middle while there is room and drifts rather than being covered where there is not. `tests/ui/test_transport_centred.py` holds the transport to within a pixel with the search box open or shut; it also proves nothing overlaps as the tray narrows. |
-| A stylesheet border needs `WA_StyledBackground` on a plain widget | Both trays were written to be ruled off from the library between them, both said so in `theme.py` and neither drew a line; the top one had gone its whole life that way. Qt fills a plain `QWidget` subclass's background from the sheet while dropping its border unless that attribute is set, with no warning anywhere. Measured on both trays: unset, every edge pixel comes back the surface colour; set, the first and last rows come back the border colour. The attribute is therefore load-bearing rather than decoration, which is why it is stated on each tray with the measurement beside it. `tests/ui/test_tray_rules.py` reads the PAINT rather than the sheet, because asserting the rule is in the sheet is exactly what let this stand: the sheet said the line was there the entire time it was not. |
-| Every stop that can be landed on shows a ring, the same one everywhere | The ring rules had been stated one way only: which things must NOT ring. A control with no rule at all passed both checks, so a checkbox shipped as a stop that Tab landed on while nothing on screen reported it, which is worse than not being a stop since the reader is simply lost. The converse is now asserted by walking the real widgets of the window and of the dialogs, rather than against a list, because whoever forgets a rule forgets the list entry with it. The exceptions are named and reasoned: a zero-size holder has nothing to paint on; the stars, the ringed checkbox, the sleeve size button and each menu title paint their own ring, the stars because five glyphs standing for one value must ring once rather than five times. Item views and text views stand outside the rule altogether: neither wears a ring, as invariant 10 states. The stars were also ringing in a colour of their own, a second token nothing else used, so they read blue while the application read green; one name now serves both. |
-| A checkbox's ring is painted on its square, not stated in the stylesheet | The ring belongs on the box rather than round the words, because the box is what a checkbox is read as. The sheet cannot draw it there: naming `::indicator` hands Qt the whole subcontrol and the tick goes with it, measured as a square that could not be told ticked from unticked, while a rule scoped to `:focus` alone changes nothing at all. Owning the square in the sheet would mean inventing a checked picture and an unchecked one, which is a redrawn checkbox rather than a ring on Qt's. So `ringed_check.py` paints over the rectangle Qt reports for the square, in the room the sheet's own padding already leaves, taking its two colours from the sheet as properties so the palette stays the single home. The class is then the rule: a structural test forbids a plain `QCheckBox` anywhere but the module that subclasses it, since that is the one way an unringed stop could come back. |
-| The sleeve grid travels to a selection rather than snapping to it | A list view counts its scrollbar in items unless told otherwise, so the smallest move it could make was one whole row of sleeves: picking a cover two rows down jumped the grid a row at a time, which is what got reported. Counting in pixels makes the move continuous and a short run over it makes it readable, since artwork that arrives instantly somewhere else has to be found again by eye, which is the thing scrolling to it was meant to save. Where to scroll to stays Qt's answer: the jump it would have made is taken, put back and then travelled, so no second copy of the rules about revealing an item has to be kept in step with its own. Nothing travels while the grid is off screen; otherwise it would still be moving at the moment it is shown. `stellody/ui/gliding.py`, held by `tests/ui/test_gliding_grid.py`, which drives the run by setting its time rather than by sleeping. |
-| A cancelled lookup is stopped where it stands, not merely silenced | Silencing was the first answer and it was the wrong promise: a listener who moves off an album has stopped waiting, while a request already inside a read went on holding a thread and a socket until it finished anyway, which is what made leaving the application take as long as the last lookup did. The work is stopped instead. The worker hands the archive a question it can ask at any moment; the archive asks it between the gaps the terms require and again inside every read, so nothing long is entered without a way back out. Neither is atomic any more: a picture arrives in `CHUNK_BYTES` pieces of 64KB and a gap is sat through in `SLEEP_SLICE_S` slices of a quarter second, so a cancel is noticed within a slice rather than at the end of a whole gap or a whole image. Asking who sent an answer does not work here and the reason is worth keeping: measured, a queued cross thread signal arrives with no sender, so an identity check against a runner that has just dropped its worker passes exactly when it should fail. `tests/ui/test_cover_worker.py` holds a search open, lets go of it, releases it and watches nothing arrive; the archive's own slicing is held by a waiter and an opener the tests inject, so what is asserted is the giving up rather than the sleeping. |
-| A thread that outlives its dialog is held by the window, with leaving outright as the last resort | A cover lookup is started from a dialog and can still be in a request when that dialog closes, so the thread would be owned by an object that has gone. `ThreadKeeper` is given to the runner by the window, which is still there; it holds the worker as well as the thread, since the worker sits on that thread with no parent of its own and dropping the last reference would delete an object in the middle of its own method. Each is let go of the moment it finishes, so nothing is held a second longer than the request it waits on; the connection is made before the finished state is read rather than after, because a thread that ends between the two had already made its one announcement. What none of that covers is a socket that never comes back: a thread still running when the application is torn down is one Qt ends the process over, measured on 2026-09-05 as `QThread: Destroyed while thread is still running` from Qt6Core, an abort rather than an exit. So `leave_at_once` in `stellody/composition.py` leaves the process before the tearing down begins, everything durable having already been put away. It is the last resort and should now be unreachable; what it replaces is a crash report. |
-| Where the library was looking survives a reload that changes nothing about where it should be looking | Stating a genre replaces the whole library: the store is read again, every album comes back as a new object and the model is rebuilt from the top. That is right for what the rows SAY and wrong for where somebody is, since a listener who scrolled two thirds of the way down to correct one album should still be two thirds of the way down once it is corrected. A place cannot be a row number, because the library after an edit is not the library before it: albums fold together and an edit to an artist moves one somewhere else alphabetically. So `stellody/ui/placing.py` names the album by identity with the offset in pixels beside it and works the row out again on the other side. Where possible and no further: an album that is gone after the edit takes its own restoring with it while the offset still goes back, since somebody looking at the middle of the library is still looking at the middle of it. Nothing here scrolls to something that was not on screen to begin with. |
-| The focus rule names the arrivals that ARE a choice, rather than the ones that are not | Qt invents a current index on a focus arrival where there is none, which is correct for Tab and wrong for every other way in. Coming back from a menu or a dialog is not a choice of sleeve, yet it landed the place on the top of the library with the pane opening an album nobody had picked. Measured on 2026-09-05, an empty grid went to row 0 on a focus in carrying Popup, ActiveWindow or Other, which are a menu closing, a dialog closing and everything else respectively. Listing those would be a list to keep in step with Qt's, so `ASKING_FOR_A_PLACE` in `stellody/ui/gliding.py` names the two reasons that DO ask, Tab and Backtab; everything else is left alone by default. A reason nobody has thought about therefore changes nothing, which is the safe direction for the rule to fail in. |
-| One notch of the wheel moves one row | A list view counts a wheel in its own units, which over a grid of sleeves is not the row a listener expects. The detent is Qt's own number rather than one chosen here, an eighth of a degree times 120; what has been turned without a row having moved yet is carried, so a wheel that reports in fractions of a notch still moves a row per notch instead of losing the remainder. A trackpad reports a pixel delta; it is left to Qt's own continuous scrolling, since rounding it to rows would take away the one thing it does better than a wheel. |
-| A broken shop row is shown for mending, never dropped in silence | Reported by Oliver on 2026-09-13: a row broken by hand-editing `shops.json` vanished from the list without a word. A message naming it was judged the wrong repair while leaving the silence was judged worse; what was chosen removes the need to hand-edit at all. The shops dialog adds, edits, deletes and moves shops, refusing a form that would not make a working shop, so the dialog cannot write a broken row in the first place. One written by hand is still read as a `BrokenRow` carrying its reason, listed greyed in its own place with edit and delete beside it; a release never merges into one, since it is nobody's but the listener's. The rules are `domain/shop_list.py`, held by `tests/domain/test_shop_list.py`; the dialog is held by `tests/ui/test_shop_editing.py`. |
-| A dragged shop is carried with the pointer, never placed on release | Reported by Oliver on 2026-09-13 against the built application: the grip could be dragged while nothing moved until the button was let go, when the row jumped. The handle answered a press and a release and nothing between. `stellody/ui/shop_dragging.py` switches the rows' layout off while one is held, keeps the held row under the pointer and glides the others to the places they would take; where it would land is the place whose top is nearest the held row's top, read off where the rows started, so the answer cannot shift under a row held still. It first counted the rows whose middle lay above the held row's, which Oliver found could never reach the last place: measured over the eight shipped shops, a row held at the lowest point has its middle exactly level with the last row's, so every drag landed one short. The move is written on release before anything is drawn, the row glides home, then the list is drawn again in the same places; a refused write glides it back. The places are the tops the layout gave, handed out top to bottom: working them out from a height and a gap was measured a pixel out, because the layout shares spare room between rows unevenly. It is still not Qt's drag loop, which carries a picture rather than the row and cannot be driven offscreen. `tests/ui/test_shop_dragging.py` drives it through the handle's own mouse events. |
-| The album pane is as tall as its album, up to half the page | Reported by Oliver on 2026-09-14: an eight-track album opened a pane with room for about eight rows a column and used four. Measured before the change, the pane was 300 pixels under albums of two, eight and twenty tracks alike, since it took a list view's default height. A fixed cap of four rows was proposed and not taken: the library averages about fourteen tracks an album, so most albums would have scrolled in two columns that scroll apart, for less room than a row of sleeves needs. Instead each column in `stellody/ui/track_column.py` asks for the height of the rows it shows, while `stellody/ui/covers_page.py` sets the ceiling. That ceiling first kept one whole row of sleeves for the grid, which Oliver reported on 2026-09-17 as two albums reading like two rules: on one screen a thirteen track album left three rows of sleeves while a thirty three track album left one, enough to see the picked sleeve and not enough to go on browsing. The grid now keeps half the page (one whole row where that is the larger), so every long album stops in the same place. Both follow the window and the sleeve size, asked again on a resize and on a change of sleeve size, so neither is a number chosen here. `tests/ui/test_the_pane_fits_its_album.py` holds a short album against a longer one, an album that fits showing every row, a long album kept to half the page, the grid keeping its share, a long album leaving the picked sleeve whole and larger sleeves leaving less room. A pane already open that grows for a longer album does not lay the page out by itself, so `GlidingGrid.scroll_settled` in `stellody/ui/gliding.py` forces the layout before scrolling; `tests/ui/test_opening_an_album_keeps_its_sleeve_in_view.py` holds the picked sleeve whole in that case. |
+| PySide6 rather than Rust or Go | The requirement is a player that is not buggy, which comes from working where the coverage gate, the structural guards and the delivery lineage already exist. |
+| `soundfile` and `sounddevice` rather than `QMediaPlayer` | `QMediaPlayer` cannot present a cue-sheet slice as a track and offers no equalizer to build on. |
+| PyAV rather than Qt Multimedia, for the formats libsndfile cannot open | PyAV reaches the decoder directly, so a cue slice stays a slice; Qt Multimedia would bring a second idea of what a track is. See [The central abstraction](#the-central-abstraction). |
+| The bundled FFmpeg is LGPL, verified rather than assumed | Its own licence string, read from the shipped binary, says LGPL 3 or later. It also links libx264 and libx265 (GPL-2.0-or-later) which `avcodec` imports outright; the decoder lives in the GPL-3.0 application, so the combination is compatible and the package is distributed as a GPL-3.0 work. Nothing here encodes video. |
+| A track that will not open is reported, never left as silence | A listener cannot tell silence from a missed press. `PlaybackError` is named in the domain so the application catches it without importing the raising layer; `DecodeError` and `OutputUnavailableError` are both that error. It is raised, not reported through a callback, so the window catches it in the one place that can give the device back, reset the buttons and say what happened. A chosen device that will not open is answered by the default instead (see [Choosing the output device](#choosing-the-output-device)). |
+| A pause is not an ending; it is caught in both layers | A device cannot tell a hold from an ending. In the engine, a write failing while the resume is already clear is a pause landing on the feeder, so the block is dropped and the feeder waits again. In the transport, `_held` is set on a pause, cleared on resume and taken from `playing` at every load; `advance_if_finished` does not advance while it is set. A feeder failure is acted on first, held or not, since a failed feeder cannot resume (`application/ending.py`). |
+| Skipping while paused stays paused | A track ending and a press of Next arrive through the same method; a run-out device reports PAUSED like a paused one, so whether the move plays is handed in by the caller. Arriving by a skip does not count as waiting at a beginning, so Back still returns to the start of the track in hand. |
+| The runtime is pinned while the development tools keep their floors | A build of one commit must be the same build whenever made; the Nuitka flag for PyAV depends on exact versions. `requirements.txt` pins with `==` and `requirements-dev.txt` reads it before adding tools on floors. Invariant 20 holds every pin to what is installed. |
+| The checks run in the project's own environment | A suite run in a different interpreter can pass while the application cannot play. Where the project has a venv a structural test refuses to pass elsewhere, a second checks everything `requirements.txt` declares is installed there; `gate.ps1` names the interpreter. |
+| The claim to being the running copy is separate from the channel that reaches it | Asking a listener whether it is there races at the moment it matters. Ownership is a shared memory claim under a semaphore; the channel only carries activation. |
+| The ask carries a word rather than being the connection itself | Any process may open a named pipe, so the word is read before the window moves. |
+| Ending the application is said out loud, never left to Qt | Quit-on-last-window-closed is off so the cross can leave Stellody in the notification area; every path that means to leave says so. |
+| A file's shape is measured once and shared by its tracks | A cue album would otherwise be decoded once per track. `stellody/application/shapes.py` slices one measurement, keyed by a digest of the file's path. |
+| A bucket holds how loud it is, not its loudest sample | The loudest sample in a short bucket sits near the track's peak, so a peak envelope draws almost everything at full height. Loudness gives a shape; a column covering several buckets still takes their loudest, so transients survive. Kept records are invalidated by the format version. |
+| The resolution belongs to the music, not to the file | A fixed bucket count per file made long cue albums draw in wide blocks. A bucket is stated in time, the count following the music between a floor and a cap: `buckets_for` in `stellody/domain/waveform.py` (`BUCKET_MILLISECONDS`, `LEAST_BUCKETS`, `MOST_BUCKETS`), held by `tests/domain/test_envelope.py`. `FORMAT_VERSION` in `stellody/infrastructure/waveform.py` invalidates older records. |
+| Levels are rounded where they are measured, not on the way to the record | A measurement differing from its own record by a rounding would redraw differently after a restart; rounding also keeps records small. |
+| A cover is read by one module and kept by another | `infrastructure/covers.py` reads a picture out of audio and nothing more; `infrastructure/artwork.py` decodes, scales and writes without importing a tag library, so it can be granted writing without granting it to a tag reader (invariant 1). |
+| A cover is kept against the album's identity, not a path | A rename reuses the picture; the source's size and modification time are recorded, so a replaced cover is read afresh. |
+| One kept size serves every place a cover is drawn | One pixmap held at the grid's size serves both views, Qt scaling it for a row. Changing grid size re-reads from Stellody's own store, holding memory to the size chosen. |
+| A row states its own decoration size | A `QPixmap` in `DecorationRole` sizes the row and the view's icon size is ignored, so `RowCover` states `option.decorationSize`; only rows with a picture are touched. |
+| A shape is drawn as it is read, not when the reading finishes | The wait cannot be avoided but can be watched: the reader offers the shape so far periodically and the picture builds from the left. Only the finished measurement is kept. A part and a finish are separate signals, so a runner never lets go of its thread on the first part. |
+| Folding is done by numpy over blocks, not by walking frames | Per-frame Python dominated the time; the vectorised fold gives the same answer bit for bit. |
+| A measurement is given up on, never waited out | The bar follows the highlight, so a step through the library replaces a measurement likely still decoding. Quitting a thread does not interrupt a decode, so the cancel check is handed down to the reader, which gives up at its next block and keeps nothing; letting go never blocks the interface thread. |
+| The application keeps an account of its own appearances | A window arriving unbidden cannot be traced afterwards. `stellody/infrastructure/diary.py` records every show with its frames, every restore and each shutdown step. It and `startup_log.py` live in Stellody's own data directory (Oliver's ruling), since a sandboxed Flatpak discards its temporary directory. Both make the directory when they write and catch `RuntimeError` as well as `OSError`, since locating the data directory can itself fail. |
+| Artwork is local first, with a remote chooser somebody opens | An automatic lookup would trade the local-first guarantee for very few covers; no file carries a MusicBrainz identifier, so a fetch could attach the wrong cover unknowingly. |
+| A chosen cover is kept apart from a read one | It has no source file to check, so its record carries a chosen marker, is never invalidated by a rescan and is preferred to the folder's. |
+| The store is asked for a cover whatever an album's own files offer | A chosen picture has no file beside the music, so `AlbumArt.reading` always asks the store. |
+| The chooser is injected, so a window without it offers nothing | The lookup reaches outward, so it arrives as an adapter behind a port; a window built without one has no menu entry, which lets the suite run with no network. |
+| A refused ask is asked again; a refusal is never reported as an absence | MusicBrainz refuses often under load. The release search is retried with a growing pause; what survives every retry is carried as a refusal, since a service that would not answer made no claim about the album. Only the search retries. |
+| The rating is one control rather than five buttons | One value is one keyboard stop painting one ring; the stars are drawn rather than assembled. |
+| The transport is told who to report a play to, rather than being given it | The one place a collaborator is set rather than injected: only the window can turn a track into its album and it does not exist when the transport is built (`Transport.report_plays_to`). |
+| A narrowing keeps every cover already read | A cover belongs to an album, not a run of rows, so the cache is dropped only where the sources are replaced (a load or scan). The pane takes a sleeve that arrives after it opened. |
+| A tooltip appears almost at once | On picture buttons the tooltip is the only name. `stellody/ui/tips.py` is a proxy style shortening the tooltip delay, built from the replaced style's name since the application destroys that style. Its `polish` marks every window `WA_AlwaysShowToolTips`, so tips show while Stellody is behind another application (`tests/ui/test_tips.py`). |
+| A ring a popup leaves behind is redrawn | Qt withholds HoverLeave from a window while another's popup is up, leaving a hover-drawn ring stale. `stellody/ui/hover_paint.py` is an application filter asking for a paint on a Leave under a popup, for every `WA_Hover` widget (`tests/ui/test_leaving_under_a_popup.py`). |
+| Every switch says what a press would do, on both strips | One convention for the whole application: a switch shows the state it would move to, as the mute switch is struck through while sound is on. Repeat's tooltip names the control instead, since three states named one at a time read as stuck; its picture still names the press. |
+| The album pane's play button doubles the tray's, so it toggles with it | Two play buttons that disagree are worse than one. With a track loaded it hands the press to `toggle_playback`, the one method deciding what play means (`tests/ui/test_both_play_buttons_agree.py`); with nothing loaded it starts the open album. `_point_at_what_is_in_hand` in `stellody/ui/viewing.py` reopens the album holding the track in hand on that track (`tests/ui/test_resuming_after_the_pane_comes_back.py`). |
+| The About button became a Help button with a menu under it | A picture button is named by its tooltip, so one opening several things is named Help. Its menu IS the menu bar's Help menu, so the two cannot drift (`tests/ui/test_update_check.py`). |
+| A reading dialog never opens on its own page | A ring round a whole page offers nothing to act on. `first_stop` passes over a scrolling region; the pane keeps its stop; a dialog that is only a pane opens on nothing. Held by a sweep over every dialog discovered from source. |
+| A dialog's native window exists before anything sizes it | On Windows with mixed scaling a dialog sized before its native window existed opened scaled across several displays. `FirstStopDialog.__init__` calls `self.winId()` first except on Wayland, where it corrupts the window behind (`makes_window_early`). `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` pins the precondition. |
+| A prompt waved away decides nothing | The close prompt's answer starts at ASK and only a button moves it, so dismissing it neither leaves, hides nor writes anything. |
+| The waiting after a refusal is spent on a pass, never on one artist | MusicBrainz refusals reflect its load, not our rate. A refused artist is asked once more, then put back for a later pass, so waiting overlaps other artists. `application/passing.py` is the bookkeeping and asks nothing. |
+| A run asks a catalogue only what it has never been told | Asking everything every run made answers vary with a service's mood. Answers are kept in `catalogue-memory.json`: `application/remembering.py` holds the rule, `infrastructure/catalogue_memory.py` the file. An answer stands for a period then is asked again (Oliver's ruling: runs should differ over weeks, not minutes). Saving merges with what the file holds (`merged`); one `FileCatalogueMemory` serves the run, its price and expansion. Undated album and series answers are dropped on read (`_dated`, FR-D67). The kinds include identities, `credited`, `series-of`, `series` and `titled`; asking lives once in `recalled` over an `Asking` (`tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`). |
+| The answer is turned a page at a time, with every page built up front | A page fills every column, depth following height (Oliver's ruling); a column holding a tall artist scrolls. Every page is built at open because a tick is held by its row. `ui/results_room.py` is the arithmetic, `results_pages.py` the pages, `results_pager.py` the controls, `results_foot.py` the one foot row they share with the shop controls (Oliver's ruling). |
+| Every block the device ran dry before it arrived is written to the diary | `stellody/infrastructure/dropouts.py` watches the room in the buffer (PortAudio's underflow flag proved blind on shared WASAPI): a write finding the whole buffer free follows a device that ran dry; a write taking longer than its audio plus what was buffered held a silence of the difference (timed on `perf_counter`). The buffer's size is read once per stream, on its first start, since a queue survives a stop. `stellody/infrastructure/buffering.py` asks every stream for two blocks of queue, which ended the static heard under load; `lead_frames` counts that queue for position and pictures. Held by `tests/infrastructure/test_dropouts.py` and `tests/infrastructure/test_buffering.py`, both on the real device. Metering lives in `stellody/infrastructure/metering.py`. |
+| One dropped connection no longer ends a run; a run of them still does | An artist nothing answered about goes round again like a refused one; the run gives up only after a run of consecutive silences, counted once for the whole run by `Silence` in `application/gathering.py`. |
+| Every answer is written down as it arrives, not only when a run ends | Each answer is appended to a running record and forced to disk; each memory reads its file plus that record, dropping the record once the file holds it. `infrastructure/journal.py` owns appending, as `atomic.py` owns replacing. |
+| An answer with a hole in it is written, with the hole named in it | What could not be answered is written beside what was, shown in the shortfall sentence and filled by the next run; gaps are written in artist order. |
+| What a failure says on screen is read off its kind, never off its message | The row gets a sentence; the diary gets class, message and artist. A refusal and a timeout are distinct kinds. |
+| The results screen is dealt into columns and stops at a 13 inch display | It takes a share of the screen in up to three columns, capped at what a 13 inch display shows (Oliver's ruling; FR-D45 holds the measurement, `THIRTEEN_INCH_ROOM` the room). `results_room.py` is widget-free arithmetic; `results_columns.py` joins it to widgets. |
+| A control that closes something wears the close picture, not the negative mark | `negative.png` is only ever composed over another picture to say off; alone it names no action. |
+| Both genre filters share one row of pictured controls | Filter, Cancel and Clear are built once by `stellody/ui/filter_controls.py` (Oliver's ruling, including Clear wearing the close picture without leaving). Filtering is disabled while nothing is ticked, except in a chooser opened on a filter; `offer_apply` reads the boxes at every toggle (`tests/ui/test_filter_controls.py`). |
+| A three-state switch is told apart by its artwork, never by a fill | A fill says two things, never three; each state has its own picture, one composed with a cross at run time. |
+| Holding one track is decided where an ending is noticed, not in `next` | Repeat-one answers an ending; Next overrules it. So `advance_if_finished` replays while `next` always advances. |
+| The colours are kept apart from the stylesheet that applies them | What a colour is and where it applies change for different reasons: `stellody/ui/palette.py` holds values, `stellody/ui/theme.py` builds the sheet and re-exports both. |
+| Where a queue move lands is decided apart from the device | `domain/moving.py` holds what Next, Back and an ending mean under repeat and shuffle as pure functions, so one rule serves a press and an unattended seam. Randomness enters as an argument. |
+| The equalizer switch is kept apart from its sliders | Comparing on against off must not lose the curve; they are two settings. |
+| A boost is clipped at the format's ceiling, as the last resort | The curve already makes room for its lift; what can still reach the ceiling is input already over it plus small overshoots. Filtering is done in floating point, since writing out-of-range values into an integer array overflows rather than clips. |
+| What the library is shown as is one group on the bottom strip | The view toggle and sleeve size are one child group in `stellody/ui/showing_controls.py`. |
+| How the music sounds is one group on the right of the bottom strip | Volume, mute, output device, exclusive output and equalizer sit in `stellody/ui/sound_controls.py` in an order Oliver ruled: volume beside mute, then a rule, then device before how it is held (`OUTPUTS.md` FR-O01). |
+| Opening the whole library is a toggle on its heading | One chevron at the left of the Title heading, the application's own artwork (falling back to the style's arrow), with room derived in `expanding.py`. What a press does is read off the rows; partly open counts as shut. Replacing the header copies the replaced header's alignment, movability and stretch. Not a keyboard stop; the menu is the keyboard route. |
+| A change that moves every row is answered once, never per row | `expandAll` reports every row it opens, so the chevron's answer is silenced during such a change and asked once at the end; the View menu goes through the same object. Held by counting questions, not timing. |
+| An album's own chevron is the same picture as the heading's | `Chevrons` loads and fits the two pictures once per size; `ExpandingTree.drawBranches` draws them for rows with children only. |
+| A switch of view arrives where the other one was | A switch carries the track the left view pointed at, else what is playing; the sleeve is picked rather than opened outright so the grid travels to it and `_on_album_picked` opens the album beneath. |
+| A window that will not fit the screen is maximised, never nudged | On Windows `resize` sets content size while the frame Windows adds is not reported by Qt (`frameMargins`), so a full-width window lands partly off screen. `fit_on_screen` compares where the content landed and maximises what does not fit. Offscreen cannot see this. |
+| A window is maximised on the screen its title bar is on, never where most of it lies | Windows maximises onto the monitor holding most of a window, which across mixed scaling can be a screen the title bar is not on. `stellody/ui/maximising.py` takes the maximise only where those differ, lays the window on the title bar's screen and maximises there. `stellody/ui/title_bar.py` is the module that asks Windows where the title bar is. `tests/ui/test_maximising.py` holds the decision; the Windows half rests on measurement. |
+| The top tray decides how narrow the window may be | Every tray control is fixed size, so the tray's minimum is the window's; `tests/ui/test_window_size.py` checks the default width against it. |
+| The whole interface is drawn at nine tenths, on every screen | On a small high-DPI panel the window's minimum exceeded the room. `stellody/ui/interface_scale.py` asks Qt's global scale factor before the application is built (Qt reads it once); a scale set in the environment wins. Held by `tests/ui/test_interface_scale.py` and `tests/ui/test_launch.py`. |
+| Rescan and repair sit on the bottom strip, not in the tray above | The strips split by what is playing against what the library holds; rescan is an errand and repair answers it. A hairline rules donate off from them. |
+| A rule draws its own line rather than wearing a background | At nine tenths scale a one pixel background can cover no device pixel. `tray_parts.Rule` draws a cosmetic pen, one device pixel at any scale (`tests/ui/test_every_rule_is_drawn.py`). |
+| A menu entry that cannot act is disabled, as a button that cannot act is | `viewing.show_covers` is the one place the view changes, so it disables Expand all and Collapse all in the sleeves. |
+| The whole menu bar is swept, rather than the entry that was reported | `tests/ui/test_menu_sweep.py` states every entry against the situations enabling turns on and asserts the table IS the bar, so a new entry must be decided. Rescan's state is set where the button's is. |
+| Every picture button is on the menu bar too | Placement is Oliver's ruling: File, Edit, View, Sound, Control; the volume slider and donate stay off menus (`open_donation` is wired to the strip alone). Each entry reads its state from what it stands for when the menu opens (`stellody/ui/menu_mirrors.py`); the Output device submenu is refilled by `show_outputs`. `tests/ui/test_menu_mirrors.py` changes state through the window, not the entry. |
+| One thing held at the middle of a strip is held by three columns, not two stretches | Two stretches centre only when the end groups match in width. `tray_parts.centred_row` lays three grid columns with equal outer shares (`tests/ui/test_transport_centred.py`). |
+| A stylesheet border needs `WA_StyledBackground` on a plain widget | Qt drops a plain `QWidget` subclass's sheet border without it, silently. `tests/ui/test_tray_rules.py` reads the paint, not the sheet. |
+| Every stop that can be landed on shows a ring, the same one everywhere | Asserted by walking the real widgets, not a list. Named exceptions paint their own ring (the stars, the ringed checkbox, the sleeve size button, menu titles) or hold nothing to paint; item and text views stand outside the rule (invariant 10). One colour token serves every ring. |
+| A checkbox's ring is painted on its square, not stated in the stylesheet | Styling `::indicator` replaces the whole subcontrol and loses the tick. `ringed_check.py` paints over the square Qt reports, taking colours from the sheet as properties; a structural test forbids a plain `QCheckBox` elsewhere. |
+| The sleeve grid travels to a selection rather than snapping to it | The grid scrolls per pixel and glides to where Qt would have jumped, so no second copy of Qt's reveal rules exists; nothing glides while off screen. `stellody/ui/gliding.py`, held by `tests/ui/test_gliding_grid.py`. |
+| A cancelled lookup is stopped where it stands, not merely silenced | The worker hands the archive a question it asks between paced gaps and inside every read, in `CHUNK_BYTES` pieces and `SLEEP_SLICE_S` slices. A queued cross-thread signal arrives with no sender, so identity is never checked that way (`tests/ui/test_cover_worker.py`). |
+| A thread that outlives its dialog is held by the window, with leaving outright as the last resort | `ThreadKeeper`, given by the window, holds worker and thread until each finishes, connecting before reading the finished state. `leave_at_once` in `stellody/composition.py` leaves the process before teardown, since Qt aborts over a thread still running. |
+| Where the library was looking survives a reload that changes nothing about where it should be looking | `stellody/ui/placing.py` names the album by identity with a pixel offset and finds its row again after the reload; a vanished album still restores the offset. |
+| The focus rule names the arrivals that ARE a choice, rather than the ones that are not | Qt invents a current index on any focus arrival, right for Tab only. `ASKING_FOR_A_PLACE` in `stellody/ui/gliding.py` names Tab and Backtab; every other reason leaves the place alone, the safe direction to fail in. The results lists follow the same rule. |
+| One notch of the wheel moves one row | `NOTCH` in `stellody/ui/gliding.py` is Qt's documented detent, written here; part-turns are carried so fractional wheels still move a row per notch. Trackpad pixel deltas are left to Qt's continuous scrolling. |
+| A broken shop row is shown for mending, never dropped in silence | The shops dialog refuses a form that would not make a working shop; a hand-broken row is read as a `BrokenRow` with its reason, listed greyed with edit and delete, never merged by a release. `domain/shop_list.py` (`tests/domain/test_shop_list.py`); the dialog is `tests/ui/test_shop_editing.py`. |
+| A dragged shop is carried with the pointer, never placed on release | `stellody/ui/shop_dragging.py` switches the layout off while a row is held and glides the others; the landing place is the start position whose top is nearest the held row's top, read from the layout's own tops. The move is written on release; a refused write glides back. Not Qt's drag loop, which carries a picture and cannot be driven offscreen (`tests/ui/test_shop_dragging.py`). |
+| The album pane is as tall as its album, up to half the page | Each column in `stellody/ui/track_column.py` asks for its rows' height; `stellody/ui/covers_page.py` caps the pane so the grid keeps half the page (or one whole row of sleeves where larger), recomputed on resize and sleeve size. `GlidingGrid.scroll_settled` forces layout before scrolling. Held by `tests/ui/test_the_pane_fits_its_album.py` and `tests/ui/test_opening_an_album_keeps_its_sleeve_in_view.py`. |
 
 ## Coverage
 
 The gate is 100% branch coverage over `stellody.domain` and
-`stellody.application`: the layers reachable with no filesystem, no clock and no
-audio device, where anything short of complete is a decision nobody made.
+`stellody.application`: the layers reachable with no filesystem, no clock and
+no audio device, where anything short of complete is a decision nobody made.
+Infrastructure and UI sit outside the gate and outside what is measured, since
+much of them needs a real device, library or the Windows shell.
 
-Infrastructure and UI sit outside the gate rather than dragging it down to a
-number that means nothing, which also leaves them outside what the suite
-measures: coverage is collected over the two gated layers alone. Asked for over
-the whole package with `--cov=stellody`, it measured 95% on 2026-09-13. Much of
-infrastructure needs a real audio device, a real library or the Windows shell.
-
-**No test may start the application.** Four tests once stood in for the install
-but not for the launch that follows it, so every run of the suite started the
-copy of Stellody installed on the machine, on the owner's own desktop, while a
-window arriving unbidden was being hunted. `tests/conftest.py` refuses any
-`subprocess.Popen` command naming `stellody.exe`, whatever a test believes it
-has stood in for. It also points the diary at a directory of the test's own, so
-a run of the suite cannot write into the account of real ones. It sets
-`QT_QPA_PLATFORM=offscreen` before any `QApplication` exists, however the suite
-was started: the platform used to be set only by `gate.ps1`, so a bare `pytest`
-put every interface test's window on the owner's desktop. That matters more
-since the diary moved into the data directory: the file the suite must not touch
-now sits beside the library database rather than among temporary files.
+**No test may start the application.** `tests/conftest.py` refuses any
+`subprocess.Popen` command naming `stellody.exe`, points the diary at a
+directory of the test's own and sets `QT_QPA_PLATFORM=offscreen` before any
+`QApplication` exists, however the suite was started.

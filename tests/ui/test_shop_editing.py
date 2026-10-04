@@ -1,4 +1,4 @@
-"""Changing the shops from the shops dialog. SHOPS.md Amendment 1."""
+"""Changing the shops from the shops dialog. SHOPS.md FR-S17 to FR-S43."""
 
 from __future__ import annotations
 
@@ -188,7 +188,7 @@ def test_a_refused_delete_keeps_the_shop(application, monkeypatch) -> None:
 
 
 def test_try_save_and_put_back_wear_their_artwork(application) -> None:
-    """Amendment 2: Oliver's pictures on the form's actions and on put back."""
+    """FR-S43: Oliver's pictures on the form's actions and on put back."""
     dialog, _store, _opener, editing = dialog_over(QOBUZ)
     form = ShopForm(editing, HOUNDS)
     assert not form.try_button.icon().isNull()

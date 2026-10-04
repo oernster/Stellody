@@ -8,7 +8,7 @@ answered 404. Three of eight in one afternoon: a list compiled into the
 application is a release every time that happens, while a file is an edit.
 
 **The file is changed from the shops dialog now; it is still the record.**
-SHOPS.md Amendment 1. What an edit means and how a release's shops meet the
+SHOPS.md section 3.4. What an edit means and how a release's shops meet the
 list live in `domain/shop_list.py`. This reads the file into those rules and
 writes their answer back, so the file never holds a list the dialog did not
 show. It is written the first time it is wanted (FR-S09) and again whenever

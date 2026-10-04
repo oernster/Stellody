@@ -56,7 +56,7 @@ class OutputEntry:
     `label` is empty on the system default's line, whose words belong to the
     window; every other line reads the system's name, numbered where repeated.
     `chosen` marks the line the music is going to, which is not the choice
-    while the chosen device is missing or refused (Amendment 5).
+    while the chosen device is missing or refused (FR-O06).
     """
 
     choice: OutputChoice
@@ -74,7 +74,7 @@ def output_list(
 
     The tick follows `in_use`, the device the music is going to; None is the
     system default. A chosen device that is missing stays listed, unticked,
-    as the one the music goes back to (Amendment 5, FR-O12).
+    as the one the music goes back to (FR-O14, FR-O12).
     """
     entries = [
         OutputEntry(
@@ -127,7 +127,7 @@ def opener_position(
 
     For an opener that knows names alone, as PortAudio does here (OUTPUTS.md
     section 1.3). Measured on 2026-09-18, its WASAPI outputs arrive in the
-    system's own order (Amendment 2), so the n-th device of a name is its
+    system's own order (NFR-O-PORT-001), so the n-th device of a name is its
     n-th entry of that name. That was measured on one machine, so it is relied
     on only while the two lists agree name for name; otherwise a name more than
     one device carries is not guessed at. A name only one carries on each side

@@ -113,7 +113,7 @@ class TestNoticingAMove:
 
 
 class TestSayingWhetherTheDefaultLeft:
-    """Amendment 5: an arrival carries the music on; a departure pauses it."""
+    """FR-O15: an arrival carries the music on; a departure pauses it."""
 
     def test_a_device_arriving_leaves_the_old_default_listed(self, machine) -> None:
         devices = machine.watching()

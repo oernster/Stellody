@@ -1,4 +1,4 @@
-"""Changing the shop list from the shops dialog. SHOPS.md Amendment 1.
+"""Changing the shop list from the shops dialog. SHOPS.md FR-S17 to FR-S37.
 
 Every change is read from the store, applied by the domain, then written back
 before anybody is shown it. A change the file will not take raises, so the

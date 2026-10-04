@@ -8,11 +8,11 @@ for the second. FR-S07.
 a list of thirty ticked albums arrives as thirty tabs over whatever somebody
 was doing. Above five, it says how many and waits. FR-S08.
 
-**The list is changed here.** SHOPS.md Amendment 1: add, edit, delete, drag,
-Ctrl+Up and Ctrl+Down, then putting the original shops back. Every change is
-written before it is drawn, so a change the file refuses leaves the dialog
-showing the list the file holds (FR-S29). A dialog given no editor offers the
-shops and nothing else.
+**The list is changed here.** SHOPS.md FR-S17 to FR-S28 and FR-S37: add,
+edit, delete, drag, Ctrl+Up and Ctrl+Down, then putting the original shops
+back. Every change is written before it is drawn, so a change the file
+refuses leaves the dialog showing the list the file holds (FR-S29). A dialog
+given no editor offers the shops and nothing else.
 """
 
 from __future__ import annotations

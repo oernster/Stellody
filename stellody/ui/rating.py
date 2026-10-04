@@ -9,9 +9,7 @@ and needs nothing highlighted first. See `star_cells.py` for the two gestures.
 A record is kept against the album's identity with the disc and track number
 under it, so the album has to be in hand before the rating can be. A row is an
 index the model can answer for directly, so nothing asks the model to find a
-track it was already handed, which matters more than it looks: that search is
-retried when it misses, so a second caller would consume the attempt the first
-one needed.
+track it was already handed.
 
 The play count still rides on the row under the library as well. It follows
 what is highlighted, falling back to the one playing where nothing is.

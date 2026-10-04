@@ -6,7 +6,7 @@ so a pause the listener did not make must turn both back to play straight
 away rather than at the next poll. The status line says why it happened.
 
 A move to a device that arrived carries the music on instead (`OUTPUTS.md`
-Amendment 5, 2026-09-19).
+FR-O15, 2026-09-19).
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ class TestAMoveWhileAtrackPlays:
 
 
 class TestADeviceArriving:
-    """Amendment 5: the one left is still listed, so the music plays on."""
+    """FR-O15: the one left is still listed, so the music plays on."""
 
     def test_the_music_plays_on_with_nothing_said(self, window) -> None:
         window._player.calls.clear()

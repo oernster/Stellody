@@ -56,7 +56,7 @@ class TestTheRealList:
         assert not names & _wasapi_inputs_only()
 
     def test_every_listed_device_is_one_portaudio_can_open(self) -> None:
-        """Amendment 2: each is found, under its own name, as an output."""
+        """NFR-O-PORT-001: each is found, under its own name, as an output."""
         known = dict(output_list.portaudio_outputs())
         for device in output_list.listed_outputs():
             assert known[output_list.portaudio_number(device)] == device.name

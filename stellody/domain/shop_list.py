@@ -1,9 +1,9 @@
 """The shop list as something somebody edits; how a release's shops meet it.
 
-SHOPS.md Amendment 1. Before it the list could only be changed by hand in
-`shops.json`, where a mistyped row vanished without a word. Now it is changed
-from the shops dialog, so the rules for every change live here, pure, where the
-coverage gate holds them.
+SHOPS.md FR-S17 to FR-S36. Before them the list could only be changed by hand
+in `shops.json`, where a mistyped row vanished without a word. Now it is
+changed from the shops dialog, so the rules for every change live here, pure,
+where the coverage gate holds them.
 
 **A shop is recognised by its name.** A release carries no identifier for a
 shop, only what the file carries: a name, an address and a note. So the name,

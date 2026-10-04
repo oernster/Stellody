@@ -123,7 +123,7 @@ class Shop:
 
 
 def addresses_at(shop: Shop, wanted: tuple[WantedAlbum, ...]) -> tuple[str, ...]:
-    """One search address per ticked album, in the order they were ticked.
+    """One search address per ticked album, in the order they are handed in.
 
     One address per album rather than one for all of them, because no shop
     searches for several albums at once. FR-S06.

@@ -152,7 +152,7 @@ class TestARefusal:
         assert transport.output_choice == chose(FOCUSRITE)
 
     def test_the_tick_is_on_the_default_it_plays_on(self) -> None:
-        """Amendment 5: the list ticks where the music is going."""
+        """FR-O06: the list ticks where the music is going."""
         transport, player = _playing()
         player.refuses = {FOCUSRITE.identity: REASON}
         transport.choose_output(chose(FOCUSRITE))

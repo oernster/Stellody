@@ -65,7 +65,7 @@ class PutOnClipboard(Protocol):
 class Shopping:
     """Everything stage two does, over three things handed in.
 
-    `editing` is the shop list editor of SHOPS.md Amendment 1. It travels with
+    `editing` is the shop list editor of SHOPS.md FR-S17 to FR-S37. It travels with
     this rather than beside it, since everywhere the shops are offered is
     somewhere they can be changed; None leaves the dialog without the editor.
     """

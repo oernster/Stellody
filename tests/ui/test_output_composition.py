@@ -54,7 +54,7 @@ def test_a_move_reaches_the_window(window) -> None:
 def test_whether_the_default_left_reaches_the_transport(
     window, left: bool, followed: str
 ) -> None:
-    """Amendment 5: a departure pauses, an arrival carries on; both via Qt."""
+    """FR-O15: a departure pauses, an arrival carries on; both via Qt."""
     heard: list[str] = []
     transport = window._transport
     transport.output_moved = lambda: heard.append("moved") or False

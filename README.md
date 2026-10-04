@@ -24,20 +24,16 @@ Above all, it never changes a single one of your files.
 
 ## Why it exists
 
-Someone spent years turning a shelf of CDs into files: ripping each one,
-checking the track names, fixing the artist on the compilations, finding the
-right cover art. Then a well known music player reached into those files and
-rewrote the information stored inside them. It damaged 33 albums. The music
-still played. Every one of those albums was put right in the end; a music player
-should never have touched them.
+Someone spent years turning a shelf of CDs into files. Then a well known music
+player reached into those files and rewrote the information stored inside them,
+damaging 33 albums. Every one was put right in the end; a music player should
+never have touched them.
 
-Stellody is built on one rule that everything else follows from: your files are
-opened to be read and never to be changed. Where it finds something muddled in
-the way an album is labelled, it tells you plainly then leaves the file exactly
-as it found it.
-
-That is not a promise on a page. It is checked by the test suite every time the
-checks run; if it ever stopped being true the suite would fail.
+Stellody is built on one rule: your files are opened to be read and never to be
+changed. Where it finds muddled labelling it tells you plainly and leaves the
+file exactly as it found it. The test suite checks this on every run; if it ever
+stopped being true the suite would fail. [Why it exists](https://stellody.co.uk/why.html)
+tells the story in full.
 
 ## Who it is for
 
@@ -52,300 +48,138 @@ any shop and takes nothing from a sale.
 
 ## What you get
 
-- **A wall of album covers**, else a plain list, whichever suits you. Click a
-  cover and the album opens underneath without losing your place. Switching
-  between the two lands where you were, so whatever is playing is picked out
-  either way: its row is marked in both views and its name sits along the foot
-  of the window. In the list, one press on the arrow at the left of the Title
-  heading opens every album at once; another closes them.
-- **Search that narrows as you type**, however many thousands of songs you
-  have. The album stays whole around whatever you were looking for.
-- **Albums that flow.** Records made to run straight through play that way,
-  with no silence dropped in where the artist never put one.
-- **An equalizer, plus little bars that dance.** Ten sliders from deep bass to
-  high treble, with twenty bars along the bottom showing what the music is
-  doing. A curve that lifts any part of the sound is lowered by its largest
-  lift, which keeps a boost from clipping on ordinary material; it is not a
-  guarantee against every waveform. Music plays quieter with such a curve on,
-  while a curve of cuts alone is not lowered and keeps its level. Switched
-  off it adds nothing of its own, handing each block back untouched; at full
-  volume with mute off nothing else in Stellody touches the samples either. Volume, mute,
-  the output device, exclusive output and the equalizer sit together at the
-  right end of the bottom strip, ahead of shuffle and repeat.
-- **Exclusive output, for the track exactly as the file holds it.** One press
-  on the bottom strip asks the sound device for the music with the system
-  mixer out of the way, which is the only way it can be bit perfect. Pressing
-  it reopens the song in hand where it was; a paused song stays paused. Beside
-  the playing time sits what the device actually took: the mode, the rate, the
-  depth plus "bit perfect" where that is true. Bit perfect also needs the
-  volume at 100% with mute off plus the equalizer off or flat, since anything
-  else alters the samples; the line drops the claim the moment one of those
-  moves and gives it back when all of them hold again. It is
-  offered only for a song the device can take untouched: not for a lossy song
-  such as an MP3, which has nothing to deliver untouched, nor at a rate the
-  device does not take. A Bluetooth headphone taking 48 kHz alone cannot have a
-  44.1 kHz CD rip that way. For such a song the switch is shut off, with the
-  reason on it naming the rates the device does take; the choice stands, so
-  the next song that can have it gets it without a press. With no song
-  selected the device is judged against your library instead: the switch is
-  shut off where the device takes none of the rates your lossless songs are
-  at. Changing the sound output while Stellody runs asks the new device
-  again, so the right device brings the switch back. A device that turns
-  down a request it was expected to take, because another application holds
-  it say, takes the switch back to shared; the foot of the window says why.
-  Stellody remembers the choice between sessions.
-  - **Windows** hands the device over outright, so no other application can
-    play through it meanwhile.
-  - **macOS** runs the device at the song's own rate and refuses to convert,
-    so the samples arrive untouched while another application playing at the
-    same time is still mixed in.
-  - **Linux** does not offer it; the music plays through the system mixer.
-- **No crackle when the computer is busy.** The sound device keeps about two
-  blocks of music queued rather than the sliver it would choose for itself, so
-  a machine working hard at something else does not break the sound up. Any
-  dropout that still happens is written in the diary described under Your
-  privacy.
-- **Choose where the music plays.** A button on the bottom strip, also the
-  Sound menu's Output device, lists System default first then every device
-  your system lists, in its own order, with two of one name numbered apart.
-  Choosing one moves the song in hand there from where it was; a paused song
-  stays paused. The choice is remembered between sessions and the list keeps
-  up as devices come and go. A chosen device that disconnects pauses the
-  music; press play and it carries on through the system default, while the
-  list names the device as not connected with System default ticked. When it
-  comes back the music moves back to it by itself. A device that will not open
-  leaves the music on the system default, with the foot of the window naming
-  it and the reason it gave. Tried on Windows, macOS and Linux, every listed
-  device chosen and heard playing.
-- **Headphones on, music follows; headphones off, music pauses.** While System
-  default is your choice, a device that connects and becomes the default takes
-  the song with it, from where it was, with no press. A device going away
-  pauses the music rather than sending it out of the speakers: both play
-  buttons show play, the foot of the window says why and pressing play carries
-  on through the new output from where you last heard it.
-- **The shape of each song** drawn along the bottom, so you can see the quiet
-  parts and the loud ones. Click anywhere on it to jump there.
-- **Stars and play counts.** Every song shows its rating in a Rating column
-  beside Plays, in the list and in the album opened under the covers, so you can
-  read down a record to see what you keep coming back to. Click a star to rate;
-  clicking the star already held clears it. The number keys 1 to 5 rate the
-  highlighted song and 0 clears it. The album keeps a rating of its own, set in
-  the header of its pane. The play count of the song in hand also sits beside
-  its shape. Only a song that plays on to its end counts; pressing Next before
-  then does not.
-- **Album art found for you**, from what your files already carry. For an album
-  with none, ask Stellody to look then pick from what it finds. It never
-  guesses.
-- **Your messy collection, sorted out.** An album saved as one long file, a box
-  set spread over several folders, a bonus disc with no number in its name: all
-  of it comes out as one album where there should be one album.
-- **A scan that says what it found.** Add music, press Rescan and you get the
-  new albums by name, the new tracks counted and your library's totals, rather
-  than a line that disappears while you are looking elsewhere.
-- **Say what an album really is.** Where a tag is wrong rather than merely
-  muddled, state the artist, the title, the date or the genre yourself and
-  Stellody remembers it. A single song takes its own title, artist, disc number
-  and track number the same way, even one song of an album saved as one long
-  file. Genres come from a settled list of twenty-one headings with their
-  styles under them, so the same music cannot end up under three spellings of
-  one word. Each heading folds its styles away behind an arrow; the headings
-  you leave open are remembered, separately for each screen that shows the
-  list. Your files are read for this and never written.
-- **Show me only the folk.** Narrow the wall of covers to the genres you ask
-  for, including the albums that state none at all, then clear it in one press.
-  Every tick widens what is shown, so asking for two genres shows both.
-- **What your collection is missing.** Discovery sits at the right end of the
-  top tray, beside the appearance toggle and Help. Tick the genres worth
-  looking in and Stellody asks two public music catalogues what those artists
-  made that you do not hold, along with who else sounds like them. A name the
-  catalogues know under several artists is settled by who is credited on titles
-  you hold under it; a name found under nobody, an album artist's as much as a
-  track's, is asked about again by each artist it joins with an ampersand, a
-  comma, a spaced slash or Featuring. Fill in
-  Released from and to (any year from 1900 to next year) to be offered only
-  albums first released inside those years; one whose catalogue entry states
-  no year is left out while years are set. The years narrow what it offers,
-  never which of your artists it asks about. Under Include, three boxes
-  say what else a run takes in, each on its own. Artists on compilations
-  asks about the artists on their tracks too. Other volumes of series finds
-  the volumes missing from a series you collect, such as Global Underground:
-  Adapt. DJ mixes, ticked to begin with, offers the mixes an artist made
-  among their albums. Ticking either of the first two says first roughly how
-  many minutes it adds. Each compilation you hold is looked up by the series
-  the catalogue files it in and by the start of its title, which also finds
-  volumes the catalogue's series list does not carry yet; so is each album
-  filed under a name the catalogue knows as one artist who made no album or
-  EP, such as "Global Underground", as is an album filed under its DJ that
-  the catalogue calls a compilation or a DJ mix, such as a Fabric volume. A
-  number before a colon is read as the volume, so "Global Underground #45:
-  Danny Tenaglia" meets the catalogue's "045". A volume you already hold is
-  left out whoever it is filed under. The rest are listed under a heading
-  naming the series with how many albums it offers; one goes to a shop under
-  Various Artists. Three bars in the top tray, Looking up, Checking series
-  and Checking styles, show how far each stage of a run has got. It says
-  roughly how long is left with the series counted; it stops the moment you
-  ask it to or quit Stellody. A genre the catalogue states for an artist or an
-  album counts only where it has at least two votes there and at least half
-  the votes of the leading genre; where none reaches two votes, every one is
-  kept. Where it could not get a usable answer about somebody and holds none
-  from an earlier run, it says so and counts them, with the names one press
-  away, so an answer with gaps in it never reads like a complete one. Every
-  answer is kept the moment it arrives, so a run stopped or cut short loses
-  nothing it had already paid for and a second attempt asks only for the
-  rest. What it finds opens as a list you can read and tick, each album named
-  with the year it first came out where the catalogue states one, dealt
-  across the width of the screen and turned a page at a time, then narrowed
-  to some of the genres it looked in when the answer runs long. The filter
-  that narrows it has a Show row too, keeping or hiding albums, DJ mixes,
-  series and similar artists by kind. A similar
-  artist the catalogue gives no genre is judged there by the genres your own
-  albums carry for the artist it was suggested for, even where that artist is
-  one name in a joint credit. From there Find in shops takes the ticked albums to the
-  shop you choose, opening that shop's own search for each of them in your
-  browser. The shops on offer are yours to add, edit, delete and reorder on the
-  screen where you choose one. Closing that screen clears every tick, even one
-  under an artist rolled up or hidden by a filter, so the next round starts
-  from nothing rather than from the last one.
-  Nothing is bought here and nothing is streamed: Stellody hands over a search
-  and stops.
-- **The videos that came with the album.** A bonus video sits in the album it
-  belongs to, plays from the same press as any song and draws its picture at
-  the size it was made; fill the window when you want it larger.
-- **Corrections you can keep.** Where an album's labelling is muddled, Stellody
-  works out what it should be and shows you the tidy version. Now you can tell
-  it to keep that answer, all of it at once or one album at a time, so the same
-  list of problems stops greeting you at every start. Changed your mind? One
-  press puts it back, for one group of files, one album or the lot. Your files
-  are untouched either way.
-- **A guide to the window itself.** Help then Guide names every button on both
-  trays beside the picture the window actually draws, so nothing has to be
-  recognised from a description. Under that sit the four rules no single screen
-  can state for itself: your files are only ever read, folders group while tags
-  name, a correction differs from a stated tag, ratings follow the album rather
-  than the file.
-- **How to lay a library out.** Stellody reads a collection the way it finds
-  it, so the same guide states the rules it reads by: one album to a folder,
-  discs of one release side by side, two folders joining where the artist and
-  the title both agree, a cue sheet read only where the folder holds one audio
-  file. The short version is put in front of you before you choose a music
-  folder for the first time, so you can go and look at what you have rather
-  than find out afterwards.
-- **Everything reachable from the keyboard.** Every button on both trays bar
-  the donation button is on the menu bar too, down to the repeat mode and the
-  size of the album art.
+Each line is a summary; the site has the detail.
 
-The [features page](https://stellody.co.uk/features.html) has the overview,
-with a page each for [discovery](https://stellody.co.uk/discovery.html), the
-[library](https://stellody.co.uk/library.html) and
-[playback and sound](https://stellody.co.uk/playback.html), plus
-[the technical page](https://stellody.co.uk/technical.html) on how its claims
+**Library** ([library page](https://stellody.co.uk/library.html))
+
+- A wall of album covers or a plain list; the playing track is marked in both
+  and named along the foot of the window.
+- Search that narrows as you type, keeping each album whole around the match.
+- Messy collections sorted out: an album saved as one long file, a box set over
+  several folders or an unnumbered bonus disc comes out as one album.
+- A genre filter over the covers, including albums that state no genre.
+- State what an album or a single song really is (artist, title, date, genre,
+  disc and track number); genres come from a settled list of headings with
+  their styles under them. Stored by Stellody, never written to the file.
+- Corrections you can keep (all at once or one album at a time) then undo later.
+- Album art from what your files carry; for an album with none, ask Stellody to
+  search and pick from what it finds. It never guesses.
+- Stars and play counts per song, plus a rating for the album. Only a song that
+  plays to its end counts as played.
+- A rescan that names the new albums, counts the new tracks and gives the
+  library's totals.
+- Bonus videos that came with an album play inside it.
+
+**Playback and sound** ([playback page](https://stellody.co.uk/playback.html))
+
+- Gapless albums: no silence where the artist never put one.
+- An equalizer with a spectrum display. A curve that lifts any band is lowered
+  by its largest lift to keep a boost from clipping on ordinary material (not a
+  guarantee against every waveform); switched off it hands each block back
+  untouched.
+- Exclusive output for bit perfect playback on Windows and macOS, with the
+  rate, depth and mode the device actually took shown beside the playing time.
+  Bit perfect also needs full volume, mute off and the equalizer off or flat;
+  the claim drops the moment one of those moves. It is offered only where the
+  device can take the song untouched, so not for a lossy song or an unsupported
+  rate. Windows hands the device over outright; macOS runs it at the song's
+  rate while still mixing other applications in; Linux does not offer it.
+- Choose the output device; the choice is remembered and the list follows
+  devices as they come and go. A device that disconnects pauses the music
+  rather than sending it out of the speakers.
+- A larger output buffer than the device would choose, so a busy machine does
+  not break the sound up; any dropout is noted in the diary (see Your privacy).
+- The waveform of each song along the bottom; click to jump there.
+
+**Discovery** ([discovery page](https://stellody.co.uk/discovery.html))
+
+- Tick genres and Stellody asks two public music catalogues what those artists
+  made that you do not hold, plus who sounds like them.
+- Optional year range, artists on compilations, missing volumes of series you
+  collect and DJ mixes.
+- Progress bars per stage, an estimate of time left and a stop that takes
+  effect at once. Answers are kept as they arrive, so a second run asks only
+  for the rest; gaps are counted and named rather than hidden.
+- Find in shops opens each ticked album as a search on a shop you choose, in
+  your browser. The shop list is yours to edit. Nothing is bought or streamed.
+
+**Everywhere**
+
+- Help then Guide names every button beside the picture the window draws, plus
+  the rules Stellody reads a library by.
+- Every button on both trays bar the donation button is on the menu bar too.
+
+The [features page](https://stellody.co.uk/features.html) has the overview;
+[the technical page](https://stellody.co.uk/technical.html) says how its claims
 are kept true.
 
 ## Before you download
 
-- **It plays FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A, WMA, WavPack and AAC.** Not
-  Monkey's Audio, Musepack, DSD, TAK, TrueAudio, CAF or an M4B audiobook.
-  A file in one of those formats is named in the health report rather than
-  passed over, as is one whose details cannot be read, so a missing album says
-  so instead of simply not appearing. An M4A
-  carries either AAC or ALAC and Stellody tells them apart: ALAC states the
-  depth it stores, while AAC is lossy and states none. WMA and AAC are lossy on
-  the same terms; WavPack is lossless and keeps the depth it states. A bonus
-  video that came with an album plays as well, from the same MP4 container
-  under a `.m4v` name.
-- **The last three of those are proved differently, so here is what that
-  means.** Every other format on that list was tested against files somebody
-  owns. There were none of WMA, WavPack or AAC to test with, so each is proved
-  against a file the test suite encodes for the purpose. That exercises the
-  whole path, the walk, the tags, the decode and the honesty rules; it does not
-  tell anybody what a Windows Media ripper of 2004 actually wrote. If one of
-  yours is read wrongly, that is a defect worth reporting rather than a format
-  nobody thought about.
-- **Windows, macOS and Linux.** A setup program on Windows, a disk image
-  on macOS and a Flatpak on Linux. Out of the box the sound reaches the device
-  through the system mixer, which converts on the way, so it is not bit
-  perfect. Exclusive output, described above, takes the mixer out of the way
-  on Windows and macOS; Linux does not offer it.
-- **Sized to fit a laptop screen.** Everything is drawn at nine tenths of the
-  size it is built at, so the whole window fits a 13 inch 4K screen at 300%
-  scaling. To choose a different size, set the `QT_SCALE_FACTOR` environment
-  variable before starting Stellody; it uses yours rather than its own.
-- **It reads; it never repairs.** It tidies muddled labelling in its own view
-  and lets you keep that, though it will never rewrite the files themselves:
-  that is the whole point rather than a limitation. A control that cannot do
-  anything just now is shown switched off rather than left to disappoint you.
+- **Formats.** FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A (AAC or ALAC, told apart),
+  WMA, WavPack and AAC, plus bonus videos under a `.m4v` name. Not Monkey's
+  Audio, Musepack, DSD, TAK, TrueAudio, CAF or M4B audiobooks: such a file is
+  named in the health report rather than passed over, as is one whose details
+  cannot be read.
+- **WMA, WavPack and AAC are proved against files the test suite encodes**,
+  since no real ones were to hand. That exercises the whole path; it cannot say
+  what an old ripper actually wrote. A file of yours read wrongly is a defect
+  worth reporting.
+- **Windows, macOS and Linux.** A setup program, a disk image and a Flatpak.
+  By default the sound goes through the system mixer, which is not bit perfect;
+  exclusive output takes it out of the way on Windows and macOS.
+- **Sized to fit a laptop screen.** The window is drawn smaller than it is
+  built so it fits a 13 inch 4K screen at 300% scaling. Set `QT_SCALE_FACTOR`
+  before starting Stellody to choose your own size.
+- **It reads; it never repairs.** Tidied labelling lives in its own view; the
+  files are never rewritten. A control that cannot act just now is shown
+  switched off.
 
 ## Your privacy
 
-Stellody does not know who you are. No account, no profile, no newsletter and
-no record kept anywhere of what you listen to. Your music plays perfectly well
-with the internet switched off.
+Stellody does not know who you are. No account, no profile and no record kept
+anywhere of what you listen to. Your music plays with the internet switched
+off. Five things reach outside your computer; nothing else does.
 
-Five things reach outside your computer at all, so here are all five:
+- **Looking for album art**, only when you ask, one album at a time.
+  MusicBrainz is sent that album's artist and title; the Cover Art Archive is
+  then asked for pictures by the release identifier MusicBrainz returned.
+- **Checking for a new version**, shortly after start and once a day while it
+  runs. It sends nothing about you or your music, not even which version you
+  have: the request names the program and asks for one public page. Download
+  hands your browser the file for your platform, else the release page.
+- **Looking for music you do not own**, only when you ask. A discovery run
+  sends MusicBrainz the names of the artists inside the genres you ticked, plus
+  the identifiers it returned; ListenBrainz is sent artist identifiers alone.
+  Requests carry their own fixed settings and a user agent naming Stellody, its
+  version and the project's contact address. Titles you hold go out in two
+  cases only:
+  - up to three of them beside a name MusicBrainz knows as several artists, to
+    tell which is meant;
+  - with Other volumes of series ticked, the title of each compilation inside
+    the ticked genres, of each album filed under a name MusicBrainz knows as
+    one artist with no album or EP, plus MusicBrainz's own title for an album
+    you hold that it lists as a compilation or a DJ mix. Each is cut at its
+    first bracket, spaced slash or spaced dash, then sent again without its
+    volume number.
 
-- **Looking for album art**, only ever when you ask, one album at a time.
-  MusicBrainz is sent that album's artist and title, asking which releases
-  match; the Cover Art Archive is then asked for the pictures of each release
-  by the identifier MusicBrainz gave back. Each request carries the same user
-  agent a discovery run sends.
-- **Checking for a new version**, a few seconds after Stellody starts and once
-  a day while it runs. It sends nothing about you or
-  your music, not even which version you have: the request names the program
-  and asks for one public page. Then it stays quiet unless there is something
-  new. Where there is, pressing Download hands your browser the file for your
-  platform, else the release page when the release carries none, exactly as the
-  two entries below hand over an address.
-- **Looking for music you do not own**, only ever when you ask. A discovery run
-  names the artists inside the genres you ticked to two public music
-  catalogues, MusicBrainz and ListenBrainz, then asks what those artists made
-  that you do not hold. MusicBrainz is sent those artist names plus the
-  identifiers it gave back for artists, release groups and series.
-  ListenBrainz is sent artist identifiers alone, asking who sounds alike.
-  Every request also carries the fixed settings it states for itself (the
-  answer's format, how many results to return, where a following page starts,
-  which release types to list, which details to include and which similarity
-  algorithm to use) plus a user agent naming Stellody, its version and the
-  project's contact address. Titles you hold go out in two cases only. Where
-  MusicBrainz knows one of those names under several artists, up to three
-  titles you hold under it go out, each an album or track title cut at its
-  first bracket, asking who is credited on it; that is how the right one is
-  told apart. While Other volumes of series is ticked, the title of each
-  compilation inside the ticked genres goes out, as does that of each album
-  filed under a name MusicBrainz knows as one artist with no album or EP; so
-  does the title MusicBrainz itself gives an album you hold under its artist
-  where it lists that album as a compilation or a DJ mix. Each is cut at its
-  first bracket, spaced slash or spaced dash, then sent a second time with its
-  volume number and anything after it taken off, to search for the series by
-  name.
-  The language asked for is fixed at any, rather than your computer's own.
-  Nothing else goes: not your library as a whole, not a count of it, not a word
-  about you or your machine. The years
-  you choose are not sent either: an album's year is read from the answer that
-  comes back. Tick nothing and nothing leaves.
-- **Reaching a shop**, which hands an address to your web browser. Tick albums
-  a run found, choose a shop and Stellody gives the browser one search address
-  per album, carrying the artist, the title or both as that shop's address
-  asks. Stellody connects to no shop, holds no account with one and takes
-  nothing from any sale.
-- **The donation button**, which hands an address to your web browser. Stellody
-  itself connects to nothing. It is one button on the bottom strip and the only
-  place money is mentioned; its tooltip offers to buy the author a drink, which
-  is the whole of the asking. Nothing prompts you beyond that button being
-  there, nothing reminds you later and nothing about the program changes if you
-  never press it.
+  Not your library as a whole, not a count of it, not your chosen years and
+  nothing about you or your machine. Tick nothing and nothing leaves.
+- **Reaching a shop** hands your browser one search address per ticked album.
+  Stellody connects to no shop, holds no account with one and takes nothing
+  from any sale.
+- **The donation button** hands your browser an address. It is one button on
+  the bottom strip, the only place money is mentioned; nothing prompts or
+  reminds you and nothing changes if you never press it.
 
-It does not encrypt anything at rest: the store holds notes about your library,
-not secrets. It also keeps a plain-text account of its own comings and goings,
-named `stellody-diary.log` and written in Stellody's own data directory beside
-the library database: `%LOCALAPPDATA%\Stellody` on Windows,
-`~/Library/Application Support/Stellody` on macOS and `~/.local/share/stellody`
-on Linux. A Linux flatpak keeps its own copy of that directory under
-`~/.var/app/uk.codecrafter.Stellody/data/stellody`. It records no audio and
-nothing about you; during a discovery run it notes each address asked, which
-carries the artist names and any titles sent. A playback dropout is noted there too, with
-where in the track it fell. Beside it, `stellody-startup.log` holds the
-reason when Stellody could not start. Neither is ever sent anywhere; either can
-be deleted whenever you like.
+Nothing is encrypted at rest: the store holds notes about your library, not
+secrets. Stellody keeps a plain-text diary, `stellody-diary.log`, beside its
+library database in its data directory (`%LOCALAPPDATA%\Stellody` on Windows,
+`~/Library/Application Support/Stellody` on macOS, `~/.local/share/stellody` on
+Linux or `~/.var/app/uk.codecrafter.Stellody/data/stellody` under Flatpak). It
+records no audio and nothing about you; it notes each address a discovery run
+asks, which carries the artist names and any titles sent, plus playback
+dropouts. `stellody-startup.log` holds the reason when Stellody could not
+start. Neither is ever sent anywhere; either can be deleted whenever you like.
 
 ## Stack
 
@@ -361,13 +195,12 @@ be deleted whenever you like.
 
 ## Installing
 
-**Windows.** Download the setup program and run it. It installs just for you, so
-Windows will not ask for an administrator password. Running it again later is
-how you update, repair or remove it. After an install, a repair or a reinstall
-Stellody opens maximised on the screen the setup program was on.
+**Windows.** Download the setup program and run it. It installs just for you,
+so no administrator password is needed; running it again updates, repairs or
+removes it.
 
 **macOS.** Download the disk image, open it and drag Stellody to Applications.
-It is signed and notarized, so it opens without argument.
+It is signed and notarized.
 
 **Linux.** Download the Flatpak and install it for yourself:
 
@@ -376,14 +209,13 @@ flatpak install --user stellody.flatpak
 flatpak run uk.codecrafter.Stellody
 ```
 
-It can read your home directory and any removable drive but can write to none
-of them: Stellody never writes to a music file, so on Linux it is not given the
-means to. Beyond that it asks for sound, the screen and the network, the last
-for the things listed under Your privacy.
+It can read your home directory and removable drives but write to none of them.
+Beyond that it asks for sound, the screen and the network, the last for the
+things listed under Your privacy.
 
 ## Running from source
 
-Create a virtual environment named `venv` at the repository root, then activate
+Create a virtual environment named `venv` at the repository root and activate
 it before installing; that is the interpreter the gate runs with.
 
 ```
@@ -398,9 +230,9 @@ python main.py
 .\gate.ps1
 ```
 
-Runs black, flake8, ruff and the test suite with the project's own virtual
-environment (`venv\Scripts\python.exe`), stopping at the first that fails. The
-suite gates at 100% branch coverage over the domain and application layers.
+Runs black, flake8, ruff and the test suite with `venv\Scripts\python.exe`,
+stopping at the first that fails. The suite gates at 100% branch coverage over
+the domain and application layers.
 
 ## Building
 
@@ -410,20 +242,18 @@ Each platform builds on itself: `python buildexe.py` then
 
 ## For developers
 
-[`DEVELOPMENT.md`](DEVELOPMENT.md) is how to run, test and build Stellody from
-source on Windows, macOS and Linux in full, then how the website is published;
-[`TESTING.md`](TESTING.md) is how the tests are run and written.
-[`ARCHITECTURE.md`](ARCHITECTURE.md) states the invariants first, each linked to
-the test that enforces it. [`PLAN.md`](PLAN.md) holds the open work plus what is
-deliberately excluded. [`TECH_DEBT.md`](TECH_DEBT.md) says what is still open
-internally, what is deliberately left and what only looks like debt.
-[`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md) sets out the decisions the
-product rests on, with what each one gains and what it costs.
-[`DISCOVERY.md`](DISCOVERY.md) and [`SHOPS.md`](SHOPS.md) are the two
-specifications discovery was built from; [`FORMATS.md`](FORMATS.md) specifies
-the three formats proved by a generated fixture; [`OUTPUTS.md`](OUTPUTS.md)
-specifies choosing the output device. Each requirement names the test that
-proves it.
+- [`DEVELOPMENT.md`](DEVELOPMENT.md): running, testing and building on each
+  platform in full; publishing the website.
+- [`TESTING.md`](TESTING.md): how the tests are run and written.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): the invariants, each linked to the test
+  that enforces it.
+- [`PLAN.md`](PLAN.md): open work and what is deliberately excluded.
+- [`TECH_DEBT.md`](TECH_DEBT.md): internal debt, open and deliberately left.
+- [`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md): the decisions the product
+  rests on, with their gains and costs.
+- [`DISCOVERY.md`](DISCOVERY.md), [`SHOPS.md`](SHOPS.md),
+  [`FORMATS.md`](FORMATS.md) and [`OUTPUTS.md`](OUTPUTS.md): specifications
+  whose requirements each name the test that proves them.
 
 ## Supporting Stellody
 

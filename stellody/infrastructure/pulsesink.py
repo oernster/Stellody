@@ -1,6 +1,6 @@
 """Sending the music to one sound server sink, through PortAudio's `pulse`.
 
-`OUTPUTS.md` section 1.3 and Amendment 6 are the specification. On Linux the
+`OUTPUTS.md` section 1.3 and NFR-O-PORT-001 are the specification. On Linux the
 two lists never meet by name: Qt reads the sound server and calls a device
 `Px7 S3`, while PortAudio was built against ALSA and calls what it can see
 `default`, `pulse` and `HD-Audio Generic: HDMI 0 (hw:0,3)`. Measured inside the

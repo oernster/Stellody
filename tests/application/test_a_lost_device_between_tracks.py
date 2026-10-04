@@ -5,7 +5,7 @@ engine has finished and reads as paused until the next poll moves the queue on.
 A loss arriving then was not treated as a pause, since nothing was playing, so
 the poll opened the next track on the system default and played it: the
 headphones switched off and the music went to the speakers without a press,
-which OQ-O5 (Amendment 4) rules out. A device name gone stale before Qt
+which OQ-O5 (FR-O11) rules out. A device name gone stale before Qt
 noticed did the same, by failing to open and falling back.
 
 Ruled by Oliver on 2026-10-03: a lost chosen device holds the music whatever

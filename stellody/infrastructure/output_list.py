@@ -104,7 +104,7 @@ def open_named(
 
     Two routes to one device, chosen by platform in `pulsesink.sink_route`:
     Windows and macOS find it in PortAudio's own list by name, while a machine
-    playing through a sound server names its sink instead (Amendment 6). A
+    playing through a sound server names its sink instead (NFR-O-PORT-001). A
     named device that will not open at all is a refusal rather than the end of
     the music; the default failing stays what it always was.
     """

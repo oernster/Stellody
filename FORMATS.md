@@ -1,53 +1,35 @@
 # Formats proved by a fixture rather than by a file somebody owns
 
-Specification for widening what Stellody decodes, written before the code in
-the house form: EARS requirements, each with its failure case beside it, each
-naming the test that will prove it.
-
-Baseline: this specification as first written, 2026-09-09. Changes after that
-arrive as numbered amendments with a reason rather than as silent edits.
+Specification for widening what Stellody decodes, in the house form: EARS
+requirements, each with its failure case beside it, each naming the test that
+proves it. Every requirement states the rule as it stands today.
 
 ## 1. Introduction
 
 ### 1.1 Purpose
 
-When this was written, Stellody decoded nine audio suffixes and named nine more
-it could see but not play. Three of those nine turn out to need no new decoder
-at all: the FFmpeg build
-already shipped inside PyAV decodes them, mutagen already reads what each
-carries (ASF tags from WMA, APEv2 tags from WavPack, stream details and no tags
-from a raw AAC, which has no tag block) and the existing packet reader already
-addresses them by frame. What kept them out
-was a rule about evidence rather than a gap in capability.
+Three audio suffixes, `.wma`, `.wv` and `.aac`, need no new decoder: the FFmpeg
+build shipped inside PyAV decodes them, mutagen reads what each carries and the
+existing packet reader addresses them by frame. What kept them out was a rule
+about evidence rather than a gap in capability.
 
 ### 1.2 Intended audience
 
 Whoever implements it, whoever reviews it and Oliver, who owns every decision
 recorded here.
 
-### 1.3 The rule this amends, stated first
+### 1.3 The evidence standard
 
-`walker.py` gave this reason for `.m4b` sitting among the unplayable suffixes
-when this was written. It now gives a different one, that an audiobook is not
-music, which section 1.4 holds:
+A format may be claimed where a test PROVES the whole path: a fixture encoded at
+test time, walked, probed, assembled, then decoded back (Oliver's ruling). The
+earlier standard required a real file somebody owned.
 
-> M4B is an audiobook in the same container M4A uses. It is left here rather
-> than moved across with M4A because no file of that kind was measured; a
-> format is claimed to work only where it has been seen to.
-
-**That standard is amended by this document, on Oliver's ruling of
-2026-09-09.** A format may now be claimed where a test PROVES the whole path:
-a fixture encoded at test time, walked, probed, assembled, then decoded back.
-The old standard required a real file somebody owned, which is why formats the
-bundled FFmpeg already decoded sat unplayable in a library holding none of them.
-
-**What the new standard is weaker at, said plainly rather than discovered
-later.** A generated fixture proves the pipeline handles what FFmpeg writes.
-It does not prove the pipeline handles what Windows Media Player, dBpoweramp
-or a hardware ripper writes; tags are exactly where those differ. So
-"supported" here means the format decodes and its tags are read, proved by
-test. It does not mean verified against files in the wild. NFR-F-HONEST-001
-requires the README to say so.
+**What this standard is weaker at.** A generated fixture proves the pipeline
+handles what FFmpeg writes. It does not prove the pipeline handles what Windows
+Media Player, dBpoweramp or a hardware ripper writes; tags are exactly where
+those differ. So "supported" here means the format decodes and its tags are
+read, proved by test. It does not mean verified against files in the wild.
+NFR-F-HONEST-001 requires the README to say so.
 
 ### 1.4 Scope
 
@@ -56,28 +38,23 @@ bit-depth honesty rule extended to cover them; fixtures generated in the suite.
 
 **Out of scope, so that it is not re-proposed:**
 
-- **Monkey's Audio, Musepack, DSD and TAK.** Measured 2026-09-09: the bundled
-  FFmpeg decodes all four and mutagen reads tags for all four; it can encode
-  none of them, so no fixture can be generated and the new standard cannot be
-  met. They are named among the unplayable suffixes, where they are reported
-  rather than silently absent. Each reopens the day a fixture can be made for
+- **Monkey's Audio, Musepack, DSD and TAK.** The bundled FFmpeg decodes all
+  four and mutagen reads their tags; it can encode none of them, so no fixture
+  can be generated and the standard cannot be met. They are reported rather
+  than silently absent (FR-F08). Each reopens the day a fixture can be made for
   it or a real file is measured.
-- **CAF.** Excluded for a different reason that still holds: libsndfile decodes
-  it while mutagen reads nothing out of it, so it would scan into an album with
-  no title.
-- **`.m4b`, the MPEG-4 audiobook.** Ruled out by Oliver on 2026-09-09 on kind
-  rather than on capability: it is the cheapest of all the candidates, being
-  the same container, codec and tag table as `.m4a`; it was measured
-  working. An audiobook is not music; a chaptered one arrives as a single
-  enormous track and would read as an album nobody made. It stays reported.
-- **`.tta`, TrueAudio.** Measured working; mutagen states no channel count
-  for it at all, so the probe would have to invent one. Cut on 2026-09-09 for
-  that plus rarity.
+- **CAF.** libsndfile decodes it while mutagen reads nothing out of it, so it
+  would scan into an album with no title.
+- **`.m4b`, the MPEG-4 audiobook** (Oliver's ruling). It would work, being the
+  same container, codec and tag table as `.m4a`; it is ruled out on kind. An
+  audiobook is not music; a chaptered one arrives as a single enormous track
+  and would read as an album nobody made.
+- **`.tta`, TrueAudio.** It decodes; mutagen states no channel count for it, so
+  the probe would have to invent one. Cut for that plus rarity.
 - **Writing any of these formats.** Stellody reads music files and never writes
   them, which invariants 1 and 2 enforce. The fixtures are written into a
   temporary directory by the SUITE, never by the application.
-- **Any new dependency.** Everything here is already installed and already
-  shipped.
+- **Any new dependency.** Everything here is already installed and shipped.
 
 ### 1.5 Definitions
 
@@ -91,8 +68,7 @@ bit-depth honesty rule extended to cover them; fixtures generated in the suite.
 ### 1.6 References
 
 - `ARCHITECTURE.md`, whose invariants govern every requirement here and whose
-  "Formats and probing" section states the tag shapes the probe reads, five of
-  them since Amendment 2.
+  "Formats and probing" section states the five tag shapes the probe reads.
 - `DISCOVERY.md` and `SHOPS.md`, the two specifications this follows in form.
 
 ## 2. Overall description
@@ -125,253 +101,165 @@ inside PyAV supplies every decoder named here.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-F01 | MEASURED 2026-09-09. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
-| A-F02 | MEASURED 2026-09-09. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging (Amendment 2). A WMA fixture reports no stated depth; a WavPack fixture written as `s16p` reports 16. | | Answered |
-| A-F03 | RULED 2026-09-10, without certainty. A listener with WMA files wants them in the library rather than reported; section 5 records the ruling. | | Answered |
+| A-F01 | MEASURED. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
+| A-F02 | MEASURED. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging. It states no bits per sample for WMA or raw AAC; a WavPack fixture written as `s16p` reports 16. | | Answered |
+| A-F03 | A listener with WMA files wants them in the library rather than reported (Oliver's ruling, made without certainty; section 5). | | Answered |
 
 ## 3. Requirements
 
+Every requirement below is a Must unless it carries a Priority line;
+section 4 lists them.
+
 ### 3.1 Functional
 
----
-
 **FR-F01 The three suffixes are taken**
-
-Priority: Must
-
-Requirement: The walker shall take `.wma`, `.wv` and `.aac` as audio rather
-than naming them among the suffixes it reports as unplayable.
-
-Rationale: They are decodable, taggable and now provable. A suffix in both
-tables would be a file that is scanned and reported as missing at once.
-
-Acceptance: Given a folder holding one file of each of the three, when the
-walk lists it, then all three are taken as tracks and none appears in the
-unplayable report.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_the_widened_suffixes_are_taken`
-
----
+- Requirement: The walker shall take `.wma`, `.wv` and `.aac` as audio rather
+  than naming them among the suffixes it reports as unplayable.
+- Rationale: They are decodable, taggable and provable. A suffix in both tables
+  would be a file that is scanned and reported as missing at once.
+- Acceptance: Given a folder holding one file of each of the three, when the
+  walk lists it, then all three are taken as tracks and none appears in the
+  unplayable report.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_the_widened_suffixes_are_taken`
 
 **FR-F02 Each is decoded through the reader that already addresses packets**
-
-Priority: Must
-
-Requirement: When a source with one of the three suffixes is opened, the
-decoder chooser shall return the packet reader, which counts packet timestamps
-back into frame positions.
-
-Rationale: The same answer M4A already gets, for the same reason: none of the
-three is addressable by frame the way libsndfile addresses a WAV, so a cue
-slice, the equalizer, the visualiser and gapless all depend on that counting.
-
-Acceptance: Given a fixture of each of the three, when a source is opened for
-it, then a packet reader is returned and reading it back yields the frames
-that were encoded.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_each_widened_format_decodes_through_the_packet_reader`
-
----
+- Requirement: When a source with one of the three suffixes is opened, the
+  decoder chooser shall return the packet reader, which counts packet timestamps
+  back into frame positions.
+- Rationale: The same answer M4A gets, for the same reason: none of the three is
+  addressable by frame the way libsndfile addresses a WAV, so a cue slice, the
+  equalizer, the visualiser and gapless all depend on that counting.
+- Acceptance: Given a fixture of each of the three, when a source is opened for
+  it, then a packet reader is returned and reading it back yields the frames
+  that were encoded.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_each_widened_format_decodes_through_the_packet_reader`
 
 **FR-F03 A file that will not decode is reported, never left as silence**
-
-Priority: Must
-
-Requirement: If a file carrying one of the three suffixes cannot be decoded,
-then the transport shall raise the domain's playback error, which the window
-already catches in one place to say what happened and give the device back.
-
-Rationale: The unwanted sibling of FR-F02; also the rule the application
-already holds: a listener cannot tell a silent failure from a press that
-missed. A suffix taken on the strength of a fixture will meet files in the
-wild that the fixture did not represent, so this is the ordinary case here
-rather than the edge one.
-
-Acceptance: Given a file named `.wma` whose content is not WMA at all, when it
-is played, then a playback error is raised naming the file and the window
-reports it.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_widened_suffix_that_will_not_decode_says_so`, `tests/ui/test_saying_a_track_will_not_open.py`
-
----
+- Requirement: If a file carrying one of the three suffixes cannot be decoded,
+  then the transport shall raise the domain's playback error, which the window
+  catches in one place to say what happened and give the device back.
+- Rationale: The unwanted sibling of FR-F02. A listener cannot tell a silent
+  failure from a press that missed. A suffix taken on the strength of a fixture
+  will meet files in the wild the fixture did not represent, so this is the
+  ordinary case here rather than the edge one.
+- Acceptance: Given a file named `.wma` whose content is not WMA at all, when it
+  is played, then a playback error is raised naming the file and the window
+  reports it.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_widened_suffix_that_will_not_decode_says_so`, `tests/ui/test_saying_a_track_will_not_open.py`
 
 **FR-F04 Tags are read for each family**
-
-Priority: Must
-
-Requirement: When a file with one of the three suffixes is probed, the probe
-shall read its album artist, title, date, genre, disc number and track number
-where the file states them, translating each family's own vocabulary into the
-one the resolution rules read.
-
-Rationale: The third tag shape cost this project a scan that could not
-assemble; ASF is a fourth. A format that decodes but whose tags are not
-translated scans into an album with no title, which is the reason CAF is
-excluded rather than supported.
-
-Acceptance: Given a WMA fixture whose ASF tags state an album, an artist and a
-track number, when it is probed, then those three arrive under the domain's own
-names.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_asf_tags_arrive_under_the_domain_names`
-
----
+- Requirement: When a file with one of the three suffixes is probed, the probe
+  shall read its album artist, title, date, genre, disc number and track number
+  where the file states them, translating each family's own vocabulary into the
+  one the resolution rules read. ASF (WMA) is the fourth tag shape the probe
+  reads; APEv2 (WavPack), which iterates as keys rather than pairs, is the fifth.
+  A raw AAC is an ADTS stream with no tag block, so it states no tags whatever
+  wrote it.
+- Rationale: A format that decodes but whose tags are not translated scans into
+  an album with no title, which is the reason CAF is excluded rather than
+  supported.
+- Acceptance: Given a WMA fixture whose ASF tags state an album, an artist and a
+  track number, when it is probed, then those three arrive under the domain's own
+  names.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_asf_tags_arrive_under_the_domain_names`
 
 **FR-F05 A file whose tags cannot be read still scans**
-
-Priority: Must
-
-Requirement: If a file carrying one of the three suffixes states no readable
-tags, then the probe shall report the values as absent rather than raising,
-leaving the folder to assemble into an album as it otherwise would.
-
-Rationale: The unwanted sibling of FR-F04. A fixture states clean tags; a file
-from a real ripper may state none; the failure mode to avoid is the one
-already on record, where one file put rows in the store that the loader then
-choked on, so every later start failed too.
-
-Acceptance: Given a WavPack fixture carrying no tags at all, when the folder is
-scanned, then no file is reported unreadable, the folder assembles into an album
-of one track and that track still carries a title.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_an_untagged_widened_file_still_assembles`
-
----
+- Requirement: If a file carrying one of the three suffixes states no readable
+  tags, then the probe shall report the values as absent rather than raising,
+  leaving the folder to assemble into an album as it otherwise would.
+- Rationale: The unwanted sibling of FR-F04. A file from a real ripper may state
+  no tags; one file must never put rows in the store that the loader then chokes
+  on, which would fail every later start too.
+- Acceptance: Given a WavPack fixture carrying no tags at all, when the folder is
+  scanned, then no file is reported unreadable, the folder assembles into an album
+  of one track and that track still carries a title.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_an_untagged_widened_file_still_assembles`
 
 **FR-F06 A lossy source states no depth and is never bit perfect**
-
-Priority: Must
-
-Requirement: The probe shall report a stated depth of nought for WMA and for
-AAC, which is what makes `is_bit_perfect` false for a source of either format
-in every output mode.
-
-Rationale: **The requirement this whole change turns on.** A lossy MP4 already
-states sixteen bits per sample because its container carries that number
-whatever the codec does; passing it through would have badged an AAC track
-as delivered untouched. WMA is the same shape. The promise the README leads
-with is held by reporting rather than by hoping, so a new lossy format is
-exactly where that promise is at risk.
-
-Acceptance: Given a WMA fixture and an AAC fixture, when each is probed, then
-the stated depth is nought; when an output request is built for either in
-exclusive mode, then it is refused with the reason naming the file rather than
-the device, with `is_bit_perfect` false.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_lossy_widened_format_states_no_depth`, `tests/domain/test_output_request.py::test_a_widened_lossy_source_is_never_bit_perfect`, `tests/infrastructure/test_exclusive_refusal.py::test_a_lossy_source_is_refused_exclusive_for_the_file`
-
----
+- Requirement: The probe shall report a stated depth of nought for WMA and for
+  AAC, which is what makes `is_bit_perfect` false for a source of either format
+  in every output mode. `stellody/domain/formats.py` names both among
+  `LOSSY_FAMILIES` on what the codec does, so a tag library that starts
+  reporting a header depth for either changes nothing.
+- Rationale: **The requirement this whole change turns on.** A lossy MP4 states
+  sixteen bits per sample because its container carries that number whatever the
+  codec does; passing it through would badge an AAC track as delivered untouched.
+  The promise the README leads with is held by reporting rather than by hoping, so
+  a new lossy format is exactly where that promise is at risk.
+- Acceptance: Given a WMA fixture and an AAC fixture, when each is probed, then
+  the stated depth is nought; when an output request is built for either in
+  exclusive mode, then it is refused with the reason naming the file rather than
+  the device, with `is_bit_perfect` false.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_a_lossy_widened_format_states_no_depth`, `tests/domain/test_output_request.py::test_a_widened_lossy_source_is_never_bit_perfect`, `tests/infrastructure/test_exclusive_refusal.py::test_a_lossy_source_is_refused_exclusive_for_the_file`
 
 **FR-F07 A lossless source keeps the depth it states**
-
-Priority: Must
-
-Requirement: The probe shall report the bits per sample a WavPack file states
-rather than reducing it to nought.
-
-Rationale: The other half of FR-F06; it is the half a guard written only
-against lossy formats would break. WavPack is lossless and states a real depth,
-so suppressing it would deny a bit-perfect stream to a file that has earned
-one.
-
-Acceptance: Given a WavPack fixture encoded at sixteen bits, when it is probed,
-then the stated depth is sixteen; given one encoded at thirty two, then it is
-thirty two.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_wavpack_keeps_the_depth_it_states`
-
----
+- Requirement: The probe shall report the bits per sample a WavPack file states
+  rather than reducing it to nought.
+- Rationale: The other half of FR-F06; it is the half a guard written only
+  against lossy formats would break. WavPack is lossless and states a real depth,
+  so suppressing it would deny a bit-perfect stream to a file that has earned
+  one.
+- Acceptance: Given a WavPack fixture encoded at sixteen bits, when it is probed,
+  then the stated depth is sixteen; given one encoded at thirty two, then it is
+  thirty two.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_wavpack_keeps_the_depth_it_states`
 
 **FR-F08 What remains unplayable is still named**
-
-Priority: Must
-
-Requirement: The walker shall continue to name `.ape`, `.mpc`, `.dsf`, `.dff`,
-`.tta`, `.m4b`, `.caf` and the AAC-in-MP4 cases it already names, so a folder
-holding only those raises one finding naming how many files and which formats.
-
-Rationale: The behaviour that exists because somebody went looking for an album
-they owned and found nothing at all. Widening the taken set must not narrow the
-reported one.
-
-Acceptance: Given a folder holding one Monkey's Audio file, when it is scanned,
-then one finding names it and no album is silently absent.
-
-Verified by: `tests/infrastructure/test_scanning_formats.py::test_the_formats_left_out_are_still_reported`
-
----
+- Requirement: The walker shall name `.ape`, `.mpc`, `.dsf`, `.dff`, `.tta`,
+  `.tak`, `.m4b` and `.caf` as unplayable, so a folder holding only those raises
+  one finding naming how many files and which formats. An AAC inside an MP4 is an
+  `.m4a` and plays, so no such case is named.
+- Rationale: Somebody went looking for an album they owned and found nothing at
+  all. Widening the taken set must not narrow the reported one.
+- Acceptance: Given a folder holding one Monkey's Audio file, when it is scanned,
+  then one finding names it and no album is silently absent.
+- Verified by: `tests/infrastructure/test_scanning_formats.py::test_the_formats_left_out_are_still_reported`
 
 ### 3.2 Non-functional
 
----
-
 **NFR-F-TEST-001 Every fixture is generated, never committed**
-
-Priority: Must
-
-Requirement: The suite shall encode each fixture into a temporary directory at
-test time, so the repository holds no audio file of any of the three formats.
-
-Rationale: The whole basis of the amended rule. A committed binary is also a
-licence question and a repository that grows with every format.
-
-Verification: a structural test asserting no `.wma`, `.wv` or `.aac` file is
-tracked, plus the fixtures being built by a helper the tests call.
-
----
+- Requirement: The suite shall encode each fixture into a temporary directory at
+  test time, so the repository holds no audio file of any of the three formats.
+- Rationale: The whole basis of the evidence standard. A committed binary is also
+  a licence question and a repository that grows with every format.
+- Verification: `tests/structural/test_no_committed_audio.py`, which scans the
+  working tree for any `.wma`, `.wv` or `.aac` file (so it also catches a fixture
+  nobody has staged), plus the fixtures being built by a helper the tests call.
 
 **NFR-F-TEST-002 A fixture states its sample format**
-
-Priority: Must
-
-Requirement: Every fixture shall state the sample format it is encoded at
-rather than letting the encoder choose.
-
-Rationale: Measured 2026-09-09, which is why it is a requirement rather than
-a note. The WavPack encoder accepts `u8p`, `s16p`, `s32p` and `fltp`,
-defaulting to the FIRST of them, so a fixture written without stating one is
-eight bit. It then reports a stated depth of 8 and the test proves the wrong
-thing while passing. A fixture that lies is worse than no fixture.
-
-Verification: the WavPack cases of FR-F07, which assert 16 and 32 against
-fixtures stating `s16p` and `s32p`.
-
----
+- Requirement: Every fixture shall state the sample format it is encoded at
+  rather than letting the encoder choose.
+- Rationale: The WavPack encoder accepts `u8p`, `s16p`, `s32p` and `fltp`,
+  defaulting to the FIRST of them, so a fixture written without stating one is
+  eight bit, reports a stated depth of 8 and the test proves the wrong thing
+  while passing. A fixture that lies is worse than no fixture.
+- Verification: the WavPack cases of FR-F07, which assert 16 and 32 against
+  fixtures stating `s16p` and `s32p`.
 
 **NFR-F-HONEST-001 The README says what supported means here**
-
-Priority: Must
-
-Requirement: The README shall state that these three formats are proved by
-generated fixtures rather than verified against files in the wild, naming also
-the formats that remain reported rather than played.
-
-Rationale: The README honesty rule, applied to the weaker evidence standard
-this document adopts. A reader assuming "supported" means "tested against my
-files" would be assuming something nobody has checked.
-
-Verification: inspection, plus `tests/structural/test_no_dashes.py`, which
-holds every Markdown file to the rule on dashes. No test checks the README for
-version data or for the other prose rules.
-
----
+- Requirement: The README shall state that these three formats are proved by
+  generated fixtures rather than verified against files in the wild, naming also
+  the formats that remain reported rather than played.
+- Rationale: The README honesty rule, applied to the weaker evidence standard of
+  section 1.3. A reader assuming "supported" means "tested against my files"
+  would be assuming something nobody has checked.
+- Verification: inspection, plus `tests/structural/test_no_dashes.py`, which
+  holds every Markdown file to the rule on dashes. No test checks the README for
+  version data or for the other prose rules.
 
 **NFR-F-MAINT-001 The layering and the gate hold**
-
-Priority: Must
-
-Requirement: Every module this change touches shall stay at or below 400 lines,
-shall land at 350 or below where it enters the 381 to 400 band, with the domain
-and application layers holding 100% branch coverage.
-
-Verification: `.\gate.ps1`, read by exit code.
-
----
+- Requirement: Every module this change touches shall stay at or below the line
+  cap, shall land at the comfortable target or below where it enters the danger
+  band (both named in `tests/structural/test_loc.py`, which counts a file at the
+  cap as inside the band), with the domain and application layers holding 100%
+  branch coverage.
+- Verification: `.\gate.ps1`, read by exit code.
 
 ### 3.3 Data
 
-No new file and no new store. Two frozen sets in `walker.py` change membership;
-one names three more suffixes and the other names three fewer.
+No new file and no new store. Two frozen sets in `walker.py` hold the rule:
+`AUDIO_SUFFIXES` gains the three suffixes of FR-F01 and `UNPLAYABLE_SUFFIXES`
+is the list of FR-F08.
 
 ## 4. Prioritisation
 
@@ -384,19 +272,11 @@ DSD, TAK, CAF, `.m4b` and `.tta`, each for the reason given in section 1.4.
 
 ## 5. Open questions
 
-None. OQ-F01 asked whether a listener holding WMA files wants them in the
-library rather than reported, since taking them changes what such a library
-looks like without that person being asked. Ruled by Oliver on 2026-09-10:
-they belong in the library, which is the behaviour that shipped.
-
-The ruling was made without certainty and is recorded that way, because a
-decision stated more confidently than it was made is the kind that gets
-quietly reversed later by whoever reads it. Nobody here holds a WMA library,
-so nobody here can settle it; what would settle it is somebody who does saying
-how theirs reads. Until then the answer stands and the cost of being wrong is
-known: a listener who wanted those files reported instead sees albums appear
-that used to be named in the health report, which is visible rather than
-silent and is the milder of the two directions to be wrong in.
+None. OQ-F01: WMA files belong in the library rather than reported (Oliver's
+ruling). It was made without certainty, since nobody here holds a WMA library;
+somebody who does saying how theirs reads would settle it. Being wrong costs a
+listener who wanted those files reported seeing albums appear instead, which is
+visible rather than silent.
 
 ## 6. The build order this implies
 
@@ -404,47 +284,14 @@ Inside out, as every feature here is built.
 
 1. **Domain**: the depth rules, FR-F06 and FR-F07, as pure functions over a
    stated depth. Testable with no file present.
-2. **Infrastructure, probe**: the ASF names table and whatever WavPack and AAC
-   need, proved against generated fixtures.
+2. **Infrastructure, probe**: the ASF names table and the APEv2 reading,
+   proved against generated fixtures.
 3. **Infrastructure, walker and decoder chooser**: the two suffix sets and the
    routing, which is the smallest part.
 4. **Documents**: the README non-claim, then `ARCHITECTURE.md`'s formats
-   section gaining the fourth tag shape.
+   section gaining the fourth and fifth tag shapes.
 
 The diagnostic that says the foundation is sound: a fixture of each format must
 be walked, probed, assembled into an album and decoded back from a test, before
 anything about the interface is touched. Nothing here has an interface of its
 own.
-
-## 7. Amendments
-
-Numbered, each with its reason, as the baseline asks.
-
-**Amendment 1, 2026-09-10: OQ-F01 answered.** Section 5 and A-F03 record
-Oliver's ruling that WMA files belong in the library, made without certainty.
-Section 5 was rewritten in place when the ruling was made; this entry is the
-record that should have come with it.
-
-**Amendment 2, 2026-09-12: what the build measured where it differed from the
-text above.** No requirement's intent changed; each point corrects a statement
-the code proved wrong.
-
-- **WMA states no depth at all.** FR-F06 calls WMA the same shape as a lossy
-  MP4, which states sixteen. Measured while building, mutagen states no bits
-  per sample for WMA or for a raw AAC, so both already reported nought.
-  `stellody/domain/formats.py` names both lossy anyway, on what the codec does
-  rather than on what a tag library reports.
-- **There are five tag shapes, not four.** FR-F04, section 1.6 and the build
-  order speak of ASF as the fourth. WavPack carries APEv2, which iterates as
-  keys rather than pairs, so it is a fifth. A raw AAC is an ADTS stream with no
-  tag block, so it states no tags whatever wrote it.
-- **The reported set lost three and gained two.** Section 3.3 says it names
-  three fewer. `.tta` and `.tak` were added, since FR-F08 requires `.tta` named
-  and neither was named before; the set therefore names one fewer.
-- **No AAC-in-MP4 case is named.** FR-F08 refers to cases the walker already
-  names. It names none; an AAC inside an MP4 is an `.m4a` and plays.
-- **The guard scans the working tree.** NFR-F-TEST-001 asks for a test that no
-  fixture audio is tracked. `tests/structural/test_no_committed_audio.py` scans
-  the working tree instead, which also catches a fixture nobody has staged.
-- **The danger band is 381 to 400.** NFR-F-MAINT-001 said 399;
-  `tests/structural/test_loc.py` counts a file at the cap as inside the band.

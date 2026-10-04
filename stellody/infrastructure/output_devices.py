@@ -16,7 +16,7 @@ So a move is reported only when the default device's identity differs from the
 last one seen. That turns two signals into one; a device arriving that is not
 the default turns into none. Each move says whether the default it left has
 left the list as well: a device arriving carries the music on, one leaving
-pauses it (`OUTPUTS.md` Amendment 5).
+pauses it (`OUTPUTS.md` FR-O15).
 
 A change to the list itself is reported separately (`listed`), once for each
 different set of devices, so the output list a listener chooses from is kept

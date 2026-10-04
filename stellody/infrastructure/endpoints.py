@@ -1,6 +1,6 @@
 """The playback devices Windows lists, in Windows' own order, with identities.
 
-Measured on 2026-09-18 (`OUTPUTS.md`, Amendment 2): PortAudio's WASAPI outputs
+Measured on 2026-09-18 (`OUTPUTS.md` NFR-O-PORT-001): PortAudio's WASAPI outputs
 arrive in exactly the order `IMMDeviceEnumerator::EnumAudioEndpoints` gives
 them, so this order is what tells two devices of one name apart. Qt lists the
 same devices in another order (the default first), which is why Qt's list is

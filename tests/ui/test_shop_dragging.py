@@ -1,4 +1,4 @@
-"""A shop row carried with the pointer while it is dragged. FR-S27, Amendment 2.
+"""A shop row carried with the pointer while it is dragged. FR-S27.
 
 Driven through the handle's own mouse events rather than by calling the drag,
 so what is proved is the path a real press, movement and release take.
