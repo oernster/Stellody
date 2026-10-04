@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from stellody.domain.discovery import Gaps, ReleaseGroup, SimilarArtist
 from stellody.domain.text import VARIOUS_ARTISTS
+from stellody.ui.gliding import ASKING_FOR_A_PLACE
 from stellody.ui.results_ticks import (
     TICKED,
     UNTICKED,
@@ -66,12 +67,20 @@ class ResultsList(QTreeWidget):
     keeps_horizontal_keys = True
 
     def focusInEvent(self, event: QFocusEvent) -> None:
-        """Arrive on the first row when nothing is current.
+        """Arrive on the first row when Tab brings focus and nothing is current.
 
         A list arrived at with no current row shows nothing whatever, so the
         focus would be somewhere nobody can see.
+
+        Only on Tab, by the library grid's rule. Reported by Oliver on
+        2026-10-04 and reproduced: a click gives focus before the press is
+        handled, so choosing the first row scrolled the list to the top and
+        the press then landed on whatever row had moved under the pointer. A
+        click makes its own row current.
         """
         super().focusInEvent(event)
+        if event.reason() not in ASKING_FOR_A_PLACE:
+            return
         if self.currentItem() is None and self.topLevelItemCount():
             self.setCurrentItem(self.topLevelItem(0))
 
