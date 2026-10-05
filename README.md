@@ -107,7 +107,8 @@ Each line is a summary; the site has the detail.
 
 - Help then Guide names every button beside the picture the window draws, plus
   the rules Stellody reads a library by.
-- Every button on both trays bar the donation button is on the menu bar too.
+- Every button on both trays bar the volume and the donation button is on the
+  menu bar too.
 
 The [features page](https://stellody.co.uk/features.html) has the overview;
 [the technical page](https://stellody.co.uk/technical.html) says how its claims

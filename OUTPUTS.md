@@ -215,7 +215,10 @@ section 4 lists them.
   open the track on the system default instead; the window shall say on the
   status line which device refused and its reason. The choice stays as it was;
   the refused device is not asked again until the listener chooses it again or
-  it leaves the list and returns.
+  it leaves the list and returns. Where the refusal comes at a track boundary,
+  the next track opens on the system default paused and the status line says
+  so (`REFUSED_HELD_MESSAGE`), since music never goes to the speakers without a
+  press (OQ-O5).
 - Rationale: The unwanted sibling of FR-O07. Another application holding the
   device exclusively is the ordinary way it happens. Silence would read as a
   press that missed; retrying on every track would open each into the same
@@ -223,7 +226,7 @@ section 4 lists them.
 - Acceptance: Given the Focusrite held exclusively by another application, when
   it is chosen, then the music plays on the system default and the status line
   names the Focusrite with the reason the device gave.
-- Verified by: `tests/application/test_choosing_an_output.py::TestARefusal::test_a_refusal_falls_back_to_the_default`, `tests/ui/test_output_messages.py::test_a_refusal_is_said`
+- Verified by: `tests/application/test_choosing_an_output.py::TestARefusal::test_a_refusal_falls_back_to_the_default`, `tests/ui/test_output_messages.py::test_a_refusal_is_said`, `tests/application/test_a_lost_device_between_tracks.py::test_a_stale_device_failing_at_a_seam_holds_the_music`, `tests/ui/test_output_messages.py::test_a_refusal_at_the_next_track_is_said_by_the_poll`
 
 **FR-O09 The choice is remembered**
 - Requirement: The window shall store the choice by endpoint identity when it is
@@ -330,7 +333,7 @@ section 4 lists them.
   promise about the wrong device.
 - Acceptance: Given the Focusrite chosen, when the window asks which rates are
   taken exclusively, then the question is put to the Focusrite.
-- Verified by: `tests/ui/test_exclusive_follows_the_device.py` (extended)
+- Verified by: `tests/ui/test_exclusive_follows_the_device.py`
 
 **FR-O17 The Sound menu holds the same list**
 - Requirement: The Sound menu shall hold an Output device submenu, beside
@@ -350,8 +353,9 @@ section 4 lists them.
 - Rationale: The house keyboard model, applied to one more control. A list only
   a mouse can use is not reachable.
 - Acceptance: Given focus on mute, when Tab is pressed, then focus is on
-  the choose-device button; given the list open, when Down then Enter are
-  pressed, then the first output device is chosen; given the list open, when
+  the choose-device button; given the list open, when Down is pressed twice
+  (past System default) then Enter, then the first output device is chosen;
+  given the list open, when
   Escape is pressed, then nothing changes.
 - Verified by: `tests/ui/test_output_button.py::test_the_ring_stops_on_it_straight_after_mute`, `tests/ui/test_output_button.py::test_the_list_is_keyboard_driven`, `tests/ui/test_output_button.py::test_escape_leaves_the_choice_alone`
 

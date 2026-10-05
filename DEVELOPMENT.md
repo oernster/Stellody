@@ -115,10 +115,8 @@ which carries it across, pushes it then asks Render to deploy it. Commit here
 and both hosts follow.
 
 **The deploy is asked for rather than inferred, deliberately.** Render's own
-Auto-Deploy is set to On Commit, yet it stopped hearing pushes with nothing
-anywhere saying so; deploys went out only when somebody pressed for one. The
-workflow already knows a deploy is wanted, so it says so outright, through a
-deploy hook held as `RENDER_DEPLOY_HOOK`. Without that secret the mirror still
+Auto-Deploy cannot be relied on to hear a push, so the workflow asks for the
+deploy outright, through a deploy hook held as `RENDER_DEPLOY_HOOK`. Without that secret the mirror still
 updates while stellody.com waits; the run then logs a warning saying exactly
 that.
 

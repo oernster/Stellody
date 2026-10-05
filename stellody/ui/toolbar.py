@@ -1,8 +1,9 @@
 """The icon tray under the menus.
 
 Picture-only buttons in reading order: choose the music folder, narrow it to a
-genre and search it on the left, the transport centred, then discovery, the
-appearance toggle and Help on the right. The library buttons
+genre and search it on the left, the transport centred, then discovery with
+the button naming whom a run could not answer for, the appearance toggle and
+Help on the right. The library buttons
 repeat something the menus already offer, so they add reach rather than
 capability; nothing here owns any state of its own.
 

@@ -61,7 +61,7 @@ MATCHED_SEVERAL = (
 # Why the counts are worth reading at all, said once at the end however many
 # clauses came before it.
 SO_INCOMPLETE = ", so anything missing for them is not here."
-# The button beside the sentence. Its own count, for the reason in the module
+# The button's words for the count. Its own count, for the reason in the module
 # docstring.
 UNANSWERED_ONE = "1 artist unanswered"
 UNANSWERED_SOME = "{count} artists unanswered"
@@ -196,7 +196,7 @@ def shortfall_html(report: RunReport) -> str:
 
 
 class ShortfallDialog(FirstStopDialog):
-    """The names themselves, on the button beside the run's own sentence."""
+    """The names themselves, behind the tray button that counts them."""
 
     def __init__(self, report: RunReport, parent: QWidget | None = None) -> None:
         super().__init__(parent)

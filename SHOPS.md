@@ -121,7 +121,7 @@ is specified rather than assumed away.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-01 | 7digital's search takes `q`, confirmed by Oliver in a browser past the wall that refuses automated visitors; the shipped row carries the UK host and `fallback=true` it was seen with. Whether an artist and an album together answer there is unconfirmed. | Oliver | Answered |
+| A-01 | 7digital's search takes `q`, confirmed by Oliver in a browser past the wall that refuses automated visitors; the shipped row carries the UK host and `fallback=true` it was seen with. Whether an artist and an album together answer there is left to the page (A-03). | Oliver | Answered |
 | A-02 | `assets/copy.png` is supplied, matching `shop.png`. | Oliver | Answered |
 | A-03 | The shipped shops are not re-checked at each release (Oliver's ruling): FR-S09 makes a shop that rots an edit rather than a release. | Oliver | Answered |
 | A-04 | `assets/drag-up-down.png` is supplied for the handle, so it is artwork rather than drawn in code. | Oliver | Answered |
@@ -280,7 +280,7 @@ section 4 lists them.
 - Rationale: The unwanted sibling of FR-S06. Nothing happening at all is the one
   outcome indistinguishable from the application being broken.
 - Acceptance: Given an opener that refuses, when a shop is chosen, then the dialog
-  says the address could not be opened and remains open.
+  says that shop could not be opened and remains open.
 - Verified by: `tests/ui/test_shop_dialog.py::test_a_browser_that_will_not_open_says_so`,
   `tests/ui/test_shop_dialog.py::test_a_refusal_leaves_the_dialog_standing`
 

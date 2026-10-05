@@ -21,17 +21,16 @@ sets `QT_QPA_PLATFORM=offscreen` for the run, so no window appears.
 **A full run takes about ten minutes.** Most of it is the interface tests
 under `tests/ui`, many of them spending most of a second building their window;
 the rest of the suite takes a minute or two.
-`venv\Scripts\python.exe -m pytest --co -q --no-cov` gives the current count.
 A run that is quiet for several minutes is not stuck. To see it moving,
 add `-v` to a pytest run by hand, which names each test as it starts.
 
-**Read the exit code, never the last line.** The suite is coverage gated, so it
-prints the coverage table last and no summary line of passed and failed; a
+**Read the exit code, never the last line.** The summary line of passed and
+failed says nothing about the coverage gate, which fails the run on its own; a
 coverage row named after a module such as `passing.py` also reads like a result
 to anybody searching the text. `gate.ps1` reads `$LASTEXITCODE` after every
 step and throws on anything but nought. Running a step by hand, do the same.
-For a count of tests without running them, `python -m pytest --co -q --no-cov`
-ends with one.
+For a count of tests without running them,
+`venv\Scripts\python.exe -m pytest --co -q --no-cov` ends with one.
 
 ## What the gate holds
 
@@ -51,20 +50,20 @@ ends with one.
 
 - **Use the project's Python.** `python -m pytest` works provided it is
   `venv\Scripts\python.exe`. `tests/structural/test_environment.py` fails the
-  run anywhere else, since checks passing in one environment while the
-  application runs in another is a fault this project has actually had.
+  run anywhere else, since checks passing in one environment prove nothing
+  about the one the application runs in.
 - **The offscreen platform is set for you.** `tests/conftest.py` sets
   `QT_QPA_PLATFORM=offscreen` before any `QApplication` exists, however the
-  suite was started. The interface tests build real windows; before this was
-  in the conftest, a bare `pytest` put each of them on the desktop in turn,
-  every one answering a close with its own quit prompt.
+  suite was started. The interface tests build real windows; without it each
+  would appear on the desktop, every one answering a close with its own quit
+  prompt.
 - **One run at a time.** Two runs of the suite at once fail falsely: at least
   `tests/infrastructure/test_instance.py` and `tests/ui/test_arrow_ring.py`
   collide. A failure met while another run was going is not evidence of
   anything; run it again alone.
 - **The application is never started.** `tests/conftest.py` refuses any test
   that tries to start `stellody.exe`, whatever it believes it patched, since a
-  stand-in that stopped matching once started the installed copy on every run.
+  stand-in that stops matching would start the installed copy.
   It also sends the diary to the test's own temporary folder, so a run never
   writes into the account of real runs.
 
@@ -96,8 +95,9 @@ ends with one.
 - **One `QApplication`, no window outliving its test.** `tests/conftest.py`
   provides the session's `application` fixture to every suite, so no suite
   builds its own; `tests/ui/conftest.py` destroys every top level widget
-  between the interface tests. A window left to the garbage collector was destroyed
-  inside the next test, measured as an access violation five runs in six.
+  between the interface tests. A window left to the garbage collector is
+  destroyed inside the next test, which crashes the run with an access
+  violation.
 - **The network.** `tests/infrastructure/fetching_support.py` runs a real HTTP
   service on the loopback address and records every ask and every header, so a
   test reads what actually arrived rather than what the code meant to send.
@@ -106,8 +106,8 @@ ends with one.
   `video_support.py` and `widened_support.py` in `tests/infrastructure/` encode
   real files for the test and throw them away with its temporary folder.
 - **Anything the scale changes.** Qt reads its scale once, as the application
-  is built, while the suite runs at one. A defect that shows only at the nine
-  tenths every window is drawn at needs a process started at that scale:
+  is built, while the suite runs at one. A defect that shows only at the
+  interface scale every window is drawn at (`INTERFACE_SCALE`) needs a process started at that scale:
   `tests/ui/test_every_rule_is_drawn.py` runs `tests/ui/rule_sweep.py` that
   way and reads what it prints.
 
@@ -121,7 +121,7 @@ for code nobody has written yet. The suite in `tests/structural/`:
 | `test_readonly.py` | Stellody never writes to a music library |
 | `test_offline.py` | only the permitted modules can open a connection |
 | `test_layers.py` | layer boundaries and domain purity |
-| `test_loc.py` | the 400 line limit and the danger band below it |
+| `test_loc.py` | the line cap and the danger band below it |
 | `test_environment.py` | the suite runs where the application runs |
 | `test_style.py` | black, flake8 and ruff, as assertions |
 | `test_no_dashes.py` | no dash-like character in a screen, document or comment |

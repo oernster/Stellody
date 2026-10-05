@@ -44,7 +44,7 @@ mode the catch was written for. The breadth is the point.
 `UNPLAYABLE_SUFFIXES` in the walker could be a single mapping. They are
 deliberately apart: what can be decoded and what is known-but-unplayable are
 different facts; inferring the second from "not in the first" is exactly what
-made a stray text file read as a missing album once already.
+would make a stray text file read as a missing album.
 
 ## Not debt (do not "fix" these)
 
@@ -67,7 +67,7 @@ name. A name on that list that the walk no longer finds fails the
 suite, so the exemption cannot quietly outlive the script.
 
 **Quitting during a cover lookup leaves the process without unwinding.** A
-search inside a network read is given up within about a second now (`SLICE_S`
+search inside a network read is given up within one read slice (`SLICE_S`
 in `infrastructure/cover_search.py`), so
 `leave_at_once` in `composition.py` should never be reached. It stays because
 what no amount of asking covers is a socket that never comes back. Without it,

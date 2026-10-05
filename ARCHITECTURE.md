@@ -43,6 +43,18 @@ write new ones is in [`TESTING.md`](TESTING.md).
 Stellody was built for was damaged by a player that wrote tags back into the
 files. Stellody describes a damaged tag; it never repairs one.
 
+**Every client that leaves the machine is held to named hosts.**
+`stellody/infrastructure/reach.py` holds the hosts each may reach; a redirect
+to any other host is refused (`PinnedRedirects` in `update_source.py`, borrowed
+by the cover search; `Fetcher` in `fetching.py`). Held by
+`tests/infrastructure/test_redirects.py`.
+
+**A library database that will not open is set aside, never refused.**
+`stellody/infrastructure/opening.py` moves the file aside whole, with its write
+ahead log and shared memory file, opens a fresh one and the window says where
+the old file went, since ratings, plays, corrections and settings cannot be
+rebuilt by a rescan. Held by `tests/infrastructure/test_opening.py`.
+
 **Invariant 12 holds local-first as a test rather than a promise.** The four
 permitted modules are `stellody/infrastructure/cover_search.py` (reached when
 somebody asks for a cover), `update_source.py` (asks GitHub whether a newer
@@ -111,8 +123,8 @@ applies to it as to the package.
 **Setup never opens the library database.** It runs just after ending the
 application by force, the moment that file is least safe to touch, so it
 leaves notes for the application to act on instead:
-`stellody/infrastructure/switch_reset.py` (clear the switches on a fresh
-install) and `stellody/infrastructure/window_reset.py` (open maximised on the
+`stellody/infrastructure/switch_reset.py` (start shuffle and repeat off and ask
+again about closing, after an install or a reinstall) and `stellody/infrastructure/window_reset.py` (open maximised on the
 screen setup was on, after an install, repair or reinstall). The composition
 root takes the window note, forgets the remembered size through
 `forget_window` and lays the window on that screen through `open_on` in
@@ -411,7 +423,8 @@ from the handler has nothing waiting behind it.
 widget. Two traps are not to be re-attempted: `idealWidth()` returns the set
 width, so a second narrowing pass narrows nothing; releasing the height clamp
 after measuring lets the page grow back, so the clamp stays. The view is made
-wider than the text by its own frame (asked of the style), since the viewport
+wider than the text by its own frame (`frameWidth`, asked at measuring time),
+since the viewport
 is what wraps.
 
 **Qt rich text is not a browser:** no `opacity`; an entity dash renders as
@@ -785,10 +798,13 @@ years beside the answer, read in one reading so one run's question never sits
 above another's answer (FR-D64).
 
 **An answer says who it could not be given for.** Refused, unknown and
-ambiguous names are counted apart in the run's message, with a badged tray
-button beside the discovery button naming them; `stellody/ui/shortfall.py` holds
-the words, the report and the mixin owning the button, `icons.badged` draws the
-badge and the tray places the button.
+ambiguous names are counted apart in the run's message. A tray button beside
+the discovery button, inside discovery's rule, is always present: disabled
+while nothing is owed, enabled with a count badge once a run leaves artists
+unanswered; pressing it (as its File menu entry does) lists the names by what
+went wrong. `stellody/ui/shortfall.py` holds the words, the report, the button's
+builder and the mixin that wears it; `icons.badged` draws the badge in the
+palette's `badge` and `on_badge` colours; `LibraryTray` places the button.
 
 **One file, replaced by every completed run; a run may correct what is known
 but not take it away.** `carried_over` in `application/carrying_over.py` (pure)
@@ -967,7 +983,8 @@ because a missing device cannot be asked for one.
 
 **Identity decides; the name is what a listener reads.** Two devices can share
 a name, so the choice is stored under `output_device` with
-`output_device_name` beside it. `output_list` builds both lists: System
+`output_device_name` beside it. `output_list` in `stellody/domain/outputs.py`
+builds both lists: System
 default first, devices in the system's order, repeated names numbered, a
 missing choice last as not connected. The tick follows the device in use
 (FR-O06).
@@ -1128,7 +1145,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | The chooser is injected, so a window without it offers nothing | The lookup reaches outward, so it arrives as an adapter behind a port; a window built without one has no menu entry, which lets the suite run with no network. |
 | A refused ask is asked again; a refusal is never reported as an absence | MusicBrainz refuses often under load. The release search is retried with a growing pause; what survives every retry is carried as a refusal, since a service that would not answer made no claim about the album. Only the search retries. |
 | The rating is one control rather than five buttons | One value is one keyboard stop painting one ring; the stars are drawn rather than assembled. |
-| The transport is told who to report a play to, rather than being given it | The one place a collaborator is set rather than injected: only the window can turn a track into its album and it does not exist when the transport is built (`Transport.report_plays_to`). |
+| The transport is told who to report a play to, rather than being given it | One of two places a collaborator is set rather than injected: only the window can turn a track into its album and it does not exist when the transport is built (`Transport.report_plays_to`). The other is the device lister, which the composition root hands the window through `start_choosing_outputs`. |
 | A narrowing keeps every cover already read | A cover belongs to an album, not a run of rows, so the cache is dropped only where the sources are replaced (a load or scan). The pane takes a sleeve that arrives after it opened. |
 | A tooltip appears almost at once | On picture buttons the tooltip is the only name. `stellody/ui/tips.py` is a proxy style shortening the tooltip delay, built from the replaced style's name since the application destroys that style. Its `polish` marks every window `WA_AlwaysShowToolTips`, so tips show while Stellody is behind another application (`tests/ui/test_tips.py`). |
 | A ring a popup leaves behind is redrawn | Qt withholds HoverLeave from a window while another's popup is up, leaving a hover-drawn ring stale. `stellody/ui/hover_paint.py` is an application filter asking for a paint on a Leave under a popup, for every `WA_Hover` widget (`tests/ui/test_leaving_under_a_popup.py`). |
@@ -1141,7 +1158,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | The waiting after a refusal is spent on a pass, never on one artist | MusicBrainz refusals reflect its load, not our rate. A refused artist is asked once more, then put back for a later pass, so waiting overlaps other artists. `application/passing.py` is the bookkeeping and asks nothing. |
 | A run asks a catalogue only what it has never been told | Asking everything every run made answers vary with a service's mood. Answers are kept in `catalogue-memory.json`: `application/remembering.py` holds the rule, `infrastructure/catalogue_memory.py` the file. An answer stands for a period then is asked again (Oliver's ruling: runs should differ over weeks, not minutes). Saving merges with what the file holds (`merged`); one `FileCatalogueMemory` serves the run, its price and expansion. Undated album and series answers are dropped on read (`_dated`, FR-D67). The kinds include identities, `credited`, `series-of`, `series` and `titled`; asking lives once in `recalled` over an `Asking` (`tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`). |
 | The answer is turned a page at a time, with every page built up front | A page fills every column, depth following height (Oliver's ruling); a column holding a tall artist scrolls. Every page is built at open because a tick is held by its row. `ui/results_room.py` is the arithmetic, `results_pages.py` the pages, `results_pager.py` the controls, `results_foot.py` the one foot row they share with the shop controls (Oliver's ruling). |
-| Every block the device ran dry before it arrived is written to the diary | `stellody/infrastructure/dropouts.py` watches the room in the buffer (PortAudio's underflow flag proved blind on shared WASAPI): a write finding the whole buffer free follows a device that ran dry; a write taking longer than its audio plus what was buffered held a silence of the difference (timed on `perf_counter`). The buffer's size is read once per stream, on its first start, since a queue survives a stop. `stellody/infrastructure/buffering.py` asks every stream for two blocks of queue, which ended the static heard under load; `lead_frames` counts that queue for position and pictures. Held by `tests/infrastructure/test_dropouts.py` and `tests/infrastructure/test_buffering.py`, both on the real device. Metering lives in `stellody/infrastructure/metering.py`. |
+| Every block the device ran dry before it arrived is written to the diary | `stellody/infrastructure/dropouts.py` watches the room in the buffer (PortAudio's underflow flag proved blind on shared WASAPI): a write finding the whole buffer free follows a device that ran dry; a write taking longer than its audio plus what was buffered held a silence of the difference (timed on `perf_counter`). The buffer's size is read once per stream, on its first start, since a queue survives a stop. `stellody/infrastructure/buffering.py` asks every stream for two blocks of queue, which ended the static heard under load; `lead_frames` counts that queue for position and pictures. Held by `tests/infrastructure/test_dropouts.py` and `tests/infrastructure/test_buffering.py`, each including a case on the real device that skips where none opens. Metering lives in `stellody/infrastructure/metering.py`. |
 | One dropped connection no longer ends a run; a run of them still does | An artist nothing answered about goes round again like a refused one; the run gives up only after a run of consecutive silences, counted once for the whole run by `Silence` in `application/gathering.py`. |
 | Every answer is written down as it arrives, not only when a run ends | Each answer is appended to a running record and forced to disk; each memory reads its file plus that record, dropping the record once the file holds it. `infrastructure/journal.py` owns appending, as `atomic.py` owns replacing. |
 | An answer with a hole in it is written, with the hole named in it | What could not be answered is written beside what was, shown in the shortfall sentence and filled by the next run; gaps are written in artist order. |

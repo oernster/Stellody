@@ -484,6 +484,14 @@ Everything on screen works; planned work is invisible until it ships.
 Each switch carries the picture of the state a press leads to rather than the
 current state: one convention everywhere, learned once.
 
+### A control that cannot act is shown switched off, never removed
+
+A control with nothing to do just now keeps its place, switched off and ringed
+in red, rather than appearing only when it can act; a count it owes rides on it
+as a badge (Oliver's ruling). Chosen over controls that come and go: nothing in
+a tray moves when a state changes and every control can be found before it is
+needed. The cost is a control that is rarely usable always on show.
+
 ### Everything reachable from the keyboard and the menus
 
 Every button bar the volume and the donation button is mirrored on the menu

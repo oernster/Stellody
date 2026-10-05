@@ -1,6 +1,7 @@
 # Formats proved by a fixture rather than by a file somebody owns
 
-Specification for widening what Stellody decodes, in the house form: EARS
+Specification for the formats Stellody decodes on the strength of a generated
+fixture, in the house form: EARS
 requirements, each with its failure case beside it, each naming the test that
 proves it. Every requirement states the rule as it stands today.
 
@@ -10,8 +11,8 @@ proves it. Every requirement states the rule as it stands today.
 
 Three audio suffixes, `.wma`, `.wv` and `.aac`, need no new decoder: the FFmpeg
 build shipped inside PyAV decodes them, mutagen reads what each carries and the
-existing packet reader addresses them by frame. What kept them out was a rule
-about evidence rather than a gap in capability.
+existing packet reader addresses them by frame. Each is claimed on the
+evidence standard of section 1.3.
 
 ### 1.2 Intended audience
 
@@ -21,8 +22,7 @@ recorded here.
 ### 1.3 The evidence standard
 
 A format may be claimed where a test PROVES the whole path: a fixture encoded at
-test time, walked, probed, assembled, then decoded back (Oliver's ruling). The
-earlier standard required a real file somebody owned.
+test time, walked, probed, assembled, then decoded back (Oliver's ruling).
 
 **What this standard is weaker at.** A generated fixture proves the pipeline
 handles what FFmpeg writes. It does not prove the pipeline handles what Windows
@@ -75,9 +75,9 @@ bit-depth honesty rule extended to cover them; fixtures generated in the suite.
 
 ### 2.1 Product perspective
 
-An addition to the walk, the probe and the decoder chooser. No new module
-reaches the network, so invariant 12's list of four is untouched. No new
-dependency, so the packaged build does not grow.
+Held by the walk, the probe and the decoder chooser. No module here reaches the
+network, so invariant 12's list of four holds. No dependency is added, so the
+packaged build does not grow.
 
 ### 2.2 The one user class
 
@@ -94,8 +94,9 @@ inside PyAV supplies every decoder named here.
 - **C-F02** No music file is ever written, fixtures excepted, which the suite
   writes to a temporary directory of its own.
 - **C-F03** A format is claimed only where a test proves the whole path.
-- **C-F04** Domain and application hold 100% branch coverage; modules stay at
-  or below 400 lines.
+- **C-F04** Domain and application hold 100% branch coverage; modules stay
+  within the line cap and out of the danger band named in
+  `tests/structural/test_loc.py`.
 
 ### 2.5 Assumptions
 
@@ -248,7 +249,7 @@ section 4 lists them.
   version data or for the other prose rules.
 
 **NFR-F-MAINT-001 The layering and the gate hold**
-- Requirement: Every module this change touches shall stay at or below the line
+- Requirement: Every module holding these rules shall stay at or below the line
   cap, shall land at the comfortable target or below where it enters the danger
   band (both named in `tests/structural/test_loc.py`, which counts a file at the
   cap as inside the band), with the domain and application layers holding 100%
@@ -264,10 +265,10 @@ is the list of FR-F08.
 ## 4. Prioritisation
 
 Must: FR-F01 to FR-F08 and every NFR.
-Should: nothing this stage.
-Could: nothing this stage.
+Should: nothing.
+Could: nothing.
 
-Won't, this time, recorded so it is not re-proposed: Monkey's Audio, Musepack,
+Won't, recorded so it is not re-proposed: Monkey's Audio, Musepack,
 DSD, TAK, CAF, `.m4b` and `.tta`, each for the reason given in section 1.4.
 
 ## 5. Open questions
@@ -278,20 +279,8 @@ somebody who does saying how theirs reads would settle it. Being wrong costs a
 listener who wanted those files reported seeing albums appear instead, which is
 visible rather than silent.
 
-## 6. The build order this implies
+## 6. The standing check
 
-Inside out, as every feature here is built.
-
-1. **Domain**: the depth rules, FR-F06 and FR-F07, as pure functions over a
-   stated depth. Testable with no file present.
-2. **Infrastructure, probe**: the ASF names table and the APEv2 reading,
-   proved against generated fixtures.
-3. **Infrastructure, walker and decoder chooser**: the two suffix sets and the
-   routing, which is the smallest part.
-4. **Documents**: the README non-claim, then `ARCHITECTURE.md`'s formats
-   section gaining the fourth and fifth tag shapes.
-
-The diagnostic that says the foundation is sound: a fixture of each format must
-be walked, probed, assembled into an album and decoded back from a test, before
-anything about the interface is touched. Nothing here has an interface of its
-own.
+A fixture of each format is walked, probed, assembled into an album and decoded
+back from a test. That diagnostic says the foundation is sound; nothing here has
+an interface of its own.

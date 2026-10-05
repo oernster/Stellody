@@ -2,9 +2,8 @@
 
 What Stellody has not built yet, in the order it is worth building.
 
-This file exists because the plan lived in a conversation and the conversation
-ended. It is rebuilt from the tree as it actually stands, read module by
-module. Where the code and the shorthand disagree, the code wins.
+It is kept true to the tree as it stands; where the code and this file
+disagree, the code wins.
 
 ## How this file works
 
@@ -33,8 +32,8 @@ Cutting one means: the gate is green, the release notes are written in
 owner's to make. A tagged version's notes leave `NOTES.md` on the next pass,
 since the file carries the pending release alone.
 
-The readiness call has been made and the owner made it; the number itself lives
-in `VERSION` rather than in any document here, this file included. What it
+The release number lives in `VERSION` rather than in any document here, this
+file included. What it
 commits to is stated in `README.md` and in `ARCHITECTURE.md` rather than here:
 the invariants are the promise. The two that matter most to somebody's
 collection, that a music file is only ever read and that nothing reaches the
@@ -62,12 +61,12 @@ when somebody decides on one.
 - **Streaming, ripping, device syncing and tag writing.** Deliberate non-goals
   named in the README; tag writing is excluded by a structural test.
 - **Fetching a music video for a track from an outside service** (Oliver's
-  ruling). C-07 forbids a compiled-in credential; the obvious service's terms
+  ruling). C-07 in `DISCOVERY.md` forbids a compiled-in credential; the obvious service's terms
   forbid extracting or re-presenting its streams; sources that permit downloads
   hold almost no commercial videos. A search link would be a link, not a
   feature. Videos already on disk beside the music still play.
 - **Concerts near you by artists you hold** (Oliver's ruling). Every listing
-  service needs an API key, which C-07 in `DISCOVERY.md` rules out; it would
+  service needs an API key, which C-07 rules out; it would
   also send a location and its answers go stale. A gig search link would be a
   link, not a feature.
 - **Anything over the network that carries your library or names you.** No

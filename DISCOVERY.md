@@ -124,7 +124,8 @@ ruling).
 **FR-D01 Reaching the feature**
 - Requirement: The main window shall place a discovery button in the toolbar to
   the left of the appearance toggle, with the separator that divides the library
-  controls from the application controls to its right. The File menu shall carry
+  controls from the application controls to its right and the unanswered button
+  of FR-D43 between the two. The File menu shall carry
   `Discover new music...`, which calls what the button calls (so during a run it
   stops that run, FR-D23) and is offered exactly where the button is enabled,
   read off the button each time the menu opens.
@@ -237,7 +238,8 @@ ruling).
   statement shall be restated whenever a genre or a box is ticked or unticked; a
   press of the control of FR-D44 shall restate it once, after every genre has
   moved. It reads, for example, "3 artists and 2 series on compilations in these
-  genres have not been looked up yet".
+  genres have not been looked up yet: under a minute more at the pace
+  MusicBrainz allows, longer when it is busy."
 - Rationale: A tick box whose consequence is not stated invites a run of unknown
   length. The minutes are arithmetic rather than a forecast, so the words name a
   busy catalogue and call the figure a pace (Oliver's ruling).
@@ -554,18 +556,24 @@ ruling).
   names, then it says that alone and names neither other kind; given a stopped run
   holding a failure, then it says only that it was stopped; given a completed run
   whose only failure is an artist the file already held an answer for, then the
-  message names no shortfall and no button is offered.
+  message names no shortfall and the unanswered button stays disabled.
 - Verified by: `tests/ui/test_shortfall.py::TestTheSentence`, `tests/ui/test_discovery_wiring.py::test_a_run_names_all_three_kinds_of_silence`, `tests/ui/test_discovery_wiring.py::test_only_the_groups_that_happened_are_named`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_went_unanswered`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_counts_nothing`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 **FR-D43 The names themselves are one press away**
 - Requirement: A picture button shall sit in the top tray at all times
   immediately right of the discovery button, inside the rule that separates
-  discovery's group from the appearance toggle. While nothing is owed it shall be disabled,
-  wearing the permanent red ring of a disabled control and passed over by the
-  keyboard ring. Where a run ends owing the message in FR-D42 it shall be
-  enabled, wearing its own count of the artists gone unanswered as a red badge
-  with a white figure in its top right corner; the tooltip says the count in
-  words and what a press does. Pressing it shall open a modal dialog listing
+  discovery's group from the appearance toggle. While nothing is owed it shall
+  be disabled, wearing the permanent red ring of a disabled control, passed
+  over by the keyboard ring and saying `NOTHING_UNANSWERED_TIP` in its tooltip.
+  Where a run ends owing the message in FR-D42 it shall be enabled, wearing its
+  own count of the artists gone unanswered as a red badge with a white figure in
+  its top right corner (capped at `BADGE_MOST` with a `+`); the tooltip states
+  the count in a sentence and says what a press does. Once enabled the keyboard
+  ring reaches it straight after the discovery button. The badge is repainted
+  when the appearance changes. The File menu shall carry `Show unanswered
+  artists...` after `Discover new music...`, calling what the button calls and
+  offered exactly where the button is enabled. Pressing it shall open a modal
+  dialog listing
   those artists, grouped under a heading for each of the three kinds with a
   plain sentence saying what that kind means; the sources' own reasons are not
   shown. It shall be disabled again when the next run starts. Enabling it shall
@@ -578,12 +586,12 @@ ruling).
   disabled and red ringed; given a run that could not answer for nine artists,
   when it ends, then the button is enabled badged `9` with the tooltip `9
   artists unanswered: show which`; given one artist, then the tooltip reads `1
-  artist unanswered: show which`; given more than 99, then the badge reads
-  `99+`; given the button pressed, then a modal dialog lists every one of those
+  artist unanswered: show which`; given more than `BADGE_MOST`, then the badge
+  reads `BADGE_MOST` followed by `+`; given the button pressed, then a modal dialog lists every one of those
   artists under the heading for its kind; given a run that answered for
   everybody, then the button stays disabled; given a new run started, then the
   button is disabled.
-- Verified by: `tests/ui/test_unanswered_button.py`, `tests/ui/test_badge.py`, `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
+- Verified by: `tests/ui/test_unanswered_button.py`, `tests/ui/test_menu_mirrors.py::test_an_entry_is_offered_exactly_where_its_button_is`, `tests/ui/test_menu_sweep.py`, `tests/ui/test_badge.py`, `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 **FR-D23 One run at a time**
 - Requirement: While a run is under way, pressing the discovery button shall stop
@@ -796,7 +804,7 @@ ruling).
   against the question that was asked; it shall ask a catalogue for an artist's
   identity, releases or similar artists (also who is credited on a held title as
   FR-D09 asks; also the series questions of FR-D69 and FR-D70) only where that
-  answer is not kept or was kept more than thirty days ago (`MEMORY_LIFE_DAYS`);
+  answer is not kept or was kept more than `MEMORY_LIFE_DAYS` days ago;
   what a candidate plays is kept without a limit. A run shall write down what it
   learned however that run ended. Where a run cannot reach a source about an
   artist an earlier run answered for, the discovery file shall keep the earlier
@@ -819,11 +827,11 @@ ruling).
   run finishes, then it asked the catalogues nothing and answered exactly as the
   first did; given an artist an earlier run answered for and this one could not
   reach, then the file still holds that artist and records no failure for it,
-  while the run's message counts nobody unanswered and no shortfall button is
-  shown; given an artist nothing has ever been learned about that this run could
+  while the run's message counts nobody unanswered and the unanswered button
+  stays disabled; given an artist nothing has ever been learned about that this run could
   not reach either, then the file is still written, holding what did answer with
   that artist named among the failures, while the run says which artists it could
-  not answer about; given an answer kept more than thirty days ago, then it is
+  not answer about; given an answer kept more than `MEMORY_LIFE_DAYS` days ago, then it is
   asked about again; given two holders of the memory that each learned something
   the other did not, when both have saved, then the file holds both answers.
 - Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`, `tests/application/test_merging_recollections.py`, `tests/infrastructure/test_overlapping_memory.py`, `tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`
@@ -955,10 +963,11 @@ ruling).
 - Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`, `tests/ui/test_filter_controls.py::test_clearing_every_tick_takes_filtering_away_again`, `tests/ui/test_filter_controls.py::test_a_filter_already_on_can_still_be_taken_off`, `tests/ui/test_results_showing.py::test_a_kind_left_out_is_enough_to_filter_by`
 
 **FR-D45 The answer is dealt across the width of the screen**
-- Requirement: The results dialog shall open at nine tenths of the screen it opens
-  on, never below 700 by 560 and never above 1920 by 1080. It shall deal the
-  source artists across as many columns as that width affords, never more than
-  three, a column being a third of the width it opens at on a real 13 inch
+- Requirement: The results dialog shall open at `SCREEN_SHARE` of the screen it
+  opens on, never below `DIALOG_WIDTH_PX` by `DIALOG_HEIGHT_PX` and never above
+  `CEILING_WIDTH_PX` by `CEILING_HEIGHT_PX` (all in `ui/results_room.py`). It
+  shall deal the source artists across as many columns as that width affords,
+  never more than `COLUMNS_AT_THE_CEILING`, a column being a third of the width it opens at on a real 13 inch
   display, each a list read top to bottom; a row too long for its column is cut
   short with an ellipsis. Artists shall be dealt to the shortest column at the
   time, counting an artist's height as its own row plus one for each album and
@@ -970,11 +979,11 @@ ruling).
 - Rationale: A single list is a shape nobody reaches the end of. The ceiling is
   what a 13 inch display shows and three columns is what one shows comfortably
   (Oliver's ruling); dealing by height keeps columns even.
-- Acceptance: Given a screen wide enough that nine tenths of it holds two column
-  widths, when the dialog opens, then the source artists are drawn over two or
-  more lists side by side and each artist appears exactly once; given a screen at
-  the floor, then one list is drawn as before; given a 3440 monitor, then the
-  dialog opens no wider than 1920 pixels and shows three columns; given a 13 inch
+- Acceptance: Given a screen wide enough that `SCREEN_SHARE` of it holds two
+  column widths, when the dialog opens, then the source artists are drawn over
+  two or more lists side by side and each artist appears exactly once; given a
+  screen at the floor, then one list is drawn; given a 3440 monitor, then the
+  dialog opens no wider than `CEILING_WIDTH_PX` and shows three columns; given a 13 inch
   display at 300% reported as 1422 by 836, then three columns are drawn; given
   fewer artists than the width affords columns, then no empty column is built;
   given a row chosen in one column, then any selection in the others is cleared.
@@ -1050,7 +1059,7 @@ rare.
 
 **FR-D59 Years that cannot be used are refused, not corrected**
 - Requirement: If a year field holds anything other than a four digit year from
-  `FIRST_YEAR` to the year after the current one (or the from year is later than
+  `FIRST_YEAR` to `YEARS_AHEAD` past the current year (or the from year is later than
   the to year), then the discovery dialog shall say which field is wrong and why,
   with Find disabled.
 - Rationale: A range quietly clamped answers a question nobody asked. The ceiling
@@ -1171,11 +1180,9 @@ rare.
 - Acceptance: Given held albums "Global Underground: Adapt #2" and "Global
   Underground: Adapt #6" credited to Various Artists, with series included,
   when the catalogue places both in the series "Global Underground: Adapt" of six
-  entries, then that series is offered with Adapt, Adapt #3, Adapt #4 and Adapt
-
-#5 and nothing else.
-
-Verified by: `tests/application/test_discovering_series.py::test_a_compilation_brings_its_series`, `tests/application/test_discovering_series.py::test_one_series_is_asked_about_once`, `tests/application/test_discovering_series.py::test_leaving_compilations_out_asks_about_no_series`, `tests/application/test_discovering_series.py::test_a_person_with_albums_is_no_placeholder`, `tests/application/test_discovering_series.py::test_a_name_reaching_several_artists_is_no_placeholder`
+  entries, then that series is offered with Adapt, Adapt #3, Adapt #4 and
+  Adapt #5 and nothing else.
+- Verified by: `tests/application/test_discovering_series.py::test_a_compilation_brings_its_series`, `tests/application/test_discovering_series.py::test_one_series_is_asked_about_once`, `tests/application/test_discovering_series.py::test_leaving_compilations_out_asks_about_no_series`, `tests/application/test_discovering_series.py::test_a_person_with_albums_is_no_placeholder`, `tests/application/test_discovering_series.py::test_a_name_reaching_several_artists_is_no_placeholder`
 
 **FR-D70 A series album is also matched by its stem**
 - Requirement: When a run reaches a series album, the discovery service shall
@@ -1188,12 +1195,10 @@ Verified by: `tests/application/test_discovering_series.py::test_a_compilation_b
   can lag the catalogue's own titles (Oliver's ruling).
 - Acceptance: Given held "Global Underground: Unique #2" filed under the
   placeholder artist "Global Underground", with series included and no
-  catalogue series for it, when a title search answers Unique, Unique #2, Unique
-
-#3 and "Global Underground: Uniqueness", then Unique and Unique #3 are offered
-under "Global Underground: Unique".
-
-Verified by: `tests/application/test_discovering_series.py::test_no_series_falls_back_to_the_stem`, `tests/application/test_discovering_series.py::test_a_volume_found_twice_is_offered_once`, `tests/domain/test_series.py::TestOneVolumeOnce`, `tests/domain/test_series.py`
+  catalogue series for it, when a title search answers Unique, Unique #2,
+  Unique #3 and "Global Underground: Uniqueness", then Unique and Unique #3 are
+  offered under "Global Underground: Unique".
+- Verified by: `tests/application/test_discovering_series.py::test_no_series_falls_back_to_the_stem`, `tests/application/test_discovering_series.py::test_a_volume_found_twice_is_offered_once`, `tests/domain/test_series.py::TestOneVolumeOnce`, `tests/domain/test_series.py`
 
 **FR-D71 A series entry is judged held on its stem and number**
 - Requirement: The discovery service shall treat a series entry as held where
@@ -1253,13 +1258,13 @@ Verified by: `tests/application/test_discovering_series.py::test_no_series_falls
 - Verified by: `tests/ui/test_results_series.py::test_an_empty_heading_is_left_out`, `tests/domain/test_series.py::TestOnScreen::test_an_empty_heading_is_not_worth_showing`
 
 **FR-D76 A genre with one vote or under half the leading votes is not believed**
-- Requirement: Where a catalogue states a genre with fewer than two votes beside
-  one with two or more, the discovery service shall not count it among that
+- Requirement: Where a catalogue states a genre with fewer than `FEWEST_VOTES`
+  votes beside one with at least that many, the discovery service shall not count it among that
   artist's or that album's genres; where every genre has a single vote, all are
   kept. Nor shall it count a genre with fewer than half the votes of the leading
   genre (`LEADING_SHARE`); the leading genre always stays. The rule is `believed`
   in `domain/genre_votes.py`, applied by the catalogue client to every genre list
-  it reads. The candidate genre cache is `candidate-genres-2.json`; caches kept
+  it reads. The candidate genre cache is named by `CACHE_NAME`; caches kept
   under earlier rules are not read.
 - Rationale: Stray tags let almost anybody through a genre filter; a minor genre
   far behind the leading one is no description of the artist (Oliver's ruling).
@@ -1555,8 +1560,9 @@ Verified by: `tests/application/test_discovering_series.py::test_no_series_falls
   is that constant.
 
 **NFR-PERF-001 Request pacing**
-- Requirement: The discovery service shall issue at most one request per second
-  per source host, measured over any ten second window.
+- Requirement: The discovery service shall leave at least `REQUEST_GAP_S`
+  between any two requests to the same source host, which keeps it under one
+  request per second; each host has its own gate.
 - Rationale: MusicBrainz declines above one per second per IP and ListenBrainz
   states the same limit.
 - Verification:
@@ -1730,7 +1736,7 @@ or a trailing `" - X"` segment. A segment is removed when:
    and the source states as a primary type instead; or
 2. it holds no word naming a different recording; it either ends in `edition`,
    `version`, `remaster`, `remastered` or `reissue`, else is built wholly of
-   edition words and connectives with a four-digit year from 1800 to 2099
+   edition words and connectives with a four-digit year matching `YEAR_LIKE`
    permitted.
 
 The three tables are data rather than rules buried in code:
