@@ -147,8 +147,9 @@ def test_discovery_is_ruled_off_from_the_application_controls(
 ) -> None:
     """Discovery acts on the library; theme and help act on the application.
 
-    The right end of the tray reads discovery, a rule, the appearance toggle,
-    then Help, with nothing else between them.
+    The right end of the tray reads discovery, the button reporting whom a
+    run could not answer for, a rule, the appearance toggle, then Help, with
+    nothing else between them.
     """
     window.show()
     tray = window._tray
@@ -157,6 +158,7 @@ def test_discovery_is_ruled_off_from_the_application_controls(
     assert line.focusPolicy() == 0, "a rule is not a control"
     assert (
         across(tray, tray.discover_button)
+        < across(tray, tray.unanswered_button)
         < across(tray, line)
         < across(tray, tray.theme_button)
         < across(tray, tray.help_button)
@@ -165,6 +167,7 @@ def test_discovery_is_ruled_off_from_the_application_controls(
     start = placed.index(tray.discover_button)
     assert placed[start:] == [
         tray.discover_button,
+        tray.unanswered_button,
         line,
         tray.theme_button,
         tray.help_button,

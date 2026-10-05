@@ -72,4 +72,4 @@ def test_an_artist_carried_over_is_not_called_unanswered(
     assert said == FOUND.format(
         albums=albums, artists=artists, where=discovery_file.discovery_path()
     ), "the counts are the counts the screen shows"
-    assert window._shortfall_button.isHidden(), "no button owes anybody anything"
+    assert not window._shortfall_button.isEnabled(), "no button owes anybody anything"

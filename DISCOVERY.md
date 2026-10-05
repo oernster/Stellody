@@ -558,22 +558,32 @@ ruling).
 - Verified by: `tests/ui/test_shortfall.py::TestTheSentence`, `tests/ui/test_discovery_wiring.py::test_a_run_names_all_three_kinds_of_silence`, `tests/ui/test_discovery_wiring.py::test_only_the_groups_that_happened_are_named`, `tests/ui/test_discovery_wiring.py::test_finding_nothing_still_says_what_went_unanswered`, `tests/ui/test_discovery_wiring.py::test_a_stopped_run_counts_nothing`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 **FR-D43 The names themselves are one press away**
-- Requirement: Where a run ends owing the message in FR-D42, a button shall be
-  offered beside that message carrying its own count of the artists gone
-  unanswered. Pressing it shall open a modal dialog listing those artists, grouped
-  under a heading for each of the three kinds with a plain sentence saying what
-  that kind means; the sources' own reasons are not shown. The button shall be
-  offered only where something is owed and shall be taken away when the next run
-  starts.
+- Requirement: A picture button shall sit in the top tray at all times
+  immediately right of the discovery button, inside the rule that separates
+  discovery's group from the appearance toggle. While nothing is owed it shall be disabled,
+  wearing the permanent red ring of a disabled control and passed over by the
+  keyboard ring. Where a run ends owing the message in FR-D42 it shall be
+  enabled, wearing its own count of the artists gone unanswered as a red badge
+  with a white figure in its top right corner; the tooltip says the count in
+  words and what a press does. Pressing it shall open a modal dialog listing
+  those artists, grouped under a heading for each of the three kinds with a
+  plain sentence saying what that kind means; the sources' own reasons are not
+  shown. It shall be disabled again when the next run starts. Enabling it shall
+  move no control in the tray.
 - Rationale: The names are the half somebody can act on. The button carries its
-  own count because the shared status bar soon replaces the sentence beside it.
-- Acceptance: Given a run that could not answer for nine artists, when it ends,
-  then a button reading `9 artists unanswered` is offered; given one artist, then
-  it reads `1 artist unanswered`; given the button pressed, then a modal dialog
-  lists every one of those artists under the heading for its kind; given a run
-  that answered for everybody, then no button is offered; given a new run started,
-  then the button is taken away.
-- Verified by: `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
+  own count because the shared status bar soon replaces the sentence. It is a
+  picture in the tray rather than text in the status bar because text there was
+  not read as a button at all (Oliver's ruling).
+- Acceptance: Given the application started, then the button is present,
+  disabled and red ringed; given a run that could not answer for nine artists,
+  when it ends, then the button is enabled badged `9` with the tooltip `9
+  artists unanswered: show which`; given one artist, then the tooltip reads `1
+  artist unanswered: show which`; given more than 99, then the badge reads
+  `99+`; given the button pressed, then a modal dialog lists every one of those
+  artists under the heading for its kind; given a run that answered for
+  everybody, then the button stays disabled; given a new run started, then the
+  button is disabled.
+- Verified by: `tests/ui/test_unanswered_button.py`, `tests/ui/test_badge.py`, `tests/ui/test_shortfall.py::TestTheButtonLabel`, `tests/ui/test_shortfall.py::TestTheList`, `tests/ui/test_shortfall.py::TestTheDialog`, `tests/ui/test_discovery_wiring.py::test_the_button_appears_carrying_its_own_count`, `tests/ui/test_discovery_wiring.py::test_one_unanswered_artist_reads_as_one`, `tests/ui/test_discovery_wiring.py::test_a_clean_run_offers_no_button`, `tests/ui/test_discovery_wiring.py::test_a_new_run_takes_the_last_one_s_button_away`, `tests/ui/test_discovery_wiring.py::test_pressing_it_opens_the_names`, `tests/ui/test_dialog_first_stop.py`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`
 
 **FR-D23 One run at a time**
 - Requirement: While a run is under way, pressing the discovery button shall stop

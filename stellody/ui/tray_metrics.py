@@ -52,7 +52,9 @@ STOP_DISCOVERY_TOOLTIP = "Stop discovery"
 FILTERED_TOOLTIP = "Showing {what}"
 
 
-def tray_button(parent: QWidget, path, tip: str, on_click: Callable) -> QPushButton:
+def tray_button(
+    parent: QWidget, path, tip: str, on_click: Callable | None
+) -> QPushButton:
     """One picture-only button at the top tray's own size."""
     return icon_button(parent, path, tip, on_click, BUTTON_PX, ICON_PX)
 

@@ -54,3 +54,4 @@ class Appearance:
         self.show_rating_appearance(mode)
         self.show_tile_appearance(mode)
         self.show_mark_appearance(mode)
+        self.show_shortfall_appearance(mode)

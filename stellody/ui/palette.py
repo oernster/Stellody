@@ -117,6 +117,13 @@ class Palette:
     ring: str
     danger: str
     danger_soft: str
+    # The count in a picture's corner, red with a white figure as a chat
+    # app wears one (Oliver's ruling). One red for both appearances: the dark
+    # `danger` is a pink white cannot sit on, measured at 2.69 to 1. Measured
+    # for this one: white on it 4.83; it against the window 4.47 light and
+    # 3.87 dark, where a shape asks for 3.
+    badge: str
+    on_badge: str
 
 
 LIGHT = Palette(
@@ -147,6 +154,8 @@ LIGHT = Palette(
     ring="#047857",
     danger="#be123c",
     danger_soft="#ffe4e6",
+    badge="#dc2626",
+    on_badge="#ffffff",
 )
 
 DARK = Palette(
@@ -177,6 +186,8 @@ DARK = Palette(
     ring="#34d399",
     danger="#fb7185",
     danger_soft="#35161f",
+    badge="#dc2626",
+    on_badge="#ffffff",
 )
 
 PALETTES: dict[Mode, Palette] = {Mode.LIGHT: LIGHT, Mode.DARK: DARK}

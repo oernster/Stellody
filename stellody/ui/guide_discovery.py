@@ -135,11 +135,15 @@ def _answer_html() -> str:
         "seconds, so the strip at the top says who is being asked about. "
         "Every other line is an album title. Nothing in the list is ever a "
         "track.</p>"
-        "<p><b>Where a name could not be answered for</b>, a button beside "
-        "the message at the foot of the window carries the count of those "
-        "artists. Pressing it lists them under what went wrong: the "
-        "catalogue refused; it knew nobody by that name; it knew several and "
-        "none of your tags says which is yours.</p>"
+        "<p>"
+        + img(resources.unanswered_icon_path())
+        + "<b>Where a name could not be answered for</b>, the button right of "
+        "the discovery button lights up with the count of those artists in a red "
+        "badge. Pressing it lists them under what went wrong: the catalogue "
+        "refused; it knew nobody by that name; it knew several and none of "
+        "your tags says which is yours. Until a run leaves somebody "
+        "unanswered it is disabled, ringed in red like every button that "
+        "cannot be pressed yet.</p>"
         "<p>"
         + img(resources.find_asset(PREVIOUS_PAGE_ICON))
         + img(resources.find_asset(NEXT_PAGE_ICON))

@@ -42,14 +42,15 @@ def icon_button(
     parent: QWidget,
     path: pathlib.Path | None,
     tip: str,
-    on_click: Callable[[], None],
+    on_click: Callable[[], None] | None,
     button_px: int,
     icon_px: int,
 ) -> QPushButton:
     """One picture-only button, sized to its artwork.
 
     A button with no artwork yet is still built: several of these are given
-    their picture later, by whatever knows which state they are showing.
+    their picture later, by whatever knows which state they are showing. One
+    with no `on_click` is wired later by whatever owns what it opens.
     """
     button = QPushButton(parent)
     button.setObjectName("TrayButton")
@@ -65,7 +66,8 @@ def icon_button(
     button.setIconSize(QSize(icon_px, icon_px))
     if path is not None:
         button.setIcon(QIcon(str(path)))
-    button.clicked.connect(on_click)
+    if on_click is not None:
+        button.clicked.connect(on_click)
     return button
 
 

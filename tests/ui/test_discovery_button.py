@@ -34,7 +34,9 @@ def test_discovery_sits_left_of_the_appearance_toggle(application) -> None:
     tray = make_tray(holder)
     placed = laid_out(tray.layout())
     line = placed.index(tray.library_separator)
-    assert placed.index(tray.discover_button) == line - 1
+    # The unanswered button closes discovery's group, inside the rule.
+    assert placed.index(tray.discover_button) == line - 2
+    assert placed.index(tray.unanswered_button) == line - 1
     assert line == placed.index(tray.theme_button) - 1
 
 
@@ -44,7 +46,9 @@ def test_discovery_is_reachable(application) -> None:
     tray = make_tray(holder)
     stops = tray.ring_stops()
     assert tray.discover_button in stops
-    assert stops.index(tray.discover_button) == stops.index(tray.theme_button) - 1
+    # The unanswered button is drawn between this one and the toggle.
+    before = stops.index(tray.unanswered_button) - 1
+    assert stops.index(tray.discover_button) == before
     assert stops.index(tray.discover_button) == stops.index(tray.next_button) + 1
 
 

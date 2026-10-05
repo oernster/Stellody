@@ -785,9 +785,10 @@ years beside the answer, read in one reading so one run's question never sits
 above another's answer (FR-D64).
 
 **An answer says who it could not be given for.** Refused, unknown and
-ambiguous names are counted apart in the run's message, with a button naming
-them; `stellody/ui/shortfall.py` holds the words, the report and the mixin
-owning the button.
+ambiguous names are counted apart in the run's message, with a badged tray
+button beside the discovery button naming them; `stellody/ui/shortfall.py` holds
+the words, the report and the mixin owning the button, `icons.badged` draws the
+badge and the tray places the button.
 
 **One file, replaced by every completed run; a run may correct what is known
 but not take it away.** `carried_over` in `application/carrying_over.py` (pure)

@@ -14,11 +14,19 @@ weight for something nobody asked for; the names are a dialog behind a button,
 which is the right weight for an answer somebody pressed for. The same split
 `scan_summary` makes, for the same reason.
 
-**The button carries its own count** rather than relying on the sentence beside
-it. The status bar is shared: playing a track replaces the text seconds later,
-which would leave a button saying `Show them` next to a sentence about
-something else entirely. A button reading `9 artists unanswered` still says
-what it is once its sentence has gone.
+**The button carries its own count** rather than relying on the sentence. The
+status bar is shared: playing a track replaces the text seconds later, so the
+count has to outlive it. It is a picture in the tray beside the discovery
+button, inside the rule closing discovery's group, with the count as a red
+badge in its corner. It used to be a
+text button in the status bar, which nobody read as a button at all (Oliver,
+2026-10-05: "I had no idea"); a picture in a row of pictures that are all
+buttons says what it is. The tooltip carries the count in words.
+
+**Always there, disabled while nothing is owed** (Oliver's ruling), rather
+than appearing at the end of a run: a disabled tray button wears the house's
+permanent red ring and is passed over by the keyboard ring, which says
+"present but inert" where an absent one says nothing about what it is for.
 
 The words and the report are built here as text, apart from any widget, so
 what they say can be checked without a screen.
@@ -26,11 +34,14 @@ what they say can be checked without a screen.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QPushButton, QTextBrowser, QVBoxLayout, QWidget
 
 from stellody.application.values import RunReport
+from stellody.shared import resources
 from stellody.ui.dialogs import FirstStopDialog, close_row
+from stellody.ui.icons import badged, plain_icon
+from stellody.ui.palette import Mode, palette_for
+from stellody.ui.tray_metrics import ICON_PX, tray_button
 from stellody.ui.widgets import ReadingPane
 from stellody.ui.words import ONE, escaped, plural
 
@@ -54,6 +65,12 @@ SO_INCOMPLETE = ", so anything missing for them is not here."
 # docstring.
 UNANSWERED_ONE = "1 artist unanswered"
 UNANSWERED_SOME = "{count} artists unanswered"
+# The tooltip: the count in words, then what a press does about it.
+UNANSWERED_TIP = "{said}: show which"
+# The tooltip while nothing is owed, which is also before any run at all.
+NOTHING_UNANSWERED_TIP = "Artists a discovery run could not answer for: none"
+# Until the window applies its appearance, which it does before it is shown.
+FIRST_MODE = Mode.DARK
 
 # Not measured against the content the way the scan summary is. That dialog
 # shows a report whose length is known once it is built; this one shows a list
@@ -197,10 +214,15 @@ class ShortfallDialog(FirstStopDialog):
 
 
 def build_shortfall_button(parent: QWidget) -> QPushButton:
-    """The button, built hidden: a run that went cleanly shows nothing."""
-    button = QPushButton("", parent)
-    button.setFocusPolicy(Qt.FocusPolicy.TabFocus)
-    button.hide()
+    """The button, built disabled: nothing is owed before any run has ended.
+
+    A tray button like its neighbours, so it is read as one and wears their
+    three ring states, the permanent red ring of a disabled one included.
+    """
+    button = tray_button(
+        parent, resources.unanswered_icon_path(), NOTHING_UNANSWERED_TIP, None
+    )
+    button.setEnabled(False)
     return button
 
 
@@ -216,31 +238,55 @@ class ShowingShortfall:
         """Take the button a run's shortfall is offered on.
 
         Handed in rather than built here, because where it goes is the
-        window's business: the real one puts it in the status bar beside the
-        sentence and pins it into the ring, while a window driven by a test
-        needs it to exist and nothing more.
+        window's business: the real one has the tray place it beside the
+        discovery button, while a window driven by a test needs it to exist and
+        nothing more.
         """
         self._shortfall_button = button
         self._shortfall_report: RunReport | None = None
+        self._shortfall_mode = FIRST_MODE
         button.clicked.connect(self.show_shortfall)
 
+    def show_shortfall_appearance(self, mode: Mode) -> None:
+        """Repaint the badge in this appearance's colours."""
+        self._shortfall_mode = mode
+        self._wear_shortfall()
+
     def forget_shortfall(self) -> None:
-        """Take the button away, which is what a run with nothing owed shows."""
+        """Disable the button, which is what a run with nothing owed shows."""
         self._offer_shortfall(None)
 
     def _offer_shortfall(self, report: RunReport | None) -> None:
         """Offer the names of a run that could not answer for everybody.
 
-        A report with nothing owed takes the button away exactly as None does,
+        A report with nothing owed disables the button exactly as None does,
         so a clean run leaves nothing behind for the last untidy one.
         """
         owed = report if report is not None and counted(report) else None
         self._shortfall_report = owed
+        self._wear_shortfall()
+
+    def _wear_shortfall(self) -> None:
+        """Enable the button wearing its count; disable it when none is owed."""
+        owed = self._shortfall_report
+        button = self._shortfall_button
         if owed is None:
-            self._shortfall_button.hide()
+            button.setIcon(plain_icon(resources.unanswered_icon_path()))
+            button.setToolTip(NOTHING_UNANSWERED_TIP)
+            button.setEnabled(False)
             return
-        self._shortfall_button.setText(button_label(owed))
-        self._shortfall_button.show()
+        colour = palette_for(self._shortfall_mode)
+        button.setIcon(
+            badged(
+                resources.unanswered_icon_path(),
+                counted(owed),
+                colour.badge,
+                colour.on_badge,
+                ICON_PX,
+            )
+        )
+        button.setToolTip(UNANSWERED_TIP.format(said=button_label(owed)))
+        button.setEnabled(True)
 
     def show_shortfall(self) -> None:
         """Open the names themselves, modally, over the window that ran it."""

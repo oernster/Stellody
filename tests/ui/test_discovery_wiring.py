@@ -158,35 +158,36 @@ def test_the_button_appears_carrying_its_own_count(application) -> None:
     """It outlives its sentence, so it has to say what it is on its own."""
     window = make_window(application)
     completed(window, a_report(albums=2, artists=3, failed=4, unresolved=5))
-    assert not window._shortfall_button.isHidden()
-    assert window._shortfall_button.text() == "9 artists unanswered"
+    assert window._shortfall_button.isEnabled()
+    assert window._shortfall_button.toolTip() == "9 artists unanswered: show which"
+    assert not window._shortfall_button.icon().isNull(), "it wears the badge"
 
 
 def test_one_unanswered_artist_reads_as_one(application) -> None:
     """Nothing on this screen says 1 artists."""
     window = make_window(application)
     completed(window, a_report(albums=2, artists=3, ambiguous=1))
-    assert window._shortfall_button.text() == "1 artist unanswered"
+    assert window._shortfall_button.toolTip() == "1 artist unanswered: show which"
 
 
 def test_a_clean_run_offers_no_button(application) -> None:
     """There is nothing behind it, so there is nothing to press."""
     window = make_window(application)
     completed(window, a_report(albums=2, artists=3))
-    assert window._shortfall_button.isHidden()
+    assert not window._shortfall_button.isEnabled()
 
 
 def test_a_new_run_takes_the_last_one_s_button_away(application) -> None:
     """The shortfall belongs to the run that had it, not to the evening."""
     window = make_window(application)
     completed(window, a_report(albums=2, artists=3, failed=4))
-    assert not window._shortfall_button.isHidden()
+    assert window._shortfall_button.isEnabled()
     # A runner that takes the run without starting a thread. A real one
     # would outlive this test and take Qt down with it, which says nothing
     # about the button.
     window._discovery_runner = RunnerInProgress()
     window.begin_discovery(("Rock",))
-    assert window._shortfall_button.isHidden()
+    assert not window._shortfall_button.isEnabled()
     assert window._shortfall_report is None
 
 
@@ -200,7 +201,7 @@ def test_a_stopped_run_offers_no_button_either(application) -> None:
             failed=(SourceFailure(artist="Nobody", reason="a server error"),),
         ),
     )
-    assert window._shortfall_button.isHidden()
+    assert not window._shortfall_button.isEnabled()
 
 
 def test_pressing_it_opens_the_names(application, monkeypatch) -> None:

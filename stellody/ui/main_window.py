@@ -60,7 +60,7 @@ from stellody.ui.settings_keys import (
     TRUE,
 )
 from stellody.ui.shape_worker import ShapeRunner
-from stellody.ui.shortfall import ShowingShortfall, build_shortfall_button
+from stellody.ui.shortfall import ShowingShortfall
 from stellody.ui.showing_shapes import ShowingShapes
 from stellody.ui.showing_spectrum import ShowingSpectrum
 from stellody.ui.switches import Switches
@@ -270,13 +270,8 @@ class MainWindow(
         self.start_rating()
         self._progress = build_progress(self)
         self.statusBar().addPermanentWidget(self._progress)
-        # A permanent widget rather than part of the message: `showMessage`
-        # covers ordinary status widgets and leaves permanent ones alone;
-        # this has to outlive its own sentence. Playing a track replaces the
-        # text seconds later; the run that could not answer for nine artists
-        # is still the last run that happened.
-        self._shortfall_button = build_shortfall_button(self)
-        self.statusBar().addPermanentWidget(self._shortfall_button)
+        # The tray places it beside the discovery bars; this owns what it says.
+        self._shortfall_button = self._tray.unanswered_button
         self.start_shortfall(self._shortfall_button)
         # Before the appearance is applied, since that is what gives the mark
         # its colour; beside the others, since what is playing outlives any

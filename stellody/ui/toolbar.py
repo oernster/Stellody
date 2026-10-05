@@ -23,9 +23,11 @@ rather than about what is playing, so they sit on the bottom strip among the
 things that outlast a track. The volume, mute and the equalizer sit there too,
 beside shuffle and repeat, as settings a listener leaves somewhere.
 
-Discovery is ruled off from the two buttons after it. It acts on the library
-while they act on the application, so a line says they are different kinds of
-thing rather than leaving the three to read as one group.
+Discovery's group (its bars, the button that starts a run and the one that
+reports whom a run could not answer for) is ruled off from the two buttons
+after it. It acts on the library while they act on the application, so a line
+says they are different kinds of thing rather than leaving them to read as one
+group.
 
 Every picture here says what a press would DO rather than what is the case:
 the appearance toggle shows the appearance it would move to.
@@ -48,6 +50,7 @@ from PySide6.QtWidgets import QLineEdit, QMenu, QPushButton, QWidget
 
 from stellody.shared import resources
 from stellody.ui.discovery_progress import DiscoveryBars
+from stellody.ui.shortfall import build_shortfall_button
 from stellody.ui.theme import Mode
 from stellody.ui.tray_metrics import (
     BUTTON_PX,
@@ -146,6 +149,12 @@ class LibraryTray(QWidget):
             DISCOVER_TOOLTIP,
             open_discovery,
         )
+        # Whom the last run could not answer for, last of discovery's group so
+        # the bars, the button that starts a run and the button that reports
+        # on it sit together inside the rule (Oliver's ruling). Always there
+        # and disabled until a run leaves somebody unanswered, for the reason
+        # the bars are reserved: nothing beside it moves when a run ends.
+        self.unanswered_button = build_shortfall_button(self)
         # Discovery is a library action; theme and help act on the application.
         # A line goes between the two to keep that boundary visible.
         self.library_separator = separator(self, SEPARATOR_HEIGHT_PX)
@@ -174,6 +183,7 @@ class LibraryTray(QWidget):
                 TRAY_GAP_PX,
                 self.discovery_bar,
                 self.discover_button,
+                self.unanswered_button,
                 self.library_separator,
                 self.theme_button,
                 self.help_button,
@@ -192,9 +202,10 @@ class LibraryTray(QWidget):
     def ring_stops(self) -> tuple[QWidget, ...]:
         """This tray's controls, left to right as they are drawn.
 
-        The search box is named here while it is hidden, so the ring picks it
-        up the moment it opens without the order being revisited. Qt skips an
-        invisible stop, so naming it costs nothing while it is one.
+        The search box is named here while it is hidden and the unanswered
+        button while it is disabled, so the ring picks either up the moment it
+        can be used without the order being revisited. The ring skips a hidden
+        or disabled stop, so naming one costs nothing meanwhile.
         """
         return (
             self.choose_button,
@@ -203,6 +214,7 @@ class LibraryTray(QWidget):
             self.search_box,
             *self.transport_stops(),
             self.discover_button,
+            self.unanswered_button,
             self.theme_button,
             self.help_button,
         )

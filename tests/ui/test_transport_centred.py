@@ -72,9 +72,10 @@ def test_nothing_is_sat_on_however_narrow_it_gets(
     """Where there is no room to centre, the transport gives way rather than
     being covered by either end."""
     tray.set_searching(searching)
+    right = tray.discovery_bar
     for width in NARROWING_PX:
         _laid_out(application, tray, max(width, tray.minimumSizeHint().width()))
         first, *_, last = tray.transport_stops()
         left = tray.search_box if searching else tray.search_button
         assert left.geometry().right() < first.geometry().left(), f"at {width}"
-        assert last.geometry().right() < tray.discovery_bar.geometry().left()
+        assert last.geometry().right() < right.geometry().left(), f"at {width}"

@@ -27,12 +27,12 @@ def ring_stops(window) -> tuple[QWidget, ...]:
     The menu bar leads, so somebody reaching for the keyboard finds File
     before anything else, exactly as it is drawn. Then the tray above, the
     library itself with the open album under it, then the strip along the
-    foot and last the status bar under all of it.
+    foot.
 
-    The shortfall button is a stop that is USUALLY NOT THERE: it is hidden
-    unless the last run could not answer for somebody. A hidden stop is
-    passed over by `ring.is_a_stop`, so it can be stated here once rather
-    than the order being restated every time a run ends.
+    The tray's stops include the unanswered button, which is USUALLY NOT A
+    STOP: it is disabled unless the last run could not answer for somebody. A
+    disabled stop is passed over by `ring.is_a_stop`, so it is stated once
+    rather than the order being restated every time a run ends.
     """
     return (
         window.menuBar(),
@@ -43,7 +43,6 @@ def ring_stops(window) -> tuple[QWidget, ...]:
         *window._album_pane.columns,
         window._position_bar.slider,
         *window._bottom_tray.ring_stops(),
-        window._shortfall_button,
     )
 
 
