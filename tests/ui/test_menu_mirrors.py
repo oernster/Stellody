@@ -160,6 +160,11 @@ def test_filter_is_ticked_while_its_button_is_held_down(window: MainWindow) -> N
     (
         (lambda w: w._bottom_tray.repair_button, lambda w: w._repair_action, "&File"),
         (lambda w: w._tray.discover_button, lambda w: w._discover_action, "&File"),
+        (
+            lambda w: w._tray.unanswered_button,
+            lambda w: w._unanswered_action,
+            "&File",
+        ),
         (lambda w: w._tray.play_button, lambda w: w._play_action, "&Control"),
         (lambda w: w._tray.stop_button, lambda w: w._stop_action, "&Control"),
         (

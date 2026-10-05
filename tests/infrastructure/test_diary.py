@@ -113,3 +113,21 @@ def test_clearing_is_safe_when_there_is_nothing_to_clear(elsewhere) -> None:
     diary.note("kept")
     diary.clear()
     assert not elsewhere.exists()
+
+
+def test_a_home_that_cannot_be_found_breaks_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Asking WHERE can fail too; that failure arrives as a RuntimeError.
+
+    `Path.home()` raises it when no home can be resolved, measured on Windows
+    with the variables it reads removed. A diary that let it out would break
+    the application it is watching, which is the one thing it may not do.
+    """
+
+    def no_home() -> pathlib.Path:
+        raise RuntimeError("Could not determine home directory.")
+
+    monkeypatch.setattr(diary, "location", no_home)
+    assert diary.note("something happened") is None
+    assert diary.clear() is None

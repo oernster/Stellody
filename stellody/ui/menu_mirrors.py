@@ -45,12 +45,19 @@ class MenuMirrors:
     """The window's half of offering its buttons on the menu bar too."""
 
     def _mirror_file(self, file_menu: QMenu) -> None:
-        """Repair and discovery, beside the other errands on the library."""
+        """Repair and discovery, beside the other errands on the library.
+
+        Whom the last run could not answer for follows discovery, as its
+        button does in the tray.
+        """
         self._repair_action = menu_action(
             file_menu, self, "Re&pair the library...", self.repair_library
         )
         self._discover_action = menu_action(
             file_menu, self, "&Discover new music...", self.open_discovery
+        )
+        self._unanswered_action = menu_action(
+            file_menu, self, "Show &unanswered artists...", self.show_shortfall
         )
         file_menu.aboutToShow.connect(self._show_mirrored_state)
 
@@ -151,6 +158,7 @@ class MenuMirrors:
         tray, strip = self._tray, self._bottom_tray
         self._repair_action.setEnabled(strip.repair_button.isEnabled())
         self._discover_action.setEnabled(tray.discover_button.isEnabled())
+        self._unanswered_action.setEnabled(tray.unanswered_button.isEnabled())
         self._search_action.setChecked(tray.searching)
         self._filter_action.setEnabled(tray.filter_button.isEnabled())
         self._filter_action.setChecked(tray.filter_button.isChecked())

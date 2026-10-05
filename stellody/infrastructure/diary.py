@@ -75,7 +75,9 @@ def note(message: str) -> None:
             report.unlink()
         with report.open("a", encoding="utf-8") as diary:
             diary.write(line)
-    except OSError:
+    # RuntimeError as well: locating the data directory asks for the home
+    # directory, which raises that where none can be resolved.
+    except (OSError, RuntimeError):
         return
 
 
@@ -83,5 +85,5 @@ def clear() -> None:
     """Start a fresh account, for when a run is being watched deliberately."""
     try:
         location().unlink(missing_ok=True)
-    except OSError:
+    except (OSError, RuntimeError):
         return

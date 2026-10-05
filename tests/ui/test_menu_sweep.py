@@ -45,6 +45,8 @@ EXPECTED = {
     # are disabled and the entries standing for them follow.
     "Repair the library...": (False, False, False),
     "Discover new music...": (False, False, False),
+    # No run has ended, so nobody is owed; its button is disabled too.
+    "Show unanswered artists...": (False, False, False),
     "Search the library": (True, True, True),
     "Filter the library...": (True, True, True),
     "Album art": (True, True, True),
