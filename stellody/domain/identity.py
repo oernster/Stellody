@@ -6,10 +6,11 @@ import hashlib
 from dataclasses import dataclass, replace
 
 from stellody.domain.text import (
+    artist_sort_key,
     comparison_key,
     is_various_artists,
+    natural_sort_key,
     normalise,
-    sort_key,
     year_of,
 )
 
@@ -84,12 +85,12 @@ class AlbumIdentity:
         return replace(self, discriminator=_digest(place))
 
     @property
-    def sort_key(self) -> tuple[str, int, str]:
+    def sort_key(self) -> tuple[str, int, tuple[str | int, ...]]:
         """Ordering: by artist, then chronologically, then by title."""
         return (
-            sort_key(self.album_artist),
+            artist_sort_key(self.album_artist),
             year_of(self.date) or 0,
-            sort_key(self.title),
+            natural_sort_key(self.title),
         )
 
     @property

@@ -23,6 +23,7 @@ _APOSTROPHES = str.maketrans(
 )
 _WHITESPACE = re.compile(r"\s+")
 _LEADING_ARTICLE = re.compile(r"^(?:the|a|an)\s+", re.IGNORECASE)
+_DIGIT_RUN = re.compile(r"(\d+)")
 _ARTIST_SEPARATORS = re.compile(r"\s*(?:;|/|\b(?:feat|ft|vs)\b\.?)\s*", re.IGNORECASE)
 # What joins the artists inside one credit. FR-D53. A comma before the last
 # ampersand is typed by hand in some tags, so ", &" is one join rather than two.
@@ -112,6 +113,31 @@ def bare_title(title: str) -> str:
 def sort_key(value: str) -> str:
     """An ordering key that ignores a leading article, so The Police sorts P."""
     return _LEADING_ARTICLE.sub("", normalise(value)).casefold()
+
+
+def natural_sort_key(value: str) -> tuple[str | int, ...]:
+    """`sort_key` with each run of digits compared by value, so #2 precedes #10.
+
+    Splitting on a captured digit run always yields text first, then numbers
+    and text alternating, so any two keys compare position by position without
+    ever setting a number against a string. The captured runs are the odd
+    positions, which is what decides a number rather than `str.isdigit`.
+    """
+    pieces = _DIGIT_RUN.split(sort_key(value))
+    return tuple(
+        int(piece) if index % 2 else piece for index, piece in enumerate(pieces)
+    )
+
+
+def artist_sort_key(album_artist: str) -> str:
+    """An album artist's ordering key, every compilation spelling filed as one.
+
+    A tag may write "Various" where its neighbour writes "Various Artists";
+    both name a compilation, so both sort in one place rather than two.
+    """
+    if is_various_artists(album_artist):
+        return sort_key(VARIOUS_ARTISTS)
+    return sort_key(album_artist)
 
 
 def split_artists(value: str) -> tuple[str, ...]:

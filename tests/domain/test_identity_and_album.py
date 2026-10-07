@@ -50,6 +50,29 @@ def test_sort_key_orders_by_artist_then_year_then_title() -> None:
     ]
 
 
+def test_sort_key_files_compilation_spellings_together() -> None:
+    first = identity(album_artist="Various", title="Adapt", date="2015")
+    second = identity(album_artist="Various Artists", title="Adapt #2", date="2016")
+    earlier = identity(album_artist="Various Artists", title="Other", date="2010")
+    assert sorted([second, earlier, first], key=lambda i: i.sort_key) == [
+        earlier,
+        first,
+        second,
+    ]
+
+
+def test_sort_key_numbers_a_series_by_value_within_a_year() -> None:
+    titles = ["Adapt #10", "Adapt #2", "Adapt", "Adapt #3"]
+    albums = [identity(title=title, date="2020") for title in titles]
+    ordered = sorted(albums, key=lambda i: i.sort_key)
+    assert [album.title for album in ordered] == [
+        "Adapt",
+        "Adapt #2",
+        "Adapt #3",
+        "Adapt #10",
+    ]
+
+
 def test_art_key_is_stable_and_short() -> None:
     key = identity().art_key
     assert key == identity(album_artist="sasha").art_key

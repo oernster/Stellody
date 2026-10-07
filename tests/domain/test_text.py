@@ -43,6 +43,43 @@ def test_sort_key_strips_only_a_leading_article(name: str, expected: str) -> Non
 
 
 @pytest.mark.parametrize(
+    "spelling", ["Various", "VA", "verschiedene", "Various Artists"]
+)
+def test_artist_sort_key_files_every_compilation_spelling_as_one(
+    spelling: str,
+) -> None:
+    assert text.artist_sort_key(spelling) == text.sort_key(text.VARIOUS_ARTISTS)
+
+
+def test_artist_sort_key_strips_an_article_from_a_person() -> None:
+    assert text.artist_sort_key("The Police") == "police"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("The Adapt #10", ("adapt #", 10, "")),
+        ("2 Unlimited", ("", 2, " unlimited")),
+        ("Involver", ("involver",)),
+    ],
+)
+def test_natural_sort_key_reads_digit_runs_as_numbers(
+    raw: str, expected: tuple[str | int, ...]
+) -> None:
+    assert text.natural_sort_key(raw) == expected
+
+
+def test_natural_sort_key_puts_two_before_ten_wherever_the_number_sits() -> None:
+    names = ["Vol 10 Part 1", "Vol 2 Part 10", "Vol 2 Part 2", "10 Years"]
+    assert sorted(names, key=text.natural_sort_key) == [
+        "10 Years",
+        "Vol 2 Part 2",
+        "Vol 2 Part 10",
+        "Vol 10 Part 1",
+    ]
+
+
+@pytest.mark.parametrize(
     ("raw", "expected"),
     [
         ("Sasha; John Digweed", ("Sasha", "John Digweed")),
