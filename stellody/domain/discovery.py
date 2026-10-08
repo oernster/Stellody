@@ -157,7 +157,7 @@ class LastRun:
 
 
 def catalogue_genres(stated: tuple[str, ...]) -> tuple[str, ...]:
-    """What the catalogue's own genre names mean here, in catalogue order.
+    """What the catalogue's own genre names mean here, alphabetically.
 
     Each stated name is read on its own rather than joined into one string,
     since a catalogue hands over a list and joining it would invent a separator
