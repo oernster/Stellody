@@ -15,7 +15,6 @@ TARGETS = (
     "buildexe.py",
     "buildinstaller.py",
     "generate_icons.py",
-    "sync_site.py",
 )
 
 

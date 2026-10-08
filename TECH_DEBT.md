@@ -58,7 +58,7 @@ suite full of mocks standing in for the very things worth testing.
 
 **The build and packaging scripts are exempt from the line cap.**
 `buildexe.py`, `buildinstaller.py`, `builddmg.py`, `dmg_icon.py`,
-`build_utils.py`, `stamp_version.py`, `stamp_sitemap.py`, `sync_site.py` and
+`build_utils.py`, `stamp_version.py`, `stamp_sitemap.py` and
 `generate_icons.py` are linear recipes read top to bottom. Splitting a sequence
 of flags across modules costs more than it buys, so the structural line-cap
 test, which walks every Python file in the repository from its root bar the
