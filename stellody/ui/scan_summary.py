@@ -62,7 +62,7 @@ def _album_list(identities: tuple[AlbumIdentity, ...]) -> str:
     shown = identities[:MAX_ALBUMS_SHOWN]
     rows = "".join(
         f"<li>{escaped(identity.title)} "
-        f"<i>by {escaped(identity.album_artist)}</i></li>"
+        f"<i>by {escaped(identity.display_artist)}</i></li>"
         for identity in shown
     )
     rest = len(identities) - len(shown)

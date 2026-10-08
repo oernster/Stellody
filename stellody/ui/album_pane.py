@@ -247,7 +247,7 @@ class AlbumPane(QWidget):
         if year:
             named = f"{named}  ({year})"
         self.title.setText(named)
-        self.artist.setText(album.identity.album_artist)
+        self.artist.setText(album.identity.display_artist)
         self.show_cover(cover)
         self._fill_columns(where)
 

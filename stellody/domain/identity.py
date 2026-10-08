@@ -6,6 +6,7 @@ import hashlib
 from dataclasses import dataclass, replace
 
 from stellody.domain.text import (
+    VARIOUS_ARTISTS,
     artist_sort_key,
     comparison_key,
     is_various_artists,
@@ -85,12 +86,21 @@ class AlbumIdentity:
         return replace(self, discriminator=_digest(place))
 
     @property
-    def sort_key(self) -> tuple[str, int, tuple[str | int, ...]]:
-        """Ordering: by artist, then chronologically, then by title."""
+    def sort_key(self) -> tuple[str, int, tuple[str | int, ...], int]:
+        """Ordering: by artist, then chronologically, then by title.
+
+        A compilation is ordered by title before year instead. Its artist names
+        nobody, so year first would scatter a series such as Adapt, #2 and #3
+        among every other compilation of the years between. One shape serves
+        both, with the unused year held at zero, so two keys always compare.
+        """
+        year = year_of(self.date) or 0
+        chronological = 0 if self.is_compilation else year
         return (
             artist_sort_key(self.album_artist),
-            year_of(self.date) or 0,
+            chronological,
             natural_sort_key(self.title),
+            year,
         )
 
     @property
@@ -123,7 +133,13 @@ class AlbumIdentity:
 
     @property
     def display_artist(self) -> str:
-        """The album artist as it should be shown."""
+        """The album artist as it should be shown; one name for a compilation.
+
+        "Various" and "VA" are shown as Various Artists, so two volumes of one
+        series never appear to come from two different artists.
+        """
+        if self.is_compilation:
+            return VARIOUS_ARTISTS
         return normalise(self.album_artist)
 
     @property

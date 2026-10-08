@@ -50,15 +50,32 @@ def test_sort_key_orders_by_artist_then_year_then_title() -> None:
     ]
 
 
-def test_sort_key_files_compilation_spellings_together() -> None:
-    first = identity(album_artist="Various", title="Adapt", date="2015")
+def test_sort_key_keeps_a_compilation_series_together_across_spellings() -> None:
+    first = identity(album_artist="Various", title="Adapt", date="2019")
     second = identity(album_artist="Various Artists", title="Adapt #2", date="2016")
-    earlier = identity(album_artist="Various Artists", title="Other", date="2010")
-    assert sorted([second, earlier, first], key=lambda i: i.sort_key) == [
-        earlier,
+    tenth = identity(album_artist="VA", title="Adapt #10", date="2021")
+    between = identity(album_artist="Various", title="Watergate 25", date="2018")
+    earlier = identity(album_artist="Various Artists", title="Cream", date="2010")
+    albums = [between, tenth, earlier, second, first]
+    assert sorted(albums, key=lambda i: i.sort_key) == [
         first,
         second,
+        tenth,
+        earlier,
+        between,
     ]
+
+
+def test_sort_key_orders_one_compilation_title_by_year() -> None:
+    later = identity(album_artist="Various", title="Hits", date="2020")
+    sooner = identity(album_artist="Various Artists", title="Hits", date="1999")
+    assert sorted([later, sooner], key=lambda i: i.sort_key) == [sooner, later]
+
+
+def test_sort_key_compares_with_an_artist_that_only_sorts_like_a_compilation() -> None:
+    person = identity(album_artist="The Various Artists", title="Debut", date="2001")
+    compilation = identity(album_artist="Various", title="Adapt", date="2019")
+    assert sorted([compilation, person], key=lambda i: i.sort_key)
 
 
 def test_sort_key_numbers_a_series_by_value_within_a_year() -> None:
@@ -86,6 +103,19 @@ def test_compilation_detection_and_display_fields() -> None:
     assert compilation.display_title == "Adapt"
     assert compilation.display_artist == "Various Artists"
     assert identity().is_compilation is False
+
+
+@pytest.mark.parametrize("spelling", ["Various", "VA", "Verschiedene"])
+def test_every_compilation_spelling_is_shown_as_various_artists(
+    spelling: str,
+) -> None:
+    compilation = identity(album_artist=spelling, title="Adapt")
+    assert compilation.display_artist == "Various Artists"
+    assert compilation.label == "Various Artists - Adapt"
+
+
+def test_an_ordinary_artist_is_shown_as_tagged() -> None:
+    assert identity(album_artist="  Sasha ").display_artist == "Sasha"
 
 
 def test_a_disc_needs_a_positive_number() -> None:
