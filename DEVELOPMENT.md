@@ -109,16 +109,11 @@ without building on either of the other two.
 
 The same pages are also served at `stellody.com`, out of the
 [stellody-website](https://github.com/oernster/stellody-website) repository
-under `public/`. **That mirror keeps itself up to date and needs nothing from
-you.** Pushing a change to `docs/` runs `.github/workflows/mirror-site.yml`,
-which carries it across, pushes it then asks Render to deploy it. Commit here
-and both hosts follow.
-
-**The deploy is asked for rather than inferred, deliberately.** Render's own
-Auto-Deploy cannot be relied on to hear a push, so the workflow asks for the
-deploy outright, through a deploy hook held as `RENDER_DEPLOY_HOOK`. Without that secret the mirror still
-updates while stellody.com waits; the run then logs a warning saying exactly
-that.
+under `docs/`, served by GitHub Pages exactly as this one is. **That mirror
+keeps itself up to date and needs nothing from you.** Pushing a change to
+`docs/` runs `.github/workflows/mirror-site.yml`, which carries it across and
+pushes it; that push starts the mirror's own Pages build. Commit here and both
+hosts follow.
 
 One trap is worth knowing before investigating either host. A browser holding
 the previous page is indistinguishable from a deploy that never ran, so hard
@@ -127,18 +122,16 @@ refresh first.
 `sync_site.py` is what the workflow runs. It works locally too:
 
 ```
-python sync_site.py           # carry docs/ across to ../stellody-website/public
+python sync_site.py           # carry docs/ across to ../stellody-website/docs
 python sync_site.py --check   # report drift, write nothing, exit 1 if any
 ```
 
-Two files are deliberately NOT mirrored. `docs/CNAME` names the Pages custom
-domain and means nothing on Render; `docs/sitemap.xml` stays because this host
-owns the sitemap. `robots.txt` differs on the mirror on purpose, so it is
-neither copied over nor deleted there. The mirrored pages keep their
+`docs/sitemap.xml` is deliberately NOT mirrored, because this host owns the
+sitemap. `CNAME` and `robots.txt` differ on the mirror on purpose, so they are
+neither copied over nor deleted there: each CNAME names its own host's domain. The mirrored pages keep their
 `canonical`, `og:url` and `og:image` pointing here, which is what stops the two
 hosts competing for the same pages.
 
-The workflow reads two secrets. `MIRROR_TOKEN` is a fine-grained personal access
+The workflow reads one secret. `MIRROR_TOKEN` is a fine-grained personal access
 token scoped to `oernster/stellody-website` alone, with Contents set to read
-and write; without it the run stops at once. `RENDER_DEPLOY_HOOK` is the deploy
-hook described above.
+and write; without it the run stops at once.

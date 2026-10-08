@@ -19,21 +19,19 @@ import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent
 SOURCE = REPO_ROOT / "docs"
-DEFAULT_TARGET = REPO_ROOT.parent / "stellody-website" / "public"
-
-# Belongs to GitHub Pages alone: it names the custom domain and means nothing
-# to a host that is not Pages.
-PAGES_ONLY = frozenset({"CNAME"})
+DEFAULT_TARGET = REPO_ROOT.parent / "stellody-website" / "docs"
 
 # The canonical host owns the sitemap. A mirror offering a competing one is how
 # two hosts start arguing over which of them owns the same pages.
 CANONICAL_ONLY = frozenset({"sitemap.xml"})
 
 # Written for the mirror and different there on purpose, so it is neither
-# copied over nor deleted as an unknown extra.
-MIRROR_OWNED = frozenset({"robots.txt"})
+# copied over nor deleted as an unknown extra. Both hosts are GitHub Pages, so
+# each CNAME names its own domain; carrying this one across would point the
+# mirror at stellody.co.uk, while deleting it there would drop stellody.com.
+MIRROR_OWNED = frozenset({"CNAME", "robots.txt"})
 
-NOT_MIRRORED = PAGES_ONLY | CANONICAL_ONLY
+NOT_MIRRORED = CANONICAL_ONLY
 EXIT_OK = 0
 EXIT_DRIFTED = 1
 EXIT_NO_TARGET = 2
@@ -115,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     if not target.parent.exists():
         print(
             f"No mirror at {target}. Clone stellody-website beside this repo, "
-            "or name its public directory with --target.",
+            "or name its docs directory with --target.",
             file=sys.stderr,
         )
         return EXIT_NO_TARGET
