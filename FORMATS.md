@@ -182,7 +182,7 @@ section 4 lists them.
   in every output mode. `stellody/domain/formats.py` names both among
   `LOSSY_FAMILIES` on what the codec does, so a tag library that starts
   reporting a header depth for either changes nothing.
-- Rationale: **The requirement this whole change turns on.** A lossy MP4 states
+- Rationale: **The requirement this specification turns on.** A lossy MP4 states
   sixteen bits per sample because its container carries that number whatever the
   codec does; passing it through would badge an AAC track as delivered untouched.
   The promise the README leads with is held by reporting rather than by hoping, so
@@ -258,8 +258,8 @@ section 4 lists them.
 
 ### 3.3 Data
 
-No new file and no new store. Two frozen sets in `walker.py` hold the rule:
-`AUDIO_SUFFIXES` gains the three suffixes of FR-F01 and `UNPLAYABLE_SUFFIXES`
+No file or store of its own. Two frozen sets in `walker.py` hold the rule:
+`AUDIO_SUFFIXES` holds the three suffixes of FR-F01 and `UNPLAYABLE_SUFFIXES`
 is the list of FR-F08.
 
 ## 4. Prioritisation

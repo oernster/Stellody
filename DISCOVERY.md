@@ -41,7 +41,7 @@ Out of scope:
 | **Catalogue genre** | A name in `stellody.domain.genres.GENRES`, main or style. |
 | **Resolved genre** | An album's genre as the library shows it: the probed tag with any album edit laid over it. Never the raw `sources.genre` column. |
 | **Ticked genres** | The catalogue genres selected in the discovery dialog. |
-| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while artists on compilations are included (FR-D51), each track credit on it instead. Also each artist a name joins, once the catalogue finds nobody under the whole name (FR-D53). Never "Various Artists" itself. |
+| **Source artist** | An artist a run looks up. For a held album whose resolved genre names at least one ticked genre: its album artist; for a compilation, only while artists on compilations are included (FR-D51), each track credit on it instead. Also each artist a name joins, once the catalogue finds nobody under the whole name (FR-D53). Never a name that marks a compilation ("Various Artists", "Various", "VA" or "Verschiedene"). |
 | **Compilation** | A held album whose album artist names various artists rather than a person, as `AlbumIdentity.is_compilation` decides. |
 | **Track credit** | One of a track's artists, split exactly as the library splits them for playback. |
 | **Placeholder artist** | An album artist the catalogue identifies as exactly one artist who has released no album and no EP, such as MusicBrainz's "Global Underground". |
@@ -191,7 +191,8 @@ ruling).
   whose resolved genre names at least one ticked genre. Where artists on
   compilations are included (FR-D51), it shall also take every track credit of
   each compilation whose resolved genre names at least one ticked genre. It shall
-  never take "Various Artists" as a source artist. Two names that differ only in
+  never take a name that marks a compilation ("Various Artists", "Various", "VA"
+  or "Verschiedene") as a source artist. Two names that differ only in
   case or spacing shall be one source artist, asked about once under the spelling
   met first, with what they hold compared as one on `comparison_key`.
 - Rationale: The resolved genre is what the listener sees and spent their time
@@ -813,7 +814,8 @@ ruling).
   will hold it, so neither names that artist. Where a run reaches its end still
   owing an answer about an artist nothing was ever known about, the discovery
   file shall be written with that artist named as unanswered rather than
-  withheld. The gaps written shall be ordered by artist. Where two holders of the
+  withheld. The gaps written shall be ordered by the artist's name exactly as
+  written, which is not the library's own ordering. Where two holders of the
   memory save over one another, the file shall keep every answer either of them
   learned, taking the later answer to any question both hold; one lock covers a
   save and any note that would land between its read and its clearing of the

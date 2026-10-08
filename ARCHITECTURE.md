@@ -181,8 +181,8 @@ out of that comparison (audio and videos disagree about it); a folder naming
 no album or no album artist is never folded. The tags then supply title,
 artist, date and genre as the most common value among the tracks.
 
-Grouping by tags alone was tried and fragmented classical rips, which carry
-the composer in `ALBUM` and a different `DATE` per track. A folder boundary is
+Grouping by tags alone fragments classical rips, which carry the composer in
+`ALBUM` and a different `DATE` per track. A folder boundary is
 what a ripper actually records, so it is trusted; folding never splits a
 folder, it only joins folders that agree.
 
@@ -215,6 +215,15 @@ and
 `stellody/domain/ordering.py` holds the track rules, `grouping.py` the album
 rules, `folding.py` the folding rule and `health.py` the reporting vocabulary.
 
+**Albums are ordered by artist, then year, then title; a compilation by title,
+then year.** `AlbumIdentity.sort_key` in `stellody/domain/identity.py` is the
+one ordering the views, the scan report and assembly use. A leading article is
+set aside, every compilation spelling (`is_various_artists`) files and shows as
+Various Artists and a title's digit runs compare by value, so #2 precedes #10.
+A compilation's artist names nobody, so year first would scatter one series
+among every other compilation of the years between. Held by
+`tests/domain/test_identity_and_album.py::test_sort_key_keeps_a_compilation_series_together_across_spellings`.
+
 ## Accepting a correction
 
 **Resolution has three layers: raw tags, the automatic rules, then what has
@@ -243,7 +252,7 @@ cover, an album rating and accepted corrections.
 it sees what they buy back. Telling apart by place survives only where albums
 collide without folding: `_named_apart` in `stellody/domain/grouping.py`
 appends the place to what the handle is digested from, so an album nothing
-collides with digests exactly as before. A test pins that digest to its
+collides with digests from its artist, title and year alone. A test pins that digest to its
 literal value, since a refactor moving it would silently empty every
 library's ratings.
 
@@ -267,8 +276,8 @@ rule.
 pin is written against. A cue track's display name is invented by the scan and
 renumbering can change it, while every track of a cue album shares one path,
 so neither a name nor a path can carry a pin. `TrackSource.address` is the bare
-path for a whole file and `path#start_frame` for a slice; a whole file
-addresses exactly as it always did, so no stored pin changed shape.
+path for a whole file and `path#start_frame` for a slice, so a pin against a
+whole file holds nothing but its path.
 `overrides.applied` looks pins up by address; `edits_for` in
 `stellody/application/editing.py` writes the tag editor's values against it
 (`tests/application/test_editing_a_cue_album.py`).
@@ -379,9 +388,9 @@ kept as written.
 
 **`tests/infrastructure/test_scanning_formats.py` scans real files of every
 format end to end** through the real walker, probe and store and back out of a
-reopened store. Unit tests of the probe and of the domain once passed while
-disagreeing about nought, leaving rows a load could not assemble; only an end
-to end scan catches that shape.
+reopened store. Unit tests of the probe and of the domain can each pass while
+disagreeing about nought, leaving rows a load cannot assemble; only an end to
+end scan catches that shape.
 
 **What the walk takes is `AUDIO_SUFFIXES` united with `PICTURE_SUFFIXES`**
 (`PLAYABLE_SUFFIXES`). Whether a suffix carries a picture is the domain's
@@ -1129,7 +1138,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | Ending the application is said out loud, never left to Qt | Quit-on-last-window-closed is off so the cross can leave Stellody in the notification area; every path that means to leave says so. |
 | A file's shape is measured once and shared by its tracks | A cue album would otherwise be decoded once per track. `stellody/application/shapes.py` slices one measurement, keyed by a digest of the file's path. |
 | A bucket holds how loud it is, not its loudest sample | The loudest sample in a short bucket sits near the track's peak, so a peak envelope draws almost everything at full height. Loudness gives a shape; a column covering several buckets still takes their loudest, so transients survive. Kept records are invalidated by the format version. |
-| The resolution belongs to the music, not to the file | A fixed bucket count per file made long cue albums draw in wide blocks. A bucket is stated in time, the count following the music between a floor and a cap: `buckets_for` in `stellody/domain/waveform.py` (`BUCKET_MILLISECONDS`, `LEAST_BUCKETS`, `MOST_BUCKETS`), held by `tests/domain/test_envelope.py`. `FORMAT_VERSION` in `stellody/infrastructure/waveform.py` invalidates older records. |
+| The resolution belongs to the music, not to the file | A fixed bucket count per file would draw long cue albums in wide blocks. A bucket is stated in time, the count following the music between a floor and a cap: `buckets_for` in `stellody/domain/waveform.py` (`BUCKET_MILLISECONDS`, `LEAST_BUCKETS`, `MOST_BUCKETS`), held by `tests/domain/test_envelope.py`. `FORMAT_VERSION` in `stellody/infrastructure/waveform.py` invalidates older records. |
 | Levels are rounded where they are measured, not on the way to the record | A measurement differing from its own record by a rounding would redraw differently after a restart; rounding also keeps records small. |
 | A cover is read by one module and kept by another | `infrastructure/covers.py` reads a picture out of audio and nothing more; `infrastructure/artwork.py` decodes, scales and writes without importing a tag library, so it can be granted writing without granting it to a tag reader (invariant 1). |
 | A cover is kept against the album's identity, not a path | A rename reuses the picture; the source's size and modification time are recorded, so a replaced cover is read afresh. |
@@ -1151,15 +1160,15 @@ Held by `tests/ui/test_results_keyboard.py`.
 | A ring a popup leaves behind is redrawn | Qt withholds HoverLeave from a window while another's popup is up, leaving a hover-drawn ring stale. `stellody/ui/hover_paint.py` is an application filter asking for a paint on a Leave under a popup, for every `WA_Hover` widget (`tests/ui/test_leaving_under_a_popup.py`). |
 | Every switch says what a press would do, on both strips | One convention for the whole application: a switch shows the state it would move to, as the mute switch is struck through while sound is on. Repeat's tooltip names the control instead, since three states named one at a time read as stuck; its picture still names the press. |
 | The album pane's play button doubles the tray's, so it toggles with it | Two play buttons that disagree are worse than one. With a track loaded it hands the press to `toggle_playback`, the one method deciding what play means (`tests/ui/test_both_play_buttons_agree.py`); with nothing loaded it starts the open album. `_point_at_what_is_in_hand` in `stellody/ui/viewing.py` reopens the album holding the track in hand on that track (`tests/ui/test_resuming_after_the_pane_comes_back.py`). |
-| The About button became a Help button with a menu under it | A picture button is named by its tooltip, so one opening several things is named Help. Its menu IS the menu bar's Help menu, so the two cannot drift (`tests/ui/test_update_check.py`). |
+| The help button opens a menu rather than one dialog | A picture button is named by its tooltip, so one opening several things is named Help. Its menu IS the menu bar's Help menu, so the two cannot drift (`tests/ui/test_update_check.py`). |
 | A reading dialog never opens on its own page | A ring round a whole page offers nothing to act on. `first_stop` passes over a scrolling region; the pane keeps its stop; a dialog that is only a pane opens on nothing. Held by a sweep over every dialog discovered from source. |
-| A dialog's native window exists before anything sizes it | On Windows with mixed scaling a dialog sized before its native window existed opened scaled across several displays. `FirstStopDialog.__init__` calls `self.winId()` first except on Wayland, where it corrupts the window behind (`makes_window_early`). `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` pins the precondition. |
+| A dialog's native window exists before anything sizes it | On Windows with mixed scaling a dialog sized before its native window exists opens scaled across several displays. `FirstStopDialog.__init__` calls `self.winId()` first except on Wayland, where it corrupts the window behind (`makes_window_early`). `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` pins the precondition. |
 | A prompt waved away decides nothing | The close prompt's answer starts at ASK and only a button moves it, so dismissing it neither leaves, hides nor writes anything. |
 | The waiting after a refusal is spent on a pass, never on one artist | MusicBrainz refusals reflect its load, not our rate. A refused artist is asked once more, then put back for a later pass, so waiting overlaps other artists. `application/passing.py` is the bookkeeping and asks nothing. |
 | A run asks a catalogue only what it has never been told | Asking everything every run made answers vary with a service's mood. Answers are kept in `catalogue-memory.json`: `application/remembering.py` holds the rule, `infrastructure/catalogue_memory.py` the file. An answer stands for a period then is asked again (Oliver's ruling: runs should differ over weeks, not minutes). Saving merges with what the file holds (`merged`); one `FileCatalogueMemory` serves the run, its price and expansion. Undated album and series answers are dropped on read (`_dated`, FR-D67). The kinds include identities, `credited`, `series-of`, `series` and `titled`; asking lives once in `recalled` over an `Asking` (`tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`). |
 | The answer is turned a page at a time, with every page built up front | A page fills every column, depth following height (Oliver's ruling); a column holding a tall artist scrolls. Every page is built at open because a tick is held by its row. `ui/results_room.py` is the arithmetic, `results_pages.py` the pages, `results_pager.py` the controls, `results_foot.py` the one foot row they share with the shop controls (Oliver's ruling). |
-| Every block the device ran dry before it arrived is written to the diary | `stellody/infrastructure/dropouts.py` watches the room in the buffer (PortAudio's underflow flag proved blind on shared WASAPI): a write finding the whole buffer free follows a device that ran dry; a write taking longer than its audio plus what was buffered held a silence of the difference (timed on `perf_counter`). The buffer's size is read once per stream, on its first start, since a queue survives a stop. `stellody/infrastructure/buffering.py` asks every stream for two blocks of queue, which ended the static heard under load; `lead_frames` counts that queue for position and pictures. Held by `tests/infrastructure/test_dropouts.py` and `tests/infrastructure/test_buffering.py`, each including a case on the real device that skips where none opens. Metering lives in `stellody/infrastructure/metering.py`. |
-| One dropped connection no longer ends a run; a run of them still does | An artist nothing answered about goes round again like a refused one; the run gives up only after a run of consecutive silences, counted once for the whole run by `Silence` in `application/gathering.py`. |
+| Every block the device ran dry before it arrived is written to the diary | `stellody/infrastructure/dropouts.py` watches the room in the buffer (PortAudio's underflow flag proved blind on shared WASAPI): a write finding the whole buffer free follows a device that ran dry; a write taking longer than its audio plus what was buffered held a silence of the difference (timed on `perf_counter`). The buffer's size is read once per stream, on its first start, since a queue survives a stop. `stellody/infrastructure/buffering.py` asks every stream for two blocks of queue, so a busy machine does not break the sound up into static; `lead_frames` counts that queue for position and pictures. Held by `tests/infrastructure/test_dropouts.py` and `tests/infrastructure/test_buffering.py`, each including a case on the real device that skips where none opens. Metering lives in `stellody/infrastructure/metering.py`. |
+| One dropped connection does not end a run; a run of them does | An artist nothing answered about goes round again like a refused one; the run gives up only after a run of consecutive silences, counted once for the whole run by `Silence` in `application/gathering.py`. |
 | Every answer is written down as it arrives, not only when a run ends | Each answer is appended to a running record and forced to disk; each memory reads its file plus that record, dropping the record once the file holds it. `infrastructure/journal.py` owns appending, as `atomic.py` owns replacing. |
 | An answer with a hole in it is written, with the hole named in it | What could not be answered is written beside what was, shown in the shortfall sentence and filled by the next run; gaps are written in artist order. |
 | What a failure says on screen is read off its kind, never off its message | The row gets a sentence; the diary gets class, message and artist. A refusal and a timeout are distinct kinds. |

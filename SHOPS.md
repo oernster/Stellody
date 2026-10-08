@@ -90,8 +90,8 @@ Nothing here is ever a track. A run deals in artists and albums; so does this.
 ### 2.1 Product perspective
 
 An addition to the results dialog built for FR-D28 to FR-D34, plus a small
-application service and one new file in Stellody's own directory. No new
-outward connection: opening a browser is not a call this application makes.
+application service and one file in Stellody's own directory (`shops.json`).
+No outward connection: opening a browser is not a call this application makes.
 The four modules named in invariant 12 stay four.
 
 ### 2.2 User classes
@@ -130,7 +130,7 @@ is specified rather than assumed away.
 ## 3. Requirements
 
 Every requirement below is a Must unless it carries a Priority line;
-section 4 lists them.
+Appendix B lists them.
 
 ### 3.1 Functional
 
@@ -264,7 +264,7 @@ section 4 lists them.
 - Rationale: The unwanted sibling of FR-S09: a list nobody can read is a
   disappointment, while an exception in the middle of a results dialog is worse.
   The unusable file goes straight back to the installed state, which is what the
-  dialog shows (Oliver's ruling); leaving it on disk only postponed that, since
+  dialog shows (Oliver's ruling); leaving it on disk would gain nothing, since
   the first change made in the dialog would save over it.
 - Acceptance: Given a shop file holding malformed JSON, a top level that is not an
   object or a `shops` that is not a list, when the list is read, then the shipped
@@ -590,7 +590,7 @@ section 4 lists them.
   `ARCHITECTURE.md` keeps for composing over another picture.
   `tests/ui/test_guide.py` fails on a picture the interface names that the guide
   does not draw.
-- Verified by: `tests/ui/test_guide.py::TestWhatItNames` (existing)
+- Verified by: `tests/ui/test_guide.py::TestWhatItNames`
 
 **FR-S42 A hand-broken row can be mended from the dialog**
 - Requirement: If a row in the shop file cannot be read as a shop, then the shops
@@ -639,8 +639,7 @@ section 4 lists them.
 - Rationale: A round of shopping is finished when its dialog closes; ticks that
   outlive it are work to undo by hand before the next. A tick nobody can see is
   worse, since it would be sent with the next round unnoticed. This narrows
-  FR-D56: a tick still outlives a filter; it no longer outlives the close of the
-  shops dialog.
+  FR-D56: a tick outlives a filter, not the close of the shops dialog.
 - Acceptance: Given two albums ticked (one under an artist then rolled up) with
   the shops dialog opened, when it is closed, then nothing is ticked and neither
   Copy nor Find in shops is enabled. Given an album ticked and then withheld by a

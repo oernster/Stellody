@@ -188,6 +188,16 @@ screen shows corrected ones and would need rebuilding. Search finds exactly
 what is on screen and is quick at real library sizes; the work grows with the
 library, so a far larger collection would need measuring again.
 
+### Compilations are one artist, ordered by title
+
+Every way a tag marks a compilation (Various, VA, Various Artists) is shown
+and sorted as Various Artists; the file keeps its own spelling. Other artists'
+albums run chronologically, while compilations run by title, numbers in a title
+counted as numbers, then by year. Chosen over sorting on the tag as written or
+by year throughout, either of which scatters the volumes of one series across
+the grid. A series reads in order wherever its tags disagree; compilations are
+not in release order.
+
 ### A settled genre list
 
 Genres are a fixed catalogue of main genres with styles, spelled to match the

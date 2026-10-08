@@ -42,8 +42,7 @@ intention. Nothing below is sized against the number.
 
 ## Open work
 
-There is no open planned work. Every milestone this file carried has either
-shipped or been ruled out. The section below records what was decided against
+There is no open planned work. The section below records what was decided against
 and why, so the same ground is not argued twice. A new milestone arrives here
 when somebody decides on one.
 

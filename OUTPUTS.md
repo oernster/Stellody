@@ -9,19 +9,19 @@ rule as it stands today.
 
 ### 1.1 Purpose
 
-Without this, Stellody plays to whatever the operating system calls its default
+By default Stellody plays to whatever the operating system calls its default
 output and follows it when the system moves it
-(`infrastructure/output_devices.py`). A listener who wanted the music on the
-Focusrite while everything else stayed on the speakers would have to move the
-whole system's default, which moves every other application with it.
+(`infrastructure/output_devices.py`). A listener who wants the music on the
+Focusrite while everything else stays on the speakers chooses it here, rather
+than moving the whole system's default and every other application with it.
 
-This adds a choice of output device to Stellody alone, listing only the
-devices the system can play to, kept current while the application runs.
+The choice is Stellody's alone. The list holds only the devices the system can
+play to and is kept current while the application runs.
 
 ### 1.2 Intended audience
 
-Whoever implements it, whoever reviews it and Oliver, who owns every decision
-recorded here.
+Whoever maintains or reviews it and Oliver, who owns every decision recorded
+here.
 
 ### 1.3 What the design rests on
 
@@ -456,7 +456,7 @@ asked its name; without it FR-O10 could only say "a device is missing".
 ## 4. Prioritisation
 
 Every functional requirement is a Must: the feature is small; each one is a
-case the feature cannot ship without. Won't this time is the out-of-scope list
+case the feature would be incomplete without. Won't this time is the out-of-scope list
 in section 1.4.
 
 ## 5. Open questions
@@ -469,9 +469,7 @@ in section 1.4.
 | OQ-O4 | Does Qt report a Bluetooth output connecting and disconnecting on Windows? (A-O02) | Claude, with Oliver's Bathys | Log every `audioOutputsChanged` with a timestamp while the Bathys connects and disconnects five times. If it misses any, a poll of `QMediaDevices.audioOutputs()` once a second replaces the signal; the poll never touches PortAudio. | Observed working live; the timed probe is still open |
 | OQ-O5 | Which rule governs the chosen device leaving and returning? | Oliver | | Answered: music never goes to the speakers without a press (FR-O11, FR-O12) |
 
-## 6. The build order this implies
-
-Inside out, as every feature here is built.
+## 6. How the layers divide the work
 
 1. **Domain**: the output list as a value (System default first, numbered
    repeats, a missing choice kept and marked), plus the rule choosing the
@@ -484,9 +482,5 @@ Inside out, as every feature here is built.
    each stream on the device it is handed.
 4. **UI**: the button, the list, the menu mirror, the messages, the settings.
 
-The diagnostic that says the foundation is sound: choosing a device,
-losing it and getting it back must each be driven from a test against fakes
-before the button exists.
-
-Then the documents: `ARCHITECTURE.md` gains the choice beside exclusive
-output; the README's feature list and the site gain one line each.
+Choosing a device, losing it and getting it back are each driven from tests
+against fakes (`tests/application/test_choosing_an_output.py`).
