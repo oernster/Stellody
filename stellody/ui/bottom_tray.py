@@ -246,10 +246,10 @@ class BottomTray(QWidget):
         # How the music sounds is a different question from how the queue
         # runs, so a rule stands between the sound and the two switches.
         self.sound_separator = separator(self, BOTTOM_SEPARATOR_HEIGHT_PX)
-        # Half the height of a button beside it, centred against them: it
-        # is something to notice out of the corner of an eye rather than a
-        # sixth control, so it should not stand as tall as the things that are.
-        self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX // HALF)
+        # As tall as a button beside it, centred against them: the tallest it
+        # can stand without making the strip itself taller. It was half that
+        # until Oliver asked for more of it on 2026-10-11.
+        self.visualiser = Visualiser(self, BOTTOM_BUTTON_PX)
         if read_levels is not None:
             self.visualiser.read_levels_from(read_levels)
         # The visualiser at the middle of the strip rather than the middle of

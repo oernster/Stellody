@@ -144,19 +144,19 @@ class TestTheDisplayInTheWindow:
         assert widgets.index(tray.showing) < here < widgets.index(tray.sound)
         made.close()
 
-    def test_it_stands_lower_than_the_controls_and_sits_between_them(
+    def test_it_stands_as_tall_as_the_controls_and_sits_between_them(
         self, application
     ) -> None:
-        """Half a button tall, centred against them, derived from their size.
+        """A button tall, centred against them, derived from their size.
 
-        It is something to notice out of the corner of an eye rather than a
-        sixth control, so it should not stand as tall as the things that are;
-        the height comes from the tray's own so the two cannot drift apart.
+        The tallest it can stand without making the strip taller; the height
+        comes from the tray's own so the two cannot drift apart.
         """
         made = self.window(RememberingStore(), RecordingPlayer())
         made.show()
         strip, tray = made._visualiser, made._bottom_tray
-        assert strip.height() == BOTTOM_BUTTON_PX // 2
+        assert strip.height() == BOTTOM_BUTTON_PX
+        assert strip.height() == tray.donate_button.height(), "no taller than a button"
         centre = strip.mapTo(tray, strip.rect().center()).y()
         assert abs(centre - tray.height() // 2) <= 1, "centred in the strip"
         made.close()
