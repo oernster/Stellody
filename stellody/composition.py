@@ -359,6 +359,7 @@ def _start(argv: list[str] | None = None) -> int:
     # Read now, while nothing is playing, rather than on the first press of
     # Discover, when reading it starves the sound device. FileCatalogueMemory.
     warm_memory(recall, diary.note)
+    window.warm_discovery()
     if set_aside is not None:
         window.report_library_set_aside(set_aside)
     listening = only.listen(window.restore_for_channel)

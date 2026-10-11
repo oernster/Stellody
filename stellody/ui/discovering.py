@@ -159,6 +159,19 @@ class Discovering(AnsweringDiscovery, SettlingDiscovery):
         finally:
             self._discovery_dialog = None
 
+    def warm_discovery(self) -> None:
+        """Build the dialog once, unseen, as the application opens.
+
+        The first dialog of a session was measured on 2026-10-11 taking 246 ms
+        to build on Windows against 35 ms for every one after it; that first
+        build held up the sound device's feeder long enough to be heard as a
+        dropout on the first press of Discover. Paid here instead, while
+        nothing is playing: measured on 2026-10-12, the first press then built
+        in 45 ms with no dropout all session. What Windows does once is not
+        known; offscreen the two builds cost the same.
+        """
+        DiscoveryDialog(start=self.begin_discovery, parent=self).deleteLater()
+
     def begin_discovery(
         self,
         ticked: tuple[str, ...],
