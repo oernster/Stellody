@@ -174,7 +174,7 @@ def test_the_ring_follows_reading_order(application: QApplication, window) -> No
         "Buy the author a drink (opens your browser)",
         "Rescan the library",
         "Switch to album art",
-        "Switch the visualiser to the meter",
+        "Choose how the visualiser draws",
         f"Volume {DEFAULT_PERCENT}%",
         "Mute",
         "Choose the output device",

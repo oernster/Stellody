@@ -1,15 +1,13 @@
 """The ways the visualiser can draw the same twenty measurements.
 
-Four of them, stepped through by one button on the bottom strip: the plain
-bars it always had, then a meter, a wave and a flame. Every style draws the
-SAME bands from the same measurement, so switching changes how the music looks
-and never what is measured; nothing upstream is told which style is on show.
+Ten of them, named, chosen from a list that lifts up over the button on the
+bottom strip the way the output devices do. Every style draws the SAME bands
+from the same measurement, so choosing changes how the music looks and never
+what is measured; nothing upstream is told which style is on show.
 
-One button cycling rather than four buttons or a menu: the strip has room for
-one more picture and none for a choice. A style is also something tried by
-pressing until one is liked rather than picked by name. The button's artwork shows the
-cycle; its tooltip names the style a press moves to, which is the rule every
-other picture on the strip follows.
+A named list rather than a button stepping through them: stepped, ten styles
+are nine presses from the last back to the first, with no way to tell which
+comes next. Oliver asked for the list on 2026-10-12, once there were ten.
 
 The choice is written down by NAME, as the sleeve size is, so reordering or
 adding a style cannot turn somebody's choice into a different one.
@@ -21,29 +19,37 @@ from enum import StrEnum
 
 
 class Visualisation(StrEnum):
-    """One way of drawing the bands, in the order a press steps through them."""
+    """One way of drawing the bands, in the order the list offers them."""
 
     BARS = "bars"
     METER = "meter"
     WAVE = "wave"
     FLAME = "flame"
+    MIRROR = "mirror"
+    RAINBOW = "rainbow"
+    SUNBURST = "sunburst"
+    DOT_MATRIX = "dot matrix"
+    SCOPE = "scope"
+    BUBBLES = "bubbles"
 
 
 VISUALISATIONS = tuple(Visualisation)
 DEFAULT_VISUALISATION = Visualisation.BARS
-# How each is named in a sentence, kept beside the styles so a new one cannot
-# be added without words to offer it by.
-SPOKEN = {
-    Visualisation.BARS: "bars",
-    Visualisation.METER: "the meter",
-    Visualisation.WAVE: "the wave",
-    Visualisation.FLAME: "the flame",
+# What the list calls each, kept beside the styles so a new one cannot be
+# added without a name to offer it by.
+NAMES = {
+    Visualisation.BARS: "Bars",
+    Visualisation.METER: "Meter",
+    Visualisation.WAVE: "Wave",
+    Visualisation.FLAME: "Flame",
+    Visualisation.MIRROR: "Mirror",
+    Visualisation.RAINBOW: "Rainbow",
+    Visualisation.SUNBURST: "Sunburst",
+    Visualisation.DOT_MATRIX: "Dot matrix",
+    Visualisation.SCOPE: "Scope",
+    Visualisation.BUBBLES: "Bubbles",
 }
-
-
-def next_visualisation(style: Visualisation) -> Visualisation:
-    """The style a press would move to, wrapping round after the last."""
-    return VISUALISATIONS[(VISUALISATIONS.index(style) + 1) % len(VISUALISATIONS)]
+VISUALISATION_TOOLTIP = "Choose how the visualiser draws"
 
 
 def stored_visualisation(stored: str) -> Visualisation:
@@ -55,8 +61,3 @@ def stored_visualisation(stored: str) -> Visualisation:
     if stored in VISUALISATIONS:
         return Visualisation(stored)
     return DEFAULT_VISUALISATION
-
-
-def visualisation_tooltip(following: Visualisation) -> str:
-    """What the button says a press would do: switch to the style after this."""
-    return f"Switch the visualiser to {SPOKEN[following]}"

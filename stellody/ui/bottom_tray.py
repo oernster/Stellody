@@ -46,17 +46,16 @@ so its words name the control instead. The picture still names the press.
 
 from __future__ import annotations
 
-import pathlib
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
-from stellody.ui.icons import plain_icon, struck_through
+from stellody.ui.lift_menu import LiftMenu, Line, fill_choices, pop_up_above
+from stellody.ui.queue_switches import QueueSwitches
 from stellody.ui.showing_controls import ShowingControls
 from stellody.ui.sound_controls import SoundControls
 from stellody.ui.theme import HALF
@@ -68,7 +67,12 @@ from stellody.ui.tray_metrics import (
     TRAY_MARGIN_PX,
 )
 from stellody.ui.tray_parts import centred_row, group, icon_button, separator
-from stellody.ui.visualisations import Visualisation, visualisation_tooltip
+from stellody.ui.visualisations import (
+    NAMES,
+    VISUALISATION_TOOLTIP,
+    VISUALISATIONS,
+    Visualisation,
+)
 from stellody.ui.visualiser import Visualiser
 
 # Three quarters of the tray above. Expressed against that tray's own sizes so
@@ -86,24 +90,6 @@ BOTTOM_SEPARATOR_HEIGHT_PX = (
 )
 
 
-# Keyed by the state a press LANDS on, not the one it leaves. Repeating the
-# album is the plain wheel and holding one track is the numbered wheel;
-# arriving back at off is the wheel crossed out, composed rather than drawn.
-REPEAT_ICONS = {
-    RepeatMode.ALBUM: resources.repeat_icon_path,
-    RepeatMode.ONE: resources.repeat_one_icon_path,
-}
-# The one control on either strip whose words name the control rather than the
-# next press. Every other switch here holds two states, where naming the press
-# tells the whole story. This one holds three, where naming only the next
-# press reads as a switch that has got itself the wrong way round: offered "Repeat
-# one track" while the album is already repeating looks like a refusal to turn
-# off rather than the second step of a cycle. So the words say which control
-# this is and the picture keeps saying what a press would do, which is the half
-# of the rule that actually needs a glance rather than a hover. One wording for
-# all three states also means a tooltip that does not rewrite itself under the
-# pointer while somebody is reading it.
-REPEAT_TOOLTIP = "Repeat mode"
 # One wording, one home, kept where the button itself is. The health report's
 # own repair control reads it from here, so the two cannot come to say
 # different things about one feature.
@@ -130,43 +116,6 @@ def _small_button(
     return icon_button(parent, path, tip, on_click, BOTTOM_BUTTON_PX, BOTTOM_ICON_PX)
 
 
-def _state_icon(path: pathlib.Path | None, becomes_on: bool) -> QIcon:
-    """The picture a press would land on: the artwork, else it crossed out.
-
-    Named for the destination rather than the current state, so the cross
-    reads as an offer to switch off rather than as a report of being off.
-    """
-    if becomes_on:
-        return plain_icon(path)
-    return struck_through(path, resources.negative_icon_path(), BOTTOM_ICON_PX)
-
-
-def _repeat_icon(repeat: RepeatMode) -> QIcon:
-    """The state a press would move to, which nothing else has to be told.
-
-    The cycle is read off the mode itself rather than from a second table,
-    so the picture and the press cannot come to disagree.
-    """
-    following = repeat.after
-    if following is RepeatMode.OFF:
-        return _state_icon(resources.repeat_icon_path(), False)
-    return plain_icon(REPEAT_ICONS[following]())
-
-
-def _switch_button(
-    parent: QWidget, tip: str, on_click: Callable[[], None]
-) -> QPushButton:
-    """One picture button that stays down while whatever it names is on.
-
-    Checkable carries no paint of its own here, since the artwork says the
-    state. It is kept so anything reading the widget rather than looking at
-    it is still told which switches are engaged.
-    """
-    button = _small_button(parent, None, tip, on_click)
-    button.setCheckable(True)
-    return button
-
-
 class BottomTray(QWidget):
     """The strip along the bottom, holding the settings that outlast a track."""
 
@@ -185,7 +134,6 @@ class BottomTray(QWidget):
         toggle_exclusive: Callable[[], None] = lambda: None,
         set_volume: Callable[[int], None] = lambda _percent: None,
         read_levels=None,
-        next_visualisation: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -198,8 +146,11 @@ class BottomTray(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         # A container is never a stop, so it is said rather than assumed.
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.shuffle_button = _switch_button(self, "Turn shuffle on", toggle_shuffle)
-        self.repeat_button = _switch_button(self, REPEAT_TOOLTIP, toggle_repeat)
+        self.switches = QueueSwitches(
+            self, BOTTOM_BUTTON_PX, BOTTOM_ICON_PX, toggle_shuffle, toggle_repeat
+        )
+        self.shuffle_button = self.switches.shuffle_button
+        self.repeat_button = self.switches.repeat_button
         self.donate_button = _small_button(
             self, resources.donate_icon_path(), DONATE_TOOLTIP, open_donation
         )
@@ -228,9 +179,15 @@ class BottomTray(QWidget):
         )
         # How the music is DRAWN closes the left group, after how the library
         # is: both change what is on show, so the two sit side by side.
+        # A press lifts the list of styles, as the output button lifts its
+        # devices; `lift_menu.py` is the one home for how either behaves.
         self.visualisation_separator = separator(self, BOTTOM_SEPARATOR_HEIGHT_PX)
+        self.visualisation_menu = LiftMenu(self)
         self.visualisation_button = _small_button(
-            self, resources.visualisations_icon_path(), "", next_visualisation
+            self,
+            resources.visualisations_icon_path(),
+            VISUALISATION_TOOLTIP,
+            lambda: pop_up_above(self.visualisation_menu, self.visualisation_button),
         )
         self.sound = SoundControls(
             self,
@@ -304,7 +261,7 @@ class BottomTray(QWidget):
 
     def switch_stops(self) -> tuple[QPushButton, ...]:
         """The settings at the right end, left to right as they are drawn."""
-        return (self.shuffle_button, self.repeat_button)
+        return self.switches.stops()
 
     def set_showing_covers(self, covers: bool) -> None:
         """Say what pressing the view toggle would do from here."""
@@ -314,9 +271,17 @@ class BottomTray(QWidget):
         """Show the size a press would move to."""
         self.showing.set_next_cover_size(size)
 
-    def set_next_visualisation(self, following: Visualisation) -> None:
-        """Say which style a press of the visualiser button would move to."""
-        self.visualisation_button.setToolTip(visualisation_tooltip(following))
+    def show_visualisations(
+        self, chosen: Visualisation, choose: Callable[[Visualisation], None]
+    ) -> None:
+        """Put every style in the list the visualiser button lifts, ticking one."""
+        fill_choices(
+            self.visualisation_menu,
+            tuple(
+                Line(NAMES[style], style is chosen, lambda style=style: choose(style))
+                for style in VISUALISATIONS
+            ),
+        )
 
     def set_percent(self, percent: int) -> None:
         """Remember where the volume is, so the slider opens showing it."""
@@ -340,29 +305,11 @@ class BottomTray(QWidget):
 
     def set_shuffled(self, shuffled: bool) -> None:
         """Light the shuffle switch while the queue is scattered."""
-        self._show_switch(
-            self.shuffle_button, resources.shuffle_icon_path(), shuffled, "shuffle"
-        )
+        self.switches.set_shuffled(shuffled)
 
     def set_repeat(self, repeat: RepeatMode) -> None:
-        """Show which of the three repeat states the switch is holding.
-
-        The tooltip is not touched: it names the control rather than the state,
-        so there is nothing here for a change of state to rewrite.
-        """
-        self.repeat_button.setIcon(_repeat_icon(repeat))
-        self.repeat_button.setChecked(repeat.repeats)
-
-    def _show_switch(self, button: QPushButton, path, on: bool, name: str) -> None:
-        """Light one switch while it is on; say what a press would do.
-
-        The picture shows where a press would leave it, so a lit switch wears
-        the cross that offers to put it out and nothing behind the artwork
-        has to change for the state to be read.
-        """
-        button.setIcon(_state_icon(path, not on))
-        button.setChecked(on)
-        button.setToolTip(f"Turn {name} {'off' if on else 'on'}")
+        """Show which of the three repeat states the switch is holding."""
+        self.switches.set_repeat(repeat)
 
     def offer_repairs(self, available: bool) -> None:
         """Say whether there is anything for the repair control to act on.

@@ -1,10 +1,11 @@
-"""The visualiser's four styles and the button that steps between them.
+"""The visualiser's ten named styles and the list the button lifts to choose one.
 
 What is asserted is that every style draws something in silence and in sound,
 that no two styles draw the same picture, that the button sits after the view
-controls and says where a press goes, then that the choice outlasts the window.
-Rendering the widget runs its own paintEvent, so what is counted is what would
-be drawn rather than what is on a screen.
+controls and lifts a list naming every style with the current one ticked, then
+that a choice outlasts the window. Rendering the widget runs its own
+paintEvent, so what is counted is what would be drawn rather than what is on
+a screen.
 """
 
 from __future__ import annotations
@@ -16,24 +17,28 @@ from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.spectrum import BAR_COUNT, FULL, SILENT_BANDS
+from stellody.ui.lift_menu import pop_up_above
 from stellody.ui.settings_keys import SETTING_VISUALISATION
+from stellody.ui.spectrum_styles import PAINTERS
 from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.visualisations import (
     DEFAULT_VISUALISATION,
+    NAMES,
+    VISUALISATION_TOOLTIP,
     VISUALISATIONS,
     Visualisation,
-    next_visualisation,
     stored_visualisation,
-    visualisation_tooltip,
 )
 from stellody.ui.visualiser import Visualiser
 
 # Wide enough that every band gets its own columns of pixels to be counted in.
 STRIP_WIDTH_PX = 600
-STRIP_HEIGHT_PX = 34
+STRIP_HEIGHT_PX = 68
 # A spectrum with a shape, so a style that ignored the heights would show it.
 SHAPED = tuple((band % 5 + 1) / 5 for band in range(BAR_COUNT))
 LOUD = (FULL,) * BAR_COUNT
+# The number of styles Oliver asked for: the four, then six more.
+STYLE_COUNT = 10
 
 
 def _drawn(
@@ -64,12 +69,11 @@ def _colours(image: QImage) -> set[int]:
 
 
 class TestTheStyles:
-    def test_a_press_steps_through_every_style_and_comes_round(self) -> None:
-        seen = [DEFAULT_VISUALISATION]
-        for _ in VISUALISATIONS:
-            seen.append(next_visualisation(seen[-1]))
-        assert set(seen) == set(VISUALISATIONS)
-        assert seen[-1] is DEFAULT_VISUALISATION
+    def test_there_are_ten_each_named_and_painted(self) -> None:
+        assert len(VISUALISATIONS) == STYLE_COUNT
+        assert set(NAMES) == set(VISUALISATIONS)
+        assert set(PAINTERS) == set(VISUALISATIONS)
+        assert len(set(NAMES.values())) == STYLE_COUNT, "no two share a name"
 
     def test_a_stored_name_comes_back_as_its_style(self) -> None:
         for style in VISUALISATIONS:
@@ -78,9 +82,6 @@ class TestTheStyles:
     def test_a_name_nobody_knows_falls_back_to_the_bars(self) -> None:
         for stored in ("", "lasers", "3"):
             assert stored_visualisation(stored) is DEFAULT_VISUALISATION
-
-    def test_the_tooltip_names_where_a_press_goes(self) -> None:
-        assert visualisation_tooltip(Visualisation.WAVE).endswith("the wave")
 
     @pytest.mark.parametrize("style", VISUALISATIONS)
     def test_silence_still_reads_as_a_strip_in_every_style(
@@ -102,16 +103,16 @@ class TestTheStyles:
                 if style is not other:
                     assert drawn[style] != drawn[other], f"{style} draws as {other}"
 
-    def test_the_new_styles_wear_more_than_one_colour(
+    def test_every_style_but_the_bars_wears_more_than_one_colour(
         self, application: QApplication
     ) -> None:
-        """Each of the three carries a ramp of its own rather than the accent."""
+        """Each carries colours of its own rather than the accent alone."""
         for mode in Mode:
             plain = len(_colours(_drawn(application, mode, Visualisation.BARS, LOUD)))
             for style in VISUALISATIONS:
                 if style is Visualisation.BARS:
                     continue
-                coloured = len(_colours(_drawn(application, mode, style, LOUD)))
+                coloured = len(_colours(_drawn(application, mode, style, SHAPED)))
                 assert coloured > plain, f"{style} in {mode}"
 
 
@@ -135,8 +136,16 @@ class TestThePeaks:
         made.close()
 
 
-class TestTheButton:
-    def test_it_follows_the_view_controls_behind_a_rule(self, application) -> None:
+def _lines(window) -> list[tuple[str, bool]]:
+    """What the list says, line by line, with whether each is ticked."""
+    menu = window._bottom_tray.visualisation_menu
+    return [(action.text(), action.isChecked()) for action in menu.actions()]
+
+
+class TestTheList:
+    def test_the_button_follows_the_view_controls_behind_a_rule(
+        self, application
+    ) -> None:
         made = build(RememberingStore(), RecordingPlayer())
         made.show()
         tray = made._bottom_tray
@@ -151,19 +160,43 @@ class TestTheButton:
         stops = tray.ring_stops()
         assert stops.index(button) == stops.index(last_view) + 1
         assert not button.icon().isNull(), "it wears the artwork"
+        assert button.toolTip() == VISUALISATION_TOOLTIP
         made.close()
 
-    def test_a_press_steps_the_style_and_writes_it_down(self, application) -> None:
+    def test_it_names_every_style_with_the_one_in_force_ticked(
+        self, application
+    ) -> None:
+        made = build(RememberingStore(), RecordingPlayer())
+        assert _lines(made) == [
+            (NAMES[style], style is DEFAULT_VISUALISATION) for style in VISUALISATIONS
+        ]
+        made.close()
+
+    def test_the_button_lifts_it_and_a_second_press_puts_it_down(
+        self, application
+    ) -> None:
+        made = build(RememberingStore(), RecordingPlayer())
+        made.show()
+        tray = made._bottom_tray
+        menu = tray.visualisation_menu
+        pop_up_above(menu, tray.visualisation_button)
+        assert menu.isVisible()
+        pop_up_above(menu, tray.visualisation_button)
+        assert not menu.isVisible()
+        made.close()
+
+    def test_choosing_a_line_draws_it_ticks_it_and_writes_it_down(
+        self, application
+    ) -> None:
         store = RememberingStore()
         made = build(store, RecordingPlayer())
-        button = made._bottom_tray.visualisation_button
-        style = made._visualiser.style
-        for _ in VISUALISATIONS:
-            following = next_visualisation(style)
-            assert button.toolTip() == visualisation_tooltip(following)
-            button.click()
-            style = made._visualiser.style
-            assert style is following
+        menu = made._bottom_tray.visualisation_menu
+        for style in reversed(VISUALISATIONS):
+            line = next(a for a in menu.actions() if a.text() == NAMES[style])
+            line.trigger()
+            assert made._visualiser.style is style
+            assert [ticked for _text, ticked in _lines(made)].count(True) == 1
+            assert dict(_lines(made))[NAMES[style]]
             assert store.get_setting(SETTING_VISUALISATION) == style.value
         made.close()
 
@@ -174,4 +207,5 @@ class TestTheButton:
             store = RememberingStore({SETTING_VISUALISATION: style.value})
             reopened = build(store, RecordingPlayer())
             assert reopened._visualiser.style is style
+            assert dict(_lines(reopened))[NAMES[style]]
             reopened.close()

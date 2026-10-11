@@ -29,13 +29,14 @@ so it stays the size it was asked to be wherever it is opened rather than
 shrinking on one display and sprawling on another. Its height is the tray's
 own, handed in, so the two cannot drift apart.
 
-**It draws in one of four styles**, chosen from a button on the strip and listed
-in `visualisations.py`: the plain bars in the accent, then a meter, a wave and
-a flame in colours of their own. This widget runs the clock and keeps the
-heights; how a frame looks is `spectrum_painting.py`'s, so a style changes
-nothing about what is measured. Heights are fractions of the strip and colours
-come from the palette, so nothing here knows a pixel count or a colour value
-that the palette or the layout does not already own.
+**It draws in one of ten named styles**, chosen from a list lifted up over a
+button on the strip and listed in `visualisations.py`: the plain bars in the
+accent, the rest in colours of their own. This widget runs the clock and keeps
+the heights; how a frame looks is the painters' (`spectrum_styles.py` names
+them), so a style changes nothing about what is measured. Heights are
+fractions of the strip and colours come from the palette, so nothing here knows
+a pixel count or a colour value that the palette or the layout does not already
+own.
 
 **It has a ground of its own, plus a baseline it draws even in silence.** It had
 neither at first, which measured as a strip of exactly one colour, the window's:
@@ -54,7 +55,7 @@ from PySide6.QtWidgets import QWidget
 
 from stellody.domain.spectrum import SILENT_BANDS, fallen, held
 from stellody.ui.palette import Mode, palette_for
-from stellody.ui.spectrum_painting import PAINTERS
+from stellody.ui.spectrum_styles import PAINTERS
 from stellody.ui.visualisations import DEFAULT_VISUALISATION, Visualisation
 
 # Thirty a second. Fast enough that a falling bar reads as movement rather than

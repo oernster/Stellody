@@ -19,22 +19,18 @@ of the button that switches between them.
 from __future__ import annotations
 
 import itertools
-from collections.abc import Callable
 
 from PySide6.QtCore import QPointF, QRect, Qt
 from PySide6.QtGui import (
     QBrush,
     QColor,
     QLinearGradient,
-    QPainter,
     QPainterPath,
     QPen,
     QPolygonF,
 )
 
-from stellody.ui.palette import Palette
 from stellody.ui.theme import HALF
-from stellody.ui.visualisations import Visualisation
 
 # As tight as bars can be drawn and still be told apart. The whole thing is a
 # few centimetres across and holds twenty bars, so every pixel spent on a gap
@@ -62,22 +58,20 @@ RAMP_MIDDLE = 0.5
 FLAME_VALLEY_SHARE = 0.35
 FLAME_EDGE_PX = 1.0
 
-Painter = Callable[
-    [QPainter, QRect, tuple[float, ...], tuple[float, ...], Palette], None
-]
 
-
-def _span(inner: QRect, count: int) -> float:
+def band_span(inner: QRect, count: int) -> float:
     """How far apart neighbouring bands sit across the room."""
     return (inner.width() + BAR_GAP_PX) / count
 
 
-def _tall(inner: QRect, height: float) -> float:
+def drawn_height(inner: QRect, height: float) -> float:
     """A height on the 0 to 1 scale in pixels, never below the baseline."""
     return max(BASELINE_PX, inner.height() * height)
 
 
-def _ramp(inner: QRect, low: str, middle: str, high: str) -> QLinearGradient:
+def three_colour_ramp(
+    inner: QRect, low: str, middle: str, high: str
+) -> QLinearGradient:
     """Three colours from the floor of the room to its ceiling."""
     ramp = QLinearGradient(
         QPointF(inner.left(), inner.bottom()), QPointF(inner.left(), inner.top())
@@ -88,12 +82,13 @@ def _ramp(inner: QRect, low: str, middle: str, high: str) -> QLinearGradient:
     return ramp
 
 
-def _band_points(inner: QRect, heights: tuple[float, ...]) -> list[QPointF]:
+def band_tops(inner: QRect, heights: tuple[float, ...]) -> list[QPointF]:
     """Each band's top at its own centre, with the two ends held at the edges."""
-    span = _span(inner, len(heights))
+    span = band_span(inner, len(heights))
     points = [
         QPointF(
-            inner.left() + (band + 1 / HALF) * span, inner.bottom() - _tall(inner, h)
+            inner.left() + (band + 1 / HALF) * span,
+            inner.bottom() - drawn_height(inner, h),
         )
         for band, h in enumerate(heights)
     ]
@@ -104,7 +99,7 @@ def _band_points(inner: QRect, heights: tuple[float, ...]) -> list[QPointF]:
     ]
 
 
-def _smooth(points: list[QPointF]) -> QPainterPath:
+def smoothed(points: list[QPointF]) -> QPainterPath:
     """A curve through the midpoints, bending at each point rather than turning.
 
     Each band's top is a control point and the curve passes halfway between
@@ -122,10 +117,10 @@ def paint_bars(painter, inner, shown, peaks, palette) -> None:
     """The plain bars: one rounded column per band, in the accent."""
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QColor(palette.accent))
-    span = _span(inner, len(shown))
+    span = band_span(inner, len(shown))
     width = max(BASELINE_PX, int(span) - BAR_GAP_PX)
     for band, height in enumerate(shown):
-        tall = int(_tall(inner, height))
+        tall = int(drawn_height(inner, height))
         painter.drawRoundedRect(
             inner.left() + int(band * span),
             inner.bottom() - tall,
@@ -146,12 +141,14 @@ def paint_meter(painter, inner, shown, peaks, palette) -> None:
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(
         QBrush(
-            _ramp(inner, palette.visual_cool, palette.visual_warm, palette.visual_hot)
+            three_colour_ramp(
+                inner, palette.visual_cool, palette.visual_warm, palette.visual_hot
+            )
         )
     )
     pitch = LAMP_PX + LAMP_GAP_PX
     lamps = max(1, (inner.height() + LAMP_GAP_PX) // pitch)
-    span = _span(inner, len(shown))
+    span = band_span(inner, len(shown))
     width = max(BASELINE_PX, int(span) - BAR_GAP_PX)
     for band, (height, peak) in enumerate(zip(shown, peaks)):
         left = inner.left() + int(band * span)
@@ -173,7 +170,7 @@ def paint_meter(painter, inner, shown, peaks, palette) -> None:
 
 def paint_wave(painter, inner, shown, peaks, palette) -> None:
     """A smooth line over a filled sea, with the recent peaks traced above."""
-    curve = _smooth(_band_points(inner, shown))
+    curve = smoothed(band_tops(inner, shown))
     sea = QPainterPath(curve)
     sea.lineTo(QPointF(inner.right(), inner.bottom()))
     sea.lineTo(QPointF(inner.left(), inner.bottom()))
@@ -182,32 +179,35 @@ def paint_wave(painter, inner, shown, peaks, palette) -> None:
     painter.setOpacity(WAVE_FILL_OPACITY)
     painter.setBrush(
         QBrush(
-            _ramp(inner, palette.visual_deep, palette.visual_deep, palette.visual_warm)
+            three_colour_ramp(
+                inner, palette.visual_deep, palette.visual_deep, palette.visual_warm
+            )
         )
     )
     painter.drawPath(sea)
     painter.setOpacity(1)
     painter.setBrush(Qt.BrushStyle.NoBrush)
     painter.setPen(QPen(QColor(palette.visual_hot), PEAK_LINE_PX))
-    painter.drawPath(_smooth(_band_points(inner, peaks)))
+    painter.drawPath(smoothed(band_tops(inner, peaks)))
     painter.setPen(QPen(QColor(palette.visual_cool), WAVE_LINE_PX))
     painter.drawPath(curve)
 
 
-def _flame(inner: QRect, heights: tuple[float, ...]) -> QPolygonF:
+def flame_outline(inner: QRect, heights: tuple[float, ...]) -> QPolygonF:
     """Spikes at each band's centre with shallow valleys between them."""
-    span = _span(inner, len(heights))
+    span = band_span(inner, len(heights))
     floor = inner.bottom()
     outline = [QPointF(inner.left(), floor)]
     previous = heights[0]
     for band, height in enumerate(heights):
         valley = min(previous, height) * FLAME_VALLEY_SHARE
         outline.append(
-            QPointF(inner.left() + band * span, floor - _tall(inner, valley))
+            QPointF(inner.left() + band * span, floor - drawn_height(inner, valley))
         )
         outline.append(
             QPointF(
-                inner.left() + (band + 1 / HALF) * span, floor - _tall(inner, height)
+                inner.left() + (band + 1 / HALF) * span,
+                floor - drawn_height(inner, height),
             )
         )
         previous = height
@@ -227,15 +227,9 @@ def paint_flame(painter, inner, shown, peaks, palette) -> None:
     painter.setPen(QPen(QColor(palette.visual_blaze), FLAME_EDGE_PX))
     painter.setBrush(
         QBrush(
-            _ramp(inner, palette.visual_ember, palette.visual_blaze, palette.visual_hot)
+            three_colour_ramp(
+                inner, palette.visual_ember, palette.visual_blaze, palette.visual_hot
+            )
         )
     )
-    painter.drawPolygon(_flame(inner, shown))
-
-
-PAINTERS: dict[Visualisation, Painter] = {
-    Visualisation.BARS: paint_bars,
-    Visualisation.METER: paint_meter,
-    Visualisation.WAVE: paint_wave,
-    Visualisation.FLAME: paint_flame,
-}
+    painter.drawPolygon(flame_outline(inner, shown))

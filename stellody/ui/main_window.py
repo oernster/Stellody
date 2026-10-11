@@ -251,7 +251,6 @@ class MainWindow(
             toggle_exclusive=self.toggle_exclusive,
             set_volume=self.set_volume,
             read_levels=lambda: self._transport.levels,
-            next_visualisation=self.cycle_visualisation,
         )
         # The strip owns it; the window keeps the name it is reached by, so
         # nothing else has to know which tray it was put in.

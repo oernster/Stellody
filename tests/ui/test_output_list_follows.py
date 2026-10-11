@@ -18,7 +18,8 @@ from output_support import (
 )
 from playback_support import player, window
 
-from stellody.ui.output_menu import NOT_CONNECTED_LABEL, pop_up_above
+from stellody.ui.lift_menu import pop_up_above
+from stellody.ui.output_menu import NOT_CONNECTED_LABEL
 
 __all__ = ["choosing", "devices", "player", "window"]
 

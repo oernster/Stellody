@@ -36,6 +36,7 @@ from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.guide_discovery import discovery_html
 from stellody.ui.guide_pictures import img, row
 from stellody.ui.layout_advice import layout_html
+from stellody.ui.visualisations import NAMES
 from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 720
@@ -89,6 +90,12 @@ def _top_tray_html() -> str:
     )
 
 
+def _style_names() -> str:
+    """The visualiser's styles as a sentence: "bars, meter and bubbles"."""
+    names = [name.lower() for name in NAMES.values()]
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
 def _bottom_tray_html() -> str:
     """The strip along the foot, in the order it is drawn."""
     return (
@@ -122,9 +129,9 @@ def _bottom_tray_html() -> str:
         + row(
             resources.visualisations_icon_path(),
             "Visualiser",
-            "steps the display in the middle of the strip through its four "
-            "styles: bars, a meter, a wave and a flame. Each draws the same "
-            "sound; the one you leave it on is kept for next time.",
+            "lifts a list of the styles the display in the middle of the "
+            f"strip can draw in: {_style_names()}. Each draws the same sound; "
+            "the one you choose is kept for next time.",
         )
         + "<p>"
         + img(resources.volume_icon_path())

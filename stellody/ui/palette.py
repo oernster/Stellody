@@ -138,6 +138,13 @@ class Palette:
     visual_deep: str
     visual_ember: str
     visual_blaze: str
+    # Six hues, red round to violet, for the styles that give each band a
+    # colour of its own; a band between two takes the nearer. Measured against
+    # `surface` in order: light 4.83, 5.18, 3.21, 5.02, 5.93, 5.70; dark 5.24,
+    # 8.35, 13.17, 9.84, 8.92, 6.44.
+    visual_rainbow: tuple[str, ...]
+    # The scope's trace, the green of an oscilloscope: 3.30 light, 12.65 dark.
+    visual_scope: str
 
 
 LIGHT = Palette(
@@ -176,6 +183,8 @@ LIGHT = Palette(
     visual_deep="#4338ca",
     visual_ember="#dc2626",
     visual_blaze="#c2410c",
+    visual_rainbow=("#dc2626", "#c2410c", "#b58900", "#15803d", "#0369a1", "#7c3aed"),
+    visual_scope="#16a34a",
 )
 
 DARK = Palette(
@@ -214,6 +223,8 @@ DARK = Palette(
     visual_deep="#5b4bff",
     visual_ember="#ff3b1f",
     visual_blaze="#ff8a00",
+    visual_rainbow=("#ff4d4d", "#ff9f1c", "#ffe14d", "#4ade80", "#4cc9f0", "#b388ff"),
+    visual_scope="#39ff14",
 )
 
 PALETTES: dict[Mode, Palette] = {Mode.LIGHT: LIGHT, Mode.DARK: DARK}

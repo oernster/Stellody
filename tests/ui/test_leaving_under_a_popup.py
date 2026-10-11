@@ -21,7 +21,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMenu, QPushButton, QWidget
 
 from stellody.ui.hover_paint import LeaveRepaints
-from stellody.ui.output_menu import pop_up_above
+from stellody.ui.lift_menu import pop_up_above
 
 __all__ = ["choosing", "devices", "player", "window"]
 

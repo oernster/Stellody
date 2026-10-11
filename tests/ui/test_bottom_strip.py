@@ -35,8 +35,9 @@ from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.shared.version import DONATE_URL
 from stellody.ui import menus as window_module
-from stellody.ui.bottom_tray import REPEAT_TOOLTIP, BottomTray
+from stellody.ui.bottom_tray import BottomTray
 from stellody.ui.main_window import MainWindow
+from stellody.ui.queue_switches import REPEAT_TOOLTIP
 from stellody.ui.settings_keys import FALSE, SETTING_REPEAT, SETTING_SHUFFLE, TRUE
 
 # Down to a window narrower than anything worth using.

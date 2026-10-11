@@ -21,7 +21,8 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 
 from stellody.domain.outputs import SYSTEM_DEFAULT
-from stellody.ui.output_menu import OUTPUT_TOOLTIP, SYSTEM_DEFAULT_LABEL, pop_up_above
+from stellody.ui.lift_menu import pop_up_above
+from stellody.ui.output_menu import OUTPUT_TOOLTIP, SYSTEM_DEFAULT_LABEL
 
 __all__ = ["choosing", "devices", "player", "window"]
 
