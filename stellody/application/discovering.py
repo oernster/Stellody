@@ -33,6 +33,7 @@ in `gathering.py` beside this holds that rule and why it is written that way.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
 from stellody.application.artist_stage import ArtistStage
@@ -51,6 +52,7 @@ from stellody.application.discovery_ports import (
     SeriesSource,
     SimilaritySource,
 )
+from stellody.application.foreseeing import Foreseen
 from stellody.application.gathering import Silence
 from stellody.application.ports import CancelledCheck
 from stellody.application.remembering import (
@@ -141,7 +143,14 @@ class Discovery:
                     self.similarity, kept, self.now, self.recall
                 ),
                 series=RememberingSeries(self.series, kept, self.now, self.recall),
-            )._asked(albums, ticked, Ahead(report, ahead), cancelled, including, years)
+            )._asked(
+                albums,
+                ticked,
+                Ahead(report, ahead),
+                cancelled,
+                (including, years),
+                Foreseen(kept, self.now),
+            )
         finally:
             self.recall.remember(kept)
 
@@ -151,10 +160,15 @@ class Discovery:
         ticked: tuple[str, ...],
         report: Ahead,
         cancelled: CancelledCheck,
-        including: Including = OWN_ALBUMS,
-        years: ReleaseYears = ANY_YEAR,
+        taking: tuple[Including, ReleaseYears],
+        costly: Callable[[str], bool],
     ) -> RunReport:
-        """The run itself, with the memory already standing in front of it."""
+        """The run itself, with the memory already standing in front of it.
+
+        `costly` says which artists that memory cannot answer, so the time
+        said while looking up is measured from those alone.
+        """
+        including, years = taking
         artists = source_artists(albums, ticked, including.credits)
         # A compilation crediting nobody askable still has its series. FR-D69.
         if not artists and not (including.series and series_albums(albums, ticked)):
@@ -169,7 +183,7 @@ class Discovery:
         # mean the same whichever stage happened to be asking them.
         silence = Silence()
         gathered, ending = ArtistStage(
-            self.catalogue, self.similarity, self.pause
+            self.catalogue, self.similarity, self.pause, costly
         ).gathered(
             albums,
             artists,

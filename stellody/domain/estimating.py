@@ -78,6 +78,7 @@ def looking_up_seconds_left(
     elapsed_s: float,
     candidates_seen: int,
     series_ahead: int = 0,
+    asked: tuple[int, int] | None = None,
 ) -> float | None:
     """Seconds left in the WHOLE run while the first stage is under way.
 
@@ -86,11 +87,21 @@ def looking_up_seconds_left(
     then have to ask about. The later stages are priced from the first stage's
     own pace, scaled by the ratio of what each unit costs the catalogue, since
     none of their units has happened to measure.
+
+    **Only an artist the network was asked about is timed.** `asked` is how
+    many such artists have finished and how many there are in all; None means
+    every artist goes to the network. An artist answered from memory takes no
+    measurable time, so counting it divided the time spent across work that
+    cost nothing: measured on 2026-10-11, fifty remembered artists in a second
+    then two asked ones at thirty seconds each read as 56 seconds left where
+    48 asked artists still owed 24 minutes. Reported by Oliver as "less than
+    a minute" three to five minutes into a run.
     """
-    each = pace(done, elapsed_s)
+    timed_done, timed_total = (done, total) if asked is None else asked
+    each = pace(timed_done, elapsed_s)
     if each is None:
         return None
-    first = max(total - done, 0) * each
+    first = max(timed_total - timed_done, 0) * each
     series = series_ahead * each * REQUESTS_PER_SERIES / REQUESTS_PER_SOURCE_ARTIST
     expected = projected_candidates(candidates_seen, done, total)
     last = expected * each * REQUESTS_PER_CANDIDATE / REQUESTS_PER_SOURCE_ARTIST

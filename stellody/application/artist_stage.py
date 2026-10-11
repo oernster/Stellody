@@ -8,6 +8,7 @@ questions. FR-D09 to FR-D13, FR-D53.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from stellody.application.asking import Pause, asked, waited
@@ -52,6 +53,9 @@ class ArtistStage:
     catalogue: CatalogueSource
     similarity: SimilaritySource
     pause: Pause
+    # Whether an artist will go to the network rather than be answered from
+    # memory; only those are timed. `foreseeing.py`.
+    costly: Callable[[str], bool]
 
     def gathered(
         self,
@@ -79,6 +83,7 @@ class ArtistStage:
         everyone = tuple(held)
         gathered = Gathering(passes=Passes(artists), known=known)
         done = 0
+        asked_done = 0
         while True:
             # Read afresh at every step rather than walked as it stood, since a
             # credit taken apart adds its artists to this same pass. FR-D53.
@@ -88,12 +93,19 @@ class ArtistStage:
                 at += 1
                 if cancelled():
                     return gathered.report(CANCELLED)
+                # Read before the artist is looked up, since an answer arriving
+                # makes it remembered. Still to come: the artist in hand, the
+                # rest of this pass and those refused, which go round again.
+                passes = gathered.passes
+                asks = self.costly(artist)
+                still = sum(map(self.costly, (*passes.pending[at:], *passes.refused)))
                 report(
                     DiscoveryProgress(
                         artist=artist,
                         done=done,
                         total=len(gathered.passes.everyone),
                         candidates=len(gathered.met),
+                        asked=(asked_done, asked_done + asks + still),
                     )
                 )
                 try:
@@ -130,9 +142,11 @@ class ArtistStage:
                     silence.ended()
                     gathered.broke(artist, str(failure))
                     done += 1
+                    asked_done += asks
                     continue
                 silence.ended()
                 done += 1
+                asked_done += asks
                 if gaps is None:
                     # Any name, album artist or credit, is taken apart once
                     # nobody is found under the whole of it. FR-D53.

@@ -274,6 +274,10 @@ class DiscoveryProgress:
     # memory as the run starts; carried while looking up, so the time said
     # then covers the series stage too. FR-D84.
     series: int = 0
+    # While looking up: how many finished artists went to the network, then
+    # how many such artists the stage holds in all. Only those are timed, since
+    # one answered from memory costs nothing. None from any other stage.
+    asked: tuple[int, int] | None = None
 
     @property
     def percent(self) -> int:

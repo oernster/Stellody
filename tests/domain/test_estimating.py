@@ -110,6 +110,48 @@ class TestWhileLookingUp:
         assert left == pytest.approx(0.0)
 
 
+class TestOnlyAskedArtistsAreTimed:
+    """An artist answered from memory costs nothing, so it sets no pace."""
+
+    def test_remembered_artists_no_longer_make_the_wait_look_short(self) -> None:
+        """The shape Oliver reported on 2026-10-11: under a minute, minutes in.
+
+        Fifty remembered artists in a second, then two asked at thirty seconds
+        each: timing all fifty-two read 56 seconds. Timing the two asked
+        leaves the 48 still to ask at about 30.5 seconds each.
+        """
+        left = looking_up_seconds_left(
+            done=52, total=100, elapsed_s=61.0, candidates_seen=0, asked=(2, 50)
+        )
+        assert left == pytest.approx(48 * 30.5)
+        assert left > SECONDS_PER_MINUTE
+
+    def test_too_few_asked_to_say_is_silence_however_many_finished(self) -> None:
+        """Ninety remembered and one asked is still a pace over one sample."""
+        assert (
+            looking_up_seconds_left(
+                done=91, total=100, elapsed_s=20.0, candidates_seen=0, asked=(1, 10)
+            )
+            is None
+        )
+
+    def test_the_candidates_are_still_projected_from_every_artist(self) -> None:
+        """Candidates arrive per artist looked at, remembered or not.
+
+        Ten of twenty artists met ten candidates, projecting twenty; two of
+        four asked at two seconds each leaves four seconds of artists plus
+        twenty candidates at a second each.
+        """
+        left = looking_up_seconds_left(
+            done=10,
+            total=20,
+            elapsed_s=2 * EACH_S,
+            candidates_seen=10,
+            asked=(2, 4),
+        )
+        assert left == pytest.approx(4.0 + 20.0)
+
+
 class TestTheSeriesAhead:
     """FR-D84: the series stage counted into every time said before it ends."""
 

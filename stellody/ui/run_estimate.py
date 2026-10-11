@@ -132,6 +132,7 @@ class RunEstimate:
                 elapsed_s,
                 progress.candidates,
                 progress.series,
+                progress.asked,
             )
         if progress.stage is DiscoveryStage.SERIES:
             return series_seconds_left(
