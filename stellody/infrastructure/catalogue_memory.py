@@ -1,8 +1,9 @@
 """What the catalogues have already said, kept between runs.
 
-The file behind `application/remembering.py`. Read once when a run starts and
-written whole once when it ends, since a run that rewrote a file of this size
-after every answer would write it two hundred times.
+The file behind `application/remembering.py`. Read once a session and written
+whole once, as the application quits (`FileCatalogueMemory` says why), since a
+run that rewrote a file of this size after every answer would write it two
+hundred times.
 
 **So each answer is also noted on its own, the moment it arrives.** The whole
 file being written late is affordable only because nothing waits on it: the
@@ -25,7 +26,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-import threading
 
 from stellody.application.remembering import (
     ALBUMS,
@@ -256,7 +256,7 @@ def _put(kept: Recollection, kind: str, key: str, answer: object) -> bool:
     return True
 
 
-def _replayed(kept: Recollection, entries: tuple[dict, ...]) -> Recollection:
+def replayed_over(kept: Recollection, entries: tuple[dict, ...]) -> Recollection:
     """The recollection with everything noted since laid on top of it.
 
     In the order it was written, so a question answered twice keeps the later
@@ -287,15 +287,17 @@ def remembered() -> Recollection:
     whose process died noted its answers and never reached the file, so the
     two together are what is known and the file alone is not.
     """
-    return _replayed(_from_file(), journal.replayed(journal_path()))
+    return replayed_over(_from_file(), journal.replayed(journal_path()))
+
+
+def entry_for(kind: str, key: str, answer: object, when: float) -> dict:
+    """One answer as the running record carries it."""
+    return {"kind": kind, "key": key, "when": when, "answer": _answer_as(kind, answer)}
 
 
 def note(kind: str, key: str, answer: object, when: float) -> None:
     """Write one answer down now, so a run that dies still keeps it."""
-    journal.note(
-        journal_path(),
-        {"kind": kind, "key": key, "when": when, "answer": _answer_as(kind, answer)},
-    )
+    journal.note(journal_path(), entry_for(kind, key, answer, when))
 
 
 def remember(kept: Recollection) -> None:
@@ -313,30 +315,3 @@ def remember(kept: Recollection) -> None:
     except OSError:
         return
     journal.cleared(journal_path())
-
-
-class FileCatalogueMemory:
-    """The catalogue memory as a file, for a run to be handed.
-
-    One is made, then shared by everything that keeps answers, so its lock is
-    the one lock: a note landing between a save reading what is known and
-    clearing the running record would be cleared without ever reaching the
-    file.
-    """
-
-    def __init__(self) -> None:
-        self._lock = threading.Lock()
-
-    def remembered(self) -> Recollection:
-        """Everything already known; empty where nothing is."""
-        return remembered()
-
-    def note(self, kind: str, key: str, answer: object, when: float) -> None:
-        """Write this one answer down now."""
-        with self._lock:
-            note(kind, key, answer, when)
-
-    def remember(self, kept: Recollection) -> None:
-        """Keep it for next time, over whatever was kept since."""
-        with self._lock:
-            remember(kept)

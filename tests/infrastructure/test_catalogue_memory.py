@@ -18,7 +18,7 @@ from stellody.application.remembering import (
 )
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.domain.matching import ReleaseKind
-from stellody.infrastructure import catalogue_memory, paths
+from stellody.infrastructure import catalogue_memory, held_memory, paths
 
 WOLF = "wolf-id"
 
@@ -115,6 +115,6 @@ def test_a_memory_that_cannot_be_written_is_not_an_error(monkeypatch) -> None:
 
 class TestTheMemoryARunIsHanded:
     def test_it_recalls_what_was_kept(self) -> None:
-        memory = catalogue_memory.FileCatalogueMemory()
+        memory = held_memory.FileCatalogueMemory()
         memory.remember(_full())
         assert memory.remembered() == _full()

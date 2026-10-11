@@ -32,7 +32,6 @@ from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.infrastructure import (
-    catalogue_memory,
     diary,
     discovery_file,
     instance,
@@ -52,6 +51,7 @@ from stellody.infrastructure.cover_search import ArchiveCovers
 from stellody.infrastructure.covers import EmbeddedPictures
 from stellody.infrastructure.dropouts import DropoutWatch
 from stellody.infrastructure.fetching import Fetcher
+from stellody.infrastructure.held_memory import FileCatalogueMemory, warm_memory
 from stellody.infrastructure.opening import open_store
 from stellody.infrastructure.output_devices import OutputDevices
 from stellody.infrastructure.paths import (
@@ -110,6 +110,7 @@ def build_window(
     store: SqliteLibraryStore,
     leave: Callable[[], None] | None = None,
     note: Callable[[str], None] | None = None,
+    recall: FileCatalogueMemory | None = None,
 ) -> MainWindow:
     """Assemble the window over a store, with real adapters behind every port.
 
@@ -129,8 +130,10 @@ def build_window(
     gate = Gate()
     catalogue = MusicBrainz(Fetcher(gate))
     # One memory of what the catalogues said, shared by the run, its price
-    # and the expansion, so its lock is the one lock over the one file.
-    recall = catalogue_memory.FileCatalogueMemory()
+    # and the expansion, so its lock is the one lock over the one file. Handed
+    # in by `main`, which writes it as the application quits.
+    if recall is None:
+        recall = FileCatalogueMemory()
     artwork = FileArtwork(art_cache_dir(), EmbeddedPictures())
     listening = ListeningLog(store)
     listening.load()
@@ -335,7 +338,8 @@ def _start(argv: list[str] | None = None) -> int:
     afresh = window_reset.take(data_location())
     if afresh is not None:
         forget_window(store)
-    window = build_window(store, application.quit, diary.note)
+    recall = FileCatalogueMemory()
+    window = build_window(store, application.quit, diary.note, recall)
     if afresh is not None:
         placed = window.open_on(afresh.name, afresh.origin)
         diary.note(f"opened afresh where setup was, screen found: {placed}")
@@ -352,12 +356,17 @@ def _start(argv: list[str] | None = None) -> int:
     # the music folder every time the application opened, which on a large
     # library is felt; nobody asked for it by starting the application.
     window.load_remembered()
+    # Read now, while nothing is playing, rather than on the first press of
+    # Discover, when reading it starves the sound device. FileCatalogueMemory.
+    warm_memory(recall, diary.note)
     if set_aside is not None:
         window.report_library_set_aside(set_aside)
     listening = only.listen(window.restore_for_channel)
     diary.note(f"listening on the activation channel: {listening}")
     code = application.exec()
     diary.note(f"the event loop ended with {code}")
+    recall.keep()
+    diary.note("catalogue memory kept")
     store.close()
     diary.note("store closed")
     only.release()
