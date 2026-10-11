@@ -124,6 +124,20 @@ class Palette:
     # 3.87 dark, where a shape asks for 3.
     badge: str
     on_badge: str
+    # The visualiser's own colours, for every style but the plain bars, which
+    # wear the accent. Taken from the artwork of the button that switches
+    # between them: cyan into magenta into yellow for the meter, indigo under
+    # a cyan line for the wave, red through orange to yellow for the flame.
+    # The light appearance takes each hue down until it carries on white.
+    # Measured against `surface`, the ground the strip wears, in the order
+    # below: light 5.36, 4.71, 3.21, 7.90, 4.83, 5.18; dark 9.49, 5.14,
+    # 12.15, 3.18, 4.82, 7.26. The bar is 3, since these are shapes.
+    visual_cool: str
+    visual_warm: str
+    visual_hot: str
+    visual_deep: str
+    visual_ember: str
+    visual_blaze: str
 
 
 LIGHT = Palette(
@@ -156,6 +170,12 @@ LIGHT = Palette(
     danger_soft="#ffe4e6",
     badge="#dc2626",
     on_badge="#ffffff",
+    visual_cool="#0e7490",
+    visual_warm="#c026d3",
+    visual_hot="#b58900",
+    visual_deep="#4338ca",
+    visual_ember="#dc2626",
+    visual_blaze="#c2410c",
 )
 
 DARK = Palette(
@@ -188,6 +208,12 @@ DARK = Palette(
     danger_soft="#35161f",
     badge="#dc2626",
     on_badge="#ffffff",
+    visual_cool="#22d3ee",
+    visual_warm="#e040fb",
+    visual_hot="#ffd60a",
+    visual_deep="#5b4bff",
+    visual_ember="#ff3b1f",
+    visual_blaze="#ff8a00",
 )
 
 PALETTES: dict[Mode, Palette] = {Mode.LIGHT: LIGHT, Mode.DARK: DARK}

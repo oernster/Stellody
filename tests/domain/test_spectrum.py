@@ -19,12 +19,14 @@ from stellody.domain.spectrum import (
     FALL_PER_SECOND,
     FLOOR_DB,
     FULL,
+    PEAK_FALL_PER_SECOND,
     SILENT_BANDS,
     as_decibels,
     as_height,
     band_edges,
     fallen,
     heights,
+    held,
 )
 
 CD_RATE = 44100
@@ -165,3 +167,20 @@ class TestHowABarFalls:
         got = fallen((FULL, EMPTY), (EMPTY, FULL), 0.1)
         assert got[0] < FULL
         assert got[1] == FULL
+
+
+class TestHowAPeakHangs:
+    def test_a_peak_jumps_to_any_bar_that_reaches_past_it(self) -> None:
+        assert held((EMPTY,), (0.7,), 1.0) == (0.7,)
+
+    def test_a_peak_sinks_at_its_own_slower_rate(self) -> None:
+        """Slower than the bar, which is what lets it hang over where it was."""
+        assert PEAK_FALL_PER_SECOND < FALL_PER_SECOND
+        sunk = held((FULL,), (EMPTY,), 1.0)[0]
+        assert math.isclose(sunk, FULL - PEAK_FALL_PER_SECOND, abs_tol=1e-9)
+
+    def test_a_peak_never_sinks_below_the_bar_beneath_it(self) -> None:
+        assert held((FULL,), (0.4,), 10.0) == (0.4,)
+
+    def test_time_running_backwards_leaves_a_peak_where_it_was(self) -> None:
+        assert held((FULL,), (EMPTY,), -1.0) == (FULL,)

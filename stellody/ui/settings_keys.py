@@ -16,6 +16,8 @@ SETTING_DESCENDING = "sort_descending"
 SETTING_COVERS = "show_covers"
 # How large a sleeve is drawn in the grid, stored as the pixel size itself.
 SETTING_COVER_SIZE = "cover_size"
+# Which style the visualiser draws in, stored by name. `visualisations.py`.
+SETTING_VISUALISATION = "visualisation"
 # The size the window was left at, plus whether it was left maximised. Both,
 # because a maximised window reports the screen as its size while the size to
 # come back to is the other one.

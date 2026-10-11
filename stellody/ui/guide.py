@@ -119,6 +119,13 @@ def _bottom_tray_html() -> str:
         + img(resources.view_icon_path())
         + img(resources.medium_grid_icon_path())
         + "switch between the list and the sleeves; change the sleeve size.</p>"
+        + row(
+            resources.visualisations_icon_path(),
+            "Visualiser",
+            "steps the display in the middle of the strip through its four "
+            "styles: bars, a meter, a wave and a flame. Each draws the same "
+            "sound; the one you leave it on is kept for next time.",
+        )
         + "<p>"
         + img(resources.volume_icon_path())
         + img(resources.unmute_icon_path())

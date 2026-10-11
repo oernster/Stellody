@@ -59,6 +59,9 @@ FULL = 1.0
 # followed by eye, fast enough that a bar is not still descending from the last
 # chorus during the silence after it.
 FALL_PER_SECOND = 2.2
+# How far a held peak sinks per second. Slower than a bar falls, so the mark
+# hangs over the bar it came from long enough to be read as where it reached.
+PEAK_FALL_PER_SECOND = 0.6
 
 # How many bars each of the equalizer's filters is drawn as. Two: enough that a
 # few centimetres reads as a spectrum, few enough that every edge is still one
@@ -136,7 +139,30 @@ def fallen(
     fixed rate. Rising instantly is the point: the transient is the thing worth
     seeing; a bar that eased up to it would arrive after it had gone.
     """
-    drop = max(EMPTY, seconds) * FALL_PER_SECOND
+    return _sunk(shown, measured, seconds, FALL_PER_SECOND)
+
+
+def held(
+    peaks: tuple[float, ...],
+    shown: tuple[float, ...],
+    seconds: float,
+) -> tuple[float, ...]:
+    """Where each band's peak mark is after `seconds`, with the bars at `shown`.
+
+    The same rule the bars follow, at a slower fall: a mark jumps to any bar
+    that reaches past it, then sinks towards the bar beneath it until it meets.
+    """
+    return _sunk(peaks, shown, seconds, PEAK_FALL_PER_SECOND)
+
+
+def _sunk(
+    was: tuple[float, ...],
+    now: tuple[float, ...],
+    seconds: float,
+    per_second: float,
+) -> tuple[float, ...]:
+    """Each value risen at once to `now`, else fallen towards it at a rate."""
+    drop = max(EMPTY, seconds) * per_second
     return tuple(
-        max(was - drop, now) if now < was else now for was, now in zip(shown, measured)
+        max(old - drop, new) if new < old else new for old, new in zip(was, now)
     )

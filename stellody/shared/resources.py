@@ -50,6 +50,7 @@ NEGATIVE_ICON = "negative.png"
 EQUALISER_ICON = "equalizer.png"
 EXCLUSIVE_ICON = "exclusive-audio.png"
 OUTPUT_DEVICE_ICON = "choose-audio-device.png"
+VISUALISATIONS_ICON = "visualisations.png"
 
 
 def _roots() -> tuple[pathlib.Path, ...]:
@@ -230,6 +231,11 @@ def output_device_icon_path() -> pathlib.Path | None:
 def exclusive_icon_path() -> pathlib.Path | None:
     """The artwork for the switch between shared and exclusive output."""
     return find_asset(EXCLUSIVE_ICON)
+
+
+def visualisations_icon_path() -> pathlib.Path | None:
+    """The artwork for stepping the visualiser on to its next style."""
+    return find_asset(VISUALISATIONS_ICON)
 
 
 def negative_icon_path() -> pathlib.Path | None:

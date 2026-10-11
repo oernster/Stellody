@@ -68,6 +68,7 @@ from stellody.ui.tray_metrics import (
     TRAY_MARGIN_PX,
 )
 from stellody.ui.tray_parts import centred_row, group, icon_button, separator
+from stellody.ui.visualisations import Visualisation, visualisation_tooltip
 from stellody.ui.visualiser import Visualiser
 
 # Three quarters of the tray above. Expressed against that tray's own sizes so
@@ -184,6 +185,7 @@ class BottomTray(QWidget):
         toggle_exclusive: Callable[[], None] = lambda: None,
         set_volume: Callable[[int], None] = lambda _percent: None,
         read_levels=None,
+        next_visualisation: Callable[[], None] = lambda: None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("BottomTray")
@@ -224,6 +226,12 @@ class BottomTray(QWidget):
             toggle_view=toggle_view,
             toggle_cover_size=toggle_cover_size,
         )
+        # How the music is DRAWN closes the left group, after how the library
+        # is: both change what is on show, so the two sit side by side.
+        self.visualisation_separator = separator(self, BOTTOM_SEPARATOR_HEIGHT_PX)
+        self.visualisation_button = _small_button(
+            self, resources.visualisations_icon_path(), "", next_visualisation
+        )
         self.sound = SoundControls(
             self,
             BOTTOM_BUTTON_PX,
@@ -260,6 +268,8 @@ class BottomTray(QWidget):
                 *self.library_stops(),
                 self.showing_separator,
                 self.showing,
+                self.visualisation_separator,
+                self.visualisation_button,
             ),
             group(TRAY_GAP_PX, self.visualiser),
             group(
@@ -283,6 +293,7 @@ class BottomTray(QWidget):
             self.donate_button,
             *self.library_stops(),
             *self.showing.stops(),
+            self.visualisation_button,
             *self.sound.stops(),
             *self.switch_stops(),
         )
@@ -302,6 +313,10 @@ class BottomTray(QWidget):
     def set_next_cover_size(self, size: CoverSize) -> None:
         """Show the size a press would move to."""
         self.showing.set_next_cover_size(size)
+
+    def set_next_visualisation(self, following: Visualisation) -> None:
+        """Say which style a press of the visualiser button would move to."""
+        self.visualisation_button.setToolTip(visualisation_tooltip(following))
 
     def set_percent(self, percent: int) -> None:
         """Remember where the volume is, so the slider opens showing it."""

@@ -29,8 +29,12 @@ so it stays the size it was asked to be wherever it is opened rather than
 shrinking on one display and sprawling on another. Its height is the tray's
 own, handed in, so the two cannot drift apart.
 
-The bars are drawn from the same accent the rest of the application uses, at a
-height that is a fraction of the strip, so nothing here knows a pixel count
+**It draws in one of four styles**, chosen from a button on the strip and listed
+in `visualisations.py`: the plain bars in the accent, then a meter, a wave and
+a flame in colours of their own. This widget runs the clock and keeps the
+heights; how a frame looks is `spectrum_painting.py`'s, so a style changes
+nothing about what is measured. Heights are fractions of the strip and colours
+come from the palette, so nothing here knows a pixel count or a colour value
 that the palette or the layout does not already own.
 
 **It has a ground of its own, plus a baseline it draws even in silence.** It had
@@ -48,8 +52,10 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPaintEvent
 from PySide6.QtWidgets import QWidget
 
-from stellody.domain.spectrum import BAR_COUNT, SILENT_BANDS, fallen
+from stellody.domain.spectrum import SILENT_BANDS, fallen, held
 from stellody.ui.palette import Mode, palette_for
+from stellody.ui.spectrum_painting import PAINTERS
+from stellody.ui.visualisations import DEFAULT_VISUALISATION, Visualisation
 
 # Thirty a second. Fast enough that a falling bar reads as movement rather than
 # as a slideshow, slow enough that the strip is not the reason a laptop's fan
@@ -62,21 +68,12 @@ STRIP_WIDTH_CM = 5.0
 MILLIMETRES_PER_INCH = 25.4
 MILLIMETRES_PER_CM = 10.0
 STRIP_HEIGHT_PX = 64
-# As tight as bars can be drawn and still be told apart. The whole thing is a
-# few centimetres across and holds twenty bars, so every pixel spent on a gap
-# is a pixel taken off a bar: at the spacing this had as a full band of the
-# window, twenty bars in this room would be more gap than bar.
-BAR_GAP_PX = 1
 STRIP_MARGIN_PX = 3
-BAR_RADIUS_PX = 2
-# What a band with nothing in it still shows: enough to say the band is there
-# and too little to be mistaken for something being heard.
-BASELINE_PX = 2
 _MILLISECONDS = 1000.0
 
 
 class Visualiser(QWidget):
-    """Twenty bars showing how loud each half of each band is."""
+    """Twenty bands showing how loud each half of each band is, in one style."""
 
     def __init__(
         self, parent: QWidget | None = None, height_px: int = STRIP_HEIGHT_PX
@@ -87,7 +84,9 @@ class Visualiser(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setFixedSize(self._asked_width(), height_px)
         self._mode = Mode.DARK
+        self._style = DEFAULT_VISUALISATION
         self._shown = SILENT_BANDS
+        self._peaks = SILENT_BANDS
         self._reading = SILENT_BANDS
         # Answers silence until something is wired up, so a strip started
         # before it has a source draws empty rather than raising.
@@ -116,6 +115,21 @@ class Visualiser(QWidget):
         """Where the bars have reached, which is what a paint would draw."""
         return self._shown
 
+    @property
+    def peaks(self) -> tuple[float, ...]:
+        """Where each band's peak mark hangs, which the meter and wave draw."""
+        return self._peaks
+
+    @property
+    def style(self) -> Visualisation:
+        """Which of the visualisations a paint draws."""
+        return self._style
+
+    def show_style(self, style: Visualisation) -> None:
+        """Draw the same bands another way from the next paint on."""
+        self._style = style
+        self.update()
+
     def read_levels_from(self, source) -> None:
         """Say where to fetch a measurement on each frame.
 
@@ -135,6 +149,7 @@ class Visualiser(QWidget):
         """Stop repainting and empty the bars."""
         self._timer.stop()
         self._shown = SILENT_BANDS
+        self._peaks = SILENT_BANDS
         self._reading = SILENT_BANDS
         self.update()
 
@@ -145,40 +160,29 @@ class Visualiser(QWidget):
 
     def _tick(self) -> None:
         """One frame: take whatever has been measured, let the bars fall to it."""
+        seconds = FRAME_MS / _MILLISECONDS
         self._reading = self._source()
-        self._shown = fallen(self._shown, self._reading, FRAME_MS / _MILLISECONDS)
+        self._shown = fallen(self._shown, self._reading, seconds)
+        # Kept whichever style is on show, so switching to one that draws the
+        # peaks shows where they really are rather than starting them at zero.
+        self._peaks = held(self._peaks, self._shown, seconds)
         self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Twenty bars across the strip, each as tall as its half band is."""
+        """The ground, then the bands drawn the way the chosen style draws them."""
         palette = palette_for(self._mode)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
         # The ground the trays wear, so the strip is visibly a strip whether or
         # not there is anything in it. It draws no rule of its own: it sits
         # inside the bottom tray now, so the tray's own edges are what rule it
         # off and a second line here floated across the middle of the row.
         painter.fillRect(self.rect(), QColor(palette.surface))
-        painter.setBrush(QColor(palette.accent))
-        # The bars are laid out across the room that is left rather than at a
+        # The bands are laid out across the room that is left rather than at a
         # width of their own, so widening the display or dividing the bands
         # again changes nothing here.
         inner = self.rect().adjusted(
             STRIP_MARGIN_PX, STRIP_MARGIN_PX, -STRIP_MARGIN_PX, -STRIP_MARGIN_PX
         )
-        span = (inner.width() + BAR_GAP_PX) / BAR_COUNT
-        width = max(BASELINE_PX, int(span) - BAR_GAP_PX)
-        for band, height in enumerate(self._shown):
-            # Never less than the baseline: a band with nothing in it still says
-            # it is a band, which is what stops silence reading as an absence.
-            tall = max(BASELINE_PX, int(inner.height() * height))
-            painter.drawRoundedRect(
-                inner.left() + int(band * span),
-                inner.bottom() - tall,
-                width,
-                tall,
-                BAR_RADIUS_PX,
-                BAR_RADIUS_PX,
-            )
+        PAINTERS[self._style](painter, inner, self._shown, self._peaks, palette)
         painter.end()
