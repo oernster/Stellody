@@ -29,7 +29,6 @@ whole dialog can be driven with nothing behind it.
 
 from __future__ import annotations
 
-import datetime
 from collections.abc import Callable
 
 from PySide6.QtCore import QSize, Qt
@@ -62,6 +61,7 @@ from stellody.ui.ringed_check import RingedCheckBox
 from stellody.ui.taste_controls import TasteControls
 from stellody.ui.taste_store import TasteStore
 from stellody.ui.year_fields import YearFields, refusal_words
+from stellody.ui.year_fields import this_year as current_year
 
 TITLE = "Discover new music"
 FIND_LABEL = "Find"
@@ -107,11 +107,6 @@ def _start_nothing(
     """A dialog handed no run to start starts nothing."""
 
 
-def _this_year() -> int:
-    """The current year, which the latest year worth asking about follows."""
-    return datetime.datetime.now(datetime.UTC).astimezone().year
-
-
 def _keep_nothing(_including: Including) -> None:
     """A dialog handed nowhere to remember the boxes remembers nothing."""
 
@@ -141,7 +136,7 @@ class DiscoveryDialog(FirstStopDialog):
         self._sweeping = False
         # Read once as the dialog opens, since the latest year worth asking
         # about follows it; handed in by a test standing in another year.
-        self._this_year = _this_year() if this_year is None else this_year
+        self._this_year = current_year() if this_year is None else this_year
         # What including compilations would add for a set of ticks; None where
         # the window has no memory to price it from, so no line is shown
         # rather than a guess. FR-D52.
@@ -318,11 +313,7 @@ class DiscoveryDialog(FirstStopDialog):
             self.credits.setChecked(profile.including.credits)
             self.series.setChecked(profile.including.series)
             self.mixes.setChecked(profile.including.mixes)
-            for field, year in (
-                (self.years.earliest, profile.years.earliest),
-                (self.years.latest, profile.years.latest),
-            ):
-                field.setText("" if year is None else str(year))
+            self.years.put(profile.years)
 
         self._swept(selected)
 

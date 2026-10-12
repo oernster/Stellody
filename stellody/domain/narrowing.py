@@ -28,6 +28,11 @@ behind a field nobody had filled in. It also covers an album whose tag names
 nothing in the catalogue, since no tick could ever reach one of those either:
 to somebody looking at the dialog the two are the same album, one nothing here
 can say anything about.
+
+**The years narrow as well, beside the field** (Oliver's ruling, 2026-10-12;
+FR-D99). Read off the album's date tag, by the rule a run reads a release by:
+with years set, an album whose date names no year is left out, since it
+cannot be shown to fit (`ReleaseYears.admits`).
 """
 
 from __future__ import annotations
@@ -37,6 +42,8 @@ from dataclasses import dataclass
 from stellody.domain.album import Album
 from stellody.domain.genres import chosen_in
 from stellody.domain.overrides import AlbumField
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
+from stellody.domain.text import year_of
 
 
 def stated_values(album: Album, field: AlbumField) -> tuple[str, ...]:
@@ -73,15 +80,27 @@ class Narrowing:
     field: AlbumField = AlbumField.GENRE
     wanted: tuple[str, ...] = ()
     unstated: bool = False
+    years: ReleaseYears = ANY_YEAR
 
     @property
     def is_open(self) -> bool:
         """True while nothing is being asked for, so everything survives."""
+        return self._field_open and not self.years.is_bounded
+
+    @property
+    def _field_open(self) -> bool:
+        """True while nothing is asked of the field, whatever the years say."""
         return not self.wanted and not self.unstated
 
     def keeps(self, album: Album) -> bool:
         """True while this album is one of the ones asked for."""
-        if self.is_open:
+        return self._field_keeps(album) and self.years.admits(
+            year_of(album.identity.date)
+        )
+
+    def _field_keeps(self, album: Album) -> bool:
+        """True while the field asks nothing or the album holds a value asked."""
+        if self._field_open:
             return True
         held = stated_values(album, self.field)
         if not held:

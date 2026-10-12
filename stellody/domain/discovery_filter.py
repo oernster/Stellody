@@ -21,6 +21,7 @@ from stellody.domain.discovery import (
 from stellody.domain.genres import chosen_in
 from stellody.domain.narrowing import Narrowing, narrowed_to
 from stellody.domain.overrides import AlbumField
+from stellody.domain.release_years import ReleaseYears
 from stellody.domain.series import series_place
 from stellody.domain.text import comparison_key, credit_parts
 
@@ -41,6 +42,23 @@ def worth_showing(gaps: tuple[Gaps, ...]) -> tuple[Gaps, ...]:
     still holds it; only the screen leaves it out.
     """
     return tuple(gap for gap in gaps if not gap.is_empty)
+
+
+def released_within(gaps: tuple[Gaps, ...], years: ReleaseYears) -> tuple[Gaps, ...]:
+    """The answer with only the albums released in these years. FR-D99.
+
+    The years judge albums alone, as they do in a run (FR-D60): a similar
+    artist has no year, so it stays. An album stating no year is left out
+    while years are set, since it cannot be shown to fit. A heading left with
+    nothing under it is not shown, for the reason FR-D75 gives.
+    """
+    if not years.is_bounded:
+        return gaps
+    kept = (
+        replace(gap, albums=tuple(a for a in gap.albums if years.admits(a.year)))
+        for gap in gaps
+    )
+    return worth_showing(tuple(kept))
 
 
 def _series_held(library: tuple[Album, ...], picked: tuple[str, ...]) -> set[str]:

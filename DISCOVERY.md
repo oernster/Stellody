@@ -975,9 +975,9 @@ ruling).
 - Verified by: `tests/ui/test_results_filter.py::test_a_withheld_tick_is_left_out_of_copy`, `tests/ui/test_results_filter.py::test_a_tick_survives_the_filter_being_cleared`
 
 **FR-D57 The chooser's Filter waits for a tick**
-- Requirement: While no genre is ticked in the chooser FR-D54 opens and every
-  kind of FR-D86 is ticked, its Filter control shall be disabled, unless the
-  chooser opened with a filter on.
+- Requirement: While no genre is ticked in the chooser FR-D54 opens, every
+  kind of FR-D86 is ticked and no year is set (FR-D99), its Filter control
+  shall be disabled, unless the chooser opened with a filter on.
 - Rationale: With nothing to filter by, the press can only take a filter off; the
   exception keeps that the one way a filter comes off, since Cancel keeps it.
 - Acceptance: Given the chooser opened on no filter, when nothing is ticked, then
@@ -1663,16 +1663,17 @@ it sits inside the scope above.
   that filters, lifting the same list as the Discover dialog's (FR-D88), read
   from the one setting (FR-D93), so a profile saved or deleted in any of the
   three is saved or deleted in all. When a profile is chosen in the library's
-  filter, it shall tick exactly that profile's genres the catalogue still offers
-  and leave the box for albums stating no genre as it was. When a profile is
-  chosen in the answer's chooser, it shall tick exactly that profile's genres
-  the run looked in and leave the kinds of FR-D86 as they were. Each chooser
-  shall offer to save its genres as FR-D98 states.
+  filter, it shall tick exactly that profile's genres the catalogue still offers,
+  put its years in the year fields of FR-D99 and leave the box for albums
+  stating no genre as it was. When a profile is chosen in the answer's chooser,
+  it shall tick exactly that profile's genres the run looked in, put its years
+  in the year fields and leave the kinds of FR-D86 as they were. Each chooser
+  shall offer to save its genres and years as FR-D98 states.
 - Rationale: Taste profiles are one list across every dialog that asks for
-  genres (Oliver's ruling). The choosers ask nothing about what to
-  include or which years, so a profile's genres are all they can use. The
-  no-genre box and the kinds are not genres; a genre the run never looked in
-  could only filter to nothing.
+  genres (Oliver's ruling). The choosers ask nothing about what to include, so
+  a profile's genres and years are all they can use. The no-genre box and the
+  kinds are not genres; a genre the run never looked in could only filter to
+  nothing.
 - Acceptance: Given a profile saved from Discover by pressing Find, when the
   filter is opened, then the profile is listed and choosing it ticks its genres;
   given a profile deleted in the filter, when Discover is opened, then it is not
@@ -1680,8 +1681,10 @@ it sits inside the scope above.
   stays ticked; given the window's settings holding a profile, when the window
   opens its filter or the answer's chooser, then that profile is listed; given
   a run that looked in Jazz and Rock, when a profile holding Jazz and Blues is
-  chosen in the answer's chooser, then Jazz alone is picked.
-- Verified by: `tests/ui/test_filter_taste.py`
+  chosen in the answer's chooser, then Jazz alone is picked; given a profile
+  holding the years 1980 to 1989, when it is chosen in either chooser, then
+  the year fields read 1980 and 1989.
+- Verified by: `tests/ui/test_filter_taste.py`, `tests/ui/test_filter_years.py::TestTasteProfiles`
 
 **FR-D97 The way out stands alone on the left**
 - Requirement: The Discover dialog's foot row shall read Close, then a gap,
@@ -1698,25 +1701,53 @@ it sits inside the scope above.
   the next.
 - Verified by: `tests/ui/test_discovery_dialog.py::test_close_stands_left_with_the_sweeps_beside_find`, `tests/ui/test_filter_controls.py::test_cancel_stands_left_and_clear_beside_the_filter`
 
-**FR-D98 Both genre choosers offer to save their genres**
+**FR-D98 Both genre choosers offer to save their genres and years**
 - Requirement: When the press that filters is pressed in either genre chooser
   (FR-D96) while at least one genre is ticked and no saved profile holds
-  exactly those genres, whatever its Include boxes and years, the chooser shall
-  make the offer of FR-D90 and FR-D91 before it closes. A profile saved there
-  shall hold the genres ticked (in the answer's chooser, those picked), the
-  Include boxes as Discover first opens them and any year. Cancel shall offer
-  nothing.
+  exactly those genres and those years, whatever its Include boxes, the chooser
+  shall make the offer of FR-D90 and FR-D91 before it closes. A profile saved
+  there shall hold the genres ticked (in the answer's chooser, those picked),
+  the years in the year fields of FR-D99 and the Include boxes as Discover
+  first opens them. Cancel shall offer nothing.
 - Rationale: A selection is worth keeping at the moment it is used, in a
-  chooser as on Find (Oliver's ruling). A chooser asks only for genres, so a
-  profile holding the same genres already holds all it can put back; offering
-  it again would be noise.
+  chooser as on Find (Oliver's ruling). A chooser asks for genres and years,
+  never what to include, so a profile holding the same genres and years
+  already holds all it can put back; offering it again would be noise.
 - Acceptance: Given profile "Ambient", when it is chosen in the library's
   filter, then Clear is pressed, then Rock is ticked and Show pressed, then the
   offer appears and the name given saves Rock; given a profile holding Rock
   with credits included, when Rock alone is filtered for, then nothing is
-  asked; given only the box for albums stating no genre ticked, then nothing is
-  asked; when Cancel is pressed, then nothing is asked.
-- Verified by: `tests/ui/test_filter_taste.py`
+  asked; given a profile holding Jazz from 1980 to 1989, when Jazz alone is
+  filtered for over any year, then the offer appears; given Jazz and 1980 to
+  1989 filtered for, then the name given saves both; given only the box for
+  albums stating no genre ticked, then nothing is asked; when Cancel is
+  pressed, then nothing is asked.
+- Verified by: `tests/ui/test_filter_taste.py`, `tests/ui/test_filter_years.py::TestTasteProfiles`, `tests/domain/test_taste.py::TestWhatAGenreFilterCountsAsHeld`
+
+**FR-D99 Both genre choosers narrow by year as well**
+- Requirement: The library's Filter by genre dialog and the answer's chooser
+  (FR-D54) shall each offer the two optional year fields of FR-D58 below the
+  genres, opening on the years already in use. While years are set, the
+  library shall show only albums whose date tag names a year inside them and
+  the answer shall show only albums the catalogue dates inside them, leaving
+  similar artists as they are; an album stating no year shall not be shown. A
+  heading with nothing left under it shall not be shown (FR-D75). Years alone
+  shall be enough to filter by (FR-D57). Years that cannot be used shall be
+  refused as FR-D59 states, said beneath the fields, with the press that
+  filters disabled. Clear shall empty the fields. The library's Filter button
+  and the answer's filter line (FR-D55) shall name the years after the genres.
+- Rationale: Taste profiles hold years (FR-D87), so every dialog that offers
+  them should ask for years too (Oliver's ruling). A similar artist has no
+  year, which is how a run treats one (FR-D60); an album whose year cannot be
+  established cannot be shown to fit (FR-D61).
+- Acceptance: Given an answer holding a 1983 album and a 2019 one, when 1980
+  to 1989 is filtered for, then only the 1983 album's heading is shown and the
+  line reads "Filtered to Rock; albums released 1980 to 1989" with Rock
+  picked; given a library holding albums dated 1980-07-25, 2020 and none, when
+  1980 to 1989 is asked, then only the first is shown; given 1990 in from and
+  1980 in to, then the chooser says the from year is later than the to year and
+  its press is disabled; when Clear is pressed, then both fields are empty.
+- Verified by: `tests/domain/test_filtering_by_year.py`, `tests/ui/test_filter_years.py`
 
 ### 3.2 Non-functional requirements
 
@@ -2003,7 +2034,7 @@ genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D98 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D99 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
@@ -2011,9 +2042,8 @@ Won't, this time, recorded so it is not re-proposed: NFR-PERF-002; any purchase
 path; ranking candidates by anything beyond what a source states; remembering
 across runs what was offered and rejected; reopening a past run's results from
 the menu, which FR-D28 makes cheap to add later; year presets, decade buttons
-or a slider beside the two fields of FR-D58; narrowing a finished answer by
-year on the results screen, where FR-D54 narrows by genre; renaming a taste
-profile, which saving under the new name then deleting the old does.
+or a slider beside the two fields of FR-D58; renaming a taste profile, which
+saving under the new name then deleting the old does.
 
 ## 5. Open questions
 

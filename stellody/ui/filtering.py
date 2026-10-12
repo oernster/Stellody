@@ -1,4 +1,4 @@
-"""Narrowing what is on screen to the genres somebody asked for.
+"""Narrowing what is on screen to the genres and years somebody asked for.
 
 The window's half of the filter. The question is collected by a dialog and
 answered in the domain; what is here is holding the answer and composing it
@@ -24,6 +24,7 @@ from stellody.domain.narrowing import Narrowing
 from stellody.domain.searching import AlbumText
 from stellody.ui.filter_dialog import FilterDialog
 from stellody.ui.genre_folds import Folds
+from stellody.ui.results_words import asked_for
 from stellody.ui.settings_keys import SETTING_GENRES_OPEN_LIBRARY_FILTER
 from stellody.ui.taste_store import TasteStore
 
@@ -37,7 +38,7 @@ def worded(asked: Narrowing) -> str:
     named = list(asked.wanted)
     if asked.unstated:
         named.append(UNSTATED_WORD)
-    return ", ".join(named)
+    return asked_for(tuple(named), asked.years)
 
 
 class Filtering:

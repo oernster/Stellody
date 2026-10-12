@@ -731,11 +731,12 @@ Select all; `ui/taste_prompt.py` offers to save a new selection on Find. Both ge
 choosers (the library's Filter by genre and the answer's Filter the answer)
 carry the same controls beside Clear (FR-D96), each over its own `TasteStore`
 on the same settings, so the three dialogs share one list through the setting
-rather than through a shared object; there a profile ticks its genres alone,
-the answer's chooser only those the run looked in. Each chooser's `accept`
-offers to save its genres (FR-D98) through `TasteControls.offer_genres`, which
-counts them held by any profile with the same genres (`holding_genres`), since
-a chooser asks nothing else.
+rather than through a shared object; there a profile ticks its genres (the
+answer's chooser only those the run looked in) and puts its years back. Each
+chooser's `accept` offers to save its genres and years (FR-D98) through
+`TasteControls.offer_filter`, which counts them held by any profile with the
+same genres and years (`holding_filter`), since a chooser asks nothing about
+what to include.
 `ui/taste_list.py` lifts the profiles as a `Qt.Popup` frame of real buttons,
 each row a delete button then the name, because a menu row holding two
 buttons let neither take keyboard focus. The rows sit in the shared
@@ -845,6 +846,13 @@ across the deal; `ui/results_asking.py` holds the asking half.
 **The answer is narrowed by kind as well** (FR-D86): `Showing` and `shown` in
 `domain/showing.py` are the pure rule, drawn by `ui/results_filter.py`
 (`tests/domain/test_showing.py`, `tests/ui/test_results_showing.py`).
+
+**Both genre choosers narrow by year too** (FR-D99). `Narrowing.years` holds
+the library's years, read off each album's date tag; `released_within` in
+`domain/discovery_filter.py` is the answer's, judging albums alone as a run
+does. Both choosers wear `YearsAsked` from `ui/year_fields.py`: the fields
+Discover wears plus a line beneath saying why typed years will not do
+(`tests/domain/test_filtering_by_year.py`, `tests/ui/test_filter_years.py`).
 
 **A row shows the year; a shop is asked for the title alone** (FR-D68).
 `album_row` in `ui/results_words.py` writes the year; the bare title rides

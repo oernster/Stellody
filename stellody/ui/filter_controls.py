@@ -89,12 +89,18 @@ def filter_controls(
     return FilterControls(row, clear_button, cancel_button, apply_button)
 
 
+def _never() -> bool:
+    """Nothing typed is ever refused where nothing can be typed."""
+    return False
+
+
 def offer_apply(
     apply: QPushButton,
     boxes: Iterable[QAbstractButton],
     asking: Callable[[], bool],
     filtering_already: bool,
-) -> None:
+    refused: Callable[[], bool] = _never,
+) -> Callable[[], None]:
     """Enable the press that filters only where it would change something.
 
     Reported by Oliver on 2026-09-13: a chooser opened with nothing ticked
@@ -106,11 +112,16 @@ def offer_apply(
 
     Read off the boxes at every toggle rather than counted, so Clear, a sweep
     or a box unticked by hand all move it alike.
+
+    Years that cannot be used take the press away whatever else is ticked,
+    as they take Find away in Discover (FR-D59, FR-D99). The refresh is
+    handed back so a dialog can call it as the years are typed.
     """
 
     def refresh(*_toggled: object) -> None:
-        apply.setEnabled(asking() or filtering_already)
+        apply.setEnabled(not refused() and (asking() or filtering_already))
 
     for box in boxes:
         box.toggled.connect(refresh)
     refresh()
+    return refresh

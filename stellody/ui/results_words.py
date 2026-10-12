@@ -118,13 +118,17 @@ LOOKED_IN = "Looked in {count}: {genres}"
 # An album row: the title, then the year it first came out. FR-D68.
 ALBUM_ROW = "{title} ({year})"
 # What the run's years add to that line, where it had any. FR-D64.
-RELEASED_BETWEEN = "; released {earliest} to {latest}"
-RELEASED_FROM = "; released {earliest} or later"
-RELEASED_UNTIL = "; released {latest} or earlier"
+RELEASED_BETWEEN = "released {earliest} to {latest}"
+RELEASED_FROM = "released {earliest} or later"
+RELEASED_UNTIL = "released {latest} or earlier"
+# What sets the years apart from the genres before them.
+YEARS_APART = "; "
+# The years as a filter states them: they judge albums alone. FR-D99.
+ALBUMS_RELEASED = "albums {released}"
 
 
-def released_in(years: ReleaseYears) -> str:
-    """The years a run was asked for, as the end of the looked-in line."""
+def released(years: ReleaseYears) -> str:
+    """The years asked for as a phrase; nothing where every year is."""
     if years.earliest is not None and years.latest is not None:
         return RELEASED_BETWEEN.format(earliest=years.earliest, latest=years.latest)
     if years.earliest is not None:
@@ -132,6 +136,18 @@ def released_in(years: ReleaseYears) -> str:
     if years.latest is not None:
         return RELEASED_UNTIL.format(latest=years.latest)
     return ""
+
+
+def released_in(years: ReleaseYears) -> str:
+    """The years a run was asked for, as the end of the looked-in line."""
+    return YEARS_APART + released(years) if years.is_bounded else ""
+
+
+def asked_for(named: tuple[str, ...], years: ReleaseYears) -> str:
+    """What a filter is set to: the names, then the years, either alone."""
+    said_years = ALBUMS_RELEASED.format(released=released(years))
+    parts = (GENRES_APART.join(named), said_years if years.is_bounded else "")
+    return YEARS_APART.join(part for part in parts if part)
 
 
 def counted(count: int, single: str, several: str) -> str:
@@ -231,16 +247,18 @@ def where_in_the_answer(showing: int, pages: int) -> str:
 # Since FR-D78 a candidate MusicBrainz gives nothing is judged by the artist it
 # was suggested for, so only those that heading names nothing for either are
 # held back; the sentence says both, ruled by Oliver on 2026-10-01.
-FILTERED_TO = "Filtered to {genres}"
+FILTERED_TO = "Filtered to {asked}"
 HELD_BACK = (
     ": {count} held back, since neither MusicBrainz nor the artist they were "
     f"suggested for gives a genre {APP_NAME} recognises"
 )
 
 
-def withheld(picked: tuple[str, ...], count: int) -> str:
-    """The genres a filter is set to; what it held back for want of a genre."""
-    said = FILTERED_TO.format(genres=GENRES_APART.join(picked))
+def withheld(
+    picked: tuple[str, ...], count: int, years: ReleaseYears = ANY_YEAR
+) -> str:
+    """What a filter is set to; what it held back for want of a genre."""
+    said = FILTERED_TO.format(asked=asked_for(picked, years))
     if count:
         said += HELD_BACK.format(count=counted(count, SIMILAR, f"{SIMILAR}s"))
     return said

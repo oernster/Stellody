@@ -57,8 +57,9 @@ Each line is a summary; the site has the detail.
 - Search that narrows as you type, keeping each album whole around the match.
 - Messy collections sorted out: an album saved as one long file, a box set over
   several folders or an unnumbered bonus disc comes out as one album.
-- A genre filter over the covers, including albums that state no genre; a
-  saved taste profile ticks its genres there in one choice.
+- A genre and year filter over the covers, including albums that state no
+  genre; a saved taste profile puts its genres and years back there in one
+  choice.
 - State what an album or a single song really is (artist, title, date, genre,
   disc and track number); genres come from a settled list of headings with
   their styles under them. Stored by Stellody, never written to the file.
@@ -111,8 +112,9 @@ Each line is a summary; the site has the detail.
   to keep it (genres, the Include boxes and the years) under a name; choose it
   later to put the whole selection back. Each profile in the list has its own
   delete button; a long list scrolls. The same profiles are offered in the
-  library's Filter by genre and in Filter the answer, where a profile ticks its
-  genres; filtering on genres no profile holds offers to keep them too.
+  library's Filter by genre and in Filter the answer, where a profile puts its
+  genres and years back; filtering on genres and years no profile holds offers
+  to keep them too. Both filters take a year range, as Discover does.
 - Progress bars per stage, an estimate of time left and a stop that takes
   effect at once. Answers are kept as they arrive, so a second run asks only
   for the rest; gaps are counted and named rather than hidden.

@@ -30,7 +30,8 @@ from PySide6.QtWidgets import QDialog, QPushButton
 
 from stellody.domain.album import Album
 from stellody.domain.discovery import Gaps
-from stellody.domain.discovery_filter import filtered_answer
+from stellody.domain.discovery_filter import filtered_answer, released_within
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.domain.shopping import WantedAlbum
 from stellody.domain.showing import EVERYTHING, Showing, shown
 from stellody.ui.genre_folds import Folds
@@ -74,6 +75,7 @@ class FilteringResults:
         self._remembered = remembered
         self._picked: tuple[str, ...] = ()
         self._showing = EVERYTHING
+        self._years = ANY_YEAR
         # Every album ticked on any rows dealt so far, including rows the
         # filter is holding back right now.
         self._kept: set[WantedAlbum] = set()
@@ -95,6 +97,7 @@ class FilteringResults:
             folds=self._folds,
             showing=self._showing,
             taste=self._taste,
+            years=self._years,
         )
 
     def open_filter(self) -> None:
@@ -107,28 +110,40 @@ class FilteringResults:
         chooser = self.filter_dialog()
         try:
             if chooser.exec() == QDialog.DialogCode.Accepted:
-                self.filter_to(chooser.picked(), chooser.showing())
+                self.filter_to(
+                    chooser.picked(), chooser.showing(), chooser.years.years()
+                )
         finally:
             self.filter_button.setChecked(self._narrowed)
             chooser.deleteLater()
 
     @property
     def _narrowed(self) -> bool:
-        """Whether a filter, by genre or by kind, is hiding anything."""
-        return bool(self._picked) or self._showing != EVERYTHING
+        """Whether a filter, by genre, kind or year, is hiding anything."""
+        return (
+            bool(self._picked) or self._showing != EVERYTHING or self._years.is_bounded
+        )
 
-    def filter_to(self, picked: tuple[str, ...], showing: Showing = EVERYTHING) -> None:
-        """Show the answer as these genres and kinds leave it. FR-D54, FR-D86.
+    def filter_to(
+        self,
+        picked: tuple[str, ...],
+        showing: Showing = EVERYTHING,
+        years: ReleaseYears = ANY_YEAR,
+    ) -> None:
+        """Show the answer as these genres, kinds and years leave it. FR-D54,
+        FR-D86, FR-D99.
 
-        Nothing picked is every genre; every kind ticked is every kind.
+        Nothing picked is every genre; every kind ticked is every kind; no
+        bound is every year.
         """
         self._picked = picked
         self._showing = showing
+        self._years = years
         answer = filtered_answer(
             self._gaps, self._library, self._remembered or {}, picked
         )
-        self._deal(shown(answer.gaps, showing))
-        self.top.say_withheld(picked, answer.unjudged)
+        self._deal(released_within(shown(answer.gaps, showing), years))
+        self.top.say_withheld(picked, answer.unjudged, years)
         self.filter_button.setChecked(self._narrowed)
 
     def _deal(self, gaps: tuple[Gaps, ...]) -> None:

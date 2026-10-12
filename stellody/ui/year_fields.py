@@ -1,4 +1,8 @@
-"""The two year fields in the discovery dialog: released from, to. FR-D58.
+"""The two year fields: released from, to. FR-D58, FR-D99.
+
+Worn by the Discover dialog and by both genre choosers, which also wear the
+line beneath them saying why typed years will not do (`YearsAsked`); Discover
+says that in the message line it already has.
 
 Two plain text fields rather than spin boxes. A spin box holds a number it has
 clamped into its range, so a year typed outside it would be quietly changed to
@@ -12,10 +16,13 @@ years are plausible has one home and this module holds only the words.
 
 from __future__ import annotations
 
+import datetime
+
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 from stellody.domain.release_years import (
+    ANY_YEAR,
     FIRST_YEAR,
     Bound,
     ReleaseYears,
@@ -44,6 +51,11 @@ FAULTS = {
     ),
     YearFault.REVERSED: "The from year is later than the to year.",
 }
+
+
+def this_year() -> int:
+    """The current year, which the latest year worth asking about follows."""
+    return datetime.datetime.now(datetime.UTC).astimezone().year
 
 
 def refusal_words(refusal: YearRefusal, this_year: int) -> str:
@@ -87,3 +99,65 @@ class YearFields(QWidget):
     def reading(self, this_year: int) -> ReleaseYears | YearRefusal:
         """The years the two fields ask for; else why they cannot be used."""
         return read_years(self.earliest.text(), self.latest.text(), this_year)
+
+    def put(self, years: ReleaseYears) -> None:
+        """Put these years in the fields; an absent bound leaves one empty."""
+        for field, year in (
+            (self.earliest, years.earliest),
+            (self.latest, years.latest),
+        ):
+            field.setText("" if year is None else str(year))
+
+
+class YearsAsked(QWidget):
+    """The year fields with a line beneath saying why typed years will not do.
+
+    For a dialog with no message line of its own to say it in: both genre
+    choosers. The line is hidden while the years can be used. Neither this nor
+    the line takes focus; the two fields do.
+    """
+
+    changed = Signal()
+
+    def __init__(
+        self, years: ReleaseYears, this_year: int, parent: QWidget | None = None
+    ) -> None:
+        super().__init__(parent)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self._this_year = this_year
+        column = QVBoxLayout(self)
+        column.setContentsMargins(0, 0, 0, 0)
+        self.fields = YearFields(self)
+        self.fields.put(years)
+        column.addWidget(self.fields)
+        self.refusal = QLabel("", self)
+        self.refusal.setWordWrap(True)
+        column.addWidget(self.refusal)
+        self.fields.changed.connect(self._changed)
+        self._changed()
+
+    def reading(self) -> ReleaseYears | YearRefusal:
+        """The years asked for; else why they cannot be used."""
+        return self.fields.reading(self._this_year)
+
+    def refused(self) -> bool:
+        """Whether the years typed cannot be used. FR-D59."""
+        return isinstance(self.reading(), YearRefusal)
+
+    def years(self) -> ReleaseYears:
+        """The years asked for; every year while they cannot be used."""
+        reading = self.reading()
+        return ANY_YEAR if isinstance(reading, YearRefusal) else reading
+
+    def put(self, years: ReleaseYears) -> None:
+        """Put these years in the fields."""
+        self.fields.put(years)
+
+    def _changed(self) -> None:
+        """Say why the years will not do (nothing where they will); then tell
+        the dialog."""
+        reading = self.reading()
+        refused = isinstance(reading, YearRefusal)
+        self.refusal.setText(refusal_words(reading, self._this_year) if refused else "")
+        self.refusal.setHidden(not refused)
+        self.changed.emit()

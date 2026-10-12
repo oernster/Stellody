@@ -57,10 +57,11 @@ def _top_tray_html() -> str:
         + row(
             resources.filter_icon_path(),
             "Filter",
-            "narrow the library to the genres you tick. It stays pressed in "
+            "narrow the library to the genres you tick and the years you "
+            "type, from and to. It stays pressed in "
             "while it is holding something back, because a narrowed library "
             "looks exactly like a small one. Show in its dialog waits until "
-            "something is ticked, unless a filter is already on.",
+            "something is asked, unless a filter is already on.",
         )
         + row(
             resources.search_icon_path(),

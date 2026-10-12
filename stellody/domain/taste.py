@@ -11,8 +11,9 @@ business; so is the dialog that offers them.
 **Genres are a set, not a sequence.** Ticking Jazz then Rock is the same
 choice as Rock then Jazz, so the genres are compared whatever their order; the
 Include boxes and the years must match as well (FR-D90). A genre filter asks
-about genres alone, so what it offers is held by any profile with the same
-genres, whatever that profile includes (FR-D98).
+about genres and years, never what to include, so what it offers is held by
+any profile with the same genres and years, whatever that profile includes
+(FR-D98, FR-D99).
 
 **A name is compared ignoring case and the space around it.** "Jazz" and
 " jazz " are one profile, so saving the second replaces the first once that is
@@ -77,13 +78,14 @@ def holding(
     return None
 
 
-def holding_genres(
-    profiles: tuple[TasteProfile, ...], genres: tuple[str, ...]
+def holding_filter(
+    profiles: tuple[TasteProfile, ...], genres: tuple[str, ...], years: ReleaseYears
 ) -> TasteProfile | None:
-    """A saved profile holding exactly these genres, whatever else it holds;
-    else None. A genre filter asks for genres alone. FR-D98."""
+    """A saved profile holding exactly these genres and years, whatever it
+    includes; else None. A genre filter asks nothing about what to include.
+    FR-D98."""
     for profile in profiles:
-        if _same_genres(profile.genres, genres):
+        if _same_genres(profile.genres, genres) and profile.years == years:
             return profile
     return None
 

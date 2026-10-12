@@ -1,16 +1,16 @@
 """Taste profiles' rules, with nothing installed.
 
-`DISCOVERY.md` FR-D87 to FR-D93, FR-D98.
+`DISCOVERY.md` FR-D87 to FR-D93, FR-D98, FR-D99.
 """
 
 from __future__ import annotations
 
 from stellody.domain.including import Including
-from stellody.domain.release_years import ReleaseYears
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 from stellody.domain.taste import (
     TasteProfile,
     holding,
-    holding_genres,
+    holding_filter,
     named,
     ordered,
     saved,
@@ -51,18 +51,22 @@ class TestWhatCountsAsTheSameSelection:
 
 
 class TestWhatAGenreFilterCountsAsHeld:
-    """FR-D98: a filter asks for genres alone."""
+    """FR-D98: a filter asks for genres and years, never what to include."""
 
-    def test_the_same_genres_are_held_whatever_else_the_profile_holds(
+    def test_the_same_genres_and_years_are_held_whatever_the_profile_includes(
         self,
     ) -> None:
-        wider = TasteProfile(
-            "Wider", JAZZ.genres, Including(credits=True), ReleaseYears(2020, None)
-        )
-        assert holding_genres((AMBIENT, wider), ("Blues", "Jazz")) is wider
+        years = ReleaseYears(2020, None)
+        wider = TasteProfile("Wider", JAZZ.genres, Including(credits=True), years)
+        assert holding_filter((AMBIENT, wider), ("Blues", "Jazz"), years) is wider
 
     def test_other_genres_are_not_held(self) -> None:
-        assert holding_genres((AMBIENT, JAZZ), ("Jazz",)) is None
+        assert holding_filter((AMBIENT, JAZZ), ("Jazz",), ANY_YEAR) is None
+
+    def test_other_years_are_not_held(self) -> None:
+        """FR-D99: the years a filter asks are part of what it would save."""
+        later = ReleaseYears(2020, None)
+        assert holding_filter((AMBIENT, JAZZ), JAZZ.genres, later) is None
 
 
 class TestNames:

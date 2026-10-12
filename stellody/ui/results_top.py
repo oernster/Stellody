@@ -165,10 +165,13 @@ class ResultsTop(QWidget):
         self.bar.setRange(0, 0)
         self.bar.setFormat(asking_about(names))
 
-    def say_withheld(self, picked: tuple[str, ...], count: int) -> None:
+    def say_withheld(
+        self, picked: tuple[str, ...], count: int, years: ReleaseYears = ANY_YEAR
+    ) -> None:
         """Say what a filter is set to and what it could not judge.
 
         Nothing at all while no filter is on.
         """
-        self.withheld.setText(withheld(picked, count) if picked else "")
-        self.withheld.setHidden(not picked)
+        filtering = bool(picked) or years.is_bounded
+        self.withheld.setText(withheld(picked, count, years) if filtering else "")
+        self.withheld.setHidden(not filtering)

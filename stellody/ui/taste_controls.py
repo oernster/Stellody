@@ -1,4 +1,4 @@
-"""The Taste profiles button and what it lifts. FR-D87 to FR-D92, FR-D96, FR-D98.
+"""The Taste profiles button and what it lifts. FR-D87 to FR-D92, FR-D96 to FR-D99.
 
 Built on the dialog that lays it out, as the queue switches are built on the
 bottom strip: this owns the button, its list and the two questions it asks,
@@ -23,10 +23,12 @@ from collections.abc import Callable
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QPushButton, QWidget
 
+from stellody.domain.including import OWN_ALBUMS
+from stellody.domain.release_years import ReleaseYears
 from stellody.domain.taste import (
     TasteProfile,
     holding,
-    holding_genres,
+    holding_filter,
     named,
     saved,
     without,
@@ -85,14 +87,16 @@ class TasteControls:
         """On Find: offer to save a selection no profile holds yet. FR-D90."""
         self._offer(selection, lambda profiles: holding(profiles, selection))
 
-    def offer_genres(self, genres: tuple[str, ...]) -> None:
-        """On a filter's press: offer to save genres no profile holds. FR-D98.
+    def offer_filter(self, genres: tuple[str, ...], years: ReleaseYears) -> None:
+        """On a filter's press: offer to save genres and years no profile
+        holds. FR-D98.
 
-        Saved with the Include boxes a first Discover opens on and any year,
-        since a filter asks nothing about what to include or which years.
+        Saved with the Include boxes a first Discover opens on, since a filter
+        asks nothing about what to include.
         """
         self._offer(
-            TasteProfile("", genres), lambda profiles: holding_genres(profiles, genres)
+            TasteProfile("", genres, OWN_ALBUMS, years),
+            lambda profiles: holding_filter(profiles, genres, years),
         )
 
     def _offer(
