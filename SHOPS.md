@@ -606,8 +606,8 @@ Appendix B lists them.
 - Requirement: If a row in the shop file cannot be read as a shop, then the shops
   dialog shall list it greyed out with the reason it cannot be used, offering its
   edit and delete controls and no way to search it.
-- Rationale: Oliver's ruling (OQ-S04). The row is still never searched (FR-S11),
-  while it is no longer skipped without a word. Edit opens the shop form holding
+- Rationale: Oliver's ruling (OQ-S04). The row is never searched (FR-S11); it is
+  listed with its reason rather than skipped without a word. Edit opens the shop form holding
   whatever the row carried, so FR-S20 decides whether the mended row saves.
 - Acceptance: Given a file holding a row named "Juno" whose address names no
   placeholder, when the dialog opens, then Juno is listed greyed out saying its
@@ -629,7 +629,9 @@ Appendix B lists them.
 
 **FR-S44 The shops dialog follows the ticks behind it**
 - Requirement: While the shops dialog is open, it shall take the albums ticked
-  in the results at that moment, stating their number. The shops control shall
+  in the results at that moment, stating their number. A tick a filter is
+  holding back shall not be taken while the filter withholds it (FR-D56). The
+  shops control shall
   bring back the one shops dialog rather than open another. While nothing
   is ticked, no shop shall be choosable.
 - Rationale: The dialog stays open (FR-S07) while the ticks behind it change, so

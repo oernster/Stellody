@@ -506,7 +506,9 @@ renamed whenever the rule changes, so each candidate is asked again.
 
 **The filter is pure and takes a field, not a genre.** `Narrowing` and
 `narrowed_to` live in `stellody/domain/narrowing.py`; other fields arrive by
-being passed rather than by the module learning about them.
+being passed rather than by the module learning about them. The years ride
+beside the field (`Narrowing.years`, FR-D99; see the year filtering under
+Discovering).
 
 **Any, not all** (Oliver's ruling): an album is kept when it carries any
 ticked value, so each tick widens. **A style is not its main in the ask**:
@@ -739,7 +741,7 @@ same genres and years (`holding_filter`), since a chooser asks nothing about
 what to include.
 `ui/taste_list.py` lifts the profiles as a `Qt.Popup` frame of real buttons,
 each row a delete button then the name, because a menu row holding two
-buttons let neither take keyboard focus. The rows sit in the shared
+buttons lets neither take keyboard focus. The rows sit in the shared
 `ui/scrolling_column.py`, capped at the room the list opens into (FR-D95), so a
 long list scrolls rather than running off the screen; the area takes no focus
 and a button scrolls itself into view as it takes focus. Held by
@@ -847,12 +849,16 @@ across the deal; `ui/results_asking.py` holds the asking half.
 `domain/showing.py` are the pure rule, drawn by `ui/results_filter.py`
 (`tests/domain/test_showing.py`, `tests/ui/test_results_showing.py`).
 
-**Both genre choosers narrow by year too** (FR-D99). `Narrowing.years` holds
-the library's years, read off each album's date tag; `released_within` in
-`domain/discovery_filter.py` is the answer's, judging albums alone as a run
-does. Both choosers wear `YearsAsked` from `ui/year_fields.py`: the fields
-Discover wears plus a line beneath saying why typed years will not do
-(`tests/domain/test_filtering_by_year.py`, `tests/ui/test_filter_years.py`).
+**Both genre choosers narrow by year too** (FR-D99, Oliver's ruling).
+`Narrowing.years` holds the library's years, read off each album's date tag;
+`released_within` in `domain/discovery_filter.py` is the answer's, judging
+albums alone, since the answer holds no year for a similar artist. With years
+set, an album naming no year is left out, since it cannot be shown to fit. Both
+choosers wear `YearsAsked` from `ui/year_fields.py`: the fields Discover wears
+plus a line beneath saying why typed years will not do. The library's Filter
+tooltip and the answer's filter line name the years after the genres through
+`asked_for` in `ui/results_words.py` (`tests/domain/test_filtering_by_year.py`,
+`tests/ui/test_filter_years.py`).
 
 **A row shows the year; a shop is asked for the title alone** (FR-D68).
 `album_row` in `ui/results_words.py` writes the year; the bare title rides
@@ -927,11 +933,13 @@ parses every module in `stellody/ui` for each `.png` it names, with no
 exemptions, since dialogs fetch assets by name through `resources.find_asset`.
 A companion case asserts the scan finds something.
 
-**What the guide says of the taste profiles and the foot rows is pinned word
-for word.** A taste profile putting the whole selection back, the same
-profiles in both genre filters, a genre filter offering to save genres no
-profile holds, Filter at the right of the answer's foot row and the way out
-standing alone on the left are each asserted in its text
+**What the guide says of the taste profiles, the year fields and the foot rows
+is pinned word for word.** A taste profile putting the whole selection back,
+the same profiles in both genre filters, a profile there ticking its genres and
+putting its years back, a genre filter offering to save genres and years no
+profile holds, the year fields showing only albums first released in those
+years, Filter at the right of the answer's foot row and the way out standing
+alone on the left are each asserted in its text
 (`tests/ui/test_guide.py::TestWhatItNames::test_it_describes_the_rows_and_profiles_as_they_now_stand`).
 
 **Under the furniture sit the rules no single screen can state**, plus how a
@@ -1287,7 +1295,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | The results screen is dealt into columns and stops at a 13 inch display | It takes a share of the screen in up to `COLUMNS_AT_THE_CEILING` columns, capped at what a 13 inch display shows (Oliver's ruling; FR-D45 holds the measurement, `THIRTEEN_INCH_ROOM` the room). `results_room.py` is widget-free arithmetic; `results_columns.py` joins it to widgets. |
 | A control that closes something wears the close picture, not the negative mark | `negative.png` is only ever composed over another picture to say off; alone it names no action. |
 | The way out stands alone on the left of every foot row | Oliver's ruling (FR-D97): Close in the Discover dialog, on the results screen (`results_foot.py`) and in the shops dialog (FR-S40), Cancel in both genre choosers and the shop form, with the controls that act grouped on the right; each row walks Tab as drawn (`tests/ui/test_discovery_dialog.py::test_close_stands_left_with_the_sweeps_beside_find`, `tests/ui/test_filter_controls.py::test_cancel_stands_left_and_clear_beside_the_filter`, `tests/ui/test_shop_editing.py::test_the_ring_walks_the_rows_in_reading_order`, `tests/ui/test_shop_editing.py::test_the_forms_cancel_stands_left_of_try_and_save`). |
-| Both genre filters share one row of pictured controls | Cancel, Clear and Filter are built once by `stellody/ui/filter_controls.py` (Oliver's ruling, including Clear wearing the close picture without leaving); both add Taste profiles between Clear and Filter. Filtering is disabled while nothing is ticked, except in a chooser opened on a filter; `offer_apply` reads the boxes at every toggle (`tests/ui/test_filter_controls.py`). |
+| Both genre filters share one row of pictured controls | Cancel, Clear and the press that filters (Show in the library's, Filter in the answer's) are built once by `stellody/ui/filter_controls.py` (Oliver's ruling, including Clear wearing the close picture without leaving); both add Taste profiles between Clear and that press. It is disabled while nothing is asked (no tick and no year), except in a chooser opened on a filter; years that cannot be used disable it whatever is ticked. `offer_apply` reads the boxes at every toggle and the years as they are typed (`tests/ui/test_filter_controls.py`, `tests/ui/test_filter_years.py`). |
 | A three-state switch is told apart by its artwork, never by a fill | A fill says two things, never three; each state has its own picture, one composed with a cross at run time. |
 | Holding one track is decided where an ending is noticed, not in `next` | Repeat-one answers an ending; Next overrules it. So `advance_if_finished` replays while `next` always advances. |
 | The colours are kept apart from the stylesheet that applies them | What a colour is and where it applies change for different reasons: `stellody/ui/palette.py` holds values, `stellody/ui/theme.py` builds the sheet and re-exports both. |

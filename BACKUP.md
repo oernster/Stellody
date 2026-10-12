@@ -265,8 +265,9 @@ Appendix B lists them.
   `tests/ui/test_backup_menu.py::test_the_backup_runs_off_the_window_thread`
 
 **FR-B35 Work in progress is shown**
-- Requirement: While a backup is being written or a chosen backup is being
-  verified, Stellody shall show that it is working, naming which of the two.
+- Requirement: While a backup is being written, a chosen backup is being
+  verified or the current library is being saved before a restore, Stellody
+  shall show that it is working, naming which of the three.
 - Rationale: Oliver's ruling: a spinning disk can make either take
   far longer than the reference machine does, so the listener must never be
   left wondering whether anything is happening.
@@ -275,8 +276,8 @@ Appendix B lists them.
 - Verified by: `tests/ui/test_backup_menu.py::test_a_running_backup_is_shown`
 
 **FR-B36 One at a time**
-- Requirement: While a backup is being written or a backup is being verified,
-  Stellody shall disable "Back up library..." and "Restore from backup...".
+- Requirement: While any errand of FR-B35 runs, Stellody shall disable "Back
+  up library..." and "Restore from backup...".
 - Rationale: The unwanted sibling of FR-B35. A second press on a slow machine
   would start a second backup under the same minute's name; it could also start
   a restore over a backup still being written.
@@ -579,8 +580,8 @@ Appendix B lists them.
 
 A journal carries a schema number of its own, derived from its own list of
 upgrade steps (`JOURNAL_UPGRADES`, `CACHE_JOURNAL_UPGRADES`) rather than from
-its file's. A cache renamed for a rule
-change, as `candidate-genres-2.json` was, is a new file name: an older backup
+its file's. A cache whose name carries a rule's number, such as
+`candidate-genres-2.json`, takes a new file name when that rule changes: an older backup
 holding the old name carries a file this Stellody does not list, which a
 restore leaves out rather than refusing.
 

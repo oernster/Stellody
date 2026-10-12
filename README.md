@@ -297,8 +297,8 @@ Licence button says so, then says that Stellody itself is dual licensed. See
 
 A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack, AAC
 and bonus videos. The FFmpeg libraries themselves report their licence as
-LGPL-3.0-or-later. That build also links libx264 and libx265, which are GPL-2.0-or-later, so the
-packaged application as a whole is distributed as a GPL-3.0 work. Nothing here
+LGPL-3.0-or-later. That build also links libx264 and libx265, which are
+GPL-2.0-or-later, so the packaged application as a whole is distributed as a GPL-3.0 work. Nothing here
 encodes video; those two arrive as dependencies of the shared FFmpeg build.
 
 A commercial licence for my own code is also available, separately from the

@@ -19,7 +19,10 @@ In scope: a toolbar button, a dialog carrying the genre catalogue, a run that
 looks up the artists inside the ticked genres (where the dialog's Include boxes
 ask for them, also the artists credited on those genres' compilations and the
 other volumes of the series their compilations belong to), a JSON file holding
-what it found and a dialog showing what that file holds when a run completes.
+what it found and a dialog showing what that file holds when a run completes;
+the answer's filter by genre, kind and year; the taste profiles the three genre
+dialogs share; the years both genre choosers narrow by, the library's own
+filter included.
 
 Out of scope:
 
@@ -912,7 +915,7 @@ ruling).
   after another has been looked at.
 - Rationale: A whole-library answer in scrolling columns gives no sense of where
   in it somebody is. Filling every column lets one tall artist scroll rather than
-  leaving pages half empty; one foot row rather than two is Oliver's ruling.
+  leaving pages half empty; one foot row rather than two (Oliver's ruling).
   The per-row height is a stated figure, since the offscreen platform cannot
   measure fonts; correct it from a real screen.
 - Acceptance: Given more source artists than a page holds, when the dialog
@@ -948,8 +951,8 @@ ruling).
 - Verified by: `tests/domain/test_discovery_filter.py::test_nothing_picked_shows_everything`, `tests/domain/test_discovery_filter.py::test_a_source_artist_shows_by_the_genres_held`, `tests/domain/test_discovery_filter.py::test_a_candidate_shows_by_its_remembered_genres`, `tests/domain/test_discovery_filter.py::test_an_artist_with_nothing_left_is_not_shown`, `tests/ui/test_results_filter.py::test_only_the_genres_looked_in_are_offered`, `tests/ui/test_results_filter.py::test_the_filter_stays_pressed_in_while_on`, `tests/ui/test_results_filter.py::test_the_pages_are_dealt_from_what_is_shown`, `tests/domain/test_series.py::TestOnScreen::test_a_filter_keeps_a_series_held_in_the_picked_genres`, `tests/domain/test_series.py::TestOnScreen::test_a_filter_withholds_a_series_held_elsewhere`
 
 **FR-D55 What a filter withholds is said**
-- Requirement: While a filter is on, the results dialog shall name the genres it
-  is set to, then state how many candidate artists are withheld because neither
+- Requirement: While a filter by genre or by year is on, the results dialog
+  shall name the genres it is set to, then the years (FR-D99), then state how many candidate artists are withheld because neither
   the candidate genre cache nor the library's albums for the heading they sit
   under (FR-D78) record a genre for them that Stellody's genre catalogue
   recognises.
@@ -977,14 +980,15 @@ ruling).
 **FR-D57 The chooser's Filter waits for a tick**
 - Requirement: While no genre is ticked in the chooser FR-D54 opens, every
   kind of FR-D86 is ticked and no year is set (FR-D99), its Filter control
-  shall be disabled, unless the chooser opened with a filter on.
+  shall be disabled, unless the chooser opened with a filter on. While the years
+  typed cannot be used it shall be disabled whatever else is set (FR-D99).
 - Rationale: With nothing to filter by, the press can only take a filter off; the
   exception keeps that the one way a filter comes off, since Cancel keeps it.
 - Acceptance: Given the chooser opened on no filter, when nothing is ticked, then
   Filter is disabled; when a genre is ticked, then it is enabled; when Clear is
   pressed, then it is disabled again. Given the chooser opened on a filter, when
   Clear is pressed, then Filter is still enabled.
-- Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`, `tests/ui/test_filter_controls.py::test_clearing_every_tick_takes_filtering_away_again`, `tests/ui/test_filter_controls.py::test_a_filter_already_on_can_still_be_taken_off`, `tests/ui/test_results_showing.py::test_a_kind_left_out_is_enough_to_filter_by`
+- Verified by: `tests/ui/test_filter_controls.py::test_filtering_waits_for_a_tick`, `tests/ui/test_filter_controls.py::test_clearing_every_tick_takes_filtering_away_again`, `tests/ui/test_filter_controls.py::test_a_filter_already_on_can_still_be_taken_off`, `tests/ui/test_results_showing.py::test_a_kind_left_out_is_enough_to_filter_by`, `tests/ui/test_filter_years.py::TestTheFields::test_years_alone_are_enough_to_filter_by`, `tests/ui/test_filter_years.py::TestRefusing`
 
 **FR-D45 The answer is dealt across the width of the screen**
 - Requirement: The results dialog shall open at `SCREEN_SHARE` of the screen it
@@ -1078,14 +1082,15 @@ ruling).
 
 A run may be told which years the music it offers was released in. **The years
 scope what a run offers, never what it learns from.** A candidate artist is
-checked during the run; the years are not remembered between dialogs; a
+checked during the run; the years Discover asks for are not remembered between
+openings; a
 plausible year runs from `FIRST_YEAR` to `YEARS_AHEAD` after the current one
 (Oliver's ruling). A release group with no stated year is ordinary rather than
 rare.
 
 **FR-D58 Choosing the years to look in**
 - Requirement: The discovery dialog shall offer two optional year fields, from
-  and to, each empty when the dialog opens.
+  and to, each empty when the dialog opens and saying any year while empty.
 - Rationale: Two optional bounds cover after, before, between and any. Empty on
   opening because what to look for is decided afresh each time, unlike the
   Include boxes (FR-D51, FR-D85).
@@ -1313,8 +1318,8 @@ rare.
 - Verified by: `tests/domain/test_genre_votes.py`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_a_genre_voted_for_once_beside_real_ones_is_dropped`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_an_album_s_genres_are_held_to_the_same_rule`
 
 **FR-D77 The catalogue holds the genres similar artists are stated with**
-- Requirement: The genre catalogue shall carry these mains in place of the
-  single Electronic, each with these styles: Dance (Breakbeat, Dance-Pop, Disco,
+- Requirement: The genre catalogue shall carry these four mains, each with
+  these styles: Dance (Breakbeat, Dance-Pop, Disco,
   Downtempo, EDM, Electronica, Eurodance, Hi-NRG, Italo Dance); Electronic
   (Ambient, Big Beat, Drum n Bass, Dubstep, Jungle, UK Garage); House (Acid
   House, Deep House, Progressive House, Tech House); Techno & Electro (EBM,
@@ -1526,7 +1531,7 @@ rare.
   genres and with no genre ticked. The Filter press shall be offered once either
   the genres or the kinds would hide anything; Clear shall untick every genre and
   tick every kind; the button beneath the answer shall stay pressed in while
-  either filter is on.
+  the genres, the kinds or the years (FR-D99) hide anything.
 - Rationale: With series and DJ mixes offered in number, an answer needs
   separating by what each thing is (Oliver's ruling).
 - Acceptance: Given an answer with an artist holding a mix, an album and a
@@ -1560,8 +1565,8 @@ it sits inside the scope above.
   a list above it (below it where there is not room above) holding one row per saved profile in alphabetical order
   ignoring case: that profile's delete button on the left, then its name. A
   second press shall put the list down.
-- Rationale: Oliver's ruling: a delete beside each name, every one on the left
-  so they share a column. The list is a frame of buttons rather than a menu,
+- Rationale: A delete beside each name, every one on the left so they share a
+  column (Oliver's ruling). The list is a frame of buttons rather than a menu,
   because a menu row holding two buttons was measured to let neither take the
   keyboard (`ui/taste_list.py`).
 - Acceptance: Given profiles "rock", "Ambient" and "Jazz", when the button is
@@ -1736,9 +1741,10 @@ it sits inside the scope above.
   refused as FR-D59 states, said beneath the fields, with the press that
   filters disabled. Clear shall empty the fields. The library's Filter button
   and the answer's filter line (FR-D55) shall name the years after the genres.
-- Rationale: Taste profiles hold years (FR-D87), so every dialog that offers
-  them should ask for years too (Oliver's ruling). A similar artist has no
-  year, which is how a run treats one (FR-D60); an album whose year cannot be
+- Rationale: Taste profiles hold years (FR-D89), so every dialog that offers
+  them should ask for years too (Oliver's ruling). A similar artist carries no
+  year in the answer, while a run that had years set already kept only
+  candidates with an album inside them (FR-D63); an album whose year cannot be
   established cannot be shown to fit (FR-D61).
 - Acceptance: Given an answer holding a 1983 album and a 2019 one, when 1980
   to 1989 is filtered for, then only the 1983 album's heading is shown and the

@@ -47,8 +47,9 @@ def worth_showing(gaps: tuple[Gaps, ...]) -> tuple[Gaps, ...]:
 def released_within(gaps: tuple[Gaps, ...], years: ReleaseYears) -> tuple[Gaps, ...]:
     """The answer with only the albums released in these years. FR-D99.
 
-    The years judge albums alone, as they do in a run (FR-D60): a similar
-    artist has no year, so it stays. An album stating no year is left out
+    The years judge albums alone: a similar artist carries no year in the
+    answer, so it stays. A run that had years set already kept only those
+    shown to have released inside them (FR-D63). An album stating no year is left out
     while years are set, since it cannot be shown to fit. A heading left with
     nothing under it is not shown, for the reason FR-D75 gives.
     """

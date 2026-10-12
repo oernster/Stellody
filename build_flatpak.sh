@@ -120,9 +120,10 @@ fetch_once "${PORTAUDIO_ARCHIVE}" "${PORTAUDIO_URL}"
 fetch_once "${KRB5_ARCHIVE}" "${KRB5_URL}"
 
 section "Fetching the wheels"
-# Downloaded on the host so the build itself needs no network at all. What the
-# application asks the network for at RUNTIME is one thing, the update check;
-# what it asks for while being built should be nothing.
+# Downloaded on the host so the build itself needs no network at all. The
+# application reaches the network at RUNTIME only for what the listener uses
+# (the update check, cover search, discovery); while being built it should
+# reach nothing.
 rm -rf "${WHEEL_DIR}"
 platform_args=()
 for tag in ${WHEEL_PLATFORMS}; do

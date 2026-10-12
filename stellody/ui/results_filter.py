@@ -15,7 +15,7 @@ Its three controls are the library filter's, pictures and all: see
 
 **Years too, as Discover asks them** (Oliver's ruling, 2026-10-12): the same
 two fields below the genres, showing only the albums released inside them.
-Similar artists have no year, so the years leave them be, as a run does.
+A similar artist carries no year in the answer, so the years leave them be.
 FR-D99.
 
 **Taste profiles too, beside Clear** (Oliver's ruling, 2026-10-12): the same

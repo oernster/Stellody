@@ -33,9 +33,9 @@ the owner deciding the format and the migration.
 ## Looks like debt, not worth touching
 
 **`_drive` catches `OSError`, `RuntimeError` and `ValueError` rather than
-`PlaybackError` alone.** Now that the domain names a playback error and the
-adapters behind the transport raise it, narrowing the catch looks like the
-tidy move. It is the wrong one: the catch exists because an exception raised
+`PlaybackError` alone.** The domain names a playback error and the adapters
+behind the transport raise it, so narrowing the catch looks like the tidy
+move. It is the wrong one: the catch exists because an exception raised
 inside a Qt slot ends the slot in silence, leaving the buttons wearing faces
 that are no longer true and nothing said to anybody. A narrow catch would let
 exactly the failures nobody predicted through that hole, which is the failure

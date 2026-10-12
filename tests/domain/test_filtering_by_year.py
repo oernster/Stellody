@@ -75,7 +75,8 @@ class TestTheAnswer:
         assert shown == (Gaps("AC/DC", albums=(EIGHTIES_ALBUM,)),)
 
     def test_similar_artists_have_no_year_and_stay(self) -> None:
-        """As in a run, the years judge albums alone (FR-D60)."""
+        """The answer holds no year for a similar artist, so the years judge
+        albums alone."""
         answer = (Gaps("AC/DC", albums=(LATER_ALBUM,), artists=(AIRBOURNE,)),)
         shown = released_within(answer, EIGHTIES)
         assert shown == (Gaps("AC/DC", artists=(AIRBOURNE,)),)

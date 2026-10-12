@@ -424,6 +424,19 @@ can still lead to a new release and runs are far shorter. Set years cost a
 question per suggested artist; opening one not asked about waits on the
 catalogue.
 
+### The genre filters narrow by year too, albums only
+
+Both genre choosers take the same two year fields as Discover. The library's
+filter reads each album's own date tag; the answer's filter reads the year the
+catalogue gave each album's first release. A similar artist carries no year in
+the answer, so the years leave them be; a run that had years set already kept
+only those shown to have released inside them. While years are set, an album stating
+no year is hidden rather than kept. Chosen over a filter by genre alone, since
+a taste profile holds years and every dialog offering one should ask for them
+too; also over keeping an undated album, which would claim it fits a range it
+never stated. A library with sparse date tags loses albums from view while
+years are set; a long list of similar artists stays long whatever the years.
+
 ### Time is stated from pace, never promised
 
 Before a run widens to compilations or series, the dialog says how many more
@@ -439,8 +452,8 @@ A genre the catalogue states for an artist counts only with enough votes,
 relative to the artist's leading genre; an artist whose genres are all thinly
 voted keeps them all. A similar artist with no genre is judged by the genres
 of the listener's albums by the artist it was suggested for; failing that the
-filter holds it back and says how many it could not judge. A stray tag no
-longer puts a rock band under house. Some genuine secondary genres are lost;
+filter holds it back and says how many it could not judge. A stray tag cannot
+put a rock band under house. Some genuine secondary genres are lost;
 an inferred genre can be wrong.
 
 ### Three choices for what else a run takes in
@@ -485,15 +498,16 @@ The profiles are one list in one setting, offered by Discover and by both
 genre choosers (the library's filter and the answer's), so a profile deleted
 in any of the three is gone from all. Each of the three offers to save a
 selection no profile already holds: Find offers the whole selection. A genre
-chooser asks nothing about what to include or which years, so pressing Filter
-offers its genres with the Include boxes a first Discover opens on and any
-year, offering nothing when a profile already holds those genres; choosing a
-profile there sets its genres alone. Chosen over keeping the genres alone,
-which would leave the rest to be set by hand every time; also over a list per
-dialog, where a profile kept in one would be missing from the others. Two
-profiles with the same genres and different years are different profiles, so
-the list can grow longer than the genres alone would make it; in a genre
-chooser the two tick the same boxes.
+chooser asks for genres and years but nothing about what to include, so its
+press offers its genres and years with the Include boxes a first Discover opens
+on; a profile with the same genres and years counts as held whatever it
+includes, while years with no genre offer nothing. Choosing a profile in a
+genre chooser sets its genres and its years. Chosen over keeping the genres
+alone, which would leave the rest to be set by hand every time; also over a
+list per dialog, where a profile kept in one would be missing from the others.
+Two profiles differing only in their Include boxes look the same to a genre
+chooser; a profile saved from one carries the default Include boxes rather
+than chosen ones.
 
 ### The answer is read a page at a time
 

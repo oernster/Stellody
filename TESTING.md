@@ -69,7 +69,8 @@ For a count of tests without running them,
 
 ## Where the tests live
 
-`tests/` mirrors the package, one directory a layer:
+`tests/` holds one directory for each layer with rules of its own, plus one for
+the setup program and one for the structural rules:
 
 | Directory | What it tests | Against |
 |---|---|---|
