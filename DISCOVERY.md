@@ -1342,7 +1342,7 @@ rare.
   Dance, then the stored value reads back as Dance; given the stored
   `Electronic; House`, then Electronic and House. Every genre has a box in the
   discovery dialog, the library filter, the answer's filter and the tag editor.
-- Verified by: `tests/domain/test_genre_rulings.py::TestTheRulingsOf2026_10_01`, `tests/domain/test_genre_rulings.py::TestTheRulingsOf2026_10_01::test_a_value_stored_before_the_split_reads_as_written`, `tests/domain/test_genre_rulings.py::TestTheRulingsOf2026_10_01::test_the_bare_dance_tag_is_the_dance_main`, `tests/domain/test_genre_rulings.py::TestTheDanceSubTaxonomy`, `tests/domain/test_genre_rulings.py::TestTheRulingsOnTheRest::test_the_names_a_filter_withheld_on_2026_09_30`, `tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_every_catalogue_name_in_its_own_spelling_reads_back_as_itself`, `tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_no_alias_is_keyed_on_a_catalogue_name`, `tests/domain/test_genres.py::TestTheCatalogue::test_it_holds_the_mains_that_were_settled`, `tests/ui/test_genre_grid.py::test_every_dialog_holding_the_grid_offers_every_genre`
+- Verified by: `tests/domain/test_genre_rulings.py::TestTheNamesSimilarArtistsStated`, `tests/domain/test_genre_rulings.py::TestTheNamesSimilarArtistsStated::test_a_value_stored_before_the_split_reads_as_written`, `tests/domain/test_genre_rulings.py::TestTheNamesSimilarArtistsStated::test_the_bare_dance_tag_is_the_dance_main`, `tests/domain/test_genre_rulings.py::TestTheDanceSubTaxonomy`, `tests/domain/test_genre_rulings.py::TestTheRulingsOnTheRest::test_the_names_a_filter_once_withheld`, `tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_every_catalogue_name_in_its_own_spelling_reads_back_as_itself`, `tests/domain/test_genre_rulings.py::TestTagsRuledToMeanAGenre::test_no_alias_is_keyed_on_a_catalogue_name`, `tests/domain/test_genres.py::TestTheCatalogue::test_it_holds_the_mains_that_were_settled`, `tests/ui/test_genre_grid.py::test_every_dialog_holding_the_grid_offers_every_genre`
 
 **FR-D78 An untagged candidate is judged by who it was suggested for**
 - Requirement: While a genre filter is on, where the candidate genre cache
@@ -1690,7 +1690,9 @@ it sits inside the scope above.
   Cancel, then a gap, then Clear, Taste profiles (FR-D96) and the press that
   filters. Tab shall walk each row in the order it reads.
 - Rationale: The way out on its own at the left, the controls that set the
-  ticks together on the right beside the press that acts (Oliver's ruling). The results dialog's row follows the same ruling (FR-D49).
+  ticks together on the right beside the press that acts (Oliver's ruling). The
+  results dialog's row follows the same ruling (FR-D49), as do the shops dialog
+  and the shop form (FR-S40 in `SHOPS.md`).
 - Acceptance: Given either dialog, when it is laid out, then each control
   named stands to the right of the one before it and Tab moves from each to
   the next.

@@ -182,17 +182,17 @@ class TestTheRulingsOnTheRest:
             ("indietronica", ("Dance", "Electronica")),
         ),
     )
-    def test_the_names_a_filter_withheld_on_2026_09_30(
+    def test_the_names_a_filter_once_withheld(
         self, stated: str, expected: tuple[str, ...]
     ) -> None:
         """74 similar artists stated only names nothing here recognised; ruled
-        by Oliver. Those once ruled Electronic alone have a style of their own
-        since 2026-10-01 (FR-D77), so they still stay out of a House or Techno
-        filter while a filter for their own style keeps them."""
+        by Oliver. Those once ruled Electronic alone now have a style of their
+        own (FR-D77), so they still stay out of a House or Techno filter while
+        a filter for their own style keeps them."""
         assert genres.chosen_in(stated) == expected
 
 
-class TestTheRulingsOf2026_10_01:
+class TestTheNamesSimilarArtistsStated:
     """FR-D77: 155 of 1,996 similar artists in Oliver's whole-library answer
     stated only names nothing here recognised. Each name below was ruled."""
 
