@@ -34,7 +34,8 @@ class Visualisation(StrEnum):
 
 
 VISUALISATIONS = tuple(Visualisation)
-DEFAULT_VISUALISATION = Visualisation.BARS
+# What a new install draws in, ruled by Oliver on 2026-10-12. `fresh_start.py`.
+DEFAULT_VISUALISATION = Visualisation.DOT_MATRIX
 # What the list calls each, kept beside the styles so a new one cannot be
 # added without a name to offer it by.
 NAMES = {
@@ -56,7 +57,7 @@ def stored_visualisation(stored: str) -> Visualisation:
     """The style a written-down choice names; the default when it names none.
 
     A value nobody recognises, from a later version or a hand-edited file,
-    falls back to the plain bars rather than refusing to draw anything.
+    falls back to the default rather than refusing to draw anything.
     """
     if stored in VISUALISATIONS:
         return Visualisation(stored)

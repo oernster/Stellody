@@ -73,17 +73,11 @@ from stellody.infrastructure.waveform import FileWaveforms
 from stellody.shared import resources
 from stellody.shared.startup import starts_hidden
 from stellody.shared.version import APP_AUTHOR, APP_NAME, __version__
-from stellody.ui.close_prompt import CloseAction
+from stellody.ui.fresh_start import forget_for_a_fresh_install
 from stellody.ui.geometry import forget_window
 from stellody.ui.interface_scale import use_interface_scale
 from stellody.ui.main_window import MainWindow
 from stellody.ui.native_windows import keep_siblings_plain
-from stellody.ui.settings_keys import (
-    FALSE,
-    SETTING_CLOSE,
-    SETTING_REPEAT,
-    SETTING_SHUFFLE,
-)
 from stellody.ui.tips import show_tips_quickly
 
 # What a second launch returns once it has asked the running copy to show
@@ -329,12 +323,7 @@ def _start(argv: list[str] | None = None) -> int:
     diary.note("took the claim, so this is the copy that runs")
     store, set_aside = open_store(database_path())
     if switch_reset.take(data_location()):
-        for key in (SETTING_SHUFFLE, SETTING_REPEAT):
-            store.set_setting(key, FALSE)
-        # The remembered close choice is the same kind of thing: an answer
-        # given once that outlives the install it was given to. A reinstall
-        # that came back still acting on it would offer no way to notice.
-        store.set_setting(SETTING_CLOSE, CloseAction.ASK.value)
+        forget_for_a_fresh_install(store)
     # Setup names the screen it was on after a fresh install, a repair or a
     # reinstall; the window opens maximised there, whatever size was left.
     afresh = window_reset.take(data_location())

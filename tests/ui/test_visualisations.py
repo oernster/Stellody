@@ -80,7 +80,7 @@ class TestTheStyles:
         for style in VISUALISATIONS:
             assert stored_visualisation(style.value) is style
 
-    def test_a_name_nobody_knows_falls_back_to_the_bars(self) -> None:
+    def test_a_name_nobody_knows_falls_back_to_the_default(self) -> None:
         for stored in ("", "lasers", "3"):
             assert stored_visualisation(stored) is DEFAULT_VISUALISATION
 
