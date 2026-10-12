@@ -80,6 +80,7 @@ from stellody.ui.results_room import (
 from stellody.ui.results_ticks import anything_ticked, ticked_albums, untick_all
 from stellody.ui.results_top import ResultsTop
 from stellody.ui.shops_dialog import ShopsDialog
+from stellody.ui.taste_store import TasteStore
 from stellody.ui.theme import Mode, palette_for
 
 # One name for the window and for the heading inside it, so the taskbar, the
@@ -113,10 +114,13 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         parent: QWidget | None = None,
         years: ReleaseYears = ANY_YEAR,
         folds: Folds | None = None,
+        taste: TasteStore | None = None,
     ) -> None:
         super().__init__(parent)
         # Where the answer's filter remembers its open genre categories.
         self._folds = folds
+        # The taste profiles its filter offers, shared with Discover. FR-D96.
+        self._taste = taste
         # A heading with nothing under it is left off the screen. FR-D75.
         gaps = worth_showing(gaps)
         self._asking = asking

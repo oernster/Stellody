@@ -1656,32 +1656,38 @@ it sits inside the scope above.
   given two profiles, then every row shows and no scroll bar does.
 - Verified by: `tests/ui/test_taste_list_scrolling.py`
 
-**FR-D96 The library's genre filter offers the same taste profiles**
-- Requirement: The library's Filter by genre dialog shall carry a Taste profiles
-  button between Clear and Show, lifting the same list as the Discover dialog's
-  (FR-D88), read from the one setting (FR-D93), so a profile saved or deleted in
-  either dialog is saved or deleted in both. When a profile is chosen there, the
-  dialog shall tick exactly that profile's genres the catalogue still offers and
-  leave the box for albums stating no genre as it was. Profiles shall be saved
-  from the Discover dialog only (FR-D90).
-- Rationale: Oliver's ruling, 2026-10-12: taste profiles are one list across the
-  two dialogs that ask for genres. The filter asks nothing about what to include
-  or which years, so a profile's genres are all it can use; the no-genre box is
-  not a genre.
+**FR-D96 Both genre choosers offer the same taste profiles**
+- Requirement: The library's Filter by genre dialog and the answer's chooser
+  (FR-D54) shall each carry a Taste profiles button between Clear and the press
+  that filters, lifting the same list as the Discover dialog's (FR-D88), read
+  from the one setting (FR-D93), so a profile saved or deleted in any of the
+  three is saved or deleted in all. When a profile is chosen in the library's
+  filter, it shall tick exactly that profile's genres the catalogue still offers
+  and leave the box for albums stating no genre as it was. When a profile is
+  chosen in the answer's chooser, it shall tick exactly that profile's genres
+  the run looked in and leave the kinds of FR-D86 as they were. Profiles shall
+  be saved from the Discover dialog only (FR-D90).
+- Rationale: Oliver's ruling, 2026-10-12: taste profiles are one list across
+  every dialog that asks for genres. The choosers ask nothing about what to
+  include or which years, so a profile's genres are all they can use. The
+  no-genre box and the kinds are not genres; a genre the run never looked in
+  could only filter to nothing.
 - Acceptance: Given a profile saved from Discover by pressing Find, when the
   filter is opened, then the profile is listed and choosing it ticks its genres;
   given a profile deleted in the filter, when Discover is opened, then it is not
   listed; given the no-genre box ticked, when a profile is chosen, then the box
   stays ticked; given the window's settings holding a profile, when the window
-  opens its filter, then that profile is listed.
+  opens its filter or the answer's chooser, then that profile is listed; given
+  a run that looked in Jazz and Rock, when a profile holding Jazz and Blues is
+  chosen in the answer's chooser, then Jazz alone is picked.
 - Verified by: `tests/ui/test_filter_taste.py`
 
 **FR-D97 The way out stands alone on the left**
 - Requirement: The Discover dialog's foot row shall read Close, then a gap,
   then Select all, Taste profiles and Find. The foot row of both genre choosers
   (the library's Filter by genre and the answer's chooser of FR-D54) shall read
-  Cancel, then a gap, then Clear, the library's Taste profiles (FR-D96) and the
-  press that filters. Tab shall walk each row in the order it reads.
+  Cancel, then a gap, then Clear, Taste profiles (FR-D96) and the press that
+  filters. Tab shall walk each row in the order it reads.
 - Rationale: Oliver's ruling, 2026-10-12: the way out on its own at the left,
   the controls that set the ticks together on the right beside the press that
   acts. The results dialog's row follows the same ruling (FR-D49).

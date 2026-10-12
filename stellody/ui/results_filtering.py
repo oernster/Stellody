@@ -42,6 +42,7 @@ from stellody.ui.results_ticks import (
     every_row_across,
     is_tickable,
 )
+from stellody.ui.taste_store import TasteStore
 from stellody.ui.theme import Palette
 
 
@@ -57,6 +58,7 @@ class FilteringResults:
     _colour: Palette
     _room: QSize
     _folds: Folds | None
+    _taste: TasteStore | None
 
     def _start_filtering(
         self,
@@ -92,6 +94,7 @@ class FilteringResults:
             self,
             folds=self._folds,
             showing=self._showing,
+            taste=self._taste,
         )
 
     def open_filter(self) -> None:

@@ -18,6 +18,7 @@ from stellody.ui.expansion_worker import ExpansionRunner
 from stellody.ui.genre_folds import Folds
 from stellody.ui.results_dialog import ResultsDialog
 from stellody.ui.settings_keys import SETTING_GENRES_OPEN_ANSWER_FILTER
+from stellody.ui.taste_store import TasteStore
 
 
 class AnsweringDiscovery:
@@ -89,6 +90,7 @@ class AnsweringDiscovery:
             ),
             parent=self,
             folds=Folds(self._settings, SETTING_GENRES_OPEN_ANSWER_FILTER),
+            taste=TasteStore(self._settings),
         )
         if asking is not None:
             # Parented to the dialog once there is one, so what asks the

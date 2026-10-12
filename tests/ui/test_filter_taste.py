@@ -1,4 +1,7 @@
-"""Taste profiles in the library's Filter by genre dialog. `DISCOVERY.md` FR-D96.
+"""Taste profiles in both genre choosers. `DISCOVERY.md` FR-D96.
+
+The library's Filter by genre and the answer's Filter the answer each carry
+the button after Clear.
 
 One list across both dialogs (Oliver's ruling, 2026-10-12): each dialog is
 handed its own `TasteStore` over the SAME settings, as the window does, so what
@@ -8,6 +11,7 @@ is asserted is that the two meet in the setting rather than in a shared object.
 from __future__ import annotations
 
 import pytest
+from discovery_wiring_support import Results, make_window, opened_results
 from PySide6.QtWidgets import QDialog
 from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
@@ -16,6 +20,7 @@ from stellody.domain.taste import TasteProfile
 from stellody.ui import taste_controls
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.filter_dialog import FilterDialog
+from stellody.ui.results_filter import ResultsFilterDialog
 from stellody.ui.taste_list import NAME_COLUMN
 from stellody.ui.taste_store import TasteStore
 
@@ -89,6 +94,39 @@ def test_the_window_opens_its_filter_on_its_own_profiles(
     window.open_filter()
     window.close()
     assert offered == [["Jazz"]]
+
+
+def test_the_answers_chooser_ticks_only_genres_the_run_looked_in(
+    application,
+) -> None:
+    """Blues was never looked in, so it could only filter to nothing."""
+    chooser = ResultsFilterDialog(("Jazz", "Rock"), taste=TasteStore(_settings(JAZZ)))
+    chooser.series.setChecked(False)
+    chooser.taste.list.rows[0][NAME_COLUMN].click()
+    assert chooser.picked() == ("Jazz",)
+    assert not chooser.grid.boxes["Blues"].isChecked()
+    assert not chooser.series.isChecked(), "the kinds are no genre"
+
+
+def test_a_profile_deleted_in_the_answers_chooser_is_gone_everywhere(
+    application, yes
+) -> None:
+    settings = _settings(AMBIENT, JAZZ)
+    chooser = ResultsFilterDialog(("Jazz",), taste=TasteStore(settings))
+    chooser.taste.list.rows[0][0].click()
+    assert _names(_filter(settings).taste) == ["Jazz"]
+
+
+def test_the_window_opens_the_answer_on_its_own_profiles(
+    application, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The wiring: the answer's chooser reads the window's settings."""
+    seen = opened_results(monkeypatch)
+    window = make_window(application, results=Results())
+    TasteStore(window._settings).keep((JAZZ,))
+    window.show_discovery_results()
+    assert _names(seen[0].filter_dialog().taste) == ["Jazz"]
+    window.close()
 
 
 def test_a_profile_deleted_here_is_gone_from_discover(application, yes) -> None:

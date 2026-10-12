@@ -7,8 +7,8 @@ choosers asking one question should not dress it two ways.
 **Cancel on the left, Clear beside the press that filters.** Oliver's ruling
 of 2026-10-12, matching the Discover dialog: the way out stands alone on the
 left, the controls that set the ticks sit together on the right. A chooser may
-add one control of its own between Clear and the press that filters; the
-library's filter adds Taste profiles there.
+add one control of its own between Clear and the press that filters; both
+choosers add Taste profiles there.
 
 **Filtering wears the filter picture**, the one the tray's own filter button
 wears, so the press that narrows looks like the button that opened the chooser.

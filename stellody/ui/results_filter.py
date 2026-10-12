@@ -12,6 +12,12 @@ its own would be a second place for those rules to live.
 
 Its three controls are the library filter's, pictures and all: see
 `filter_controls`.
+
+**Taste profiles too, beside Clear** (Oliver's ruling, 2026-10-12): the same
+list as Discover and the library's filter, read from the one setting. A
+profile ticks those of its genres the run looked in; the rest could only
+filter to nothing, so they are passed over, as a genre not on offer always is.
+The kinds are left as they stand, being no genre. FR-D96.
 """
 
 from __future__ import annotations
@@ -19,12 +25,15 @@ from __future__ import annotations
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from stellody.domain.showing import EVERYTHING, Showing
-from stellody.ui.dialogs import FirstStopDialog
+from stellody.domain.taste import TasteProfile
+from stellody.ui.dialogs import CONTROL_ICON_PX, FirstStopDialog
 from stellody.ui.discovery_dialog import MIXES_LABEL
 from stellody.ui.filter_controls import filter_controls, offer_apply
 from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.ringed_check import RingedCheckBox
+from stellody.ui.taste_controls import TasteControls
+from stellody.ui.taste_store import TasteStore
 
 TITLE = "Filter the answer"
 FILTER_LABEL = "Filter"
@@ -45,6 +54,7 @@ class ResultsFilterDialog(FirstStopDialog):
         parent: QWidget | None = None,
         folds: Folds | None = None,
         showing: Showing = EVERYTHING,
+        taste: TasteStore | None = None,
     ) -> None:
         super().__init__(parent)
         self._offered = offered
@@ -66,7 +76,10 @@ class ResultsFilterDialog(FirstStopDialog):
         for name, box in self.grid.boxes.items():
             box.setChecked(name in offered and name in picked)
         outer.addWidget(self.grid)
-        controls = filter_controls(self, FILTER_LABEL, self.clear)
+        self.taste = TasteControls(self, taste, self._put_back, CONTROL_ICON_PX)
+        controls = filter_controls(
+            self, FILTER_LABEL, self.clear, extra=self.taste.button
+        )
         self.clear_button = controls.clear
         self.cancel_button = controls.cancel
         self.filter_button = controls.apply
@@ -98,6 +111,11 @@ class ResultsFilterDialog(FirstStopDialog):
         self.grid.set_all(False)
         for box in self._kinds():
             box.setChecked(True)
+
+    def _put_back(self, profile: TasteProfile) -> None:
+        """Tick exactly a taste profile's genres the run looked in. FR-D96."""
+        offered = set(self._offered)
+        self.grid.set_chosen(tuple(g for g in profile.genres if g in offered))
 
     def showing(self) -> Showing:
         """The kinds ticked. FR-D86."""

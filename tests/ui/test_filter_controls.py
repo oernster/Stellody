@@ -69,18 +69,14 @@ def _drawn_row(dialog, apply) -> list:
 
 
 def test_cancel_stands_left_and_clear_beside_the_filter(application) -> None:
-    """Oliver's ruling of 2026-10-12; the library's adds Taste profiles."""
-    library, answer = _choosers()
-    expected = (
-        [
-            library[0].cancel_button,
-            library[0].clear_button,
-            library[0].taste.button,
-            library[1],
-        ],
-        [answer[0].cancel_button, answer[0].clear_button, answer[1]],
-    )
-    for (dialog, apply), wanted in zip((library, answer), expected):
+    """Oliver's ruling of 2026-10-12, Taste profiles after Clear in both."""
+    for dialog, apply in _choosers():
+        wanted = [
+            dialog.cancel_button,
+            dialog.clear_button,
+            dialog.taste.button,
+            apply,
+        ]
         assert _drawn_row(dialog, apply) == wanted
         walked = [wanted[0]]
         while len(walked) < len(wanted):

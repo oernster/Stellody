@@ -727,11 +727,12 @@ surrounding space, the list alphabetical, saving under a taken name replacing
 it once confirmed); `ui/taste_store.py` keeps the list as JSON in one setting
 (`SETTING_TASTE_PROFILES`), reading anything malformed as absent rather than
 refusing to open the dialog. `ui/taste_controls.py` owns the button beside
-Select all; `ui/taste_prompt.py` offers to save a new selection on Find. The
-library's Filter by genre carries the same controls beside Clear (FR-D96), over
-its own `TasteStore` on the same settings, so the two dialogs share one list
-through the setting rather than through a shared object; there a profile ticks
-its genres alone.
+Select all; `ui/taste_prompt.py` offers to save a new selection on Find. Both genre
+choosers (the library's Filter by genre and the answer's Filter the answer)
+carry the same controls beside Clear (FR-D96), each over its own `TasteStore`
+on the same settings, so the three dialogs share one list through the setting
+rather than through a shared object; there a profile ticks its genres alone,
+the answer's chooser only those the run looked in.
 `ui/taste_list.py` lifts the profiles as a `Qt.Popup` frame of real buttons,
 each row a delete button then the name, because a menu row holding two
 buttons let neither take keyboard focus. The rows sit in the shared
@@ -1266,7 +1267,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | What a failure says on screen is read off its kind, never off its message | The row gets a sentence; the diary gets class, message and artist. A refusal and a timeout are distinct kinds. |
 | The results screen is dealt into columns and stops at a 13 inch display | It takes a share of the screen in up to three columns, capped at what a 13 inch display shows (Oliver's ruling; FR-D45 holds the measurement, `THIRTEEN_INCH_ROOM` the room). `results_room.py` is widget-free arithmetic; `results_columns.py` joins it to widgets. |
 | A control that closes something wears the close picture, not the negative mark | `negative.png` is only ever composed over another picture to say off; alone it names no action. |
-| Both genre filters share one row of pictured controls | Cancel, Clear and Filter are built once by `stellody/ui/filter_controls.py` (Oliver's ruling, including Clear wearing the close picture without leaving), Cancel alone on the left (FR-D97); the library's filter adds Taste profiles between Clear and Filter, the row stating the Tab order so it walks as drawn. Filtering is disabled while nothing is ticked, except in a chooser opened on a filter; `offer_apply` reads the boxes at every toggle (`tests/ui/test_filter_controls.py`). |
+| Both genre filters share one row of pictured controls | Cancel, Clear and Filter are built once by `stellody/ui/filter_controls.py` (Oliver's ruling, including Clear wearing the close picture without leaving), Cancel alone on the left (FR-D97); both add Taste profiles between Clear and Filter, the row stating the Tab order so it walks as drawn. Filtering is disabled while nothing is ticked, except in a chooser opened on a filter; `offer_apply` reads the boxes at every toggle (`tests/ui/test_filter_controls.py`). |
 | A three-state switch is told apart by its artwork, never by a fill | A fill says two things, never three; each state has its own picture, one composed with a cross at run time. |
 | Holding one track is decided where an ending is noticed, not in `next` | Repeat-one answers an ending; Next overrules it. So `advance_if_finished` replays while `next` always advances. |
 | The colours are kept apart from the stylesheet that applies them | What a colour is and where it applies change for different reasons: `stellody/ui/palette.py` holds values, `stellody/ui/theme.py` builds the sheet and re-exports both. |
