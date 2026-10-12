@@ -185,5 +185,8 @@ class Visualiser(QWidget):
         inner = self.rect().adjusted(
             STRIP_MARGIN_PX, STRIP_MARGIN_PX, -STRIP_MARGIN_PX, -STRIP_MARGIN_PX
         )
+        # Nothing a style draws may leave the room it is handed: a dot or a hub
+        # that reached past it painted below the floor, measured on 2026-10-12.
+        painter.setClipRect(inner)
         PAINTERS[self._style](painter, inner, self._shown, self._peaks, palette)
         painter.end()

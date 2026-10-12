@@ -96,8 +96,11 @@ def paint_rainbow(painter, inner, shown, peaks, palette) -> None:
             BAR_RADIUS_PX,
         )
         if peak > height:
-            top = inner.bottom() - drawn_height(inner, peak)
-            painter.drawEllipse(QRectF(left, top, width, width))
+            # The dot sits ON the peak line rather than hanging from it: hung,
+            # a quiet band's dot reached below the floor, reported by Oliver
+            # on 2026-10-12 and measured at 320 pixels under it.
+            top = inner.bottom() - drawn_height(inner, peak) - width
+            painter.drawEllipse(QRectF(left, max(inner.top(), top), width, width))
 
 
 def paint_sunburst(painter, inner, shown, peaks, palette) -> None:

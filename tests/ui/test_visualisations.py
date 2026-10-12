@@ -11,13 +11,14 @@ a screen.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
 from stellody.domain.spectrum import BAR_COUNT, FULL, SILENT_BANDS
 from stellody.ui.lift_menu import pop_up_above
+from stellody.ui.palette import palette_for
 from stellody.ui.settings_keys import SETTING_VISUALISATION
 from stellody.ui.spectrum_styles import PAINTERS
 from stellody.ui.theme import Mode, stylesheet
@@ -29,7 +30,7 @@ from stellody.ui.visualisations import (
     Visualisation,
     stored_visualisation,
 )
-from stellody.ui.visualiser import Visualiser
+from stellody.ui.visualiser import STRIP_MARGIN_PX, Visualiser
 
 # Wide enough that every band gets its own columns of pixels to be counted in.
 STRIP_WIDTH_PX = 600
@@ -114,6 +115,45 @@ class TestTheStyles:
                     continue
                 coloured = len(_colours(_drawn(application, mode, style, SHAPED)))
                 assert coloured > plain, f"{style} in {mode}"
+
+
+class TestTheRoom:
+    """No style paints outside the room inside the strip's margin.
+
+    Reported by Oliver on 2026-10-12: the rainbow's peak dots hung below the
+    floor on quiet bands, measured at 320 pixels under it; the sunburst's hub
+    did the same, at 32.
+    """
+
+    @pytest.mark.parametrize("style", VISUALISATIONS)
+    def test_nothing_is_drawn_in_the_margin(
+        self, application: QApplication, style: Visualisation
+    ) -> None:
+        ground = QColor(palette_for(Mode.DARK).surface).rgb()
+        quiet = tuple(0.0 for _ in range(BAR_COUNT))
+        low_peaks = tuple(0.05 for _ in range(BAR_COUNT))
+        for shown, peaks in ((quiet, low_peaks), (LOUD, LOUD)):
+            made = Visualiser(height_px=STRIP_HEIGHT_PX)
+            made.show_appearance(Mode.DARK)
+            made.show_style(style)
+            made.resize(STRIP_WIDTH_PX, made.height())
+            made._shown, made._peaks = shown, peaks
+            image = made.grab().toImage()
+            made.close()
+            edge = STRIP_MARGIN_PX
+            outside = [
+                (x, y)
+                for y in range(image.height())
+                for x in range(image.width())
+                if (
+                    y < edge
+                    or y >= image.height() - edge
+                    or x < edge
+                    or x >= image.width() - edge
+                )
+                and image.pixel(x, y) != ground
+            ]
+            assert outside == [], f"{style}: {len(outside)} pixels in the margin"
 
 
 class TestThePeaks:
