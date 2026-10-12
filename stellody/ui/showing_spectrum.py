@@ -11,7 +11,8 @@ it stops, so an idle window does no painting for a display of nothing. The
 measuring upstream is switched on once in `start_watching` and left on.
 
 Which STYLE it draws in is the listener's, chosen by name from the list the
-button beside the view controls lifts; it is remembered between sessions by
+button beside the view controls lifts (the same list sits under View); it is
+remembered between sessions by
 name as the sleeve size is. That is not the switch that was taken away:
 nothing is asked, the strip is always there and a choice only changes how it
 looks.
@@ -20,7 +21,11 @@ looks.
 from __future__ import annotations
 
 from stellody.ui.settings_keys import SETTING_VISUALISATION
-from stellody.ui.visualisations import Visualisation, stored_visualisation
+from stellody.ui.visualisations import (
+    Visualisation,
+    fill_styles,
+    stored_visualisation,
+)
 
 
 class ShowingSpectrum:
@@ -38,13 +43,15 @@ class ShowingSpectrum:
         self.follow_spectrum()
 
     def show_visualisation(self, style: Visualisation) -> None:
-        """Draw in this style, tick it in the list and remember the choice.
+        """Draw in this style, tick it in both lists and remember the choice.
 
-        The list is filled afresh with each choice, so the tick moves with it;
+        Both lists, the strip's and the View menu's, are filled afresh with
+        each choice, so the tick moves in both whichever was used;
         `lift_menu.fill_choices` is safe to call from inside a line's own press.
         """
         self._visualiser.show_style(style)
         self._bottom_tray.show_visualisations(style, self.show_visualisation)
+        fill_styles(self._style_menu, style, self.show_visualisation)
         self._settings.set_setting(SETTING_VISUALISATION, style.value)
 
     def follow_spectrum(self) -> None:

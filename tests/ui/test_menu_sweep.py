@@ -59,6 +59,19 @@ EXPECTED = {
     "Medium": (False, False, True),
     "Large": (False, False, True),
     "Extra large": (False, False, True),
+    # The visualiser's styles need no library and no view; one is always in
+    # force. Oliver's ruling, 2026-10-12.
+    "Visualiser style": (True, True, True),
+    "Bars": (True, True, True),
+    "Meter": (True, True, True),
+    "Wave": (True, True, True),
+    "Flame": (True, True, True),
+    "Mirror": (True, True, True),
+    "Rainbow": (True, True, True),
+    "Sunburst": (True, True, True),
+    "Dot matrix": (True, True, True),
+    "Scope": (True, True, True),
+    "Bubbles": (True, True, True),
     "Exclusive output": (True, True, True),
     # Where the music goes needs no library and no view. OUTPUTS.md FR-O17.
     "Output device": (True, True, True),

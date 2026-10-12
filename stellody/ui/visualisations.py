@@ -15,7 +15,12 @@ adding a style cannot turn somebody's choice into a different one.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import StrEnum
+
+from PySide6.QtWidgets import QMenu
+
+from stellody.ui.lift_menu import Line, fill_choices
 
 
 class Visualisation(StrEnum):
@@ -51,6 +56,25 @@ NAMES = {
     Visualisation.BUBBLES: "Bubbles",
 }
 VISUALISATION_TOOLTIP = "Choose how the visualiser draws"
+# The View menu's copy of the same list (Oliver's ruling, 2026-10-12).
+VISUALISATION_MENU = "&Visualiser style"
+
+
+def fill_styles(
+    menu: QMenu, chosen: Visualisation, choose: Callable[[Visualisation], None]
+) -> None:
+    """Put every style in this menu, ticking the one in force.
+
+    One function for both lists, the strip's and the View menu's, so the two
+    cannot come to offer different styles or tick different ones.
+    """
+    fill_choices(
+        menu,
+        tuple(
+            Line(NAMES[style], style is chosen, lambda style=style: choose(style))
+            for style in VISUALISATIONS
+        ),
+    )
 
 
 def stored_visualisation(stored: str) -> Visualisation:

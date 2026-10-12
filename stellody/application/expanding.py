@@ -83,10 +83,15 @@ class Expansion:
         asked rather than for this. FR-D32.
         """
         kept = self.recall.remembered()
+        # The memory is its own keeper, as it is for a run: each answer is
+        # written down the moment it arrives, since the whole file is written
+        # only as the application quits and a crash would lose it. FR-D48.
         try:
             return everything_offered(
                 asked(
-                    RememberingCatalogue(self.catalogue, kept, self.now).albums_of,
+                    RememberingCatalogue(
+                        self.catalogue, kept, self.now, self.recall
+                    ).albums_of,
                     cancelled,
                     self.pause,
                     identifier,

@@ -35,9 +35,10 @@ TITLES = ("&File", "&Edit", "&View", "&Sound", "&Control", "&Help")
 # because it toggles and nothing else: choosing an appearance would restyle
 # the window under the test and move the focus.
 HARMLESS = "Sort &Z to A"
-# Dark, Album art, List, then Sort: the size entry is dead over the list the
-# window opens on, so Down passes it by. Measured, not counted from the source.
-STEPS_TO_HARMLESS = 4
+# Dark, Album art, List, Visualiser style, then Sort: the size entry is dead
+# over the list the window opens on, so Down passes it by, while the style
+# submenu is live and takes a press. Measured, not counted from the source.
+STEPS_TO_HARMLESS = 5
 # How many titles along the View menu sits.
 TO_VIEW = TITLES.index("&View")
 # One more press than there are titles, so the walk is seen to LEAVE the bar

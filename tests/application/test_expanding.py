@@ -19,6 +19,7 @@ from stellody.application.discovery_ports import (
     SourceUnavailable,
 )
 from stellody.application.expanding import Expansion, never_stopped
+from stellody.application.remembering import ALBUMS, Recollection
 from stellody.domain.discovery import ReleaseGroup
 from stellody.domain.matching import ReleaseKind
 
@@ -171,6 +172,34 @@ def test_the_question_carries_whether_it_is_still_wanted() -> None:
     expansion.releases_of(WOLF)
     handed = catalogue.wanted[0]
     assert handed() is True, "still wanted while nobody has stopped anything"
+
+
+class NotingMemory:
+    """A memory recording every answer it is told to write down at once."""
+
+    def __init__(self) -> None:
+        self.noted: list[tuple[str, str]] = []
+
+    def remembered(self) -> Recollection:
+        return Recollection()
+
+    def note(self, kind: str, key: str, answer: object, when: float) -> None:
+        self.noted.append((kind, key))
+
+    def remember(self, kept: Recollection) -> None:
+        """Held for the quit; what matters here is what was noted."""
+
+
+def test_an_answer_is_written_down_the_moment_it_arrives() -> None:
+    """FR-D48: the whole file waits for the quit, so a crash keeps the answer."""
+    memory = NotingMemory()
+    expansion = Expansion(
+        catalogue=Releasing((ReleaseGroup(title="A Record"),)),
+        pause=Waits(),
+        recall=memory,
+    )
+    expansion.releases_of(WOLF)
+    assert memory.noted == [(ALBUMS, WOLF)]
 
 
 def test_a_run_that_left_mixes_out_leaves_them_out_on_expanding() -> None:

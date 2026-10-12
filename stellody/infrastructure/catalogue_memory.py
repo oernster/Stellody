@@ -12,10 +12,10 @@ back on top of the file, so a run whose process dies loses nothing. The file
 and the record hold the same answers while both exist, which is why writing
 the file clears the record.
 
-**Nothing here expires.** An answer stands until the file is removed. That is
-the point of it rather than an oversight: a memory with a lifetime answers
-differently before and after that lifetime, which is the difference between
-two runs this exists to end.
+**This file keeps every answer with the moment it was learned; age is judged
+above it.** Nothing here throws an answer away. `application/remembering.py`
+lets each stand for a month (`MEMORY_LIFE_DAYS`) and then asks again, since
+the catalogues themselves change over weeks while they do not over minutes.
 
 **A memory that cannot be read is an empty memory, never an error.** The same
 judgement the rest of this module family makes: an answer nobody can recall

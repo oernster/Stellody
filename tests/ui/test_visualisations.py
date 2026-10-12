@@ -25,6 +25,7 @@ from stellody.ui.theme import Mode, stylesheet
 from stellody.ui.visualisations import (
     DEFAULT_VISUALISATION,
     NAMES,
+    VISUALISATION_MENU,
     VISUALISATION_TOOLTIP,
     VISUALISATIONS,
     Visualisation,
@@ -182,6 +183,11 @@ def _lines(window) -> list[tuple[str, bool]]:
     return [(action.text(), action.isChecked()) for action in menu.actions()]
 
 
+def _view_lines(window) -> list[tuple[str, bool]]:
+    """What the View menu's copy of the list says, line by line."""
+    return [(a.text(), a.isChecked()) for a in window._style_menu.actions()]
+
+
 class TestTheList:
     def test_the_button_follows_the_view_controls_behind_a_rule(
         self, application
@@ -238,6 +244,34 @@ class TestTheList:
             assert [ticked for _text, ticked in _lines(made)].count(True) == 1
             assert dict(_lines(made))[NAMES[style]]
             assert store.get_setting(SETTING_VISUALISATION) == style.value
+        made.close()
+
+    def test_the_view_menu_offers_the_same_list(self, application) -> None:
+        """Oliver's ruling, 2026-10-12: the style list is on the menu bar too."""
+        made = build(RememberingStore(), RecordingPlayer())
+        view = made.menuBar().actions()[2].menu()
+        style_entry = next(a for a in view.actions() if a.text() == VISUALISATION_MENU)
+        assert _view_lines(made) == _lines(made)
+        assert style_entry.menu() is made._style_menu
+        made.close()
+
+    def test_choosing_from_either_list_ticks_both(self, application) -> None:
+        made = build(RememberingStore(), RecordingPlayer())
+        from_menu = next(
+            a
+            for a in made._style_menu.actions()
+            if a.text() == NAMES[Visualisation.FLAME]
+        )
+        from_menu.trigger()
+        assert made._visualiser.style is Visualisation.FLAME
+        assert dict(_lines(made))[NAMES[Visualisation.FLAME]]
+        assert _view_lines(made) == _lines(made)
+        strip = made._bottom_tray.visualisation_menu
+        next(
+            a for a in strip.actions() if a.text() == NAMES[Visualisation.SCOPE]
+        ).trigger()
+        assert dict(_view_lines(made))[NAMES[Visualisation.SCOPE]]
+        assert _view_lines(made) == _lines(made)
         made.close()
 
     def test_a_reopened_window_draws_in_the_style_it_was_left_in(

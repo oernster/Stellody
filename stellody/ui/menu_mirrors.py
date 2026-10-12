@@ -29,6 +29,7 @@ from stellody.domain.playback import OutputMode, RepeatMode
 from stellody.ui.covering import COVER_SIZES
 from stellody.ui.menus import menu_action
 from stellody.ui.showing_controls import SIZE_NAMES
+from stellody.ui.visualisations import VISUALISATION_MENU
 
 # What each repeat state is called where it is chosen by name rather than
 # stepped through with a switch.
@@ -73,7 +74,7 @@ class MenuMirrors:
         edit_menu.aboutToShow.connect(self._show_mirrored_state)
 
     def _mirror_view(self, view_menu: QMenu) -> None:
-        """The sleeves or the list, then how large a sleeve is drawn."""
+        """The sleeves or the list, how large a sleeve is drawn, then the style."""
         showing = QActionGroup(self)
         self._covers_action = _chosen(
             view_menu, self, showing, "Album &art", lambda: self.show_covers(True)
@@ -93,6 +94,9 @@ class MenuMirrors:
             )
             for size in COVER_SIZES
         }
+        # The strip's style list again; `ShowingSpectrum.show_visualisation`
+        # fills both from one function, so they cannot disagree.
+        self._style_menu = view_menu.addMenu(VISUALISATION_MENU)
         view_menu.aboutToShow.connect(self._show_mirrored_state)
 
     def _mirror_sound(self, sound_menu: QMenu) -> None:

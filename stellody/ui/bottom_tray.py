@@ -54,7 +54,7 @@ from PySide6.QtWidgets import QPushButton, QWidget
 from stellody.domain.playback import RepeatMode
 from stellody.shared import resources
 from stellody.ui.covering import CoverSize
-from stellody.ui.lift_menu import LiftMenu, Line, fill_choices, pop_up_above
+from stellody.ui.lift_menu import LiftMenu, pop_up_above
 from stellody.ui.queue_switches import QueueSwitches
 from stellody.ui.showing_controls import ShowingControls
 from stellody.ui.sound_controls import SoundControls
@@ -68,10 +68,9 @@ from stellody.ui.tray_metrics import (
 )
 from stellody.ui.tray_parts import centred_row, group, icon_button, separator
 from stellody.ui.visualisations import (
-    NAMES,
     VISUALISATION_TOOLTIP,
-    VISUALISATIONS,
     Visualisation,
+    fill_styles,
 )
 from stellody.ui.visualiser import Visualiser
 
@@ -275,13 +274,7 @@ class BottomTray(QWidget):
         self, chosen: Visualisation, choose: Callable[[Visualisation], None]
     ) -> None:
         """Put every style in the list the visualiser button lifts, ticking one."""
-        fill_choices(
-            self.visualisation_menu,
-            tuple(
-                Line(NAMES[style], style is chosen, lambda style=style: choose(style))
-                for style in VISUALISATIONS
-            ),
-        )
+        fill_styles(self.visualisation_menu, chosen, choose)
 
     def set_percent(self, percent: int) -> None:
         """Remember where the volume is, so the slider opens showing it."""

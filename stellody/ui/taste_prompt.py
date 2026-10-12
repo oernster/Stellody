@@ -21,7 +21,10 @@ from stellody.domain.taste import usable_name
 from stellody.ui.dialogs import FirstStopDialog, title_label
 
 TITLE = "Save as a taste profile?"
-ASK = "Save these genres as a taste profile, to tick them again with one choice?"
+ASK = (
+    "Save this selection as a taste profile: the genres below, the Include "
+    "boxes and the years. One choice then puts it all back."
+)
 NAME_HINT = "A name for this profile"
 SAVE_LABEL = "Save"
 NOT_NOW_LABEL = "Not now"
