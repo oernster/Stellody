@@ -8,8 +8,9 @@ today. No version number of its own: a document version beside a product
 version is two numbers a reader has to tell apart, only one of them the
 product's.
 
-It is built. Every requirement below names the test that holds it; FR-B23 and
-NFR-B01 are also checked by hand in a packaged build.
+It is built. Every requirement below names what verifies it. FR-B13 and FR-B23
+are also checked by hand in a packaged build; NFR-B01 is checked only by a
+timed run on the reference machine.
 
 ## 1. Introduction
 
@@ -69,9 +70,9 @@ is not there.
 | Data folder | Stellody's own per-user directory (`paths.data_location()`). |
 | Backup | One zip written by FR-B03, holding the backed-up set plus a manifest. |
 | Backed-up set | The database plus the JSON files and journals listed in DATA-B01. Nothing else. |
-| Manifest | `manifest.json` inside a backup: the backup format number, the Stellody version that wrote it, plus a schema number and a checksum for every file in the set. |
+| Manifest | `manifest.json` inside a backup: the backup format number, the Stellody version that wrote it, the moment it was written, plus a schema number and a checksum for every file in the set. |
 | Backup format | The layout of the zip and its manifest, numbered. Distinct from any file's schema. |
-| Schema number | A whole number naming the shape of one stored file. Each file has exactly one owner that declares the newest number it writes and the oldest it can still read. |
+| Schema number | A whole number naming the shape of one stored file. Each file has exactly one owner, whose upgrade steps fix the newest number it writes and the oldest it can still read. |
 | Owner | The infrastructure module that reads and writes a file: `store.py` for the database, `catalogue_memory.py`, `discovery_file.py` and `shop_file.py` for the JSON files. |
 | Safety backup | The backup FR-B20 writes automatically before a restore replaces anything. |
 | Remembered folder | The folder the last backup was written to, kept in the settings table. |
@@ -89,10 +90,13 @@ is not there.
 
 ### 2.1 Product perspective
 
-Two File menu commands, an application service for each, one infrastructure
-module that writes and reads backups plus a schema number on every file in the
-set. The database gains `PRAGMA user_version`; each JSON owner gains a schema
-constant. No outward connection.
+Two File menu commands over one application service (`Backups`, in
+`application/backing_up.py`); one infrastructure module that writes and reads
+backups (`backup_file.py`) plus one that completes a staged restore at the next
+start (`staged_restore.py`); a schema number on every file in the set. The
+database carries its number in `PRAGMA user_version`, its steps listed in
+`database_schema.py`; each JSON owner lists its upgrade steps, from which its
+range is derived (FR-B17). No outward connection.
 
 ### 2.2 User classes
 
@@ -110,10 +114,11 @@ Downloads folder is the one the operating system names (Qt's
 - The database runs in WAL mode (`store.py`, `JOURNAL_MODE`). A file copy
   taken while Stellody runs can miss what the WAL holds, so the database is
   copied through SQLite's online backup, never as a file.
-- The catalogue memory and the genre cache are written whole only when
-  Stellody quits; between those writes their answers live in the `.record`
-  journals beside them (`catalogue_memory.py` docstring). A backup without the
-  journals silently loses that session's answers.
+- The catalogue memory is written whole only when Stellody quits
+  (`catalogue_memory.py` docstring); the genre cache is written whole when a
+  discovery run finishes asking about candidates (`candidate_genres.py`).
+  Between those writes their answers live in the `.record` journals beside
+  them. A backup without the journals silently loses those answers.
 - Windows will not replace a file another handle holds open. A restore cannot
   swap the live database underneath the running store.
 - A backup holds personal data unencrypted, exactly as the data folder does.
@@ -250,8 +255,8 @@ Appendix B lists them.
 **FR-B13 Playback carries on while a backup is written**
 - Requirement: While a backup is being written, Stellody shall keep playing
   without an audible gap and the window shall keep answering input.
-- Rationale: The judder work of 2026-10 made dropouts a measured defect, not a
-  matter of taste. The writing happens off the window's thread.
+- Rationale: A dropout is a defect, not a matter of taste. The writing happens
+  off the window's thread.
 - Acceptance: Given a track playing, when a backup is written, then no dropout
   is heard and the window answers a click within the same frame budget as
   without one.
@@ -261,7 +266,7 @@ Appendix B lists them.
 **FR-B35 Work in progress is shown**
 - Requirement: While a backup is being written or a chosen backup is being
   verified, Stellody shall show that it is working, naming which of the two.
-- Rationale: Oliver's point of 2026-10-12: a spinning disk can make either take
+- Rationale: Oliver's ruling, 2026-10-12: a spinning disk can make either take
   far longer than the reference machine does, so the listener must never be
   left wondering whether anything is happening.
 - Acceptance: Given a backup service held part way by a test double, when the
@@ -282,8 +287,9 @@ Appendix B lists them.
 
 **FR-B14 Every backup carries a manifest**
 - Requirement: The backup service shall write `manifest.json` into every zip,
-  naming the backup format number, the Stellody version that wrote it, plus
-  each carried file's name, schema number and SHA-256 checksum.
+  naming the backup format number, the Stellody version that wrote it, the
+  moment it was written, plus each carried file's name, schema number and
+  SHA-256 checksum.
 - Rationale: Oliver's ruling: the backup's data is versioned by schema.
 - Acceptance: Given a library at database schema 1, when a backup is written,
   then the manifest lists `library.sqlite3` at schema 1 with the checksum of
@@ -293,24 +299,23 @@ Appendix B lists them.
 **FR-B15 The database knows its schema**
 - Requirement: The store shall keep the database's schema number in
   `PRAGMA user_version`.
-- Rationale: Measured on 2026-10-12: the database records no shape at all, so
-  nothing can compare one copy with another.
+- Rationale: A database that records no shape cannot be compared with another
+  copy of itself.
 - Acceptance: Given a database just opened by the store, when `user_version` is
   read, then it equals the store's current schema number.
 - Verified by: `tests/infrastructure/test_schema_numbers.py::test_the_database_carries_its_number`
 
-**FR-B16 An unnumbered database is brought up to schema 1**
+**FR-B16 An unnumbered database is brought up to the current schema**
 - Requirement: When the store opens a database whose `user_version` is 0, it
   shall apply every numbered step up to the current schema, then record the
   number.
-- Rationale: The unwanted sibling of FR-B15: every existing library is
-  unnumbered. Today's `folders.derivation` column (`folder_derivation.py`) is
-  the first numbered step. Every step still runs on every open, as the column
-  check always did, so a file whose number and shape disagree is repaired
-  rather than refused.
-- Acceptance: Given a database written before this change, holding no
-  `derivation` column, when the store opens it, then the column exists and
-  `user_version` reads the current schema.
+- Rationale: The unwanted sibling of FR-B15: a library written before
+  numbering reads 0. The `folders.derivation` column (`folder_derivation.py`)
+  is step 1 (`database_schema.py`, `STEPS`). Every step runs on every open, so
+  a file whose number and shape disagree is repaired rather than refused.
+- Acceptance: Given an unnumbered database holding no `derivation` column,
+  when the store opens it, then the column exists and `user_version` reads the
+  current schema.
 - Verified by: `tests/infrastructure/test_schema_numbers.py::test_an_unnumbered_library_is_brought_up`
 
 **FR-B17 Each JSON owner declares its schema**
@@ -319,9 +324,12 @@ Appendix B lists them.
   derived from those steps, starting at the first schema.
 - Rationale: A range worked out from the steps cannot claim a shape no step
   reaches, nor fall out of step with a journal beside its file.
-- Acceptance: Given the four owners, when the set's ranges are read, then each
-  JSON file's range runs from the first schema to one past it per step.
-- Verified by: `tests/infrastructure/test_schema_numbers.py::test_every_owner_declares_its_range`
+- Acceptance: Given an owner's list of steps, when its file's range is read,
+  then it runs from the first schema to one past it per step; given the set,
+  then every file of DATA-B01 has a range.
+- Verified by: `tests/domain/test_backups.py::TestUpgrading::test_a_range_starts_at_the_first_schema_whatever_was_added`,
+  `tests/domain/test_backups.py::TestUpgrading::test_an_owner_with_no_steps_reads_only_its_first_schema`,
+  `tests/infrastructure/test_schema_numbers.py::test_every_owner_declares_its_range`
 
 **FR-B18 A database shape change cannot ship without a schema bump**
 - Requirement: The structural suite shall fail when the database's creating
@@ -452,7 +460,7 @@ Appendix B lists them.
   oldest readable number but below its newest, the restore service shall
   accept it; a JSON file shall be taken through every upgrade step since as it
   is staged, while the database is brought up by the store as it opens.
-- Rationale: Oliver's ruling of 2026-10-12: old backups stay restorable.
+- Rationale: Old backups stay restorable (Oliver's ruling, 2026-10-12).
 - Acceptance: Given a backup holding a database at schema 0, when it is
   restored, then the library opens at the current schema with its rows intact.
   Given a shop file at schema 1 and an owner that has added one step since,
@@ -474,11 +482,11 @@ Appendix B lists them.
 - Verified by: `tests/domain/test_backups.py::TestJudging::test_a_schema_too_old_is_refused`
 
 **FR-B37 No owner stops reading a shape it once wrote**
-- Requirement: The structural suite shall fail when any file of DATA-B01 can no
-  longer be read at the schema it was first numbered at: zero for the
-  database, the first schema for each JSON file.
-- Rationale: Oliver's ruling of 2026-10-12: a backup made by an older version
-  must restore. A change of shape adds a step; it never removes one.
+- Requirement: The suite shall fail when any file of DATA-B01 can no longer be
+  read at the schema it was first numbered at: zero for the database, the
+  first schema for each JSON file.
+- Rationale: A backup made by an older version must restore (Oliver's ruling,
+  2026-10-12). A change of shape adds a step; it never removes one.
   Proved on 2026-10-12 by raising the database's oldest readable schema to 1:
   exit 1 with it, exit 0 once removed.
 - Acceptance: Given the database's oldest readable schema raised from 0 to 1,
@@ -546,10 +554,14 @@ Appendix B lists them.
   real library, padded to the bound.
 
 **NFR-B02 Coverage**
-- Requirement: The backup and restore services, the backup file module and the
-  schema-number code shall be held at 100 percent branch coverage by the gated
-  suite.
-- Verified by: the coverage gate.
+- Requirement: The backup and restore service (`application/backing_up.py`)
+  and the backup rules (`domain/backups.py`: naming, schema ranges, judging
+  and upgrading) shall be held at 100 percent branch coverage by the gated
+  suite. The infrastructure modules (`backup_file.py`, `staged_restore.py`,
+  `database_schema.py`) lie outside the layers the gate measures; their
+  behaviour is held by the tests each requirement names.
+- Verified by: the coverage gate (`pyproject.toml`, `--cov-fail-under=100`
+  over `stellody.domain` and `stellody.application`).
 
 ### 3.7 Data
 

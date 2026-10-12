@@ -148,12 +148,17 @@ ruling).
 **FR-D03 Choosing what to look for**
 - Requirement: When the discovery button is pressed, the main window shall open
   the discovery dialog showing the same genre catalogue the filter dialog shows.
+  As the application opens, the main window shall build that dialog once,
+  unseen, then discard it.
 - Rationale: Two grids built from one catalogue cannot come to disagree; a second
-  vocabulary invented here would.
+  vocabulary invented here would. The first dialog of a session is the slow one
+  to build, slow enough to starve the sound device, so it is paid for while
+  nothing is playing.
 - Acceptance: Given the catalogue holds a genre, when the discovery dialog opens,
   then that genre appears in its grid with the same main and the same spelling as
-  in the filter dialog.
-- Verified by: `tests/ui/test_discovery_dialog.py::test_grid_matches_the_catalogue`
+  in the filter dialog. Given the dialog built ahead, then nothing was shown and
+  no dialog is left behind.
+- Verified by: `tests/ui/test_discovery_dialog.py::test_grid_matches_the_catalogue`, `tests/ui/test_discovery_warm.py::test_building_ahead_shows_nothing_and_leaves_nothing`
 
 **FR-D04 Nothing ticked, nothing to do**
 - Requirement: While no genre is ticked, the discovery dialog shall keep its
@@ -581,8 +586,8 @@ ruling).
   move no control in the tray.
 - Rationale: The names are the half somebody can act on. The button carries its
   own count because the shared status bar soon replaces the sentence. It is a
-  picture in the tray rather than text in the status bar because text there was
-  not read as a button at all (Oliver's ruling).
+  picture in the tray rather than text in the status bar because text there does
+  not read as a button (Oliver's ruling).
 - Acceptance: Given the application started, then the button is present,
   disabled and red ringed; given a run that could not answer for nine artists,
   when it ends, then the button is enabled badged `9` with the tooltip `9
@@ -651,8 +656,8 @@ ruling).
   completed, found nothing, could not be reached or failed. Picture and words are
   set together in one place; the strings live in `stellody/ui/tray_metrics.py`,
   from which the guide reads them.
-- Rationale: A confirmation question was a thing a press had to get past, so the
-  control that said stop did not stop; a button that plainly says what it will do
+- Rationale: A confirmation question is a thing a press has to get past, so a
+  control saying stop would not stop; a button that plainly says what it will do
   needs no check. The run is abandoned rather than waited for, so a stop is
   instant (Oliver's ruling).
 - Acceptance: Given a run in progress, when the discovery button is pressed, then
@@ -816,10 +821,10 @@ ruling).
   file shall be written with that artist named as unanswered rather than
   withheld. The gaps written shall be ordered by the artist's name exactly as
   written, which is not the library's own ordering. Where two holders of the
-  memory save over one another, the file shall keep every answer either of them
-  learned, taking the later answer to any question both hold; one lock covers a
-  save and any note that would land between its read and its clearing of the
-  record.
+  memory save over one another (a stopped run still winding down beside a new
+  one; a run beside an opened candidate), the memory shall keep every answer
+  either of them learned, taking the later answer to any question both hold; one
+  lock covers every note, every save and the writing of the file.
 - Rationale: Without memory the answer is a property of how a service feels that
   day rather than of the library. Thirty days is long enough that a run usually
   asks nothing, short enough that this year's record is found this year
@@ -835,25 +840,38 @@ ruling).
   that artist named among the failures, while the run says which artists it could
   not answer about; given an answer kept more than `MEMORY_LIFE_DAYS` days ago, then it is
   asked about again; given two holders of the memory that each learned something
-  the other did not, when both have saved, then the file holds both answers.
+  the other did not, when both have saved, then the memory holds both answers.
 - Verified by: `tests/application/test_remembering.py::TestTwoRunsOverOneLibrary::test_the_second_run_asks_the_catalogues_nothing`, `tests/application/test_remembering.py::TestAskingOnlyWhatIsUnknown`, `tests/application/test_remembering.py::TestHowLongAnAnswerStands`, `tests/application/test_remembering.py::TestCarryingAnAnswerOver`, `tests/infrastructure/test_discovery_file.py::test_an_answer_with_a_hole_in_it_is_written_with_the_hole_named`, `tests/infrastructure/test_discovery_file.py::test_an_artist_already_answered_for_is_not_a_hole`, `tests/infrastructure/test_discovery_file.py::test_the_artists_are_written_in_one_order_however_they_arrived`, `tests/ui/test_discovery_wiring.py::test_a_run_with_a_hole_in_it_still_opens_its_answer`, `tests/infrastructure/test_catalogue_memory.py::test_what_is_kept_comes_back_exactly`, `tests/ui/test_a_carried_answer_is_not_a_shortfall.py::test_an_artist_carried_over_is_not_called_unanswered`, `tests/application/test_merging_recollections.py`, `tests/infrastructure/test_overlapping_memory.py`, `tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`
 
 **FR-D48 An answer is written down the moment it arrives**
 - Requirement: Each answer a run's catalogues give and each answer about what a
   candidate plays shall be appended to a running record as it arrives and forced
-  to the disk. An answer fetched when a candidate is opened on the results screen
-  is written straight into the memory file once that lookup ends. Both memories
-  shall be read as their file plus that record; each record shall be dropped only
-  once its own file has been written with what it held.
+  to the disk. Both memories shall be read as their file plus that record; each
+  record shall be dropped only once its own file has been written with what it
+  held. The candidate genre cache shall be written once a run's second half has
+  asked about every candidate. The catalogue memory shall be read once a
+  session (on a thread of its own as the application opens) then held: a run's
+  save and an answer fetched when a candidate is opened on the results screen
+  go into what is held and write nothing, while the file is written whole once,
+  as the application quits, where something new was learned. Each caller shall
+  be handed a copy of what is held.
 - Rationale: A crash or a closed window must not take a run's whole cost with it.
   An append cannot damage what is already there; clearing the record beside a
-  failed write would discard the very answers it protects.
+  failed write would discard the very answers it protects. Reading or writing
+  the catalogue memory whole holds the interpreter long enough to starve the
+  sound device, so it is done while nothing is playing; a process that dies
+  before quitting loses nothing, since the record is read on top of the file
+  next time.
 - Acceptance: Given answers noted by a run that never finished, when a later run
   starts, then it knows every one of them and asks about none of them; given a
   record whose last line is half written, then every line before it is still
   known; given a memory whose file cannot be written, then its record survives;
-  given a memory whose file is written, then its record is gone.
-- Verified by: `tests/infrastructure/test_a_dead_run_keeps_what_it_learned.py`, `tests/infrastructure/test_journal.py`, `tests/application/test_remembering.py::TestAnAnswerIsKeptTheMomentItArrives`, `tests/application/test_discovery_narrowing.py::test_each_candidate_is_written_down_as_it_is_answered`
+  given a memory whose file is written, then its record is gone. Given the
+  catalogue memory asked for many times in a session, then its file is read
+  once; given a run ending, then nothing is written; given the application
+  quitting, then the file is written once; where nothing new was learned, it
+  is not written at all.
+- Verified by: `tests/infrastructure/test_a_dead_run_keeps_what_it_learned.py`, `tests/infrastructure/test_journal.py`, `tests/infrastructure/test_held_memory.py`, `tests/application/test_remembering.py::TestAnAnswerIsKeptTheMomentItArrives`, `tests/application/test_discovery_narrowing.py::test_each_candidate_is_written_down_as_it_is_answered`
 
 **FR-D47 A failure is said in words somebody can act on**
 - Requirement: Where a lookup fails, the results dialog shall say what happened
@@ -1011,33 +1029,46 @@ ruling).
 **FR-D36 The estimate is taken from the run itself**
 - Requirement: The window shall derive the estimate from the time the run has
   actually taken for each unit of work finished, rather than from the request gap
-  NFR-PERF-001 states.
+  NFR-PERF-001 states. While artists are looked up, only a source artist the
+  catalogue memory cannot answer in full shall count as a unit, both among
+  those finished and among those still to come; which artists those are is read
+  off the memory the run answers from, before each artist is looked up
+  (`application/foreseeing.py`). A name the memory knows reaches several
+  artists counts as asked.
 - Rationale: Refusals and passes (FR-D21) make the real cost differ from the gap,
-  so an estimate built on the gap would be confidently wrong.
+  so an estimate built on the gap would be confidently wrong. An artist answered
+  from memory takes no measurable time, so counting it would spread the time
+  spent over work that cost nothing and make the wait look short.
 - Acceptance: Given a run whose finished units took twice the gap apiece, when the
   estimate is computed, then it follows the observed pace rather than the
-  configured one.
-- Verified by: `tests/domain/test_estimating.py::TestThePace::test_the_pace_comes_from_what_happened`
+  configured one. Given fifty remembered artists finished in a second, then two
+  asked artists at thirty seconds each with forty-eight more to ask, then the
+  forty-eight are priced at the pace of the two asked, far more than a minute;
+  given ninety remembered artists and one asked finished, then no time is named
+  (FR-D38).
+- Verified by: `tests/domain/test_estimating.py::TestThePace::test_the_pace_comes_from_what_happened`, `tests/domain/test_estimating.py::TestOnlyAskedArtistsAreTimed`, `tests/application/test_foreseeing.py`
 
 **FR-D37 The second stage is estimated before it begins**
 - Requirement: While a run is in its first stage, the window shall include in the
   estimate a projection of the second stage, sized from the candidate artists seen
-  so far against the source artists finished so far.
+  so far against the source artists finished so far, remembered or asked.
 - Rationale: The second stage is the larger half; leaving it out would understate
   the wait.
 - Acceptance: Given a run that has finished two of ten source artists and turned
   up twelve distinct candidates, when the estimate is computed, then it covers a
   projected sixty candidates alongside the eight source artists left.
-- Verified by: `tests/domain/test_estimating.py::TestProjectingTheSecondStage::test_the_second_stage_is_projected_from_the_first`
+- Verified by: `tests/domain/test_estimating.py::TestProjectingTheSecondStage::test_the_second_stage_is_projected_from_the_first`, `tests/domain/test_estimating.py::TestOnlyAskedArtistsAreTimed::test_the_candidates_are_still_projected_from_every_artist`
 
 **FR-D38 Too little has happened to estimate**
 - Requirement: If fewer than `MINIMUM_SAMPLES` units of the current stage have
-  finished, then the window shall say the run is under way without naming a time.
+  finished, counting only the artists asked about while artists are looked up
+  (FR-D36), then the window shall say the run is under way without naming a
+  time.
 - Rationale: A pace measured over one sample swings by a factor; an honest silence
   is trusted more.
 - Acceptance: Given a run that has finished one source artist, when the status bar
   is read, then it says the run is under way and names no time.
-- Verified by: `tests/domain/test_estimating.py::TestThePace::test_one_sample_is_not_enough_to_estimate`, `tests/ui/test_run_estimate.py::TestWhenItWillNotSay::test_one_sample_is_not_enough_to_estimate`
+- Verified by: `tests/domain/test_estimating.py::TestThePace::test_one_sample_is_not_enough_to_estimate`, `tests/ui/test_run_estimate.py::TestWhenItWillNotSay::test_one_sample_is_not_enough_to_estimate`, `tests/domain/test_estimating.py::TestOnlyAskedArtistsAreTimed::test_too_few_asked_to_say_is_silence_however_many_finished`
 
 #### Release years
 
@@ -1292,12 +1323,13 @@ rare.
   genre value stored before this catalogue shall be read as written, with the
   style's new main added and nothing rewritten. Every dialog that offers the
   catalogue shall show a tick box for every genre in it.
-- Rationale: Many similar artists stated only names the catalogue did not know.
-  Where the lines between the four mains fall is Oliver's ruling, not a
-  definition: Electronic is ambient, bass and breaks; House and Techno & Electro
-  are the club families; Dance is chart and festival dance music. Rock
-  subgenres, R&B, soul, folk, country, blues, reggae, production music, new age,
-  poetry and spoken word were not ruled and stay unrecognised (Oliver's ruling).
+- Rationale: Many similar artists state only names the catalogue would not
+  otherwise know. Where the lines between the four mains fall is Oliver's
+  ruling, not a definition: Electronic is ambient, bass and breaks; House and
+  Techno & Electro are the club families; Dance is chart and festival dance
+  music. A name with no ruling stays unrecognised, such as `progressive rock`,
+  `neo soul`, `indie folk`, `roots reggae`, `production music`, `new age`,
+  `poetry` and `spoken word` (Oliver's ruling).
 - Acceptance: Given MusicBrainz stating `dubstep`, then the candidate reads as
   Electronic and Dubstep; given `goa trance`, then Techno & Electro and Trance;
   given `microhouse`, then House alone; given `trip hop`, then Dance and
@@ -1345,7 +1377,7 @@ rare.
   open and open them again next time. While a category is folded, a count of its
   ticked styles shall show beside the main's name. A dialog shall give back the
   room a category took once it is folded again.
-- Rationale: With every box showing, the grid made its dialogs too wide; the
+- Rationale: With every box showing, the grid makes its dialogs too wide; the
   count keeps a folded-away tick from being a choice nobody can see (Oliver's
   ruling).
 - Acceptance: Given a dialog never opened before, then every category is folded
@@ -1365,7 +1397,7 @@ rare.
   (Live, Remix, Demo). A release group stating Compilation without DJ-mix shall
   stay excluded. The rule is `ReleaseGroup.is_offered` in `domain/discovery.py`.
 - Rationale: MusicBrainz files a mix as Compilation plus DJ-mix, so excluding
-  Compilation excluded the mix. A DJ's mix is worth offering; a hits package is
+  every Compilation would exclude the mix. A DJ's mix is worth offering; a hits package is
   not (Oliver's ruling).
 - Acceptance: Given an artist whose discography holds "Involver" as Compilation
   plus DJ-mix, "Fundacion" as DJ-mix and "Live at Fabric" as DJ-mix plus Live,
@@ -1505,10 +1537,9 @@ rare.
 
 A taste profile is a named selection, saved so a selection made once can be
 put back with one choice. It holds everything the dialog asks: the genres
-ticked, the Include boxes (FR-D85) and the years (FR-D58). Amended on
-2026-10-12 by Oliver's ruling; it first held the genres alone. It is a
-remembered selection, not a model of anybody's taste, so it sits inside the
-scope above.
+ticked, the Include boxes (FR-D85) and the years (FR-D58) (Oliver's ruling,
+2026-10-12). It is a remembered selection, not a model of anybody's taste, so
+it sits inside the scope above.
 
 **FR-D87 A taste profiles button beside Select all**
 - Requirement: The Discover dialog shall carry a button labelled "Taste
@@ -1568,7 +1599,7 @@ scope above.
   dialog shall ask whether to replace that profile, naming it; No shall return to
   the name field with nothing saved.
 - Acceptance: Given profile "Jazz", when "jazz" is saved and replacing is
-  confirmed, then one profile named "jazz" holds the new genres; when replacing
+  confirmed, then one profile named "jazz" holds the new selection; when replacing
   is refused, then "Jazz" is unchanged.
 - Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
 

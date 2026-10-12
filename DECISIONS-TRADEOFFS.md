@@ -5,8 +5,8 @@ for it and why. Each entry is the decision as the product makes it today.
 The detail behind each one, with the tests that hold it, lives in
 [ARCHITECTURE.md](ARCHITECTURE.md) and the specifications
 ([DISCOVERY.md](DISCOVERY.md), [SHOPS.md](SHOPS.md), [FORMATS.md](FORMATS.md),
-[OUTPUTS.md](OUTPUTS.md)); [PLAN.md](PLAN.md) holds what is deliberately not
-planned.
+[OUTPUTS.md](OUTPUTS.md), [BACKUP.md](BACKUP.md)); [PLAN.md](PLAN.md) holds
+what is deliberately not planned.
 
 ## The product as a whole
 
@@ -16,7 +16,8 @@ Everything Stellody knows is kept on the computer it runs on, in SQLite plus
 a few JSON files, for the one person whose library it is. Chosen over a server
 database, an account or anything synchronised. There is nothing to install
 beside it or sign in to; it works with the network off. The cost: the library
-notes belong to that one machine and follow nobody elsewhere.
+notes belong to that one machine; they reach another only in a backup the
+listener carries there.
 
 ### Python and PySide6
 
@@ -215,6 +216,49 @@ carry no catalogue identifiers, so an automatic match could attach the wrong
 one unknowingly; anyone who never opens the chooser sends nothing. Missing art
 stays missing until the listener acts.
 
+## Backups
+
+### A backup carries the listener's notes, not what can be rebuilt
+
+A backup holds the database, the discovery answer, the catalogue memory, the
+genre cache and the shop list, together with the running journals beside the
+two memories; the artwork and waveform caches and the logs stay behind. The
+database is copied through SQLite's own backup rather than as a file, so a
+write not yet out of its log is carried. Chosen over zipping the whole data
+folder: a backup is small and quick, holding nothing that measuring again
+cannot bring back. After a restore the covers and waveforms are rebuilt as the
+library is browsed.
+
+### Judged by each file's shape, never by the release that wrote it
+
+Every file a backup carries is listed with the schema number of its shape; a
+restore asks each file's owner whether it can read that shape. Chosen over
+comparing the version of Stellody that wrote the backup: two releases can share
+a shape while one release can change several, so a version says little about
+whether a file can be read. A file newer than this Stellody understands refuses
+the whole backup, naming the file. The cost is a number to bump with every
+change of shape; a structural test holds that for the database, while the JSON
+files rely on care.
+
+### Old backups always restore
+
+No owner ever stops reading a shape it once wrote: a change of shape adds an
+upgrade step and never removes one; an older file is brought up to date as it
+is restored. Every backup format stays readable in the same way. Chosen over
+retiring old shapes after a while, so a backup kept for years still restores.
+Every upgrade step is kept for good; the code reading old shapes only grows.
+
+### A restore completes at the next start
+
+A confirmed restore first writes a safety backup of the current library, then
+stages the chosen backup inside Stellody's data folder and starts Stellody
+again; the staged files are put in place before the library opens. If the new
+start never happens, the next start by hand completes it. Chosen over swapping
+files under the running copy, which Windows will not allow for an open
+database and which would leave what is held in memory disagreeing with the
+disk. A restore that fails part way puts the previous files back. The cost is
+a restart plus a safety backup written every time.
+
 ## Playback and sound
 
 ### Its own audio pipeline
@@ -279,7 +323,9 @@ before any lift. The always-on spectrum is measured from what was written to
 the device in the equalizer's own bands and idles when nothing plays. Chosen
 over a large scientific library for one function and over a display in the
 audio path: the package stays small and the visualiser can never delay or
-alter a sample. The filters are Stellody's own to maintain.
+alter a sample. The filters are Stellody's own to maintain. The visualiser's
+styles all draw that one measurement, so choosing a style changes how the
+music looks and never what is measured.
 
 ### Music never moves to the speakers without a press
 
@@ -326,6 +372,16 @@ then waits for a later pass. Every answer is kept for a month and written to
 disk as it arrives. Runs finish instead of being refused; the same library
 gives the same answer; later runs ask little; a crash loses at most one answer.
 A large run takes many minutes; a new release can take a month to appear.
+
+### The catalogue memory is read once and written at quit
+
+What the catalogues said is read the first time a session needs it, held in
+memory and written whole only as Stellody quits; each answer is also noted on
+its own in a running journal the moment it arrives. Chosen over reading and
+rewriting the file around every run: reading or writing a file of that size
+held the interpreter long enough to starve the sound device. A process that
+dies loses nothing, since the journal is read on top of the file next time.
+The cost is a journal beside each memory, which a backup has to carry too.
 
 ### A partial answer is still an answer
 
@@ -408,6 +464,15 @@ years, choices) as well as what was found. Chosen over dated files needing
 tidying: the answer on screen always matches its question and expanding later
 obeys the same choices. An earlier answer is replaced once a new run
 completes, except for artists that run could not reach.
+
+### A taste profile is the whole selection
+
+A taste profile names everything the Discover dialog asks: the genres ticked,
+the three Include boxes and the years. Choosing one puts all of it back; Find
+offers to save a selection no profile already holds. Chosen over keeping the
+genres alone, which would leave the rest to be set by hand every time. Two
+profiles with the same genres and different years are different profiles, so
+the list can grow longer than the genre choices alone would make it.
 
 ### The answer is read a page at a time
 
@@ -509,6 +574,16 @@ bar; every control is on the keyboard ring; the focus ring is drawn on
 controls, never on the panes that hold them. The whole application works
 without a mouse; every new control needs its menu entry and its place in the
 ring.
+
+### A row holding two buttons is a frame, not a menu
+
+The taste profiles lift as a frame of real buttons, each row a delete button
+then the profile's name, rather than as a menu. A menu row holding two buttons
+lit under the arrows while focus never entered either button, so neither could
+be reached from the keyboard. The frame is walked explicitly: the arrows move
+along a column or across a row while Tab walks every button. Every button is
+reachable without a mouse; the frame's keyboard handling is Stellody's own to
+maintain rather than Qt's.
 
 ### Reading dialogs read themselves; the guide uses real controls
 

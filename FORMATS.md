@@ -102,8 +102,8 @@ inside PyAV supplies every decoder named here.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-F01 | MEASURED. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
-| A-F02 | MEASURED. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging. It states no bits per sample for WMA or raw AAC; a WavPack fixture written as `s16p` reports 16. | | Answered |
+| A-F01 | Measured on 2026-10-12. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
+| A-F02 | Measured on 2026-10-12. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging. It states no bits per sample for WMA or raw AAC; a WavPack fixture written as `s16p` reports 16. | | Answered |
 | A-F03 | A listener with WMA files wants them in the library rather than reported (Oliver's ruling, made without certainty; section 5). | | Answered |
 
 ## 3. Requirements
@@ -258,9 +258,9 @@ section 4 lists them.
 
 ### 3.3 Data
 
-No file or store of its own. Two frozen sets in `walker.py` hold the rule:
-`AUDIO_SUFFIXES` holds the three suffixes of FR-F01 and `UNPLAYABLE_SUFFIXES`
-is the list of FR-F08.
+No file or store of its own. Two frozen sets in `infrastructure/walker.py`
+hold the rule: `AUDIO_SUFFIXES` includes the three suffixes of FR-F01;
+`UNPLAYABLE_SUFFIXES` is the list of FR-F08.
 
 ## 4. Prioritisation
 

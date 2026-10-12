@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stellody library: how it reads the collection you own</title>
-  <meta name="description" content="How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings and album art.">
+  <meta name="description" content="How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings, album art and backups.">
   <link rel="canonical" href="https://stellody.co.uk/library.html">
   <meta name="theme-color" content="#0d1220">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Stellody">
   <meta property="og:url" content="https://stellody.co.uk/library.html">
   <meta property="og:title" content="Stellody library: how it reads the collection you own">
-  <meta property="og:description" content="How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings and album art.">
+  <meta property="og:description" content="How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings, album art and backups.">
   <meta property="og:image" content="https://stellody.co.uk/social-features.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
@@ -26,7 +26,7 @@
     "@context": "https://schema.org",
     "@type": "WebPage",
     "name": "Stellody library: how it reads the collection you own",
-    "description": "How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings and album art.",
+    "description": "How Stellody reads, sorts and shows the collection already on your disk: scanning, one folder to one album, muddled labels it works around without touching a file, two views, instant search, genres, ratings, album art and backups.",
     "url": "https://stellody.co.uk/library.html",
     "primaryImageOfPage": "https://stellody.co.uk/social-features.png",
     "isPartOf": {"@type": "WebSite", "@id": "https://stellody.co.uk/#site",
@@ -41,7 +41,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=112b6fcf17">
+  <link rel="stylesheet" href="styles.css?v=56c17e586d">
 <script>window.goatcounter = {path: function (p) { return location.host + p }}</script>
 <script data-goatcounter="https://oernster.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -225,7 +225,7 @@
     </div>
   </div>
   <div class="shot" style="margin-top:2.5rem;">
-    <img src="screenshots/screenshot2.png" width="1720" height="694" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. BT's Emotional Technology (Special Collector's Edition) is open at the foot of the list, showing its tracks with a play count and a row of rating stars on each. Knowledge of Self, the track playing, is painted pink on its row. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window carries the sentence the last discovery search ended with at its left and Playing: Knowledge of Self, BT at its right. The three discovery bars sit at rest in the tray above, labelled Looking up, Checking series and Checking styles; beside the discovery button, the button for the artists that search could not answer for wears a red badge reading 53. The waveform of the playing track runs along the bottom; beside it the time reads 0:23 of 6:39, then shared, 44.1 kHz, 32 bit, 1 play. The sleeve size button, last of the group at the left of the strip below, is outlined in red and shut off, since the list shows no sleeves. The spectrum display sits in the middle of that strip. Volume, mute, the output device, exclusive output and the equalizer are grouped at its right end, then shuffle and repeat; exclusive output is outlined in red and shut off as well.">
+    <img src="screenshots/screenshot2.png" width="1720" height="694" alt="Stellody's list view in its light appearance: one row per album with its cover, its title and its artist, then a detail column giving the year, the genres the album states and the track count, with Plays, Rating and Length headings at the right. An album carrying several genres lists them all there. Each row carries the chevron that opens it, with one at the left of the Title heading for opening every album at once. Tinlicker's Cold Enough For Snow is open at the foot of the list, showing its tracks with a rate and depth, a row of rating stars and a play count on the two played so far. Nothing To Lose (feat. Circa Waves), the track playing, is painted pink on its row. The menu bar reads File, Edit, View, Sound, Control and Help. The foot of the window carries the sentence the last discovery search ended with at its left and Playing: Nothing To Lose (feat. Circa Waves), Tinlicker at its right. The three discovery bars sit at rest in the tray above, labelled Looking up, Checking series and Checking styles; beside the discovery button, the button for the artists that search could not answer for wears a red badge reading 46. The waveform of the playing track runs along the bottom; beside it the time reads 2:21 of 4:18, then shared, 44.1 kHz, 32 bit. In the strip below, the sleeve size button is outlined in red and shut off, since the list shows no sleeves; the button choosing the visualiser's style follows it. The visualiser sits in the middle of that strip, drawn in another of its styles as purple bars mirrored about a line. Volume and mute, then the output device, exclusive output and the equalizer, then shuffle and repeat end the strip at the right.">
   </div>
   <p class="shot-caption">The list view, with the play controls across the top and your settings along the bottom.</p>
 </section>
@@ -335,6 +335,48 @@
   </div>
 </section>
 
+<section class="section">
+  <div class="section-label">Keeping it safe</div>
+  <h2 class="section-title">Back it up, put it back</h2>
+  <p style="max-width:65ch;">
+    Your ratings, play counts and corrections cannot be had back by scanning again. Two entries on the
+    File menu keep them: Back up library and Restore from backup. The Guide walks through both.
+  </p>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>One zip holds what Stellody knows</h3>
+      <p>A backup holds the library's records (ratings, play counts, corrections, stated tags, settings
+      and taste profiles) with what discovery has learned: the catalogue memory, the last answer, the
+      genre cache and the shop list. It does not hold the music, which is yours to copy, nor the cover
+      and waveform pictures, which Stellody draws again by itself.</p>
+    </div>
+    <div class="feat">
+      <h3>Wherever you keep it</h3>
+      <p>You choose the folder: Downloads the first time, then wherever the last backup went. Each
+      backup is named for the minute it was made, so a new one never replaces an old one. The music
+      carries on playing while it is written.</p>
+    </div>
+    <div class="feat">
+      <h3>Restoring asks first</h3>
+      <p>Restore from backup checks the zip before asking you anything, then asks before it replaces
+      your library. It saves a backup of the library as it stands first, beside your others, then
+      starts Stellody again to put the restored one in place. Should that go wrong part way, the
+      library you had is put back.</p>
+    </div>
+    <div class="feat">
+      <h3>Old backups always restore</h3>
+      <p>A backup made by an older version always restores; whatever has changed since is brought up to
+      date as it goes in. One made by a newer version is refused with the reason, since this version
+      cannot know what the newer one changed.</p>
+    </div>
+    <div class="feat">
+      <h3>Moving to another computer</h3>
+      <p>Restored on a computer whose music sits somewhere else, Stellody says the music folder is not
+      there and offers to choose one.</p>
+    </div>
+  </div>
+</section>
+
 <section class="section onward">
   <p class="onward-links">
     <a class="btn-secondary" href="features.html">All features</a>
@@ -362,7 +404,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.13.3<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.14.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>

@@ -328,6 +328,9 @@ h1 .accent { color: var(--accent); }
 .feat h3 { font-size: 0.975rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
 /* A card holding several paragraphs shows the break between them. */
 .feat p + p { margin-top: 0.75rem; }
+/* A short list of names inside a card, in the card's own text: the visualiser's styles. */
+.feat .name-list { list-style: disc; columns: 2; padding-left: 1.25rem; margin-top: 0.75rem; font-size: 0.875rem; color: var(--subtext0); line-height: 1.65; }
+.feat .name-list + p { margin-top: 0.75rem; }
 /* The button that leads from a Features gateway card to its own page sits at
    the card's foot, so the three line up whatever the length above them. */
 .gateways .feat { display: flex; flex-direction: column; }

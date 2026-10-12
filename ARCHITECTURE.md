@@ -9,10 +9,10 @@ has one home.
 
 ## Invariants
 
-Each invariant names the test that enforces it. Every one of these guards has
-been verified by planting a violation and reading the exit code; a guard that
-has never been seen to fail is not yet a guard. How to run these tests and
-write new ones is in [`TESTING.md`](TESTING.md).
+Each invariant names the test that enforces it. A guard that has never been
+seen to fail is not yet a guard, so a new one is proved by planting a
+violation and reading the exit code. How to run these tests and write new ones
+is in [`TESTING.md`](TESTING.md).
 
 | # | Invariant | Enforced by |
 |---|---|---|
@@ -123,10 +123,12 @@ applies to it as to the package.
 **Setup never opens the library database.** It runs just after ending the
 application by force, the moment that file is least safe to touch, so it
 leaves notes for the application to act on instead:
-`stellody/infrastructure/switch_reset.py` (start shuffle and repeat off and ask
-again about closing, after an install or a reinstall) and `stellody/infrastructure/window_reset.py` (open maximised on the
-screen setup was on, after an install, repair or reinstall). The composition
-root takes the window note, forgets the remembered size through
+`stellody/infrastructure/switch_reset.py` (after an install or a reinstall:
+start shuffle and repeat off, ask again about closing and put the visualiser
+back on its default style, all done by `stellody/ui/fresh_start.py`) and
+`stellody/infrastructure/window_reset.py` (open maximised on the screen setup
+was on, after an install, repair or reinstall). The composition root takes the
+window note, forgets the remembered size through
 `forget_window` and lays the window on that screen through `open_on` in
 `stellody/ui/geometry.py` before it is shown. An update or downgrade leaves no
 note, so the last size comes back.
@@ -621,10 +623,23 @@ feeder never waits on a painter. **Two clocks:** measurements land per block
 while the strip repaints faster and lets the domain decide where a bar has
 fallen; bars rise instantly and fall at a fixed rate.
 
-**It has no switch.** It sits at the middle of the bottom strip, held there by
-`tray_parts.centred_row`, sized in centimetres against its screen; it draws
-twenty empty bars on the tray surface when silent. Its timer runs only while
-music does; the feeder measures only what it has written.
+**It has no on or off switch.** It sits at the middle of the bottom strip,
+held there by `tray_parts.centred_row`, its width stated in centimetres against
+its screen and its height a button's; it fills its ground with the tray surface
+even when silent. Its timer runs only while music does; the feeder measures
+only what it has written.
+
+**Ten named styles draw the same measurement.** `Visualisation` in
+`stellody/ui/visualisations.py` names them in list order, with
+`DEFAULT_VISUALISATION` (the dot matrix, Oliver's ruling) for a new install;
+`PAINTERS` in `stellody/ui/spectrum_styles.py` maps each to a painter in
+`spectrum_painting.py` or `spectrum_figures.py`. The widget keeps the clock,
+the heights and the held peaks whichever style is on show, then clips each
+painter to its room, so a style changes nothing about what is measured. The
+choice is stored by name under `SETTING_VISUALISATION`; an unrecognised name
+reads as the default. A button closing the strip's left group lifts the list
+through `LiftMenu` in `stellody/ui/lift_menu.py`, the one home for a lifted
+list, which the output devices share. Held by `tests/ui/test_visualisations.py`.
 
 ## Discovering what the library does not hold
 
@@ -686,7 +701,11 @@ and retries dominate. Every bar's time is the whole run's: `Ahead` in
 `looking_up_seconds_left` and `series_seconds_left` in `domain/estimating.py`
 price later stages from the current pace (FR-D84); `ui/run_estimate.py` reads
 pace afresh at every change of stage. Too few finished units says nothing
-rather than swinging.
+rather than swinging. **Only an artist that goes to the network is timed**,
+since one answered from memory costs nothing worth dividing by: `Foreseen` in
+`application/foreseeing.py` reads the same memory the run answers from, before
+each artist is looked up, so the prediction and the answer cannot disagree
+(`tests/application/test_foreseeing.py`).
 
 **Colour never carries meaning alone:** every row states its kind in words.
 
@@ -697,7 +716,29 @@ run, which would add a request per surviving candidate.
 (`Including.credits`); "Various Artists" itself is never asked about.
 `application/compilation_cost.py` prices the credits and series before a run,
 from the same memory and pace, so the price is arithmetic. Select all sets
-`_sweeping` in `ui/discovery_dialog.py` so the price is worked out once.
+`_sweeping` in `ui/discovery_dialog.py` so the price is worked out once; so
+does putting a taste profile back. The sentence itself is
+`ui/discovery_price.py`.
+
+**A taste profile keeps the dialog's whole selection** (FR-D87 to FR-D93):
+the genres ticked, the three Include boxes and the years. `stellody/domain/taste.py`
+holds the rules (genres compared as a set, names compared ignoring case and
+surrounding space, the list alphabetical, saving under a taken name replacing
+it once confirmed); `ui/taste_store.py` keeps the list as JSON in one setting
+(`SETTING_TASTE_PROFILES`), reading anything malformed as absent rather than
+refusing to open the dialog. `ui/taste_controls.py` owns the button beside
+Select all; `ui/taste_prompt.py` offers to save a new selection on Find.
+`ui/taste_list.py` lifts the profiles as a `Qt.Popup` frame of real buttons,
+each row a delete button then the name, because a menu row holding two
+buttons let neither take keyboard focus. Held by `tests/domain/test_taste.py`
+and `tests/ui/test_taste_profiles.py`.
+
+**The dialog is built once, unseen, as the application opens.** The first
+build of a session was measured holding up the sound device's feeder long
+enough to be heard on the first press of Discover, so `warm_discovery` in
+`ui/discovering.py` pays it at launch while nothing is playing
+(`tests/ui/test_discovery_warm.py`). The catalogue memory is read ahead on a
+thread of its own at the same moment (`warm_memory`).
 
 **A compilation's neighbours are its other volumes, so a second box asks after
 the series** (FR-D69 to FR-D75, FR-D81, FR-D82):
@@ -854,7 +895,8 @@ service; `ReleaseSource` sits in `stellody/application/ports.py`;
 `stellody/ui/guide.py` resolves every icon through `stellody.shared.resources`,
 the lookup the trays use; a missing icon yields no picture rather than an
 exception. `guide_discovery.py` holds the discovery and shops procedure,
-`guide_pictures.py` the drawing helpers (`INLINE_ICON_PX` sizes pictures larger
+`guide_backups.py` backing up and restoring (naming the commands by the File
+menu's own labels in `backup_words.py`), `guide_pictures.py` the drawing helpers (`INLINE_ICON_PX` sizes pictures larger
 than body text) and `layout_advice.py` the layout section.
 
 **A control the guide does not explain is a failure, found by sweeping rather
@@ -1037,7 +1079,9 @@ Specified in [`BACKUP.md`](BACKUP.md). One service over one port:
 `stellody/application/backing_up.py` holds `Backups` (back up, verify, restore)
 and the `BackupArchive` port; `stellody/domain/backups.py` holds the manifest,
 the dated name and the judgement of whether a backup may be put back, by each
-file's schema rather than by the release that wrote it.
+file's schema rather than by the release that wrote it. The window's half is
+`stellody/ui/keeping_backups.py`, two File menu commands; each errand runs off
+the interface thread through `stellody/ui/errand_worker.py` and answers on it.
 
 **Every file a backup carries has a numbered shape.** The database records its
 own in `PRAGMA user_version`; `stellody/infrastructure/database_schema.py` holds
@@ -1201,10 +1245,11 @@ Held by `tests/ui/test_results_keyboard.py`.
 | The album pane's play button doubles the tray's, so it toggles with it | Two play buttons that disagree are worse than one. With a track loaded it hands the press to `toggle_playback`, the one method deciding what play means (`tests/ui/test_both_play_buttons_agree.py`); with nothing loaded it starts the open album. `_point_at_what_is_in_hand` in `stellody/ui/viewing.py` reopens the album holding the track in hand on that track (`tests/ui/test_resuming_after_the_pane_comes_back.py`). |
 | The help button opens a menu rather than one dialog | A picture button is named by its tooltip, so one opening several things is named Help. Its menu IS the menu bar's Help menu, so the two cannot drift (`tests/ui/test_update_check.py`). |
 | A reading dialog never opens on its own page | A ring round a whole page offers nothing to act on. `first_stop` passes over a scrolling region; the pane keeps its stop; a dialog that is only a pane opens on nothing. Held by a sweep over every dialog discovered from source. |
-| A dialog's native window exists before anything sizes it | On Windows with mixed scaling a dialog sized before its native window exists opens scaled across several displays. `FirstStopDialog.__init__` calls `self.winId()` first except on Wayland, where it corrupts the window behind (`makes_window_early`). `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` pins the precondition. |
+| A dialog's native window exists before anything sizes it | On Windows with mixed scaling a dialog sized before its native window exists opens scaled across several displays. `FirstStopDialog.__init__` calls `self.winId()` first except on Wayland, where it corrupts the window behind (`makes_window_early`). `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` pins the precondition. Qt would then make that window's siblings native too, which once gave the window's zero-size focus holder a native window over the menu bar and left the menus dead; `keep_siblings_plain` in `stellody/ui/native_windows.py` sets `AA_DontCreateNativeWidgetSiblings` before the application is built (`tests/ui/test_neutral_start.py`). |
+| A popup frame lifted from a button opens above it where the screen has room, else below | A menu is kept on screen by Qt; a plain `Qt.Popup` frame is not. `lifted_top` in `stellody/ui/lifting.py` asks the screen the button is actually on, for the volume slider and the taste profile list alike. |
 | A prompt waved away decides nothing | The close prompt's answer starts at ASK and only a button moves it, so dismissing it neither leaves, hides nor writes anything. |
 | The waiting after a refusal is spent on a pass, never on one artist | MusicBrainz refusals reflect its load, not our rate. A refused artist is asked once more, then put back for a later pass, so waiting overlaps other artists. `application/passing.py` is the bookkeeping and asks nothing. |
-| A run asks a catalogue only what it has never been told | Asking everything every run made answers vary with a service's mood. Answers are kept in `catalogue-memory.json`: `application/remembering.py` holds the rule, `infrastructure/catalogue_memory.py` the file. An answer stands for a period then is asked again (Oliver's ruling: runs should differ over weeks, not minutes). Saving merges with what the file holds (`merged`); one `FileCatalogueMemory` serves the run, its price and expansion. Undated album and series answers are dropped on read (`_dated`, FR-D67). The kinds include identities, `credited`, `series-of`, `series` and `titled`; asking lives once in `recalled` over an `Asking` (`tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`). |
+| A run asks a catalogue only what it has never been told | Asking everything every run made answers vary with a service's mood. Answers are kept in `catalogue-memory.json`: `application/remembering.py` holds the rule, `infrastructure/catalogue_memory.py` the file. An answer stands for a period then is asked again (Oliver's ruling: runs should differ over weeks, not minutes). One `FileCatalogueMemory` (`infrastructure/held_memory.py`) serves the run, its price and expansion: it reads the file once a session and holds it, since reading or writing the file whole was measured starving the sound device's feeder; a run's save merges in hand (`merged`) and the file is written whole only at quit (`keep`), with the running record covering a process that dies first (`tests/infrastructure/test_held_memory.py`). Undated album and series answers are dropped on read (`_dated`, FR-D67). The kinds include identities, `credited`, `series-of`, `series` and `titled`; asking lives once in `recalled` over an `Asking` (`tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`). |
 | The answer is turned a page at a time, with every page built up front | A page fills every column, depth following height (Oliver's ruling); a column holding a tall artist scrolls. Every page is built at open because a tick is held by its row. `ui/results_room.py` is the arithmetic, `results_pages.py` the pages, `results_pager.py` the controls, `results_foot.py` the one foot row they share with the shop controls (Oliver's ruling). |
 | Every block the device ran dry before it arrived is written to the diary | `stellody/infrastructure/dropouts.py` watches the room in the buffer (PortAudio's underflow flag proved blind on shared WASAPI): a write finding the whole buffer free follows a device that ran dry; a write taking longer than its audio plus what was buffered held a silence of the difference (timed on `perf_counter`). The buffer's size is read once per stream, on its first start, since a queue survives a stop. `stellody/infrastructure/buffering.py` asks every stream for two blocks of queue, so a busy machine does not break the sound up into static; `lead_frames` counts that queue for position and pictures. Held by `tests/infrastructure/test_dropouts.py` and `tests/infrastructure/test_buffering.py`, each including a case on the real device that skips where none opens. Metering lives in `stellody/infrastructure/metering.py`. |
 | One dropped connection does not end a run; a run of them does | An artist nothing answered about goes round again like a refused one; the run gives up only after a run of consecutive silences, counted once for the whole run by `Silence` in `application/gathering.py`. |
@@ -1234,7 +1279,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | A rule draws its own line rather than wearing a background | At nine tenths scale a one pixel background can cover no device pixel. `tray_parts.Rule` draws a cosmetic pen, one device pixel at any scale (`tests/ui/test_every_rule_is_drawn.py`). |
 | A menu entry that cannot act is disabled, as a button that cannot act is | `viewing.show_covers` is the one place the view changes, so it disables Expand all and Collapse all in the sleeves. |
 | The whole menu bar is swept, rather than the entry that was reported | `tests/ui/test_menu_sweep.py` states every entry against the situations enabling turns on and asserts the table IS the bar, so a new entry must be decided. Rescan's state is set where the button's is. |
-| Every picture button is on the menu bar too | Placement is Oliver's ruling: File, Edit, View, Sound, Control; the volume slider and donate stay off menus (`open_donation` is wired to the strip alone). Each entry reads its state from what it stands for when the menu opens (`stellody/ui/menu_mirrors.py`); the Output device submenu is refilled by `show_outputs`. `tests/ui/test_menu_mirrors.py` changes state through the window, not the entry. |
+| Every picture button is on the menu bar too, bar two | Placement is Oliver's ruling: File, Edit, View, Sound, Control; the volume slider and donate stay off menus (`open_donation` is wired to the strip alone). Each entry reads its state from what it stands for when the menu opens (`stellody/ui/menu_mirrors.py`); the Output device submenu is refilled by `show_outputs`, the View menu's Visualiser style submenu by `show_visualisation` through the one `fill_styles` that fills the strip's list. `tests/ui/test_menu_mirrors.py` changes state through the window, not the entry. |
 | One thing held at the middle of a strip is held by three columns, not two stretches | Two stretches centre only when the end groups match in width. `tray_parts.centred_row` lays three grid columns with equal outer shares (`tests/ui/test_transport_centred.py`). |
 | A stylesheet border needs `WA_StyledBackground` on a plain widget | Qt drops a plain `QWidget` subclass's sheet border without it, silently. `tests/ui/test_tray_rules.py` reads the paint, not the sheet. |
 | Every stop that can be landed on shows a ring, the same one everywhere | Asserted by walking the real widgets, not a list. Named exceptions paint their own ring (the stars, the ringed checkbox, the sleeve size button, menu titles) or hold nothing to paint; item and text views stand outside the rule (invariant 10). One colour token serves every ring. |

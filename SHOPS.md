@@ -590,7 +590,7 @@ Appendix B lists them.
   `ARCHITECTURE.md` keeps for composing over another picture.
   `tests/ui/test_guide.py` fails on a picture the interface names that the guide
   does not draw.
-- Verified by: `tests/ui/test_guide.py::TestWhatItNames`
+- Verified by: `tests/ui/test_guide.py::TestWhatItNames::test_every_picture_the_dialogs_name_is_explained_too`
 
 **FR-S42 A hand-broken row can be mended from the dialog**
 - Requirement: If a row in the shop file cannot be read as a shop, then the shops
@@ -615,7 +615,7 @@ Appendix B lists them.
   on both screens wear Oliver's artwork, so three bare words beside them read as
   unfinished.
 - Verified by: `tests/ui/test_shop_editing.py::test_try_save_and_put_back_wear_their_artwork`,
-  `tests/ui/test_guide.py`
+  `tests/ui/test_guide.py::TestWhatItNames::test_every_picture_the_dialogs_name_is_explained_too`
 
 **FR-S44 The shops dialog follows the ticks behind it**
 - Requirement: While the shops dialog is open, it shall take the albums ticked

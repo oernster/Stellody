@@ -48,7 +48,7 @@ when somebody decides on one.
 
 ## Not planned, so that this is not revisited
 
-- **Making the sites findable** (Oliver's ruling). Search Console, Bing,
+- **Making the site findable** (Oliver's ruling). Search Console, Bing,
   sitemap submission and Rich Results validation are browser work outside this
   repository; the existing markup stays but reach is not chased.
 - **Monkey's Audio, Musepack, DSD and TAK.** Reported rather than played via

@@ -21,7 +21,8 @@ accepted track corrections (`infrastructure/override_rows.py`) and album edits
 library index, which is a cache a rescan rebuilds. A file damaged badly enough
 not to open is set aside whole by `infrastructure/opening.py`, write ahead log
 included, so nothing is lost. The application then starts without any of that
-data, though; the only way back is by hand.
+data, though; the way back is restoring a backup the listener made from the
+File menu, else by hand.
 
 The structural answer is to keep that data in a file of its own, so a damaged
 scan cache cannot take it with it. That is a migration of user data: an

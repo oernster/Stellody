@@ -98,14 +98,19 @@ accepted corrections as well.
 
 ## The website
 
-`docs/` is the site, served by GitHub Pages at
-[stellody.co.uk](https://stellody.co.uk/), which is the canonical host. Version
-tokens in it are stamped from `VERSION` by `stamp_version.py`, which the Windows
-and macOS build scripts call, so the site is never hand-versioned. It also puts
-a content hash on every local stylesheet and script link (`styles.css?v=<hash>`)
-so a browser cannot pair a fresh page with a stale cached stylesheet. The Flatpak
-build does not stamp the site; run the script directly after a bump made
+`docs/` is the site, served by GitHub Pages from `docs/` on `main` at
+[stellody.co.uk](https://stellody.co.uk/), which is the canonical host; pushing
+`main` publishes it. Version tokens in it are stamped from `VERSION` by
+`stamp_version.py`, which the Windows and macOS build scripts call, so the site
+is never hand-versioned. It also puts a content hash on every local stylesheet
+and script link (`styles.css?v=<hash>`) so a browser cannot pair a fresh page
+with a stale cached stylesheet. The same builds call `stamp_sitemap.py`, which
+dates each page in `sitemap.xml` from the last commit that touched it. The
+Flatpak build stamps neither; run the two scripts directly after a bump made
 without building on either of the other two.
+
+Every page counts its loads with GoatCounter, through the one script tag each
+page carries.
 
 `stellody.com` redirects permanently (301) to `stellody.co.uk`. The redirect is
 the registrar's domain forwarding on the .com, not anything in this repository,

@@ -132,6 +132,7 @@ for code nobody has written yet. The suite in `tests/structural/`:
 | `test_focus_ring_selectors.py` | no stylesheet rings a pane or a region |
 | `test_rings.py` | no checkbox ships without a ring |
 | `test_no_committed_audio.py` | no audio file of a widened format in the tree |
+| `test_schema_bumps.py` | the database's shape cannot change under the same schema number |
 
 **A guard is not trusted until it has been seen to fail.** Every new guard is
 proved by planting the violation it exists to catch and reading the failure, then restoring the tree in a

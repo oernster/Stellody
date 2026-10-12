@@ -69,8 +69,11 @@ Each line is a summary; the site has the detail.
 - A rescan that names the new albums, counts the new tracks and gives the
   library's totals.
 - Back up everything Stellody knows about your library (ratings, edits,
-  settings and discovery results) to one zip in a folder you choose; restore it
-  here or on another computer. The music itself is yours to copy.
+  settings, taste profiles and discovery results) to one zip in a folder you
+  choose, from the File menu. Restore it here or on another computer: Stellody
+  writes a safety backup first, then starts again to take the restored library
+  up. A backup made by an older Stellody still restores. The music itself is
+  yours to copy.
 - Bonus videos that came with an album play inside it.
 
 **Playback and sound** ([playback page](https://stellody.co.uk/playback.html))
@@ -92,6 +95,9 @@ Each line is a summary; the site has the detail.
   rather than sending it out of the speakers.
 - A larger output buffer than the device would choose, so a busy machine does
   not break the sound up; any dropout is noted in the diary (see Your privacy).
+- A visualiser along the bottom showing the equalizer's bands as they play,
+  drawn in any of ten styles chosen from a list; a new install starts on Dot
+  matrix and an update keeps the style you chose.
 - The waveform of each song along the bottom; click to jump there.
 
 **Discovery** ([discovery page](https://stellody.co.uk/discovery.html))
@@ -100,6 +106,9 @@ Each line is a summary; the site has the detail.
   made that you do not hold, plus who sounds like them.
 - Optional year range, artists on compilations, missing volumes of series you
   collect and DJ mixes.
+- Taste profiles: save a selection (genres, the Include boxes and the years)
+  under a name, then choose it later to put the whole selection back. Each
+  profile in the list has its own delete button.
 - Progress bars per stage, an estimate of time left and a stop that takes
   effect at once. Answers are kept as they arrive, so a second run asks only
   for the rest; gaps are counted and named rather than hidden.
@@ -111,7 +120,7 @@ Each line is a summary; the site has the detail.
 - Help then Guide names every button beside the picture the window draws, plus
   the rules Stellody reads a library by.
 - Every button on both trays bar the volume and the donation button is on the
-  menu bar too.
+  menu bar too; the visualiser's styles are under View.
 
 The [features page](https://stellody.co.uk/features.html) has the overview;
 [the technical page](https://stellody.co.uk/technical.html) says how its claims
@@ -176,7 +185,8 @@ off. Five things reach outside your computer; nothing else does.
   reminds you and nothing changes if you never press it.
 
 Nothing is encrypted at rest: the store holds notes about your library, not
-secrets. Stellody keeps a plain-text diary, `stellody-diary.log`, beside its
+secrets. A backup zip holds the same notes just as plainly, wherever you choose
+to keep it; it never leaves your computer unless you move it. Stellody keeps a plain-text diary, `stellody-diary.log`, beside its
 library database in its data directory (`%LOCALAPPDATA%\Stellody` on Windows,
 `~/Library/Application Support/Stellody` on macOS, `~/.local/share/stellody` on
 Linux or `~/.var/app/uk.codecrafter.Stellody/data/stellody` under Flatpak). It
