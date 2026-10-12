@@ -5,8 +5,9 @@ in write ahead mode, so the file alone can be missing whatever the log still
 holds (FR-B08). The copy is taken on whichever thread asks, over a connection
 of its own, since SQLite refuses one used from a thread that did not make it.
 
-**The journals travel with their files.** The catalogue memory and the genre
-cache are written whole only as Stellody quits; between those writes their
+**The journals travel with their files.** The catalogue memory is written
+whole only as Stellody quits, the genre cache when a discovery run finishes
+asking about candidates; between those writes their
 answers live in the running records beside them, so a backup without the
 records silently loses that session. A record copied while a run appends to it
 can end in a torn line, which the journal reader already skips.

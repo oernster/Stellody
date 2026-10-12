@@ -127,7 +127,7 @@ Downloads folder is the one the operating system names (Qt's
   that than it already says about the data folder.
 - The house rules hold: clean-architecture layering, modules within
   `LINE_CAP` (`tests/structural/test_loc.py`), 100 percent branch coverage over domain and application, no magic values, no Qt
-  below the UI layer, confirmation before anything destructive.
+  below the infrastructure layer, confirmation before anything destructive.
 
 ### 2.5 Assumptions and dependencies
 
@@ -577,7 +577,9 @@ Appendix B lists them.
 | `candidate-genres-2.record` | `discovery_file.py` | Answers since the cache was last written (2.4) |
 | `shops.json` | `shop_file.py` | The shop list as edited |
 
-A journal travels under its file's schema number. A cache renamed for a rule
+A journal carries a schema number of its own, derived from its own list of
+upgrade steps (`JOURNAL_UPGRADES`, `CACHE_JOURNAL_UPGRADES`) rather than from
+its file's. A cache renamed for a rule
 change, as `candidate-genres-2.json` was, is a new file name: an older backup
 holding the old name carries a file this Stellody does not list, which a
 restore leaves out rather than refusing.

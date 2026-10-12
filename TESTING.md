@@ -56,10 +56,11 @@ For a count of tests without running them,
   suite was started. The interface tests build real windows; without it each
   would appear on the desktop, every one answering a close with its own quit
   prompt.
-- **One run at a time.** Two runs of the suite at once fail falsely: at least
-  `tests/infrastructure/test_instance.py` and `tests/ui/test_arrow_ring.py`
-  collide. A failure met while another run was going is not evidence of
-  anything; run it again alone.
+- **One run at a time.** Two runs of the suite at once fail falsely:
+  `tests/infrastructure/test_instance.py` takes a claim under fixed names that
+  hold across the whole machine, so the second run finds it taken. A failure
+  met while another run was going is not evidence of anything; run it again
+  alone.
 - **The application is never started.** `tests/conftest.py` refuses any test
   that tries to start `stellody.exe`, whatever it believes it patched, since a
   stand-in that stops matching would start the installed copy.

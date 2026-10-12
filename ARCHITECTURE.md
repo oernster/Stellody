@@ -732,7 +732,10 @@ choosers (the library's Filter by genre and the answer's Filter the answer)
 carry the same controls beside Clear (FR-D96), each over its own `TasteStore`
 on the same settings, so the three dialogs share one list through the setting
 rather than through a shared object; there a profile ticks its genres alone,
-the answer's chooser only those the run looked in.
+the answer's chooser only those the run looked in. Each chooser's `accept`
+offers to save its genres (FR-D98) through `TasteControls.offer_genres`, which
+counts them held by any profile with the same genres (`holding_genres`), since
+a chooser asks nothing else.
 `ui/taste_list.py` lifts the profiles as a `Qt.Popup` frame of real buttons,
 each row a delete button then the name, because a menu row holding two
 buttons let neither take keyboard focus. The rows sit in the shared
@@ -916,9 +919,10 @@ parses every module in `stellody/ui` for each `.png` it names, with no
 exemptions, since dialogs fetch assets by name through `resources.find_asset`.
 A companion case asserts the scan finds something.
 
-**Where the guide once described a control wrongly, its words are pinned.** A
-taste profile putting the whole selection back, the same profiles in both
-genre filters, Filter at the right of the answer's foot row and the way out
+**What the guide says of the taste profiles and the foot rows is pinned word
+for word.** A taste profile putting the whole selection back, the same
+profiles in both genre filters, a genre filter offering to save genres no
+profile holds, Filter at the right of the answer's foot row and the way out
 standing alone on the left are each asserted in its text
 (`tests/ui/test_guide.py::TestWhatItNames::test_it_describes_the_rows_and_profiles_as_they_now_stand`).
 

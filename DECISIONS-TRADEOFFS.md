@@ -295,8 +295,9 @@ adjusts volume between records mastered at different levels.
 
 The next track is joined inside the playback thread without stopping the
 stream, rather than reopening it per track. Two joins stay gapped on purpose:
-a change of sample rate; a shuffled album starting again. Albums meant to run
-without a break do; a sample-rate change leaves a gap.
+a change of sample rate or channel count; a shuffled album starting again.
+Albums meant to run without a break do; a change of rate or channels leaves a
+gap.
 
 ### The transport works by state, not timing
 
@@ -479,18 +480,20 @@ completes, except for artists that run could not reach.
 ### A taste profile is the whole selection, in one shared list
 
 A taste profile names everything the Discover dialog asks: the genres ticked,
-the three Include boxes and the years. Choosing one there puts all of it back;
-Find offers to save a selection no profile already holds. The profiles are one
-list in one setting, offered by Discover and by both genre choosers (the
-library's filter and the answer's), so a profile deleted in any of the three
-is gone from all; they are saved from Discover alone. Chosen over keeping the
-genres alone, which would leave the rest to be set by hand every time; also
-over a list per dialog, where a profile kept in one would be missing from the
-others. A genre
-chooser asks nothing about what to include or which years, so there a profile
-sets its genres alone. Two profiles with the same genres and different years
-are different profiles, so the list can grow longer than the genres alone
-would make it; in a genre chooser the two tick the same boxes.
+the three Include boxes and the years. Choosing one there puts all of it back.
+The profiles are one list in one setting, offered by Discover and by both
+genre choosers (the library's filter and the answer's), so a profile deleted
+in any of the three is gone from all. Each of the three offers to save a
+selection no profile already holds: Find offers the whole selection. A genre
+chooser asks nothing about what to include or which years, so pressing Filter
+offers its genres with the Include boxes a first Discover opens on and any
+year, offering nothing when a profile already holds those genres; choosing a
+profile there sets its genres alone. Chosen over keeping the genres alone,
+which would leave the rest to be set by hand every time; also over a list per
+dialog, where a profile kept in one would be missing from the others. Two
+profiles with the same genres and different years are different profiles, so
+the list can grow longer than the genres alone would make it; in a genre
+chooser the two tick the same boxes.
 
 ### The answer is read a page at a time
 

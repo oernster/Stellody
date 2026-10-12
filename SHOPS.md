@@ -113,7 +113,8 @@ is specified rather than assumed away.
 - The shop list is data. Shops close, wall their search and move it without
   notice; a list compiled into the application would need a release every time
   that happens.
-- The house rules hold: clean-architecture layering, 400-line modules, 100
+- The house rules hold: clean-architecture layering, modules within `LINE_CAP`
+  (`tests/structural/test_loc.py`), 100
   percent branch coverage over domain and application, no magic values, no Qt
   below the infrastructure layer.
 
@@ -212,7 +213,8 @@ Appendix B lists them.
   about to open, opening none of them unless it is given.
 - Rationale: One album is one browser tab. Thirty ticked albums is thirty tabs
   arriving at once over whatever the listener was doing, which is not a state
-  anybody chooses deliberately. Five is the bar (Oliver's ruling).
+  anybody chooses deliberately. Five is the bar (Oliver's ruling), held as
+  `MOST_WITHOUT_ASKING` in `application/shopping.py`.
 - Acceptance: Given six albums ticked, when a shop is chosen and the question is
   answered no, then nothing is opened; when it is answered yes, then six
   addresses are opened.
@@ -370,7 +372,8 @@ Appendix B lists them.
 - Verified by: `tests/ui/test_shop_editing.py::test_a_shop_that_cannot_search_is_not_saved`
 
 **FR-S21 Two shops cannot share a name**
-- Requirement: If the name matches, ignoring case, the name of another shop in
+- Requirement: If the name matches, ignoring case and surrounding space, the
+  name of another shop in
   the list, then the shop form shall refuse to save and shall say the name is
   taken.
 - Rationale: A name is how a shipped shop is recognised across releases (section
@@ -685,7 +688,7 @@ Appendix B lists them.
 **NFR-S-MAIN-001 The layering and the gate hold**
 - Requirement: The domain and application modules added by this specification
   shall hold 100 percent branch coverage, shall import nothing from
-  infrastructure or UI and shall each stay within the 400-line module cap. The
+  infrastructure or UI and shall each stay within `LINE_CAP`. The
   merge rules FR-S30 to FR-S34 and FR-S36 sit in the domain as one pure function,
   `merged`; putting back (FR-S37) is a pure method, `ShopBook.put_back`.
 - Rationale: The house invariants, restated here because a new area is where they

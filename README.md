@@ -112,7 +112,7 @@ Each line is a summary; the site has the detail.
   later to put the whole selection back. Each profile in the list has its own
   delete button; a long list scrolls. The same profiles are offered in the
   library's Filter by genre and in Filter the answer, where a profile ticks its
-  genres.
+  genres; filtering on genres no profile holds offers to keep them too.
 - Progress bars per stage, an estimate of time left and a stop that takes
   effect at once. Answers are kept as they arrive, so a second run asks only
   for the rest; gaps are counted and named rather than hidden.
@@ -294,9 +294,8 @@ Licence button says so, then says that Stellody itself is dual licensed. See
 `LICENSE` for the mapping.
 
 A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack, AAC
-and bonus videos. The FFmpeg libraries themselves are built LGPL-3.0-or-later, verified from
-the licence string the build reports rather than from its documentation. That
-build also links libx264 and libx265, which are GPL-2.0-or-later, so the
+and bonus videos. The FFmpeg libraries themselves report their licence as
+LGPL-3.0-or-later. That build also links libx264 and libx265, which are GPL-2.0-or-later, so the
 packaged application as a whole is distributed as a GPL-3.0 work. Nothing here
 encodes video; those two arrive as dependencies of the shared FFmpeg build.
 

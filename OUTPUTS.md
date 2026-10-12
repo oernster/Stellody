@@ -385,12 +385,12 @@ section 4 lists them.
 
 ### 3.2 Non-functional
 
-**NFR-O-PERF-001 A device change reaches the list in time.** When an output
-device connects or disconnects, the output list shall reflect it within 2
-seconds of the operating system's own Sound settings showing the change,
+**NFR-O-PERF-001 A device change reaches the list in time.** Not yet
+measured: this is the timed probe of OQ-O4, which is still open. When an
+output device connects or disconnects, the output list shall reflect it within
+2 seconds of the operating system's own Sound settings showing the change,
 measured on the reference machine by connecting and disconnecting the Bathys
-five times with the list open. Not yet measured: that is the timed probe of
-OQ-O4, which is still open. Priority: Must.
+five times with the list open. Priority: Must.
 
 **NFR-O-PERF-002 Keeping the list current never interrupts the music.** While
 a track plays, a change to the device list shall not take PortAudio's list
