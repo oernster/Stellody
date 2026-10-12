@@ -104,8 +104,20 @@ class ShopForm(FirstStopDialog):
         return line
 
     def _buttons(self) -> QHBoxLayout:
-        """Try on the left, the two ways out on the right."""
+        """Cancel alone on the left; Try, then Save, on the right.
+
+        The way out stands apart from what acts, as in every other dialog
+        (Oliver's ruling). Made in the order they stand, since the keyboard
+        ring follows the order they were made in.
+        """
         row = QHBoxLayout()
+        self.cancel_button = wearing(
+            QPushButton(CANCEL_LABEL, self), resources.find_asset(CLOSE_ICON)
+        )
+        self.cancel_button.setAutoDefault(False)
+        self.cancel_button.clicked.connect(self.reject)
+        row.addWidget(self.cancel_button)
+        row.addStretch()
         self.try_button = wearing(
             QPushButton(TRY_LABEL, self), resources.find_asset(TRY_ICON)
         )
@@ -113,19 +125,12 @@ class ShopForm(FirstStopDialog):
         self.try_button.setEnabled(self._album is not None)
         self.try_button.clicked.connect(self.try_it)
         row.addWidget(self.try_button)
-        row.addStretch()
         self.save_button = wearing(
             QPushButton(SAVE_LABEL, self), resources.find_asset(SAVE_ICON)
         )
         self.save_button.setDefault(True)
         self.save_button.clicked.connect(self.save)
         row.addWidget(self.save_button)
-        self.cancel_button = wearing(
-            QPushButton(CANCEL_LABEL, self), resources.find_asset(CLOSE_ICON)
-        )
-        self.cancel_button.setAutoDefault(False)
-        self.cancel_button.clicked.connect(self.reject)
-        row.addWidget(self.cancel_button)
         return row
 
     def _problems(self) -> tuple[ShopProblem, ...]:

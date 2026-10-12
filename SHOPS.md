@@ -74,7 +74,7 @@ shops dialog.
 | Edited | A shipped shop whose name, address or note differs from the recorded shipped copy of it. Moving a shop does not edit it. |
 | Deleted record | The names of shipped shops the listener deleted, kept in the shop file. |
 | Retired record | The names of shops removed because a release stopped shipping them, kept until the dialog has said so. |
-| Shop form | The small dialog Add and Edit open: Name, Search address, Note, Try, Save, Cancel. |
+| Shop form | The small dialog Add and Edit open: Name, Search address, Note, then Cancel, Try and Save. |
 
 Nothing here is ever a track. A run deals in artists and albums; so does this.
 
@@ -575,14 +575,19 @@ Appendix B lists them.
 
 **FR-S40 Every new control is on the keyboard ring**
 - Requirement: The shops dialog shall place each shop's button, edit control and
-  delete control, the add control and the put-back control in the keyboard ring in
-  reading order. The handle shall not be a stop.
+  delete control, Close, the add control and the put-back control in the keyboard
+  ring in reading order; the foot shall read Close alone on the left, then add and
+  put back on the right (Oliver's ruling, as FR-D97). The shop form's foot shall
+  read Cancel alone on the left, then Try and Save on the right, walked by Tab
+  in that order. The handle shall not be a stop.
 - Rationale: The handle is a mouse affordance whose keyboard equivalent is
   FR-S28, so a stop on it would be a press that does nothing.
 - Acceptance: Given two shops listed, when Tab is pressed repeatedly, then focus
-  reaches the first shop's button, edit and delete, then the second's, then add,
-  then put back, then Close.
-- Verified by: `tests/ui/test_shop_editing.py::test_the_ring_walks_the_rows_in_reading_order`
+  reaches the first shop's button, edit and delete, then the second's, then
+  Close, then add, then put back; Close is drawn to the left of add. Given the
+  shop form, then Cancel, Try and Save stand left to right and Tab walks them
+  in that order.
+- Verified by: `tests/ui/test_shop_editing.py::test_the_ring_walks_the_rows_in_reading_order`, `tests/ui/test_shop_editing.py::test_the_forms_cancel_stands_left_of_try_and_save`
 
 **FR-S41 The row controls wear artwork the guide explains**
 - Requirement: The add, edit and delete controls shall wear `add.png`, `edit.png`

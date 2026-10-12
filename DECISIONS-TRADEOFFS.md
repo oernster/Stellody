@@ -605,14 +605,13 @@ maintain rather than Qt's.
 
 ### The way out stands alone on the left
 
-In the Discover dialog, the results window and both genre choosers, Close or
-Cancel stands by itself at the left of the button row; the controls that set
-the ticks sit together on the right beside the press that acts, with the
-results window's pager between (Oliver's ruling). Tab walks each row as it
-reads. Chosen over the way out sitting among the acting controls: it stands in
-one place in each of those dialogs, apart from anything that acts. The cost:
-the shops dialog and the shop form keep Close and Cancel on the right, so not
-every dialog is laid out alike.
+In the Discover dialog, the results window, both genre choosers, the shops
+dialog and the shop form, Close or Cancel stands by itself at the left of the
+button row; the controls that act sit together on the right, with the results
+window's pager between (Oliver's ruling). Tab walks each row as it reads.
+Chosen over the way out sitting among the acting controls: it stands in one place in every one of these dialogs,
+apart from anything that acts. The cost: the press that acts and the way out
+sit at opposite ends of a wide row, so a pointer travels further between them.
 
 ### Reading dialogs read themselves; the guide uses real controls
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
@@ -262,8 +264,17 @@ def test_an_empty_list_offers_add(application) -> None:
 
 
 def test_the_ring_walks_the_rows_in_reading_order(application) -> None:
-    """FR-S40: each row's button, edit and delete, then add, put back, Close."""
+    """FR-S40: each row's button, edit and delete, then Close, add, put back.
+
+    Close stands alone on the left of the foot (Oliver's ruling), so the ring
+    reaches it before the two to its right.
+    """
     dialog, *_rest = dialog_over(QOBUZ, BLEEP)
+    dialog.show()
+    application.processEvents()
+    close, add = dialog.close_button, dialog.add_button
+    assert close.geometry().right() < add.geometry().left()
+    assert add.geometry().right() < dialog.put_back_button.geometry().left()
     first, second = dialog.controls
     expected = [
         first.button,
@@ -272,9 +283,9 @@ def test_the_ring_walks_the_rows_in_reading_order(application) -> None:
         second.button,
         second.edit,
         second.delete,
+        dialog.close_button,
         dialog.add_button,
         dialog.put_back_button,
-        dialog.close_button,
     ]
     walked, widget = [], first.button
     for _ in expected:
@@ -283,6 +294,19 @@ def test_the_ring_walks_the_rows_in_reading_order(application) -> None:
         while not widget.focusPolicy() & Qt.FocusPolicy.TabFocus:
             widget = widget.nextInFocusChain()
     assert walked == expected
+
+
+def test_the_forms_cancel_stands_left_of_try_and_save(application) -> None:
+    """FR-S40: Cancel alone on the left (Oliver's ruling); Tab walks as drawn."""
+    _dialog, _store, _opener, editing = dialog_over(QOBUZ)
+    form = ShopForm(editing, HOUNDS)
+    form.show()
+    application.processEvents()
+    row = [form.cancel_button, form.try_button, form.save_button]
+    for left, right in pairwise(row):
+        assert left.geometry().right() < right.geometry().left(), right.text()
+    assert [row[0], row[0].nextInFocusChain(), row[1].nextInFocusChain()] == row
+    form.close()
 
 
 def test_a_broken_row_is_listed_greyed_with_its_reason(application, forms) -> None:

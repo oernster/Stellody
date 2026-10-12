@@ -179,8 +179,20 @@ class ShopsDialog(FirstStopDialog):
         return shortcut
 
     def _buttons(self) -> QHBoxLayout:
-        """Add and put back where the list can change; Close to the right."""
+        """Close alone to the left; add and put back where the list can change.
+
+        The way out stands apart from what acts, as in every dialog that
+        chooses genres (Oliver's ruling).
+        """
         row = QHBoxLayout()
+        self.close_button = wearing(
+            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
+        )
+        self.close_button.setDefault(True)
+        self.close_button.setAutoDefault(True)
+        self.close_button.clicked.connect(self.reject)
+        row.addWidget(self.close_button)
+        row.addStretch()
         self.add_button: QPushButton | None = None
         self.put_back_button: QPushButton | None = None
         if self._editing is not None:
@@ -196,14 +208,6 @@ class ShopsDialog(FirstStopDialog):
             self.put_back_button.setAutoDefault(False)
             self.put_back_button.clicked.connect(self.put_back)
             row.addWidget(self.put_back_button)
-        row.addStretch()
-        self.close_button = wearing(
-            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
-        )
-        self.close_button.setDefault(True)
-        self.close_button.setAutoDefault(True)
-        self.close_button.clicked.connect(self.reject)
-        row.addWidget(self.close_button)
         return row
 
     def _fill(self) -> None:
@@ -238,10 +242,13 @@ class ShopsDialog(FirstStopDialog):
         self._chain()
 
     def _chain(self) -> None:
-        """Tab walks the rows in reading order, then the controls below. FR-S40."""
+        """Tab walks the rows in reading order, then the controls below. FR-S40.
+
+        Below means as drawn: Close, then add and put back to its right.
+        """
         stops = [stop for made in self.controls for stop in made.stops()]
-        stops += [b for b in (self.add_button, self.put_back_button) if b is not None]
         stops.append(self.close_button)
+        stops += [b for b in (self.add_button, self.put_back_button) if b is not None]
         for before, after in pairwise(stops):
             QWidget.setTabOrder(before, after)
 
