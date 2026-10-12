@@ -651,7 +651,8 @@ ruling).
   window shall stop that run at once, without asking anything, let go of the bar
   at once and ignore any report the run sends afterwards; the run winds down on
   its own thread reporting to nobody. While a run is under way the button shall
-  wear the shared negative mark over its picture and shall say "Stop discovery";
+  wear the shared negative mark over its picture and its tooltip shall say
+  "Stop discovery";
   the mark shall come off on EVERY ending, whether the run was stopped,
   completed, found nothing, could not be reached or failed. Picture and words are
   set together in one place; the strings live in `stellody/ui/tray_metrics.py`,
@@ -663,9 +664,10 @@ ruling).
 - Acceptance: Given a run in progress, when the discovery button is pressed, then
   the run is asked to stop with no question raised, the toolbar bar returns to
   rest at once and reports are ignored until the run ends. Given a run in
-  progress, then the button carries the negative mark and says "Stop discovery".
+  progress, then the button carries the negative mark and its tooltip says
+  "Stop discovery".
   Given a run that is stopped, one that completes, one that fails and one that
-  reaches nothing, then in every case the mark comes off and the button says
+  reaches nothing, then in every case the mark comes off and the tooltip says
   "Discover music the library does not hold" again. Given a run that has just
   been stopped, when a new run is asked for, then it starts at once; the stopped
   run winds down on its own thread and reports to nobody.
@@ -826,7 +828,7 @@ ruling).
   either of them learned, taking the later answer to any question both hold; one
   lock covers every note, every save and the writing of the file.
 - Rationale: Without memory the answer is a property of how a service feels that
-  day rather than of the library. Thirty days is long enough that a run usually
+  day rather than of the library. `MEMORY_LIFE_DAYS` is long enough that a run usually
   asks nothing, short enough that this year's record is found this year
   (Oliver's ruling). A run may add to what is known and correct it but may not
   take it away because a service said no.
@@ -901,7 +903,7 @@ ruling).
   on the SAME row as Close, the Filter control of FR-D54 and the controls that
   act on the ticks, immediately beneath the answer: Close alone on the left,
   then the pager, then Filter, Copy and Find in shops on the right (Oliver's
-  ruling, 2026-10-12); Tab shall walk them in that order. The pager shall stand
+  ruling); Tab shall walk them in that order. The pager shall stand
   on the middle of the dialog, Close and the right controls each in a side of
   their own sharing equally the width it leaves; where the right side cannot
   fit in half, it keeps its width and the pager stands as near the middle as
@@ -1539,8 +1541,8 @@ rare.
 
 A taste profile is a named selection, saved so a selection made once can be
 put back with one choice. It holds everything the dialog asks: the genres
-ticked, the Include boxes (FR-D85) and the years (FR-D58) (Oliver's ruling,
-2026-10-12). It is a remembered selection, not a model of anybody's taste, so
+ticked, the Include boxes (FR-D85) and the years (FR-D58) (Oliver's ruling).
+It is a remembered selection, not a model of anybody's taste, so
 it sits inside the scope above.
 
 **FR-D87 A taste profiles button beside Select all**
@@ -1555,13 +1557,13 @@ it sits inside the scope above.
 
 **FR-D88 The button lifts the saved profiles, by name**
 - Requirement: When the Taste profiles button is pressed, the dialog shall lift
-  a list above it holding one row per saved profile in alphabetical order
+  a list above it (below it where there is not room above) holding one row per saved profile in alphabetical order
   ignoring case: that profile's delete button on the left, then its name. A
   second press shall put the list down.
 - Rationale: Oliver's ruling: a delete beside each name, every one on the left
   so they share a column. The list is a frame of buttons rather than a menu,
   because a menu row holding two buttons was measured to let neither take the
-  keyboard (`taste_list.py`).
+  keyboard (`ui/taste_list.py`).
 - Acceptance: Given profiles "rock", "Ambient" and "Jazz", when the button is
   pressed, then the rows read Ambient, Jazz, rock and every delete button sits
   in one column to the left of its name.
@@ -1612,7 +1614,7 @@ it sits inside the scope above.
   naming the profile; only on Yes shall the profile be removed. When the last
   profile is removed, the button shall be disabled (FR-D87).
 - Rationale: `delete.png` rather than `negative.png`, which `ARCHITECTURE.md`
-  keeps for composing over another picture (Oliver's ruling, 2026-10-12).
+  keeps for composing over another picture (Oliver's ruling).
 - Acceptance: Given profiles Ambient and Jazz, when Jazz is chosen for deleting
   and confirmed, then only Ambient remains; when confirmation is refused, then
   both remain; when Ambient is then deleted, then the button is disabled.
@@ -1647,9 +1649,8 @@ it sits inside the scope above.
   rows do not fit, the list shall show a vertical scroll bar; while they fit, it
   shall show none. When a button in the list takes focus, the list shall scroll
   it into view. The scroll area shall never take focus itself.
-- Rationale: Measured on 2026-10-12: sixty profiles made a list 3436 pixels
-  tall, which ran off an 800 pixel screen below the button. The rows are the
-  stops; the pane holding them has nothing of its own to offer.
+- Rationale: A list sized to its rows alone runs off the screen once enough
+  profiles are saved. The rows are the stops; the pane holding them has nothing of its own to offer.
 - Acceptance: Given more profiles than the screen holds, when the list is
   lifted, then it lies wholly on the screen with a scroll bar; when Up is
   pressed from the first name, then the last name is focused and in view;
@@ -1667,8 +1668,8 @@ it sits inside the scope above.
   chosen in the answer's chooser, it shall tick exactly that profile's genres
   the run looked in and leave the kinds of FR-D86 as they were. Profiles shall
   be saved from the Discover dialog only (FR-D90).
-- Rationale: Oliver's ruling, 2026-10-12: taste profiles are one list across
-  every dialog that asks for genres. The choosers ask nothing about what to
+- Rationale: Taste profiles are one list across every dialog that asks for
+  genres (Oliver's ruling). The choosers ask nothing about what to
   include or which years, so a profile's genres are all they can use. The
   no-genre box and the kinds are not genres; a genre the run never looked in
   could only filter to nothing.
@@ -1688,9 +1689,8 @@ it sits inside the scope above.
   (the library's Filter by genre and the answer's chooser of FR-D54) shall read
   Cancel, then a gap, then Clear, Taste profiles (FR-D96) and the press that
   filters. Tab shall walk each row in the order it reads.
-- Rationale: Oliver's ruling, 2026-10-12: the way out on its own at the left,
-  the controls that set the ticks together on the right beside the press that
-  acts. The results dialog's row follows the same ruling (FR-D49).
+- Rationale: The way out on its own at the left, the controls that set the
+  ticks together on the right beside the press that acts (Oliver's ruling). The results dialog's row follows the same ruling (FR-D49).
 - Acceptance: Given either dialog, when it is laid out, then each control
   named stands to the right of the one before it and Tab moves from each to
   the next.

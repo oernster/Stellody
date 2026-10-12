@@ -16,7 +16,7 @@ timed run on the reference machine.
 
 ### 1.1 Purpose
 
-The library database now holds a good deal that cannot be had back by
+The library database holds a good deal that cannot be had back by
 scanning again: tag and album edits, overrides, ratings, listening history,
 settings and taste profiles. Beside it sit the discovery answer, the catalogue
 memory, the genre cache and the shop list, each of which cost network time or
@@ -124,8 +124,8 @@ Downloads folder is the one the operating system names (Qt's
 - A backup holds personal data unencrypted, exactly as the data folder does.
   Where it is kept decides who can read it; Stellody says nothing more about
   that than it already says about the data folder.
-- The house rules hold: clean-architecture layering, 400-line modules, 100
-  percent branch coverage over domain and application, no magic values, no Qt
+- The house rules hold: clean-architecture layering, modules within
+  `LINE_CAP` (`tests/structural/test_loc.py`), 100 percent branch coverage over domain and application, no magic values, no Qt
   below the UI layer, confirmation before anything destructive.
 
 ### 2.5 Assumptions and dependencies
@@ -133,8 +133,8 @@ Downloads folder is the one the operating system names (Qt's
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-01 | A journal copied while a discovery run appends to it can end in a torn last line, which the journal reader skips: held by `tests/infrastructure/test_journal.py::test_a_half_written_last_line_costs_only_that_line`. | Claude | Answered |
-| A-02 | Stellody can relaunch itself as a packaged build: seen by Oliver on 2026-10-12, a restore relaunched the built copy. | Oliver | Answered |
-| A-03 | A backup is a matter of seconds. Measured on a copy of Oliver's real library on 2026-10-12: a 26,128,646 byte set (database 7,405,568) backed up and zipped in 0.30 s over three runs, giving a 3,579,524 byte zip. | Oliver | Answered |
+| A-02 | Stellody can relaunch itself as a packaged build: seen by Oliver, a restore relaunched the built copy. | Oliver | Answered |
+| A-03 | A backup is a matter of seconds. Measured on a copy of Oliver's real library: a 26,128,646 byte set (database 7,405,568) backed up and zipped in 0.30 s over three runs, giving a 3,579,524 byte zip. | Oliver | Answered |
 
 ## 3. Requirements
 
@@ -266,7 +266,7 @@ Appendix B lists them.
 **FR-B35 Work in progress is shown**
 - Requirement: While a backup is being written or a chosen backup is being
   verified, Stellody shall show that it is working, naming which of the two.
-- Rationale: Oliver's ruling, 2026-10-12: a spinning disk can make either take
+- Rationale: Oliver's ruling: a spinning disk can make either take
   far longer than the reference machine does, so the listener must never be
   left wondering whether anything is happening.
 - Acceptance: Given a backup service held part way by a test double, when the
@@ -337,7 +337,7 @@ Appendix B lists them.
 - Rationale: A schema number is honest only while it is bumped. The database's
   shape is text, so it can be fingerprinted; a JSON file's shape is built in
   code and written down nowhere as one text, so the same guard over the JSON
-  owners is Won't this time (Appendix B). Proved on 2026-10-12 by planting a
+  owners is Won't this time (Appendix B). Proved by planting a
   column: exit 1 with it, exit 0 once removed.
 - Acceptance: Given a column added to the database schema, when the structural
   suite runs without the number changing, then it fails naming
@@ -460,7 +460,7 @@ Appendix B lists them.
   oldest readable number but below its newest, the restore service shall
   accept it; a JSON file shall be taken through every upgrade step since as it
   is staged, while the database is brought up by the store as it opens.
-- Rationale: Old backups stay restorable (Oliver's ruling, 2026-10-12).
+- Rationale: Old backups stay restorable (Oliver's ruling).
 - Acceptance: Given a backup holding a database at schema 0, when it is
   restored, then the library opens at the current schema with its rows intact.
   Given a shop file at schema 1 and an owner that has added one step since,
@@ -473,7 +473,7 @@ Appendix B lists them.
 - Requirement: If a backup's file carries a schema below its owner's oldest
   readable number, then the restore service shall refuse the whole backup,
   naming the file, its schema and the oldest this Stellody reads.
-- Rationale: The unwanted sibling of FR-B30. Since FR-B37 no owner ever stops
+- Rationale: The unwanted sibling of FR-B30. Under FR-B37 no owner ever stops
   reading a shape it wrote, so only a manifest no Stellody wrote can reach
   this; a zip is foreign input and says whatever it says.
 - Acceptance: Given an owner whose oldest readable schema is 2 and a backup
@@ -485,9 +485,8 @@ Appendix B lists them.
 - Requirement: The suite shall fail when any file of DATA-B01 can no longer be
   read at the schema it was first numbered at: zero for the database, the
   first schema for each JSON file.
-- Rationale: A backup made by an older version must restore (Oliver's ruling,
-  2026-10-12). A change of shape adds a step; it never removes one.
-  Proved on 2026-10-12 by raising the database's oldest readable schema to 1:
+- Rationale: A backup made by an older version must restore (Oliver's ruling).
+  A change of shape adds a step; it never removes one. Proved by raising the database's oldest readable schema to 1:
   exit 1 with it, exit 0 once removed.
 - Acceptance: Given the database's oldest readable schema raised from 0 to 1,
   when the suite runs, then it fails naming the database.

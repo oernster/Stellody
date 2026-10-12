@@ -375,13 +375,24 @@ A large run takes many minutes; a new release can take a month to appear.
 
 ### The catalogue memory is read once and written at quit
 
-What the catalogues said is read the first time a session needs it, held in
-memory and written whole only as Stellody quits; each answer is also noted on
-its own in a running journal the moment it arrives. Chosen over reading and
-rewriting the file around every run: reading or writing a file of that size
-held the interpreter long enough to starve the sound device. A process that
-dies loses nothing, since the journal is read on top of the file next time.
-The cost is a journal beside each memory, which a backup has to carry too.
+What the catalogues said is read once a session, on a thread of its own as
+Stellody opens while nothing is playing, held in memory and written whole only
+as Stellody quits; each answer is also noted on its own in a running journal
+the moment it arrives. Chosen over reading and rewriting the file around every
+run: reading or writing a file of that size held the interpreter long enough to
+starve the sound device. A process that dies loses nothing, since the journal
+is read on top of the file next time. The cost is a journal beside each
+memory, which a backup has to carry too, plus the whole memory held for the
+session whether or not discovery is used.
+
+### The Discover dialog is built once, unseen, as Stellody opens
+
+The first Discover dialog of a session took several times longer to build on
+Windows than every one after it, long enough to be heard as a dropout on the
+first press. So one is built and thrown away as the application opens, while
+nothing is playing. Chosen over building it only when asked for: the first
+press is as quick as any other and never interrupts the music. The cost is a
+dialog built at every launch that nobody may open.
 
 ### A partial answer is still an answer
 
@@ -465,14 +476,21 @@ tidying: the answer on screen always matches its question and expanding later
 obeys the same choices. An earlier answer is replaced once a new run
 completes, except for artists that run could not reach.
 
-### A taste profile is the whole selection
+### A taste profile is the whole selection, in one shared list
 
 A taste profile names everything the Discover dialog asks: the genres ticked,
-the three Include boxes and the years. Choosing one puts all of it back; Find
-offers to save a selection no profile already holds. Chosen over keeping the
-genres alone, which would leave the rest to be set by hand every time. Two
-profiles with the same genres and different years are different profiles, so
-the list can grow longer than the genre choices alone would make it.
+the three Include boxes and the years. Choosing one there puts all of it back;
+Find offers to save a selection no profile already holds. The profiles are one
+list in one setting, offered by Discover and by both genre choosers (the
+library's filter and the answer's), so a profile deleted in any of the three
+is gone from all; they are saved from Discover alone. Chosen over keeping the
+genres alone, which would leave the rest to be set by hand every time; also
+over a list per dialog, where a profile kept in one would be missing from the
+others. A genre
+chooser asks nothing about what to include or which years, so there a profile
+sets its genres alone. Two profiles with the same genres and different years
+are different profiles, so the list can grow longer than the genres alone
+would make it; in a genre chooser the two tick the same boxes.
 
 ### The answer is read a page at a time
 
@@ -584,6 +602,17 @@ be reached from the keyboard. The frame is walked explicitly: the arrows move
 along a column or across a row while Tab walks every button. Every button is
 reachable without a mouse; the frame's keyboard handling is Stellody's own to
 maintain rather than Qt's.
+
+### The way out stands alone on the left
+
+In the Discover dialog, the results window and both genre choosers, Close or
+Cancel stands by itself at the left of the button row; the controls that set
+the ticks sit together on the right beside the press that acts, with the
+results window's pager between (Oliver's ruling). Tab walks each row as it
+reads. Chosen over the way out sitting among the acting controls: it stands in
+one place in each of those dialogs, apart from anything that acts. The cost:
+the shops dialog and the shop form keep Close and Cancel on the right, so not
+every dialog is laid out alike.
 
 ### Reading dialogs read themselves; the guide uses real controls
 

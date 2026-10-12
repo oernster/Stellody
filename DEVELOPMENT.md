@@ -12,7 +12,7 @@ publish its website. What the product does and why is in
 | Language | Python 3.13 |
 | Interface | PySide6 |
 | Tags | mutagen |
-| Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
+| Decode | soundfile, plus PyAV for M4A, WMA, WavPack, AAC and bonus videos (`PACKET_SUFFIXES`) |
 | Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux; Qt Multimedia notices the output devices changing. The list of devices to choose from is read from Windows' own endpoint enumeration (ctypes over COM) on Windows, from Qt Multimedia elsewhere; on Linux a chosen device is reached through PortAudio's `pulse` device with `PULSE_SINK` naming its sink |
 | Buffers | numpy |
 | Store | SQLite |
@@ -109,8 +109,9 @@ dates each page in `sitemap.xml` from the last commit that touched it. The
 Flatpak build stamps neither; run the two scripts directly after a bump made
 without building on either of the other two.
 
-Every page counts its loads with GoatCounter, through the one script tag each
-page carries.
+Every page counts its loads with GoatCounter: two script tags in each page's
+head, one naming the count by host and path, the other loading
+GoatCounter's counter.
 
 `stellody.com` redirects permanently (301) to `stellody.co.uk`. The redirect is
 the registrar's domain forwarding on the .com, not anything in this repository,

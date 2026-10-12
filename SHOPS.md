@@ -298,7 +298,9 @@ Appendix B lists them.
 **FR-S15 Both controls are reachable from the keyboard**
 - Requirement: The results dialog shall open focused on its first list with that
   list's first row current. It shall place each list then each control beneath
-  them in the keyboard ring, in the order they are drawn. Within a list, Up and
+  them in the keyboard ring, in the order they are drawn: Close alone on the
+  left, the pager's two directions in the middle, then Filter, Copy and Find in
+  shops on the right. Within a list, Up and
   Down shall walk the rows; Right shall open an artist and Left shall shut it;
   Enter and Space shall tick or untick an album and open or shut an artist. The
   current row shall wear the ring while its list has the focus. A list given the

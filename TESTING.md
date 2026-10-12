@@ -36,11 +36,10 @@ For a count of tests without running them,
 
 - **Coverage.** 100% branch coverage over `stellody.domain` and
   `stellody.application`, set in `pyproject.toml`; below that the run fails.
-  Those are the layers that reach no disk, no network and no device, so
-  anything short there is a decision nobody made. Infrastructure and the
-  interface are tested too, against real files, a real loopback server and a
-  real `QApplication`; they sit outside the floor rather than dragging it down
-  to a number that means nothing.
+  Why the floor covers those two layers alone is under Coverage in
+  [`ARCHITECTURE.md`](ARCHITECTURE.md). Infrastructure and the interface are
+  tested too, against real files, a real loopback server and a real
+  `QApplication`.
 - **Style.** `tests/structural/test_style.py` runs black, flake8 and ruff as
   assertions, so a formatting or linting regression fails the suite even
   without the gate around it.
@@ -138,5 +137,6 @@ for code nobody has written yet. The suite in `tests/structural/`:
 proved by planting the violation it exists to catch and reading the failure, then restoring the tree in a
 `finally` block so an interrupted proof cannot leave the plant behind. A test
 written for a defect is run before the fix, where it has to fail for the
-reason named, not merely fail. The proof is recorded where the rule is
-described, usually as "proved by planting" in `ARCHITECTURE.md`.
+reason named, not merely fail. Where a guard can be planted against without
+touching the tree, keep the plant as a test of its own beside the guard, as
+`test_the_guard_bites` in `test_no_dashes.py` does.

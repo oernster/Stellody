@@ -57,7 +57,8 @@ Each line is a summary; the site has the detail.
 - Search that narrows as you type, keeping each album whole around the match.
 - Messy collections sorted out: an album saved as one long file, a box set over
   several folders or an unnumbered bonus disc comes out as one album.
-- A genre filter over the covers, including albums that state no genre.
+- A genre filter over the covers, including albums that state no genre; a
+  saved taste profile ticks its genres there in one choice.
 - State what an album or a single song really is (artist, title, date, genre,
   disc and track number); genres come from a settled list of headings with
   their styles under them. Stored by Stellody, never written to the file.
@@ -106,9 +107,12 @@ Each line is a summary; the site has the detail.
   made that you do not hold, plus who sounds like them.
 - Optional year range, artists on compilations, missing volumes of series you
   collect and DJ mixes.
-- Taste profiles: save a selection (genres, the Include boxes and the years)
-  under a name, then choose it later to put the whole selection back. Each
-  profile in the list has its own delete button.
+- Taste profiles: when Find runs on a selection not yet saved, Stellody offers
+  to keep it (genres, the Include boxes and the years) under a name; choose it
+  later to put the whole selection back. Each profile in the list has its own
+  delete button; a long list scrolls. The same profiles are offered in the
+  library's Filter by genre and in Filter the answer, where a profile ticks its
+  genres.
 - Progress bars per stage, an estimate of time left and a stop that takes
   effect at once. Answers are kept as they arrive, so a second run asks only
   for the rest; gaps are counted and named rather than hidden.
@@ -186,7 +190,9 @@ off. Five things reach outside your computer; nothing else does.
 
 Nothing is encrypted at rest: the store holds notes about your library, not
 secrets. A backup zip holds the same notes just as plainly, wherever you choose
-to keep it; it never leaves your computer unless you move it. Stellody keeps a plain-text diary, `stellody-diary.log`, beside its
+to keep it; it never leaves your computer unless you move it.
+
+Stellody keeps a plain-text diary, `stellody-diary.log`, beside its
 library database in its data directory (`%LOCALAPPDATA%\Stellody` on Windows,
 `~/Library/Application Support/Stellody` on macOS, `~/.local/share/stellody` on
 Linux or `~/.var/app/uk.codecrafter.Stellody/data/stellody` under Flatpak). It
@@ -270,7 +276,7 @@ Each platform builds on itself: `python buildexe.py` then
   [`BACKUP.md`](BACKUP.md): specifications whose requirements each name the
   test that proves them.
 
-## Supporting Stellody
+## Supporting the project
 
 Stellody is free and stays free. There is no paid tier, no licence key and no
 feature held back behind a donation. If it has replaced something you were

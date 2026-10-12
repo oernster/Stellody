@@ -102,8 +102,8 @@ inside PyAV supplies every decoder named here.
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-F01 | Measured on 2026-10-12. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
-| A-F02 | Measured on 2026-10-12. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging. It states no bits per sample for WMA or raw AAC; a WavPack fixture written as `s16p` reports 16. | | Answered |
+| A-F01 | Measured. The bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; of those it encodes wmav1, wmav2, wavpack and aac, not wmapro or wmalossless. | | Answered |
+| A-F02 | Measured. mutagen reads ASF and WavPack tags. It opens a raw AAC stream but reads no tags from it, since its AAC class does not support tagging. It states no bits per sample for WMA or raw AAC; a WavPack fixture written as `s16p` reports 16. | | Answered |
 | A-F03 | A listener with WMA files wants them in the library rather than reported (Oliver's ruling, made without certainty; section 5). | | Answered |
 
 ## 3. Requirements
@@ -210,8 +210,8 @@ section 4 lists them.
   `.tak`, `.m4b` and `.caf` as unplayable, so a folder holding only those raises
   one finding naming how many files and which formats. An AAC inside an MP4 is an
   `.m4a` and plays, so no such case is named.
-- Rationale: Somebody went looking for an album they owned and found nothing at
-  all. Widening the taken set must not narrow the reported one.
+- Rationale: An album a listener owns must never be silently absent. Widening
+  the taken set must not narrow the reported one.
 - Acceptance: Given a folder holding one Monkey's Audio file, when it is scanned,
   then one finding names it and no album is silently absent.
 - Verified by: `tests/infrastructure/test_scanning_formats.py::test_the_formats_left_out_are_still_reported`

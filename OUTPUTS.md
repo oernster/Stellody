@@ -407,8 +407,8 @@ is held by the existing invariant 12 test, which this change must leave green.
 Priority: Must.
 
 **NFR-O-MAINT-001 The house limits hold.** Domain and application keep 100%
-branch coverage; every module stays at or below the 400 line cap and out of
-the danger band. The button lives inside `SoundControls`
+branch coverage; every module stays at or below `LINE_CAP` and out of the
+danger band (both in `tests/structural/test_loc.py`). The button lives inside `SoundControls`
 (`ui/sound_controls.py`) rather than in `ui/bottom_tray.py`. Verified by the
 existing structural suite. Priority: Must.
 
