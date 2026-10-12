@@ -1,14 +1,16 @@
-"""Taste profiles: named sets of genres, kept so a selection can be put back.
+"""Taste profiles: named selections, kept so a whole selection can be put back.
 
-`DISCOVERY.md` FR-D87 to FR-D93. The rules about them are here, with nothing
-installed: what makes two selections the same profile, what makes two names
-the same name, the order the list shows them in and what saving or deleting
-leaves behind. Where they are kept is another layer's business; so is the
-dialog that offers them.
+`DISCOVERY.md` FR-D87 to FR-D93. A profile holds everything the Discover
+dialog asks: the genres ticked, the three Include boxes and the years (Oliver's
+ruling, 2026-10-12, amending one that held the genres alone). The rules about
+them are here, with nothing installed: what makes two selections the same,
+what makes two names the same name, the order the list shows them in and what
+saving or deleting leaves behind. Where they are kept is another layer's
+business; so is the dialog that offers them.
 
-**A selection is a set, not a sequence.** Ticking Jazz then Rock is the same
-choice as Rock then Jazz, so profiles are compared by the genres they hold
-whatever the order (FR-D90).
+**Genres are a set, not a sequence.** Ticking Jazz then Rock is the same
+choice as Rock then Jazz, so the genres are compared whatever their order; the
+Include boxes and the years must match as well (FR-D90).
 
 **A name is compared ignoring case and the space around it.** "Jazz" and
 " jazz " are one profile, so saving the second replaces the first once that is
@@ -17,15 +19,20 @@ confirmed (FR-D91); the list orders them the same way (FR-D88).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+from stellody.domain.including import OWN_ALBUMS, Including
+from stellody.domain.release_years import ANY_YEAR, ReleaseYears
 
 
 @dataclass(frozen=True, slots=True)
 class TasteProfile:
-    """One named selection of genres."""
+    """One named selection: genres, what else to include and which years."""
 
     name: str
     genres: tuple[str, ...]
+    including: Including = OWN_ALBUMS
+    years: ReleaseYears = ANY_YEAR
 
 
 def usable_name(text: str) -> str | None:
@@ -44,13 +51,21 @@ def ordered(profiles: tuple[TasteProfile, ...]) -> tuple[TasteProfile, ...]:
     return tuple(sorted(profiles, key=lambda profile: _key(profile.name)))
 
 
+def _same_selection(one: TasteProfile, other: TasteProfile) -> bool:
+    """Whether two profiles hold the same choices, whatever they are called."""
+    return (
+        frozenset(one.genres) == frozenset(other.genres)
+        and one.including == other.including
+        and one.years == other.years
+    )
+
+
 def holding(
-    profiles: tuple[TasteProfile, ...], genres: tuple[str, ...]
+    profiles: tuple[TasteProfile, ...], wanted: TasteProfile
 ) -> TasteProfile | None:
-    """The profile holding exactly these genres, in any order; else None."""
-    wanted = frozenset(genres)
+    """The saved profile holding exactly this selection; else None."""
     for profile in profiles:
-        if frozenset(profile.genres) == wanted:
+        if _same_selection(profile, wanted):
             return profile
     return None
 
@@ -64,11 +79,12 @@ def named(profiles: tuple[TasteProfile, ...], name: str) -> TasteProfile | None:
 
 
 def saved(
-    profiles: tuple[TasteProfile, ...], name: str, genres: tuple[str, ...]
+    profiles: tuple[TasteProfile, ...], name: str, selection: TasteProfile
 ) -> tuple[TasteProfile, ...]:
-    """The profiles with this one saved, replacing any going by the same name."""
+    """The profiles with this selection saved under the name, replacing any
+    going by the same name."""
     kept = without(profiles, name)
-    return ordered((*kept, TasteProfile(name=name.strip(), genres=genres)))
+    return ordered((*kept, replace(selection, name=name.strip())))
 
 
 def without(profiles: tuple[TasteProfile, ...], name: str) -> tuple[TasteProfile, ...]:

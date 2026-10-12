@@ -11,6 +11,8 @@ import pytest
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore
 
+from stellody.domain.including import Including
+from stellody.domain.release_years import ReleaseYears
 from stellody.domain.taste import TasteProfile
 from stellody.ui import taste_controls
 from stellody.ui.discovery_dialog import DiscoveryDialog
@@ -102,14 +104,20 @@ class TestTheButton:
 
 
 class TestChoosing:
-    def test_a_profile_ticks_exactly_its_genres(self, application) -> None:
-        """FR-D89: the Include boxes are left as they stand."""
-        dialog = _dialog(_store(TasteProfile("Jazz", JAZZ)))
+    def test_a_profile_puts_back_its_whole_selection(self, application) -> None:
+        """FR-D89: genres, Include boxes and years (Oliver's ruling, 2026-10-12)."""
+        profile = TasteProfile(
+            "Jazz", JAZZ, Including(series=True, mixes=False), ReleaseYears(1990, 1999)
+        )
+        dialog = _dialog(_store(profile))
         dialog.grid.set_chosen(("Rock", "Electronic"))
         dialog.credits.setChecked(True)
+        dialog.years.earliest.setText("2020")
         dialog.taste.menu.actions()[0].trigger()
         assert set(dialog.chosen()) == set(JAZZ)
-        assert dialog.credits.isChecked()
+        assert dialog.including() == Including(series=True, mixes=False)
+        assert dialog.years.earliest.text() == "1990"
+        assert dialog.years.latest.text() == "1999"
 
     def test_a_genre_no_longer_offered_is_passed_over(self, application) -> None:
         dialog = _dialog(_store(TasteProfile("Old", ("Jazz", "Not a genre"))))
@@ -217,12 +225,30 @@ class TestKeeping:
             "not json",
             '{"name": "Jazz"}',
             '[{"name": "  "}, {"genres": ["Jazz"]}, {"name": "X", "genres": [1]}, 3]',
+            '[{"name": "X", "genres": [], "years": {"earliest": 2, "latest": 1}}]',
+            '[{"name": "X", "genres": [], "years": {"earliest": "1990"}}]',
+            '[{"name": "X", "genres": [], "including": {"credits": 1}}]',
+            '[{"name": "X", "genres": [], "including": [], "years": 5}]',
         ],
     )
     def test_a_setting_that_is_not_profiles_offers_none(self, application, stored):
         settings = RememberingStore({SETTING_TASTE_PROFILES: stored})
         dialog = _dialog(TasteStore(settings))
         assert not dialog.taste.button.isEnabled()
+
+    def test_the_whole_selection_survives_the_round_trip(self, application):
+        profile = TasteProfile(
+            "Jazz", JAZZ, Including(credits=True), ReleaseYears(None, 1975)
+        )
+        assert _store(profile).profiles() == (profile,)
+
+    def test_a_profile_kept_with_genres_alone_reads_with_the_defaults(
+        self, application
+    ):
+        settings = RememberingStore(
+            {SETTING_TASTE_PROFILES: '[{"name": "Jazz", "genres": ["Jazz"]}]'}
+        )
+        assert TasteStore(settings).profiles() == (TasteProfile("Jazz", ("Jazz",)),)
 
     def test_a_readable_profile_survives_beside_a_broken_one(self, application):
         settings = RememberingStore(

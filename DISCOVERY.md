@@ -1503,10 +1503,12 @@ rare.
 
 #### Taste profiles
 
-A taste profile is a named set of ticked genres, saved so a selection made once
-can be put back with one choice. It holds the genres alone: the Include boxes
-(FR-D85) and the years (FR-D58) are left as they stand. It is a remembered
-selection, not a model of anybody's taste, so it sits inside the scope above.
+A taste profile is a named selection, saved so a selection made once can be
+put back with one choice. It holds everything the dialog asks: the genres
+ticked, the Include boxes (FR-D85) and the years (FR-D58). Amended on
+2026-10-12 by Oliver's ruling; it first held the genres alone. It is a
+remembered selection, not a model of anybody's taste, so it sits inside the
+scope above.
 
 **FR-D87 A taste profiles button beside Select all**
 - Requirement: The Discover dialog shall carry a button labelled "Taste
@@ -1529,21 +1531,25 @@ selection, not a model of anybody's taste, so it sits inside the scope above.
   opening those three in the same order.
 - Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
 
-**FR-D89 Choosing a profile ticks exactly its genres**
+**FR-D89 Choosing a profile puts its whole selection back**
 - Requirement: When a profile is chosen from the list, the dialog shall tick
-  exactly that profile's genres and untick every other. If a profile names a
-  genre the grid no longer offers, then the dialog shall pass that genre over
-  and tick the rest.
-- Acceptance: Given Rock and Blues ticked and a profile holding Electronic and
-  Jazz, when that profile is chosen, then Electronic and Jazz alone are ticked
-  while the Include boxes and the years are unchanged; given a profile holding a
-  genre since removed, then its other genres are ticked and nothing is raised.
+  exactly that profile's genres, set the Include boxes to the profile's and set
+  both year fields to the profile's, empty where it holds no bound. If a profile
+  names a genre the grid no longer offers, then the dialog shall pass that genre
+  over and tick the rest. A profile kept before profiles held the Include boxes
+  and the years reads with their defaults (FR-D85, every year).
+- Acceptance: Given Rock and Electronic ticked, compilations included and 2020
+  as the earliest year, when a profile holding Jazz and Blues, series only and
+  1990 to 1999 is chosen, then Jazz and Blues alone are ticked, the boxes read
+  clear, ticked, clear and the years read 1990 to 1999; given a profile holding
+  a genre since removed, then its other genres are ticked and nothing is raised.
 - Verified by: `tests/ui/test_taste_profiles.py`
 
 **FR-D90 A new selection is offered for saving on Find**
-- Requirement: When Find is pressed while the genres ticked are not exactly the
-  genres of any saved profile (whatever order they were ticked in), the dialog
-  shall ask whether to save them as a taste profile, with a name field, Save and
+- Requirement: When Find is pressed while the selection (the genres, whatever
+  order they were ticked in, the Include boxes and the years) is not exactly that
+  of any saved profile, the dialog shall ask whether to save it as a taste
+  profile, with a name field, Save and
   Not now. The run shall start after either answer; Escape answers Not now.
 - Rationale: A selection is worth keeping at the moment it is used (Oliver's
   ruling); asking again for a selection already kept would be noise.
@@ -1878,9 +1884,7 @@ across runs what was offered and rejected; reopening a past run's results from
 the menu, which FR-D28 makes cheap to add later; year presets, decade buttons
 or a slider beside the two fields of FR-D58; narrowing a finished answer by
 year on the results screen, where FR-D54 narrows by genre; renaming a taste
-profile, which saving under the new name then deleting the old does; a taste
-profile holding the Include boxes or the years (FR-D87 to FR-D93 hold genres
-alone, Oliver's ruling).
+profile, which saving under the new name then deleting the old does.
 
 ## 5. Open questions
 

@@ -6,7 +6,7 @@ questions it asks, while the dialog says where it goes.
 
 The list lifts the way the visualiser's styles do (`lift_menu.py`): the saved
 profiles by name, alphabetically, then "Delete a profile" opening the same
-names. Choosing a name puts that profile's genres back; choosing one to delete
+names. Choosing a name puts that profile's selection back; choosing one to delete
 asks first, naming it. With nothing saved the button is disabled, which wears
 the red ring every disabled control wears.
 
@@ -32,7 +32,7 @@ TASTE_LABEL = "Taste profiles"
 TASTE_ICON = "taste-profiles.png"
 DELETE_MENU = "Delete a profile"
 DELETE_TITLE = "Delete taste profile"
-DELETE_ASK = "Delete the taste profile “{name}”? Its genres stay as they are."
+DELETE_ASK = "Delete the taste profile “{name}”? Nothing ticked changes."
 REPLACE_TITLE = "Replace taste profile"
 REPLACE_ASK = "A taste profile called “{name}” is already saved. Replace it?"
 # A literal ampersand in a menu line would mark a shortcut and vanish.
@@ -55,7 +55,7 @@ class TasteControls:
         self,
         parent: QWidget,
         store: TasteStore | None,
-        put_back: Callable[[tuple[str, ...]], None],
+        put_back: Callable[[TasteProfile], None],
         icon_px: int,
         name_for: NameFor | None = None,
         ask: Ask | None = None,
@@ -84,7 +84,7 @@ class TasteControls:
         for profile in profiles:
             action = self.menu.addAction(_line(profile.name))
             action.triggered.connect(
-                lambda _checked=False, genres=profile.genres: self._put_back(genres)
+                lambda _checked=False, chosen=profile: self._put_back(chosen)
             )
         if not profiles:
             return
@@ -96,25 +96,25 @@ class TasteControls:
                 lambda _checked=False, name=profile.name: self.delete(name)
             )
 
-    def offer(self, genres: tuple[str, ...]) -> None:
+    def offer(self, selection: TasteProfile) -> None:
         """On Find: offer to save a selection no profile holds yet. FR-D90.
 
         A name already taken is replaced only once that is confirmed; refused,
         the offer is made again, which is the name field coming back (FR-D91).
         """
-        if self._store is None or not genres:
+        if self._store is None or not selection.genres:
             return
-        if holding(self.profiles(), genres) is not None:
+        if holding(self.profiles(), selection) is not None:
             return
         while True:
-            name = self._name_for(genres)
+            name = self._name_for(selection.genres)
             if name is None:
                 return
             taken = named(self.profiles(), name)
             if taken is None or self._ask(
                 REPLACE_TITLE, REPLACE_ASK.format(name=taken.name)
             ):
-                self._store.keep(saved(self.profiles(), name, genres))
+                self._store.keep(saved(self.profiles(), name, selection))
                 self.refresh()
                 return
 

@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
 from stellody.application.compilation_cost import Cost
 from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.release_years import ReleaseYears, YearRefusal
+from stellody.domain.taste import TasteProfile
 from stellody.shared import resources
 from stellody.ui.dialogs import (
     CLOSE_ICON,
@@ -305,9 +306,21 @@ class DiscoveryDialog(FirstStopDialog):
         """
         self._swept(lambda: self.grid.set_all(not self.grid.all_ticked()))
 
-    def _put_back(self, genres: tuple[str, ...]) -> None:
-        """Tick exactly a taste profile's genres, priced once. FR-D89."""
-        self._swept(lambda: self.grid.set_chosen(genres))
+    def _put_back(self, profile: TasteProfile) -> None:
+        """Put a taste profile's whole selection back, priced once. FR-D89."""
+
+        def selected() -> None:
+            self.grid.set_chosen(profile.genres)
+            self.credits.setChecked(profile.including.credits)
+            self.series.setChecked(profile.including.series)
+            self.mixes.setChecked(profile.including.mixes)
+            for field, year in (
+                (self.years.earliest, profile.years.earliest),
+                (self.years.latest, profile.years.latest),
+            ):
+                field.setText("" if year is None else str(year))
+
+        self._swept(selected)
 
     def _swept(self, change: Callable[[], None]) -> None:
         """Move many boxes at once, then price once; busy pointer meanwhile."""
@@ -333,6 +346,6 @@ class DiscoveryDialog(FirstStopDialog):
             return
         # Offered before the run, whose start does not wait on the answer
         # beyond the offer itself. FR-D90.
-        self.taste.offer(self.chosen())
+        self.taste.offer(TasteProfile("", self.chosen(), self.including(), years))
         self._start(self.chosen(), self.including(), years)
         self.accept()
