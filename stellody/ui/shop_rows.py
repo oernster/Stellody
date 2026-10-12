@@ -111,8 +111,11 @@ class RowControls:
         return [stop for stop in found if stop is not None and stop.isEnabled()]
 
 
-def _picture_button(artwork: str, tooltip: str, parent: QWidget) -> QPushButton:
-    """A control named by its picture and its tooltip alone."""
+def picture_button(artwork: str, tooltip: str, parent: QWidget) -> QPushButton:
+    """A control named by its picture and its tooltip alone.
+
+    Shared with the taste profiles list, whose rows delete the same way.
+    """
     button = wearing(QPushButton("", parent), resources.find_asset(artwork))
     button.setToolTip(tooltip)
     button.setAccessibleName(tooltip)
@@ -148,10 +151,10 @@ def row_controls(
     edit, delete, grip = changes
     line.addWidget(Handle(grip, holder))
     line.addWidget(button, 1)
-    edit_button = _picture_button(EDIT_ICON, EDIT_TOOLTIP.format(shop=name), holder)
+    edit_button = picture_button(EDIT_ICON, EDIT_TOOLTIP.format(shop=name), holder)
     edit_button.clicked.connect(edit)
     line.addWidget(edit_button)
-    delete_button = _picture_button(
+    delete_button = picture_button(
         DELETE_ICON, DELETE_TOOLTIP.format(shop=name), holder
     )
     delete_button.clicked.connect(delete)

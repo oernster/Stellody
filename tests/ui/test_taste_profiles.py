@@ -1,4 +1,4 @@
-"""Taste profiles in the Discover dialog. `DISCOVERY.md` FR-D87 to FR-D93.
+"""Taste profiles in the Discover dialog. `DISCOVERY.md` FR-D87 to FR-D94.
 
 The two questions the profiles ask (a name to save under; a yes or no) are
 answered by replacing the module's own functions, never by mocking Qt: what
@@ -8,6 +8,8 @@ is under test is what the dialog does with the answer.
 from __future__ import annotations
 
 import pytest
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore
 
@@ -17,12 +19,13 @@ from stellody.domain.taste import TasteProfile
 from stellody.ui import taste_controls
 from stellody.ui.discovery_dialog import DiscoveryDialog
 from stellody.ui.settings_keys import SETTING_TASTE_PROFILES
-from stellody.ui.taste_controls import DELETE_MENU
+from stellody.ui.taste_list import DELETE_TOOLTIP, NAME_COLUMN
 from stellody.ui.taste_prompt import SaveTasteDialog
 from stellody.ui.taste_store import TasteStore
 
 JAZZ = ("Jazz", "Blues")
 ELECTRONIC = ("Electronic",)
+_JAZZ = (TasteProfile("Jazz", JAZZ),)
 
 
 class Answers:
@@ -65,7 +68,11 @@ def _dialog(store: TasteStore | None, started=None) -> DiscoveryDialog:
 
 
 def _names(dialog: DiscoveryDialog) -> list[str]:
-    return [a.text() for a in dialog.taste.menu.actions() if not a.isSeparator()]
+    return [name.text() for _, name in dialog.taste.list.rows]
+
+
+def _choose(dialog: DiscoveryDialog, index: int) -> None:
+    dialog.taste.list.rows[index][NAME_COLUMN].click()
 
 
 class TestTheButton:
@@ -87,10 +94,10 @@ class TestTheButton:
         assert int(button.focusPolicy()) != 0, "the keyboard reaches it"
         dialog.close()
 
-    def test_it_lists_names_alphabetically_then_the_delete_entry(
+    def test_it_lists_names_alphabetically_each_with_its_delete(
         self, application
     ) -> None:
-        """FR-D88: Ambient, Jazz, rock, then the delete entry naming the same."""
+        """FR-D88, FR-D92: Ambient, Jazz, rock, each row deleting its own."""
         dialog = _dialog(
             _store(
                 TasteProfile("rock", ("Rock",)),
@@ -98,9 +105,33 @@ class TestTheButton:
                 TasteProfile("Jazz", JAZZ),
             )
         )
-        assert _names(dialog) == ["Ambient", "Jazz", "rock", DELETE_MENU]
-        deleting = dialog.taste.menu.actions()[-1].menu()
-        assert [a.text() for a in deleting.actions()] == ["Ambient", "Jazz", "rock"]
+        assert _names(dialog) == ["Ambient", "Jazz", "rock"]
+        tips = [delete.toolTip() for delete, _ in dialog.taste.list.rows]
+        assert tips == [
+            DELETE_TOOLTIP.format(name=name) for name in ("Ambient", "Jazz", "rock")
+        ]
+
+    def test_the_delete_buttons_line_up_on_the_left(
+        self, application: QApplication
+    ) -> None:
+        """Oliver's ruling: delete first in every row, so all share one column."""
+        dialog = _dialog(
+            _store(TasteProfile("A long profile name", JAZZ), TasteProfile("B", JAZZ))
+        )
+        dialog.show()
+        dialog.taste.button.click()
+        application.processEvents()
+        rows = dialog.taste.list.rows
+        lefts = {delete.mapToGlobal(delete.rect().topLeft()).x() for delete, _ in rows}
+        assert len(lefts) == 1, "every delete button in one column"
+        for delete, name in rows:
+            assert delete.geometry().right() < name.geometry().left()
+        dialog.taste.list.hide()
+        dialog.close()
+
+    def test_a_name_with_an_ampersand_keeps_it(self, application) -> None:
+        dialog = _dialog(_store(TasteProfile("Rock & Roll", ("Rock",))))
+        assert _names(dialog) == ["Rock && Roll"], "a single one would vanish"
 
 
 class TestChoosing:
@@ -113,7 +144,7 @@ class TestChoosing:
         dialog.grid.set_chosen(("Rock", "Electronic"))
         dialog.credits.setChecked(True)
         dialog.years.earliest.setText("2020")
-        dialog.taste.menu.actions()[0].trigger()
+        _choose(dialog, 0)
         assert set(dialog.chosen()) == set(JAZZ)
         assert dialog.including() == Including(series=True, mixes=False)
         assert dialog.years.earliest.text() == "1990"
@@ -121,7 +152,7 @@ class TestChoosing:
 
     def test_a_genre_no_longer_offered_is_passed_over(self, application) -> None:
         dialog = _dialog(_store(TasteProfile("Old", ("Jazz", "Not a genre"))))
-        dialog.taste.menu.actions()[0].trigger()
+        _choose(dialog, 0)
         assert dialog.chosen() == ("Jazz",)
 
 
@@ -186,8 +217,8 @@ class TestSavingOnFind:
 
 class TestDeleting:
     def _delete(self, dialog: DiscoveryDialog, name: str) -> None:
-        deleting = dialog.taste.menu.actions()[-1].menu()
-        next(a for a in deleting.actions() if a.text() == name).trigger()
+        rows = dialog.taste.list.rows
+        next(delete for delete, shown in rows if shown.text() == name).click()
 
     def test_a_profile_goes_only_once_confirmed(self, application, answers):
         """FR-D92: asked naming it; refused, both remain."""
@@ -209,6 +240,77 @@ class TestDeleting:
         self._delete(dialog, "Ambient")
         assert store.profiles() == ()
         assert not dialog.taste.button.isEnabled()
+
+
+class TestTheKeyboard:
+    """FR-D94: every button in the list is reached from the keyboard."""
+
+    @pytest.fixture
+    def lifted(self, application: QApplication):
+        dialog = _dialog(_store(TasteProfile("Ambient", ("Ambient",)), *_JAZZ))
+        dialog.show()
+        dialog.taste.button.click()
+        application.processEvents()
+        yield dialog, dialog.taste.list.rows
+        dialog.taste.list.hide()
+        dialog.close()
+
+    def _press(self, application: QApplication, key: Qt.Key) -> None:
+        QTest.keyClick(application.focusWidget(), key)
+        application.processEvents()
+
+    def test_it_opens_on_the_first_name(self, application, lifted) -> None:
+        dialog, rows = lifted
+        assert dialog.taste.list.isVisible()
+        assert application.focusWidget() is rows[0][NAME_COLUMN]
+
+    def test_up_and_down_keep_the_column_and_wrap(self, application, lifted) -> None:
+        _, rows = lifted
+        self._press(application, Qt.Key.Key_Down)
+        assert application.focusWidget() is rows[1][NAME_COLUMN]
+        self._press(application, Qt.Key.Key_Down)
+        assert application.focusWidget() is rows[0][NAME_COLUMN], "wraps"
+        self._press(application, Qt.Key.Key_Up)
+        assert application.focusWidget() is rows[1][NAME_COLUMN], "wraps back"
+
+    def test_left_and_right_cross_between_delete_and_name(
+        self, application, lifted
+    ) -> None:
+        _, rows = lifted
+        self._press(application, Qt.Key.Key_Left)
+        assert application.focusWidget() is rows[0][0]
+        self._press(application, Qt.Key.Key_Down)
+        assert application.focusWidget() is rows[1][0], "the delete column kept"
+        self._press(application, Qt.Key.Key_Right)
+        assert application.focusWidget() is rows[1][NAME_COLUMN]
+
+    def test_tab_walks_every_button_in_reading_order_and_wraps(
+        self, application, lifted
+    ) -> None:
+        _, rows = lifted
+        walked = []
+        for _ in range(len(rows) * len(rows[0])):
+            self._press(application, Qt.Key.Key_Tab)
+            walked.append(application.focusWidget())
+        assert walked == [rows[1][0], rows[1][NAME_COLUMN], rows[0][0], rows[0][1]]
+
+    def test_escape_puts_it_down(self, application, lifted) -> None:
+        dialog, _ = lifted
+        self._press(application, Qt.Key.Key_Escape)
+        assert not dialog.taste.list.isVisible()
+
+    def test_choosing_a_name_puts_it_down(self, application, lifted) -> None:
+        dialog, rows = lifted
+        rows[0][NAME_COLUMN].click()
+        assert not dialog.taste.list.isVisible()
+        assert dialog.chosen() == ("Ambient",)
+
+    def test_a_second_press_of_the_button_puts_it_down(
+        self, application, lifted
+    ) -> None:
+        dialog, _ = lifted
+        dialog.taste.button.click()
+        assert not dialog.taste.list.isVisible()
 
 
 class TestKeeping:

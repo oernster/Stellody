@@ -12,10 +12,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QFrame, QLabel, QSlider, QVBoxLayout, QWidget
 
 from stellody.ui.dismissal import Dismissal
+from stellody.ui.lifting import lifted_top
 from stellody.ui.theme import HALF
 
 # The slider runs in whole percent, which is what the label says and what is
@@ -28,16 +28,6 @@ DEFAULT_PERCENT = 75
 PERCENT_STEP = 5
 SLIDER_HEIGHT_PX = 220
 SLIDER_MARGIN_PX = 10
-
-
-def _screen_top(widget: QWidget) -> int:
-    """The top of the screen this widget is on, in screen coordinates.
-
-    The one it is on rather than the primary one, since a window dragged to a
-    second screen would otherwise be measured against the wrong edge.
-    """
-    handle = widget.screen() or QGuiApplication.primaryScreen()
-    return handle.availableGeometry().top()
 
 
 class VolumeSlider(QFrame):
@@ -96,13 +86,10 @@ class VolumeSlider(QFrame):
         self._dismissal.forget()
         self.slider.setValue(percent)
         wanted = self.sizeHint()
-        top = button.mapToGlobal(button.rect().topLeft())
-        bottom = button.mapToGlobal(button.rect().bottomLeft())
-        room_above = top.y() - _screen_top(button)
-        above = room_above >= wanted.height()
+        left = button.mapToGlobal(button.rect().topLeft()).x()
         self.move(
-            top.x() + (button.width() - wanted.width()) // HALF,
-            top.y() - wanted.height() if above else bottom.y(),
+            left + (button.width() - wanted.width()) // HALF,
+            lifted_top(wanted.height(), button),
         )
         self.show()
         self.slider.setFocus(Qt.FocusReason.PopupFocusReason)

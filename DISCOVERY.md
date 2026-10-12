@@ -1522,13 +1522,16 @@ scope above.
 
 **FR-D88 The button lifts the saved profiles, by name**
 - Requirement: When the Taste profiles button is pressed, the dialog shall lift
-  a list above it naming every saved profile in alphabetical order ignoring
-  case, then a separator, then "Delete a profile", which opens the same names.
-  A second press shall put the list down. It lifts as the visualiser's styles
-  do (`lift_menu.py`).
+  a list above it holding one row per saved profile in alphabetical order
+  ignoring case: that profile's delete button on the left, then its name. A
+  second press shall put the list down.
+- Rationale: Oliver's ruling: a delete beside each name, every one on the left
+  so they share a column. The list is a frame of buttons rather than a menu,
+  because a menu row holding two buttons was measured to let neither take the
+  keyboard (`taste_list.py`).
 - Acceptance: Given profiles "rock", "Ambient" and "Jazz", when the button is
-  pressed, then the list reads Ambient, Jazz, rock, then the delete entry
-  opening those three in the same order.
+  pressed, then the rows read Ambient, Jazz, rock and every delete button sits
+  in one column to the left of its name.
 - Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
 
 **FR-D89 Choosing a profile puts its whole selection back**
@@ -1570,10 +1573,13 @@ scope above.
 - Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
 
 **FR-D92 A profile can be deleted, with confirmation**
-- Requirement: When a profile is chosen under "Delete a profile", the dialog
-  shall ask for confirmation naming it; only on Yes shall the profile be
-  removed. When the last profile is removed, the button shall be disabled
-  (FR-D87).
+- Requirement: Each row's delete button shall wear `delete.png`, as the shops
+  dialog's rows do, with the tooltip "Delete the taste profile" followed by the
+  name in quotes. When it is pressed, the dialog shall ask for confirmation
+  naming the profile; only on Yes shall the profile be removed. When the last
+  profile is removed, the button shall be disabled (FR-D87).
+- Rationale: `delete.png` rather than `negative.png`, which `ARCHITECTURE.md`
+  keeps for composing over another picture (Oliver's ruling, 2026-10-12).
 - Acceptance: Given profiles Ambient and Jazz, when Jazz is chosen for deleting
   and confirmed, then only Ambient remains; when confirmation is refused, then
   both remain; when Ambient is then deleted, then the button is disabled.
@@ -1588,6 +1594,19 @@ scope above.
   button is enabled and lists it; given the setting holding text that is not a
   set of profiles, then the button is disabled and nothing is raised.
 - Verified by: `tests/ui/test_taste_profiles.py`, `tests/domain/test_taste.py`
+
+**FR-D94 Every button in the list is reached from the keyboard**
+- Requirement: While the taste profiles list is up, the dialog shall start the
+  keyboard on the first profile's name; Up and Down shall move a row keeping to
+  the same column, Left and Right shall cross between delete and name, Tab
+  shall walk every button in reading order, all of them wrapping; Escape shall
+  put the list down. Choosing a name or pressing a delete shall put it down.
+- Acceptance: Given profiles Ambient and Jazz lifted, when Down is pressed
+  twice then Up once, then focus is on Jazz's name; when Left then Down are
+  pressed from Ambient's name, then focus is on Jazz's delete; when Tab is
+  pressed from Jazz's name, then focus is on Ambient's delete; when Escape is
+  pressed, then the list is down.
+- Verified by: `tests/ui/test_taste_profiles.py::TestTheKeyboard`
 
 ### 3.2 Non-functional requirements
 
@@ -1874,7 +1893,7 @@ genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D93 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D94 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
