@@ -26,9 +26,11 @@ from stellody.ui.discovery_dialog import (
     INCLUDE_HEADING,
     MIXES_LABEL,
     SELECT_ALL_ICON,
+    SELECT_ALL_LABEL,
     SERIES_LABEL,
 )
 from stellody.ui.discovery_progress import STAGE_NAMES
+from stellody.ui.filter_controls import CANCEL_LABEL, CLEAR_LABEL
 from stellody.ui.guide_pictures import img
 from stellody.ui.results_filter import (
     ALBUMS_LABEL,
@@ -37,6 +39,7 @@ from stellody.ui.results_filter import (
     SHOW_SERIES_LABEL,
 )
 from stellody.ui.results_foot import (
+    CLOSE_LABEL,
     COPY_ICON,
     COPY_LABEL,
     FILTER_LABEL,
@@ -116,12 +119,17 @@ def _asking_html() -> str:
         "everything is ticked.</p>"
         "<p>"
         + img(resources.find_asset(TASTE_ICON))
-        + f"<b>{TASTE_LABEL}.</b> Pressing Find with genres ticked that no "
-        "profile holds offers to save them under a name. The button beside "
-        "Select all then lifts your profiles alphabetically; choosing one "
-        "ticks exactly its genres, leaving the Include boxes and the years as "
-        "they are. Profiles can be deleted from the same list, which asks "
-        "first. With none saved the button is disabled.</p>"
+        + f"<b>{TASTE_LABEL}.</b> Pressing <b>{FIND_LABEL}</b> with a selection "
+        "no profile holds offers to save it under a name: the genres ticked, "
+        f"the {INCLUDE_HEADING.rstrip(':')} boxes and the years. The button "
+        f"beside <b>{SELECT_ALL_LABEL}</b> then lifts your profiles "
+        "alphabetically; choosing one puts that whole selection back. Each "
+        "profile has its own delete button at its left, which asks first; a "
+        "list too long for the screen scrolls. With none saved the button is "
+        f"disabled. Both genre filters offer the same profiles beside "
+        f"<b>{CLEAR_LABEL}</b>, where a profile ticks its genres alone. It is "
+        "one list, so a profile deleted in any of these dialogs is gone from "
+        "all of them.</p>"
         f"<p><b>Stopping.</b> While a run is going the button wears a cross "
         f"and its tooltip reads <b>{STOP_DISCOVERY_TOOLTIP}</b>. One press "
         "stops it there and then, with nothing to confirm; the request in "
@@ -165,7 +173,7 @@ def _answer_html() -> str:
         "whole answer can go to a shop together.</p>"
         "<p>"
         + img(resources.filter_icon_path())
-        + f"<b>Narrowing the answer.</b> <b>{FILTER_LABEL}</b>, at the left "
+        + f"<b>Narrowing the answer.</b> <b>{FILTER_LABEL}</b>, at the right "
         "of the row beneath the answer, offers the genres that run looked in. "
         "Tick some to see only the artists you hold with an album of your own "
         "filed under one of them, plus the similar artists an earlier run "
@@ -217,9 +225,13 @@ def _shops_html() -> str:
         "deleted.</p>"
         "<p>"
         + img(resources.find_asset(CLOSE_ICON))
-        + "Close wears that picture on every dialog in the application. In the "
-        "two genre filters Clear wears it too, unticking every box without "
-        "leaving; Cancel beside it wears the filter picture struck through.</p>"
+        + f"<b>{CLOSE_LABEL}</b> wears that picture on every dialog in the "
+        "application. In Discover, the answer, the shops screen, the shop form "
+        "and the two genre filters, the way out stands alone at the left, "
+        "apart from what acts. In the "
+        f"two genre filters <b>{CLEAR_LABEL}</b> wears that picture too, "
+        f"unticking every box without leaving; <b>{CANCEL_LABEL}</b>, at the "
+        "left, wears the filter picture struck through.</p>"
         f"<p>{NO_SHOP_AFFILIATION}</p>"
     )
 

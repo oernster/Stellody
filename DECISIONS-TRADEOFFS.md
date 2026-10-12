@@ -609,9 +609,10 @@ In the Discover dialog, the results window, both genre choosers, the shops
 dialog and the shop form, Close or Cancel stands by itself at the left of the
 button row; the controls that act sit together on the right, with the results
 window's pager between (Oliver's ruling). Tab walks each row as it reads.
-Chosen over the way out sitting among the acting controls: it stands in one place in every one of these dialogs,
-apart from anything that acts. The cost: the press that acts and the way out
-sit at opposite ends of a wide row, so a pointer travels further between them.
+Chosen over the way out sitting among the acting controls: it stands in one
+place in every one of these dialogs, apart from anything that acts. The cost:
+the press that acts and the way out sit at opposite ends of a wide row, so a
+pointer travels further between them.
 
 ### Reading dialogs read themselves; the guide uses real controls
 

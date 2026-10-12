@@ -747,7 +747,8 @@ build of a session holds up the sound device's feeder long enough to be heard
 on the first press of Discover, so `warm_discovery` in
 `ui/discovering.py` pays it at launch while nothing is playing
 (`tests/ui/test_discovery_warm.py`). The catalogue memory is read ahead on a
-thread of its own at the same moment (`warm_memory`).
+thread of its own at the same moment (`warm_memory` in
+`infrastructure/held_memory.py`).
 
 **A compilation's neighbours are its other volumes, so a second box asks after
 the series** (FR-D69 to FR-D75, FR-D81, FR-D82):
@@ -914,6 +915,12 @@ getter minus a named, reasoned set of non-controls; `_named_pictures`
 parses every module in `stellody/ui` for each `.png` it names, with no
 exemptions, since dialogs fetch assets by name through `resources.find_asset`.
 A companion case asserts the scan finds something.
+
+**Where the guide once described a control wrongly, its words are pinned.** A
+taste profile putting the whole selection back, the same profiles in both
+genre filters, Filter at the right of the answer's foot row and the way out
+standing alone on the left are each asserted in its text
+(`tests/ui/test_guide.py::TestWhatItNames::test_it_describes_the_rows_and_profiles_as_they_now_stand`).
 
 **Under the furniture sit the rules no single screen can state**, plus how a
 library wants laying out. `stellody/ui/layout_advice.py` states the latter

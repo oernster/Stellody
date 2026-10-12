@@ -116,7 +116,8 @@ Downloads folder is the one the operating system names (Qt's
   copied through SQLite's online backup, never as a file.
 - The catalogue memory is written whole only when Stellody quits
   (`catalogue_memory.py` docstring); the genre cache is written whole when a
-  discovery run finishes asking about candidates (`candidate_genres.py`).
+  discovery run finishes asking about candidates
+  (`application/candidate_genres.py`).
   Between those writes their answers live in the `.record` journals beside
   them. A backup without the journals silently loses those answers.
 - Windows will not replace a file another handle holds open. A restore cannot

@@ -184,6 +184,17 @@ class TestWhatItNames:
         """BACKUP.md FR-B37: the promise a listener keeps old backups on."""
         assert "made by an older version always restores" in guide_html()
 
+    def test_it_describes_the_rows_and_profiles_as_they_now_stand(self) -> None:
+        """FR-D89, FR-D96, FR-D97: claims the Guide once got wrong."""
+        html = guide_html()
+        for claim in (
+            "choosing one puts that whole selection back",
+            "Both genre filters offer the same profiles",
+            "at the right of the row beneath the answer",
+            "the way out stands alone at the left",
+        ):
+            assert claim in html, claim
+
     def test_a_label_is_spoken_without_its_key_or_ellipsis(self) -> None:
         assert spoken(BACK_UP_LABEL) == "Back up library"
         assert spoken(RESTORE_LABEL) == "Restore from backup"

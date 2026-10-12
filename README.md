@@ -208,7 +208,7 @@ start. Neither is ever sent anywhere; either can be deleted whenever you like.
 | Language | Python 3.13 |
 | Interface | PySide6 |
 | Tags | mutagen |
-| Decode | soundfile, plus PyAV for M4A, WMA, WavPack and AAC |
+| Decode | soundfile, plus PyAV for M4A, WMA, WavPack, AAC and bonus videos |
 | Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux |
 | Store | SQLite |
 | Packaging | Nuitka on Windows and macOS, Flatpak on Linux |
@@ -293,8 +293,8 @@ The Windows setup program under `installer/` is under LGPL-3.0 alone; its
 Licence button says so, then says that Stellody itself is dual licensed. See
 `LICENSE` for the mapping.
 
-A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack and
-AAC. The FFmpeg libraries themselves are built LGPL-3.0-or-later, verified from
+A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack, AAC
+and bonus videos. The FFmpeg libraries themselves are built LGPL-3.0-or-later, verified from
 the licence string the build reports rather than from its documentation. That
 build also links libx264 and libx265, which are GPL-2.0-or-later, so the
 packaged application as a whole is distributed as a GPL-3.0 work. Nothing here

@@ -32,12 +32,13 @@ from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.auto_scroller import AutoScroller
+from stellody.ui.backup_words import spoken
 from stellody.ui.dialogs import FirstStopDialog, close_row
 from stellody.ui.guide_backups import backups_html
 from stellody.ui.guide_discovery import discovery_html
 from stellody.ui.guide_pictures import img, row
 from stellody.ui.layout_advice import layout_html
-from stellody.ui.visualisations import NAMES
+from stellody.ui.visualisations import NAMES, VISUALISATION_MENU
 from stellody.ui.widgets import ReadingPane
 
 DIALOG_WIDTH_PX = 720
@@ -132,7 +133,8 @@ def _bottom_tray_html() -> str:
             "Visualiser",
             "lifts a list of the styles the display in the middle of the "
             f"strip can draw in: {_style_names()}. Each draws the same sound; "
-            "the one you choose is kept for next time.",
+            "the one you choose is kept for next time. The same list is "
+            f"{spoken(VISUALISATION_MENU)} under View on the menu bar.",
         )
         + "<p>"
         + img(resources.volume_icon_path())
