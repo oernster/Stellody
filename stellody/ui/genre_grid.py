@@ -266,6 +266,16 @@ class GenreGrid(QWidget):
         for box in self.boxes.values():
             box.setChecked(on)
 
+    def set_chosen(self, genres: tuple[str, ...]) -> None:
+        """Tick exactly these, clearing every other. FR-D89.
+
+        A name the grid no longer offers is passed over rather than trusted,
+        which is what a catalogue change leaves behind in a saved profile.
+        """
+        wanted = set(genres)
+        for name, box in self.boxes.items():
+            box.setChecked(name in wanted)
+
     def all_ticked(self) -> bool:
         """Whether there is nothing left to tick.
 

@@ -56,6 +56,8 @@ SETTING_DISCOVER_COMPILATIONS = "discover_compilations"
 SETTING_DISCOVER_CREDITS = "discover_credits"
 SETTING_DISCOVER_SERIES = "discover_series"
 SETTING_DISCOVER_MIXES = "discover_mixes"
+# The taste profiles saved from the Discover dialog, as JSON. FR-D93.
+SETTING_TASTE_PROFILES = "taste_profiles"
 # Which genre categories each dialog holding the genre grid was left with open:
 # one setting per dialog, since each is opened for a different job.
 SETTING_GENRES_OPEN_DISCOVERY = "genres_open_discovery"

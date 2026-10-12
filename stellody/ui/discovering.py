@@ -44,6 +44,7 @@ from stellody.ui.settings_keys import (
     SETTING_GENRES_OPEN_DISCOVERY,
 )
 from stellody.ui.standing_in import say_nothing
+from stellody.ui.taste_store import TasteStore
 from stellody.ui.tray_metrics import show_discovery_running
 
 # Said where the runner will not take a new run, which it refuses only while it
@@ -152,6 +153,7 @@ class Discovering(AnsweringDiscovery, SettlingDiscovery):
             cost=None if priced is None else priced.pricing(self._all_albums).of,
             remember=lambda chosen: remember_including(self._settings, chosen),
             folds=Folds(self._settings, SETTING_GENRES_OPEN_DISCOVERY),
+            taste=TasteStore(self._settings),
         )
         self._discovery_dialog = dialog
         try:

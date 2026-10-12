@@ -36,6 +36,20 @@ class Line:
     choose: Callable[[], None]
 
 
+def emptied(menu: QMenu) -> None:
+    """Take every line off the menu, safely even from inside a line's press.
+
+    The lines, their groups and any submenu are let go of later rather than
+    deleted at once, since `clear` would delete the very action still
+    delivering the press that asked for the refill.
+    """
+    for action in menu.actions():
+        menu.removeAction(action)
+        action.deleteLater()
+    for old in (*menu.findChildren(QActionGroup), *menu.findChildren(QMenu)):
+        old.deleteLater()
+
+
 def fill_choices(menu: QMenu, lines: tuple[Line, ...]) -> None:
     """Replace the menu's lines with these, the chosen one ticked.
 
@@ -45,11 +59,7 @@ def fill_choices(menu: QMenu, lines: tuple[Line, ...]) -> None:
     let go of later rather than deleted at once, since `clear` would delete
     the very action still delivering the press.
     """
-    for action in menu.actions():
-        menu.removeAction(action)
-        action.deleteLater()
-    for old in menu.findChildren(QActionGroup):
-        old.deleteLater()
+    emptied(menu)
     group = QActionGroup(menu)
     for line in lines:
         action = menu.addAction(line.text.replace(AMPERSAND, LITERAL_AMPERSAND))

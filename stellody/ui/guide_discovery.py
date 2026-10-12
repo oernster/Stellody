@@ -56,6 +56,7 @@ from stellody.ui.shop_rows import (
     PUT_BACK_ICON,
     PUT_BACK_LABEL,
 )
+from stellody.ui.taste_controls import TASTE_ICON, TASTE_LABEL
 from stellody.ui.tray_metrics import DISCOVER_TOOLTIP, STOP_DISCOVERY_TOOLTIP
 from stellody.ui.year_fields import FROM_LABEL, TO_LABEL
 
@@ -113,6 +114,14 @@ def _asking_html() -> str:
         "says which of the two things a press would do, offering to clear "
         "them all once "
         "everything is ticked.</p>"
+        "<p>"
+        + img(resources.find_asset(TASTE_ICON))
+        + f"<b>{TASTE_LABEL}.</b> Pressing Find with genres ticked that no "
+        "profile holds offers to save them under a name. The button beside "
+        "Select all then lifts your profiles alphabetically; choosing one "
+        "ticks exactly its genres, leaving the Include boxes and the years as "
+        "they are. Profiles can be deleted from the same list, which asks "
+        "first. With none saved the button is disabled.</p>"
         f"<p><b>Stopping.</b> While a run is going the button wears a cross "
         f"and its tooltip reads <b>{STOP_DISCOVERY_TOOLTIP}</b>. One press "
         "stops it there and then, with nothing to confirm; the request in "

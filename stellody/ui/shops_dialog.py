@@ -26,7 +26,6 @@ from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -37,7 +36,13 @@ from stellody.application.shopping import Shopping
 from stellody.domain.shopping import Shop, WantedAlbum
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
-from stellody.ui.dialogs import CLOSE_ICON, FirstStopDialog, title_label, wearing
+from stellody.ui.dialogs import (
+    CLOSE_ICON,
+    FirstStopDialog,
+    said_yes,
+    title_label,
+    wearing,
+)
 from stellody.ui.shop_dragging import RowDrag
 from stellody.ui.shop_form import ShopForm
 from stellody.ui.shop_rows import (
@@ -254,14 +259,7 @@ class ShopsDialog(FirstStopDialog):
 
     def _asked(self, title: str, text: str) -> bool:
         """Whether somebody said yes."""
-        answer = QMessageBox.question(
-            self,
-            title,
-            text,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        return answer == QMessageBox.StandardButton.Yes
+        return said_yes(self, title, text)
 
     def _form(self, index: int | None) -> None:
         """Open the shop form, redrawing if it saved. FR-S17, FR-S18."""

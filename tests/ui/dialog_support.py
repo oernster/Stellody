@@ -66,6 +66,7 @@ from stellody.ui.shop_form import ShopForm
 from stellody.ui.shops_dialog import ShopsDialog
 from stellody.ui.shortfall import ShortfallDialog
 from stellody.ui.tag_editor import TagEditor
+from stellody.ui.taste_prompt import SaveTasteDialog
 from stellody.ui.theme import Mode
 
 BASE = "FirstStopDialog"
@@ -214,6 +215,7 @@ BUILDERS = {
         parent, Equalisation(), lambda _curve: None
     ),
     "DiscoveryDialog": lambda parent: DiscoveryDialog(parent=parent),
+    "SaveTasteDialog": lambda parent: SaveTasteDialog(("Jazz",), parent),
     "FilterDialog": lambda parent: FilterDialog(Narrowing(), parent),
     "GuideDialog": lambda parent: GuideDialog(parent),
     "HealthDialog": lambda parent: HealthDialog(_issues(), parent),

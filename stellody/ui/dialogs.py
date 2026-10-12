@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QTextBrowser,
     QVBoxLayout,
@@ -192,6 +193,22 @@ def wearing(button: QPushButton, artwork: pathlib.Path | None) -> QPushButton:
     button.setIcon(plain_icon(artwork))
     button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
     return button
+
+
+def said_yes(parent: QWidget, title: str, text: str) -> bool:
+    """Ask a yes or no question, No the default; whether somebody said yes.
+
+    One home for the confirmation every destructive action asks for, so each
+    asks it the same way with the same safe default.
+    """
+    answer = QMessageBox.question(
+        parent,
+        title,
+        text,
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.No,
+    )
+    return answer == QMessageBox.StandardButton.Yes
 
 
 def close_row(dialog: QDialog) -> QHBoxLayout:

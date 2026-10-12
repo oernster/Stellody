@@ -43,7 +43,6 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.application.compilation_cost import Cost
-from stellody.domain.estimating import SECONDS_PER_MINUTE, rounded_minutes
 from stellody.domain.including import OWN_ALBUMS, Including
 from stellody.domain.release_years import ReleaseYears, YearRefusal
 from stellody.shared import resources
@@ -54,10 +53,13 @@ from stellody.ui.dialogs import (
     title_label,
     wearing,
 )
+from stellody.ui.discovery_price import cost_sentence
 from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.icons import plain_icon, struck_through
 from stellody.ui.ringed_check import RingedCheckBox
+from stellody.ui.taste_controls import TasteControls
+from stellody.ui.taste_store import TasteStore
 from stellody.ui.year_fields import YearFields, refusal_words
 
 TITLE = "Discover new music"
@@ -96,62 +98,6 @@ CREDITS_LABEL = "Artists on compilations (Various Artists)"
 SERIES_LABEL = "Other volumes of series"
 # DJ mixes in an artist's own list. FR-D80.
 MIXES_LABEL = "DJ mixes"
-# What ticking the boxes would cost, said beneath them. FR-D52. The minutes are
-# arithmetic at the pace the catalogue permits, so the sentence names what makes
-# a real run longer rather than passing a floor off as a forecast.
-NOTHING_NEW = (
-    "Every artist and series on compilations in these genres has been looked up "
-    "already, so including them asks nothing new."
-)
-# The artists and the series still to look up, named apart since a series is
-# not an artist. FR-D52, FR-D69.
-ONE_ARTIST = "one artist"
-SOME_ARTISTS = "{count} artists"
-ONE_SERIES = "one series"
-SOME_SERIES = "{count} series"
-BOTH = "{artists} and {series}"
-NOT_LOOKED_UP = "{what} on compilations in these genres {verb} not been looked up yet"
-HAS = "has"
-HAVE = "have"
-UNDER_A_MINUTE = "under a minute more"
-ABOUT_A_MINUTE = "about a minute more"
-ABOUT_MINUTES = "about {minutes} minutes more"
-COST = "{names}: {time} at the pace MusicBrainz allows, longer when it is busy."
-# A single name or a single minute reads as "one" rather than "1 artists".
-ONE = 1
-
-
-def _counted(count: int, one: str, some: str) -> str:
-    """A count in words: "one" for a single one rather than "1"."""
-    return one if count == ONE else some.format(count=count)
-
-
-def _still_to_look_up(cost: Cost) -> str:
-    """Who and what is still to be looked up, as the start of a sentence."""
-    artists = _counted(cost.names, ONE_ARTIST, SOME_ARTISTS)
-    series = _counted(cost.series, ONE_SERIES, SOME_SERIES)
-    if cost.names and cost.series:
-        what = BOTH.format(artists=artists, series=series)
-    else:
-        what = artists if cost.names else series
-    single = cost.names + cost.series == ONE
-    said = NOT_LOOKED_UP.format(what=what, verb=HAS if single else HAVE)
-    return said[0].upper() + said[1:]
-
-
-def cost_sentence(cost: Cost) -> str:
-    """What including compilations would add, in the words beneath the box."""
-    if not cost.names and not cost.series:
-        return NOTHING_NEW
-    names = _still_to_look_up(cost)
-    minutes = rounded_minutes(cost.seconds)
-    if cost.seconds < SECONDS_PER_MINUTE:
-        said = UNDER_A_MINUTE
-    elif minutes == ONE:
-        said = ABOUT_A_MINUTE
-    else:
-        said = ABOUT_MINUTES.format(minutes=minutes)
-    return COST.format(names=names, time=said)
 
 
 def _start_nothing(
@@ -183,9 +129,12 @@ class DiscoveryDialog(FirstStopDialog):
         remember: Callable[[Including], None] = _keep_nothing,
         this_year: int | None = None,
         folds: Folds | None = None,
+        taste: TasteStore | None = None,
     ) -> None:
         super().__init__(parent)
         self._start = start
+        # Where taste profiles are kept; None offers none and saves none.
+        self._taste_store = taste
         self._remember = remember
         # True while Select all moves every box, so each does not price alone.
         self._sweeping = False
@@ -243,6 +192,11 @@ class DiscoveryDialog(FirstStopDialog):
         self.select_button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
         self.select_button.clicked.connect(self._select_or_clear)
         row.addWidget(self.select_button)
+        # Beside Select all, since both set the genres in one go. FR-D87.
+        self.taste = TasteControls(
+            self, self._taste_store, self._put_back, CONTROL_ICON_PX
+        )
+        row.addWidget(self.taste.button)
         row.addStretch()
         self.close_button = wearing(
             QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
@@ -349,10 +303,18 @@ class DiscoveryDialog(FirstStopDialog):
         57 of them, freezing the dialog for 4.1 seconds. The price waits for
         the sweep to end; the pointer says the dialog is busy meanwhile.
         """
+        self._swept(lambda: self.grid.set_all(not self.grid.all_ticked()))
+
+    def _put_back(self, genres: tuple[str, ...]) -> None:
+        """Tick exactly a taste profile's genres, priced once. FR-D89."""
+        self._swept(lambda: self.grid.set_chosen(genres))
+
+    def _swept(self, change: Callable[[], None]) -> None:
+        """Move many boxes at once, then price once; busy pointer meanwhile."""
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         self._sweeping = True
         try:
-            self.grid.set_all(not self.grid.all_ticked())
+            change()
         finally:
             self._sweeping = False
             self._price()
@@ -369,5 +331,8 @@ class DiscoveryDialog(FirstStopDialog):
         years = self.years.reading(self._this_year)
         if not self.chosen() or isinstance(years, YearRefusal):
             return
+        # Offered before the run, whose start does not wait on the answer
+        # beyond the offer itself. FR-D90.
+        self.taste.offer(self.chosen())
         self._start(self.chosen(), self.including(), years)
         self.accept()

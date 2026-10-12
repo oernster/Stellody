@@ -1501,6 +1501,88 @@ rare.
   kind is cleared, then Filter can be pressed.
 - Verified by: `tests/domain/test_showing.py`, `tests/ui/test_results_showing.py`
 
+#### Taste profiles
+
+A taste profile is a named set of ticked genres, saved so a selection made once
+can be put back with one choice. It holds the genres alone: the Include boxes
+(FR-D85) and the years (FR-D58) are left as they stand. It is a remembered
+selection, not a model of anybody's taste, so it sits inside the scope above.
+
+**FR-D87 A taste profiles button beside Select all**
+- Requirement: The Discover dialog shall carry a button labelled "Taste
+  profiles", wearing `taste-profiles.png`, immediately to the right of Select
+  all. While no profile is saved it shall be disabled, which wears the red ring
+  every disabled control wears.
+- Rationale: Profiles are chosen where genres are ticked (Oliver's ruling).
+- Acceptance: Given no profile saved, then the button is disabled; given one
+  saved, then it is enabled and the keyboard ring stops at it after Select all.
+- Verified by: `tests/ui/test_taste_profiles.py`
+
+**FR-D88 The button lifts the saved profiles, by name**
+- Requirement: When the Taste profiles button is pressed, the dialog shall lift
+  a list above it naming every saved profile in alphabetical order ignoring
+  case, then a separator, then "Delete a profile", which opens the same names.
+  A second press shall put the list down. It lifts as the visualiser's styles
+  do (`lift_menu.py`).
+- Acceptance: Given profiles "rock", "Ambient" and "Jazz", when the button is
+  pressed, then the list reads Ambient, Jazz, rock, then the delete entry
+  opening those three in the same order.
+- Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
+
+**FR-D89 Choosing a profile ticks exactly its genres**
+- Requirement: When a profile is chosen from the list, the dialog shall tick
+  exactly that profile's genres and untick every other. If a profile names a
+  genre the grid no longer offers, then the dialog shall pass that genre over
+  and tick the rest.
+- Acceptance: Given Rock and Blues ticked and a profile holding Electronic and
+  Jazz, when that profile is chosen, then Electronic and Jazz alone are ticked
+  while the Include boxes and the years are unchanged; given a profile holding a
+  genre since removed, then its other genres are ticked and nothing is raised.
+- Verified by: `tests/ui/test_taste_profiles.py`
+
+**FR-D90 A new selection is offered for saving on Find**
+- Requirement: When Find is pressed while the genres ticked are not exactly the
+  genres of any saved profile (whatever order they were ticked in), the dialog
+  shall ask whether to save them as a taste profile, with a name field, Save and
+  Not now. The run shall start after either answer; Escape answers Not now.
+- Rationale: A selection is worth keeping at the moment it is used (Oliver's
+  ruling); asking again for a selection already kept would be noise.
+- Acceptance: Given profile "Electronic" holding Electronic, when Find is
+  pressed with Electronic ticked, then nothing is asked and the run starts; when
+  pressed with Electronic and Jazz ticked, then the offer appears; when it is
+  answered Not now, then nothing is saved and the run starts.
+- Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
+
+**FR-D91 A profile is saved under a name nobody else holds**
+- Requirement: While the name field is blank once trimmed, the dialog shall keep
+  Save disabled. If the name matches a saved profile's ignoring case, then the
+  dialog shall ask whether to replace that profile, naming it; No shall return to
+  the name field with nothing saved.
+- Acceptance: Given profile "Jazz", when "jazz" is saved and replacing is
+  confirmed, then one profile named "jazz" holds the new genres; when replacing
+  is refused, then "Jazz" is unchanged.
+- Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
+
+**FR-D92 A profile can be deleted, with confirmation**
+- Requirement: When a profile is chosen under "Delete a profile", the dialog
+  shall ask for confirmation naming it; only on Yes shall the profile be
+  removed. When the last profile is removed, the button shall be disabled
+  (FR-D87).
+- Acceptance: Given profiles Ambient and Jazz, when Jazz is chosen for deleting
+  and confirmed, then only Ambient remains; when confirmation is refused, then
+  both remain; when Ambient is then deleted, then the button is disabled.
+- Verified by: `tests/ui/test_taste_profiles.py`
+
+**FR-D93 Profiles outlast the session**
+- Requirement: The application shall keep taste profiles in its settings store
+  under one setting, read back on every opening of the dialog. If the setting
+  cannot be read as profiles, then the dialog shall offer none rather than
+  raise.
+- Acceptance: Given a profile saved, when the dialog is opened afresh, then the
+  button is enabled and lists it; given the setting holding text that is not a
+  set of profiles, then the button is disabled and nothing is raised.
+- Verified by: `tests/ui/test_taste_profiles.py`, `tests/domain/test_taste.py`
+
 ### 3.2 Non-functional requirements
 
 **NFR-PRIV-001 What leaves the machine**
@@ -1786,7 +1868,7 @@ genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D86 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D93 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
@@ -1795,7 +1877,10 @@ path; ranking candidates by anything beyond what a source states; remembering
 across runs what was offered and rejected; reopening a past run's results from
 the menu, which FR-D28 makes cheap to add later; year presets, decade buttons
 or a slider beside the two fields of FR-D58; narrowing a finished answer by
-year on the results screen, where FR-D54 narrows by genre.
+year on the results screen, where FR-D54 narrows by genre; renaming a taste
+profile, which saving under the new name then deleting the old does; a taste
+profile holding the Include boxes or the years (FR-D87 to FR-D93 hold genres
+alone, Oliver's ruling).
 
 ## 5. Open questions
 

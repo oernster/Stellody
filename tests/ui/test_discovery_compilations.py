@@ -14,11 +14,10 @@ from stellody.ui.discovery_choices import widened_by
 from stellody.ui.discovery_dialog import (
     CREDITS_LABEL,
     MIXES_LABEL,
-    NOTHING_NEW,
     SERIES_LABEL,
     DiscoveryDialog,
-    cost_sentence,
 )
+from stellody.ui.discovery_price import NOTHING_NEW, cost_sentence
 from stellody.ui.discovery_worker import DiscoveryRunner
 from stellody.ui.settings_keys import SETTING_DISCOVER_COMPILATIONS, TRUE
 
