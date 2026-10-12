@@ -730,8 +730,12 @@ refusing to open the dialog. `ui/taste_controls.py` owns the button beside
 Select all; `ui/taste_prompt.py` offers to save a new selection on Find.
 `ui/taste_list.py` lifts the profiles as a `Qt.Popup` frame of real buttons,
 each row a delete button then the name, because a menu row holding two
-buttons let neither take keyboard focus. Held by `tests/domain/test_taste.py`
-and `tests/ui/test_taste_profiles.py`.
+buttons let neither take keyboard focus. The rows sit in the shared
+`ui/scrolling_column.py`, capped at the room the list opens into (FR-D95), so a
+long list scrolls rather than running off the screen; the area takes no focus
+and a button scrolls itself into view as it takes focus. Held by
+`tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py` and
+`tests/ui/test_taste_list_scrolling.py`.
 
 **The dialog is built once, unseen, as the application opens.** The first
 build of a session was measured holding up the sound device's feeder long
@@ -1246,7 +1250,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | The help button opens a menu rather than one dialog | A picture button is named by its tooltip, so one opening several things is named Help. Its menu IS the menu bar's Help menu, so the two cannot drift (`tests/ui/test_update_check.py`). |
 | A reading dialog never opens on its own page | A ring round a whole page offers nothing to act on. `first_stop` passes over a scrolling region; the pane keeps its stop; a dialog that is only a pane opens on nothing. Held by a sweep over every dialog discovered from source. |
 | A dialog's native window exists before anything sizes it | On Windows with mixed scaling a dialog sized before its native window exists opens scaled across several displays. `FirstStopDialog.__init__` calls `self.winId()` first except on Wayland, where it corrupts the window behind (`makes_window_early`). `tests/ui/test_dialog_first_stop.py::test_every_dialog_has_its_window_before_it_is_shown` pins the precondition. Qt would then make that window's siblings native too, which once gave the window's zero-size focus holder a native window over the menu bar and left the menus dead; `keep_siblings_plain` in `stellody/ui/native_windows.py` sets `AA_DontCreateNativeWidgetSiblings` before the application is built (`tests/ui/test_neutral_start.py`). |
-| A popup frame lifted from a button opens above it where the screen has room, else below | A menu is kept on screen by Qt; a plain `Qt.Popup` frame is not. `lifted_top` in `stellody/ui/lifting.py` asks the screen the button is actually on, for the volume slider and the taste profile list alike. |
+| A popup frame lifted from a button opens above it where the screen has room, else below | A menu is kept on screen by Qt; a plain `Qt.Popup` frame is not. `lifted_top` in `stellody/ui/lifting.py` asks the screen the button is actually on, for the volume slider and the taste profile list alike; `room` there gives the tallest a list can be and stay on screen. |
 | A prompt waved away decides nothing | The close prompt's answer starts at ASK and only a button moves it, so dismissing it neither leaves, hides nor writes anything. |
 | The waiting after a refusal is spent on a pass, never on one artist | MusicBrainz refusals reflect its load, not our rate. A refused artist is asked once more, then put back for a later pass, so waiting overlaps other artists. `application/passing.py` is the bookkeeping and asks nothing. |
 | A run asks a catalogue only what it has never been told | Asking everything every run made answers vary with a service's mood. Answers are kept in `catalogue-memory.json`: `application/remembering.py` holds the rule, `infrastructure/catalogue_memory.py` the file. An answer stands for a period then is asked again (Oliver's ruling: runs should differ over weeks, not minutes). One `FileCatalogueMemory` (`infrastructure/held_memory.py`) serves the run, its price and expansion: it reads the file once a session and holds it, since reading or writing the file whole was measured starving the sound device's feeder; a run's save merges in hand (`merged`) and the file is written whole only at quit (`keep`), with the running record covering a process that dies first (`tests/infrastructure/test_held_memory.py`). Undated album and series answers are dropped on read (`_dated`, FR-D67). The kinds include identities, `credited`, `series-of`, `series` and `titled`; asking lives once in `recalled` over an `Asking` (`tests/ui/test_discovery_composition.py::test_everything_keeping_catalogue_answers_shares_one_memory`). |

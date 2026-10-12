@@ -34,7 +34,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
-    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -44,6 +43,7 @@ from stellody.application.repairs import AcceptedGroup, Repairs
 from stellody.domain.health import LibraryIssue, sorted_issues
 from stellody.shared.version import APP_NAME
 from stellody.ui.dialogs import FirstStopDialog, close_row
+from stellody.ui.scrolling_column import scrolling_column
 
 DIALOG_WIDTH_PX = 760
 DIALOG_HEIGHT_PX = 620
@@ -116,24 +116,6 @@ def _acting_row(
     return row
 
 
-def _scrolling_column(parent: QWidget) -> tuple[QScrollArea, QVBoxLayout]:
-    """A scrollable column that is never itself a stop on the ring.
-
-    The controls inside it are what a reader tabs to, so the area holding them
-    has nothing of its own to offer and takes no focus, which is the rule a
-    pane in this application already follows.
-    """
-    area = QScrollArea(parent)
-    area.setWidgetResizable(True)
-    area.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    area.viewport().setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    inner = QWidget(area)
-    column = QVBoxLayout(inner)
-    column.setContentsMargins(0, 0, 0, 0)
-    area.setWidget(inner)
-    return area, column
-
-
 def field_summary(group: AcceptedGroup) -> str:
     """What one accepted group changed, in a reader's words.
 
@@ -183,7 +165,7 @@ class RepairDialog(FirstStopDialog):
         self._view = reload_library()
         self._outer = QVBoxLayout(self)
         self._outer.addWidget(_caption(HEADING, self))
-        self._area, self._column = _scrolling_column(self)
+        self._area, self._column = scrolling_column(self)
         self._outer.addWidget(self._area, stretch=1)
         self._outer.addLayout(close_row(self))
         self._fill()

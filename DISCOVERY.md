@@ -1639,6 +1639,21 @@ it sits inside the scope above.
   pressed, then the list is down.
 - Verified by: `tests/ui/test_taste_profiles.py::TestTheKeyboard`
 
+**FR-D95 A long list scrolls rather than leaving the screen**
+- Requirement: The taste profiles list shall be no taller than the larger of
+  the space above and below the Taste profiles button on its screen. While its
+  rows do not fit, the list shall show a vertical scroll bar; while they fit, it
+  shall show none. When a button in the list takes focus, the list shall scroll
+  it into view. The scroll area shall never take focus itself.
+- Rationale: Measured on 2026-10-12: sixty profiles made a list 3436 pixels
+  tall, which ran off an 800 pixel screen below the button. The rows are the
+  stops; the pane holding them has nothing of its own to offer.
+- Acceptance: Given more profiles than the screen holds, when the list is
+  lifted, then it lies wholly on the screen with a scroll bar; when Up is
+  pressed from the first name, then the last name is focused and in view;
+  given two profiles, then every row shows and no scroll bar does.
+- Verified by: `tests/ui/test_taste_list_scrolling.py`
+
 ### 3.2 Non-functional requirements
 
 **NFR-PRIV-001 What leaves the machine**
@@ -1924,7 +1939,7 @@ genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D94 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D95 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

@@ -13,6 +13,14 @@ all of them wrap. Escape puts it down, as it does any popup.
 
 A second press on the Taste profiles button puts it down rather than lifting it
 again (`dismissal.py`), as the volume slider's popup does.
+
+**A long list scrolls rather than leaving the screen.** Measured on 2026-10-12:
+sixty profiles made a list 3436 pixels tall, which ran off an 800 pixel screen
+below the button. The rows sit in a scroll area capped at the room the list
+opens into, so a scroll bar shows only when they do not fit; the area takes no
+focus (FR-D95), so the rows stay the only stops. A button scrolls itself into
+view as it takes focus, which covers the arrows, Tab and the opening focus in
+one place.
 """
 
 from __future__ import annotations
@@ -25,7 +33,8 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QVBoxLayout, QWi
 from stellody.domain.taste import TasteProfile
 from stellody.ui.dismissal import Dismissal
 from stellody.ui.lift_menu import AMPERSAND, LITERAL_AMPERSAND
-from stellody.ui.lifting import lifted_top
+from stellody.ui.lifting import lifted_top, room
+from stellody.ui.scrolling_column import scrolling_column
 from stellody.ui.shop_rows import DELETE_ICON, picture_button
 
 DELETE_TOOLTIP = "Delete the taste profile “{name}”"
@@ -55,7 +64,11 @@ class TasteList(QFrame):
         self._choose = choose
         self._delete = delete
         self._dismissal = Dismissal()
-        self._column = QVBoxLayout(self)
+        self._outer = QVBoxLayout(self)
+        self.area, self._column = scrolling_column(self)
+        self.area.setFrameShape(QFrame.Shape.NoFrame)
+        self.area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._outer.addWidget(self.area)
         self.rows: list[tuple[QPushButton, QPushButton]] = []
 
     def fill(self, profiles: tuple[TasteProfile, ...]) -> None:
@@ -64,7 +77,7 @@ class TasteList(QFrame):
             delete.parentWidget().deleteLater()
         self.rows = []
         for profile in profiles:
-            holder = QWidget(self)
+            holder = QWidget(self.area.widget())
             line = QHBoxLayout(holder)
             line.setContentsMargins(0, 0, 0, 0)
             delete = picture_button(
@@ -103,11 +116,24 @@ class TasteList(QFrame):
         if self._dismissal.dismissed_by(button) or not self.rows:
             return
         self._dismissal.forget()
-        self.adjustSize()
+        self._fit(room(button))
         left = button.mapToGlobal(QPoint(0, 0)).x()
         self.move(left, lifted_top(self.sizeHint().height(), button))
         self.show()
         self.rows[0][NAME_COLUMN].setFocus(Qt.FocusReason.PopupFocusReason)
+
+    def _fit(self, tallest: int) -> None:
+        """Every row where they fit in this height; else as many as do, scrolling."""
+        rows = self.area.widget().sizeHint()
+        chrome = sum(
+            edge.top() + edge.bottom()
+            for edge in (self._outer.contentsMargins(), self.contentsMargins())
+        )
+        height = min(rows.height(), tallest - chrome)
+        scrolls = height < rows.height()
+        bar = self.area.verticalScrollBar().sizeHint().width() if scrolls else 0
+        self.area.setFixedSize(rows.width() + bar, height)
+        self.adjustSize()
 
     def eventFilter(self, watched, event) -> bool:
         """Up and Down keep the column; Left and Right cross the row; both wrap.
@@ -115,7 +141,10 @@ class TasteList(QFrame):
         Taken from the buttons before they see it: a push button answers the
         arrows itself, moving to whichever button lies nearest that way, which
         measured on 2026-10-12 took Down from a name to the next row's delete.
+        A button taking focus, however it got there, is scrolled into view.
         """
+        if event.type() == QEvent.Type.FocusIn:
+            self.area.ensureWidgetVisible(watched)
         if event.type() != QEvent.Type.KeyPress:
             return super().eventFilter(watched, event)
         key = event.key()
