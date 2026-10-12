@@ -1,4 +1,4 @@
-"""The Taste profiles button and what it lifts. FR-D87 to FR-D92, FR-D96.
+"""The Taste profiles button and what it lifts. FR-D87 to FR-D92, FR-D96, FR-D98.
 
 Built on the dialog that lays it out, as the queue switches are built on the
 bottom strip: this owns the button, its list and the two questions it asks,
@@ -23,7 +23,14 @@ from collections.abc import Callable
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QPushButton, QWidget
 
-from stellody.domain.taste import TasteProfile, holding, named, saved, without
+from stellody.domain.taste import (
+    TasteProfile,
+    holding,
+    holding_genres,
+    named,
+    saved,
+    without,
+)
 from stellody.shared import resources
 from stellody.ui.dialogs import said_yes, wearing
 from stellody.ui.taste_list import TasteList
@@ -75,14 +82,32 @@ class TasteControls:
         self.list.fill(profiles)
 
     def offer(self, selection: TasteProfile) -> None:
-        """On Find: offer to save a selection no profile holds yet. FR-D90.
+        """On Find: offer to save a selection no profile holds yet. FR-D90."""
+        self._offer(selection, lambda profiles: holding(profiles, selection))
+
+    def offer_genres(self, genres: tuple[str, ...]) -> None:
+        """On a filter's press: offer to save genres no profile holds. FR-D98.
+
+        Saved with the Include boxes a first Discover opens on and any year,
+        since a filter asks nothing about what to include or which years.
+        """
+        self._offer(
+            TasteProfile("", genres), lambda profiles: holding_genres(profiles, genres)
+        )
+
+    def _offer(
+        self,
+        selection: TasteProfile,
+        held: Callable[[tuple[TasteProfile, ...]], TasteProfile | None],
+    ) -> None:
+        """Ask for a name unless `held` finds the selection already kept.
 
         A name already taken is replaced only once that is confirmed; refused,
         the offer is made again, which is the name field coming back (FR-D91).
         """
         if self._store is None or not selection.genres:
             return
-        if holding(self.profiles(), selection) is not None:
+        if held(self.profiles()) is not None:
             return
         while True:
             name = self._name_for(selection.genres)

@@ -1,4 +1,7 @@
-"""Taste profiles' rules, with nothing installed. `DISCOVERY.md` FR-D87 to FR-D93."""
+"""Taste profiles' rules, with nothing installed.
+
+`DISCOVERY.md` FR-D87 to FR-D93, FR-D98.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +10,7 @@ from stellody.domain.release_years import ReleaseYears
 from stellody.domain.taste import (
     TasteProfile,
     holding,
+    holding_genres,
     named,
     ordered,
     saved,
@@ -44,6 +48,21 @@ class TestWhatCountsAsTheSameSelection:
     def test_other_include_boxes_are_a_new_selection(self) -> None:
         wider = TasteProfile("", JAZZ.genres, including=Including(credits=True))
         assert holding((JAZZ,), wider) is None
+
+
+class TestWhatAGenreFilterCountsAsHeld:
+    """FR-D98: a filter asks for genres alone."""
+
+    def test_the_same_genres_are_held_whatever_else_the_profile_holds(
+        self,
+    ) -> None:
+        wider = TasteProfile(
+            "Wider", JAZZ.genres, Including(credits=True), ReleaseYears(2020, None)
+        )
+        assert holding_genres((AMBIENT, wider), ("Blues", "Jazz")) is wider
+
+    def test_other_genres_are_not_held(self) -> None:
+        assert holding_genres((AMBIENT, JAZZ), ("Jazz",)) is None
 
 
 class TestNames:

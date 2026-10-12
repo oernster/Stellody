@@ -10,7 +10,9 @@ business; so is the dialog that offers them.
 
 **Genres are a set, not a sequence.** Ticking Jazz then Rock is the same
 choice as Rock then Jazz, so the genres are compared whatever their order; the
-Include boxes and the years must match as well (FR-D90).
+Include boxes and the years must match as well (FR-D90). A genre filter asks
+about genres alone, so what it offers is held by any profile with the same
+genres, whatever that profile includes (FR-D98).
 
 **A name is compared ignoring case and the space around it.** "Jazz" and
 " jazz " are one profile, so saving the second replaces the first once that is
@@ -51,10 +53,15 @@ def ordered(profiles: tuple[TasteProfile, ...]) -> tuple[TasteProfile, ...]:
     return tuple(sorted(profiles, key=lambda profile: _key(profile.name)))
 
 
+def _same_genres(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
+    """Whether two lists of genres are the same choice, whatever the order."""
+    return frozenset(one) == frozenset(other)
+
+
 def _same_selection(one: TasteProfile, other: TasteProfile) -> bool:
     """Whether two profiles hold the same choices, whatever they are called."""
     return (
-        frozenset(one.genres) == frozenset(other.genres)
+        _same_genres(one.genres, other.genres)
         and one.including == other.including
         and one.years == other.years
     )
@@ -66,6 +73,17 @@ def holding(
     """The saved profile holding exactly this selection; else None."""
     for profile in profiles:
         if _same_selection(profile, wanted):
+            return profile
+    return None
+
+
+def holding_genres(
+    profiles: tuple[TasteProfile, ...], genres: tuple[str, ...]
+) -> TasteProfile | None:
+    """A saved profile holding exactly these genres, whatever else it holds;
+    else None. A genre filter asks for genres alone. FR-D98."""
+    for profile in profiles:
+        if _same_genres(profile.genres, genres):
             return profile
     return None
 

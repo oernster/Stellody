@@ -19,8 +19,9 @@ on offer is closing the dialog and hunting.
 2026-10-12): one list in one setting, so a profile saved or deleted in either
 dialog is saved or deleted in both. Choosing one here ticks its genres alone,
 since this dialog asks nothing about what to include or which years; the box
-apart from the catalogue is left as it was, being no genre. Profiles are saved
-from Discover only, where a selection is put to use. FR-D96.
+apart from the catalogue is left as it was, being no genre. FR-D96. Pressing
+Show with genres no profile holds offers to save them, as Find does in
+Discover (Oliver's ruling, 2026-10-12). FR-D98.
 """
 
 from __future__ import annotations
@@ -91,6 +92,11 @@ class FilterDialog(FirstStopDialog):
             lambda: bool(self.grid.chosen()) or self.unstated_box.isChecked(),
             filtering_already=bool(asked.wanted) or asked.unstated,
         )
+
+    def accept(self) -> None:
+        """Offer to keep genres no profile holds, then close. FR-D98."""
+        self.taste.offer_genres(self.grid.chosen())
+        super().accept()
 
     def clear(self) -> None:
         """Untick everything, leaving the dialog open to be asked again.

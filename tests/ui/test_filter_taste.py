@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QDialog
 from recording_player import RecordingPlayer
 from tray_support import RememberingStore, build
 
+from stellody.domain.including import Including
 from stellody.domain.taste import TasteProfile
 from stellody.ui import taste_controls
 from stellody.ui.discovery_dialog import DiscoveryDialog
@@ -127,6 +128,73 @@ def test_the_window_opens_the_answer_on_its_own_profiles(
     window.show_discovery_results()
     assert _names(seen[0].filter_dialog().taste) == ["Jazz"]
     window.close()
+
+
+@pytest.fixture
+def named_late_night(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
+    """Every offer answered with a name; the genres each was made over."""
+    asked: list[tuple[str, ...]] = []
+
+    def name_for(_parent, genres: tuple[str, ...]) -> str:
+        asked.append(genres)
+        return "Late night"
+
+    monkeypatch.setattr(taste_controls, "asked_name", name_for)
+    return asked
+
+
+def test_filtering_by_genres_no_profile_holds_offers_to_save_them(
+    application, named_late_night
+) -> None:
+    """Reported by Oliver on 2026-10-12: a profile chosen, then Clear, then
+    other boxes ticked and Filter pressed, offered nothing. FR-D98."""
+    settings = _settings(AMBIENT)
+    dialog = _filter(settings)
+    dialog.taste.list.rows[0][NAME_COLUMN].click()
+    dialog.clear()
+    dialog.grid.set_chosen(("Rock",))
+    dialog.show_button.click()
+    assert named_late_night == [("Rock",)]
+    saved = TasteStore(settings).profiles()
+    assert TasteProfile("Late night", ("Rock",)) in saved
+    assert dialog.result() == QDialog.DialogCode.Accepted
+
+
+def test_the_answers_chooser_offers_to_save_what_it_picks(
+    application, named_late_night
+) -> None:
+    settings = _settings()
+    chooser = ResultsFilterDialog(("Jazz", "Rock"), taste=TasteStore(settings))
+    chooser.grid.set_chosen(("Jazz",))
+    chooser.filter_button.click()
+    assert TasteStore(settings).profiles() == (TasteProfile("Late night", ("Jazz",)),)
+
+
+def test_genres_any_profile_holds_are_not_offered_again(
+    application, named_late_night
+) -> None:
+    """Held whatever the profile's Include boxes and years, which a filter
+    never asks about."""
+    wider = TasteProfile("Wider", ("Rock",), Including(credits=True))
+    dialog = _filter(_settings(wider))
+    dialog.grid.set_chosen(("Rock",))
+    dialog.show_button.click()
+    assert named_late_night == []
+
+
+def test_no_genre_ticked_offers_nothing(application, named_late_night) -> None:
+    """Taking a filter off is nothing to keep; nor is the no-genre box alone."""
+    dialog = _filter(_settings())
+    dialog.unstated_box.setChecked(True)
+    dialog.show_button.click()
+    assert named_late_night == []
+
+
+def test_cancel_offers_nothing(application, named_late_night) -> None:
+    dialog = _filter(_settings())
+    dialog.grid.set_chosen(("Rock",))
+    dialog.cancel_button.click()
+    assert named_late_night == []
 
 
 def test_a_profile_deleted_here_is_gone_from_discover(application, yes) -> None:

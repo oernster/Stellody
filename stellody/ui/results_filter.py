@@ -17,7 +17,9 @@ Its three controls are the library filter's, pictures and all: see
 list as Discover and the library's filter, read from the one setting. A
 profile ticks those of its genres the run looked in; the rest could only
 filter to nothing, so they are passed over, as a genre not on offer always is.
-The kinds are left as they stand, being no genre. FR-D96.
+The kinds are left as they stand, being no genre. FR-D96. Pressing Filter
+with genres no profile holds offers to save them (Oliver's ruling,
+2026-10-12). FR-D98.
 """
 
 from __future__ import annotations
@@ -105,6 +107,11 @@ class ResultsFilterDialog(FirstStopDialog):
     def _narrowing(self) -> bool:
         """Whether the boxes as they stand would hide anything."""
         return bool(self.picked()) or self.showing() != EVERYTHING
+
+    def accept(self) -> None:
+        """Offer to keep genres no profile holds, then close. FR-D98."""
+        self.taste.offer_genres(self.picked())
+        super().accept()
 
     def clear(self) -> None:
         """No filter at all: no genre ticked, every kind shown. FR-D86."""

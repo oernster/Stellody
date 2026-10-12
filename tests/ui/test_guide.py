@@ -185,11 +185,12 @@ class TestWhatItNames:
         assert "made by an older version always restores" in guide_html()
 
     def test_it_describes_the_rows_and_profiles_as_they_now_stand(self) -> None:
-        """FR-D89, FR-D96, FR-D97: claims the Guide once got wrong."""
+        """FR-D89, FR-D96 to FR-D98: what the Guide says, pinned word for word."""
         html = guide_html()
         for claim in (
             "choosing one puts that whole selection back",
             "Both genre filters offer the same profiles",
+            "genres no profile holds offers to save them too",
             "at the right of the row beneath the answer",
             "the way out stands alone at the left",
         ):

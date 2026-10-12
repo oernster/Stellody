@@ -1666,8 +1666,8 @@ it sits inside the scope above.
   filter, it shall tick exactly that profile's genres the catalogue still offers
   and leave the box for albums stating no genre as it was. When a profile is
   chosen in the answer's chooser, it shall tick exactly that profile's genres
-  the run looked in and leave the kinds of FR-D86 as they were. Profiles shall
-  be saved from the Discover dialog only (FR-D90).
+  the run looked in and leave the kinds of FR-D86 as they were. Each chooser
+  shall offer to save its genres as FR-D98 states.
 - Rationale: Taste profiles are one list across every dialog that asks for
   genres (Oliver's ruling). The choosers ask nothing about what to
   include or which years, so a profile's genres are all they can use. The
@@ -1697,6 +1697,26 @@ it sits inside the scope above.
   named stands to the right of the one before it and Tab moves from each to
   the next.
 - Verified by: `tests/ui/test_discovery_dialog.py::test_close_stands_left_with_the_sweeps_beside_find`, `tests/ui/test_filter_controls.py::test_cancel_stands_left_and_clear_beside_the_filter`
+
+**FR-D98 Both genre choosers offer to save their genres**
+- Requirement: When the press that filters is pressed in either genre chooser
+  (FR-D96) while at least one genre is ticked and no saved profile holds
+  exactly those genres, whatever its Include boxes and years, the chooser shall
+  make the offer of FR-D90 and FR-D91 before it closes. A profile saved there
+  shall hold the genres ticked (in the answer's chooser, those picked), the
+  Include boxes as Discover first opens them and any year. Cancel shall offer
+  nothing.
+- Rationale: A selection is worth keeping at the moment it is used, in a
+  chooser as on Find (Oliver's ruling). A chooser asks only for genres, so a
+  profile holding the same genres already holds all it can put back; offering
+  it again would be noise.
+- Acceptance: Given profile "Ambient", when it is chosen in the library's
+  filter, then Clear is pressed, then Rock is ticked and Show pressed, then the
+  offer appears and the name given saves Rock; given a profile holding Rock
+  with credits included, when Rock alone is filtered for, then nothing is
+  asked; given only the box for albums stating no genre ticked, then nothing is
+  asked; when Cancel is pressed, then nothing is asked.
+- Verified by: `tests/ui/test_filter_taste.py`
 
 ### 3.2 Non-functional requirements
 
@@ -1983,7 +2003,7 @@ genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D97 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D98 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 
