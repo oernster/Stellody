@@ -222,17 +222,19 @@ class ResultsDialog(AskingResults, FilteringResults, FirstStopDialog):
         walked the controls out of drawn order: measured on 2026-09-17 by
         taking this out and reading the Tab tests fail. It is not stated again
         when a filter deals the answer afresh: the new lists join the chain
-        after Close, which is where the cycle already wants them, measured the
-        same way. A list on a page not showing is hidden, so Tab passes it by.
+        after the last control, which is where the cycle already wants them,
+        measured the same way and again on 2026-10-12 once Close moved to the
+        left (the whole cycle walked after a deal). A list on a page not
+        showing is hidden, so Tab passes it by.
         """
         stops = (
             *self.pages.trees,
+            self.close_button,
+            self.pager.previous_button,
+            self.pager.next_button,
             self.filter_button,
             self.copy_button,
             self.shops_button,
-            self.pager.previous_button,
-            self.pager.next_button,
-            self.close_button,
         )
         for earlier, later in itertools.pairwise(stops):
             QWidget.setTabOrder(earlier, later)

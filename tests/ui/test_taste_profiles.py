@@ -90,7 +90,7 @@ class TestTheButton:
         button, select = dialog.taste.button, dialog.select_button
         assert button.isEnabled()
         assert select.geometry().right() < button.geometry().left()
-        assert button.geometry().left() < dialog.close_button.geometry().left()
+        assert button.geometry().right() < dialog.find_button.geometry().left()
         assert int(button.focusPolicy()) != 0, "the keyboard reaches it"
         dialog.close()
 

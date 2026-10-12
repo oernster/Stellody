@@ -11,6 +11,8 @@ and `test_discovery_bar.py` for the bar it reports to.
 
 from __future__ import annotations
 
+import itertools
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeyEvent
 
@@ -206,6 +208,32 @@ def test_both_controls_wear_their_artwork_at_the_shared_size() -> None:
         assert control.iconSize().width() == CONTROL_ICON_PX, control.text()
         assert control.iconSize().height() == CONTROL_ICON_PX, control.text()
         assert not control.icon().isNull(), control.text()
+
+
+def test_close_stands_left_with_the_sweeps_beside_find(application) -> None:
+    """Oliver's ruling of 2026-10-12: Close, a gap, Select all, Taste, Find.
+
+    The keyboard ring walks them in the same order, left to right.
+    """
+    dialog, _ = make_dialog()
+    dialog.show()
+    application.processEvents()
+    row = [
+        dialog.close_button,
+        dialog.select_button,
+        dialog.taste.button,
+        dialog.find_button,
+    ]
+    for left, right in itertools.pairwise(row):
+        assert left.geometry().right() < right.geometry().left(), right.text()
+    walked = [dialog.close_button]
+    while len(walked) < len(row):
+        step = walked[-1].nextInFocusChain()
+        while step not in row:
+            step = step.nextInFocusChain()
+        walked.append(step)
+    assert walked == row
+    dialog.close()
 
 
 def test_it_says_what_to_do_with_it_and_where_the_answer_goes() -> None:

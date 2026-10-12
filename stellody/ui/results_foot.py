@@ -6,12 +6,16 @@ Copy, Find in shops and Close, so the foot of the dialog read as two feet. The
 way through the answer and the way out of it belong on the same line.
 
 **The pager stands on the middle of the dialog.** Asked for by Oliver on
-2026-09-24: centred only between the controls on the left and Close, it sat
+2026-09-24: centred only between the controls and Close, it sat
 well right of the middle once Filter joined the left. `foot_row` says how.
 
-**The Filter control leads the row.** Ruled by Oliver on 2026-09-13: it wears
-the artwork the library's own filter wears; it is held down while a filter is
-on, the way that one is. FR-D54.
+**The Filter control leads the controls.** Ruled by Oliver on 2026-09-13: it
+wears the artwork the library's own filter wears; it is held down while a filter
+is on, the way that one is. FR-D54.
+
+**Close on the left, the controls on the right.** Oliver's ruling of
+2026-10-12, matching the Discover dialog, where Close also stands alone on the
+left and the controls sit together on the right.
 
 This builds the row and hands back the controls in it. It is a builder rather
 than a widget of its own on purpose: a widget would put the buttons one layout
@@ -83,29 +87,29 @@ def foot_row(
 ) -> tuple[QHBoxLayout, QPushButton, QPushButton, QPushButton, QPushButton]:
     """The row itself, with the four controls standing in it.
 
-    The controls on the left and Close on the right each stand in a side of
+    Close on the left and the controls on the right each stand in a side of
     their own; the two sides share whatever the pager leaves equally, so the
-    pager stands on the middle of the dialog wherever the left side fits in
-    half of what is left. Where it does not, the left side keeps its width and
+    pager stands on the middle of the dialog wherever the right side fits in
+    half of what is left. Where it does not, the right side keeps its width and
     the pager stands as near the middle as that allows.
     """
     row = QHBoxLayout()
     left = QHBoxLayout()
-    filter_button = filter_control(parent, open_filter)
-    left.addWidget(filter_button)
-    copy_button = control(COPY_LABEL, COPY_ICON, copy_ticked, parent)
-    left.addWidget(copy_button)
-    shops_button = control(SHOPS_LABEL, SHOP_ICON, open_shops, parent)
-    left.addWidget(shops_button)
-    left.addStretch()
-    right = QHBoxLayout()
-    right.addStretch()
     close_button = wearing(
         QPushButton(CLOSE_LABEL, parent), resources.find_asset(CLOSE_ICON)
     )
     close_button.setDefault(True)
     close_button.clicked.connect(leave)
-    right.addWidget(close_button)
+    left.addWidget(close_button)
+    left.addStretch()
+    right = QHBoxLayout()
+    right.addStretch()
+    filter_button = filter_control(parent, open_filter)
+    right.addWidget(filter_button)
+    copy_button = control(COPY_LABEL, COPY_ICON, copy_ticked, parent)
+    right.addWidget(copy_button)
+    shops_button = control(SHOPS_LABEL, SHOP_ICON, open_shops, parent)
+    right.addWidget(shops_button)
     row.addLayout(left, SIDE_SHARE)
     row.addWidget(pager, PAGER_SHARE)
     row.addLayout(right, SIDE_SHARE)

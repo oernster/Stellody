@@ -110,42 +110,46 @@ def controls_as_drawn(dialog: ResultsDialog) -> list:
     order measured with half the row inert measures the wrong list.
     """
     controls = [
+        dialog.close_button,
+        dialog.pager.previous_button,
+        dialog.pager.next_button,
         dialog.filter_button,
         dialog.copy_button,
         dialog.shops_button,
-        dialog.pager.previous_button,
-        dialog.pager.next_button,
-        dialog.close_button,
     ]
     for control in controls:
         control.setEnabled(True)
     return controls
 
 
+def _walks_the_whole_cycle(application: QApplication, dialog: ResultsDialog):
+    """From the first list, Tab reaches every stop as drawn, then wraps."""
+    dialog.pages.trees[0].setFocus(Qt.FocusReason.TabFocusReason)
+    expected = [
+        *dialog.pages.trees[1:],
+        *controls_as_drawn(dialog),
+        dialog.pages.trees[0],
+    ]
+    reached = []
+    for _ in expected:
+        pressed(application, Qt.Key.Key_Tab)
+        reached.append(QApplication.focusWidget())
+    assert reached == expected
+
+
 class TestTheRing:
     def test_tab_walks_the_lists_then_the_controls_as_drawn(
         self, application: QApplication, dialog: ResultsDialog
     ) -> None:
-        expected = [
-            *dialog.pages.trees[1:],
-            *controls_as_drawn(dialog),
-            dialog.pages.trees[0],
-        ]
-        reached = []
-        for _ in expected:
-            pressed(application, Qt.Key.Key_Tab)
-            reached.append(QApplication.focusWidget())
-        assert reached == expected
+        _walks_the_whole_cycle(application, dialog)
 
     def test_the_order_survives_the_answer_being_dealt_again(
         self, application: QApplication, dialog: ResultsDialog
     ) -> None:
+        """The new lists must take the old ones' place, wrap included."""
         dialog._deal(dialog._gaps)
         application.processEvents()
-        first_control = controls_as_drawn(dialog)[0]
-        dialog.pages.trees[-1].setFocus(Qt.FocusReason.TabFocusReason)
-        pressed(application, Qt.Key.Key_Tab)
-        assert QApplication.focusWidget() is first_control
+        _walks_the_whole_cycle(application, dialog)
 
 
 class TestInsideAList:

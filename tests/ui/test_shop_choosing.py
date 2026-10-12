@@ -261,9 +261,9 @@ def test_the_ticks_and_the_controls_are_stops_on_the_ring(application) -> None:
         widget = widget.nextInFocusChain()
     drawn = (
         dialog.pages.trees[0],
+        dialog.close_button,
         dialog.copy_button,
         dialog.shops_button,
-        dialog.close_button,
     )
     reached = [stops.index(stop) for stop in drawn]
     assert reached == sorted(reached), "each is reached in the order it is drawn"

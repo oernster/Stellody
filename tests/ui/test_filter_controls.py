@@ -57,14 +57,35 @@ def test_clearing_wears_the_close_picture(application) -> None:
         assert _drawn(dialog.clear_button.icon()) == expected
 
 
-def test_cancel_stands_beside_the_filter(application) -> None:
-    for dialog, apply in _choosers():
-        row = next(
-            layout
-            for layout in dialog.findChildren(QHBoxLayout)
-            if layout.indexOf(apply) >= 0
-        )
-        assert row.indexOf(dialog.cancel_button) + 1 == row.indexOf(apply)
+def _drawn_row(dialog, apply) -> list:
+    """The controls of the chooser's foot, left to right as laid out."""
+    row = next(
+        layout
+        for layout in dialog.findChildren(QHBoxLayout)
+        if layout.indexOf(apply) >= 0
+    )
+    placed = (row.itemAt(at).widget() for at in range(row.count()))
+    return [widget for widget in placed if widget is not None]
+
+
+def test_cancel_stands_left_and_clear_beside_the_filter(application) -> None:
+    """Oliver's ruling of 2026-10-12; the library's adds Taste profiles."""
+    library, answer = _choosers()
+    expected = (
+        [
+            library[0].cancel_button,
+            library[0].clear_button,
+            library[0].taste.button,
+            library[1],
+        ],
+        [answer[0].cancel_button, answer[0].clear_button, answer[1]],
+    )
+    for (dialog, apply), wanted in zip((library, answer), expected):
+        assert _drawn_row(dialog, apply) == wanted
+        walked = [wanted[0]]
+        while len(walked) < len(wanted):
+            walked.append(walked[-1].nextInFocusChain())
+        assert walked == wanted, "Tab walks them as drawn"
 
 
 def _fresh():

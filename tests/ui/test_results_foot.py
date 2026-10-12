@@ -3,7 +3,9 @@
 Asked for by Oliver on 2026-09-24. The pager stood centred between the
 controls on the left and Close, so once Filter joined the left it sat well to
 the right of the dialog's middle: measured offscreen, 143 pixels right in a
-dialog 720 wide. The two sides now share the spare width equally.
+dialog 720 wide. The two sides now share the spare width equally. Since
+2026-10-12 Close stands on the left and the controls on the right (Oliver's
+ruling), so the wider side is the right.
 
 Every width here is worked out from what the controls ask for rather than
 stated. How wide a button asks to be follows the style in force, which an
@@ -86,13 +88,13 @@ def test_short_of_room_the_controls_keep_their_width(application) -> None:
     """Centring never squeezes a control: the pager moves along instead."""
     dialog = made((gaps_with(albums=40),))
     left, pager, right, around = _needs(application, dialog)
-    assert left > right, "the left side is the wider, which is the whole case"
-    _at(application, dialog, left + pager + right + around + (left - right) // HALF)
+    assert right > left, "the right side is the wider, which is the whole case"
+    _at(application, dialog, left + pager + right + around + (right - left) // HALF)
     for control in (dialog.filter_button, dialog.copy_button, dialog.shops_button):
         assert control.width() >= control.sizeHint().width(), control.text()
-    shops_end = dialog.shops_button.mapTo(
-        dialog, dialog.shops_button.rect().topRight()
+    filter_start = dialog.filter_button.mapTo(
+        dialog, dialog.filter_button.rect().topLeft()
     ).x()
-    previous = dialog.pager.previous_button
-    assert previous.mapTo(dialog, previous.rect().topLeft()).x() > shops_end
-    assert _pager_middle(dialog) > dialog.width() / HALF, "as near as it can be"
+    following = dialog.pager.next_button
+    assert following.mapTo(dialog, following.rect().topRight()).x() < filter_start
+    assert _pager_middle(dialog) < dialog.width() / HALF, "as near as it can be"

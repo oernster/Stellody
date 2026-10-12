@@ -187,8 +187,18 @@ class DiscoveryDialog(FirstStopDialog):
         self._ticks_changed()
 
     def _buttons(self) -> QHBoxLayout:
-        """The sweep away to the left, then away, then the one that works."""
+        """Away to the left; the sweeps, then the one that works, to the right.
+
+        Oliver's ruling of 2026-10-12. Made in the order they stand, since the
+        keyboard ring follows the order they were made in.
+        """
         row = QHBoxLayout()
+        self.close_button = wearing(
+            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
+        )
+        self.close_button.clicked.connect(self.reject)
+        row.addWidget(self.close_button)
+        row.addStretch()
         self.select_button = QPushButton(SELECT_ALL_LABEL, self)
         self.select_button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
         self.select_button.clicked.connect(self._select_or_clear)
@@ -198,12 +208,6 @@ class DiscoveryDialog(FirstStopDialog):
             self, self._taste_store, self._put_back, CONTROL_ICON_PX
         )
         row.addWidget(self.taste.button)
-        row.addStretch()
-        self.close_button = wearing(
-            QPushButton(CLOSE_LABEL, self), resources.find_asset(CLOSE_ICON)
-        )
-        self.close_button.clicked.connect(self.reject)
-        row.addWidget(self.close_button)
         # The same picture the control that opens this dialog wears, since a
         # press here is the thing that button promised.
         self.find_button = wearing(

@@ -25,6 +25,7 @@ from stellody.domain.searching import AlbumText
 from stellody.ui.filter_dialog import FilterDialog
 from stellody.ui.genre_folds import Folds
 from stellody.ui.settings_keys import SETTING_GENRES_OPEN_LIBRARY_FILTER
+from stellody.ui.taste_store import TasteStore
 
 # What the box apart from the catalogue is called when it is named in a list of
 # genres, which is the one place it has to read as a phrase rather than a name.
@@ -57,6 +58,7 @@ class Filtering:
             self._narrowing,
             self,
             folds=Folds(self._settings, SETTING_GENRES_OPEN_LIBRARY_FILTER),
+            taste=TasteStore(self._settings),
         )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return

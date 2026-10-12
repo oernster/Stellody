@@ -898,12 +898,14 @@ ruling).
   one for each direction, each wearing its own artwork struck through where that
   direction leads nowhere (both where there is one page); between them shall
   stand words saying which page of how many is in front. Those three shall stand
-  on the SAME row as the Filter control of FR-D54, which leads it, the controls
-  that act on the ticks and Close, immediately beneath the answer. The pager
-  shall stand on the middle of the dialog, the left controls and Close each in a
-  side of their own sharing equally the width it leaves; where the left side
-  cannot fit in half, it keeps its width and the pager stands as near the middle
-  as that allows (`ui/results_foot.py`). Every page shall be built when the
+  on the SAME row as Close, the Filter control of FR-D54 and the controls that
+  act on the ticks, immediately beneath the answer: Close alone on the left,
+  then the pager, then Filter, Copy and Find in shops on the right (Oliver's
+  ruling, 2026-10-12); Tab shall walk them in that order. The pager shall stand
+  on the middle of the dialog, Close and the right controls each in a side of
+  their own sharing equally the width it leaves; where the right side cannot
+  fit in half, it keeps its width and the pager stands as near the middle as
+  that allows (`ui/results_foot.py`). Every page shall be built when the
   dialog opens and kept, so that an album ticked on one page is still ticked
   after another has been looked at.
 - Rationale: A whole-library answer in scrolling columns gives no sense of where
@@ -919,7 +921,7 @@ ruling).
   but the last carries every column; given an artist taller than a column, then
   it fills one and shares its page; given a run that found nobody, then there is
   still one page.
-- Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_results_foot.py`, `tests/ui/test_shop_choosing.py::test_a_tick_holds_across_pages_and_still_reaches_a_shop`
+- Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_results_foot.py`, `tests/ui/test_results_keyboard.py::TestTheRing`, `tests/ui/test_shop_choosing.py::test_a_tick_holds_across_pages_and_still_reaches_a_shop`
 
 **FR-D54 The answer can be narrowed to some of the genres the run looked in**
 - Requirement: The results dialog shall carry a Filter control wearing the
@@ -1654,6 +1656,40 @@ it sits inside the scope above.
   given two profiles, then every row shows and no scroll bar does.
 - Verified by: `tests/ui/test_taste_list_scrolling.py`
 
+**FR-D96 The library's genre filter offers the same taste profiles**
+- Requirement: The library's Filter by genre dialog shall carry a Taste profiles
+  button between Clear and Show, lifting the same list as the Discover dialog's
+  (FR-D88), read from the one setting (FR-D93), so a profile saved or deleted in
+  either dialog is saved or deleted in both. When a profile is chosen there, the
+  dialog shall tick exactly that profile's genres the catalogue still offers and
+  leave the box for albums stating no genre as it was. Profiles shall be saved
+  from the Discover dialog only (FR-D90).
+- Rationale: Oliver's ruling, 2026-10-12: taste profiles are one list across the
+  two dialogs that ask for genres. The filter asks nothing about what to include
+  or which years, so a profile's genres are all it can use; the no-genre box is
+  not a genre.
+- Acceptance: Given a profile saved from Discover by pressing Find, when the
+  filter is opened, then the profile is listed and choosing it ticks its genres;
+  given a profile deleted in the filter, when Discover is opened, then it is not
+  listed; given the no-genre box ticked, when a profile is chosen, then the box
+  stays ticked; given the window's settings holding a profile, when the window
+  opens its filter, then that profile is listed.
+- Verified by: `tests/ui/test_filter_taste.py`
+
+**FR-D97 The way out stands alone on the left**
+- Requirement: The Discover dialog's foot row shall read Close, then a gap,
+  then Select all, Taste profiles and Find. The foot row of both genre choosers
+  (the library's Filter by genre and the answer's chooser of FR-D54) shall read
+  Cancel, then a gap, then Clear, the library's Taste profiles (FR-D96) and the
+  press that filters. Tab shall walk each row in the order it reads.
+- Rationale: Oliver's ruling, 2026-10-12: the way out on its own at the left,
+  the controls that set the ticks together on the right beside the press that
+  acts. The results dialog's row follows the same ruling (FR-D49).
+- Acceptance: Given either dialog, when it is laid out, then each control
+  named stands to the right of the one before it and Tab moves from each to
+  the next.
+- Verified by: `tests/ui/test_discovery_dialog.py::test_close_stands_left_with_the_sweeps_beside_find`, `tests/ui/test_filter_controls.py::test_cancel_stands_left_and_clear_beside_the_filter`
+
 ### 3.2 Non-functional requirements
 
 **NFR-PRIV-001 What leaves the machine**
@@ -1939,7 +1975,7 @@ genres are run first.
 
 ## 4. Prioritisation
 
-Must: FR-D01 to FR-D14, FR-D16 to FR-D95 and every NFR except NFR-PERF-002.
+Must: FR-D01 to FR-D14, FR-D16 to FR-D97 and every NFR except NFR-PERF-002.
 Should: FR-D15.
 Could: nothing this stage.
 

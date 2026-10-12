@@ -14,6 +14,13 @@ part of the library would be hidden behind a field nobody had filled in.
 **Clearing is a button rather than a chore.** Undoing a filter by finding every
 ticked box is the kind of tidying a dialog should do for somebody; the only alternative
 on offer is closing the dialog and hunting.
+
+**The taste profiles are the Discover dialog's own** (Oliver's ruling,
+2026-10-12): one list in one setting, so a profile saved or deleted in either
+dialog is saved or deleted in both. Choosing one here ticks its genres alone,
+since this dialog asks nothing about what to include or which years; the box
+apart from the catalogue is left as it was, being no genre. Profiles are saved
+from Discover only, where a selection is put to use. FR-D96.
 """
 
 from __future__ import annotations
@@ -22,11 +29,14 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from stellody.domain.narrowing import Narrowing
 from stellody.domain.overrides import AlbumField
-from stellody.ui.dialogs import FirstStopDialog
+from stellody.domain.taste import TasteProfile
+from stellody.ui.dialogs import CONTROL_ICON_PX, FirstStopDialog
 from stellody.ui.filter_controls import filter_controls, offer_apply
 from stellody.ui.genre_folds import Folds
 from stellody.ui.genre_grid import ASKING, GenreGrid
 from stellody.ui.ringed_check import RingedCheckBox
+from stellody.ui.taste_controls import TasteControls
+from stellody.ui.taste_store import TasteStore
 
 TITLE = "Filter by genre"
 SHOW_LABEL = "Show"
@@ -48,6 +58,7 @@ class FilterDialog(FirstStopDialog):
         asked: Narrowing | None = None,
         parent: QWidget | None = None,
         folds: Folds | None = None,
+        taste: TasteStore | None = None,
     ) -> None:
         super().__init__(parent)
         asked = asked or Narrowing()
@@ -64,9 +75,12 @@ class FilterDialog(FirstStopDialog):
         self.unstated_box = RingedCheckBox(UNSTATED_LABEL, self)
         self.unstated_box.setChecked(asked.unstated)
         outer.addWidget(self.unstated_box)
-        # The same three controls the answer's chooser wears: see
-        # `filter_controls`.
-        controls = filter_controls(self, SHOW_LABEL, self.clear)
+        # The same three controls the answer's chooser wears, with Taste
+        # profiles beside Clear: see `filter_controls`.
+        self.taste = TasteControls(self, taste, self._put_back, CONTROL_ICON_PX)
+        controls = filter_controls(
+            self, SHOW_LABEL, self.clear, extra=self.taste.button
+        )
         self.clear_button = controls.clear
         self.cancel_button = controls.cancel
         self.show_button = controls.apply
@@ -86,6 +100,10 @@ class FilterDialog(FirstStopDialog):
         """
         self.grid.set_all(False)
         self.unstated_box.setChecked(False)
+
+    def _put_back(self, profile: TasteProfile) -> None:
+        """Tick exactly a taste profile's genres. FR-D96."""
+        self.grid.set_chosen(profile.genres)
 
     def narrowing(self) -> Narrowing:
         """What has been asked for, as the domain takes it."""

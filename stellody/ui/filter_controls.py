@@ -1,8 +1,14 @@
-"""The row at the foot of both genre choosers: clear, then cancel and filter.
+"""The row at the foot of both genre choosers: cancel, then clear and filter.
 
 Ruled by Oliver on 2026-09-13 for the chooser a discovery answer opens, then
 carried to the library's own filter, which offers the same three controls; two
 choosers asking one question should not dress it two ways.
+
+**Cancel on the left, Clear beside the press that filters.** Oliver's ruling
+of 2026-10-12, matching the Discover dialog: the way out stands alone on the
+left, the controls that set the ticks sit together on the right. A chooser may
+add one control of its own between Clear and the press that filters; the
+library's filter adds Taste profiles there.
 
 **Filtering wears the filter picture**, the one the tray's own filter button
 wears, so the press that narrows looks like the button that opened the chooser.
@@ -14,6 +20,7 @@ picture.**
 
 from __future__ import annotations
 
+import itertools
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
@@ -39,16 +46,17 @@ class FilterControls:
 
 
 def filter_controls(
-    dialog: QWidget, apply_label: str, clear: Callable[[], None]
+    dialog: QWidget,
+    apply_label: str,
+    clear: Callable[[], None],
+    extra: QWidget | None = None,
 ) -> FilterControls:
-    """Clear away to the left, then cancel beside the press that filters."""
+    """Cancel away to the left; clear, any extra, then the press that filters.
+
+    The keyboard ring is stated in drawn order, since the extra control is
+    made by its owner before this row exists and would otherwise come first.
+    """
     row = QHBoxLayout()
-    clear_button = wearing(
-        QPushButton(CLEAR_LABEL, dialog), resources.find_asset(CLOSE_ICON)
-    )
-    clear_button.clicked.connect(clear)
-    row.addWidget(clear_button)
-    row.addStretch()
     cancel_button = QPushButton(CANCEL_LABEL, dialog)
     cancel_button.setIcon(
         struck_through(
@@ -60,12 +68,24 @@ def filter_controls(
     cancel_button.setIconSize(QSize(CONTROL_ICON_PX, CONTROL_ICON_PX))
     cancel_button.clicked.connect(dialog.reject)
     row.addWidget(cancel_button)
+    row.addStretch()
+    clear_button = wearing(
+        QPushButton(CLEAR_LABEL, dialog), resources.find_asset(CLOSE_ICON)
+    )
+    clear_button.clicked.connect(clear)
+    row.addWidget(clear_button)
+    if extra is not None:
+        row.addWidget(extra)
     apply_button = wearing(
         QPushButton(apply_label, dialog), resources.filter_icon_path()
     )
     apply_button.setDefault(True)
     apply_button.clicked.connect(dialog.accept)
     row.addWidget(apply_button)
+    stops = (cancel_button, clear_button, extra, apply_button)
+    drawn = [stop for stop in stops if stop is not None]
+    for earlier, later in itertools.pairwise(drawn):
+        QWidget.setTabOrder(earlier, later)
     return FilterControls(row, clear_button, cancel_button, apply_button)
 
 

@@ -1,8 +1,10 @@
-"""The Discover dialog's Taste profiles button and what it lifts. FR-D87 to FR-D92.
+"""The Taste profiles button and what it lifts. FR-D87 to FR-D92, FR-D96.
 
-Built on the dialog that lays it out, beside Select all, as the queue switches
-are built on the bottom strip: this owns the button, its list and the two
-questions it asks, while the dialog says where it goes.
+Built on the dialog that lays it out, as the queue switches are built on the
+bottom strip: this owns the button, its list and the two questions it asks,
+while the dialog says where it goes. Two dialogs carry one: Discover (beside
+Select all) and the library's Filter by genre (beside Clear). Both read the one
+setting afresh, so a profile saved or deleted in either is so in both.
 
 The button lifts the saved profiles alphabetically, each a row with its own
 delete button on the left then its name (`taste_list.py`). Choosing a name puts
