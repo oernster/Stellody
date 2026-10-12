@@ -31,6 +31,7 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from stellody.infrastructure import diary
+from stellody.ui.native_windows import keep_siblings_plain
 
 # No test may draw on somebody's screen, however the suite was started. The
 # platform was set only by gate.ps1, so a bare `pytest` put a real window on
@@ -46,6 +47,8 @@ FORBIDDEN = "stellody.exe"
 def application() -> QApplication:
     """One real QApplication for the whole session. Qt is never mocked."""
     existing = QApplication.instance()
+    if existing is None:
+        keep_siblings_plain()
     return existing or QApplication([])
 
 

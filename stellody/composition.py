@@ -77,6 +77,7 @@ from stellody.ui.close_prompt import CloseAction
 from stellody.ui.geometry import forget_window
 from stellody.ui.interface_scale import use_interface_scale
 from stellody.ui.main_window import MainWindow
+from stellody.ui.native_windows import keep_siblings_plain
 from stellody.ui.settings_keys import (
     FALSE,
     SETTING_CLOSE,
@@ -314,6 +315,7 @@ def _start(argv: list[str] | None = None) -> int:
     diary.note(f"launched with {arguments[1:]}")
     # Before the application, since Qt reads the scale as it is built.
     use_interface_scale(os.environ)
+    keep_siblings_plain()
     application = QApplication(arguments)
     configure(application)
     only = instance.SingleInstance()

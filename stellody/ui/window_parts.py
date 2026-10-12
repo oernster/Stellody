@@ -96,6 +96,8 @@ def neutral_holder(window: QMainWindow) -> QWidget:
     holder.setObjectName("NeutralStart")
     holder.setFixedSize(0, 0)
     holder.setFocusPolicy(Qt.FocusPolicy.TabFocus)
+    # It must stay a plain widget: made native, Windows gives it a window of
+    # its own over the menu bar. `native_windows.py` says how that happened.
     return holder
 
 
