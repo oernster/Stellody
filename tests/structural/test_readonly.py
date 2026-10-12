@@ -60,6 +60,17 @@ WRITE_PERMITTED = frozenset(
         # anything lives, so a module reaching the music through it would have
         # to name the music itself, which is what paths.py settles.
         "stellody/infrastructure/atomic.py",
+        # BACKUP.md. A backup is the one file Stellody writes outside its own
+        # directory: a zip of a fresh name, in the folder the listener chose in
+        # a dialog, written under a temporary name and moved into place. It
+        # never replaces a file already there (FR-B04) and reads nothing in
+        # that folder but the names. Staging a restore writes only inside
+        # Stellody's own directory.
+        "stellody/infrastructure/backup_file.py",
+        # Putting a staged restore in place at the next start: renames inside
+        # Stellody's own directory, the live set moved aside until the restored
+        # one is in, then the staging removed.
+        "stellody/infrastructure/staged_restore.py",
     }
 )
 

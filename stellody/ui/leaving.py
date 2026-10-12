@@ -95,6 +95,9 @@ class Leaving:
         self.stop_covering()
         self._note("letting go of any cover being looked up")
         self.stop_choosing()
+        # A backup part written would be left as a file nobody can use.
+        self._note("waiting for any backup being written")
+        self.stop_backing_up()
         self._note("scan runner done; accepting the close")
         event.accept()
         self._note("calling the departure")

@@ -3,8 +3,8 @@
 How Stellody is tested: running the checks, reading what they say, the rules a
 run by hand has to follow and how a new test or guard is written. The rules
 themselves are in `ARCHITECTURE.md`, each invariant linked to the test that
-enforces it; `DISCOVERY.md`, `SHOPS.md`, `FORMATS.md` and `OUTPUTS.md` name the
-test behind every requirement. This file is how to work with those tests, not
+enforces it; `DISCOVERY.md`, `SHOPS.md`, `FORMATS.md`, `OUTPUTS.md` and
+`BACKUP.md` name the test behind every requirement. This file is how to work with those tests, not
 a second copy of what they assert.
 
 ## Running the checks

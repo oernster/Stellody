@@ -68,6 +68,9 @@ Each line is a summary; the site has the detail.
   plays to its end counts as played.
 - A rescan that names the new albums, counts the new tracks and gives the
   library's totals.
+- Back up everything Stellody knows about your library (ratings, edits,
+  settings and discovery results) to one zip in a folder you choose; restore it
+  here or on another computer. The music itself is yours to copy.
 - Bonus videos that came with an album play inside it.
 
 **Playback and sound** ([playback page](https://stellody.co.uk/playback.html))
@@ -253,8 +256,9 @@ Each platform builds on itself: `python buildexe.py` then
 - [`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md): the decisions the product
   rests on, with their gains and costs.
 - [`DISCOVERY.md`](DISCOVERY.md), [`SHOPS.md`](SHOPS.md),
-  [`FORMATS.md`](FORMATS.md) and [`OUTPUTS.md`](OUTPUTS.md): specifications
-  whose requirements each name the test that proves them.
+  [`FORMATS.md`](FORMATS.md), [`OUTPUTS.md`](OUTPUTS.md) and
+  [`BACKUP.md`](BACKUP.md): specifications whose requirements each name the
+  test that proves them.
 
 ## Supporting Stellody
 

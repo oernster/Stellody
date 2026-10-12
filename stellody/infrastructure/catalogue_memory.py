@@ -40,6 +40,7 @@ from stellody.application.remembering import (
     merged,
     stamp_for,
 )
+from stellody.domain.backups import FIRST_SCHEMA, SchemaRange
 from stellody.domain.discovery import ReleaseGroup, SimilarArtist
 from stellody.domain.series import Series
 from stellody.infrastructure import journal, paths
@@ -54,6 +55,9 @@ from stellody.infrastructure.file_shapes import (
 
 MEMORY_NAME = "catalogue-memory.json"
 JOURNAL_NAME = "catalogue-memory.record"
+# The shapes of both files this module reads and writes. BACKUP.md FR-B17:
+# change what is written and this changes with it.
+SCHEMA = SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA)
 # Where a series answer keeps its name and its entries.
 SERIES_NAME = "name"
 SERIES_ALBUMS = "albums"

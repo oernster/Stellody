@@ -32,12 +32,15 @@ from stellody.application.shopping import Shopping
 from stellody.application.transport import Transport
 from stellody.application.updates import UpdateService, platform_key_for
 from stellody.infrastructure import (
+    backup_file,
+    detached,
     diary,
     discovery_file,
     instance,
     output,
     output_list,
     qt_messages,
+    staged_restore,
     switch_reset,
     window_reset,
 )
@@ -215,6 +218,7 @@ def build_window(
         updates=UpdateService(
             GitHubReleases(), __version__, platform_key_for(sys.platform)
         ),
+        backups=backup_file.backups(),
         leave=leave,
         note=note,
     )
@@ -321,6 +325,8 @@ def _start(argv: list[str] | None = None) -> int:
         diary.note(f"the ask was answered: {answered}; leaving")
         return ALREADY_RUNNING
     diary.note("took the claim, so this is the copy that runs")
+    # Before the store opens, which is the only moment the files are free.
+    restored = staged_restore.apply(data_location())
     store, set_aside = open_store(database_path())
     if switch_reset.take(data_location()):
         forget_for_a_fresh_install(store)
@@ -351,6 +357,8 @@ def _start(argv: list[str] | None = None) -> int:
     # Discover, when reading it starves the sound device. FileCatalogueMemory.
     warm_memory(recall, diary.note)
     window.warm_discovery()
+    if restored is not None:
+        window.report_restore(restored.backup, restored.safety, restored.failure)
     if set_aside is not None:
         window.report_library_set_aside(set_aside)
     listening = only.listen(window.restore_for_channel)
@@ -362,5 +370,8 @@ def _start(argv: list[str] | None = None) -> int:
     store.close()
     diary.note("store closed")
     only.release()
+    # Only now: a copy started while the claim was held would leave at once.
+    if window.restart_asked:
+        diary.note(f"started again: {detached.start_again(arguments[0])}")
     diary.note(f"claim released; leaving with {code}")
     return left_with(code, window)

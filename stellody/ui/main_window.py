@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from stellody.application.artwork import AlbumArt
+from stellody.application.backing_up import Backups
 from stellody.application.choosing_covers import ChooseCover
 from stellody.application.compilation_cost import CompilationCost
 from stellody.application.discovering import Discovery
@@ -39,6 +40,7 @@ from stellody.ui.editing_tags import EditingTags
 from stellody.ui.expanding import ExpandToggle
 from stellody.ui.filtering import Filtering
 from stellody.ui.geometry import Geometry
+from stellody.ui.keeping_backups import KeepingBackups
 from stellody.ui.leaving import Leaving
 from stellody.ui.maximising import Maximising
 from stellody.ui.menu_bar import RingedMenuBar
@@ -111,6 +113,7 @@ class MainWindow(
     Geometry,
     Maximising,
     Leaving,
+    KeepingBackups,
     Covering,
     Appearance,
     Viewing,
@@ -141,6 +144,7 @@ class MainWindow(
         shopping: Shopping | None = None,
         compilation_cost: CompilationCost | None = None,
         genre_memory: GenreMemory | None = None,
+        backups: Backups | None = None,
         leave: Callable[[], None] | None = None,
         note: Callable[[str], None] | None = None,
         # Why exclusive output is not on offer here; empty where it is. A
@@ -219,6 +223,7 @@ class MainWindow(
             genre_memory=genre_memory,
         )
         self.start_keeping_place()
+        self.start_keeping_backups(backups)
         self._help_menu = self._build_help_menu()
         self._tray = LibraryTray(
             self,

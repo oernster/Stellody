@@ -16,7 +16,7 @@ from stellody.domain.listening import Listening
 from stellody.domain.overrides import AlbumEdit, Override
 from stellody.infrastructure import (
     album_edit_rows,
-    folder_derivation,
+    database_schema,
     folder_rows,
     override_rows,
     stored_dates,
@@ -117,8 +117,8 @@ class SqliteLibraryStore:
             )
             self._connection.commit()
             # Before anything reads a folder row: a database written
-            # earlier has no derivation column at all.
-            folder_derivation.ensure_column(self._connection)
+            # earlier is taken up to the current shape and numbered.
+            database_schema.bring_up(self._connection)
             # A date written before the scan learned to reduce one still
             # carries its padding; an incremental scan will not revisit
             # the folder to correct it. Settled here rather than left waiting.

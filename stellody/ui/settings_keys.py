@@ -64,6 +64,9 @@ SETTING_GENRES_OPEN_DISCOVERY = "genres_open_discovery"
 SETTING_GENRES_OPEN_LIBRARY_FILTER = "genres_open_library_filter"
 SETTING_GENRES_OPEN_ANSWER_FILTER = "genres_open_answer_filter"
 SETTING_GENRES_OPEN_TAG_EDITOR = "genres_open_tag_editor"
+# The folder the last backup went to, where the next backup or restore opens.
+# BACKUP.md FR-B06.
+SETTING_BACKUP_FOLDER = "backup_folder"
 
 # The release tag a listener asked not to be told about again. The exact tag
 # string, since both sides of the comparison come from the same endpoint.

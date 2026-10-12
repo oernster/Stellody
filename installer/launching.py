@@ -23,21 +23,18 @@ import pathlib
 import subprocess
 from ctypes import wintypes
 
+# Started on its own: detached.py says how, for setup and the application.
+from stellody.infrastructure.detached import (  # noqa: F401 - read by the tests
+    CREATE_BREAKAWAY_FROM_JOB,
+    DETACHED,
+    start,
+)
+
 # How long setup waits for the window before giving up and closing anyway. A
 # missed foreground is a smaller fault than a setup program that will not go,
 # so this is the worst case a user could see setup linger for, not a target.
 FOREGROUND_WAIT_S = 5.0
 FOREGROUND_POLL_MS = 200
-
-# Started on its own: no console inherited, its own process group, out of any
-# job object this program is in, so nothing that happens to setup reaches it.
-# The values are Windows' own; subprocess only names the first two.
-CREATE_BREAKAWAY_FROM_JOB = 0x01000000
-DETACHED = (
-    getattr(subprocess, "DETACHED_PROCESS", 0)
-    | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    | CREATE_BREAKAWAY_FROM_JOB
-)
 
 TH32CS_SNAPPROCESS = 0x00000002
 INVALID_HANDLE = -1
@@ -76,14 +73,7 @@ def launch(executable: pathlib.Path) -> subprocess.Popen | None:
     the test suite starting the installed copy, so the reason went away while
     the surprise of an install that appears to do nothing remained.
     """
-    for flags in (DETACHED, 0):
-        try:
-            return subprocess.Popen(
-                [str(executable)], cwd=str(executable.parent), creationflags=flags
-            )
-        except OSError:
-            continue
-    return None
+    return start([str(executable)], str(executable.parent))
 
 
 def family(root: int, parents: dict[int, int]) -> set[int]:

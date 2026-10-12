@@ -2,7 +2,7 @@
 
 This file holds the rules the structure keeps and why it is shaped as it is.
 Requirements live in their specifications (`DISCOVERY.md`, `SHOPS.md`,
-`OUTPUTS.md`, `FORMATS.md`); product trade-offs live in
+`OUTPUTS.md`, `FORMATS.md`, `BACKUP.md`); product trade-offs live in
 `DECISIONS-TRADEOFFS.md`; each module's docstring holds its detail. Where a
 constant governs behaviour it is named here rather than quoted, so its value
 has one home.
@@ -1030,6 +1030,39 @@ reports refusal, absence at launch and disconnection.
 `stellody/ui/output_menu.py` fills the strip's popup and the Sound menu's
 submenu from one function. `OutputDevices` emits `listed` before `changed`, so
 the list is current before a move is acted on.
+
+## Backing up and restoring
+
+Specified in [`BACKUP.md`](BACKUP.md). One service over one port:
+`stellody/application/backing_up.py` holds `Backups` (back up, verify, restore)
+and the `BackupArchive` port; `stellody/domain/backups.py` holds the manifest,
+the dated name and the judgement of whether a backup may be put back, by each
+file's schema rather than by the release that wrote it.
+
+**Every file a backup carries has a numbered shape.** The database records its
+own in `PRAGMA user_version`; `stellody/infrastructure/database_schema.py` holds
+the steps that take an older file up, so the newest number is the count of
+steps and the two cannot drift. Each JSON owner declares the oldest shape it
+reads and the newest it writes. `tests/structural/test_schema_bumps.py`
+fingerprints the database's creating statements per number, so a changed shape
+needs a new step.
+
+**A backup is the one file Stellody writes outside its own directory.**
+`stellody/infrastructure/backup_file.py` writes a zip of a fresh name into the
+folder chosen in a dialog, under a temporary name moved into place, with the
+database copied through SQLite's own backup because of the write ahead log. Its
+entry in invariant 2's permitted list says so.
+
+**A restore completes at the next start, never in the running copy.** Quitting
+writes the catalogue memory whole and the open store holds the database, so
+either would undo or block a swap made while running. A confirmed restore is
+unpacked into a staging folder whose note is written last; the window asks to
+be started again and quits; `stellody/composition.py` relaunches only after the
+single-instance claim is released, through `stellody/infrastructure/detached.py`
+(shared with the setup program). Whatever start comes next runs
+`stellody/infrastructure/staged_restore.py` before the store opens: the live
+set is moved aside by renames, the staged one moved in, the old one moved back
+if anything fails.
 
 ## Shipping to three platforms
 

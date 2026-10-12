@@ -30,6 +30,7 @@ import json
 import pathlib
 
 from stellody.application.shop_editing import ShopListUnwritable
+from stellody.domain.backups import FIRST_SCHEMA, SchemaRange
 from stellody.domain.shop_list import (
     BrokenRow,
     Row,
@@ -43,6 +44,9 @@ from stellody.infrastructure import paths
 from stellody.infrastructure.atomic import written
 
 SHOPS_NAME = "shops.json"
+# The shape of the shop file. BACKUP.md FR-B17: change what is written and
+# this changes with it.
+SCHEMA = SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA)
 SHOPS_KEY = "shops"
 # The release list the rows were last settled against, which is how an edited
 # shipped shop is told from an untouched one. FR-S32, FR-S33.

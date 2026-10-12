@@ -52,6 +52,7 @@ class Menus:
         file_menu = self.menuBar().addMenu("&File")
         menu_action(file_menu, self, "Choose &music folder...", self.choose_folder)
         self._rescan_action = menu_action(file_menu, self, "&Rescan", self.rescan)
+        self._add_backup_actions(file_menu)
         self._mirror_file(file_menu)
         file_menu.addSeparator()
         self._forget_close_action = menu_action(

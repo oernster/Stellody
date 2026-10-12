@@ -41,6 +41,9 @@ EXPECTED = {
     "Choose music folder...": (True, True, True),
     # Nothing to scan until somewhere has been named.
     "Rescan": (False, True, True),
+    # Built with no backup errands, so neither can act. BACKUP.md FR-B01.
+    "Back up library...": (False, False, False),
+    "Restore from backup...": (False, False, False),
     # Built with no repair service and no discovery source, so both buttons
     # are disabled and the entries standing for them follow.
     "Repair the library...": (False, False, False),
