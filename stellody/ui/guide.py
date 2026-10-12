@@ -33,6 +33,7 @@ from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.auto_scroller import AutoScroller
 from stellody.ui.dialogs import FirstStopDialog, close_row
+from stellody.ui.guide_backups import backups_html
 from stellody.ui.guide_discovery import discovery_html
 from stellody.ui.guide_pictures import img, row
 from stellody.ui.layout_advice import layout_html
@@ -234,6 +235,7 @@ def guide_html() -> str:
         f"{_bottom_tray_html()}<hr>"
         f"{_reading_html()}<hr>"
         f"{discovery_html()}<hr>"
+        f"{backups_html()}<hr>"
         f"{layout_html()}<hr>"
         f"{_rules_html()}"
     )

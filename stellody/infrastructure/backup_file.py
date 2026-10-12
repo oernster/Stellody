@@ -41,7 +41,10 @@ from stellody.domain.backups import (
     Refusal,
     RefusalKind,
     SchemaRange,
+    Upgrade,
     restorable,
+    schema_range,
+    upgraded,
 )
 from stellody.infrastructure import (
     catalogue_memory,
@@ -53,15 +56,22 @@ from stellody.infrastructure import (
 from stellody.infrastructure.atomic import PENDING_SUFFIX
 from stellody.shared.version import __version__
 
-# DATA-B01: every file a backup carries, against the shapes its owner reads.
+# DATA-B01 bar the database: every JSON file a backup carries, against every
+# step its owner has ever added. The database brings itself up as it opens
+# (`database_schema.py`), so it needs none here.
+UPGRADES: Mapping[str, tuple[Upgrade, ...]] = {
+    catalogue_memory.MEMORY_NAME: catalogue_memory.MEMORY_UPGRADES,
+    catalogue_memory.JOURNAL_NAME: catalogue_memory.JOURNAL_UPGRADES,
+    discovery_file.DISCOVERY_NAME: discovery_file.DISCOVERY_UPGRADES,
+    discovery_file.CACHE_NAME: discovery_file.CACHE_UPGRADES,
+    discovery_file.CACHE_JOURNAL_NAME: discovery_file.CACHE_JOURNAL_UPGRADES,
+    shop_file.SHOPS_NAME: shop_file.UPGRADES,
+}
+# DATA-B01: every file a backup carries, against the shapes it can be read in.
+# Derived from the steps, so a range can never claim a shape no step reaches.
 BACKED_UP: Mapping[str, SchemaRange] = {
     paths.DATABASE_NAME: database_schema.RANGE,
-    catalogue_memory.MEMORY_NAME: catalogue_memory.SCHEMA,
-    catalogue_memory.JOURNAL_NAME: catalogue_memory.SCHEMA,
-    discovery_file.DISCOVERY_NAME: discovery_file.DISCOVERY_SCHEMA,
-    discovery_file.CACHE_NAME: discovery_file.CACHE_SCHEMA,
-    discovery_file.CACHE_JOURNAL_NAME: discovery_file.CACHE_SCHEMA,
-    shop_file.SHOPS_NAME: shop_file.SCHEMA,
+    **{name: schema_range(steps) for name, steps in UPGRADES.items()},
 }
 BACKUP_PREFIX = f"{paths.APP_DIR_SLUG}-backup"
 SAFETY_PREFIX = f"{paths.APP_DIR_SLUG}-before-restore"
@@ -106,7 +116,13 @@ def _database_copy(database: pathlib.Path, target: pathlib.Path) -> int:
 
 
 def _manifest_from(raw: object) -> Manifest | None:
-    """The manifest this parsed JSON describes; None where it describes none."""
+    """The manifest this parsed JSON describes; None where it describes none.
+
+    **Every format ever written stays readable here** (FR-B38): a later format
+    adds a branch for itself rather than changing what format 1 is read as.
+    `tests/infrastructure/test_old_backups.py` holds a format 1 backup built
+    from literal text, so renaming a key breaks a test rather than a backup.
+    """
     try:
         carried = tuple(
             Carried(
@@ -140,11 +156,13 @@ class ZipArchive:
         database: pathlib.Path,
         written_by: str,
         backed_up: Mapping[str, SchemaRange] = BACKED_UP,
+        upgrades: Mapping[str, tuple[Upgrade, ...]] = UPGRADES,
     ) -> None:
         self._data_dir = data_dir
         self._database = database
         self._written_by = written_by
         self._backed_up = backed_up
+        self._upgrades = upgrades
 
     def names_in(self, folder: str) -> frozenset[str]:
         """The names already in a folder; empty where it cannot be read."""
@@ -249,21 +267,36 @@ class ZipArchive:
                 json.dumps({BACKUP_KEY: backup, SAFETY_KEY: safety, NAMES_KEY: names}),
                 encoding="utf-8",
             )
-        except (OSError, zipfile.BadZipFile, BackupRefused) as error:
+        # ValueError is an upgrade step that could not read what it was given.
+        except (OSError, ValueError, zipfile.BadZipFile, BackupRefused) as error:
             shutil.rmtree(staging, ignore_errors=True)
             raise BackupFailed(
                 f"The backup could not be made ready to restore: {error}"
             ) from error
 
     def _unpacked(self, backup: str, staging: pathlib.Path) -> list[str]:
-        """Copy every restorable file out of the backup, checking each again."""
+        """Copy every restorable file out of the backup, checking each again.
+
+        A JSON file written at an older schema is taken up to the newest on
+        the way out, through every step its owner added since (FR-B30). The
+        database is copied as it is: the store brings it up as it opens.
+        """
         manifest = self.read(backup)
         names: list[str] = []
         with zipfile.ZipFile(backup) as zipped:
             for carried in restorable(manifest, self._backed_up):
                 target = staging / carried.name
-                with zipped.open(carried.name) as source, target.open("wb") as out:
-                    shutil.copyfileobj(source, out, CHUNK_BYTES)
+                steps = self._upgrades.get(carried.name)
+                if steps is None:
+                    with zipped.open(carried.name) as source, target.open("wb") as out:
+                        shutil.copyfileobj(source, out, CHUNK_BYTES)
+                else:
+                    understood = self._backed_up[carried.name]
+                    target.write_bytes(
+                        upgraded(
+                            zipped.read(carried.name), carried.schema, understood, steps
+                        )
+                    )
                 names.append(carried.name)
         return names
 

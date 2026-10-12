@@ -128,7 +128,7 @@ Downloads folder is the one the operating system names (Qt's
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-01 | A journal copied while a discovery run appends to it can end in a torn last line, which the journal reader skips: held by `tests/infrastructure/test_journal.py::test_a_half_written_last_line_costs_only_that_line`. | Claude | Answered |
-| A-02 | Stellody can relaunch itself both as a packaged build and when run from source. Feasibility checked by hand in a packaged build. | Oliver | Before FR-B23 is called done |
+| A-02 | Stellody can relaunch itself as a packaged build: seen by Oliver on 2026-10-12, a restore relaunched the built copy. | Oliver | Answered |
 | A-03 | A backup is a matter of seconds. Measured on a copy of Oliver's real library on 2026-10-12: a 26,128,646 byte set (database 7,405,568) backed up and zipped in 0.30 s over three runs, giving a 3,579,524 byte zip. | Oliver | Answered |
 
 ## 3. Requirements
@@ -314,10 +314,13 @@ Appendix B lists them.
 - Verified by: `tests/infrastructure/test_schema_numbers.py::test_an_unnumbered_library_is_brought_up`
 
 **FR-B17 Each JSON owner declares its schema**
-- Requirement: Each owner of a JSON file in DATA-B01 shall declare the newest
-  schema number it writes and the oldest it can read.
-- Acceptance: Given the four owners, when each is asked, then each answers two
-  whole numbers with the oldest not above the newest.
+- Requirement: Each owner of a JSON file in DATA-B01 shall declare every
+  upgrade step it has added to that file; the file's schema range shall be
+  derived from those steps, starting at the first schema.
+- Rationale: A range worked out from the steps cannot claim a shape no step
+  reaches, nor fall out of step with a journal beside its file.
+- Acceptance: Given the four owners, when the set's ranges are read, then each
+  JSON file's range runs from the first schema to one past it per step.
 - Verified by: `tests/infrastructure/test_schema_numbers.py::test_every_owner_declares_its_range`
 
 **FR-B18 A database shape change cannot ship without a schema bump**
@@ -447,20 +450,50 @@ Appendix B lists them.
 **FR-B30 An older schema is brought up to date**
 - Requirement: When a backup's file carries a schema at or above its owner's
   oldest readable number but below its newest, the restore service shall
-  accept it; the owner shall bring it up to the newest number on first read.
+  accept it; a JSON file shall be taken through every upgrade step since as it
+  is staged, while the database is brought up by the store as it opens.
+- Rationale: Oliver's ruling of 2026-10-12: old backups stay restorable.
 - Acceptance: Given a backup holding a database at schema 0, when it is
   restored, then the library opens at the current schema with its rows intact.
-- Verified by: `tests/infrastructure/test_staged_restore.py::test_an_older_database_is_brought_up`
+  Given a shop file at schema 1 and an owner that has added one step since,
+  when it is staged, then the staged file is the step's output.
+- Verified by: `tests/infrastructure/test_staged_restore.py::test_an_older_database_is_brought_up`,
+  `tests/infrastructure/test_old_backups.py::test_a_file_from_before_a_change_is_brought_up_as_it_is_staged`,
+  `tests/domain/test_backups.py::TestUpgrading`
 
 **FR-B31 A schema too old to read is refused**
 - Requirement: If a backup's file carries a schema below its owner's oldest
   readable number, then the restore service shall refuse the whole backup,
   naming the file, its schema and the oldest this Stellody reads.
-- Rationale: The unwanted sibling of FR-B30.
+- Rationale: The unwanted sibling of FR-B30. Since FR-B37 no owner ever stops
+  reading a shape it wrote, so only a manifest no Stellody wrote can reach
+  this; a zip is foreign input and says whatever it says.
 - Acceptance: Given an owner whose oldest readable schema is 2 and a backup
   holding that file at 1, when it is chosen, then the refusal names the file,
   schema 1 and schema 2.
 - Verified by: `tests/domain/test_backups.py::TestJudging::test_a_schema_too_old_is_refused`
+
+**FR-B37 No owner stops reading a shape it once wrote**
+- Requirement: The structural suite shall fail when any file of DATA-B01 can no
+  longer be read at the schema it was first numbered at: zero for the
+  database, the first schema for each JSON file.
+- Rationale: Oliver's ruling of 2026-10-12: a backup made by an older version
+  must restore. A change of shape adds a step; it never removes one.
+  Proved on 2026-10-12 by raising the database's oldest readable schema to 1:
+  exit 1 with it, exit 0 once removed.
+- Acceptance: Given the database's oldest readable schema raised from 0 to 1,
+  when the suite runs, then it fails naming the database.
+- Verified by: `tests/infrastructure/test_old_backups.py::test_no_owner_stops_reading_a_shape_it_once_wrote`
+
+**FR-B38 Every backup format stays readable**
+- Requirement: The archive shall read a backup written in any format from the
+  first to the newest.
+- Rationale: The unwanted sibling of a format change. A later format adds a
+  reader for itself rather than changing what an earlier one is read as.
+- Acceptance: Given a format 1 backup whose manifest is typed out as literal
+  text, holding a schema 0 database, when it is restored, then the library
+  opens at the current schema with its rows intact.
+- Verified by: `tests/infrastructure/test_old_backups.py::test_a_format_one_backup_of_an_unnumbered_library_restores`
 
 ### 3.5 Functional: after a restore
 
@@ -543,6 +576,6 @@ There are no open questions.
 
 ## Appendix B: Priorities
 
-- **Must:** FR-B01 to FR-B36, NFR-B01, NFR-B02.
+- **Must:** FR-B01 to FR-B38, NFR-B01, NFR-B02.
 - **Won't this time:** everything in the out-of-scope list in 1.3, plus a
   schema-bump guard over the JSON owners (FR-B18 says why).

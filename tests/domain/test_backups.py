@@ -17,6 +17,8 @@ from stellody.domain.backups import (
     backup_name,
     judged,
     restorable,
+    schema_range,
+    upgraded,
 )
 
 MOMENT = datetime(2026, 10, 12, 14, 5, tzinfo=UTC)
@@ -46,6 +48,27 @@ class TestARangeIsChecked:
     def test_a_negative_schema_is_refused(self) -> None:
         with pytest.raises(ValueError):
             SchemaRange(-1, 1)
+
+
+class TestUpgrading:
+    def test_a_range_starts_at_the_first_schema_whatever_was_added(self) -> None:
+        """FR-B37: no step is ever removed, so the oldest never moves."""
+        steps = (lambda held: held, lambda held: held)
+        assert schema_range(steps) == SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA + 2)
+
+    def test_an_owner_with_no_steps_reads_only_its_first_schema(self) -> None:
+        assert schema_range(()) == SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA)
+
+    def test_an_old_file_is_taken_through_every_step_since(self) -> None:
+        """FR-B30."""
+        steps = (lambda held: held + b"2", lambda held: held + b"3")
+        understood = schema_range(steps)
+        assert upgraded(b"1", FIRST_SCHEMA, understood, steps) == b"123"
+        assert upgraded(b"12", FIRST_SCHEMA + 1, understood, steps) == b"123"
+
+    def test_a_current_file_is_left_as_it_is(self) -> None:
+        steps = (lambda held: held + b"2",)
+        assert upgraded(b"12", FIRST_SCHEMA + 1, schema_range(steps), steps) == b"12"
 
 
 class TestNaming:

@@ -13,7 +13,7 @@ arrives as an argument; the files arrive already listed.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -43,6 +43,33 @@ class SchemaRange:
             raise ValueError(
                 f"no schema range runs from {self.oldest} to {self.newest}"
             )
+
+
+# One step of a file's history: its content at one schema, made into the next.
+Upgrade = Callable[[bytes], bytes]
+
+
+def schema_range(upgrades: tuple[Upgrade, ...]) -> SchemaRange:
+    """The shapes an owner reads, given every step it has ever added. FR-B37.
+
+    The oldest is always the first shape, because no step is ever removed: a
+    backup made before any change is still one somebody may want back
+    (Oliver's ruling, 2026-10-12). The newest is one past the first per step,
+    so a new shape cannot be declared without the step that reaches it.
+    """
+    return SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA + len(upgrades))
+
+
+def upgraded(
+    content: bytes,
+    schema: int,
+    understood: SchemaRange,
+    upgrades: tuple[Upgrade, ...],
+) -> bytes:
+    """A file's content at this schema, taken up to the newest. FR-B30."""
+    for step in upgrades[schema - understood.oldest :]:
+        content = step(content)
+    return content
 
 
 @dataclass(frozen=True, slots=True)

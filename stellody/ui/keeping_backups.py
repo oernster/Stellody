@@ -25,6 +25,7 @@ from stellody.application.backing_up import Backups
 from stellody.domain.backups import Manifest
 from stellody.shared.version import APP_NAME
 from stellody.ui import dialogs
+from stellody.ui.backup_words import BACK_UP_LABEL, RESTORE_LABEL
 from stellody.ui.display import native_path
 from stellody.ui.errand_worker import ErrandRunner
 from stellody.ui.menus import menu_action
@@ -50,10 +51,10 @@ class KeepingBackups:
     def _add_backup_actions(self, menu: QMenu) -> None:
         """Back up and Restore, directly below Rescan. FR-B01, FR-B19."""
         self._backup_action = menu_action(
-            menu, self, "&Back up library...", self.back_up_library
+            menu, self, BACK_UP_LABEL, self.back_up_library
         )
         self._restore_action = menu_action(
-            menu, self, "Res&tore from backup...", self.restore_from_backup
+            menu, self, RESTORE_LABEL, self.restore_from_backup
         )
         self._offer_backups()
 

@@ -34,7 +34,7 @@ import pathlib
 
 from stellody.application.carrying_over import carried_over
 from stellody.application.values import RunReport
-from stellody.domain.backups import FIRST_SCHEMA, SchemaRange
+from stellody.domain.backups import Upgrade
 from stellody.domain.discovery import Gaps, LastRun
 from stellody.infrastructure import journal, paths
 from stellody.infrastructure.atomic import written as _written
@@ -62,10 +62,13 @@ DISCOVERY_NAME = "discovered.json"
 # `candidate-genres.json` held genres under half the leading votes (2026-10-02).
 CACHE_NAME = "candidate-genres-2.json"
 CACHE_JOURNAL_NAME = "candidate-genres-2.record"
-# The shapes of the answer and of the cache with its record. BACKUP.md
-# FR-B17: change what is written and the matching number changes with it.
-DISCOVERY_SCHEMA = SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA)
-CACHE_SCHEMA = SchemaRange(FIRST_SCHEMA, FIRST_SCHEMA)
+# Every change ever made to the answer, the cache and the cache's record, one
+# step per change taking a file's bytes from one schema to the next. Change
+# what is written and a step goes here; no step is ever removed, so a backup
+# made before the change can still be restored. BACKUP.md FR-B17, FR-B37.
+DISCOVERY_UPGRADES: tuple[Upgrade, ...] = ()
+CACHE_UPGRADES: tuple[Upgrade, ...] = ()
+CACHE_JOURNAL_UPGRADES: tuple[Upgrade, ...] = ()
 
 
 def discovery_path() -> pathlib.Path:

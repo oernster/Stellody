@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui.backup_words import BACK_UP_LABEL, RESTORE_LABEL, spoken
 from stellody.ui.discovery_dialog import FIND_LABEL
 from stellody.ui.guide import GuideDialog, guide_html
 from stellody.ui.guide_pictures import INLINE_ICON_PX
@@ -157,8 +158,10 @@ class TestWhatItNames:
             FIND_LABEL,
             SHOPS_LABEL,
             COPY_LABEL,
+            spoken(BACK_UP_LABEL),
+            spoken(RESTORE_LABEL),
         ],
-        ids=["discover", "stop", "find", "shops", "copy"],
+        ids=["discover", "stop", "find", "shops", "copy", "back up", "restore"],
     )
     def test_every_control_it_names_is_named_as_the_window_names_it(
         self, wording: str
@@ -176,6 +179,14 @@ class TestWhatItNames:
         thing is available.
         """
         assert wording in guide_html()
+
+    def test_it_says_an_older_backup_always_restores(self) -> None:
+        """BACKUP.md FR-B37: the promise a listener keeps old backups on."""
+        assert "made by an older version always restores" in guide_html()
+
+    def test_a_label_is_spoken_without_its_key_or_ellipsis(self) -> None:
+        assert spoken(BACK_UP_LABEL) == "Back up library"
+        assert spoken(RESTORE_LABEL) == "Restore from backup"
 
     def test_it_states_the_rules_no_screen_can_state(self) -> None:
         """The half that is not an inventory."""

@@ -1042,10 +1042,16 @@ file's schema rather than by the release that wrote it.
 **Every file a backup carries has a numbered shape.** The database records its
 own in `PRAGMA user_version`; `stellody/infrastructure/database_schema.py` holds
 the steps that take an older file up, so the newest number is the count of
-steps and the two cannot drift. Each JSON owner declares the oldest shape it
-reads and the newest it writes. `tests/structural/test_schema_bumps.py`
-fingerprints the database's creating statements per number, so a changed shape
-needs a new step.
+steps and the two cannot drift. Each JSON owner declares every upgrade step
+it has added to its files; `backup_file.py` derives each file's range from
+them. Staging a restore takes an older file through every step since.
+`tests/structural/test_schema_bumps.py` fingerprints the database's creating
+statements per number, so a changed shape needs a new step.
+
+**An old backup always restores** (Oliver's ruling). No owner may stop reading
+a shape it once wrote; every backup format stays readable. Both are held by
+`tests/infrastructure/test_old_backups.py`, whose format 1 backup is typed out
+as literal text so that renaming a key breaks a test rather than a backup.
 
 **A backup is the one file Stellody writes outside its own directory.**
 `stellody/infrastructure/backup_file.py` writes a zip of a fresh name into the
