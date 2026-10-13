@@ -755,9 +755,10 @@ is named `shops.json`. Its shape:
 in this order: 7digital (first by Oliver's ruling), Qobuz, Bandcamp, Boomkat,
 Bleep, Presto Music, ProStudioMasters, Beatport. Each template was loaded and
 answered before it shipped. A note says what a shop stocks, never a caveat about
-its address (Oliver's ruling). Two templates carry a deliberate shape: 7digital
-uses the UK storefront with `fallback=true` (A-01); Boomkat searches the artist
-alone under its Download filter (FR-S10).
+its address (Oliver's ruling). Three templates carry a deliberate shape: 7digital
+uses the UK storefront with `fallback=true` (A-01); Bandcamp asks for albums
+alone with `item_type=a`; Boomkat searches the artist alone under its Download
+filter (FR-S10).
 
 Not shipped: Juno Download (closed); Traxsource and eClassical (their bot and
 consent walls could not be read past); Volumo (its search path answered 404);

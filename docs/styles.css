@@ -224,6 +224,11 @@ h1 .accent { color: var(--accent); }
 }
 .shot img { width: 100%; height: auto; display: block; }
 
+/* A small shot, such as one lifted list, framed at the size it was taken
+   rather than stretched across the section until it blurs. */
+.shot.natural { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
+.shot.natural img { width: auto; max-width: 100%; }
+
 /* Wider than the house default, because Stellody's window is: the shot is
    almost two and a half times as wide as it is tall, so the narrower frame
    left it a strip nobody could read the track list in. */

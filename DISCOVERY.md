@@ -1005,8 +1005,10 @@ ruling).
   sized, in `FirstStopDialog` (`ui/dialogs.py`), except on Wayland, so the share
   is of the screen it opens on.
 - Rationale: A single list is a shape nobody reaches the end of. The ceiling is
-  what a 13 inch display shows and three columns is what one shows comfortably
-  (Oliver's ruling); dealing by height keeps columns even.
+  what a 13 inch display was first taken to show, larger than a real panel
+  gives, kept so a wide monitor opens as it did; three columns is what a real
+  13 inch display shows comfortably (Oliver's ruling). Dealing by height keeps
+  columns even.
 - Acceptance: Given a screen wide enough that `SCREEN_SHARE` of it holds two
   column widths, when the dialog opens, then the source artists are drawn over
   two or more lists side by side and each artist appears exactly once; given a
@@ -1563,16 +1565,19 @@ it sits inside the scope above.
 **FR-D88 The button lifts the saved profiles, by name**
 - Requirement: When the Taste profiles button is pressed, the dialog shall lift
   a list above it (below it where there is not room above) holding one row per saved profile in alphabetical order
-  ignoring case: that profile's delete button on the left, then its name. A
-  second press shall put the list down.
+  ignoring case: that profile's delete button on the left, then its name. The
+  list shall sit at its own width with its right edge on the dialog's right
+  edge, held on the screen. A second press shall put the list down.
 - Rationale: A delete beside each name, every one on the left so they share a
-  column (Oliver's ruling). The list is a frame of buttons rather than a menu,
+  column (Oliver's ruling), as is the right edge it lifts to. The list is a
+  frame of buttons rather than a menu,
   because a menu row holding two buttons was measured to let neither take the
   keyboard (`ui/taste_list.py`).
 - Acceptance: Given profiles "rock", "Ambient" and "Jazz", when the button is
   pressed, then the rows read Ambient, Jazz, rock and every delete button sits
   in one column to the left of its name.
-- Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`
+- Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`,
+  `tests/ui/test_taste_list_lifted.py`
 
 **FR-D89 Choosing a profile puts its whole selection back**
 - Requirement: When a profile is chosen from the list, the dialog shall tick
