@@ -8,7 +8,7 @@ second one may sit above or below the first.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
 
@@ -30,6 +30,18 @@ def lifted_top(height: int, button: QWidget) -> int:
     if top.y() - screen_top(button) >= height:
         return top.y() - height
     return button.mapToGlobal(button.rect().bottomLeft()).y()
+
+
+def flush_right_left(width: int, button: QWidget) -> int:
+    """The left of a popup this wide whose right edge meets the button's window.
+
+    Held on the screen: a window running off its right edge would otherwise
+    take the popup with it.
+    """
+    host = button.window()
+    right = host.mapToGlobal(QPoint(host.width(), 0)).x()
+    screen = _available(button)
+    return max(screen.left(), min(right, screen.left() + screen.width()) - width)
 
 
 def room(button: QWidget) -> int:

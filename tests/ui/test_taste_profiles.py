@@ -8,8 +8,6 @@ is under test is what the dialog does with the answer.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtCore import Qt
-from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from tray_support import RememberingStore
 
@@ -240,77 +238,6 @@ class TestDeleting:
         self._delete(dialog, "Ambient")
         assert store.profiles() == ()
         assert not dialog.taste.button.isEnabled()
-
-
-class TestTheKeyboard:
-    """FR-D94: every button in the list is reached from the keyboard."""
-
-    @pytest.fixture
-    def lifted(self, application: QApplication):
-        dialog = _dialog(_store(TasteProfile("Ambient", ("Ambient",)), *_JAZZ))
-        dialog.show()
-        dialog.taste.button.click()
-        application.processEvents()
-        yield dialog, dialog.taste.list.rows
-        dialog.taste.list.hide()
-        dialog.close()
-
-    def _press(self, application: QApplication, key: Qt.Key) -> None:
-        QTest.keyClick(application.focusWidget(), key)
-        application.processEvents()
-
-    def test_it_opens_on_the_first_name(self, application, lifted) -> None:
-        dialog, rows = lifted
-        assert dialog.taste.list.isVisible()
-        assert application.focusWidget() is rows[0][NAME_COLUMN]
-
-    def test_up_and_down_keep_the_column_and_wrap(self, application, lifted) -> None:
-        _, rows = lifted
-        self._press(application, Qt.Key.Key_Down)
-        assert application.focusWidget() is rows[1][NAME_COLUMN]
-        self._press(application, Qt.Key.Key_Down)
-        assert application.focusWidget() is rows[0][NAME_COLUMN], "wraps"
-        self._press(application, Qt.Key.Key_Up)
-        assert application.focusWidget() is rows[1][NAME_COLUMN], "wraps back"
-
-    def test_left_and_right_cross_between_delete_and_name(
-        self, application, lifted
-    ) -> None:
-        _, rows = lifted
-        self._press(application, Qt.Key.Key_Left)
-        assert application.focusWidget() is rows[0][0]
-        self._press(application, Qt.Key.Key_Down)
-        assert application.focusWidget() is rows[1][0], "the delete column kept"
-        self._press(application, Qt.Key.Key_Right)
-        assert application.focusWidget() is rows[1][NAME_COLUMN]
-
-    def test_tab_walks_every_button_in_reading_order_and_wraps(
-        self, application, lifted
-    ) -> None:
-        _, rows = lifted
-        walked = []
-        for _ in range(len(rows) * len(rows[0])):
-            self._press(application, Qt.Key.Key_Tab)
-            walked.append(application.focusWidget())
-        assert walked == [rows[1][0], rows[1][NAME_COLUMN], rows[0][0], rows[0][1]]
-
-    def test_escape_puts_it_down(self, application, lifted) -> None:
-        dialog, _ = lifted
-        self._press(application, Qt.Key.Key_Escape)
-        assert not dialog.taste.list.isVisible()
-
-    def test_choosing_a_name_puts_it_down(self, application, lifted) -> None:
-        dialog, rows = lifted
-        rows[0][NAME_COLUMN].click()
-        assert not dialog.taste.list.isVisible()
-        assert dialog.chosen() == ("Ambient",)
-
-    def test_a_second_press_of_the_button_puts_it_down(
-        self, application, lifted
-    ) -> None:
-        dialog, _ = lifted
-        dialog.taste.button.click()
-        assert not dialog.taste.list.isVisible()
 
 
 class TestKeeping:

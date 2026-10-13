@@ -11,6 +11,10 @@ walked explicitly instead: Up and Down move a row in the same column, Left and
 Right cross between delete and name, Tab walks every button in reading order;
 all of them wrap. Escape puts it down, as it does any popup.
 
+It lifts flush with the right edge of the dialog holding its button, at its
+own width, rather than starting at the button's left (Oliver's ruling of
+2026-10-13).
+
 A second press on the Taste profiles button puts it down rather than lifting it
 again (`dismissal.py`), as the volume slider's popup does.
 
@@ -27,13 +31,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QEvent, QPoint, Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
 from stellody.domain.taste import TasteProfile
 from stellody.ui.dismissal import Dismissal
 from stellody.ui.lift_menu import AMPERSAND, LITERAL_AMPERSAND
-from stellody.ui.lifting import lifted_top, room
+from stellody.ui.lifting import flush_right_left, lifted_top, room
 from stellody.ui.scrolling_column import scrolling_column
 from stellody.ui.shop_rows import DELETE_ICON, picture_button
 
@@ -117,8 +121,16 @@ class TasteList(QFrame):
             return
         self._dismissal.forget()
         self._fit(room(button))
-        left = button.mapToGlobal(QPoint(0, 0)).x()
-        self.move(left, lifted_top(self.sizeHint().height(), button))
+        # The width it will show at, which is wider than its hint: measured on
+        # 2026-10-13, a hint of 171 beside a laid out width of 200. Placed by
+        # its own rectangle rather than moved, since a move places the window
+        # frame, which a platform may only add once the list is showing.
+        self.setGeometry(
+            flush_right_left(self.width(), button),
+            lifted_top(self.sizeHint().height(), button),
+            self.width(),
+            self.height(),
+        )
         self.show()
         self.rows[0][NAME_COLUMN].setFocus(Qt.FocusReason.PopupFocusReason)
 
