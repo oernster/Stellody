@@ -28,6 +28,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QApplication
 
 from stellody.infrastructure.fetching import Fetcher
+from stellody.infrastructure.resting import resting
 from tests.infrastructure.fetching_support import (
     NO_TIMEOUT_S,
     Noting,
@@ -86,6 +87,73 @@ def test_a_connection_left_standing_too_long_is_not_asked_down(
         assert service.connections == 2, "the second ask opened its own"
     finally:
         service.close()
+
+
+def test_a_rest_past_the_limit_lets_the_connection_go(
+    application: QApplication,
+) -> None:
+    """Let go of during the pause, before the host can close it first.
+
+    The host closing it is what Qt warned about (`resting.py`); a connection
+    let go of here is one the next ask cannot reuse, so it opens its own.
+
+    The clock is put back inside the limit before that ask, so the check every
+    ask makes would have kept the connection: only the rest can have let it go.
+    """
+    clock = Clock()
+    fetcher = fetching(clock)
+    service = Service(body={"ok": True}, keeps_alive=True)
+    try:
+        fetcher.json(service.address, {})
+        clock.now += PAST_THE_LIMIT_S
+        fetcher.let_go_if_idle()
+        clock.now = WITHIN_THE_LIMIT_S
+        fetcher.json(service.address, {})
+        assert service.connections == 2, "the rest let the first one go"
+    finally:
+        service.close()
+
+
+def test_a_rest_within_the_limit_keeps_the_connection(
+    application: QApplication,
+) -> None:
+    clock = Clock()
+    fetcher = fetching(clock)
+    service = Service(body={"ok": True}, keeps_alive=True)
+    try:
+        fetcher.json(service.address, {})
+        clock.now += WITHIN_THE_LIMIT_S
+        fetcher.let_go_if_idle()
+        fetcher.json(service.address, {})
+        assert service.connections == 1, "nothing idle long enough to drop"
+    finally:
+        service.close()
+
+
+def test_a_fetcher_that_never_asked_has_nothing_to_let_go(
+    application: QApplication,
+) -> None:
+    fetcher = fetching(Clock())
+    fetcher.let_go_if_idle()
+    assert fetcher._held == {}, "nothing made just to be let go of"
+
+
+def test_the_run_pause_lets_every_holder_go_before_each_wait() -> None:
+    happened: list[str] = []
+
+    class Holder:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def let_go_if_idle(self) -> None:
+            happened.append(self.name)
+
+    rest = resting(
+        (Holder("catalogue"), Holder("similar")),
+        sleep=lambda seconds: happened.append(f"slept {seconds}"),
+    )
+    rest(WITHIN_THE_LIMIT_S)
+    assert happened == ["catalogue", "similar", f"slept {WITHIN_THE_LIMIT_S}"]
 
 
 def test_a_connection_still_worth_believing_in_is_kept(

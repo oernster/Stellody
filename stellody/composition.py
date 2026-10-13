@@ -64,6 +64,7 @@ from stellody.infrastructure.paths import (
     shape_cache_dir,
 )
 from stellody.infrastructure.probe import AudioProbe
+from stellody.infrastructure.resting import resting
 from stellody.infrastructure.shop_file import FileShopBook, FileShopList
 from stellody.infrastructure.similarity import ListenBrainz
 from stellody.infrastructure.startup_log import clear, report_failure
@@ -126,7 +127,8 @@ def build_window(
     # owed by everything that asks it anything, so the run, an expansion and
     # the cover search share this one.
     gate = Gate()
-    catalogue = MusicBrainz(Fetcher(gate))
+    asking, similar, volumes = Fetcher(gate), Fetcher(), Fetcher(gate)
+    catalogue = MusicBrainz(asking)
     # One memory of what the catalogues said, shared by the run, its price
     # and the expansion, so its lock is the one lock over the one file. Handed
     # in by `main`, which writes it as the application quits.
@@ -168,8 +170,8 @@ def build_window(
         # host says nothing about the other.
         discovery=Discovery(
             catalogue=catalogue,
-            similarity=ListenBrainz(Fetcher()),
-            pause=time.sleep,
+            similarity=ListenBrainz(similar),
+            pause=resting((asking, similar, volumes)),
             # What a candidate plays does not change between runs, while
             # asking costs a second each at the rate the catalogue permits.
             memory=discovery_file.FileGenreMemory(),
@@ -180,7 +182,7 @@ def build_window(
             recall=recall,
             # The other volumes of a compilation, asked through the same gate
             # as the catalogue since it is the same host. FR-D69.
-            series=MusicBrainzSeries(Fetcher(gate)),
+            series=MusicBrainzSeries(volumes),
         ),
         write_discovery=discovery_file.write,
         # What including compilations would add to a run, priced before it is

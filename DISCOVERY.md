@@ -482,7 +482,8 @@ ruling).
   or a stop abandoned the request) shall be left unknown rather than written down
   as playing nothing; an empty list of genres the catalogue did give is an answer
   and is kept. A pooled connection idle longer than `IDLE_LIMIT_S` shall be
-  thrown away rather than asked down.
+  thrown away rather than asked down; a run's pause shall let it go once it
+  passes that limit, before the host closes it (`infrastructure/resting.py`).
 - Rationale: One dropped socket is not a dead connection, while several questions
   in a row met with nothing is; the pace makes being sure cheap. A question never
   answered is not an answer, so recording one would drop that candidate from

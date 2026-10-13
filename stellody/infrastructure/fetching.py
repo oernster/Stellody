@@ -31,8 +31,8 @@ module already in use, so this costs nothing that was not being paid.
 The sockets are pooled between requests, which the gap the terms ask for makes
 worth doing. A run then pauses thirty seconds between passes, which is longer
 than the host's idle timeout, so the first ask of every pass was made down a
-socket the host had already let go of. See `IDLE_LIMIT_S` for the measurement
-and for what it cost.
+socket the host had already let go of. `resting.py` holds the measurement,
+what it cost and the pause that lets such connections go before the host does.
 
 **Every request is written down, which is an instrument rather than logging.**
 Reported on 2026-09-08: `QIODevice::read (QNetworkReplyHttpImpl): device not
@@ -73,6 +73,7 @@ from stellody.infrastructure.courtesy import (
     Gate,
 )
 from stellody.infrastructure.reach import DISCOVERY_REACH, Reach
+from stellody.infrastructure.resting import IDLE_LIMIT_S
 
 # How often a request in flight asks whether anybody still wants it. The same
 # slice the waits between requests are taken in, for the same reason and so
@@ -87,26 +88,6 @@ STATUS_ATTRIBUTE = QNetworkRequest.Attribute.HttpStatusCodeAttribute
 # a sentence, since the interesting part is whether it names a rate limit or
 # says it is simply unavailable; a body can otherwise be a whole page.
 SAID_LIMIT = 160
-# How long a pooled connection may sit unused before it is thrown away rather
-# than asked down. Measured twice from the same hosts: the diary of 2026-09-08
-# caught two idle sockets torn down at 29.914 and 29.877 seconds after the last
-# request; on 2026-09-09 the same question asked three times with the run's
-# between-pass pause in between came back instantly with GOAWAY and
-# `RemoteHostClosedError` on the ask after each idle.
-#
-# So the host lets go at about thirty seconds. Half of that is taken rather
-# than a figure near it, since the cost of being early is one connection to
-# open and the cost of being late is a lost request. Lost where it fell, too:
-# the pause is between PASSES, so the dead socket met the first artist of
-# every pass, which is the same artist each time. A run could go round twelve
-# times and lose that one artist on every go, which on a small library is a
-# run that finds nothing. Reported by Oliver on 2026-09-09.
-#
-# Constrained rather than watched for: an ask made down a socket that has gone
-# is reported as a service that would not answer; nothing above here could
-# tell the two apart.
-HOST_LETS_GO_AFTER_S = 30.0
-IDLE_LIMIT_S = HOST_LETS_GO_AFTER_S / 2
 # Any language, stated so Qt does not state one. Measured on 2026-09-18: Qt
 # adds `Accept-Language` by itself from the system locale wherever a request
 # names none, so every ask said `en-GB` about the machine it came from while
@@ -248,6 +229,21 @@ class Fetcher:
             held = self._held.pop(thread, None)
         if held is not None:
             held.manager.clearConnectionCache()
+
+    def let_go_if_idle(self) -> None:
+        """Close this thread's connections once they have stood past the limit.
+
+        Asked from a run's pause (`resting.py`), on the run's own thread, so
+        the host never gets to close them first. Nothing is made here: a
+        thread that has not asked has nothing to let go of.
+        """
+        with self._holding:
+            held = self._held.get(QThread.currentThread())
+        if held is None or held.last_ask is None:
+            return
+        if self._clock() - held.last_ask > self._idle_limit_s:
+            held.manager.clearConnectionCache()
+            held.last_ask = None
 
     def json(
         self, address: str, parameters: dict[str, str], wanted: Wanted = always_wanted
