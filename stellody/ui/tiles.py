@@ -3,8 +3,9 @@
 A grid of sleeves is not a list with pictures in it. Every tile is the same
 size whatever the length of the names on it, the sleeve is centred rather than
 flush against an edge, then a title too long for its tile is cut with an
-ellipsis rather than allowed to run into its neighbour. None of that is what an
-item view does on its own, so it is drawn here.
+ellipsis rather than allowed to run into its neighbour. Resting the pointer on
+a line that was cut shows the whole of it. None of that is what an item view
+does on its own, so it is drawn here.
 
 The album a listener has opened underneath the grid wears the accent ring the
 rest of the application uses to say where attention is, rather than a pointer
@@ -13,9 +14,17 @@ drawn at it. One vocabulary for one meaning.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QModelIndex, QRect, QSize, Qt
-from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
+from dataclasses import dataclass
+
+from PySide6.QtCore import QEvent, QModelIndex, QRect, QSize, Qt
+from PySide6.QtGui import QColor, QFontMetrics, QHelpEvent, QPainter, QPen, QPixmap
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
+    QToolTip,
+)
 
 from stellody.ui.covering import DEFAULT_COVER_SIZE, CoverSize
 from stellody.ui.row_text import Column
@@ -30,6 +39,20 @@ OPEN_RING_PX = 2
 NO_ROW = -1
 
 NAMES_HEIGHT_PX = TITLE_GAP_PX + NAME_LINE_PX + LINE_GAP_PX + ARTIST_LINE_PX
+
+
+@dataclass(frozen=True, slots=True)
+class NameLine:
+    """One line of names under a sleeve: where it sits, all of it, what fits."""
+
+    rect: QRect
+    text: str
+    shown: str
+
+    @property
+    def cut(self) -> bool:
+        """Whether the tile could not hold all of it."""
+        return self.shown != self.text
 
 
 def tile_size(cover_px: int) -> QSize:
@@ -112,29 +135,64 @@ class AlbumTile(QStyledItemDelegate):
         top = rect.top() + TILE_PAD_PX + (self._cover_px - drawn.height()) // 2
         painter.drawPixmap(left, top, drawn)
 
+    def helpEvent(
+        self,
+        event: QHelpEvent,
+        view: QAbstractItemView,
+        option: QStyleOptionViewItem,
+        index: QModelIndex,
+    ) -> bool:
+        """The whole of a title or an artist the tile had to cut short.
+
+        Only for a line that was cut: a tooltip repeating what is already in
+        full on the tile says nothing. Asked of the same lines the tile drew,
+        so the two cannot disagree about which was cut.
+        """
+        if event.type() == QEvent.Type.ToolTip and index.isValid():
+            for line in self._lines(option.rect, index, option.fontMetrics):
+                if line.cut and line.rect.contains(event.pos()):
+                    QToolTip.showText(event.globalPos(), line.text, view)
+                    return True
+        return super().helpEvent(event, view, option, index)
+
     def _draw_names(
         self, painter: QPainter, rect: QRect, index: QModelIndex, palette
     ) -> None:
         """The title, then the artist under it, each cut to fit its tile."""
+        colours = (palette.text, palette.text_dim)
+        for line, colour in zip(
+            self._lines(rect, index, painter.fontMetrics()), colours
+        ):
+            painter.setPen(QColor(colour))
+            painter.drawText(
+                line.rect,
+                int(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter),
+                line.shown,
+            )
+
+    def _lines(
+        self, rect: QRect, index: QModelIndex, metrics: QFontMetrics
+    ) -> tuple[NameLine, ...]:
+        """Where the title and the artist sit in a tile, with what fits of each."""
         width = rect.width() - 2 * TILE_PAD_PX
         top = rect.top() + TILE_PAD_PX + self._cover_px + TITLE_GAP_PX
-        for text, colour, height in (
-            (index.data(Qt.ItemDataRole.DisplayRole), palette.text, NAME_LINE_PX),
+        lines = []
+        for text, height in (
+            (index.data(Qt.ItemDataRole.DisplayRole), NAME_LINE_PX),
             (
                 index.sibling(index.row(), Column.ARTIST).data(
                     Qt.ItemDataRole.DisplayRole
                 ),
-                palette.text_dim,
                 ARTIST_LINE_PX,
             ),
         ):
-            line = QRect(rect.left() + TILE_PAD_PX, top, width, height)
-            painter.setPen(QColor(colour))
-            painter.drawText(
-                line,
-                int(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter),
-                painter.fontMetrics().elidedText(
-                    text or "", Qt.TextElideMode.ElideRight, width
-                ),
+            whole = text or ""
+            lines.append(
+                NameLine(
+                    rect=QRect(rect.left() + TILE_PAD_PX, top, width, height),
+                    text=whole,
+                    shown=metrics.elidedText(whole, Qt.TextElideMode.ElideRight, width),
+                )
             )
             top += height + LINE_GAP_PX
+        return tuple(lines)
