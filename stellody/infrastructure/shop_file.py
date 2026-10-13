@@ -81,7 +81,7 @@ DEFAULT_SHOPS: tuple[Shop, ...] = (
     Shop(
         name="7digital",
         template="https://uk.7digital.com/search?q={artist}%20{album}&fallback=true",
-        note="The UK storefront.",
+        note="Broad catalogue. MP3, CD quality and hi-res FLAC.",
     ),
     Shop(
         name="Qobuz",
@@ -98,7 +98,7 @@ DEFAULT_SHOPS: tuple[Shop, ...] = (
         template=(
             "https://boomkat.com/products?q[keywords]={artist}&q[format]=Download"
         ),
-        note="Digital only, by its own filter. Searches the artist alone.",
+        note="Underground electronic and experimental music. Lossless downloads.",
     ),
     Shop(
         name="Bleep",
