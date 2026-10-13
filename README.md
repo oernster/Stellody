@@ -53,8 +53,9 @@ Each line is a summary; the site has the detail.
 **Library** ([library page](https://stellody.co.uk/library.html))
 
 - A wall of album covers or a plain list; the playing track is marked in both
-  and named along the foot of the window. A title or artist cut short on a
-  cover shows in full when the pointer rests on it.
+  and named along the foot of the window; clicking that name (or Ctrl+J) goes
+  to its album. A title or artist cut short on a cover shows in full when the
+  pointer rests on it.
 - Search that narrows as you type, keeping each album whole around the match.
 - Messy collections sorted out: an album saved as one long file, a box set over
   several folders or an unnumbered bonus disc comes out as one album.

@@ -74,6 +74,8 @@ class Menus:
         view_menu.addSeparator()
         self._mirror_view(view_menu)
         view_menu.addSeparator()
+        view_menu.addAction(self.go_to_playing_action)
+        view_menu.addSeparator()
         self._descending_action = menu_action(
             view_menu, self, "Sort &Z to A", self.toggle_order, checkable=True
         )

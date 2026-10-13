@@ -146,8 +146,11 @@ class Viewing:
             # the sleeve and `_on_album_picked` opens the album under it.
             # Opening it directly leaves the sleeve wherever the grid was
             # last scrolled to, which is an album open under sleeves that are
-            # not it.
-            self._grid.setCurrentIndex(self._album_over(where))
+            # not it. Opened as well where the pick moved nothing: a pane
+            # rolled up under the sleeve still current leaves no cursor to move.
+            sleeve = self._album_over(where)
+            self._grid.setCurrentIndex(sleeve)
+            self.open_album_at(sleeve)
         self._show_highlight(where)
 
     def _album_over(self, where: QModelIndex) -> QModelIndex:

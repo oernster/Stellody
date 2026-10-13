@@ -93,6 +93,8 @@ EXPECTED = {
     "Quit": (True, True, True),
     "Light appearance": (True, True, True),
     "Dark appearance": (True, True, True),
+    # Nothing is in hand in any of the three, so there is no album to go to.
+    "Go to playing album": (False, False, False),
     # The grid is the tree's own model, so sorting reaches both views.
     "Sort Z to A": (True, True, True),
     # A sleeve holds nothing, so there is nothing there to open or shut.

@@ -38,6 +38,7 @@ from stellody.ui.guide_backups import backups_html
 from stellody.ui.guide_discovery import discovery_html
 from stellody.ui.guide_pictures import img, row
 from stellody.ui.layout_advice import layout_html
+from stellody.ui.now_playing import GO_TO_PLAYING_SHORTCUT
 from stellody.ui.visualisations import NAMES, VISUALISATION_MENU
 from stellody.ui.widgets import ReadingPane
 
@@ -198,7 +199,10 @@ def _reading_html() -> str:
         "selected.</p>"
         "<p>The <b>status line</b> names the track playing at its right hand "
         "end until it is stopped; it also says how much was found and says "
-        "plainly when a song will not play and why.</p>"
+        "plainly when a song will not play and why. Click that name or press "
+        f"{GO_TO_PLAYING_SHORTCUT} to go to its album with the track playing "
+        "picked out; where a search or the genre filter hides the album, the "
+        "line says so instead.</p>"
     )
 
 

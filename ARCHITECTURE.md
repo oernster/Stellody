@@ -557,7 +557,13 @@ through the one `AlbumTreeModel` and survives a reload
 pulses; the mark is a pink told from the selection by hue.
 `stellody/ui/now_playing.py` writes the permanent label, asked for by
 `_show_transport` in `stellody/ui/playing.py`, which every command, failure and
-poll passes through. A stop clears both; a pause keeps them.
+poll passes through. A stop clears both; a pause keeps them. The label is a
+`PlayingLine` whose click, like the View menu's Go to playing album (Ctrl+J),
+runs `show_playing_album`: it finds the track by handle and carries the view
+there through `_carry_to_view`; where the search or filter hides the album, it
+says so rather than clearing them (`tests/ui/test_going_to_what_is_playing.py`).
+The action lives with the label and is enabled from `show_now_playing`, since
+a disabled action refuses its shortcut too.
 
 ## Gapless transitions
 
@@ -679,6 +685,14 @@ agent and pacing for everything reached through `cover_search.py` or
 `fetching.py`; the composition root hands the run, its series client, an
 expansion and the cover search one MusicBrainz gate
 (`tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`).
+
+**A run lets its idle connections go while it rests.** The host closes a pooled
+connection left idle for about thirty seconds, which a run's pause between
+passes outlasts; Qt warns as it notices. The run's pause is
+`resting` in `infrastructure/resting.py`, handed the run's three fetchers by the
+composition root: before each slice of a wait it asks each to let go of
+connections idle past `IDLE_LIMIT_S`, on the run's own thread, which owns them
+(`tests/infrastructure/test_a_closed_connection.py`).
 
 **A request in flight is killed rather than abandoned; that is why it is on
 Qt.** Nothing portable interrupts a thread blocked on a socket; Qt's network
