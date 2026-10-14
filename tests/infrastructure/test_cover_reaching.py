@@ -22,9 +22,13 @@ from cover_search_support import (
     client,
     encoded,
     refused_client,
+    scripted,
+    server_error,
 )
 
 from stellody.infrastructure.cover_search import (
+    FETCH_ATTEMPTS,
+    LISTING_ATTEMPTS,
     SEARCH_ATTEMPTS,
     SLICE_S,
     ArchiveCovers,
@@ -32,6 +36,8 @@ from stellody.infrastructure.cover_search import (
 from stellody.ui.cover_worker import WAIT_MS
 
 PLAIN_ART = ART.replace("https://", "http://", 1)
+PICTURE = f"{ART}/38850137623-250.jpg"
+TIMED_OUT = urllib.error.URLError("timed out")
 # The slowest answer either service gave on 2026-10-14 that did arrive.
 SLOWEST_ANSWER_S = 4.8
 MS_PER_S = 1000
@@ -122,15 +128,91 @@ class TestASearchThatWasNeverAnswered:
         assert offer.refused
         assert not offer.unreached
 
-    def test_a_listing_that_failed_leaves_the_search_reached(self) -> None:
-        """A release is one of several; only the search itself is the answer."""
-        found, _, _ = client(
+    def test_a_lost_listing_beside_an_answered_one_leaves_it_reached(self) -> None:
+        """A release is one of several; one that answered is an answer."""
+        other = "0f0e0d0c-0000-4000-8000-000000000000"
+        two = {"releases": [SEARCH_ANSWER["releases"][0], {"id": other}]}
+        found, _, _ = scripted(
             {
-                SEARCH_HOST: encoded(SEARCH_ANSWER),
-                LISTING_HOST: urllib.error.URLError("timed out"),
+                SEARCH_HOST: [encoded(two)],
+                ART: [encoded(LISTING_ANSWER)],
+                f"{LISTING_HOST}{other}": [TIMED_OUT],
             }
         )
-        assert not found.search("Turin Brakes", "Ether Song").unreached
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert not offer.unreached
+        assert len(offer.candidates) == 2
+
+
+class TestAPassingFailureIsAskedAgain:
+    """Measured on 2026-10-14: 11 thumbnails missed across two runs, 9 to a
+    server error, 1 to a timeout, 1 to a handshake cut short. All 11 came
+    back within two more asks. Asked once, each left its tile empty for good.
+    """
+
+    def test_a_picture_the_store_failed_once_is_fetched(self) -> None:
+        found, opener, _ = scripted({PICTURE: [server_error(PICTURE), b"pic"]})
+        assert found.fetch(PICTURE) == b"pic"
+        assert len(opener.asked) == 2
+
+    def test_a_picture_that_timed_out_once_is_fetched(self) -> None:
+        found, _, _ = scripted({PICTURE: [TIMED_OUT, b"pic"]})
+        assert found.fetch(PICTURE) == b"pic"
+
+    def test_a_picture_that_never_comes_is_asked_for_a_bounded_number_of_times(
+        self,
+    ) -> None:
+        found, opener, pauses = scripted({PICTURE: [TIMED_OUT]})
+        assert found.fetch(PICTURE) is None
+        assert len(opener.asked) == FETCH_ATTEMPTS
+        assert pauses.slept == sorted(pauses.slept), "the pause grows"
+
+    def test_a_picture_that_is_not_there_is_asked_for_once(self) -> None:
+        """A 404 is an answer. Asking again would only hear it twice."""
+        found, opener, _ = scripted({})
+        assert found.fetch(PICTURE) is None
+        assert len(opener.asked) == 1
+
+    def test_a_picture_nobody_wants_any_more_is_not_asked_for_again(self) -> None:
+        found, opener, _ = scripted({PICTURE: [server_error(PICTURE), b"pic"]})
+        assert found.fetch(PICTURE, lambda: False) is None
+        assert len(opener.asked) == 1
+
+    def test_a_listing_the_archive_failed_once_is_asked_again(self) -> None:
+        found, _, _ = scripted(
+            {
+                SEARCH_HOST: [encoded(SEARCH_ANSWER)],
+                LISTING_HOST: [server_error(ART), encoded(LISTING_ANSWER)],
+            }
+        )
+        assert len(found.search("Turin Brakes", "Ether Song").candidates) == 2
+
+    def test_a_search_that_timed_out_once_is_asked_again(self) -> None:
+        found, _, _ = scripted(
+            {
+                SEARCH_HOST: [TIMED_OUT, encoded(SEARCH_ANSWER)],
+                LISTING_HOST: [encoded(LISTING_ANSWER)],
+            }
+        )
+        assert len(found.search("Turin Brakes", "Ether Song").candidates) == 2
+
+    def test_every_listing_lost_means_the_search_was_not_reached(self) -> None:
+        """The search named releases; none of them could be read. That says
+        nothing about whether the album has art."""
+        found, opener, _ = scripted(
+            {SEARCH_HOST: [encoded(SEARCH_ANSWER)], LISTING_HOST: [TIMED_OUT]}
+        )
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert offer.unreached
+        assert offer.candidates == ()
+        assert opener.asked.count(ART) == LISTING_ATTEMPTS
+
+    def test_releases_with_no_art_mean_nothing_was_found(self) -> None:
+        """Every listing answered 404: the archive has nothing and said so."""
+        found, _, _ = scripted({SEARCH_HOST: [encoded(SEARCH_ANSWER)]})
+        offer = found.search("Turin Brakes", "Ether Song")
+        assert not offer.unreached
+        assert offer.candidates == ()
 
 
 class TestHowLongAReadMayTake:

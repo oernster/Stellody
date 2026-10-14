@@ -128,15 +128,17 @@ class TestASearch:
         runner.stop()
         assert heard.searched == 1
 
-    def test_an_archive_that_raises_offers_nothing_and_still_finishes(
+    def test_an_archive_that_raises_was_not_reached_and_still_finishes(
         self, application_events
     ) -> None:
+        """A search that blew up found nothing out, so it is never reported
+        as an album nothing was found for."""
         runner = _runner(RaisingSearch())
         heard = Heard(runner)
         runner.search(PLANETS)
         _settle(runner, application_events)
         runner.stop()
-        assert heard.offered == [CoverOffer()]
+        assert heard.offered == [CoverOffer(unreached=True)]
         assert heard.searched == 1
 
 

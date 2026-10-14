@@ -109,11 +109,11 @@ class SearchWorker(QObject):
         self.done.emit()
 
     def _searched(self) -> CoverOffer:
-        """What is on offer; nothing when the search could not be made."""
+        """What is on offer; unreached when the search could not be made."""
         try:
             return self._chooser.offer(self._identity, self.wanted)
         except Exception:  # noqa: BLE001 - a search must not end the run
-            return CoverOffer()
+            return CoverOffer(unreached=True)
 
     def _preview(self, candidate: CoverCandidate) -> bytes | None:
         """One thumbnail; None when it could not be had."""

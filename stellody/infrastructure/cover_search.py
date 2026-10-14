@@ -94,6 +94,26 @@ IMAGE_TIMEOUT_S = 30
 # them. At 6 refusals in 10 asks, four more tries after the first leave about
 # one search in thirteen still refused, which the chooser then says plainly.
 SEARCH_ATTEMPTS = 5
+# Measured on 2026-10-14: 11 thumbnails missed across two runs, to a server
+# error, a timeout or a handshake cut short; all 11 came back within two more
+# asks. A listing meets the same failures. The only release an album has is
+# the whole answer for that album.
+FETCH_ATTEMPTS = 3
+LISTING_ATTEMPTS = 3
+# The first status that says the server failed rather than the request.
+SERVER_ERROR_FLOOR = 500
+
+
+def _passing(failure: Exception) -> bool:
+    """Whether a failure belongs to the moment rather than to the address.
+
+    A 404 is an answer and asking again only hears it twice. A server error, a
+    refusal, a timeout and a handshake cut short say nothing about what is
+    there, so they are asked about again.
+    """
+    if isinstance(failure, urllib.error.HTTPError):
+        return failure.code >= SERVER_ERROR_FLOOR or failure.code in REFUSAL_CODES
+    return isinstance(failure, OSError)
 
 
 def _release_query(artist: str, album: str) -> str:
@@ -191,34 +211,40 @@ class ArchiveCovers:
     ) -> CoverOffer:
         """The pictures on offer for this album, plus whether it was answered.
 
-        Only the release search is asked again. A listing that will not come is
-        one release of several and the next one is the thing to try, where a
-        search that will not come is the whole answer.
+        The search and each listing are asked again after a failure that says
+        nothing about the album. A search that never comes is unreached; so is
+        one whose every listing was lost that way, since nothing was learnt
+        about the album's art. Listings that answered 404 are an answer: those
+        releases have none.
 
-        A search reaches the network up to nine times over as many seconds, so
-        it is given up wherever it happens to be when nobody wants it: inside a
-        wait or inside a read, both below. The walk over the releases needs no
+        A search reaches the network many times over as many seconds, so it is
+        given up wherever it happens to be when nobody wants it: inside a wait
+        or inside a read, both below. The walk over the releases needs no
         question of its own, since the gate asks one before every request and
         a listing nobody wants is never asked for.
         """
-        found, refused = self._asked(
+        found, refused, _ = self._asked(
             f"{SEARCH_URL}?{_release_query(artist, album)}", wanted, SEARCH_ATTEMPTS
         )
         if found is None:
             # Not answered at all: refused, timed out, cut off or garbled.
             return CoverOffer(refused=refused, unreached=not refused)
         gathered: list[CoverCandidate] = []
+        lost = False
         for release in found.get("releases") or ():
             mbid = release.get("id")
             if not mbid:
                 continue
-            listing, _ = self._asked(f"{ART_URL}/{mbid}", wanted)
+            listing, _, passing = self._asked(
+                f"{ART_URL}/{mbid}", wanted, LISTING_ATTEMPTS
+            )
             if listing is None:
+                lost = lost or passing
                 continue
             gathered.extend(
                 _candidates_from(listing.get("images") or [], _release_label(release))
             )
-        return CoverOffer(tuple(gathered))
+        return CoverOffer(tuple(gathered), unreached=lost and not gathered)
 
     def fetch(self, url: str, wanted: Wanted = always_wanted) -> bytes | None:
         """The bytes of one picture; None when it cannot be had.
@@ -234,10 +260,15 @@ class ArchiveCovers:
         """
         if not admitted(self._reach, url):
             return None
-        try:
-            return self._read(url, IMAGE_TIMEOUT_S, wanted)
-        except (urllib.error.URLError, OSError, ValueError):
-            return None
+        for attempt in range(FETCH_ATTEMPTS):
+            if attempt and not self._waiter.hold(REQUEST_GAP_S * attempt, wanted):
+                return None
+            try:
+                return self._read(url, IMAGE_TIMEOUT_S, wanted)
+            except (urllib.error.URLError, OSError, ValueError) as failure:
+                if not _passing(failure):
+                    return None
+        return None
 
     def _read(self, url: str, budget_s: float, wanted: Wanted) -> bytes | None:
         """Everything at a URL, taken in slices, given up the moment nobody
@@ -259,38 +290,40 @@ class ArchiveCovers:
         return None
 
     def _asked(
-        self, url: str, wanted: Wanted, attempts: int = 1
-    ) -> tuple[dict | None, bool]:
-        """What came back, plus whether the service refused to answer.
+        self, url: str, wanted: Wanted, attempts: int
+    ) -> tuple[dict | None, bool, bool]:
+        """What came back, whether it was refused, whether it failed in passing.
 
         A 404 from the archive means this release carries no art, which is an
-        answer rather than a failure: the next release is what to try. A 503 is
-        not that. It says nothing about the album at all, so it is asked again
-        rather than passed on as an empty answer; what survives every ask is
-        reported as a refusal rather than as an absence.
+        answer rather than a failure: the next release is what to try. A 503, a
+        server error or a timeout is not that. It says nothing about the album
+        at all, so it is asked again rather than passed on as an empty answer;
+        what survives every ask is reported for what it was.
         """
-        refused = False
+        refused = passing = False
         for attempt in range(attempts):
             if attempt and not self._waiter.hold(REQUEST_GAP_S * attempt, wanted):
-                return None, refused
+                return None, refused, passing
             if not self._gate.wait(wanted):
-                return None, refused
-            payload, refused = self._once(url, wanted)
-            if payload is not None or not refused:
-                return payload, refused
-        return None, refused
+                return None, refused, passing
+            payload, refused, passing = self._once(url, wanted)
+            if payload is not None or not passing:
+                return payload, refused, passing
+        return None, refused, passing
 
-    def _once(self, url: str, wanted: Wanted) -> tuple[dict | None, bool]:
-        """One gated request, read as JSON, saying whether it was refused."""
+    def _once(self, url: str, wanted: Wanted) -> tuple[dict | None, bool, bool]:
+        """One gated request, read as JSON: refused, then failed in passing."""
         try:
             payload = self._read(url, TIMEOUT_S, wanted)
             if payload is None:
-                return None, False
-            return dict(json.loads(payload)), False
-        except urllib.error.HTTPError as refusal:
-            return None, refusal.code in REFUSAL_CODES
-        except (urllib.error.URLError, OSError, ValueError, TypeError):
-            return None, False
+                return None, False, False
+            return dict(json.loads(payload)), False, False
+        except urllib.error.HTTPError as failure:
+            return None, failure.code in REFUSAL_CODES, _passing(failure)
+        except (urllib.error.URLError, OSError) as failure:
+            return None, False, _passing(failure)
+        except (ValueError, TypeError):
+            return None, False, False
 
 
 def _asking(url: str) -> urllib.request.Request:

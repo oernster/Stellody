@@ -153,6 +153,42 @@ class Refusing:
         raise urllib.error.HTTPError(request.full_url, 404, "NOT FOUND", {}, None)
 
 
+class Scripted:
+    """An opener answering each address from a script, one entry per ask.
+
+    The last entry repeats, so a script of one failure fails every time. An
+    address in no script answers 404, as the archive does for a release with
+    no art.
+    """
+
+    def __init__(self, script: dict) -> None:
+        self.script = {prefix: list(outcomes) for prefix, outcomes in script.items()}
+        self.asked: list[str] = []
+
+    def __call__(self, request, timeout=None):
+        """Answer the next entry for this address; raise it if it is an error."""
+        self.asked.append(request.full_url)
+        for prefix, outcomes in self.script.items():
+            if request.full_url.startswith(prefix):
+                outcome = outcomes.pop(0) if len(outcomes) > 1 else outcomes[0]
+                if isinstance(outcome, Exception):
+                    raise outcome
+                return BytesIO(outcome)
+        raise urllib.error.HTTPError(request.full_url, 404, "NOT FOUND", {}, None)
+
+
+def scripted(script: dict) -> tuple[ArchiveCovers, Scripted, Pauses]:
+    """A client over a scripted opener, recording the pauses it takes."""
+    opener = Scripted(script)
+    pauses = Pauses()
+    return ArchiveCovers(gate=NoWait(), opener=opener, waiter=pauses), opener, pauses
+
+
+def server_error(url: str) -> urllib.error.HTTPError:
+    """What the archive's store answered for 9 of 11 misses on 2026-10-14."""
+    return urllib.error.HTTPError(url, 500, "INTERNAL SERVER ERROR", {}, None)
+
+
 def refused_client(refusals: int, code: int = 503):
     """A client whose search host refuses that many times first."""
     opener = Refusing(refusals, BOTH, code)
