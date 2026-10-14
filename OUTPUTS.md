@@ -214,8 +214,10 @@ All Must (section 4).
 
 **NFR-O-PERF-001 A device change reaches the list in time.** A connect or
 disconnect shall show in the list within 2 seconds of the system's Sound
-settings, over five cycles on the reference machine. Met by measurement: over
-five Bluetooth cycles the list changed first every time (OQ-O4).
+settings, over five cycles on the reference machine. Met: timed over five
+Bluetooth cycles, the signal fired and the list had changed before Sound
+settings was seen to, every time (OQ-O4); the running window's list was seen
+to follow by hand.
 
 **NFR-O-PERF-002 Keeping the list current never interrupts the music.** While
 a track plays, a list change shall not retake PortAudio's list unless FR-O11
