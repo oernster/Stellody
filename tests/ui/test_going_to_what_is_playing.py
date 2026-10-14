@@ -9,12 +9,17 @@ hiding it is said rather than undone (his ruling the same day).
 
 from __future__ import annotations
 
-from playback_support import album_index, player, track_index, window
+from playback_support import album_index, player, track, track_index, window
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeySequence
 from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication
 from recording_player import RecordingPlayer
+from tray_support import RememberingStore, build
 
+from stellody.domain.album import Album
+from stellody.domain.identity import AlbumIdentity
+from stellody.ui.gliding import GLIDE_MS
 from stellody.ui.main_window import MainWindow
 from stellody.ui.now_playing import GO_TO_PLAYING_SHORTCUT, PLAYING_HIDDEN
 
@@ -25,6 +30,22 @@ THIRD = 2
 NOTHING_MATCHES = "no album is called this"
 # Any size a press can land in; the label's own would be nothing while empty.
 LINE_ROOM = QSize(200, 20)
+# Enough albums that the grid scrolls, with one played well down it; measured
+# at this window size, the next size up carries that sleeve off the bottom.
+SHELF_SIZE = 40
+DEEP_ROW = 30
+WINDOW_ROOM = QSize(1000, 800)
+
+
+def shelf() -> tuple[Album, ...]:
+    """A library long enough to scroll, each album its own."""
+    return tuple(
+        Album(
+            identity=AlbumIdentity(album_artist=f"Artist {n}", title=f"Album {n}"),
+            tracks=(track(1),),
+        )
+        for n in range(SHELF_SIZE)
+    )
 
 
 def playing_third_under_a_rolled_up_pane(made: MainWindow) -> None:
@@ -56,6 +77,37 @@ class TestUnderTheSleeves:
         line.adjustSize()
         QTest.mouseClick(line, Qt.MouseButton.LeftButton)
         assert window._album_pane.isVisibleTo(window)
+
+
+class TestAfterTheSleevesChangeSize:
+    """Reported by Oliver on 2026-10-14 and reproduced offscreen the same day.
+
+    With the pane still open, a step to the next size carried the playing
+    sleeve below the viewport; going to it then found its album already open
+    and moved nothing, so it only worked at the size it was opened at.
+    """
+
+    def test_the_grid_travels_back_to_the_playing_sleeve(
+        self, application: QApplication
+    ) -> None:
+        made = build(RememberingStore(), RecordingPlayer(), leave=lambda: None)
+        made._model.set_albums(shelf())
+        made.resize(WINDOW_ROOM)
+        made.show()
+        made.show_covers(True)
+        sleeve = made._model.index(DEEP_ROW, 0)
+        made._grid.setCurrentIndex(sleeve)
+        made.activate(made._model.index(FIRST, 0, sleeve))
+        made._poll_transport()
+        made.toggle_cover_size()
+        application.processEvents()
+        grid = made._grid
+        port = grid.viewport().rect()
+        assert not port.contains(grid.visualRect(sleeve)), "premise: moved off"
+        made.go_to_playing_action.trigger()
+        grid.glide.setCurrentTime(GLIDE_MS)
+        assert port.contains(grid.visualRect(sleeve))
+        made.close()
 
 
 class TestInTheList:
