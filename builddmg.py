@@ -44,6 +44,10 @@ from packaging.requirements import InvalidRequirement, Requirement
 import stamp_sitemap
 import stamp_version
 from build_utils import require, run, section
+
+# The Nuitka minimum is stated once, beside the Windows build, so the two
+# platforms cannot compile with different ones.
+from buildexe import require_nuitka
 from dmg_icon import set_volume_icon
 
 # The copyright notice comes from the package rather than being written here as
@@ -204,6 +208,7 @@ def check_platform() -> None:
     if not shutil.which("python3"):
         sys.exit("ERROR: no python3 on PATH.")
     require("create-dmg", "create-dmg")
+    require_nuitka()
     # These arrive with the Xcode command-line tools rather than from Homebrew,
     # so asking brew for them (which require() would do) offers a remedy that
     # cannot work. They are named rather than assumed because every signing,

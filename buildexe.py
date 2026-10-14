@@ -58,10 +58,10 @@ CONSOLE_MODE_DEBUG = "attach"
 DEBUG_ENV = "STELLODY_DEBUG"
 STANDALONE_FLAG = "--standalone"
 BYTES_PER_MIB = 1024 * 1024
-# The Nuitka this build is written against, migrated to on 2026-09-13. An
-# older one left in the environment stops the build here, rather than a
-# release nobody chose compiling what ships.
-NUITKA_MINIMUM = (4, 2, 1)
+# The Nuitka the Windows and macOS builds are written against. An older one
+# left in the environment stops the build here, rather than a release nobody
+# chose compiling what ships.
+NUITKA_MINIMUM = (4, 3)
 
 
 def require(module: str, package: str) -> None:
