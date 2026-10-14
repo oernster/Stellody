@@ -34,7 +34,6 @@ no filesystem, no clock and no audio device, so every branch can be held
 cheaply. Infrastructure and the interface are tested against real files, a real
 loopback server and a real `QApplication` but are not gated: a floor over code
 needing a real device would be a number nobody can hold or a suite of mocks.
-The reasoning is under Coverage in `ARCHITECTURE.md`.
 
 ## What each suite proves
 

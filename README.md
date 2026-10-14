@@ -60,9 +60,10 @@ shop selling what you are missing; it sells nothing itself.
 - **Shops** ([SHOPS.md](SHOPS.md)): each ticked album opened as a search on a
   shop you choose, in your browser, from a list you can edit.
 - **Formats** ([FORMATS.md](FORMATS.md)): FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A
-  (AAC or ALAC), WMA, WavPack and AAC, plus bonus videos as `.m4v`. Monkey's
-  Audio, Musepack, DSD, TAK, TrueAudio, CAF and M4B audiobooks are named in the
-  health report rather than played.
+  (AAC or ALAC), WMA, WavPack and AAC, plus bonus videos as `.m4v`. WMA,
+  WavPack and AAC are proved by fixtures generated in the test suite rather than
+  by files in the wild. Monkey's Audio, Musepack, DSD, TAK, TrueAudio, CAF and
+  M4B audiobooks are named in the health report rather than played.
 - **Help**: a guide naming every button beside the picture the window draws.
 
 The window is drawn below its built size so it fits a 13 inch 4K screen at

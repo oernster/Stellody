@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication
 
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
+from stellody.ui import guide_discovery
 from stellody.ui.backup_words import BACK_UP_LABEL, RESTORE_LABEL, spoken
 from stellody.ui.discovery_dialog import FIND_LABEL
 from stellody.ui.guide import GuideDialog, guide_html
@@ -179,6 +180,14 @@ class TestWhatItNames:
         thing is available.
         """
         assert wording in guide_html()
+
+    @pytest.mark.parametrize(("most", "said"), [(7, "seven"), (25, "25")])
+    def test_the_shop_threshold_is_read_from_the_rule(
+        self, monkeypatch, most: int, said: str
+    ) -> None:
+        """SHOPS.md FR-S08: the number is the shops' own, never written twice."""
+        monkeypatch.setattr(guide_discovery, "MOST_WITHOUT_ASKING", most)
+        assert f"more than {said} asks you first" in guide_html()
 
     def test_it_says_an_older_backup_always_restores(self) -> None:
         """BACKUP.md FR-B37: the promise a listener keeps old backups on."""

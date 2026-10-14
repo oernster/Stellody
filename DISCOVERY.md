@@ -661,8 +661,8 @@ are not remembered between openings; a plausible year runs from `FIRST_YEAR` to
 **FR-D74 A series is shown as a series**
 - Requirement: Each offered series shall show as a heading giving its name, the
   word "series" and its number of albums, missing entries beneath; name, flag and
-  entries are written to the file. An entry's shop artist is "Various Artists".
-- Rationale: The shop artist is Claude's choice, standing until Oliver rules.
+  entries are written to the file. An entry's shop artist is "Various Artists"
+  (Oliver's ruling).
 - Verified by: `tests/ui/test_results_series.py::test_a_series_heading_says_it_is_one`, `tests/ui/test_results_series.py::test_a_series_entry_goes_to_the_shops_under_various_artists`, `tests/infrastructure/test_series_kept.py::test_a_series_survives_the_file`
 
 **FR-D75 A heading with nothing under it is not shown**

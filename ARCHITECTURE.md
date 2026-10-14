@@ -828,8 +828,5 @@ empty box under a tick (Oliver's ruling). Held by
 
 ## Coverage
 
-The gate is 100% branch coverage over `stellody.domain` and
-`stellody.application`: the layers reachable with no filesystem, no clock and
-no audio device. Infrastructure and UI sit outside the gate, since much of
-them needs a real device, library or the Windows shell. What the suite's
-harness guarantees is in [`TESTING.md`](TESTING.md).
+The gate, the layers it covers and why are in
+[`TESTING.md`](TESTING.md#coverage).

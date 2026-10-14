@@ -7,17 +7,15 @@ What it does is in [`README.md`](README.md); how it is put together is in
 
 ## Tools
 
+The product's stack is the table in [`README.md`](README.md#stack). What a
+developer meets beyond it:
+
 | Concern | Choice |
 |---|---|
-| Language | Python 3.13 |
-| Interface | PySide6 |
-| Tags | mutagen |
-| Decode | soundfile, plus PyAV for the suffixes in `PACKET_SUFFIXES` |
-| Output | sounddevice over PortAudio; device lists from Windows' endpoint enumeration (ctypes over COM) on Windows and Qt Multimedia elsewhere; on Linux a chosen device is reached through PortAudio's `pulse` device with `PULSE_SINK` |
+| Decode routing | PyAV takes the suffixes in `PACKET_SUFFIXES`; soundfile the rest |
+| Device lists | Windows' endpoint enumeration (ctypes over COM) on Windows, Qt Multimedia elsewhere; on Linux a chosen device is reached through PortAudio's `pulse` device with `PULSE_SINK` |
 | Buffers | numpy |
-| Store | SQLite |
 | Checks | black, flake8, ruff, pytest, pytest-cov, pytest-qt |
-| Packaging | Nuitka on Windows and macOS; Flatpak on Linux |
 | Icons | Pillow |
 
 `requirements.txt` pins the runtime exactly, so a build of one commit is the

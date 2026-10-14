@@ -6,7 +6,7 @@ for the second. FR-S07.
 
 **It asks before opening a great many tabs.** One album is one browser tab, so
 a list of thirty ticked albums arrives as thirty tabs over whatever somebody
-was doing. Above five, it says how many and waits. FR-S08.
+was doing. Above `MOST_WITHOUT_ASKING`, it says how many and waits. FR-S08.
 
 **The list is changed here.** SHOPS.md FR-S17 to FR-S28 and FR-S37: add,
 edit, delete, drag, Ctrl+Up and Ctrl+Down, then putting the original shops

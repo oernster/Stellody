@@ -33,7 +33,7 @@ read as a missing album.
 ## Not debt (do not "fix" these)
 
 **Infrastructure and the interface sit outside the coverage gate.** The reason
-is under Coverage in `ARCHITECTURE.md`.
+is under Coverage in `TESTING.md`.
 
 **The build scripts are exempt from the line cap.** `BUILD_SCRIPTS` in
 `tests/structural/test_loc.py` names them: linear recipes where splitting a

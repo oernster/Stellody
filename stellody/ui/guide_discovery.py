@@ -14,8 +14,10 @@ typed again here.
 
 from __future__ import annotations
 
+from stellody.application.shopping import MOST_WITHOUT_ASKING
 from stellody.application.values import DiscoveryStage
 from stellody.domain.genres import GENRES
+from stellody.domain.series import NUMBER_WORDS
 from stellody.shared import resources
 from stellody.shared.version import APP_NAME
 from stellody.ui.about_credits import NO_SHOP_AFFILIATION
@@ -195,6 +197,12 @@ def _answer_html() -> str:
     )
 
 
+def _spelled(number: int) -> str:
+    """A number as the guide writes it: a word where there is one, else digits."""
+    words = {value: word for word, value in NUMBER_WORDS.items()}
+    return words.get(number, str(number))
+
+
 def _shops_html() -> str:
     """Taking the ticked albums to a shop, then changing the shops."""
     return (
@@ -204,7 +212,8 @@ def _shops_html() -> str:
         + f"<b>Getting hold of it.</b> Tick any albums you want, then press "
         f"<b>{SHOPS_LABEL}</b> to choose a shop: your browser opens that "
         "shop's own search for each ticked album, one tab apiece; more than "
-        "five asks you first. The shops screen stays open so prices can "
+        f"{_spelled(MOST_WITHOUT_ASKING)} asks you first. The shops screen "
+        "stays open so prices can "
         f"be compared across several. <b>{COPY_LABEL}</b> puts the ticked "
         "albums on the clipboard instead, one line each, for anywhere else "
         "you want to paste them.</p>"

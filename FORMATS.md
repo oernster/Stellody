@@ -177,10 +177,10 @@ Every requirement is a Must unless it carries a Priority line (section 4).
 - Verification: the WavPack cases of FR-F07, which assert 16 and 32 against
   fixtures stating `s16p` and `s32p`.
 
-**NFR-F-HONEST-001 The README points here for what supported means**
-- Requirement: The README shall name the formats taken and those reported
-  rather than played, linking to this file, whose section 1.3 says what
-  supported means.
+**NFR-F-HONEST-001 The README says what supported means here**
+- Requirement: The README shall state that these three formats are proved by
+  generated fixtures rather than files in the wild, naming the formats that
+  remain reported rather than played (Oliver's ruling).
 - Verification: inspection. No test reads the README's wording.
 
 **NFR-F-MAINT-001 The layering and the gate hold**
