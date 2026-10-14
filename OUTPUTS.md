@@ -86,7 +86,7 @@ running the Linux Flatpak and an M4 MacBook Air.
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
 | A-O01 | Qt's list matches the system's sound settings; every device was heard on all three machines. | Oliver | Confirmed |
-| A-O02 | `audioOutputsChanged` fires on Bluetooth connect and disconnect; seen live, not yet timed. | Claude, with Oliver's Bathys | OQ-O4 |
+| A-O02 | `audioOutputsChanged` fires on Bluetooth connect and disconnect, in bursts. | Claude, with Oliver's Bathys | Confirmed (OQ-O4) |
 
 ## 3. Requirements
 
@@ -166,7 +166,7 @@ All Must (section 4).
 **FR-O13 The list is kept current**
 - Requirement: When the system reports an output change, the window shall retake
   the output list, even while it is open (Oliver's ruling).
-- Verified by: `tests/ui/test_output_list_follows.py::test_a_new_device_appears`, `tests/ui/test_output_list_follows.py::test_a_removed_device_leaves`, plus the live observation of A-O02.
+- Verified by: `tests/ui/test_output_list_follows.py::test_a_new_device_appears`, `tests/ui/test_output_list_follows.py::test_a_removed_device_leaves`, plus the timing of A-O02 (OQ-O4).
 
 **FR-O14 A missing choice stays in the list**
 - Requirement: While the chosen device is missing, the list shall still name it,
@@ -212,9 +212,10 @@ All Must (section 4).
 
 ### 3.2 Non-functional
 
-**NFR-O-PERF-001 A device change reaches the list in time.** Not yet measured
-(OQ-O4). A connect or disconnect shall show in the list within 2 seconds of
-the system's Sound settings, over five cycles on the reference machine.
+**NFR-O-PERF-001 A device change reaches the list in time.** A connect or
+disconnect shall show in the list within 2 seconds of the system's Sound
+settings, over five cycles on the reference machine. Met by measurement: over
+five Bluetooth cycles the list changed first every time (OQ-O4).
 
 **NFR-O-PERF-002 Keeping the list current never interrupts the music.** While
 a track plays, a list change shall not retake PortAudio's list unless FR-O11
@@ -268,7 +269,7 @@ Every requirement is a Must. Won't this time is the out list in 1.4.
 | OQ-O1 | Which PortAudio device is which of two same-named outputs? | Claude | Answered: enumeration order (NFR-O-PORT-001) |
 | OQ-O2 | Can Qt's and PortAudio's lists match on Linux in the Flatpak? | Claude | Answered: by sink, not name (NFR-O-PORT-001) |
 | OQ-O3 | On macOS, do Qt's names match CoreAudio's? | Oliver | Answered: yes |
-| OQ-O4 | Does Qt report Bluetooth connects and disconnects on Windows? (A-O02) | Claude, with Oliver's Bathys | Seen live. Probe: timestamp every `audioOutputsChanged` over five cycles; a miss means a once-a-second poll of `QMediaDevices.audioOutputs()`, never touching PortAudio, replaces the signal. |
+| OQ-O4 | Does Qt report Bluetooth connects and disconnects on Windows? (A-O02) | Claude, with Oliver's Bathys | Answered: yes. Over five cycles every connect and disconnect reached the list on a signal, before Sound settings was seen to change. |
 | OQ-O5 | Which rule governs the chosen device leaving and returning? | Oliver | Answered: no music to the speakers without a press (FR-O11, FR-O12) |
 
 ## 6. How the layers divide the work
