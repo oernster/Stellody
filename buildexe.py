@@ -58,10 +58,12 @@ CONSOLE_MODE_DEBUG = "attach"
 DEBUG_ENV = "STELLODY_DEBUG"
 STANDALONE_FLAG = "--standalone"
 BYTES_PER_MIB = 1024 * 1024
-# The Nuitka the Windows and macOS builds are written against. An older one
-# left in the environment stops the build here, rather than a release nobody
-# chose compiling what ships.
-NUITKA_MINIMUM = (4, 3)
+# The Nuitka the Windows and macOS builds are written against. One outside
+# the range stops the build here, rather than a release nobody chose compiling
+# what ships. The ceiling is the first release known to compile a Stellody
+# that dies on start (an access violation in main.dll before the window).
+NUITKA_MINIMUM = (4, 2, 1)
+NUITKA_CEILING = (4, 3)
 
 
 def require(module: str, package: str) -> None:
@@ -80,21 +82,24 @@ def require(module: str, package: str) -> None:
 
 
 def require_nuitka() -> None:
-    """Stop where the environment holds a Nuitka older than this build expects."""
+    """Stop where the environment holds a Nuitka outside the range built against."""
     require("nuitka", "Nuitka")
     installed = importlib.metadata.version("nuitka")
     numbers = tuple(
         int("".join(itertools.takewhile(str.isdigit, part)) or 0)
         for part in installed.split(".")
     )
-    if numbers < NUITKA_MINIMUM:
-        wanted = ".".join(str(number) for number in NUITKA_MINIMUM)
-        print(
-            f"Nuitka {installed} is installed; this build needs {wanted} or later:\n"
-            "    python -m pip install -r requirements-dev.txt",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
+    if NUITKA_MINIMUM <= numbers < NUITKA_CEILING:
+        return
+    lowest = ".".join(str(number) for number in NUITKA_MINIMUM)
+    above = ".".join(str(number) for number in NUITKA_CEILING)
+    print(
+        f"Nuitka {installed} is installed; this build needs {lowest} or later, "
+        f"below {above}:\n"
+        "    python -m pip install -r requirements-dev.txt",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
 
 
 def read_version() -> str:
