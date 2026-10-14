@@ -36,6 +36,12 @@ roughly half the tries.
 in the archive's listing carries `image`, `thumbnails` at 250, 500 and 1200,
 `front`, `back` and `types`. It does NOT carry the pixel size of the original,
 so the largest thumbnail offered is what a candidate can honestly claim.
+
+**The listing names its pictures over plain http.** Measured on 2026-10-14,
+every image and thumbnail address in a listing began `http://`, which the reach
+refuses, so no picture was ever fetched. The same addresses over HTTPS answer.
+So an http address is raised to HTTPS as the listing is read; no other scheme
+is touched, which leaves anything else the listing names refused.
 """
 
 from __future__ import annotations
@@ -60,6 +66,8 @@ from stellody.infrastructure.reach import (
     COVER_ART_HOST,
     COVER_REACH,
     MUSICBRAINZ_HOST,
+    PLAIN_SCHEME,
+    SECURE_SCHEME,
     Reach,
     origin,
 )
@@ -117,13 +125,24 @@ def _preview(thumbnails: dict) -> str:
     return ""
 
 
+def _secured(address: str) -> str:
+    """An address the listing named over http, raised to HTTPS.
+
+    Any other scheme comes back as written, so the reach still judges it.
+    """
+    parts = urllib.parse.urlsplit(address)
+    if parts.scheme.lower() != PLAIN_SCHEME:
+        return address
+    return urllib.parse.urlunsplit(parts._replace(scheme=SECURE_SCHEME))
+
+
 def _candidates_from(images: list, release: str) -> list[CoverCandidate]:
     """Every picture in one release's listing that can be shown and fetched."""
     made = []
     for image in images:
         thumbnails = image.get("thumbnails") or {}
-        preview = _preview(thumbnails)
-        full = image.get("image") or ""
+        preview = _secured(_preview(thumbnails))
+        full = _secured(str(image.get("image") or ""))
         if not preview or not full:
             continue
         made.append(

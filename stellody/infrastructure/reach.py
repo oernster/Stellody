@@ -22,6 +22,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 SECURE_SCHEME = "https"
+# The scheme a service may name its own addresses with, never one to go to.
+PLAIN_SCHEME = "http"
 GITHUB_API_HOST = "api.github.com"
 MUSICBRAINZ_HOST = "musicbrainz.org"
 LISTENBRAINZ_LABS_HOST = "labs.api.listenbrainz.org"

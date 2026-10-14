@@ -189,6 +189,63 @@ class TestWhatComesBack:
         assert offered[0].release == "Ether Song  2003-11-17  GB"
 
 
+PLAIN_ART = ART.replace("https://", "http://", 1)
+
+
+def plain_listing() -> dict:
+    """The listing as the archive answered on 2026-10-14: every address http."""
+    return json.loads(json.dumps(LISTING_ANSWER).replace(ART, PLAIN_ART))
+
+
+class TestTheSchemeTheListingNames:
+    """The archive names its pictures over plain http, which the reach refuses.
+
+    Left as written, every fetch was refused before it was made and every tile
+    in the chooser stayed empty.
+    """
+
+    def plain(self) -> ArchiveCovers:
+        # The picture first: the listing's prefix would answer for it too.
+        return client(
+            {
+                "https://musicbrainz.org": encoded(SEARCH_ANSWER),
+                f"{ART}/": b"a picture",
+                "https://coverartarchive.org/release/": encoded(plain_listing()),
+            }
+        )[0]
+
+    def test_a_plain_address_is_offered_over_https(self) -> None:
+        offered = self.plain().search("Turin Brakes", "Ether Song").candidates
+        assert offered[0].thumbnail_url == f"{ART}/38850137623-250.jpg"
+        assert offered[0].image_url == f"{ART}/38850137623.jpg"
+
+    def test_a_plain_address_can_be_fetched(self) -> None:
+        found = self.plain()
+        offered = found.search("Turin Brakes", "Ether Song").candidates
+        assert found.fetch(offered[0].thumbnail_url) == b"a picture"
+        assert found.fetch(offered[0].image_url) == b"a picture"
+
+    def test_no_other_scheme_is_raised_to_https(self) -> None:
+        """A `file:` address named in a listing stays one, so it stays refused."""
+        listing = {
+            "images": [
+                {
+                    "image": "file:///etc/passwd",
+                    "thumbnails": {"250": "file:///etc/passwd"},
+                }
+            ]
+        }
+        found, _, _ = client(
+            {
+                "https://musicbrainz.org": encoded(SEARCH_ANSWER),
+                "https://coverartarchive.org/release/": encoded(listing),
+            }
+        )
+        offered = found.search("Turin Brakes", "Ether Song").candidates
+        assert offered[0].thumbnail_url == "file:///etc/passwd"
+        assert found.fetch(offered[0].thumbnail_url) is None
+
+
 class TestWhenThereIsNothingToBeHad:
     def test_a_release_with_no_art_is_an_answer_not_a_failure(self) -> None:
         """The archive answers 404 for a release nobody has photographed."""
