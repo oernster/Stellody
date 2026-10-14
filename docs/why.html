@@ -58,18 +58,16 @@
   <div class="section-label">Why</div>
   <h2 class="section-title">A player broke a library.</h2>
   <p style="max-width:65ch;">
-    Someone spent years turning a shelf of CDs into files: ripping each one, checking the track names,
-    fixing the artist on the compilations, finding the right cover art. Then a well known music player
-    reached into those files and rewrote the information stored inside them.</p>
-  <p style="max-width:65ch;">It duplicated and overwrote
-    the details on 33 albums. The music still played. Every one of those albums was put right in the
-    end; a music player should never have touched them.
+    Someone spent years turning a shelf of CDs into files: ripping each one, checking track names,
+    fixing compilation artists, finding the right covers. Then a well known music player rewrote the
+    information stored inside those files.</p>
+  <p style="max-width:65ch;">It duplicated and overwrote the details on 33 albums. The music still
+    played. Every album was put right in the end; a player should never have touched them.
   </p>
   <p style="max-width:65ch;">
-    Stellody was written because of that afternoon. It is built on one rule that everything else follows
-    from: <strong>your files are opened to be read and never to be changed</strong>. If Stellody finds
-    something muddled in the way an album is labelled, it tells you and leaves the file alone. Deciding
-    what to do about it stays your job, in whatever program you like.
+    Stellody was written because of that afternoon. One rule underlies everything else:
+    <strong>your files are opened to be read and never to be changed</strong>. If an album is
+    muddled, Stellody tells you and leaves the file alone; what to do about it stays your decision.
   </p>
 </section>
 
@@ -78,9 +76,9 @@
     <div class="section-label">The promise</div>
     <h2 class="section-title">Not a promise.<br>A rule the program cannot break.</h2>
     <p style="max-width:65ch;">
-      Anybody can write "we never touch your files" on a website. It costs nothing to say and nothing to
-      quietly stop being true a year later. So in Stellody it is not a sentence. It is checked by the
-      test suite every time the checks run; if it ever stopped being true the suite would simply fail.
+      Anybody can write "we never touch your files" on a website, then quietly stop meaning it. In
+      Stellody it is checked by the test suite every time the checks run; if it stopped being true the
+      suite would fail.
     </p>
     <div class="features-grid" style="margin-top:2rem;">
       <div class="feat">
@@ -90,20 +88,20 @@
       </div>
       <div class="feat">
         <h3>Nothing is put in your music folder</h3>
-        <p>No stray database, no hidden cache, no little files left behind. Everything Stellody learns
-        about your collection is kept in its own place, well away from yours.</p>
+        <p>No stray database, no hidden cache, nothing left behind. What Stellody learns is kept in its
+        own place, away from your music.</p>
       </div>
       <div class="feat">
         <h3>Nothing quietly reaches the internet</h3>
-        <p>Only three small pieces of Stellody can reach the internet themselves: looking for album art,
-        checking for a new version and looking for music you do not own. Two buttons only hand an address
-        to your browser. All five are named below; playing your music uses none of them.</p>
+        <p>Only three parts of Stellody reach the internet themselves: album art search, the update check
+        and discovery. Two buttons only hand an address to your browser. All five are below; playing
+        music uses none of them.</p>
       </div>
       <div class="feat">
         <h3>Your library survives a mistake</h3>
-        <p>An unplugged drive or a half finished scan never makes Stellody forget your albums. Missing
-        files are flagged for you rather than thrown away. Back up library on the File menu keeps
-        everything Stellody knows about them in one zip, in a folder you choose.</p>
+        <p>An unplugged drive or a half finished scan never makes Stellody forget your albums; missing
+        files are flagged, not thrown away. Back up library on the File menu keeps everything it knows in
+        one zip.</p>
       </div>
     </div>
   </section>
@@ -114,22 +112,20 @@
   <h2 class="section-title">Your own shelves,<br>asking the question.</h2>
   <p style="max-width:65ch;">
     Playing a collection is the easy half. The harder half is what is not in it: the album an artist you
-    love made in a year you were not paying attention; the artist two steps sideways from one you have
-    played for twenty years. That question used to need a friend with better records than yours.
+    love made while you were not looking; the artist two steps sideways from one you have played for
+    twenty years. That question used to need a friend with better records than yours.
   </p>
   <p style="max-width:65ch;">
-    Stellody answers it from what you already own. It reads the artists on your shelves in the genres you
-    tick, asks MusicBrainz what else those artists released and ListenBrainz who resembles them, then
-    lists what you do not hold.</p>
-  <p style="max-width:65ch;">There is no profile of you, no listening history and no account, because
-    there is nothing for those to be built from: the question is asked from your own files and the public
-    record alone.
+    Stellody answers it from what you own. It reads your artists in the genres you tick, asks
+    MusicBrainz what else they released and ListenBrainz who resembles them, then lists what you do not
+    hold.</p>
+  <p style="max-width:65ch;">There is no profile, no listening history and no account, because nothing
+    needs them: the question is asked from your own files and the public record alone.
   </p>
   <p style="max-width:65ch;">
-    That is the difference from a recommender. A recommender tells you what people like you played next,
-    which is somebody else's idea of what you should like, arrived at from what you have been watched
-    doing. This is your collection asking what is missing from itself. The answer can be wrong; where
-    a catalogue cannot answer for an artist Stellody says so rather than quietly shortening the list.
+    A recommender tells you what people like you played next, learned from watching you. This is your
+    collection asking what is missing from itself. Where a catalogue cannot answer for an artist,
+    Stellody says so rather than quietly shortening the list.
   </p>
   <p style="margin-top:1.75rem;">
     <a class="btn-secondary" href="discovery.html">How the search works</a>
@@ -140,62 +136,56 @@
   <div class="section-label">Your privacy, in plain words</div>
   <h2 class="section-title">Nothing about you<br>ever leaves this program.</h2>
   <p style="max-width:60ch;">
-    Stellody does not know who you are. There is no account to make, no profile, no newsletter and no
-    record kept anywhere of what you listen to. Nobody is ever told what is in your collection: the only
-    things that name any of your music are searches you asked for. A cover search names one album's
-    artist and title; a discovery search names artists and titles from the genres you ticked. Your music plays perfectly well with the internet switched off altogether.
+    Stellody does not know who you are: no account, no profile, no newsletter and no record of what
+    you listen to. Only searches you ask for name any of your music. A cover search names one album's
+    artist and title; a discovery search names artists and titles from the genres you ticked. Your
+    music plays with the internet switched off.
   </p>
   <p style="max-width:60ch;">
-    Five things reach outside your computer at all. Rather than leave you to discover them, here are all
-    five.
+    Five things reach outside your computer at all. Here are all five.
   </p>
   <div class="features-grid" style="margin-top:2rem;">
     <div class="feat">
       <h3>Looking for album art</h3>
-      <p>Only ever when you ask for it, on one album at a time. Stellody looks that album up in a public
-      music archive then shows you the covers it found so you can pick one.</p>
+      <p>Only when you ask, one album at a time. Stellody looks it up in a public music archive and shows
+      the covers found so you can pick one.</p>
     </div>
     <div class="feat">
       <h3>Checking for a new version</h3>
-      <p>A few seconds after it starts, then once a day while it runs, Stellody asks whether a newer version has come out. It sends nothing about you or
-      your music, not even which version you have; the request names the program and asks for one small
-      public page, which it then compares on your own machine.</p>
-      <p>It stays quiet unless there is something
-      new. Where there is, pressing Download hands your browser the file for your platform, else the
-      release page when the release carries none, which is the same act as the two entries below. You can tell it to skip a version for good.</p>
+      <p>A few seconds after starting, then once a day while running, Stellody asks whether a newer
+      version exists. It sends nothing about you or your music, not even your version; it asks for one
+      small public page and compares on your own machine.</p>
+      <p>It stays quiet unless there is something new. Then Download hands your browser the file for
+      your platform (the release page when there is none), the same act as the two entries below. You
+      can skip a version for good.</p>
     </div>
     <div class="feat">
       <h3>Looking for music you do not own</h3>
-      <p>Only ever when you ask. You tick the genres worth looking in; Stellody asks two public music
-      catalogues, MusicBrainz and ListenBrainz, what those artists released that you do not hold and who
-      else sounds like them.</p>
-      <p>What goes out is those artist names, the MusicBrainz identifiers the
-      catalogue gives back for them and for the similar artists it suggests, the fixed settings each
-      request states for itself (the answer's format, how many results to return, where a following page starts, which release types
-      to list, which details to include and which similarity algorithm to use) plus a user agent naming Stellody, its version and the project's contact address.
-      Where the catalogue holds several artists under one of your names, up to three titles of albums
-      or tracks you hold under that name go with it, so it can say which of them is yours. While
-      Other volumes of series is ticked, the titles of the compilations you hold in those genres go
-      too, one filed under the DJ who mixed it among them, with the series name read from each, so it
-      can find the volumes of that series you do not hold. The language
-      asked for is fixed at any rather than your computer's own: not your collection as a whole, not a
+      <p>Only when you ask. You tick the genres; Stellody asks MusicBrainz and ListenBrainz what those
+      artists released that you do not hold and who else sounds like them.</p>
+      <p>What goes out: those artist names; the MusicBrainz identifiers the catalogue gives back for
+      them and for the similar artists it suggests; the fixed settings each request states (the answer's
+      format, how many results, where a following page starts, which release types to list, which
+      details to include and which similarity algorithm to use); a user agent naming Stellody, its
+      version and the project's contact address. Where the catalogue holds several artists under one of
+      your names, up to three titles of albums or tracks you hold under that name go too, so it can tell
+      which is yours. While Other volumes of series is ticked, the titles of compilations you hold in
+      those genres go too (a DJ mix among them), with each one's series name, to find the volumes you
+      lack. The language asked for is fixed at any. Nothing else: not your collection as a whole, not a
       count of it, not a word about you or your machine. Tick nothing and nothing leaves.</p>
     </div>
     <div class="feat">
       <h3>Reaching a shop</h3>
-      <p>Tick albums a search turned up, choose a shop and Stellody hands your browser that shop's own
-      search address for each one. Stellody itself connects to no shop. It has no affiliation with any of
-      them, no arrangement, no referral, no affiliate tag and no interest in whether you buy anything;
-      what happens after the browser opens is between you and the shop.</p>
+      <p>Tick albums a search found, choose a shop and Stellody hands your browser that shop's own search
+      address for each. Stellody connects to no shop and has no affiliation, referral or affiliate tag;
+      what happens next is between you and the shop.</p>
     </div>
     <div class="feat">
       <h3>The donation button</h3>
-      <p>Its tooltip offers to buy the author a drink. That button is the whole of the asking: one
-      person writes and looks after Stellody, so it is how the work gets paid for.</p>
-      <p>Press it and Stellody
-      hands the address to your web browser, which opens the page; Stellody itself connects to nothing.
-      Nothing prompts you beyond the button being there, nothing reminds you later and nothing about the
-      program changes if you never press it.</p>
+      <p>Its tooltip offers to buy the author a drink. One person writes and looks after Stellody; that
+      button is how the work gets paid for and the whole of the asking.</p>
+      <p>Pressing it hands the address to your browser; Stellody itself connects to nothing. Nothing
+      prompts or reminds you and nothing changes if you never press it.</p>
     </div>
   </div>
 </section>
@@ -205,32 +195,28 @@
     <div class="section-label">Worth knowing</div>
     <h2 class="section-title">What it is not.</h2>
     <p style="max-width:65ch;">
-      Stellody plays FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A, WMA, WavPack and AAC. It does not read Monkey's
-      Audio, Musepack, DSD, TAK, TrueAudio, CAF or an M4B audiobook. That is the one thing worth checking before you download, so
-      it is said here rather than buried.</p>
-    <p style="max-width:65ch;">A file in one of those formats is named in its health report
-      instead of being left out without a word, as is a file whose details cannot be read. That is the
-      part that matters: you find out rather than wonder.
+      Stellody plays FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A, WMA, WavPack and AAC. It does not read
+      Monkey's Audio, Musepack, DSD, TAK, TrueAudio, CAF or M4B audiobooks: the one thing worth checking
+      before you download.</p>
+    <p style="max-width:65ch;">A file in one of those formats is named in its health report rather
+      than left out without a word, as is one whose details cannot be read. You find out rather than
+      wonder.
     </p>
     <p style="max-width:65ch;">
-      Three of those formats are supported on weaker evidence than the rest and it is fairer to say so.
-      There was no WMA, WavPack or AAC file here to test against, so each is proved against a file the test
-      suite encodes for the purpose.</p>
-    <p style="max-width:65ch;">That exercises the whole path through Stellody; it says nothing about
-      what an old Windows Media ripper actually wrote. If one of yours is read wrongly, that is a defect
-      worth reporting rather than a format nobody thought about.
+      WMA, WavPack and AAC rest on weaker evidence: with no such file here to test, each is proved
+      against one the test suite encodes.</p>
+    <p style="max-width:65ch;">That exercises the whole path through Stellody but says nothing about
+      what an old Windows Media ripper wrote. If one of yours reads wrongly, please report it.
     </p>
     <p style="max-width:65ch;">
-      It is a player and only a player. It does not stream, does not copy your CDs for you, does not sync
-      to a phone and will not reorganise your collection by rewriting your files.</p>
-    <p style="max-width:65ch;">It tidies muddled
-      labelling in its own view and will keep that for you if you say so, though it will never rewrite
-      the files themselves: that is the point rather than a limitation. Where a control cannot do
-      anything just now, it is greyed out rather than left to disappoint you.
+      It is a player and only a player. It does not stream, rip CDs, sync to a phone or reorganise your
+      collection by rewriting files.</p>
+    <p style="max-width:65ch;">It tidies muddled labelling in its own view and keeps that if you say
+      so; it never rewrites the files themselves. A control that cannot act just now is greyed out.
     </p>
     <p style="max-width:65ch;">
-      Windows, macOS and Linux. On Windows it installs for one user alone; on macOS it is dragged into
-      Applications like any other program; on Linux it too installs for one user alone.
+      Windows, macOS and Linux. On Windows it installs for one user; on macOS it is dragged into
+      Applications; on Linux it installs for one user too.
     </p>
   </section>
 </div>
@@ -239,9 +225,8 @@
   <div class="section-label">For anyone who wants the detail</div>
   <h2 class="section-title">Under the bonnet.</h2>
   <p style="max-width:65ch;">
-    You do not need any of this to use Stellody. The claims above are the kind that are easy to make and
-    hard to check, so the working behind them has a page of its own: how each rule is held by a test and
-    the measurements behind the way the program is built.
+    You do not need any of this to use Stellody. The working behind the claims above has a page of its
+    own: how each rule is held by a test and the measurements behind the design.
   </p>
   <p style="margin-top:1.75rem;">
     <a class="btn-secondary" href="technical.html">Read the technical detail</a>
@@ -267,7 +252,7 @@
     </div>
     <div class="footer-bottom">
       <p>A free, quiet music player for the collection you already own. No cloud, no account.
-      Version <!--VERSION-->1.17.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      Version <!--VERSION-->1.17.1<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
       A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
       &copy; Oliver Ernster</p>
     </div>

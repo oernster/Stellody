@@ -1,144 +1,97 @@
 # Testing
 
-How Stellody is tested: running the checks, reading what they say, the rules a
-run by hand has to follow and how a new test or guard is written. The rules
-themselves are in `ARCHITECTURE.md`, each invariant linked to the test that
-enforces it; `DISCOVERY.md`, `SHOPS.md`, `FORMATS.md`, `OUTPUTS.md` and
-`BACKUP.md` name the test behind every requirement. This file is how to work with those tests, not
-a second copy of what they assert.
+How to run Stellody's checks and read what they say. What the tests assert
+lives beside the rules they hold: `ARCHITECTURE.md` links each invariant to its
+test; `DISCOVERY.md`, `SHOPS.md`, `FORMATS.md`, `OUTPUTS.md` and `BACKUP.md`
+name the test behind each requirement.
 
-## Running the checks
+## The gate
 
-```
+```powershell
 .\gate.ps1
 ```
 
-`gate.ps1` is the whole gate, in order: `black --check`, `flake8`,
-`ruff check`, then `pytest tests`. It runs every step with the project's own
-interpreter (`venv\Scripts\python.exe`) and stops at the first that fails. It
-sets `QT_QPA_PLATFORM=offscreen` for the run, so no window appears.
+In order: `black --check .`, `flake8`, `ruff check .`, then `pytest tests`.
+Every step runs with `venv\Scripts\python.exe` under
+`QT_QPA_PLATFORM=offscreen`, so no window appears; the first failure stops the
+run.
 
-**A full run takes about ten minutes.** Most of it is the interface tests
-under `tests/ui`, many of them spending most of a second building their window;
-the rest of the suite takes a minute or two.
-A run that is quiet for several minutes is not stuck. To see it moving,
-add `-v` to a pytest run by hand, which names each test as it starts.
+A full run takes about ten minutes, most of it the interface tests under
+`tests/ui`. A run quiet for several minutes is not stuck; add `-v` to a pytest
+run by hand to watch it move.
 
-**Read the exit code, never the last line.** The summary line of passed and
-failed says nothing about the coverage gate, which fails the run on its own; a
-coverage row named after a module such as `passing.py` also reads like a result
-to anybody searching the text. `gate.ps1` reads `$LASTEXITCODE` after every
-step and throws on anything but nought. Running a step by hand, do the same.
-For a count of tests without running them,
-`venv\Scripts\python.exe -m pytest --co -q --no-cov` ends with one.
+## Reading a result
 
-## What the gate holds
+**Read the exit code, never the last line.** The coverage gate fails the run
+on its own while the summary line says nothing about it. `gate.ps1` checks
+`$LASTEXITCODE` after every step and throws on anything but zero; by hand, do
+the same.
 
-- **Coverage.** 100% branch coverage over `stellody.domain` and
-  `stellody.application`, set in `pyproject.toml`; below that the run fails.
-  Why the floor covers those two layers alone is under Coverage in
-  [`ARCHITECTURE.md`](ARCHITECTURE.md). Infrastructure and the interface are
-  tested too, against real files, a real loopback server and a real
-  `QApplication`.
-- **Style.** `tests/structural/test_style.py` runs black, flake8 and ruff as
-  assertions, so a formatting or linting regression fails the suite even
-  without the gate around it.
-- **Structure.** The structural suite below.
+## Coverage
 
-## Running it by hand
+100% branch coverage over `stellody.domain` and `stellody.application`, set in
+`pyproject.toml` (`--cov-fail-under=100`). Those are the layers reachable with
+no filesystem, no clock and no audio device, so every branch can be held
+cheaply. Infrastructure and the interface are tested against real files, a real
+loopback server and a real `QApplication` but are not gated: a floor over code
+needing a real device would be a number nobody can hold or a suite of mocks.
+The reasoning is under Coverage in `ARCHITECTURE.md`.
 
-- **Use the project's Python.** `python -m pytest` works provided it is
-  `venv\Scripts\python.exe`. `tests/structural/test_environment.py` fails the
-  run anywhere else, since checks passing in one environment prove nothing
-  about the one the application runs in.
-- **The offscreen platform is set for you.** `tests/conftest.py` sets
-  `QT_QPA_PLATFORM=offscreen` before any `QApplication` exists, however the
-  suite was started. The interface tests build real windows; without it each
-  would appear on the desktop, every one answering a close with its own quit
-  prompt.
-- **One run at a time.** Two runs of the suite at once fail falsely:
-  `tests/infrastructure/test_instance.py` takes a claim under fixed names that
-  hold across the whole machine, so the second run finds it taken. A failure
-  met while another run was going is not evidence of anything; run it again
-  alone.
-- **The application is never started.** `tests/conftest.py` refuses any test
-  that tries to start `stellody.exe`, whatever it believes it patched, since a
-  stand-in that stops matching would start the installed copy.
-  It also sends the diary to the test's own temporary folder, so a run never
-  writes into the account of real runs.
+## What each suite proves
 
-## Where the tests live
-
-`tests/` holds one directory for each layer with rules of its own, plus one for
-the setup program and one for the structural rules:
-
-| Directory | What it tests | Against |
+| Directory | Proves | Against |
 |---|---|---|
 | `domain/` | the rules, pure | values built in the test |
 | `application/` | the use cases | hand-written fakes of every port |
 | `infrastructure/` | files, audio, the network client, the store | real files in a temporary folder, a real loopback server |
 | `ui/` | the windows, dialogs and trays | a real `QApplication` on the offscreen platform |
-| `installer/` | the setup program | a real `QApplication`, with the registry, the filesystem and the processes stood in for |
-| `structural/` | the rules no single test can see | the source tree itself |
+| `installer/` | the setup program | a real `QApplication`, with the registry, filesystem and processes stood in for |
+| `structural/` | rules no single test can see (read only, offline, layers, line cap, style, one name, no dashes, pins) | the source tree itself |
+
+Each structural guard is listed with the invariant it holds in the invariants
+table of `ARCHITECTURE.md`.
+
+## Running part
+
+```powershell
+venv\Scripts\python.exe -m pytest tests\domain --no-cov
+venv\Scripts\python.exe -m pytest tests\ui\test_reading_panes.py -v --no-cov
+venv\Scripts\python.exe -m pytest --co -q --no-cov
+```
+
+`--no-cov` is needed for a partial run, which cannot reach the coverage floor;
+the last line counts the tests without running them.
+
+- **Use the project's Python.** `tests/structural/test_environment.py` fails
+  the run under any other interpreter.
+- **One run at a time.** `tests/infrastructure/test_instance.py` takes a
+  machine-wide claim, so a second concurrent run fails falsely.
+- `tests/conftest.py` sets the offscreen platform, refuses any test that tries
+  to start `stellody.exe` and sends the diary to the test's own temporary
+  folder.
 
 ## Writing a test
 
 - **No mocking library; Qt is never mocked.** A port is stood in for by a
   hand-written fake: `tests/application/fakes.py` holds the shared ones and
-  `tests/recording_player.py` is the playback port every suite drives, one
-  that records what it was asked rather than playing it. A fake is a small
-  class you can read; a mock is a script of expectations nobody reads twice.
-- **The window.** `tests/ui/tray_support.py` builds the real main window over a
-  `RememberingStore` and a `RecordingPlayer` with `build(store, player)`.
-  Many interface suites have a `*_support.py` beside them building the window,
-  album or dialog they are driven against; start from the nearest one rather
-  than writing another.
-- **One `QApplication`, no window outliving its test.** `tests/conftest.py`
-  provides the session's `application` fixture to every suite, so no suite
-  builds its own; `tests/ui/conftest.py` destroys every top level widget
-  between the interface tests. A window left to the garbage collector is
-  destroyed inside the next test, which crashes the run with an access
-  violation.
+  `tests/recording_player.py` records what playback was asked to do.
+- **The window.** `tests/ui/tray_support.py` builds the real main window with
+  `build(store, player)`. Start from the nearest `*_support.py` rather than
+  writing another.
+- **One `QApplication`.** `tests/conftest.py` provides the session's
+  `application` fixture; `tests/ui/conftest.py` destroys every top level widget
+  between interface tests, since a window left to the garbage collector crashes
+  a later test.
 - **The network.** `tests/infrastructure/fetching_support.py` runs a real HTTP
-  service on the loopback address and records every ask and every header, so a
-  test reads what actually arrived rather than what the code meant to send.
-- **Audio.** No audio file of a widened format is committed
-  (`tests/structural/test_no_committed_audio.py`). `m4a_support.py`,
-  `video_support.py` and `widened_support.py` in `tests/infrastructure/` encode
-  real files for the test and throw them away with its temporary folder.
-- **Anything the scale changes.** Qt reads its scale once, as the application
-  is built, while the suite runs at one. A defect that shows only at the
-  interface scale every window is drawn at (`INTERFACE_SCALE`) needs a process started at that scale:
-  `tests/ui/test_every_rule_is_drawn.py` runs `tests/ui/rule_sweep.py` that
-  way and reads what it prints.
-
-## Guards
-
-A structural test checks the source tree rather than behaviour, so a rule holds
-for code nobody has written yet. The suite in `tests/structural/`:
-
-| Guard | Holds |
-|---|---|
-| `test_readonly.py` | Stellody never writes to a music library |
-| `test_offline.py` | only the permitted modules can open a connection |
-| `test_layers.py` | layer boundaries and domain purity |
-| `test_loc.py` | the line cap and the danger band below it |
-| `test_environment.py` | the suite runs where the application runs |
-| `test_style.py` | black, flake8 and ruff, as assertions |
-| `test_no_dashes.py` | no dash-like character in a screen, document or comment |
-| `test_one_name.py` | the product name has one home |
-| `test_half_has_one_home.py` | halving has one home |
-| `test_user_agent.py` | the agent names Stellody, its version and a contact |
-| `test_discovery_paths.py` | discovery keeps what it keeps in Stellody's own data directory |
-| `test_focus_ring_selectors.py` | no stylesheet rings a pane or a region |
-| `test_rings.py` | no checkbox ships without a ring |
-| `test_no_committed_audio.py` | no audio file of a widened format in the tree |
-| `test_schema_bumps.py` | the database's shape cannot change under the same schema number |
-
-**A guard is not trusted until it has been seen to fail.** Every new guard is
-proved by planting the violation it exists to catch and reading the failure, then restoring the tree in a
-`finally` block so an interrupted proof cannot leave the plant behind. A test
-written for a defect is run before the fix, where it has to fail for the
-reason named, not merely fail. Where a guard can be planted against without
-touching the tree, keep the plant as a test of its own beside the guard, as
-`test_the_guard_bites` in `test_no_dashes.py` does.
+  service on the loopback address and records every request and header.
+- **Audio.** No audio file of a widened format is committed;
+  `m4a_support.py`, `video_support.py` and `widened_support.py` in
+  `tests/infrastructure/` encode real files into the test's temporary folder.
+- **The interface scale.** The suite runs at scale one; a defect that shows
+  only at `INTERFACE_SCALE` needs a process started at it, as
+  `tests/ui/test_every_rule_is_drawn.py` does with `tests/ui/rule_sweep.py`.
+- **A guard is not trusted until seen to fail.** Plant the violation, read the
+  failure, then restore the tree in a `finally` block. Where the plant needs no
+  change to the tree, keep it as a test beside the guard, as
+  `test_the_guard_bites` in `test_no_dashes.py` does. A test for a defect is
+  run before the fix and must fail for the reason named.

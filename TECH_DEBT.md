@@ -1,86 +1,52 @@
 # Technical debt
 
-What is still open, what is deliberately left and what only looks like debt.
-
-Every item here is a behaviour-preserving internal concern: nothing in this file
-reverts a feature or changes what a listener sees. Anything that would is a plan
-item rather than a debt item, so it lives in `PLAN.md`. Read alongside
-`ARCHITECTURE.md`, which states the invariants; also the structural tests, which
-enforce them.
-
-Open items are numbered. A numbered heading IS the definition of an open item,
-which is why the two sections at the foot carry no numbers. A resolved item is
-deleted outright rather than marked done: technical-debt history is not
-technical debt. What a resolution was worth is recorded in the release notes.
+Internal concerns only: nothing here changes what a listener sees; anything
+that would belongs in `PLAN.md`. A numbered heading is an open item; a resolved
+item is deleted. The invariants are in `ARCHITECTURE.md`.
 
 ## 1. The listener's own data shares a file with the scan cache
 
 Ratings and play counts (the `listening` table in `infrastructure/store.py`),
-accepted track corrections (`infrastructure/override_rows.py`) and album edits
-(`infrastructure/album_edit_rows.py`) live in the same SQLite file as the
-library index, which is a cache a rescan rebuilds. A file damaged badly enough
-not to open is set aside whole by `infrastructure/opening.py`, write ahead log
-included, so nothing is lost. The application then starts without any of that
-data, though; the way back is restoring a backup the listener made from the
-File menu, else by hand.
+accepted corrections (`infrastructure/override_rows.py`) and album edits
+(`infrastructure/album_edit_rows.py`) live in `library.sqlite3` beside the scan
+index a rescan rebuilds. A file too damaged to open is set aside whole by
+`infrastructure/opening.py`, so nothing is lost; the application then starts
+without that data until a backup is restored.
 
-The structural answer is to keep that data in a file of its own, so a damaged
-scan cache cannot take it with it. That is a migration of user data: an
-existing library has to be split in two without losing a row. The format and
-location of the new file are a decision rather than a refactor. Blocked on
-the owner deciding the format and the migration.
+The fix is a file of its own for that data. That is a migration of user data
+whose format and location are a decision rather than a refactor: blocked on
+Oliver deciding both.
 
 ## Looks like debt, not worth touching
 
-**`_drive` catches `OSError`, `RuntimeError` and `ValueError` rather than
-`PlaybackError` alone.** The domain names a playback error and the adapters
-behind the transport raise it, so narrowing the catch looks like the tidy
-move. It is the wrong one: the catch exists because an exception raised
-inside a Qt slot ends the slot in silence, leaving the buttons wearing faces
-that are no longer true and nothing said to anybody. A narrow catch would let
-exactly the failures nobody predicted through that hole, which is the failure
-mode the catch was written for. The breadth is the point.
+**`_drive` in `ui/playing.py` catches `OSError`, `RuntimeError` and
+`ValueError` rather than `PlaybackError` alone.** An exception raised inside a
+Qt slot ends the slot in silence, leaving the buttons showing a state that is
+no longer true. The breadth catches the failures nobody predicted, which is
+what it exists for.
 
-**The suffix tables are two lists that could be one.** `AUDIO_SUFFIXES` and
-`UNPLAYABLE_SUFFIXES` in the walker could be a single mapping. They are
-deliberately apart: what can be decoded and what is known-but-unplayable are
-different facts; inferring the second from "not in the first" is exactly what
-would make a stray text file read as a missing album.
+**`AUDIO_SUFFIXES` and `UNPLAYABLE_SUFFIXES` in the walker are two sets.**
+What can be decoded and what is known but unplayable are different facts;
+inferring the second from absence in the first would make a stray text file
+read as a missing album.
 
 ## Not debt (do not "fix" these)
 
-**Infrastructure and the interface sit outside the coverage gate.** The gate is
-100% branch over `stellody.domain` and `stellody.application`, the layers
-reachable with no filesystem, no clock and no audio device. The rest is not
-gated and the suite does not measure it by default. That is a decision
-recorded in `ARCHITECTURE.md`, not an omission: a gate over code needing a real device, a
-real library and the Windows shell would either be a number nobody can hold or a
-suite full of mocks standing in for the very things worth testing.
+**Infrastructure and the interface sit outside the coverage gate.** The reason
+is under Coverage in `ARCHITECTURE.md`.
 
-**The build and packaging scripts are exempt from the line cap.**
-`buildexe.py`, `buildinstaller.py`, `builddmg.py`, `dmg_icon.py`,
-`build_utils.py`, `stamp_version.py`, `stamp_sitemap.py` and
-`generate_icons.py` are linear recipes read top to bottom. Splitting a sequence
-of flags across modules costs more than it buys, so the structural line-cap
-test, which walks every Python file in the repository from its root bar the
-directories `tests/structural/conftest.py` names as not ours, exempts them by
-name. A name on that list that the walk no longer finds fails the
-suite, so the exemption cannot quietly outlive the script.
+**The build scripts are exempt from the line cap.** `BUILD_SCRIPTS` in
+`tests/structural/test_loc.py` names them: linear recipes where splitting a
+sequence of flags across modules costs more than it buys. A name on that list
+the walk no longer finds fails the suite.
 
-**Quitting during a cover lookup leaves the process without unwinding.** A
-search inside a network read is given up within one read slice (`SLICE_S`
-in `infrastructure/cover_search.py`), so
-`leave_at_once` in `composition.py` should never be reached. It stays because
-what no amount of asking covers is a socket that never comes back. Without it,
-Qt ends the process over a thread destroyed while running: an abort with a
-crash report rather than the exit code the quit meant. Everything durable is
-already put away by the time it is reached, the store closed and the claim
-released.
+**Quitting during a cover lookup can leave without unwinding.** A search inside
+a network read gives up within one read slice (`SLICE_S` in
+`infrastructure/cover_search.py`), so `leave_at_once` in `composition.py`
+should never be reached. It stays for a socket that never comes back, where Qt
+would otherwise abort over a running thread. The store is closed and the claim
+released before it is reached.
 
-**`installer/` reads `stellody.shared`, `stellody.ui` and
-`stellody.infrastructure`.** That is the setup program being a client of the
-application rather than a layer of it. Nothing under `stellody/` imports back,
-which is invariant 14, enforced by
-`test_the_application_never_imports_the_setup_program` in
-`tests/structural/test_layers.py`. One identity, one theme and one licence
-viewer is the point of it.
+**`installer/` imports `stellody.shared`, `stellody.ui` and
+`stellody.infrastructure`.** The setup program is a client of the application;
+nothing under `stellody/` imports back (invariant 14).

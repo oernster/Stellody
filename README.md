@@ -2,13 +2,9 @@
 
 **A free music player for the collection already on your computer.**
 
-*Stellar* and *melody*, run together. The icon says the same thing: a note over
-a galaxy, wearing a planet's ring.
-
 No account, no subscription, no adverts and nothing about you sent anywhere.
-Point it at your music folder and it does the rest.
-
-Above all, it never changes a single one of your files.
+Point it at your music folder and it does the rest. It never changes a single
+one of your files.
 
 [Download](https://stellody.co.uk/download.html) for Windows, macOS or Linux
 &middot;
@@ -24,186 +20,77 @@ Above all, it never changes a single one of your files.
 
 ## Why it exists
 
-Someone spent years turning a shelf of CDs into files. Then a well known music
-player reached into those files and rewrote the information stored inside them,
-damaging 33 albums. Every one was put right in the end; a music player should
-never have touched them.
-
-Stellody is built on one rule: your files are opened to be read and never to be
-changed. Where it finds muddled labelling it tells you plainly and leaves the
-file exactly as it found it. The test suite checks this on every run; if it ever
-stopped being true the suite would fail. [Why it exists](https://stellody.co.uk/why.html)
-tells the story in full.
+A well known music player once rewrote the information stored inside a
+collection's files and damaged 33 albums. Stellody is built on one rule: your
+files are opened to be read and never to be changed. Muddled labelling is
+reported plainly and the file left as it was; the test suite fails if that ever
+stops being true. [Why it exists](https://stellody.co.uk/why.html) tells the
+story.
 
 ## Who it is for
 
-Somebody with a collection of music files on their own computer, ripped or
-bought over the years, who wants it played well and left exactly as it is.
+Somebody with music files on their own computer, ripped or bought over the
+years, who wants them played well and left exactly as they are.
 
-It is not for anybody after a streaming service or a tag editor. It does not
-stream, does not copy your CDs, does not sync to a phone and will not
-reorganise your files by rewriting them. It will point your browser at a shop
-selling what you are missing; it sells nothing itself, holds no account with
-any shop and takes nothing from a sale.
+Not for anybody after a streaming service or a tag editor: it does not stream,
+copy CDs, sync to a phone or rewrite your files. It can point your browser at a
+shop selling what you are missing; it sells nothing itself.
 
 ## What you get
 
-Each line is a summary; the site has the detail.
+- **Library** ([page](https://stellody.co.uk/library.html)): a wall of covers
+  or a plain list; search as you type; albums split across files, folders or
+  bonus discs gathered into one; a genre and year filter; your own statement of
+  what an album or song is, kept by Stellody and never written to the file;
+  corrections you can keep then undo; album art from your files or a search
+  you choose from; stars, play counts and album ratings; bonus videos played
+  inside their album.
+- **Backup** ([BACKUP.md](BACKUP.md)): everything Stellody knows about your
+  library in one zip, restorable here or on another computer.
+- **Playback** ([page](https://stellody.co.uk/playback.html)): gapless albums;
+  an equalizer that lowers a lifted curve to avoid clipping; bit perfect
+  exclusive output on Windows and macOS; a chosen output device that is
+  remembered ([OUTPUTS.md](OUTPUTS.md)); a visualiser in ten styles; the
+  waveform of each song to click along.
+- **Discovery** ([page](https://stellody.co.uk/discovery.html),
+  [DISCOVERY.md](DISCOVERY.md)): tick genres and Stellody asks two public music
+  catalogues what those artists made that you do not hold, plus who sounds like
+  them; saved taste profiles; answers kept so a second run asks only for the
+  rest.
+- **Shops** ([SHOPS.md](SHOPS.md)): each ticked album opened as a search on a
+  shop you choose, in your browser, from a list you can edit.
+- **Formats** ([FORMATS.md](FORMATS.md)): FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A
+  (AAC or ALAC), WMA, WavPack and AAC, plus bonus videos as `.m4v`. Monkey's
+  Audio, Musepack, DSD, TAK, TrueAudio, CAF and M4B audiobooks are named in the
+  health report rather than played.
+- **Help**: a guide naming every button beside the picture the window draws.
 
-**Library** ([library page](https://stellody.co.uk/library.html))
-
-- A wall of album covers or a plain list; the playing track is marked in both
-  and named along the foot of the window; clicking that name (or Ctrl+J) goes
-  to its album. A title or artist cut short on a cover shows in full when the
-  pointer rests on it.
-- Search that narrows as you type, keeping each album whole around the match.
-- Messy collections sorted out: an album saved as one long file, a box set over
-  several folders or an unnumbered bonus disc comes out as one album.
-- A genre and year filter over the covers, including albums that state no
-  genre; a saved taste profile puts its genres and years back there in one
-  choice.
-- State what an album or a single song really is (artist, title, date, genre,
-  disc and track number); genres come from a settled list of headings with
-  their styles under them. Stored by Stellody, never written to the file.
-- Corrections you can keep (all at once or one album at a time) then undo later.
-- Album art from what your files carry; for an album with none, ask Stellody to
-  search and pick from what it finds. It never guesses.
-- Stars and play counts per song, plus a rating for the album. Only a song that
-  plays to its end counts as played.
-- A rescan that names the new albums, counts the new tracks and gives the
-  library's totals.
-- Back up everything Stellody knows about your library (ratings, edits,
-  settings, taste profiles and discovery results) to one zip in a folder you
-  choose, from the File menu. Restore it here or on another computer: Stellody
-  writes a safety backup first, then starts again to take the restored library
-  up. A backup made by an older Stellody still restores. The music itself is
-  yours to copy.
-- Bonus videos that came with an album play inside it.
-
-**Playback and sound** ([playback page](https://stellody.co.uk/playback.html))
-
-- Gapless albums: no silence where the artist never put one.
-- An equalizer with a spectrum display. A curve that lifts any band is lowered
-  by its largest lift to keep a boost from clipping on ordinary material (not a
-  guarantee against every waveform); switched off it hands each block back
-  untouched.
-- Exclusive output for bit perfect playback on Windows and macOS, with the
-  rate, depth and mode the device actually took shown beside the playing time.
-  Bit perfect also needs full volume, mute off and the equalizer off or flat;
-  the claim drops the moment one of those moves. It is offered only where the
-  device can take the song untouched, so not for a lossy song or an unsupported
-  rate. Windows hands the device over outright; macOS runs it at the song's
-  rate while still mixing other applications in; Linux does not offer it.
-- Choose the output device; the choice is remembered and the list follows
-  devices as they come and go. A device that disconnects pauses the music
-  rather than sending it out of the speakers.
-- A larger output buffer than the device would choose, so a busy machine does
-  not break the sound up; any dropout is noted in the diary (see Your privacy).
-- A visualiser along the bottom showing the equalizer's bands as they play,
-  drawn in any of ten styles chosen from a list; a new install starts on Dot
-  matrix and an update keeps the style you chose.
-- The waveform of each song along the bottom; click to jump there.
-
-**Discovery** ([discovery page](https://stellody.co.uk/discovery.html))
-
-- Tick genres and Stellody asks two public music catalogues what those artists
-  made that you do not hold, plus who sounds like them.
-- Optional year range, artists on compilations, missing volumes of series you
-  collect and DJ mixes.
-- Taste profiles: when Find runs on a selection not yet saved, Stellody offers
-  to keep it (genres, the Include boxes and the years) under a name; choose it
-  later to put the whole selection back. Each profile in the list has its own
-  delete button; a long list scrolls. The same profiles are offered in the
-  library's Filter by genre and in Filter the answer, where a profile puts its
-  genres and years back; filtering on genres and years no profile holds offers
-  to keep them too. Both filters take a year range, as Discover does.
-- Progress bars per stage, an estimate of time left and a stop that takes
-  effect at once. Answers are kept as they arrive, so a second run asks only
-  for the rest; gaps are counted and named rather than hidden.
-- Find in shops opens each ticked album as a search on a shop you choose, in
-  your browser. The shop list is yours to edit. Nothing is bought or streamed.
-
-**Everywhere**
-
-- Help then Guide names every button beside the picture the window draws, plus
-  the rules Stellody reads a library by.
-- Every button on both trays bar the volume and the donation button is on the
-  menu bar too; the visualiser's styles are under View.
-
-The [features page](https://stellody.co.uk/features.html) has the overview;
-[the technical page](https://stellody.co.uk/technical.html) says how its claims
-are kept true.
-
-## Before you download
-
-- **Formats.** FLAC, MP3, Ogg, Opus, WAV, AIFF, M4A (AAC or ALAC, told apart),
-  WMA, WavPack and AAC, plus bonus videos under a `.m4v` name. Not Monkey's
-  Audio, Musepack, DSD, TAK, TrueAudio, CAF or M4B audiobooks: such a file is
-  named in the health report rather than passed over, as is one whose details
-  cannot be read.
-- **WMA, WavPack and AAC are proved against files the test suite encodes**,
-  since no real ones were to hand. That exercises the whole path; it cannot say
-  what an old ripper actually wrote. A file of yours read wrongly is a defect
-  worth reporting.
-- **Windows, macOS and Linux.** A setup program, a disk image and a Flatpak.
-  By default the sound goes through the system mixer, which is not bit perfect;
-  exclusive output takes it out of the way on Windows and macOS.
-- **Sized to fit a laptop screen.** The window is drawn smaller than it is
-  built so it fits a 13 inch 4K screen at 300% scaling. Set `QT_SCALE_FACTOR`
-  before starting Stellody to choose your own size.
-- **It reads; it never repairs.** Tidied labelling lives in its own view; the
-  files are never rewritten. A control that cannot act just now is shown
-  switched off.
+The window is drawn at nine tenths of its built size so it fits a 13 inch 4K
+screen at 300% scaling; set `QT_SCALE_FACTOR` before starting to choose your
+own size.
 
 ## Your privacy
 
-Stellody does not know who you are. No account, no profile and no record kept
-anywhere of what you listen to. Your music plays with the internet switched
-off. Five things reach outside your computer; nothing else does.
+Your music plays with the internet switched off. Five things reach outside your
+computer, each only as described:
 
-- **Looking for album art**, only when you ask, one album at a time.
-  MusicBrainz is sent that album's artist and title; the Cover Art Archive is
-  then asked for pictures by the release identifier MusicBrainz returned.
-- **Checking for a new version**, shortly after start and once a day while it
-  runs. It sends nothing about you or your music, not even which version you
-  have: the request names the program and asks for one public page. Download
-  hands your browser the file for your platform, else the release page.
-- **Looking for music you do not own**, only when you ask. A discovery run
-  sends MusicBrainz the names of the artists inside the genres you ticked, plus
-  the identifiers it returned; ListenBrainz is sent artist identifiers alone.
-  Requests carry their own fixed settings and a user agent naming Stellody, its
-  version and the project's contact address. Titles you hold go out in two
-  cases only:
-  - up to three of them beside a name MusicBrainz knows as several artists, to
-    tell which is meant;
-  - with Other volumes of series ticked, the title of each compilation inside
-    the ticked genres, of each album filed under a name MusicBrainz knows as
-    one artist with no album or EP, plus MusicBrainz's own title for an album
-    you hold that it lists as a compilation or a DJ mix. Each is cut at its
-    first bracket, spaced slash or spaced dash, then sent again without its
-    volume number.
+- **Album art**, when you ask: MusicBrainz is sent that album's artist and
+  title; the Cover Art Archive is sent the release identifier it returned.
+- **The update check**, shortly after start then daily: a fixed request naming
+  the program alone.
+- **Discovery**, when you ask: artist names from the ticked genres, plus a few
+  titles in the cases [DISCOVERY.md](DISCOVERY.md) sets out. Never your library
+  as a whole.
+- **Shops** and **the donation button** hand your browser an address; Stellody
+  itself connects to neither.
 
-  Not your library as a whole, not a count of it, not your chosen years and
-  nothing about you or your machine. Tick nothing and nothing leaves.
-- **Reaching a shop** hands your browser one search address per ticked album.
-  Stellody connects to no shop, holds no account with one and takes nothing
-  from any sale.
-- **The donation button** hands your browser an address. It is one button on
-  the bottom strip, the only place money is mentioned; nothing prompts or
-  reminds you and nothing changes if you never press it.
-
-Nothing is encrypted at rest: the store holds notes about your library, not
-secrets. A backup zip holds the same notes just as plainly, wherever you choose
-to keep it; it never leaves your computer unless you move it.
-
-Stellody keeps a plain-text diary, `stellody-diary.log`, beside its
-library database in its data directory (`%LOCALAPPDATA%\Stellody` on Windows,
+Stellody keeps `stellody-diary.log` (discovery requests and playback dropouts)
+and `stellody-startup.log` (why it could not start) beside its database in its
+data directory: `%LOCALAPPDATA%\Stellody` on Windows,
 `~/Library/Application Support/Stellody` on macOS, `~/.local/share/stellody` on
-Linux or `~/.var/app/uk.codecrafter.Stellody/data/stellody` under Flatpak). It
-records no audio and nothing about you; it notes each address a discovery run
-asks, which carries the artist names and any titles sent, plus playback
-dropouts. `stellody-startup.log` holds the reason when Stellody could not
-start. Neither is ever sent anywhere; either can be deleted whenever you like.
+Linux or `~/.var/app/uk.codecrafter.Stellody/data/stellody` under Flatpak.
+Neither is ever sent anywhere. Nothing is encrypted at rest: the store holds
+notes about your library, not secrets.
 
 ## Stack
 
@@ -213,20 +100,20 @@ start. Neither is ever sent anywhere; either can be deleted whenever you like.
 | Interface | PySide6 |
 | Tags | mutagen |
 | Decode | soundfile, plus PyAV for M4A, WMA, WavPack, AAC and bonus videos |
-| Output | sounddevice over PortAudio: WASAPI on Windows, CoreAudio on macOS, the system mixer on Linux |
+| Output | sounddevice over PortAudio |
 | Store | SQLite |
 | Packaging | Nuitka on Windows and macOS, Flatpak on Linux |
 
 ## Installing
 
-**Windows.** Download the setup program and run it. It installs just for you,
-so no administrator password is needed; running it again updates, repairs or
+**Windows.** Run the setup program. It installs for you alone, so no
+administrator password is needed; running it again updates, repairs or
 removes it.
 
-**macOS.** Download the disk image, open it and drag Stellody to Applications.
-It is signed and notarized.
+**macOS.** Open the disk image and drag Stellody to Applications. It is signed
+and notarized.
 
-**Linux.** Download the Flatpak and install it for yourself:
+**Linux.**
 
 ```
 flatpak install --user stellody.flatpak
@@ -234,51 +121,42 @@ flatpak run uk.codecrafter.Stellody
 ```
 
 It can read your home directory and removable drives but write to none of them.
-Beyond that it asks for sound, the screen and the network, the last for the
-things listed under Your privacy.
 
 ## Running from source
 
-Create a virtual environment named `venv` at the repository root and activate
-it before installing; that is the interpreter the gate runs with.
-
-```
+```powershell
 python -m venv venv
+venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
 python main.py
 ```
 
 ## Tests
 
-```
+```powershell
 .\gate.ps1
 ```
 
-Runs black, flake8, ruff and the test suite with `venv\Scripts\python.exe`,
-stopping at the first that fails. The suite gates at 100% branch coverage over
-the domain and application layers.
+Runs black, flake8, ruff then the suite with `venv\Scripts\python.exe`,
+stopping at the first failure. The suite gates at 100% branch coverage over the
+domain and application layers. See [TESTING.md](TESTING.md).
 
 ## Building
 
 Each platform builds on itself: `python buildexe.py` then
 `python buildinstaller.py` on Windows, `python builddmg.py` on macOS and
-`./build_flatpak.sh` on Linux.
+`./build_flatpak.sh` on Linux. See [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## For developers
 
-- [`DEVELOPMENT.md`](DEVELOPMENT.md): running, testing and building on each
-  platform in full; publishing the website.
-- [`TESTING.md`](TESTING.md): how the tests are run and written.
-- [`ARCHITECTURE.md`](ARCHITECTURE.md): the invariants, each linked to the test
+- [ARCHITECTURE.md](ARCHITECTURE.md): the invariants, each linked to the test
   that enforces it.
-- [`PLAN.md`](PLAN.md): open work and what is deliberately excluded.
-- [`TECH_DEBT.md`](TECH_DEBT.md): internal debt, open and deliberately left.
-- [`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md): the decisions the product
-  rests on, with their gains and costs.
-- [`DISCOVERY.md`](DISCOVERY.md), [`SHOPS.md`](SHOPS.md),
-  [`FORMATS.md`](FORMATS.md), [`OUTPUTS.md`](OUTPUTS.md) and
-  [`BACKUP.md`](BACKUP.md): specifications whose requirements each name the
-  test that proves them.
+- [TESTING.md](TESTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md): testing,
+  building and releasing.
+- [DECISIONS-TRADEOFFS.md](DECISIONS-TRADEOFFS.md): the decisions the product
+  rests on.
+- [PLAN.md](PLAN.md) and [TECH_DEBT.md](TECH_DEBT.md): open work and internal
+  debt.
 
 ## Supporting the project
 
@@ -290,18 +168,16 @@ paying for, a donation supports its maintenance and continued development.
 
 ## Licence
 
-Dual licensed. The model, meaning the domain, application, infrastructure and
-shared layers together with `main.py`, the build scripts and the tests, is
-under GPL-3.0. The user interface layer is under LGPL-3.0, to align with Qt.
-The Windows setup program under `installer/` is under LGPL-3.0 alone; its
-Licence button says so, then says that Stellody itself is dual licensed. See
-`LICENSE` for the mapping.
+Dual licensed; see `LICENSE` for the mapping. The model (the domain,
+application, infrastructure and shared layers with `main.py`, the build scripts
+and the tests) is under GPL-3.0. The interface layer is under LGPL-3.0, to
+align with Qt. The Windows setup program under `installer/` is under LGPL-3.0
+alone.
 
-A packaged build bundles FFmpeg through PyAV, to decode M4A, WMA, WavPack, AAC
-and bonus videos. The FFmpeg libraries themselves report their licence as
-LGPL-3.0-or-later. That build also links libx264 and libx265, which are
-GPL-2.0-or-later, so the packaged application as a whole is distributed as a GPL-3.0 work. Nothing here
-encodes video; those two arrive as dependencies of the shared FFmpeg build.
+A packaged build bundles FFmpeg through PyAV. The FFmpeg libraries report
+their licence as LGPL-3.0-or-later; that build also links libx264 and libx265
+(GPL-2.0-or-later), so the packaged application as a whole is distributed as a
+GPL-3.0 work. Nothing here encodes video.
 
 A commercial licence for my own code is also available, separately from the
 open-source licences: see

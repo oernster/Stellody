@@ -1,8 +1,7 @@
 # Decisions and trade-offs
 
 The deliberate choices Stellody rests on: what was chosen, what was given up
-for it and why. Each entry is the decision as the product makes it today.
-The detail behind each one, with the tests that hold it, lives in
+for it and why, as the product makes them today. The detail lives in
 [ARCHITECTURE.md](ARCHITECTURE.md) and the specifications
 ([DISCOVERY.md](DISCOVERY.md), [SHOPS.md](SHOPS.md), [FORMATS.md](FORMATS.md),
 [OUTPUTS.md](OUTPUTS.md), [BACKUP.md](BACKUP.md)); [PLAN.md](PLAN.md) holds
@@ -12,749 +11,432 @@ what is deliberately not planned.
 
 ### Local first, one listener, one machine
 
-Everything Stellody knows is kept on the computer it runs on, in SQLite plus
-a few JSON files, for the one person whose library it is. Chosen over a server
-database, an account or anything synchronised. There is nothing to install
-beside it or sign in to; it works with the network off. The cost: the library
-notes belong to that one machine; they reach another only in a backup the
-listener carries there.
+Everything Stellody knows is kept on the computer it runs on, for one person,
+rather than in a server, an account or anything synchronised. There is nothing
+to sign in to and it works offline; the library notes reach another machine
+only in a backup.
 
 ### Python and PySide6
 
-The application is written in Python on Qt for Python rather than Rust or Go,
-so the test gate, structural guards and delivery recipe already proved on
-earlier projects carry over and the effort goes on the player. The cost is a
-larger runtime than a native binary and packaging that takes more care.
+Python on Qt rather than Rust or Go, so the test gate, structural guards and
+delivery recipe proved on earlier projects carry over. The cost is a larger
+runtime than a native binary and packaging that takes more care.
 
 ### Specification before code
 
-Each feature area is written down as requirements before it is built, each
-naming the test that proves it, with a list of what it will not do. Chosen over
-building first and describing afterwards: a ruled-out idea stays ruled out and
-a claim in the docs is one a test holds. Keeping the specifications true is
-work of its own.
+Each feature area is written as requirements naming their tests, with a list
+of what it will not do. A ruled-out idea stays ruled out and a claim in the
+docs is one a test holds; keeping the specifications true is work.
 
 ### What Stellody deliberately is not
 
-It plays and organises music the listener already owns. It does not stream,
-rip, sync to devices or write tags. Turning down the all-in-one media suite
-keeps the surface small enough to hold to a high bar; those other jobs need
-other tools.
+It plays and organises music the listener already owns; it does not stream,
+rip, sync to devices or write tags. The surface stays small enough to hold to
+a high bar.
 
 ## Privacy and the network
 
 ### Only a named few modules may reach the network
 
-Fetching cover art, checking for an update, asking the discovery catalogues
-and the local pipe that hands a second launch to the first are the only code
-able to open a connection; a structural test holds the list. Chosen over a
-promise to use the network sparingly, so "local first" is a test result and a
-new way out is an edit somebody must defend. Every new outward feature must go
-through an existing route or argue for another.
+Cover search, the update check, the discovery catalogues and the pipe handing
+a second launch to the first are the only code able to open a connection; a
+structural test holds the list. Shops and donations are handed to the browser.
+Every new way out has to be argued for.
 
-### Nothing names the listener or the machine
+### Nothing names the listener; no credential compiled in
 
-No account, telemetry, identifier or scrobbling. A discovery run sends a fixed
-set of fields a test checks, with a fixed language rather than the computer's;
-the update check sends the product name alone, not even its version. Chosen
-over the conveniences other players offer and the defaults networking
-libraries send. The cost: no usage figures to steer development; the update
-server cannot tell which versions are in use.
-
-### No credential compiled in
-
-Only sources that need no key or token are used, rather than Discogs or
-Last.fm: a key built into an open-source application is a published key and
-Last.fm's terms would bind every fork. Nothing can leak. The cost: discovery is
-limited to MusicBrainz and ListenBrainz; the same rule rules out music videos
-and concert listings.
+No account, telemetry, identifier or scrobbling: a discovery run sends a fixed
+set of fields; the update check sends the product name alone. Only sources
+needing no key are used, since a key in open source is a published key. There
+are no usage figures; discovery is limited to MusicBrainz and ListenBrainz.
 
 ### Update checks: daily, quiet unless there is news
 
-A check runs shortly after launch and then daily, saying nothing unless a newer
-release exists; a check somebody asks for always answers. A version it cannot
-read is never treated as newer. Chosen over no check or one that reports every
-outcome: updates are found without nagging. The cost is one unprompted request
-a day.
-
-### Shops and donations go through the browser
-
-Stellody hands an address to the default browser and stops there, rather than
-making those requests itself. No connection is added inside the application
-and the shop sees the listener's own browser session. Stellody never learns
-what happened next.
+A check runs after launch and then daily, silent unless a newer release
+exists; one somebody asks for always answers. A version it cannot read is
+never newer. The cost is one unprompted request a day.
 
 ### No encryption at rest; a plain-text diary
 
-The store and the diary are ordinary files in the application's own data
-directory. The diary records comings and goings, dropouts and every address a
-discovery run asked; it is never sent anywhere. Chosen over encrypting library
-notes or keeping no record: the files are simple to inspect and the diary has
-found faults that reading the source could not. Anyone with access to the
-account can read the library notes and the artist names a run sent.
+The store and the diary are ordinary files in Stellody's own data directory,
+where a sandbox cannot discard them (Oliver's ruling). The diary records every
+window shown, every dropout and every address a discovery run asked; it is
+never sent. It has found faults reading the source could not; anyone with the
+account can read it.
 
 ## The library and its files
 
 ### The library is read, never written
 
-Music files are opened for reading only and nothing Stellody keeps, cache
-included, is written inside the one library root; the Linux build is granted
-read access only. A wrong tag is corrected in Stellody's own store and
-reported. Chosen over repairing tags on disk, sidecar files or several roots:
-Stellody cannot damage a curated collection. Corrections live only in
-Stellody; music spread across unrelated places has to be gathered under one
-root.
+Music files are opened for reading only and nothing is written inside the one
+library root; the Linux build is granted read access only. A wrong tag is
+corrected in Stellody's own store. A curated collection cannot be damaged;
+music in unrelated places has to be gathered under one root.
 
 ### Folders group albums; tags name them
 
-A folder is where an album starts; tags give its title, artist, year and genre.
-Tags may join folders into one album (disc folders, folders whose tags agree)
-but never split one; where tags contradict something physical, the physical
-thing wins. Chosen over grouping by tags alone, which real collections with
-inconsistent tags break apart. Albums are what the person who ripped them
-meant. The stated price: two recordings whose tags resolve alike show as one.
+A folder is where an album starts; tags give its title, artist, year and
+genre. Tags may join folders but never split one, so albums are what the
+person who ripped them meant. Two recordings whose tags resolve alike show as
+one.
 
 ### Raw tags stored, corrections layered on loading
 
-The store keeps tags as read. Each load applies, in layers, what the listener
-stated by hand, the automatic rules and the corrections accepted. Findings in
-the health view are accepted all at once, an album at a time or singly; any
-accepted correction can be reset for the library, an album or one field.
-Chosen over storing the corrected result: an improved rule reaches the whole
-library without a rescan; what the file says is never lost; a library's tidying
-is one decision that can be taken back. The working out repeats at every load;
-a rule that changes what is recorded at scan time still needs a rescan.
+The store keeps tags as read; each load layers on what the listener stated,
+the automatic rules and the accepted corrections, each of which can be reset.
+An improved rule reaches the library without a rescan; the working out repeats
+at every load.
 
-### A rescan reads only what changed
+### A rescan reads only what changed and deletes nothing
 
-A folder whose music files, cue sheets and pictures are unchanged in size and
-time is reused from the store. After a scan the listener is told which albums
-arrived and which left, judged by album identity. Chosen over reading every
-file on every scan or comparing the music files alone. A rescan of hundreds of
-folders is near instant. An edit that keeps a file's size and time exactly is
-not noticed; a retagged album reads as one leaving and one arriving.
-
-### An unreachable drive is not a deleted library
-
-A scan checks the music folder can be reached and stops without changing
-anything when it cannot. A folder the walk is refused keeps its albums; one no
-longer found has its files marked absent, never deleted. Chosen over
-recording whatever difference the walk sees: unplugging a drive costs nothing.
-A root that is genuinely gone is reported rather than cleared automatically.
+A folder unchanged in size and time is reused from the store. A scan that
+cannot reach the music folder changes nothing; a folder no longer found has
+its files marked absent. A rescan is near instant and unplugging a drive costs
+nothing; an edit keeping size and time exactly goes unnoticed.
 
 ### A lossy copy beside its lossless original is not a second album
 
-Where a lossless and a lossy file share a disc and track number and run about
-the same length, the lossy one is set aside. Chosen over pairing on track
-number alone, which cannot tell a copy from a live version. Each recording
-shows once; two genuinely different recordings of the same length could be
-paired, though none has been seen.
+A lossy file sharing disc, track number and about the same length with a
+lossless one is set aside. Length tells a copy from a live version; two
+different recordings of equal length could in principle be paired.
 
 ### A track can be part of a file
 
 A cue sheet over one long file is a first-class album: a track is a slice of a
-file; a whole file is the slice that covers it all. Chosen over one file per
-track, so queueing, shuffle and gapless playback are written once. Every
-decoder has to start and stop at a frame rather than at a file's ends.
+file. Queueing, shuffle and gapless playback are written once; every decoder
+has to start and stop at a frame.
 
-### Unknown stays unknown where a claim depends on it
+### Unknown stays unknown; supported means proved
 
-A bit depth, date or genre the file does not state is held as unknown rather
-than filled with a plausible default; the display uses the folder name or a
-placeholder; a missing title, album artist or track number is reported. Chosen
-over a tidy interface of invented values, so nothing (bit-perfect output, an
-exact date) is claimed on a guess. Some albums show placeholders until
-corrected.
+A bit depth, date or genre the file does not state is held as unknown, never
+given a plausible default. A format plays only when a test file in it can be
+generated and played end to end; the rest are reported. Nothing is claimed on
+a guess; a few real lossless formats are not played.
 
-### Supported means proved
-
-A format is played only when a test file in it can be generated and played end
-to end; the rest are reported in the health view, alongside a few left out on
-other grounds (audiobooks; files that state too little). Chosen over playing
-whatever the decoder opens: every playable path is tested and no audio files
-are committed. Real files in a handful of lossless formats are not played.
-
-### Ratings and plays follow the album, not the file path
+### Ratings and plays follow the album
 
 Ratings and play counts are keyed to album identity, so they survive a rename
-or rescan; a play counts only when a track reaches its end; albums and tracks
-are rated separately. The listener's history outlives reorganising folders.
-Merging two albums keeps the rating of the one merged into.
+or rescan; a play counts only when a track reaches its end.
 
 ### Search is a plain pass over what is shown
 
-Search runs over the library as shown on screen, with text prepared once at
-load. Chosen over SQLite's full-text index, which would hold raw tags while the
-screen shows corrected ones and would need rebuilding. Search finds exactly
-what is on screen and is quick at real library sizes; the work grows with the
-library, so a far larger collection would need measuring again.
+Search runs over the library as shown rather than SQLite's full-text index,
+which would hold raw tags while the screen shows corrected ones. It finds
+exactly what is on screen; the work grows with the library.
 
-### Compilations are one artist, ordered by title
+### Compilations are one artist, ordered by title; a settled genre list
 
-Every way a tag marks a compilation (Various, VA, Various Artists) is shown
-and sorted as Various Artists; the file keeps its own spelling. Other artists'
-albums run chronologically, while compilations run by title, numbers in a title
-counted as numbers, then by year. Chosen over sorting on the tag as written or
-by year throughout, either of which scatters the volumes of one series across
-the grid. A series reads in order wherever its tags disagree; compilations are
-not in release order.
-
-### A settled genre list
-
-Genres are a fixed catalogue of main genres with styles, spelled to match the
-catalogues; a library's own tag strings are mapped onto it. Chosen over
-offering whatever strings the tags contain: every dialog shows the same boxes
-and filters mean the same thing for everybody. The mapping needs keeping up.
+Every spelling of a compilation shows as Various Artists, ordered by title
+with numbers counted as numbers, so a series reads in order. Genres are a
+fixed catalogue matching the catalogues' spelling, with tag strings mapped
+onto it, so filters mean the same everywhere. The mapping needs keeping up.
 
 ### Cover art from the album's folder; online only when asked
 
-A cover comes from an image beside the music, then from a picture embedded in
-the files; parent folders are never searched; covers are cached small in
-Stellody's own directory. Searching online is a chooser the listener opens,
-never an automatic lookup. An album never wears another's cover. The files
-carry no catalogue identifiers, so an automatic match could attach the wrong
-one unknowingly; anyone who never opens the chooser sends nothing. Missing art
-stays missing until the listener acts.
+A cover comes from an image beside the music, then from one embedded in the
+files, kept small against the album's identity. Searching online is a chooser
+the listener opens: no file carries a catalogue identifier, so an automatic
+match could attach the wrong cover. Missing art stays missing until the
+listener acts.
 
 ## Backups
 
 ### A backup carries the listener's notes, not what can be rebuilt
 
 A backup holds the database, the discovery answer, the catalogue memory, the
-genre cache and the shop list, together with the running journals beside the
-two memories; the artwork and waveform caches and the logs stay behind. The
-database is copied through SQLite's own backup rather than as a file, so a
-write not yet out of its log is carried. Chosen over zipping the whole data
-folder: a backup is small and quick, holding nothing that measuring again
-cannot bring back. After a restore the covers and waveforms are rebuilt as the
-library is browsed.
+genre cache and the shop list; caches and logs stay behind. It is small and
+quick; covers and waveforms are rebuilt after a restore.
 
-### Judged by each file's shape, never by the release that wrote it
+### Judged by each file's shape; old backups always restore
 
-Every file a backup carries is listed with the schema number of its shape; a
-restore asks each file's owner whether it can read that shape. Chosen over
-comparing the version of Stellody that wrote the backup: two releases can share
-a shape while one release can change several, so a version says little about
-whether a file can be read. A file newer than this Stellody understands refuses
-the whole backup, naming the file. The cost is a number to bump with every
-change of shape; a structural test holds that for the database, while the JSON
-files rely on care.
-
-### Old backups always restore
-
-No owner ever stops reading a shape it once wrote: a change of shape adds an
-upgrade step and never removes one; an older file is brought up to date as it
-is restored. Every backup format stays readable in the same way. Chosen over
-retiring old shapes after a while, so a backup kept for years still restores.
-Every upgrade step is kept for good; the code reading old shapes only grows.
+Each file is listed with its schema number and its owner says whether it can
+read it, rather than comparing releases. A change of shape adds an upgrade
+step and never removes one, so a backup kept for years restores. The code
+reading old shapes only grows.
 
 ### A restore completes at the next start
 
-A confirmed restore first writes a safety backup of the current library, then
-stages the chosen backup inside Stellody's data folder and starts Stellody
-again; the staged files are put in place before the library opens. If the new
-start never happens, the next start by hand completes it. Chosen over swapping
-files under the running copy, which Windows will not allow for an open
-database and which would leave what is held in memory disagreeing with the
-disk. A restore that fails part way puts the previous files back. The cost is
-a restart plus a safety backup written every time.
+A restore writes a safety backup, stages the chosen one and restarts; the
+files are put in place before the library opens, never under a running copy.
+A restore failing part way puts the previous files back. The cost is a
+restart.
 
 ## Playback and sound
 
 ### Its own audio pipeline
 
-Stellody decodes and plays audio itself: libsndfile for the formats it opens,
-FFmpeg (bundled through PyAV, loaded only when needed) for the rest and
-PortAudio for output, queued a little deeper than the minimum so load does not
-cause dropouts. Chosen over system codecs and Qt's media player, which
-cannot play part of a file or equalise. It gains cue-sheet tracks, an equalizer
-and one decoder behaving alike everywhere. It owns its decoding, output and
-threading; the bundled FFmpeg includes GPL components, so the packaged
-application is GPL-3.0.
+Stellody decodes and plays audio itself through libsndfile, FFmpeg and
+PortAudio rather than Qt's media player, which cannot play part of a file or
+equalise. A track that will not open is reported, never left as silence. It
+gains cue tracks, an equalizer and in-engine gapless joins; it owns its
+threading and the bundled FFmpeg makes the package GPL-3.0.
 
-### Shared output by default; exclusive where the platform allows
+### Shared by default; bit-perfect only when proved
 
-Music plays through the system mixer unless the listener asks for exclusive
-output: on Windows that takes the device; on macOS it asks for the file's own
-format while others can still reach the device; Linux uses the mixer only. The
-switch is offered only for a song the device can take. Stellody plays alongside
-everything else and never offers what it cannot keep. The default is not
-bit-perfect; exclusive output on Windows locks other applications out.
-
-### Bit-perfect only when the stream proves it; no levelling
-
-The readout says bit perfect only when exclusive output was granted at the
-file's rate and depth with volume full, unmuted and no equalizer curve. What
-was asked and what was granted are kept apart; a refusal returns the switch to
-shared and says why. Albums play at their mastered level with no
-ReplayGain-style levelling. No claim rests on an unhonoured request or an
-altered stream. The claim comes and goes as the volume moves; the listener
-adjusts volume between records mastered at different levels.
-
-### Gapless inside the engine
-
-The next track is joined inside the playback thread without stopping the
-stream, rather than reopening it per track. Two joins stay gapped on purpose:
-a change of sample rate or channel count; a shuffled album starting again.
-Albums meant to run without a break do; a change of rate or channels leaves a
-gap.
+Music plays through the system mixer unless exclusive output is asked for,
+offered only where the device can take the song. The readout says bit perfect
+only when exclusive output was granted at the file's format with volume full
+and no equalizer curve. No levelling is applied. No claim rests on an
+unhonoured request; the default is not bit-perfect.
 
 ### The transport works by state, not timing
 
-Back returns to the track's start and waits; pressed again it goes to the
-previous track. Next always moves on, even on repeat. Shuffle begins with the
-track in hand and never reopens on the one that just ended; under shuffle Back
-never leaves the track in hand. Skipping keeps playing or paused as it was; a
-pause is never read as an ending. Volume starts below full. Chosen over
-double-press timing windows: every press does the same thing; a first run is
-never startling.
+Back returns to the track's start, then a track back; Next always moves on;
+repeat-one answers only an ending. A pause is never read as an ending and
+skipping keeps playing or paused as it was. Every press does the same thing
+whatever its timing.
 
 ### Video tracks follow the sound
 
-A bonus video plays as a track; the sound is the clock and the picture is drawn
-at its own size in the library area, filling the window only when asked.
-Chosen over a separate window or a stretched picture, so video is part of the
-album. There are no video features beyond playing it.
+A bonus video plays as a track with the sound as the clock, drawn in the
+library area. There are no video features beyond playing it.
 
 ### A hand-written equalizer and a watching visualiser
 
-The equalizer is written from the standard filter formulas: a band at zero
-costs nothing, so a flat equalizer leaves samples untouched; headroom is made
-before any lift. The always-on spectrum is measured from what was written to
-the device in the equalizer's own bands and idles when nothing plays. Chosen
-over a large scientific library for one function and over a display in the
-audio path: the package stays small and the visualiser can never delay or
-alter a sample. The filters are Stellody's own to maintain. The visualiser's
-styles all draw that one measurement, so choosing a style changes how the
-music looks and never what is measured.
+The equalizer is written from the standard formulas: a flat curve leaves
+samples untouched and headroom is made before any lift. Its switch is apart
+from its sliders, so comparing keeps the curve. The visualiser measures what
+reached the device and can never alter a sample. The filters are Stellody's
+own to maintain.
 
 ### Music never moves to the speakers without a press
 
-An output device is remembered by identity, not name. If it is missing, music
-plays on the system default and says so; if it disappears while playing, the
-track pauses; when it returns the music moves back. Chosen over forgetting the
-choice or carrying on through whatever is left: nothing plays aloud by
-surprise. A press is needed to carry on after a disconnect.
+An output device is remembered by identity. If it disappears while playing
+the track pauses; when it returns the music moves back. Nothing plays aloud by
+surprise; a press is needed to carry on.
 
-### The waveform: faster only with the same answer
+### The waveform shows loudness, drawn as it is read
 
-The waveform is reduced over whole blocks of samples (kept only once it gave
-bit-for-bit the frame-by-frame result) and drawn as it is read. It shows
-loudness rather than peaks, which crowd every moment near the top. A long track
-shows its shape almost at once; a whole-album file still takes seconds.
+Loudness rather than peaks, at a resolution stated in time, measured once per
+file and given up on when the listener moves away. The faster reduction was
+kept only once it matched the slow answer exactly. A whole-album file still
+takes seconds.
 
 ## Discovery
 
 ### Ask what is missing from the listener's own collection
 
-Discovery starts from the albums the listener owns and asks public catalogues
-what those artists released that is not on the shelf and which artists
-resemble them. A run names only artists inside the ticked genres, plus titles
-in a few stated cases; tick nothing and nothing leaves. Chosen over a
-listening history, a profile or sending the whole library: there is no
-account, what is sent is a chosen subset rather than an inventory and every
-suggestion traces to an owned album. It is less personal than a recommender
-trained on habits; other genres need another run.
+Public catalogues are asked what the listener's artists released that is not
+on the shelf and who resembles them, naming only artists in the ticked genres.
+No account or inventory is sent and every suggestion traces to an owned album;
+it is less personal than a recommender trained on habits.
 
 ### Two sources, each for one question, credited as they ask
 
 MusicBrainz answers what an artist released; ListenBrainz answers who sounds
-like them; they are joined through MusicBrainz identifiers. Both are credited
-in the application in words from their own licence pages; no licence is
-invented for a source that states none. Chosen over one commercial service
-needing a key: open data, no key. Similarity comes from an experimental
-endpoint with nothing to fall back to.
+like them; both are credited in their own licence words. Similarity comes
+from an experimental endpoint with no fallback.
 
 ### Polite, slow and remembered
 
-Requests to MusicBrainz are paced a little below its published limit through
-one gate shared by everything that asks it; a refusal gets one quick retry,
-then waits for a later pass. Every answer is kept for a month and written to
-disk as it arrives. Runs finish instead of being refused; the same library
-gives the same answer; later runs ask little; a crash loses at most one answer.
-A large run takes many minutes; a new release can take a month to appear.
-Between passes a run lets its idle connections go well before the catalogue
-would close them, rather than meeting a dead one at the next question. Each
-pause costs a fresh connection; no pass loses its first question to one the
-host already dropped.
+Requests go through one gate paced below the published limit; a refused artist
+is put back for a later pass, never read as an absence. Every answer is
+written as it arrives and kept for a period; runs differ over weeks rather
+than minutes (Oliver's ruling). A crash loses at most one answer; a large run
+takes many minutes.
 
-### The catalogue memory is read once and written at quit
+### Nothing heavy while music plays
 
-What the catalogues said is read once a session, on a thread of its own as
-Stellody opens while nothing is playing, held in memory and written whole only
-as Stellody quits; each answer is also noted on its own in a running journal
-the moment it arrives. Chosen over reading and rewriting the file around every
-run: reading or writing a file of that size held the interpreter long enough to
-starve the sound device. A process that dies loses nothing, since the journal
-is read on top of the file next time. The cost is a journal beside each
-memory, which a backup has to carry too, plus the whole memory held for the
-session whether or not discovery is used.
-
-### The Discover dialog is built once, unseen, as Stellody opens
-
-The first Discover dialog of a session took several times longer to build on
-Windows than every one after it, long enough to be heard as a dropout on the
-first press. So one is built and thrown away as the application opens, while
-nothing is playing. Chosen over building it only when asked for: the first
-press is as quick as any other and never interrupts the music. The cost is a
-dialog built at every launch that nobody may open.
+The catalogue memory is read once as Stellody opens and written whole only at
+quit, with a journal covering a crash; the Discover dialog is built once,
+unseen, at launch. Either job done mid-session starved the sound device enough
+to be heard. The cost is memory held all session.
 
 ### A partial answer is still an answer
 
-An artist a busy catalogue refused is retried on a later pass; any other
-failure is recorded and the run carries on. The answer says separately how
-many could not be asked, were not recognised or shared a name; a run that
-found nothing still opens to say why. A run of silences ends it as
-unavailable, keeping the previous answer. Chosen over ending on the first
-failure or hiding failures in one total. A real outage costs a few questions
-before it is recognised.
+A failure is recorded and the run carries on; the answer says how many could
+not be asked, were not recognised or shared a name. A run of silences ends as
+unavailable, keeping the previous answer.
 
-### Shared names: abstain rather than guess
+### Shared names: abstain; never offer back what is owned
 
-An artist is identified only by a match on the name itself (case, accents and
-dashes set aside), never by a ranking. Where several share the name, a few
-titles the listener holds decide; failing that, the name is reported as
-ambiguous. A discography is never filed under the wrong artist; a few names go
-unanswered and a few titles are sent to tell them apart.
+An artist is identified by an exact name match, never a ranking; a shared
+name is settled by held titles or reported as ambiguous. An album or series
+volume already held is never suggested. A few names go unanswered.
 
-### Years narrow what is offered; pay only for what is opened
+### Years narrow what is offered, in every genre chooser
 
-A year range filters offered albums by first release, never which of the
-listener's artists are asked about. A suggested artist's albums are fetched
-when the listener opens them rather than during the run, except with a year
-range set: then the run asks each suggested artist, offers none not shown to
-have released inside the range and answers opening from memory. An old album
-can still lead to a new release and runs are far shorter. Set years cost a
-question per suggested artist; opening one not asked about waits on the
-catalogue.
-
-### The genre filters narrow by year too, albums only
-
-Both genre choosers take the same two year fields as Discover. The library's
-filter reads each album's own date tag; the answer's filter reads the year the
-catalogue gave each album's first release. A similar artist carries no year in
-the answer, so the years leave them be; a run that had years set already kept
-only those shown to have released inside them. While years are set, an album stating
-no year is hidden rather than kept. Chosen over a filter by genre alone, since
-a taste profile holds years and every dialog offering one should ask for them
-too; also over keeping an undated album, which would claim it fits a range it
-never stated. A library with sparse date tags loses albums from view while
-years are set; a long list of similar artists stays long whatever the years.
-
-### Time is stated from pace, never promised
-
-Before a run widens to compilations or series, the dialog says how many more
-artists and series that means and roughly how many minutes at the permitted
-pace. During a run the time left is measured from the run's own speed and says
-nothing until there is enough to measure. Chosen over unstated consequences or
-arithmetic from configured pace: the listener chooses a long run knowingly. A
-busy catalogue makes a run longer than quoted; there is no estimate at first.
+A year range filters offered albums by first release, never which artists
+are asked; the library's filter uses each album's date tag and hides an
+undated one. A sparsely dated library loses albums from view while years are
+set.
 
 ### A genre needs real support
 
-A genre the catalogue states for an artist counts only with enough votes,
-relative to the artist's leading genre; an artist whose genres are all thinly
-voted keeps them all. A similar artist with no genre is judged by the genres
-of the listener's albums by the artist it was suggested for; failing that the
-filter holds it back and says how many it could not judge. A stray tag cannot
-put a rock band under house. Some genuine secondary genres are lost;
-an inferred genre can be wrong.
+A catalogue genre counts only with enough votes beside the artist's leading
+one; a similar artist with none is judged by the albums that led to it. A
+stray tag cannot misfile a band; some secondary genres are lost.
 
-### Three choices for what else a run takes in
+### What a run takes in is chosen; its time is stated
 
-Artists credited on compilations, other volumes of series and DJ mixes are
-three separate choices; the first two start clear, mixes start offered. Series
-volumes come from the catalogue's series list topped up by a search for titles
-differing only by volume number. Each cost is chosen on its own and missing
-volumes are found where the list is incomplete. More choices to understand;
-more requests; held compilation titles are sent, cut short.
+Compilation artists, series volumes and DJ mixes are separate choices. Before
+a run widens the dialog says roughly how long it adds; during a run the time
+left is measured from the run's own speed. A long run is chosen knowingly.
 
-### Never offer back what is owned
+### A run works in the background; one answer, kept with its question
 
-An album held under an artist is never suggested for that artist, however the
-name is spelled; a series volume held anywhere is never suggested. A remaster
-is the album it remasters, while a live recording is its own album. Chosen
-over completeness at the risk of offering what is on the shelf. An album held
-under a different name can still be suggested.
-
-### A run works in the background; stop means stop
-
-The dialog asks its question and leaves; progress shows on the main window
-while listening carries on. Stop ends the run at once without asking. One run
-at a time; a stopped run is discarded rather than resumed; quitting stops a
-run, closing to the tray does not. Chosen over a modal run, a confirmation or
-resumable runs. A stray press loses the run, though what it learned is
-remembered.
-
-### One answer, kept with its question
-
-Each run replaces a single answer file recording what was asked (genres,
-years, choices) as well as what was found. Chosen over dated files needing
-tidying: the answer on screen always matches its question and expanding later
-obeys the same choices. An earlier answer is replaced once a new run
-completes, except for artists that run could not reach.
+Progress shows on the main window while listening carries on; Stop ends the
+run at once and discards it. Each run replaces one answer that records what
+was asked, so the answer on screen always matches its question.
 
 ### A taste profile is the whole selection, in one shared list
 
-A taste profile names everything the Discover dialog asks: the genres ticked,
-the three Include boxes and the years. Choosing one there puts all of it back.
-The profiles are one list in one setting, offered by Discover and by both
-genre choosers (the library's filter and the answer's), so a profile deleted
-in any of the three is gone from all. Each of the three offers to save a
-selection no profile already holds: Find offers the whole selection. A genre
-chooser asks for genres and years but nothing about what to include, so its
-press offers its genres and years with the Include boxes a first Discover opens
-on; a profile with the same genres and years counts as held whatever it
-includes, while years with no genre offer nothing. Choosing a profile in a
-genre chooser sets its genres and its years. Chosen over keeping the genres
-alone, which would leave the rest to be set by hand every time; also over a
-list per dialog, where a profile kept in one would be missing from the others.
-Two profiles differing only in their Include boxes look the same to a genre
-chooser; a profile saved from one carries the default Include boxes rather
-than chosen ones.
+A profile holds the genres, the Include choices and the years; one list serves
+Discover and both genre choosers. A genre chooser uses only genres and years,
+so profiles differing only in what they include look alike there.
 
 ### The answer is read a page at a time
 
-Results open in a window that holds attention until closed, dealt into columns
-a page at a time sized for a small laptop, with every page built on opening so
-ticks survive turning pages. Chosen over one long list or a window beside the
-main one. A large answer takes a moment to lay out; the longest rows do not
-fit a column whole.
+Results are dealt into columns a page at a time, capped at what a 13 inch
+display shows (Oliver's ruling), with every page built on opening so ticks
+survive.
 
 ## Shops
 
-### Shops are editable search addresses
+### Shops are editable search addresses opened in the browser
 
-A shop is a search address with the artist and album filled in; the list
-ships with defaults and is the listener's to edit. Chosen over a compiled list
-or shop interfaces, since shops change without warning: a broken shop is an
-edit, not a release. Search quality is whatever each shop's search gives.
+A shop is a search address with artist and album filled in, handed to the
+browser; the list is the listener's to edit. A broken shop is an edit rather
+than a release. A release's list merges with the listener's: edits kept,
+deletions remembered, broken rows greyed for mending. Many tabs at once asks
+first.
 
 ### No commerce in the program
 
-No prices, stock, baskets, accounts, scraping, affiliate links or revenue;
-digital purchases only, no streaming. There is no relationship with any shop
-and no conflict of interest. Comparing prices is done in the browser.
-
-### Updates respect the listener's edits
-
-A new release's shop list is merged with the listener's: edits are kept,
-deletions remembered and a hand-broken entry is shown greyed for mending
-rather than dropped. Improvements arrive without undoing anybody's changes;
-the merge rules are intricate.
-
-### Ask before opening many tabs
-
-More than a handful of albums at once asks first; copying the list as text is
-always available instead. No browser is buried by accident, at the cost of one
-more question on a large selection.
+No prices, baskets, accounts, scraping or affiliate links; digital purchases
+only. There is no relationship with any shop.
 
 ## The interface
 
 ### Smaller by default
 
-The whole interface is drawn below its natural size; the standard Qt scale
-setting overrides it. It fits a small high-resolution laptop screen. At
-ordinary resolution a point is drawn smaller than a pixel, so thin rules need
-care to stay visible.
+The interface is drawn below its natural size on every screen, so it fits a
+small high-resolution laptop; Qt's scale setting overrides it. Thin rules have
+to draw themselves to stay visible.
 
 ### One home for every colour; colour never alone
 
-Every colour is defined once, in light and dark sets, with the accent taken
-from the application's artwork. Every coloured distinction is also said in
-words; contrast is checked by test wherever colour carries text or meaning.
-Chosen over colours written where used or colour as the only signal: the two
-appearances stay consistent and unreadable colour fails the suite. A new
-colour must earn its place; there are more words on screen.
+Every colour is defined once in light and dark sets, apart from the stylesheet
+applying it. Every coloured distinction is also said in words or artwork and
+contrast is checked by test.
 
 ### Two views of one library
 
-The cover grid and the list are two views over one model; the open album's
-tracks sit in a pane below the grid, as tall as needed up to half the page.
-Chosen over a pane inline among the covers, which would need a custom view and
-lose keyboard reach. Switching views keeps the selection; the tracks sit below
-the covers rather than beside the album.
+The cover grid and the list are two views of one model; the open album's
+tracks sit below the grid, up to half the page. Switching views keeps the
+selection.
 
 ### Browsing is never dragged back
 
-The highlight follows playback only when the playing track changes, so a
-listener browsing elsewhere is not pulled back; browsing and listening do not
-fight.
+The highlight follows playback only when the track changes; the grid glides
+to a selection and a reload keeps the listener's place. Browsing and listening
+do not fight.
 
 ### Closing asks once; one copy runs
 
-The close button asks whether to quit or keep playing from the tray; it can
-remember the answer and dismissing it decides nothing. A second launch hands
-over to the copy already running. Music can carry on with the window away and
-there is only ever one player; there is one more question until remembered.
+The close button asks whether to quit or keep playing from the tray and can
+remember the answer; dismissing it decides nothing. A second launch hands over
+to the running copy. One more question until remembered.
 
-### Nothing promises what is not built
+### Controls say what they do and stay put
 
-No control may say a feature is coming; a sweep of every control forbids it.
-Everything on screen works; planned work is invisible until it ships.
-
-### A switch shows what a press will do
-
-Each switch carries the picture of the state a press leads to rather than the
-current state: one convention everywhere, learned once.
-
-### A control that cannot act is shown switched off, never removed
-
-A control with nothing to do just now keeps its place, switched off and ringed
-in red, rather than appearing only when it can act; a count it owes rides on it
-as a badge (Oliver's ruling). Chosen over controls that come and go: nothing in
-a tray moves when a state changes and every control can be found before it is
-needed. The cost is a control that is rarely usable always on show.
+Each switch shows the state a press leads to. A control that cannot act is
+shown switched off, never removed, with any count as a badge (Oliver's
+ruling). No control may say a feature is coming. Nothing moves when a state
+changes; a rarely usable control is always on show.
 
 ### Everything reachable from the keyboard and the menus
 
-Every button bar the volume and the donation button is mirrored on the menu
-bar; every control is on the keyboard ring save the playing name along the
-foot, whose menu entry is the keyboard's way there; the focus ring is drawn on
-controls, never on the panes that hold them. The whole application works
-without a mouse; every new control needs its menu entry and its place in the
-ring.
+Every button bar the volume and donation is mirrored on the menu bar; every
+control is on the keyboard ring with one focus ring, drawn on controls and
+never on panes. A row of two buttons is a frame rather than a menu, so both
+can be reached. Every new control needs its menu entry and ring place.
 
 ### The playing name leads to its album
 
-The name of the playing track along the foot of the window is itself the way
-to its album: a click opens the album on the track in hand, while Go to playing
-album on the View menu does the same from the keyboard. Chosen over a new
-picture button, which would crowd a tray for something the name already says
-(Oliver's ruling). An album hidden by the search or the genre filter stays
-hidden and the foot says so; the listener's narrowing is never thrown away to
-reach it. The cost: the name gives no sign it can be clicked until the pointer
-rests on it; a filtered-out album needs the filter cleared by hand.
-
-### A row holding two buttons is a frame, not a menu
-
-The taste profiles lift as a frame of real buttons, each row a delete button
-then the profile's name, rather than as a menu. A menu row holding two buttons
-lit under the arrows while focus never entered either button, so neither could
-be reached from the keyboard. The frame is walked explicitly: the arrows move
-along a column or across a row while Tab walks every button. Every button is
-reachable without a mouse; the frame's keyboard handling is Stellody's own to
-maintain rather than Qt's.
+The playing track's name along the foot opens its album, rather than a new
+picture button (Oliver's ruling). An album hidden by a filter stays hidden
+and the foot says so. The name shows no sign it can be clicked.
 
 ### The way out stands alone on the left
 
-In the Discover dialog, the results window, both genre choosers, the shops
-dialog and the shop form, Close or Cancel stands by itself at the left of the
-button row; the controls that act sit together on the right, with the results
-window's pager between (Oliver's ruling). Tab walks each row as it reads.
-Chosen over the way out sitting among the acting controls: it stands in one
-place in every one of these dialogs, apart from anything that acts. The cost:
-the press that acts and the way out sit at opposite ends of a wide row, so a
-pointer travels further between them.
+Close or Cancel stands alone at the left of a dialog's button row with the
+acting controls on the right; both genre filters share one row (Oliver's
+ruling). The way out is in one place everywhere; a pointer travels further.
 
 ### Reading dialogs read themselves; the guide uses real controls
 
-Long help and report pages scroll gently on their own and stop the moment the
-reader takes over. The help guide is drawn with the same pictures as the
-controls it explains rather than screenshots, so it cannot drift from the
-interface; the cost is a guide generated rather than freely laid out.
+Long help and report pages scroll gently until the reader takes over. The
+guide is drawn with the controls' own pictures, so it cannot drift; it is
+generated rather than freely laid out.
 
 ### A window that does not fit is maximised
 
-The window remembers its size (held to the screen it opens on) and opens
-maximised on a first run; one that still overhangs the screen once shown is
-maximised rather than nudged aside. Nothing opens partly off the screen.
+The window remembers its size; one overhanging the screen is maximised on the
+screen its title bar is on rather than nudged. Nothing opens partly off
+screen.
 
 ## Building and installing
 
-### Nuitka
+### Nuitka, each platform on itself
 
-The application is compiled with Nuitka into a single executable on Windows
-and a packaged application on macOS, rather than bundled by PyInstaller. One
-tool builds both platforms with one set of packaging behaviour and far smaller
-packages. It has quirks of its own: some modules must be named explicitly,
-which ties the build to particular library versions.
+Compiled with Nuitka rather than PyInstaller for smaller packages, each built
+on its own platform with macOS signed and notarised. Some modules must be
+named explicitly; it needs a machine of each kind and an Apple account.
 
 ### Installed for one user by a setup program of its own
 
-On Windows the setup program installs into the user's own folders and
-registry without administrator rights; on Linux the Flatpak may read the home
-folder but not write it, so the read-only promise is enforced by the system as
-well. Each account installs separately. Install, update, repair and removal
-are one bespoke program wearing the application's look. It reads the
-application's shared code but never opens the library database, leaving a
-note instead; it checks every payload file lands
-inside the install folder before unpacking any; removal keeps the listener's
-data unless asked. Chosen over a machine-wide generic installer: no
-administrator prompt, one identity throughout and the database untouched at
-its least safe moment. It is Stellody's own to maintain.
-
-### Each platform builds on itself
-
-Windows, macOS and Linux packages are each built on their own platform; the
-macOS one is signed and notarised. Chosen over cross-compiling or shipping
-macOS unsigned. It needs a machine of each kind and an Apple developer account.
+Windows installs into the user's folders without administrator rights; the
+Flatpak may read the home folder but not write it. One bespoke program
+installs, updates, repairs and removes, never opening the library database.
+It is Stellody's own to maintain.
 
 ### Two licences plus a commercial one
 
-The model is GPL-3.0 and the interface LGPL-3.0; the packaged application is
-GPL-3.0 because of the bundled FFmpeg codecs. A commercial licence for
-Stellody's own code is offered separately. The interface can be reused under
-the lighter terms Qt itself carries; there are two licence files to keep
-straight.
+The model is GPL-3.0 and the interface LGPL-3.0; the package is GPL-3.0
+because of FFmpeg. A commercial licence for Stellody's own code is offered;
+there are two licence files to keep straight.
 
 ### A website written for the listener
 
-The website explains what Stellody does for somebody who will use it: no links
-into the source, build instructions, dependency lists or dates. The people
-deciding whether to install it find what they need; developers go to the
-repository.
+The site explains what Stellody does for somebody who will use it, with no
+source links, build steps or dates; developers go to the repository.
 
 ### Exact versions for what ships
 
-The libraries the application ships with are pinned exactly and a test checks
-the installed ones match; development tools only have floors. A build of one
-commit is the same whenever it is made; every upgrade is a deliberate change to
-the pins.
+Shipped libraries are pinned exactly and the suite refuses to run outside the
+project's environment; development tools have floors. A build of one commit
+is the same whenever made.
 
 ## Engineering
 
 ### Layers with one place where they meet
 
-The code is split into domain, application, infrastructure and interface, each
-depending only inward, with one composition root wiring them by constructor;
-structural tests hold the boundaries. Chosen over convention alone or a
-dependency injection framework: the rules about music and discovery are tested
-with no disk, network, clock or screen. The cost is more modules and explicit
-wiring.
+Domain, application, infrastructure and interface each depend only inward,
+wired in one composition root; structural tests hold the boundaries. The
+rules are tested with no disk, network, clock or screen, at the cost of
+explicit wiring.
 
 ### Complete coverage where it means something
 
-Branch coverage must be total over the domain and application layers; the
-layers that talk to devices, disks and the screen are tested but not held to a
-figure. One whole-program figure could only be met with mocks standing in for
-the things worth testing. Anything short of complete in the pure layers is a
-decision nobody made; device, file and screen code relies on targeted tests.
+Branch coverage is total over the domain and application layers; the layers
+touching devices, disks and the screen are tested but held to no figure,
+which only mocks could meet.
 
-### Small modules
+### Small modules; every value has one home
 
-Every module has a line ceiling; one that comes close is cut well below rather
-than shaved; build scripts are exempt. Modules split at real seams, at the
-cost of many small files.
-
-### Every value has one home
-
-The product name, the version, each colour and the icons each come from one
-place; everything else reads or is generated from it. A change is made once
-and cannot drift; static files such as the website have to be stamped from the
-source.
+Every module has a line ceiling and one nearing it is cut at a real seam. The
+name, version, colours and icons each come from one place. Nothing drifts, at
+the cost of many small files.
 
 ### Threads are owned
 
-Every thread that outlives its errand is held until it ends; an answer from a
-worker thread is received by a method of an object on the interface thread,
-never a loose function that would run on the worker's. Quitting never pulls
-the ground from under a working thread, at the cost of more ceremony around
-background work.
+Every thread outliving its errand is held until it ends and a cancelled one
+stops where it stands; a worker's answer arrives on the interface thread.
+Quitting never pulls the ground from under a thread.
 
 ### Tests with real parts
 
-No mocking library; Qt is never mocked; the suite never reaches the network
-and never starts the application. Every guard is proved by planting a
-violation and watching it fail. A passing test means the real thing works;
-fakes are written by hand and the suite takes minutes rather than seconds.
+No mocking library, Qt never mocked; outward adapters are injected so the
+suite never reaches the network. Every guard is proved by planting a
+violation. Fakes are written by hand; the suite takes minutes.
