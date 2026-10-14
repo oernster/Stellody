@@ -62,9 +62,9 @@ class CoverSearchPort(Protocol):
 
         Slow, then able to fail. A lookup that fails comes back empty rather
         than raising, since nothing was changed either way. It does say which
-        kind of empty it is: a service that refused to answer has made no claim
-        about this album, so reporting it as an album with no art anywhere is a
-        claim the search never made.
+        kind of empty it is: a service that refused to answer (or never
+        answered at all) has made no claim about this album, so reporting it
+        as an album with no art anywhere is a claim the search never made.
         """
         ...
 
@@ -93,7 +93,11 @@ class ChooseCover:
         type forbids is a branch no test can reach honestly.
         """
         found = self._search.search(identity.album_artist, identity.title, wanted)
-        return CoverOffer(ordered(found.candidates), refused=found.refused)
+        return CoverOffer(
+            ordered(found.candidates),
+            refused=found.refused,
+            unreached=found.unreached,
+        )
 
     def accept(
         self, key: str, candidate: CoverCandidate, wanted: Wanted = always_wanted

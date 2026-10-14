@@ -64,10 +64,17 @@ class CoverOffer:
     anybody exceeded; nor is it rare. Reporting one as "nothing came back for
     this album" tells a listener their album has no art anywhere, which is a
     claim the search never made and which they are right to disbelieve.
+
+    **A search that was never answered is a third thing.** Measured on
+    2026-10-14, a search that timed out was reported as "nothing came back"
+    for an album with 31 pictures on offer. A timeout, a lost connection and an
+    answer that was not the search's own all leave `unreached` set: the search
+    found nothing out, so it says nothing about the album.
     """
 
     candidates: tuple[CoverCandidate, ...] = ()
     refused: bool = False
+    unreached: bool = False
 
     @property
     def is_empty(self) -> bool:

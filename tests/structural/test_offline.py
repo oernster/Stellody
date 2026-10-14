@@ -199,6 +199,8 @@ TESTS_PERMITTED = frozenset(
         "tests/infrastructure/test_instance.py",
         # The error types the cover search's opener raises, raised by a fake
         # opener. Nothing is opened.
+        "tests/infrastructure/cover_search_support.py",
+        "tests/infrastructure/test_cover_reaching.py",
         "tests/infrastructure/test_cover_search.py",
         "tests/infrastructure/test_giving_up_a_lookup.py",
         # Reading the host out of each client's address constants, so About can

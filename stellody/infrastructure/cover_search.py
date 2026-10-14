@@ -77,10 +77,11 @@ SEARCH_URL = f"{origin(MUSICBRAINZ_HOST)}/ws/2/release"
 ART_URL = f"{origin(COVER_ART_HOST)}/release"
 # How long any one socket operation may block before the question is asked
 # again. It is the cap on how long a cancelled lookup can go unnoticed, so it
-# is well inside the two seconds the window waits for a thread on the way out;
-# it is also longer than a healthy answer takes, so an ordinary request never
-# meets it. The budget above still bounds the whole request.
-SLICE_S = 1.0
+# sits inside the wait the window gives a thread on the way out (`WAIT_MS` in
+# `ui/cover_worker.py`). It must also outlast a slow answer: measured on
+# 2026-10-14, the services took up to 4.8 seconds and a one-second slice gave
+# up on half the requests. The budget above still bounds the whole request.
+SLICE_S = 5.0
 # How much of a picture is taken at a time, for the same reason: a read that
 # came back in one call could not be given up part way through.
 CHUNK_BYTES = 64 * 1024
@@ -204,7 +205,8 @@ class ArchiveCovers:
             f"{SEARCH_URL}?{_release_query(artist, album)}", wanted, SEARCH_ATTEMPTS
         )
         if found is None:
-            return CoverOffer(refused=refused)
+            # Not answered at all: refused, timed out, cut off or garbled.
+            return CoverOffer(refused=refused, unreached=not refused)
         gathered: list[CoverCandidate] = []
         for release in found.get("releases") or ():
             mbid = release.get("id")

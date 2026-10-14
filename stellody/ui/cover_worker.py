@@ -44,10 +44,11 @@ from stellody.application.choosing_covers import ChooseCover
 from stellody.domain.cover_choice import CoverCandidate, CoverOffer
 from stellody.domain.identity import AlbumIdentity
 
-# Long enough for a request between boundaries to finish, short enough that
-# closing the chooser never feels like a hang. A search is pure reading, so
-# abandoning one costs nothing but the reading already done.
-WAIT_MS = 2000
+# Longer than one read slice (`SLICE_S` in `infrastructure/cover_search.py`),
+# so a request noticing a cancel ends inside it. Only quitting waits on it;
+# closing the chooser hands the thread over rather than waiting. A search is
+# pure reading, so abandoning one costs nothing but the reading already done.
+WAIT_MS = 6000
 
 
 class SearchWorker(QObject):

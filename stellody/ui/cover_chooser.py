@@ -70,20 +70,27 @@ REFUSED = (
     "about this album. It declines a share of requests even at the rate its "
     "terms ask for. Close this and try again in a moment."
 )
+UNREACHED = (
+    "The search could not be made just now: MusicBrainz did not answer in "
+    "time or could not be reached. That says nothing about this album. Close "
+    "this and try again in a moment."
+)
 KEEPING = "Keeping the picture."
 CANCEL = "Cancel"
 CLOSE = "Close"
 UNREACHABLE = "That picture could not be fetched, so the album is as it was."
 
 
-def _counted(pictures: int, refused: bool = False) -> str:
+def _counted(pictures: int, offer: CoverOffer) -> str:
     """What the status line says once a search has finished.
 
-    A refusal is never reported as an absence: the service made no claim about
-    this album, so neither does the chooser.
+    A refusal or a search never answered is never reported as an absence: the
+    service made no claim about this album, so neither does the chooser.
     """
-    if refused:
+    if offer.refused:
         return REFUSED
+    if offer.unreached:
+        return UNREACHED
     if not pictures:
         return NOTHING
     if pictures == 1:
@@ -107,7 +114,7 @@ class CoverChooser(FirstStopDialog):
         super().__init__(parent)
         self._album = album
         self._candidates: tuple[CoverCandidate, ...] = ()
-        self._refused = False
+        self._offer = CoverOffer()
         self._placeholder = placeholder_for(mode)
         self.setWindowTitle(f"Cover art for {album.identity.title}")
         self.resize(DIALOG_WIDTH_PX, DIALOG_HEIGHT_PX)
@@ -182,7 +189,7 @@ class CoverChooser(FirstStopDialog):
     def _on_offered(self, offer: object) -> None:
         """Draw a tile for each picture on offer, before any has arrived."""
         found = offer if isinstance(offer, CoverOffer) else CoverOffer()
-        self._refused = found.refused
+        self._offer = found
         self._candidates = found.candidates
         if self._candidates:
             # There is something to count now, so the bar stops guessing and
@@ -207,7 +214,7 @@ class CoverChooser(FirstStopDialog):
     def _on_searched(self) -> None:
         """Say what the search came back with, now that it has finished."""
         self._show_busy(False)
-        self.status.setText(_counted(len(self._candidates), self._refused))
+        self.status.setText(_counted(len(self._candidates), self._offer))
 
     @Slot(str, object)
     def _on_kept(self, key: str, kept: object) -> None:

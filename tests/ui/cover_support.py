@@ -38,9 +38,11 @@ class FakeSearch:
         pictures: dict[str, bytes] | None = None,
         gate: threading.Event | None = None,
         refused: bool = False,
+        unreached: bool = False,
     ) -> None:
         self.candidates = candidates
         self.refused = refused
+        self.unreached = unreached
         self.pictures = {} if pictures is None else pictures
         self.gate = gate
         self.searched: list[tuple[str, str]] = []
@@ -59,7 +61,9 @@ class FakeSearch:
         self.asked.append(wanted)
         if self.gate is not None:
             self.gate.wait()
-        return CoverOffer(self.candidates, refused=self.refused)
+        return CoverOffer(
+            self.candidates, refused=self.refused, unreached=self.unreached
+        )
 
     def fetch(self, url: str, wanted: Wanted = always_wanted) -> bytes | None:
         """The bytes a test put at this address; None when it put none."""

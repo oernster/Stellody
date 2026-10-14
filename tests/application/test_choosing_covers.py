@@ -31,9 +31,12 @@ def candidate(**overrides: object) -> CoverCandidate:
 class RecordingSearch:
     """A search that answers what it was told to and remembers being asked."""
 
-    def __init__(self, offered=(), pictures=None, refused=False) -> None:
+    def __init__(
+        self, offered=(), pictures=None, refused=False, unreached=False
+    ) -> None:
         self.offered = tuple(offered)
         self.refused = refused
+        self.unreached = unreached
         self.pictures = pictures if pictures is not None else {}
         self.searched: list[tuple[str, str]] = []
         self.fetched: list[str] = []
@@ -45,7 +48,7 @@ class RecordingSearch:
         """Answer the canned offer, noting what was asked for."""
         self.searched.append((artist, album))
         self.asked.append(wanted)
-        return CoverOffer(self.offered, refused=self.refused)
+        return CoverOffer(self.offered, refused=self.refused, unreached=self.unreached)
 
     def fetch(self, url: str, wanted: Wanted = always_wanted):
         """The canned bytes for that address; None when there are none."""
@@ -114,6 +117,17 @@ class TestWhatIsOffered:
         offered = ChooseCover(search, RecordingArtwork()).offer(IDENTITY)
         assert not offered.refused
         assert not offered.is_empty
+
+    def test_a_search_never_answered_is_carried_through(self) -> None:
+        """A search that timed out said nothing about the album either."""
+        search = RecordingSearch(unreached=True)
+        offered = ChooseCover(search, RecordingArtwork()).offer(IDENTITY)
+        assert offered.unreached
+        assert not offered.refused
+
+    def test_an_answered_search_is_never_marked_unreached(self) -> None:
+        search = RecordingSearch(offered=(candidate(),))
+        assert not ChooseCover(search, RecordingArtwork()).offer(IDENTITY).unreached
 
     def test_an_identity_always_carries_both_names(self) -> None:
         """Which is why nothing here guards against an album missing one."""

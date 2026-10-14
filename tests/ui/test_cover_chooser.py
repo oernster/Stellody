@@ -27,6 +27,7 @@ from stellody.ui.cover_chooser import (
     CLOSE,
     NOTHING,
     REFUSED,
+    UNREACHED,
     CoverChooser,
 )
 from stellody.ui.row_text import Column
@@ -133,6 +134,18 @@ class TestWhatTheChooserShows:
         assert dialog.status.text() == REFUSED
         assert dialog.status.text() != NOTHING
         assert dialog.grid.count() == 0
+        dialog.reject()
+
+    def test_a_search_never_answered_is_never_reported_as_nothing_found(
+        self, application
+    ) -> None:
+        """Measured 2026-10-14: a search that timed out said "Nothing came
+        back for this album" for an album with 31 pictures on offer."""
+        dialog = _opened(FakeSearch(candidates=(), unreached=True), application)
+        assert dialog.status.text() == UNREACHED
+        assert dialog.grid.count() == 0
+        assert not dialog.progress.isVisibleTo(dialog)
+        assert dialog.close_button.text() == CLOSE
         dialog.reject()
 
     def test_one_picture_is_counted_as_one(self, application) -> None:

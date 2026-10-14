@@ -1,19 +1,23 @@
 """Reading MusicBrainz and the Cover Art Archive, without reaching either.
 
-The JSON below is not invented. It is the shape those two services actually
-answered with on 2026-08-30, cut down to the fields this client reads. A test
-written against a remembered API is a test of the memory.
-
-No connection is opened here. The opener is handed in, which is also how the
-gate is: waiting a real second between requests would make this suite a minute
-longer for nothing.
+The canned answers and the fakes they go in live in `cover_search_support`.
 """
 
 from __future__ import annotations
 
-import json
 import urllib.error
-from io import BytesIO
+
+from cover_search_support import (
+    ART,
+    BOTH,
+    SEARCH_ANSWER,
+    Answering,
+    NoWait,
+    Pauses,
+    client,
+    encoded,
+    refused_client,
+)
 
 from stellody.infrastructure.courtesy import CONTACT, USER_AGENT
 from stellody.infrastructure.cover_search import (
@@ -21,116 +25,6 @@ from stellody.infrastructure.cover_search import (
     SEARCH_ATTEMPTS,
     ArchiveCovers,
 )
-
-MBID = "69249908-12ef-4eae-be48-46acf1354837"
-ART = f"https://coverartarchive.org/release/{MBID}"
-
-SEARCH_ANSWER = {
-    "count": 8,
-    "releases": [
-        {
-            "id": MBID,
-            "title": "Ether Song",
-            "date": "2003-11-17",
-            "country": "GB",
-            "track-count": 15,
-        }
-    ],
-}
-
-LISTING_ANSWER = {
-    "images": [
-        {
-            "approved": True,
-            "back": False,
-            "front": True,
-            "id": "38850137623",
-            "image": f"{ART}/38850137623.jpg",
-            "thumbnails": {
-                "250": f"{ART}/38850137623-250.jpg",
-                "500": f"{ART}/38850137623-500.jpg",
-                "1200": f"{ART}/38850137623-1200.jpg",
-                "large": f"{ART}/38850137623-500.jpg",
-                "small": f"{ART}/38850137623-250.jpg",
-            },
-            "types": ["Front"],
-        },
-        {
-            "back": True,
-            "front": False,
-            "id": "38850137624",
-            "image": f"{ART}/38850137624.jpg",
-            "thumbnails": {"250": f"{ART}/38850137624-250.jpg"},
-            "types": ["Back"],
-        },
-    ]
-}
-
-
-class NoWait:
-    """A gate that lets everything through, so the suite does not wait."""
-
-    def __init__(self) -> None:
-        self.waits = 0
-
-    def wait(self, wanted=lambda: True) -> bool:
-        """Count the request and let it go, unless nobody wants it."""
-        self.waits += 1
-        return wanted()
-
-
-class Answering:
-    """An opener answering canned bytes, remembering what it was asked."""
-
-    def __init__(self, answers: dict) -> None:
-        self.answers = answers
-        self.asked: list[str] = []
-        self.headers: list[dict] = []
-
-    def __call__(self, request, timeout=None):
-        """Answer this request; raise the error it was told to raise."""
-        self.asked.append(request.full_url)
-        self.headers.append(dict(request.header_items()))
-        for prefix, answer in self.answers.items():
-            if request.full_url.startswith(prefix):
-                if isinstance(answer, Exception):
-                    raise answer
-                return BytesIO(answer)
-        raise urllib.error.HTTPError(request.full_url, 404, "NOT FOUND", {}, None)
-
-
-def encoded(value: dict) -> bytes:
-    """One canned JSON answer as bytes."""
-    return json.dumps(value).encode("utf-8")
-
-
-class Pauses:
-    """The backoff, recorded rather than waited through."""
-
-    def __init__(self) -> None:
-        self.slept: list[float] = []
-
-    def hold(self, seconds: float, wanted=lambda: True) -> bool:
-        """Note the whole pause and return at once.
-
-        The gap asked for rather than the slices the real waiter takes it in:
-        what the terms ask for is the thing worth pinning.
-        """
-        self.slept.append(seconds)
-        return wanted()
-
-
-def client(answers: dict) -> tuple[ArchiveCovers, Answering, NoWait]:
-    """A client over a canned opener and a gate that never waits."""
-    opener = Answering(answers)
-    gate = NoWait()
-    return ArchiveCovers(gate=gate, opener=opener, waiter=Pauses()), opener, gate
-
-
-BOTH = {
-    "https://musicbrainz.org": encoded(SEARCH_ANSWER),
-    "https://coverartarchive.org/release/": encoded(LISTING_ANSWER),
-}
 
 
 class TestWhatTheSearchAsksFor:
@@ -189,63 +83,6 @@ class TestWhatComesBack:
         assert offered[0].release == "Ether Song  2003-11-17  GB"
 
 
-PLAIN_ART = ART.replace("https://", "http://", 1)
-
-
-def plain_listing() -> dict:
-    """The listing as the archive answered on 2026-10-14: every address http."""
-    return json.loads(json.dumps(LISTING_ANSWER).replace(ART, PLAIN_ART))
-
-
-class TestTheSchemeTheListingNames:
-    """The archive names its pictures over plain http, which the reach refuses.
-
-    Left as written, every fetch was refused before it was made and every tile
-    in the chooser stayed empty.
-    """
-
-    def plain(self) -> ArchiveCovers:
-        # The picture first: the listing's prefix would answer for it too.
-        return client(
-            {
-                "https://musicbrainz.org": encoded(SEARCH_ANSWER),
-                f"{ART}/": b"a picture",
-                "https://coverartarchive.org/release/": encoded(plain_listing()),
-            }
-        )[0]
-
-    def test_a_plain_address_is_offered_over_https(self) -> None:
-        offered = self.plain().search("Turin Brakes", "Ether Song").candidates
-        assert offered[0].thumbnail_url == f"{ART}/38850137623-250.jpg"
-        assert offered[0].image_url == f"{ART}/38850137623.jpg"
-
-    def test_a_plain_address_can_be_fetched(self) -> None:
-        found = self.plain()
-        offered = found.search("Turin Brakes", "Ether Song").candidates
-        assert found.fetch(offered[0].thumbnail_url) == b"a picture"
-        assert found.fetch(offered[0].image_url) == b"a picture"
-
-    def test_no_other_scheme_is_raised_to_https(self) -> None:
-        """A `file:` address named in a listing stays one, so it stays refused."""
-        listing = {
-            "images": [
-                {
-                    "image": "file:///etc/passwd",
-                    "thumbnails": {"250": "file:///etc/passwd"},
-                }
-            ]
-        }
-        found, _, _ = client(
-            {
-                "https://musicbrainz.org": encoded(SEARCH_ANSWER),
-                "https://coverartarchive.org/release/": encoded(listing),
-            }
-        )
-        offered = found.search("Turin Brakes", "Ether Song").candidates
-        assert offered[0].thumbnail_url == "file:///etc/passwd"
-        assert found.fetch(offered[0].thumbnail_url) is None
-
-
 class TestWhenThereIsNothingToBeHad:
     def test_a_release_with_no_art_is_an_answer_not_a_failure(self) -> None:
         """The archive answers 404 for a release nobody has photographed."""
@@ -299,36 +136,6 @@ class TestFetchingAPicture:
         assert gate.waits == 0
 
 
-class Refusing:
-    """An opener refusing a set number of times before it answers."""
-
-    def __init__(self, refusals: int, answers: dict, code: int = 503) -> None:
-        self.refusals = refusals
-        self.answers = answers
-        self.code = code
-        self.asked = 0
-
-    def __call__(self, request, timeout=None):
-        """Refuse while there are refusals left, then answer normally."""
-        self.asked += 1
-        if self.refusals > 0:
-            self.refusals -= 1
-            raise urllib.error.HTTPError(
-                request.full_url, self.code, "SERVICE UNAVAILABLE", {}, None
-            )
-        for prefix, answer in self.answers.items():
-            if request.full_url.startswith(prefix):
-                return BytesIO(answer)
-        raise urllib.error.HTTPError(request.full_url, 404, "NOT FOUND", {}, None)
-
-
-def _refused_client(refusals: int, code: int = 503):
-    """A client whose search host refuses that many times first."""
-    opener = Refusing(refusals, BOTH, code)
-    pauses = Pauses()
-    return ArchiveCovers(gate=NoWait(), opener=opener, waiter=pauses), opener, pauses
-
-
 class TestARefusalIsAskedAgainAbout:
     """Measured 2026-08-31: MusicBrainz refused 6 of 10 asks at 1.1s spacing.
 
@@ -338,26 +145,26 @@ class TestARefusalIsAskedAgainAbout:
     """
 
     def test_a_search_refused_once_is_asked_again_and_answered(self) -> None:
-        found, opener, _ = _refused_client(1)
+        found, opener, _ = refused_client(1)
         offer = found.search("Turin Brakes", "Ether Song")
         assert offer.candidates
         assert not offer.refused
         assert opener.asked > 1
 
     def test_a_search_refused_every_time_says_it_was_refused(self) -> None:
-        found, opener, _ = _refused_client(SEARCH_ATTEMPTS)
+        found, opener, _ = refused_client(SEARCH_ATTEMPTS)
         offer = found.search("Turin Brakes", "Ether Song")
         assert offer.refused
         assert offer.candidates == ()
         assert opener.asked == SEARCH_ATTEMPTS
 
     def test_too_many_requests_is_a_refusal_too(self) -> None:
-        found, opener, _ = _refused_client(1, code=429)
+        found, opener, _ = refused_client(1, code=429)
         assert found.search("Turin Brakes", "Ether Song").candidates
         assert opener.asked > 1
 
     def test_the_pause_between_asks_grows(self) -> None:
-        found, _, pauses = _refused_client(SEARCH_ATTEMPTS)
+        found, _, pauses = refused_client(SEARCH_ATTEMPTS)
         found.search("Turin Brakes", "Ether Song")
         assert pauses.slept == sorted(pauses.slept)
         assert len(set(pauses.slept)) == len(pauses.slept)
