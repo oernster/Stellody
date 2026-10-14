@@ -453,8 +453,8 @@ tick nor an untagged sweep under select-all is wanted (Oliver's ruling).
   holds what it held. The candidate genre cache is written once the second half
   has asked about every candidate. The catalogue memory is read once a session,
   on its own thread as the application opens, then held: saves and expansions
-  update what is held, writing nothing; the file is written whole once, at quit, if anything new
-  was learned. Each caller gets a copy.
+  update what is held, writing nothing; the file is written whole once, at
+  quit, if anything new was learned. Each caller gets a copy.
 - Rationale: Whole-file reads and writes stall the interpreter enough to starve
   the sound device.
 - Verified by: `tests/infrastructure/test_a_dead_run_keeps_what_it_learned.py`, `tests/infrastructure/test_journal.py`, `tests/infrastructure/test_held_memory.py`, `tests/application/test_remembering.py::TestAnAnswerIsKeptTheMomentItArrives`, `tests/application/test_discovery_narrowing.py::test_each_candidate_is_written_down_as_it_is_answered`
@@ -479,8 +479,10 @@ tick nor an untagged sweep under select-all is wanted (Oliver's ruling).
   its width and the pager stands as near the middle as it can
   (`ui/results_foot.py`). All pages are built on opening and kept, so ticks hold
   across pages.
-- Rationale: The per-row height is a stated figure because the offscreen
-  platform cannot measure fonts; correct it from a real screen.
+- Rationale: The rows a column holds at the ceiling are a stated figure
+  (`ROWS_AT_THE_CEILING`, `ui/results_room.py`), the row height following from
+  it, because the offscreen platform cannot measure fonts; correct it from a
+  real screen.
 - Verified by: `tests/ui/test_results_pages.py`, `tests/ui/test_results_foot.py`, `tests/ui/test_results_keyboard.py::TestTheRing`, `tests/ui/test_shop_choosing.py::test_a_tick_holds_across_pages_and_still_reaches_a_shop`
 
 **FR-D54 The answer can be narrowed to some of the genres the run looked in**
@@ -668,12 +670,12 @@ are not remembered between openings; a plausible year runs from `FIRST_YEAR` to
   screen, still recorded in the file (Oliver's ruling).
 - Verified by: `tests/ui/test_results_series.py::test_an_empty_heading_is_left_out`, `tests/domain/test_series.py::TestOnScreen::test_an_empty_heading_is_not_worth_showing`
 
-**FR-D76 A genre with one vote or under half the leading votes is not believed**
+**FR-D76 A thinly voted genre is not believed**
 - Requirement: A genre with fewer than `FEWEST_VOTES` votes beside one with at
-  least that many shall not count; where every genre has one vote, all count. Nor does one
-  under `LEADING_SHARE` of the leader's votes; the leader always counts. The rule
-  is `believed` (`domain/genre_votes.py`), applied to every genre list the
-  catalogue client reads. The candidate genre cache is named by `CACHE_NAME`;
+  least that many shall not count; where none reaches it, all count. Nor does
+  one with under 1/`LEADING_SHARE` of the leader's votes; the leader always
+  counts. The rule is `believed` (`domain/genre_votes.py`), applied to every
+  genre list the catalogue client reads. The candidate genre cache is named by `CACHE_NAME`;
   caches from earlier rules are not read.
 - Rationale: Stray tags let anybody through a filter (Oliver's ruling).
 - Verified by: `tests/domain/test_genre_votes.py`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_a_genre_voted_for_once_beside_real_ones_is_dropped`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_an_album_s_genres_are_held_to_the_same_rule`
@@ -834,8 +836,8 @@ asks: genres, Include boxes and years (Oliver's ruling).
   rows do, with the tooltip "Delete the taste profile" and the quoted name. A
   press asks for confirmation naming the profile; only Yes removes it. Removing
   the last disables the button (FR-D87).
-- Rationale: `ARCHITECTURE.md` keeps `negative.png` for composing (Oliver's
-  ruling).
+- Rationale: `negative.png` is kept for striking through other artwork, as
+  SHOPS.md FR-S41 says (Oliver's ruling).
 - Verified by: `tests/ui/test_taste_profiles.py`
 
 **FR-D93 Profiles outlast the session**
@@ -869,7 +871,8 @@ asks: genres, Include boxes and years (Oliver's ruling).
 **FR-D97 The way out stands alone on the left**
 - Requirement: Discover's foot row shall read Close, a gap, then Select all,
   Taste profiles and Find; both genre choosers' read Cancel, a gap, then Clear,
-  Taste profiles and the filtering press. Tab follows the reading order (Oliver's ruling, as for FR-D49 and FR-S40 in `SHOPS.md`).
+  Taste profiles and the filtering press. Tab follows the reading order
+  (Oliver's ruling, as for FR-D49 and FR-S40 in `SHOPS.md`).
 - Verified by: `tests/ui/test_discovery_dialog.py::test_close_stands_left_with_the_sweeps_beside_find`, `tests/ui/test_filter_controls.py::test_cancel_stands_left_and_clear_beside_the_filter`
 
 **FR-D98 Both genre choosers offer to save their genres and years**
@@ -1090,7 +1093,6 @@ Nothing marked open may be built from.
 
 | # | Question | Owner |
 |---|---|---|
-| OQ-04 | Answered: deduplicating shared candidates and dropping held ones brings genre lookups to about a quarter of one per suggestion; the candidate genre cache answers later runs. | Answered |
 | OQ-07 | Answered: similarity depends on the labs endpoint with no fallback (Oliver's ruling). `SourceRefused` puts the artist back (FR-D21); `SourceFailed` records it (FR-D22); both are caught in `application/artist_stage.py`. | Answered |
 
 ## 6. The build order this implies

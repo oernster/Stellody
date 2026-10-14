@@ -1,6 +1,6 @@
 # Development
 
-How to run Stellody from source, build it on each platform and cut a release.
+How to build Stellody on each platform and cut a release.
 What it does is in [`README.md`](README.md); how it is put together is in
 [`ARCHITECTURE.md`](ARCHITECTURE.md); how it is tested is in
 [`TESTING.md`](TESTING.md).
@@ -27,20 +27,10 @@ it then adds the tools with floors.
 
 ## Running from source
 
-```powershell
-python -m venv venv
-venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
-python main.py
-```
-
-The venv must be named `venv` at the repository root; `gate.ps1` runs every
-check with `venv\Scripts\python.exe`.
-
-The logs live in the data directory beside `library.sqlite3`
-(`%LOCALAPPDATA%\Stellody` on Windows): `stellody-diary.log` records discovery
-requests and playback dropouts; `stellody-startup.log` records why a start
-failed.
+The commands are under Running from source in [`README.md`](README.md). The
+venv must be named `venv` at the repository root; `gate.ps1` runs every check
+with `venv\Scripts\python.exe`. The logs and where they live are under Your
+privacy in the same file.
 
 ## Building
 

@@ -65,8 +65,8 @@ shop selling what you are missing; it sells nothing itself.
   health report rather than played.
 - **Help**: a guide naming every button beside the picture the window draws.
 
-The window is drawn at nine tenths of its built size so it fits a 13 inch 4K
-screen at 300% scaling; set `QT_SCALE_FACTOR` before starting to choose your
+The window is drawn below its built size so it fits a 13 inch 4K screen at
+300% scaling; set `QT_SCALE_FACTOR` before starting to choose your
 own size.
 
 ## Your privacy
@@ -75,7 +75,8 @@ Your music plays with the internet switched off. Five things reach outside your
 computer, each only as described:
 
 - **Album art**, when you ask: MusicBrainz is sent that album's artist and
-  title; the Cover Art Archive is sent the release identifier it returned.
+  title; the Cover Art Archive is sent the release identifier it returned,
+  as is the Internet Archive that stores its pictures.
 - **The update check**, shortly after start then daily: a fixed request naming
   the program alone.
 - **Discovery**, when you ask: artist names from the ticked genres, plus a few
@@ -84,8 +85,8 @@ computer, each only as described:
 - **Shops** and **the donation button** hand your browser an address; Stellody
   itself connects to neither.
 
-Stellody keeps `stellody-diary.log` (discovery requests and playback dropouts)
-and `stellody-startup.log` (why it could not start) beside its database in its
+Stellody keeps `stellody-diary.log` (what it did: starts, quits, discovery
+requests, playback dropouts and Qt's warnings) and `stellody-startup.log` (why it could not start) beside its database in its
 data directory: `%LOCALAPPDATA%\Stellody` on Windows,
 `~/Library/Application Support/Stellody` on macOS, `~/.local/share/stellody` on
 Linux or `~/.var/app/uk.codecrafter.Stellody/data/stellody` under Flatpak.

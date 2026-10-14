@@ -261,8 +261,8 @@ def configure(application: QApplication) -> None:
 def leave_at_once(code: int) -> None:
     """End the process where unwinding would end it worse.
 
-    A cover lookup is given up within a slice of a second now: the archive
-    asks whether anybody still wants it between its waits and inside its reads.
+    A cover lookup is given up within one read slice (`SLICE_S`), inside the quit
+    wait: the archive asks whether anybody wants it between waits and in reads.
     What no amount of asking covers is a socket that never comes back at all.
     A thread still running when the application is torn down is one Qt ends the
     process over: measured on 2026-09-05, `QThread: Destroyed while thread

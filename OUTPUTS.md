@@ -22,8 +22,8 @@ Maintainers, reviewers and Oliver, who owns every decision here.
   device; `use_device` sets it for later streams.
 - `Transport._reopen_in_place` (`application/transport.py`) reopens the track
   in hand at its position, paused if it was.
-- On Windows PortAudio lists each output once per host API; the WASAPI ones
-  carry Windows' own names.
+- On Windows PortAudio lists the outputs under several host APIs; only the
+  WASAPI ones carry Windows' full names.
 - Qt lists outputs only; PortAudio's channel counts narrow its list likewise.
 - Two outputs can share a name; only the endpoint identity separates them.
 - The bundled PortAudio lacks `PaWasapi_GetDeviceId`, so matching is by name
@@ -222,7 +222,7 @@ or FR-O12 acts on it. Verified by
 `tests/infrastructure/test_output_list.py::test_a_list_change_leaves_the_stream_alone`.
 
 **NFR-O-PRIV-001 Nothing leaves the machine.** Device names and identities
-live only in settings; no Stellody code logs them. Qt warnings are copied into
+live only in settings; no diary line Stellody composes names them. Qt warnings are copied into
 the diary verbatim (`infrastructure/qt_messages.py`), so one naming a device
 would carry it; untested. The invariant 12 test holds the rest.
 

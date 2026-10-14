@@ -59,9 +59,9 @@ never newer. The cost is one unprompted request a day.
 ### No encryption at rest; a plain-text diary
 
 The store and the diary are ordinary files in Stellody's own data directory,
-where a sandbox cannot discard them (Oliver's ruling). The diary records every
-window shown, every dropout and every address a discovery run asked; it is
-never sent. It has found faults reading the source could not; anyone with the
+where a sandbox cannot discard them (Oliver's ruling). The diary records starts and
+quits, each time the main window appears, every dropout and every address a
+discovery run asked; it is never sent. It has found faults reading the source could not; anyone with the
 account can read it.
 
 ## The library and its files
@@ -138,6 +138,12 @@ files, kept small against the album's identity. Searching online is a chooser
 the listener opens: no file carries a catalogue identifier, so an automatic
 match could attach the wrong cover. Missing art stays missing until the
 listener acts.
+
+A lookup the listener asked for is worth an answer. A failure belonging to the
+moment (a server error, a refusal or a timeout) is asked again at the cost of
+a longer wait; a "not found" is taken as the answer. A search never answered
+says so rather than claiming the album has no art. Quitting during a lookup
+may wait a few seconds longer, so a slow service has time to reply.
 
 ## Backups
 
@@ -433,7 +439,8 @@ the cost of many small files.
 
 Every thread outliving its errand is held until it ends and a cancelled one
 stops where it stands; a worker's answer arrives on the interface thread.
-Quitting never pulls the ground from under a thread.
+Quitting waits for each thread; one stuck in a socket ends with the process
+rather than being torn down beneath it.
 
 ### Tests with real parts
 

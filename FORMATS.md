@@ -59,9 +59,8 @@ extended to them; fixtures generated in the suite.
 
 ### 1.6 References
 
-- `ARCHITECTURE.md`: its invariants and "Formats and probing", which states
-  the five tag shapes the probe reads.
-- `DISCOVERY.md` and `SHOPS.md`, which this follows in form.
+`ARCHITECTURE.md`: its invariants and "Formats and probing", which states the
+five tag shapes the probe reads.
 
 ## 2. Overall description
 
@@ -84,9 +83,7 @@ Windows, macOS and Linux. The FFmpeg inside PyAV supplies every decoder named.
 - **C-F02** No music file is written, except fixtures the suite writes to its
   own temporary directory.
 - **C-F03** A format is claimed only where a test proves the whole path.
-- **C-F04** Domain and application hold 100% branch coverage; modules stay
-  within the line cap and out of the danger band of
-  `tests/structural/test_loc.py`.
+- **C-F04** The layering, line cap and coverage gate hold (NFR-F-MAINT-001).
 
 ### 2.5 Assumptions
 
@@ -94,7 +91,7 @@ Windows, macOS and Linux. The FFmpeg inside PyAV supplies every decoder named.
 |---|---|---|---|
 | A-F01 | Measured: the bundled FFmpeg decodes wmav1, wmav2, wmapro, wmalossless, wavpack and aac; it encodes all but wmapro and wmalossless. | | Answered |
 | A-F02 | Measured: mutagen reads ASF and WavPack tags; it opens raw AAC but reads no tags from it. It states no depth for WMA or raw AAC; a WavPack fixture written as `s16p` reports 16. | | Answered |
-| A-F03 | A listener with WMA files wants them in the library rather than reported (Oliver's ruling; section 5). | | Answered |
+| A-F03 | A listener with WMA files wants them in the library rather than reported (Oliver's ruling, made without a WMA library to check against). If wrong, albums appear where a report was wanted, which is visible rather than silent. | | Answered |
 
 ## 3. Requirements
 
@@ -180,13 +177,11 @@ Every requirement is a Must unless it carries a Priority line (section 4).
 - Verification: the WavPack cases of FR-F07, which assert 16 and 32 against
   fixtures stating `s16p` and `s32p`.
 
-**NFR-F-HONEST-001 The README says what supported means here**
-- Requirement: The README shall state that these three formats are proved by
-  generated fixtures rather than files in the wild, naming the formats that
-  remain reported rather than played.
-- Verification: inspection, plus `tests/structural/test_no_dashes.py`, which
-  holds every Markdown file to the rule on dashes. No test checks the README for
-  version data or for the other prose rules.
+**NFR-F-HONEST-001 The README points here for what supported means**
+- Requirement: The README shall name the formats taken and those reported
+  rather than played, linking to this file, whose section 1.3 says what
+  supported means.
+- Verification: inspection. No test reads the README's wording.
 
 **NFR-F-MAINT-001 The layering and the gate hold**
 - Requirement: Every module holding these rules shall stay at or below the
@@ -210,11 +205,4 @@ Won't: Monkey's Audio, Musepack, DSD, TAK, CAF, `.m4b` and `.tta` (section
 
 ## 5. Open questions
 
-None. OQ-F01: WMA files belong in the library rather than reported (Oliver's
-ruling, made without a WMA library to check against). If wrong, albums appear
-where a report was wanted, which is visible rather than silent.
-
-## 6. The standing check
-
-A fixture of each format is walked, probed, assembled into an album and decoded
-back from a test, with no interface needed.
+None.

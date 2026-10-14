@@ -18,12 +18,9 @@ None. A milestone arrives here when one is decided on.
 - **Making the site findable** (Oliver's ruling). Search Console, Bing,
   sitemap submission and Rich Results validation are browser work outside this
   repository; the existing markup stays but reach is not chased.
-- **Monkey's Audio, Musepack, DSD and TAK.** Reported via
-  `UNPLAYABLE_SUFFIXES` rather than played, since FFmpeg cannot encode a
-  fixture to prove them; each reopens when a fixture can be made or a real file
-  is measured.
-- **CAF, `.m4b` and `.tta`.** Reported for reasons a fixture does not answer;
-  `FORMATS.md` section 1.4 gives each.
+- **Monkey's Audio, Musepack, DSD, TAK, CAF, `.m4b` and `.tta`.** Reported via
+  `UNPLAYABLE_SUFFIXES` rather than played; `FORMATS.md` section 1.4 gives each
+  reason and what would reopen it.
 - **Streaming, ripping, device syncing and tag writing.** Non-goals; tag
   writing is excluded by invariant 1.
 - **Fetching a music video for a track from an outside service** (Oliver's

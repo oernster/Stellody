@@ -1,9 +1,7 @@
 # Backing up the library and restoring it
 
 Requirements for copying what Stellody knows about a library to a folder the
-listener chooses, then restoring it. EARS form; each names its test. FR-B13
-and FR-B23 are also checked by hand in a packaged build; NFR-B01 only by a
-timed run.
+listener chooses, then restoring it. EARS form; each names its test.
 
 ## 1. Introduction
 
@@ -68,8 +66,7 @@ Constraints:
 | # | Assumption | Owner | Status |
 |---|---|---|---|
 | A-01 | A journal copied mid-append may end in a torn line, which the reader skips (`tests/infrastructure/test_journal.py::test_a_half_written_last_line_costs_only_that_line`). | Claude | Answered |
-| A-02 | A packaged build can relaunch itself; seen by Oliver. | Oliver | Answered |
-| A-03 | A real library backs up in well under a second on the reference machine, mostly zipping. | Oliver | Answered |
+| A-02 | A packaged build can relaunch itself. | Oliver | Answered |
 
 ## 3. Requirements
 

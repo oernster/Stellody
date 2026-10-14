@@ -93,11 +93,11 @@ specified (FR-S13).
 
 | # | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| A-01 | 7digital's search takes `q`, confirmed by Oliver in a browser; the shipped row carries the UK host and `fallback=true`. Whether artist plus album answers is left to the page (A-03). | Oliver | Answered |
+| A-01 | 7digital's search takes `q`; the shipped row carries the UK host and `fallback=true`. Whether artist plus album answers is left to the page (A-03). | Oliver | Answered |
 | A-02 | `assets/copy.png` is supplied, matching `shop.png`. | Oliver | Answered |
 | A-03 | Shipped shops are not re-checked each release (Oliver's ruling); FR-S09 makes a rotten shop an edit. | Oliver | Answered |
 | A-04 | `assets/drag-up-down.png` is supplied for the handle. | Oliver | Answered |
-| A-05 | Dragging a row in the shops dialog is feasible in PySide6, held by `tests/ui/test_shop_dragging.py` and tested by hand by Oliver. | Oliver | Answered |
+| A-05 | Dragging a row in the shops dialog is feasible in PySide6, held by `tests/ui/test_shop_dragging.py`. | Oliver | Answered |
 
 ## 3. Requirements
 
@@ -144,7 +144,7 @@ Every requirement is a Must unless it carries a Priority line (Appendix B).
   listener closes it, so prices can be compared (Oliver's ruling).
 - Verified by: `tests/ui/test_shop_dialog.py::test_it_stays_open_so_prices_can_be_compared`
 
-**FR-S08 More than five albums is confirmed first**
+**FR-S08 Many albums are confirmed first**
 - Requirement: If more than `MOST_WITHOUT_ASKING` (`application/shopping.py`;
   Oliver's ruling) albums are ticked when a shop is chosen, then the shops
   dialog shall ask for confirmation naming the number of tabs about to open,
@@ -379,8 +379,8 @@ Every requirement is a Must unless it carries a Priority line (Appendix B).
 - Requirement: The add, edit and delete controls shall wear `add.png`,
   `edit.png` and `delete.png`; the handle shall wear `drag-up-down.png`. The
   guide shall show all four beside what each does.
-- Rationale: Delete avoids `negative.png`, which `ARCHITECTURE.md` keeps for
-  composing.
+- Rationale: Delete avoids `negative.png`, which is kept for striking through
+  other artwork (`struck_through`).
 - Verified by: `tests/ui/test_guide.py::TestWhatItNames::test_every_picture_the_dialogs_name_is_explained_too`
 
 **FR-S42 A hand-broken row can be mended from the dialog**
@@ -484,15 +484,13 @@ answers only whether the machine took the address (FR-S13).
 
 **The shipped defaults** are `DEFAULT_SHOPS` in `infrastructure/shop_file.py`,
 in this order: 7digital (first by Oliver's ruling), Qobuz, Bandcamp, Boomkat,
-Bleep, Presto Music, ProStudioMasters, Beatport. Each template answered before
-it shipped. A note says what a shop stocks, never a caveat about its address
+Bleep, Presto Music, ProStudioMasters, Beatport. A note says what a shop stocks, never a caveat about its address
 (Oliver's ruling). 7digital uses the UK storefront with `fallback=true` (A-01);
 Bandcamp asks for albums alone with `item_type=a`; Boomkat searches the artist
 alone under its Download filter (FR-S10).
 
-Not shipped, all addable as rows: Juno Download (closed); Traxsource and
-eClassical (walls could not be read past); Volumo (search path answered 404);
-HDtracks (Oliver's ruling, OQ-S01).
+Not shipped, all addable as rows: Juno Download, Traxsource, eClassical and
+Volumo; HDtracks too (Oliver's ruling, OQ-S01).
 
 ## 4. Other requirements
 

@@ -16,9 +16,8 @@ Every step runs with `venv\Scripts\python.exe` under
 `QT_QPA_PLATFORM=offscreen`, so no window appears; the first failure stops the
 run.
 
-A full run takes about ten minutes, most of it the interface tests under
-`tests/ui`. A run quiet for several minutes is not stuck; add `-v` to a pytest
-run by hand to watch it move.
+A full run takes about ten minutes. A run quiet for several minutes is not
+stuck; add `-v` to a pytest run by hand to watch it move.
 
 ## Reading a result
 
@@ -46,10 +45,7 @@ The reasoning is under Coverage in `ARCHITECTURE.md`.
 | `infrastructure/` | files, audio, the network client, the store | real files in a temporary folder, a real loopback server |
 | `ui/` | the windows, dialogs and trays | a real `QApplication` on the offscreen platform |
 | `installer/` | the setup program | a real `QApplication`, with the registry, filesystem and processes stood in for |
-| `structural/` | rules no single test can see (read only, offline, layers, line cap, style, one name, no dashes, pins) | the source tree itself |
-
-Each structural guard is listed with the invariant it holds in the invariants
-table of `ARCHITECTURE.md`.
+| `structural/` | rules no single test can see, each listed with its invariant in `ARCHITECTURE.md` | the source tree itself |
 
 ## Running part
 

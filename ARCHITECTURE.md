@@ -26,7 +26,7 @@ planting a violation and reading the exit code. Running and writing tests is in
 | 9 | Formatting and linting are current, as assertions. | `tests/structural/test_style.py` |
 | 10 | A ring belongs to a control; to every control. No container is a ring target; no item view or text view wears one round itself (a row may: the results list rings its current row, the cover chooser its picked tile); no pane reaches the window's focus chain; every other control Tab can land on shows a ring, walked off the real widgets. A checkbox is always the ringed subclass. | `tests/ui/test_focus_rings.py`, `tests/ui/test_every_stop_paints_a_ring.py`, `tests/structural/test_rings.py`, `tests/structural/test_focus_ring_selectors.py` |
 | 11 | A read-only page is never focused by a click and is never what a dialog opens on; it is a stop only while it overflows. | `tests/ui/test_reading_panes.py`, `tests/ui/test_dialog_first_stop.py` |
-| 12 | Exactly four modules may hold the machinery to open a connection; the cover search is reached only through its port, which the composition root alone builds. Nothing on the scanning, drawing or playback path can reach the network. | `tests/structural/test_offline.py` |
+| 12 | Exactly four modules may hold the machinery to open a connection; the cover search is reached only through its port, which the composition root alone builds. Nothing on the scanning, drawing or playback path can reach the network. | `tests/structural/test_offline.py::test_only_the_permitted_modules_can_reach_the_network`, `tests/structural/test_offline.py::test_the_search_is_reached_only_through_its_port` |
 | 13 | No control tells a listener that what it does has not been built; swept off the real widgets of the window and dialogs. | `tests/ui/test_unbuilt_words.py` |
 | 14 | `installer/` reads from `stellody`; nothing under `stellody/` imports `installer`. | `tests/structural/test_layers.py::test_the_application_never_imports_the_setup_program` |
 | 15 | The product name is written once, as `APP_NAME`; every other surface builds it from that. Comments and docstrings are left alone. | `tests/structural/test_one_name.py::test_the_product_name_is_written_in_one_place` |
@@ -34,8 +34,8 @@ planting a violation and reading the exit code. Running and writing tests is in
 | 17 | The discovery fetcher's user agent is built from the product name, the version and one fixed contact address alone. | `tests/structural/test_user_agent.py` |
 | 18 | Everything discovery keeps is written under Stellody's own data directory, each place named through `paths.py`. | `tests/structural/test_discovery_paths.py` |
 | 19 | No test holds the machinery to reach the network, except the named few that open nothing beyond this machine. | `tests/structural/test_offline.py::test_no_test_holds_the_machinery_to_reach_the_network` |
-| 20 | Every runtime pin in `requirements.txt` is the version installed in the environment the suite runs in. | `tests/structural/test_environment.py` |
-| 21 | No audio file of a format proved by a generated fixture sits in the tree. | `tests/structural/test_no_committed_audio.py` |
+| 20 | Every runtime pin in `requirements.txt` is the version installed in the environment the suite runs in. | `tests/structural/test_environment.py::test_every_pin_is_the_version_installed` |
+| 21 | No audio file of a format proved by a generated fixture sits in the tree. | `tests/structural/test_no_committed_audio.py::test_no_fixture_audio_is_committed` |
 | 22 | `HALF` is defined in `stellody/ui/theme.py` and in no other module of the package or suite. | `tests/structural/test_half_has_one_home.py::test_half_is_defined_only_in_the_theme` |
 
 **Invariants 1 and 2 are why the project exists.** Stellody describes a
@@ -47,8 +47,7 @@ damaged tag; it never repairs one.
 `instance.py` (the second-launch channel: a named pipe or local socket file).
 The composition root builds all four. The catalogue clients `catalogue.py`,
 `catalogue_series.py` and `similarity.py` hold no socket; each is handed the
-fetcher. `test_the_search_is_reached_only_through_its_port` holds the cover
-search to its port. Dotted imports are matched in full, since every window
+fetcher. Dotted imports are matched in full, since every window
 imports `PySide6` while only `PySide6.QtNetwork` reaches out.
 
 **Every client that leaves the machine is held to named hosts.**
@@ -548,6 +547,37 @@ A version that cannot be read is not newer.
 has gone is dropped where `shiboken6.isValid` says so in `_run`
 (`tests/ui/test_update_check_after_close.py`).
 
+## Cover art from the archive
+
+`ArchiveCovers` in `stellody/infrastructure/cover_search.py` asks MusicBrainz
+for an album's releases and the Cover Art Archive for each release's pictures;
+`stellody/application/choosing_covers.py` is the use case,
+`stellody/domain/cover_choice.py` the offer, `stellody/ui/cover_worker.py` the
+thread and `stellody/ui/cover_chooser.py` the dialog.
+
+**Nothing found, refused and unreached are three answers.** `CoverOffer.unreached`
+marks a search never answered (timed out, cut off, garbled or raised) or one
+whose every listing was lost to a passing failure; the chooser then says the
+search could not be made, never that nothing came back. A 404 listing is an
+answer: that release has no art. Held by
+`tests/infrastructure/test_cover_reaching.py::TestASearchThatWasNeverAnswered`
+and
+`tests/ui/test_cover_chooser.py::TestWhatTheChooserShows::test_a_search_never_answered_is_never_reported_as_nothing_found`.
+
+**A passing failure is asked again.** A status at or above
+`SERVER_ERROR_FLOOR`, one of `REFUSAL_CODES`, a timeout or another `OSError`
+is retried up to `SEARCH_ATTEMPTS`, `LISTING_ATTEMPTS` or `FETCH_ATTEMPTS`
+(`tests/infrastructure/test_cover_reaching.py::TestAPassingFailureIsAskedAgain`).
+
+**The listing names its pictures over http.** Such an address is raised to
+https as the listing is read (`PLAIN_SCHEME` in `reach.py`); any other scheme
+is left as written, so `COVER_REACH` refuses it
+(`tests/infrastructure/test_cover_reaching.py::TestTheSchemeTheListingNames`).
+
+**A read is taken in slices of `SLICE_S`**, so a cancel is noticed within one;
+the thread's quit wait, `WAIT_MS` in `cover_worker.py`, stays above it
+(`tests/infrastructure/test_cover_reaching.py::TestHowLongAReadMayTake`).
+
 ## The guide
 
 `stellody/ui/guide.py` resolves every icon through `stellody.shared.resources`,
@@ -763,7 +793,7 @@ reopens on the track in hand
 `stellody/ui/auto_scroller.py` works on any surface with a vertical scroll bar
 and a viewport. The licence viewer, About (`stellody/ui/dialogs.py`) and the
 guide build one; each wraps its text in a `ReadingPane` (invariant 11). The
-pace belongs to the class: `TICK_MS`, `START_PAUSE_MS`, `DOWN_STEP_PX`,
+pace is named in the module: `TICK_MS`, `START_PAUSE_MS`, `DOWN_STEP_PX`,
 `DOWN_TICKS_PER_STEP`, `BOTTOM_PAUSE_MS`, `UP_STEP_PX`, `TOP_PAUSE_MS`. Input on
 the surface (or focus arriving inside it after the opening hold) suspends the
 cycle for `RESUME_AFTER_MS`; a surface under another modal is `frozen`. Held by
@@ -795,10 +825,6 @@ empty box under a tick (Oliver's ruling). Held by
 `stellody/ui/tiles.py` shows a cut name whole (`tests/ui/test_tile_names.py`);
 `stellody/ui/hover_paint.py` repaints a ring a popup left stale
 (`tests/ui/test_leaving_under_a_popup.py`).
-
-## Design decisions
-
-Moved to [`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md).
 
 ## Coverage
 
