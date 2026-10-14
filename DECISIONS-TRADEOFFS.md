@@ -373,6 +373,10 @@ then waits for a later pass. Every answer is kept for a month and written to
 disk as it arrives. Runs finish instead of being refused; the same library
 gives the same answer; later runs ask little; a crash loses at most one answer.
 A large run takes many minutes; a new release can take a month to appear.
+Between passes a run lets its idle connections go well before the catalogue
+would close them, rather than meeting a dead one at the next question. Each
+pause costs a fresh connection; no pass loses its first question to one the
+host already dropped.
 
 ### The catalogue memory is read once and written at quit
 
@@ -605,10 +609,22 @@ needed. The cost is a control that is rarely usable always on show.
 ### Everything reachable from the keyboard and the menus
 
 Every button bar the volume and the donation button is mirrored on the menu
-bar; every control is on the keyboard ring; the focus ring is drawn on
+bar; every control is on the keyboard ring save the playing name along the
+foot, whose menu entry is the keyboard's way there; the focus ring is drawn on
 controls, never on the panes that hold them. The whole application works
 without a mouse; every new control needs its menu entry and its place in the
 ring.
+
+### The playing name leads to its album
+
+The name of the playing track along the foot of the window is itself the way
+to its album: a click opens the album on the track in hand, while Go to playing
+album on the View menu does the same from the keyboard. Chosen over a new
+picture button, which would crowd a tray for something the name already says
+(Oliver's ruling). An album hidden by the search or the genre filter stays
+hidden and the foot says so; the listener's narrowing is never thrown away to
+reach it. The cost: the name gives no sign it can be clicked until the pointer
+rests on it; a filtered-out album needs the filter cleared by hand.
 
 ### A row holding two buttons is a frame, not a menu
 

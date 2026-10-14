@@ -687,7 +687,7 @@ expansion and the cover search one MusicBrainz gate
 (`tests/ui/test_discovery_composition.py::test_everything_asking_musicbrainz_waits_at_one_gate`).
 
 **A run lets its idle connections go while it rests.** The host closes a pooled
-connection left idle for about thirty seconds, which a run's pause between
+connection left idle past `HOST_LETS_GO_AFTER_S`, which a run's pause between
 passes outlasts; Qt warns as it notices. The run's pause is
 `resting` in `infrastructure/resting.py`, handed the run's three fetchers by the
 composition root: before each slice of a wait it asks each to let go of
@@ -760,6 +760,7 @@ buttons lets neither take keyboard focus. The rows sit in the shared
 long list scrolls rather than running off the screen; the area takes no focus
 and a button scrolls itself into view as it takes focus. Held by
 `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`,
+`tests/ui/test_taste_list_lifted.py` (the keyboard),
 `tests/ui/test_taste_list_scrolling.py` and `tests/ui/test_filter_taste.py`.
 
 **The dialog is built once, unseen, as the application opens.** The first
@@ -1323,7 +1324,7 @@ Held by `tests/ui/test_results_keyboard.py`.
 | Opening the whole library is a toggle on its heading | One chevron at the left of the Title heading, the application's own artwork (falling back to the style's arrow), with room derived in `expanding.py`. What a press does is read off the rows; partly open counts as shut. Replacing the header copies the replaced header's alignment, movability and stretch. Not a keyboard stop; the menu is the keyboard route. |
 | A change that moves every row is answered once, never per row | `expandAll` reports every row it opens, so the chevron's answer is silenced during such a change and asked once at the end; the View menu goes through the same object. Held by counting questions, not timing. |
 | An album's own chevron is the same picture as the heading's | `Chevrons` loads and fits the two pictures once per size; `ExpandingTree.drawBranches` draws them for rows with children only. |
-| A switch of view arrives where the other one was | A switch carries the track the left view pointed at, else what is playing; the sleeve is picked rather than opened outright so the grid travels to it and `_on_album_picked` opens the album beneath. |
+| A switch of view arrives where the other one was | A switch carries the track the left view pointed at, else what is playing; the sleeve is picked so the grid travels to it and `_on_album_picked` opens the album beneath; it is opened directly as well, since a pane rolled up under a sleeve already current moves nothing. Going to the playing album takes the same route. |
 | A window that will not fit the screen is maximised, never nudged | On Windows `resize` sets content size while the frame Windows adds is not reported by Qt (`frameMargins`), so a full-width window lands partly off screen. `fit_on_screen` compares where the content landed and maximises what does not fit. Offscreen cannot see this. |
 | A window is maximised on the screen its title bar is on, never where most of it lies | Windows maximises onto the monitor holding most of a window, which across mixed scaling can be a screen the title bar is not on. `stellody/ui/maximising.py` takes the maximise only where those differ, lays the window on the title bar's screen and maximises there. `stellody/ui/title_bar.py` is the module that asks Windows where the title bar is. `tests/ui/test_maximising.py` holds the decision; the Windows half rests on measurement. |
 | The top tray decides how narrow the window may be | Every tray control is fixed size, so the tray's minimum is the window's; `tests/ui/test_window_size.py` checks the default width against it. |

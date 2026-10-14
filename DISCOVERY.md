@@ -1578,7 +1578,8 @@ it sits inside the scope above.
   pressed, then the rows read Ambient, Jazz, rock and every delete button sits
   in one column to the left of its name.
 - Verified by: `tests/domain/test_taste.py`, `tests/ui/test_taste_profiles.py`,
-  `tests/ui/test_taste_list_lifted.py`
+  `tests/ui/test_taste_list_lifted.py`,
+  `tests/ui/test_taste_list_scrolling.py::TestTheBar::test_a_list_too_long_for_the_room_scrolls_and_stays_on_screen`
 
 **FR-D89 Choosing a profile puts its whole selection back**
 - Requirement: When a profile is chosen from the list, the dialog shall tick
@@ -1652,7 +1653,7 @@ it sits inside the scope above.
   pressed from Ambient's name, then focus is on Jazz's delete; when Tab is
   pressed from Jazz's name, then focus is on Ambient's delete; when Escape is
   pressed, then the list is down.
-- Verified by: `tests/ui/test_taste_profiles.py::TestTheKeyboard`
+- Verified by: `tests/ui/test_taste_list_lifted.py::TestTheKeyboard`
 
 **FR-D95 A long list scrolls rather than leaving the screen**
 - Requirement: The taste profiles list shall be no taller than the larger of
