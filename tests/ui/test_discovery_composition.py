@@ -16,6 +16,7 @@ import tempfile
 
 import pytest
 from PySide6.QtCore import QEvent
+from steady_devices import steady_devices
 
 from stellody.application.discovery_ports import NothingRemembered
 from stellody.application.shopping import Shopping
@@ -31,7 +32,7 @@ def window(application):
     """The real window over a throwaway store, closed again afterwards."""
     folder = pathlib.Path(tempfile.mkdtemp())
     store = SqliteLibraryStore(str(folder / "t.sqlite3"))
-    made = build_window(store)
+    made = build_window(store, devices=steady_devices())
     yield made
     # Deleted rather than merely closed, with the deletion actually delivered:
     # the suite's own cleanup closes any window still standing, so a window

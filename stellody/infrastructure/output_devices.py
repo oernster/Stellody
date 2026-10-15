@@ -41,7 +41,12 @@ from PySide6.QtMultimedia import QMediaDevices
 
 from stellody.domain.outputs import OutputDevice
 from stellody.domain.playback import OutputReport, OutputRequest
-from stellody.infrastructure.output_list import NamedOpener, named_rates, open_named
+from stellody.infrastructure.output_list import (
+    NamedOpener,
+    listed_outputs,
+    named_rates,
+    open_named,
+)
 
 
 def rescan() -> None:
@@ -75,8 +80,10 @@ class OutputDevices(QObject):
         parent: QObject | None = None,
         rates: Callable[[OutputDevice | None], tuple[int, ...] | None] = named_rates,
         output_ids: Callable[[], tuple[bytes, ...]] = output_ids,
+        listing: Callable[[], tuple[OutputDevice, ...]] = listed_outputs,
     ) -> None:
         super().__init__(parent)
+        self._listing = listing
         self._opener = opener
         self._refresh = refresh
         self._default_id = default_id
@@ -91,6 +98,10 @@ class OutputDevices(QObject):
         self._answered: tuple[OutputDevice | None, tuple[int, ...] | None] | None = None
         self._devices = QMediaDevices(self)
         self._devices.audioOutputsChanged.connect(self.notice)
+
+    def outputs(self) -> tuple[OutputDevice, ...]:
+        """The devices a listener chooses from, as the system lists them now."""
+        return self._listing()
 
     @Slot()
     def notice(self) -> None:

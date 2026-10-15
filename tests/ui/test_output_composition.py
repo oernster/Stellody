@@ -14,6 +14,7 @@ import tempfile
 
 import pytest
 from PySide6.QtCore import QEvent, QMetaMethod
+from steady_devices import steady_devices
 
 from stellody.composition import build_window
 from stellody.infrastructure.output_devices import OutputDevices
@@ -25,7 +26,7 @@ def window(application):
     """The real window over a throwaway store, closed again afterwards."""
     folder = pathlib.Path(tempfile.mkdtemp())
     store = SqliteLibraryStore(str(folder / "t.sqlite3"))
-    made = build_window(store)
+    made = build_window(store, devices=steady_devices())
     yield made
     made.close()
     made.deleteLater()

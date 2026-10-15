@@ -21,6 +21,7 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
+from steady_devices import steady_devices
 
 from stellody.composition import build_window
 from stellody.infrastructure.store import SqliteLibraryStore
@@ -37,7 +38,7 @@ def a_window(application: QApplication):
     folder = pathlib.Path(tempfile.mkdtemp())
     store = SqliteLibraryStore(str(folder / "t.sqlite3"))
     store.set_setting(SETTING_ROOT, str(folder))
-    made = build_window(store)
+    made = build_window(store, devices=steady_devices())
     made.show()
     application.processEvents()
     try:

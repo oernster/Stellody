@@ -10,6 +10,8 @@ import pathlib
 import re
 import tempfile
 
+from steady_devices import steady_devices
+
 from stellody.composition import build_window
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.ui.settings_keys import SETTING_ROOT
@@ -33,7 +35,7 @@ def build_ring_window(application):
     folder = pathlib.Path(tempfile.mkdtemp())
     store = SqliteLibraryStore(str(folder / "t.sqlite3"))
     store.set_setting(SETTING_ROOT, str(folder))
-    made = build_window(store)
+    made = build_window(store, devices=steady_devices())
     made.show()
     application.processEvents()
     yield made

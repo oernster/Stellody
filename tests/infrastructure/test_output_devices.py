@@ -13,6 +13,7 @@ import pytest
 import sounddevice
 from PySide6.QtWidgets import QApplication
 
+from stellody.domain.outputs import OutputDevice
 from stellody.infrastructure.output_devices import (
     OutputDevices,
     default_output_id,
@@ -56,6 +57,12 @@ class Machine:
         self.events.append(("rates", device))
         return RATES[self.default]
 
+    def listing(self) -> tuple[OutputDevice, ...]:
+        """The devices to choose from, as the system lists them now."""
+        return tuple(
+            OutputDevice(identity=i.decode(), name=i.decode()) for i in self.outputs
+        )
+
     def watching(self) -> OutputDevices:
         devices = OutputDevices(
             opener=self.opener,
@@ -63,6 +70,7 @@ class Machine:
             default_id=lambda: self.default,
             rates=self.rates,
             output_ids=lambda: self.outputs,
+            listing=self.listing,
         )
         devices.changed.connect(self._moved)
         devices.listed.connect(self._listed)
@@ -79,6 +87,14 @@ class Machine:
 @pytest.fixture
 def machine(application: QApplication) -> Machine:
     return Machine()
+
+
+class TestTheDevicesToChooseFrom:
+    def test_they_are_the_list_as_it_stands_when_asked(self, machine) -> None:
+        """FR-O13: the window's list is read from here after every change."""
+        devices = machine.watching()
+        machine.outputs = (SPEAKERS,)
+        assert [one.identity for one in devices.outputs()] == ["speakers"]
 
 
 class TestNoticingAMove:

@@ -38,7 +38,6 @@ from stellody.infrastructure import (
     discovery_file,
     instance,
     output,
-    output_list,
     qt_messages,
     staged_restore,
     switch_reset,
@@ -110,6 +109,7 @@ def build_window(
     leave: Callable[[], None] | None = None,
     note: Callable[[str], None] | None = None,
     recall: FileCatalogueMemory | None = None,
+    devices: OutputDevices | None = None,
 ) -> MainWindow:
     """Assemble the window over a store, with real adapters behind every port.
 
@@ -138,8 +138,8 @@ def build_window(
     listening = ListeningLog(store)
     listening.load()
     # Every stream is opened through this, so one that follows a move of the
-    # system's output is opened where the output went.
-    devices = OutputDevices()
+    # system's output is opened where the output went. A test hands in its own.
+    devices = devices if devices is not None else OutputDevices()
     window = MainWindow(
         scan_session=scan_session(store.database),
         loader=LoadLibrary(store),
@@ -231,7 +231,7 @@ def build_window(
     # The devices to choose from, read from the system here, where
     # infrastructure may be reached; the list follows every change to them
     # with no relaunch (`OUTPUTS.md` FR-O13).
-    window.start_choosing_outputs(output_list.listed_outputs)
+    window.start_choosing_outputs(devices.outputs)
     devices.listed.connect(window.outputs_changed)
     return window
 
