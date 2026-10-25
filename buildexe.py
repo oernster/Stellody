@@ -12,11 +12,13 @@ from __future__ import annotations
 import importlib.metadata
 import importlib.util
 import itertools
+import math
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterable
 
 import stamp_sitemap
 import stamp_version
@@ -41,8 +43,23 @@ BUNDLE_DIR = PAYLOAD_DIR / APP_DISPLAY_NAME
 NUITKA_DIST_DIR = PAYLOAD_DIR / "main.dist"
 ONEFILE_EXE = PAYLOAD_DIR / f"{EXE_NAME}.exe"
 
-# Directories shipped whole, as (source, destination inside the bundle).
-DATA_DIRS: tuple[tuple[pathlib.Path, str], ...] = ((ROOT / "assets", "assets"),)
+ASSETS_DIR = ROOT / "assets"
+# Where the assets are copied before being shipped, scaled to fit (see
+# `stage_assets`); inside the payload directory, which git ignores.
+ASSET_STAGE_DIR = PAYLOAD_DIR / "assets-stage"
+ASSET_DESTINATION = "assets"
+# Assets only another platform's build reads, never the running application:
+# the macOS DMG's icon and file icon, plus the master `generate_icons.py`
+# draws every icon from. About 4 MB the Windows bundle carried for nothing.
+OTHER_PLATFORM_ASSETS = frozenset(
+    {"stellody.icns", "stellody_icon_1024.png", "application-icon.png"}
+)
+# Windows' display scaling stops at 500%. With the interface scale and the
+# largest drawn icon this gives the most pixels any shipped picture can
+# fill; the masters are about 1,250 px, almost five times that, which was
+# about 65 MB of resolution no screen could show.
+WINDOWS_MAX_DISPLAY_SCALE = 5
+PICTURE_SUFFIX = ".png"
 
 # Loose files shipped at the bundle root.
 DATA_FILES: tuple[pathlib.Path, ...] = (
@@ -50,6 +67,39 @@ DATA_FILES: tuple[pathlib.Path, ...] = (
     ROOT / "LICENSE",
     ROOT / "LICENSE-GPL-3.0.txt",
     ROOT / "LICENSE-LGPL-3.0.txt",
+)
+
+# Qt plugins and libraries the application never loads, as patterns over the
+# bundled paths. Stellody reads JPEG, PNG, WebP and BMP pictures (`walker.py`
+# IMAGE_SUFFIXES) and GIF may be embedded, so those stay; PDF (with the 4 MB
+# Qt PDF library it drags in), TIFF, ICNS, TGA, WBMP and SVG are never read.
+# Windows needs only the `qwindows` platform; the other three are for
+# headless runs and Direct2D, which nothing here asks for.
+UNUSED_QT_LIBRARIES = (
+    "*qt-plugins/imageformats/qpdf*",
+    "*qt-plugins/imageformats/qtiff*",
+    "*qt-plugins/imageformats/qicns*",
+    "*qt-plugins/imageformats/qtga*",
+    "*qt-plugins/imageformats/qwbmp*",
+    "*qt-plugins/imageformats/qsvg*",
+    "*qt-plugins/iconengines/qsvgicon*",
+    "*qt-plugins/platforms/qdirect2d*",
+    "*qt-plugins/platforms/qoffscreen*",
+    "*qt-plugins/platforms/qminimal*",
+    "qt6pdf*",
+    "qt6svg*",
+)
+# numpy subpackages nothing reaches: a plain `import numpy` loads none of them
+# and neither Stellody nor its audio libraries name them (soundfile's
+# `np.random` is in docstring examples). `numpy.fft` stays: `analysing.py`.
+UNUSED_MODULES = (
+    "numpy.random",
+    "numpy.ma",
+    "numpy.polynomial",
+    "numpy.ctypeslib",
+    "numpy.matlib",
+    "numpy.testing",
+    "numpy.f2py",
 )
 
 PE_VERSION_PARTS = 4
@@ -135,6 +185,55 @@ def jobs() -> int:
     return os.cpu_count() or 1
 
 
+def icon_edge_px() -> int:
+    """The most pixels any shipped picture is drawn across, at any scale."""
+    from stellody.ui.interface_scale import INTERFACE_SCALE
+    from stellody.ui.tray_metrics import ICON_PX
+
+    return math.ceil(ICON_PX * INTERFACE_SCALE * WINDOWS_MAX_DISPLAY_SCALE)
+
+
+def stage_assets(
+    target: pathlib.Path, names: Iterable[str] | None = None
+) -> pathlib.Path:
+    """Copy the assets to ship into `target`, pictures scaled to fit.
+
+    Every asset but `OTHER_PLATFORM_ASSETS`, else only `names`. A picture
+    larger than `icon_edge_px` on its longer side is written at that size,
+    keeping its shape; the masters in `assets/` are never touched.
+    """
+    require("PIL", "Pillow")
+    from PIL import Image
+
+    edge = icon_edge_px()
+    shutil.rmtree(target, ignore_errors=True)
+    target.mkdir(parents=True)
+    wanted = None if names is None else set(names)
+    for source in sorted(ASSETS_DIR.iterdir()):
+        if not source.is_file() or source.name in OTHER_PLATFORM_ASSETS:
+            continue
+        if wanted is not None and source.name not in wanted:
+            continue
+        destination = target / source.name
+        if source.suffix.lower() != PICTURE_SUFFIX:
+            shutil.copy2(source, destination)
+            continue
+        with Image.open(source) as picture:
+            if max(picture.size) <= edge:
+                shutil.copy2(source, destination)
+                continue
+            picture.thumbnail((edge, edge), Image.Resampling.LANCZOS)
+            picture.save(destination, optimize=True)
+    return target
+
+
+def exclusions() -> list[str]:
+    """The Nuitka options leaving out what the application never loads."""
+    return [f"--noinclude-dlls={pattern}" for pattern in UNUSED_QT_LIBRARIES] + [
+        f"--nofollow-import-to={module}" for module in UNUSED_MODULES
+    ]
+
+
 def clean() -> None:
     """Remove previous output so nothing stale survives into this build."""
     for path in (NUITKA_DIST_DIR, BUNDLE_DIR):
@@ -180,9 +279,10 @@ def command(version: str, onefile: bool) -> list[str]:
     ]
     if ICON_FILE.exists():
         parts.append(f"--windows-icon-from-ico={ICON_FILE}")
-    for source, destination in DATA_DIRS:
-        if source.is_dir():
-            parts.append(f"--include-data-dir={source}={destination}")
+    parts.extend(exclusions())
+    if ASSETS_DIR.is_dir():
+        staged = stage_assets(ASSET_STAGE_DIR)
+        parts.append(f"--include-data-dir={staged}={ASSET_DESTINATION}")
     for item in DATA_FILES:
         if item.is_file():
             parts.append(f"--include-data-file={item}={item.name}")

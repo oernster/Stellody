@@ -21,7 +21,8 @@ import stamp_version
 
 # The Nuitka minimum is stated once, beside the application build, so the two
 # executables cannot come to be compiled against different releases.
-from buildexe import require_nuitka
+from buildexe import PAYLOAD_DIR, exclusions, require_nuitka, stage_assets
+from stellody.shared import resources
 
 # The copyright notice comes from the package rather than being written
 # here as well: the exe's file properties and the About box have to say
@@ -39,6 +40,16 @@ VERSION_FILE = ROOT / "VERSION"
 DEV_VERSION = "0.0.0-dev"
 
 ASSETS_DIR = ROOT / "assets"
+# The only assets the setup program draws: its window and taskbar icons and
+# the light and dark mode marks (`installer/app.py`, `installer/appearance.py`).
+# It shipped the whole folder once, about 70 MB of pictures it never opened.
+SETUP_ASSETS = (
+    resources.APPLICATION_ICON,
+    resources.WINDOW_ICON,
+    resources.LIGHT_MODE_ICON,
+    resources.DARK_MODE_ICON,
+)
+SETUP_ASSET_STAGE_DIR = PAYLOAD_DIR / "setup-assets-stage"
 STAGE_DIR = ROOT / "installer" / "stage"
 ARCHIVE = STAGE_DIR / "payload.zip"
 MANIFEST = STAGE_DIR / "manifest.json"
@@ -125,8 +136,10 @@ def command(version: str) -> list[str]:
         f"--copyright={COPYRIGHT_NOTICE}",
         f"--include-data-dir={STAGE_DIR}=payload",
     ]
+    parts.extend(exclusions())
     if ASSETS_DIR.is_dir():
-        parts.append(f"--include-data-dir={ASSETS_DIR}=assets")
+        staged = stage_assets(SETUP_ASSET_STAGE_DIR, SETUP_ASSETS)
+        parts.append(f"--include-data-dir={staged}=assets")
     if ICON_FILE.exists():
         parts.append(f"--windows-icon-from-ico={ICON_FILE}")
     for item in DATA_FILES:
