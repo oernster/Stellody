@@ -9,6 +9,7 @@ Run:  python buildexe.py
 
 from __future__ import annotations
 
+import ast
 import importlib.metadata
 import importlib.util
 import itertools
@@ -44,6 +45,7 @@ NUITKA_DIST_DIR = PAYLOAD_DIR / "main.dist"
 ONEFILE_EXE = PAYLOAD_DIR / f"{EXE_NAME}.exe"
 
 ASSETS_DIR = ROOT / "assets"
+UI_DIR = ROOT / "stellody" / "ui"
 # Where the assets are copied before being shipped, scaled to fit (see
 # `stage_assets`); inside the payload directory, which git ignores.
 ASSET_STAGE_DIR = PAYLOAD_DIR / "assets-stage"
@@ -73,21 +75,25 @@ DATA_FILES: tuple[pathlib.Path, ...] = (
 # bundled paths. Stellody reads JPEG, PNG, WebP and BMP pictures (`walker.py`
 # IMAGE_SUFFIXES) and GIF may be embedded, so those stay; PDF (with the 4 MB
 # Qt PDF library it drags in), TIFF, ICNS, TGA, WBMP and SVG are never read.
-# Windows needs only the `qwindows` platform; the other three are for
-# headless runs and Direct2D, which nothing here asks for.
+# Of the platform plugins only the native one is used; the other three are
+# for headless runs and Direct2D, which nothing here asks for. Each pattern
+# matches both namings, `qpdf.dll` and `qt6pdf.dll` on Windows,
+# `libqpdf.dylib` and `QtPdf` on macOS, where matching is case sensitive.
 UNUSED_QT_LIBRARIES = (
-    "*qt-plugins/imageformats/qpdf*",
-    "*qt-plugins/imageformats/qtiff*",
-    "*qt-plugins/imageformats/qicns*",
-    "*qt-plugins/imageformats/qtga*",
-    "*qt-plugins/imageformats/qwbmp*",
-    "*qt-plugins/imageformats/qsvg*",
-    "*qt-plugins/iconengines/qsvgicon*",
-    "*qt-plugins/platforms/qdirect2d*",
-    "*qt-plugins/platforms/qoffscreen*",
-    "*qt-plugins/platforms/qminimal*",
-    "qt6pdf*",
-    "qt6svg*",
+    "*qt-plugins/imageformats/*qpdf*",
+    "*qt-plugins/imageformats/*qtiff*",
+    "*qt-plugins/imageformats/*qicns*",
+    "*qt-plugins/imageformats/*qtga*",
+    "*qt-plugins/imageformats/*qwbmp*",
+    "*qt-plugins/imageformats/*qsvg*",
+    "*qt-plugins/iconengines/*qsvgicon*",
+    "*qt-plugins/platforms/*qdirect2d*",
+    "*qt-plugins/platforms/*qoffscreen*",
+    "*qt-plugins/platforms/*qminimal*",
+    "*qt6pdf*",
+    "*qt6svg*",
+    "*QtPdf*",
+    "*QtSvg*",
 )
 # numpy subpackages nothing reaches: a plain `import numpy` loads none of them
 # and neither Stellody nor its audio libraries name them (soundfile's
@@ -185,12 +191,32 @@ def jobs() -> int:
     return os.cpu_count() or 1
 
 
-def icon_edge_px() -> int:
-    """The most pixels any shipped picture is drawn across, at any scale."""
-    from stellody.ui.interface_scale import INTERFACE_SCALE
-    from stellody.ui.tray_metrics import ICON_PX
+def source_constant(path: pathlib.Path, name: str) -> object:
+    """The literal a module assigns to `name`, read without importing it.
 
-    return math.ceil(ICON_PX * INTERFACE_SCALE * WINDOWS_MAX_DISPLAY_SCALE)
+    Read rather than imported so staging needs Pillow alone: the module
+    holding the icon size imports Qt, which the Linux host building the
+    Flatpak need not have.
+    """
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == name
+            for target in node.targets
+        ):
+            return ast.literal_eval(node.value)
+    raise LookupError(f"{name} is not assigned a literal in {path}")
+
+
+def icon_edge_px() -> int:
+    """The most pixels any shipped picture is drawn across, at any scale.
+
+    The largest icon (`ICON_PX`) at the interface scale, on the platform
+    whose display scaling goes highest (`WINDOWS_MAX_DISPLAY_SCALE`; macOS
+    Retina stops at two), so one staged set serves every build.
+    """
+    icon_px = source_constant(UI_DIR / "tray_metrics.py", "ICON_PX")
+    scale = source_constant(UI_DIR / "interface_scale.py", "INTERFACE_SCALE")
+    return math.ceil(icon_px * scale * WINDOWS_MAX_DISPLAY_SCALE)
 
 
 def stage_assets(

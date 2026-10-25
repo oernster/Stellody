@@ -47,7 +47,13 @@ from build_utils import require, run, section
 
 # The Nuitka minimum is stated once, beside the Windows build, so the two
 # platforms cannot compile with different ones.
-from buildexe import require_nuitka
+from buildexe import (
+    ASSET_DESTINATION,
+    ASSET_STAGE_DIR,
+    exclusions,
+    require_nuitka,
+    stage_assets,
+)
 from dmg_icon import set_volume_icon
 
 # The copyright notice comes from the package rather than being written here as
@@ -107,8 +113,11 @@ WINDOWS_PORTAUDIO_PATTERN = "_sounddevice_data/portaudio-binaries/*.dll"
 PORTAUDIO_LIBRARY = "_sounddevice_data/portaudio-binaries/libportaudio.dylib"
 
 # Directories shipped whole, as (source, destination inside the bundle); loose
-# files shipped at its root. The same two lists the Windows build uses.
-DATA_DIRS: tuple[tuple[Path, str], ...] = ((ROOT / "assets", "assets"),)
+# files shipped at its root. The assets ship from the copy `stage_assets`
+# writes, scaled to fit and without the other platforms' icon files, exactly
+# as the Windows build ships them; the app and DMG icons still come from
+# assets/ itself.
+DATA_DIRS: tuple[tuple[Path, str], ...] = ((ASSET_STAGE_DIR, ASSET_DESTINATION),)
 DATA_FILES: tuple[Path, ...] = (
     ROOT / "VERSION",
     ROOT / "LICENSE",
@@ -312,6 +321,7 @@ def check_bundled_assets() -> None:
     mistake in one place or the other; either way it is not shippable.
     """
     section("Bundled assets")
+    stage_assets(ASSET_STAGE_DIR)
     missing = [str(path) for path in DATA_FILES if not path.is_file()]
     missing += [str(source) for source, _dest in DATA_DIRS if not source.is_dir()]
     if not ICNS_FILE.is_file():
@@ -434,6 +444,8 @@ def build_app_bundle() -> Path:
         # See WINDOWS_PORTAUDIO_PATTERN: the Windows PortAudio builds that ship
         # beside the macOS one are fatal to an arm64 build.
         f"--noinclude-dlls={WINDOWS_PORTAUDIO_PATTERN}",
+        # What the application never loads, shared with the Windows build.
+        *exclusions(),
         f"--jobs={os.cpu_count() or 1}",
         f"--macos-app-name={APP_NAME}",
         f"--macos-app-version={APP_VERSION}",

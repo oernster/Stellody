@@ -239,6 +239,7 @@ _stellody_rw.dmg
 .flatpak-repo/
 .flatpak-wheels/
 .flatpak-vendor/
+.flatpak-stage-venv/
 packaging/
 stellody.flatpak
 uk.codecrafter.Stellody.yml

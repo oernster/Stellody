@@ -35,6 +35,11 @@ BUNDLE="stellody.flatpak"
 BUILD_DIR=".flatpak-build"
 REPO_DIR=".flatpak-repo"
 WHEEL_DIR=".flatpak-wheels"
+# A throwaway environment holding Pillow alone, to write the assets scaled
+# to fit before they are copied in (stage_assets in buildexe.py). The copy
+# lands where buildexe.py puts it and ships as the application's assets.
+STAGE_VENV=".flatpak-stage-venv"
+STAGED_ASSETS="installer/payload/assets-stage"
 HELPER_DIR="packaging"
 MANIFEST="${APP_ID}.yml"
 
@@ -133,6 +138,16 @@ pip download --only-binary :all: \
     --python-version "${WHEEL_PYTHON}" --implementation cp \
     "${platform_args[@]}" \
     -d "${WHEEL_DIR}" -r requirements.txt
+
+section "Staging the assets"
+# The masters in assets/ are about 72 MB, drawn far larger than any screen
+# shows them; the staged copy is about 5 MB. Pillow's version comes from
+# requirements-dev.txt, where the other builds read it.
+rm -rf "${STAGE_VENV}"
+python3 -m venv "${STAGE_VENV}"
+"${STAGE_VENV}/bin/pip" install --quiet "$(grep -i '^pillow' requirements-dev.txt)"
+"${STAGE_VENV}/bin/python" -c \
+    "import buildexe; buildexe.stage_assets(buildexe.ASSET_STAGE_DIR)"
 
 section "Writing the packaging helpers"
 rm -rf "${HELPER_DIR}"
@@ -291,7 +306,8 @@ modules:
     buildsystem: simple
     build-commands:
       - install -d /app/share/${COMMAND}
-      - cp -r main.py stellody assets VERSION LICENSE /app/share/${COMMAND}/
+      - cp -r main.py stellody VERSION LICENSE /app/share/${COMMAND}/
+      - cp -r ${STAGED_ASSETS} /app/share/${COMMAND}/assets
       - install -Dm755 ${HELPER_DIR}/${COMMAND} /app/bin/${COMMAND}
       - install -Dm644 ${HELPER_DIR}/${APP_ID}.desktop
         /app/share/applications/${APP_ID}.desktop
@@ -322,6 +338,7 @@ cat >> "${MANIFEST}" <<MANIFEST_TAIL
           - ${REPO_DIR}
           - ${WHEEL_DIR}
           - ${VENDOR_DIR}
+          - ${STAGE_VENV}
           - venv
           - ${BUNDLE}
 MANIFEST_TAIL

@@ -42,7 +42,7 @@ section "Removing what the build wrote"
 # never heard of survives it.
 rm -f "${BUNDLE}" "${MANIFEST}"
 rm -rf .flatpak-build .flatpak-repo .flatpak-builder .flatpak-wheels \
-    .flatpak-vendor packaging
+    .flatpak-vendor .flatpak-stage-venv packaging
 echo "  Done."
 
 if [ "${PURGE_DATA}" = "yes" ]; then
