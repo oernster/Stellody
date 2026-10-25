@@ -32,7 +32,10 @@ privacy in the same file.
 
 ## Building
 
-Each platform builds on itself; none cross-compiles.
+Each platform builds on itself; none cross-compiles. `buildexe.py`,
+`buildinstaller.py` and `builddmg.py` stop before compiling unless the
+installed Nuitka is at least `NUITKA_MINIMUM` and below `NUITKA_CEILING`
+(`buildexe.py`); `requirements-dev.txt` holds the same range.
 
 **Windows**
 

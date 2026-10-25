@@ -20,7 +20,7 @@ None. A milestone arrives here when one is decided on.
   repository; the existing markup stays but reach is not chased.
 - **Monkey's Audio, Musepack, DSD, TAK, CAF, `.m4b` and `.tta`.** Reported via
   `UNPLAYABLE_SUFFIXES` rather than played; `FORMATS.md` section 1.4 gives each
-  reason and what would reopen it.
+  reason.
 - **Streaming, ripping, device syncing and tag writing.** Non-goals; tag
   writing is excluded by invariant 1.
 - **Fetching a music video for a track from an outside service** (Oliver's

@@ -50,7 +50,8 @@ shop selling what you are missing; it sells nothing itself.
 - **Playback** ([page](https://stellody.co.uk/playback.html)): gapless albums;
   an equalizer that lowers a lifted curve to avoid clipping; bit perfect
   exclusive output on Windows and macOS; a chosen output device that is
-  remembered ([OUTPUTS.md](OUTPUTS.md)); a visualiser in ten styles; the
+  remembered ([OUTPUTS.md](OUTPUTS.md)); a warning when Windows' own Volume
+  mixer holds Stellody silent; a visualiser in ten styles; the
   waveform of each song to click along.
 - **Discovery** ([page](https://stellody.co.uk/discovery.html),
   [DISCOVERY.md](DISCOVERY.md)): tick genres and Stellody asks two public music
@@ -160,7 +161,7 @@ Each platform builds on itself: `python buildexe.py` then
 - [PLAN.md](PLAN.md) and [TECH_DEBT.md](TECH_DEBT.md): open work and internal
   debt.
 
-## Supporting the project
+## Supporting Stellody
 
 Stellody is free and stays free. There is no paid tier, no licence key and no
 feature held back behind a donation. If it has replaced something you were

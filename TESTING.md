@@ -44,7 +44,7 @@ needing a real device would be a number nobody can hold or a suite of mocks.
 | `infrastructure/` | files, audio, the network client, the store | real files in a temporary folder, a real loopback server |
 | `ui/` | the windows, dialogs and trays | a real `QApplication` on the offscreen platform |
 | `installer/` | the setup program | a real `QApplication`, with the registry, filesystem and processes stood in for |
-| `structural/` | rules no single test can see, each listed with its invariant in `ARCHITECTURE.md` | the source tree itself |
+| `structural/` | rules no single test can see, each named in `ARCHITECTURE.md` beside the invariant or rule it holds | the source tree itself |
 
 ## Running part
 
@@ -77,6 +77,10 @@ the last line counts the tests without running them.
   `application` fixture; `tests/ui/conftest.py` destroys every top level widget
   between interface tests, since a window left to the garbage collector crashes
   a later test.
+- **Sound devices.** No test depends on the machine's audio devices (Oliver's
+  ruling). Every window a test builds through `build_window` is handed
+  `steady_devices()` from `tests/ui/steady_devices.py`: one device with fixed
+  rates and a fixed list.
 - **The network.** `tests/infrastructure/fetching_support.py` runs a real HTTP
   service on the loopback address and records every request and header.
 - **Audio.** No audio file of a widened format is committed;

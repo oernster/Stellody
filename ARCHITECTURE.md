@@ -75,7 +75,7 @@ UI  ->  Application  ->  Domain  <-  Infrastructure
 |---|---|---|
 | `domain` | Values and rules. Frozen dataclasses, pure functions. | The standard library, minus anything with a side effect. |
 | `application` | Ports as Protocols, plus use cases. | `domain` and the standard library. |
-| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and its host APIs, Qt Multimedia's device list, Windows' audio endpoint enumeration over COM, Qt's image codecs and network stack, the filesystem. | `domain`, `application` and `shared`. |
+| `infrastructure` | SQLite, mutagen, soundfile, PyAV, sounddevice and its host APIs, Qt Multimedia's device list, Windows' audio endpoints and per-program session volume over COM, Qt's image codecs and network stack, the filesystem. | `domain`, `application` and `shared`. |
 | `ui` | PySide6 widgets, models, dialogs, the colour tokens in `palette.py` and the stylesheet built from them in `theme.py`. | `domain`, `application` and `shared`. |
 | `shared` | Identity (name, version read from `VERSION`, copyright, donation address), asset resolution and the start-hidden flag. | The standard library. |
 
@@ -141,7 +141,8 @@ the streams cannot drift. It crosses the boundary as `domain/picture.py`
 `ui/picturing.py` shows it in the library's own area.
 
 **Deferred imports:** PyAV only inside `open_source` and `VideoReader` (it
-loads a large FFmpeg build); `output.py` reaches `wasapi` and `coreaudio`,
+loads a large FFmpeg build); `output.py` reaches `wasapi`, `coreaudio` and
+`session_volume`,
 `output_list.py` reaches `endpoints`; `stellody/__init__.py` defers the
 composition root into `main`.
 
@@ -695,11 +696,17 @@ window once.
 program and per device that can silence Stellody whatever it plays.
 `infrastructure/session_volume.py` reads Stellody's active session over the
 same COM walk as `endpoints.py`; `output.system_volume` answers None off
-Windows. `SystemSilence` in `stellody/application/system_silence.py` asks once
-per start and hands a silencing `SystemVolume` to the window's poll once.
+Windows. `SystemSilence` in `stellody/application/system_silence.py`, mixed
+into the transport, asks once each time a track opens or resumes, waiting until
+it plays; a `SystemVolume` muted or at or below `SILENT_VOLUME` is handed to
+the window's poll once, where `say_system_silence` puts it on the status line.
+Held by `tests/domain/test_system_volume.py`,
+`tests/application/test_system_silence.py` and
+`tests/ui/test_output_messages.py::test_windows_holding_stellody_silent_is_said`.
 
 **The window.** `stellody/ui/choosing_outputs.py` shows the list, stores the
-choice and reports refusal, absence and disconnection;
+choice and reports refusal, absence, disconnection and Windows' mixer holding
+Stellody silent;
 `stellody/ui/output_menu.py` fills the strip's popup and the Sound menu from
 one function. `OutputDevices` emits `listed` before `changed`.
 
@@ -747,7 +754,8 @@ icons into `docs/`. `stamp_version.py` writes the version from `VERSION` into
 
 Nuitka compiles on Windows and macOS, both naming `av.utils` explicitly.
 PortAudio is built from source in the Flatpak. The Flatpak is granted the home
-directory read only, putting the sandbox behind invariants 1 and 2.
+directory, `/media` and `/run/media` read only, putting the sandbox behind
+invariants 1 and 2.
 
 ## The window
 

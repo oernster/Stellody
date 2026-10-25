@@ -43,10 +43,10 @@ the walk no longer finds fails the suite.
 **Quitting during a cover lookup can leave without unwinding.** A search inside
 a network read gives up within one read slice (`SLICE_S` in
 `infrastructure/cover_search.py`), which the quit wait (`WAIT_MS` in
-`ui/cover_worker.py`) outlasts, so `leave_at_once` in `infrastructure/unwinding.py` should
-never be reached. It stays for a socket that never comes back, where Qt
-would otherwise abort over a running thread. The store is closed and the claim
-released before it is reached.
+`ui/cover_worker.py`) outlasts, so `leave_at_once` in
+`infrastructure/unwinding.py` should never be reached. It stays for a socket
+that never comes back, where Qt would otherwise abort over a running thread.
+The store is closed and the claim released before it is reached.
 
 **`installer/` imports `stellody.shared`, `stellody.ui` and
 `stellody.infrastructure`.** The setup program is a client of the application;

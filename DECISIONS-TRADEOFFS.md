@@ -211,6 +211,16 @@ An output device is remembered by identity. If it disappears while playing
 the track pauses; when it returns the music moves back. Nothing plays aloud by
 surprise; a press is needed to carry on.
 
+### Windows' own volume is reported, never reset
+
+Windows keeps a volume and a mute for each program on each device, beyond
+Stellody's reach; held at nought, the music is silent while the visualiser
+still moves. When music starts Stellody reads that setting; if it silences the
+music, the status line says so and where to change it. Stellody never resets
+it, since that would override a choice the listener or Windows made (Oliver's
+ruling). The cost is a trip to the system's settings; off Windows nothing is
+asked.
+
 ### The waveform shows loudness, drawn as it is read
 
 Loudness rather than peaks, at a resolution stated in time, measured once per

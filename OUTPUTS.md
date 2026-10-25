@@ -211,11 +211,13 @@ All Must (section 4).
   `tests/ui/test_output_button.py::test_choosing_a_line_leaves_the_list_able_to_open_again`
 
 **FR-O21 Windows holding Stellody silent is said**
-- Requirement: When a track starts playing on Windows, if Windows' Volume mixer
-  holds Stellody at nought or muted, then the status line shall say so and
-  where to change it. Stellody shall never change that setting itself (Oliver's
+- Requirement: When music starts, resumes or moves to another device on
+  Windows, if Windows' Volume mixer holds Stellody at nought or muted, then the
+  status line shall say so and where to change it (Settings > System > Sound >
+  Volume mixer). Stellody shall never change that setting itself (Oliver's
   ruling). Windows keeps it per program and per device, so it outlasts a
-  reinstall; a run from source is `python.exe` and has its own.
+  reinstall; a run from source is `python.exe` and has its own. Elsewhere
+  nothing is asked.
 - Verified by: `tests/domain/test_system_volume.py`, `tests/application/test_system_silence.py`, `tests/ui/test_output_messages.py::test_windows_holding_stellody_silent_is_said`, plus reading a real setting off the reference machine.
 
 ### 3.2 Non-functional

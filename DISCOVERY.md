@@ -255,7 +255,7 @@ tick nor an untagged sweep under select-all is wanted (Oliver's ruling).
   (section 3.4): `gaps` keyed by source artist, each holding candidate albums and
   candidate artists, an offered series keyed by its name and marked a series
   (FR-D74); beside it the unresolved, ambiguous and failed artists, the ticked
-  genres, the years (FR-D64; both bounds empty where unset) and the Include
+  genres, the years (FR-D64; a bound unset is null) and the Include
   choices (FR-D85).
 - Verified by: `tests/infrastructure/test_discovery_file.py::test_the_file_is_keyed_by_the_artist_it_was_found_for`
 
@@ -280,8 +280,9 @@ tick nor an untagged sweep under select-all is wanted (Oliver's ruling).
 - Verified by: `tests/application/test_a_dropped_connection.py::test_one_dropped_connection_does_not_end_a_run`, `tests/application/test_a_dropped_connection.py::test_a_connection_that_has_gone_still_ends_the_run`, `tests/application/test_a_dropped_connection.py::test_an_answer_between_two_silences_starts_the_count_over`, `tests/application/test_a_dropped_connection.py::test_an_artist_nothing_ever_answered_about_says_that`, `tests/application/test_discovery_narrowing.py::test_a_candidate_nothing_answered_about_is_left_unknown`, `tests/application/test_discovery_narrowing.py::test_a_candidate_that_did_not_answer_is_not_remembered`, `tests/application/test_discovery_narrowing.py::test_a_candidate_that_answered_with_no_genres_is_remembered`, `tests/application/test_discovery_narrowing.py::test_a_connection_lost_in_the_second_half_ends_the_run`, `tests/infrastructure/test_a_closed_connection.py`
 
 **FR-D21 The source refuses**
-- Requirement: On a refusal the service shall ask again at once (`RETRY_ATTEMPTS`
-  asks in all), then put the artist back for a later pass. Passes continue until
+- Requirement: On a refusal the service shall wait `RETRY_PAUSE_SECONDS` (doubled
+  after each further refusal) and ask again (`RETRY_ATTEMPTS` asks in all,
+  `application/asking.py`), then put the artist back for a later pass. Passes continue until
   none is owed, `QUIET_PASSES` passes running achieve nothing or `MOST_PASSES`
   are made (`application/passing.py`). An artist still owed is reported a failure
   in the words of its last pass: refused, else as FR-D20 or FR-D50 word it.
@@ -675,8 +676,8 @@ are not remembered between openings; a plausible year runs from `FIRST_YEAR` to
   least that many shall not count; where none reaches it, all count. Nor does
   one with under 1/`LEADING_SHARE` of the leader's votes; the leader always
   counts. The rule is `believed` (`domain/genre_votes.py`), applied to every
-  genre list the catalogue client reads. The candidate genre cache is named by `CACHE_NAME`;
-  caches from earlier rules are not read.
+  genre list the catalogue client reads. The candidate genre cache is named by
+  `CACHE_NAME`; caches from earlier rules are not read.
 - Rationale: Stray tags let anybody through a filter (Oliver's ruling).
 - Verified by: `tests/domain/test_genre_votes.py`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_a_genre_voted_for_once_beside_real_ones_is_dropped`, `tests/infrastructure/test_discovery_sources.py::TestWhatAnArtistPlays::test_an_album_s_genres_are_held_to_the_same_rule`
 
@@ -1027,10 +1028,11 @@ application is a published one.
 The discovery file is one JSON object in Stellody's data directory, replaced by
 every completed run (`infrastructure/discovery_file.py`). `gaps` maps each
 source artist to its candidate albums and candidate artists; each album carries
-its first release date under `released`, empty where none was stated; a series
-entry carries `series` true. Beside it: `unresolved`, `ambiguous`, `failed`,
-`ticked`, `years` and `including` (`credits`, `series` and `mixes`, each true or
-false). A file without `ticked` reads as an empty list; one without `including`
+its first release date under `released`, empty where none was stated; each
+source artist's entry carries `series`, true where it names a series (FR-D74).
+Beside it: `unresolved`, `ambiguous`, `failed`, `ticked`, `years` (`earliest`
+and `latest`, each null where unset) and `including` (`credits`, `series` and
+`mixes`, each true or false). A file without `ticked` reads as an empty list; one without `including`
 reads as the first two false and `mixes` true.
 
 ### 3.5 What makes two albums the same album

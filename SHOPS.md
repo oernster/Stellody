@@ -484,9 +484,9 @@ answers only whether the machine took the address (FR-S13).
 
 **The shipped defaults** are `DEFAULT_SHOPS` in `infrastructure/shop_file.py`,
 in this order: 7digital (first by Oliver's ruling), Qobuz, Bandcamp, Boomkat,
-Bleep, Presto Music, ProStudioMasters, Beatport. A note says what a shop stocks, never a caveat about its address
-(Oliver's ruling). 7digital uses the UK storefront with `fallback=true` (A-01);
-Bandcamp asks for albums alone with `item_type=a`; Boomkat searches the artist
+Bleep, Presto Music, ProStudioMasters, Beatport. A note says what a shop
+stocks, never a caveat about its address (Oliver's ruling). 7digital uses the
+UK storefront with `fallback=true` (A-01); Bandcamp asks for albums alone with `item_type=a`; Boomkat searches the artist
 alone under its Download filter (FR-S10).
 
 Not shipped, all addable as rows: Juno Download, Traxsource, eClassical and

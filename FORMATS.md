@@ -9,7 +9,8 @@ it.
 ### 1.1 Purpose
 
 `.wma`, `.wv` and `.aac` need no new decoder: the FFmpeg inside PyAV decodes
-them, mutagen reads their tags and the packet reader addresses them by frame.
+them, mutagen reads the WMA and WavPack tags (a raw AAC stream carries none,
+FR-F04) and the packet reader addresses them by frame.
 Each is claimed on the standard of section 1.3.
 
 ### 1.2 Intended audience
@@ -23,8 +24,8 @@ at test time, walked, probed, assembled and decoded back (Oliver's ruling).
 
 This proves the pipeline handles what FFmpeg writes, not what other encoders or
 rippers write; tags are where those differ. "Supported" here means decoded with
-tags read, proved by test; not verified against files in the wild
-(NFR-F-HONEST-001).
+whatever tags the file carries read, proved by test; not verified against files
+in the wild (NFR-F-HONEST-001).
 
 ### 1.4 Scope
 
@@ -165,9 +166,11 @@ Every requirement is a Must unless it carries a Priority line (section 4).
   at test time; the repository holds no `.wma`, `.wv` or `.aac` file.
 - Rationale: The basis of the evidence standard; it also avoids licence
   questions and repository growth.
-- Verification: `tests/structural/test_no_committed_audio.py`, which scans the
-  working tree for any `.wma`, `.wv` or `.aac` file (so it also catches a fixture
-  nobody has staged), plus the fixtures being built by a helper the tests call.
+- Verification: `tests/structural/test_no_committed_audio.py::test_no_fixture_audio_is_committed`
+  (invariant 21), which scans the working tree for any `.wma`, `.wv` or `.aac`
+  file (so it also catches a fixture nobody has staged), plus every fixture
+  being built by `tests/infrastructure/widened_support.py` into the temporary
+  directory pytest hands the test.
 
 **NFR-F-TEST-002 A fixture states its sample format**
 - Requirement: Every fixture shall state its sample format rather than letting
@@ -195,6 +198,9 @@ Every requirement is a Must unless it carries a Priority line (section 4).
 
 No file or store of its own. In `infrastructure/walker.py`, `AUDIO_SUFFIXES`
 includes the suffixes of FR-F01; `UNPLAYABLE_SUFFIXES` is the list of FR-F08.
+In `infrastructure/decode.py`, `PACKET_SUFFIXES` holds the three beside `.m4a`
+and the picture suffixes, which is how the chooser of FR-F02 sends them to the
+packet reader.
 
 ## 4. Prioritisation
 
