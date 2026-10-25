@@ -278,6 +278,25 @@ class Loudness:
         return Loudness(level=self.level, muted=muted)
 
 
+@dataclass(frozen=True, slots=True)
+class SystemVolume:
+    """What the operating system's own mixer does to Stellody. FR-O21.
+
+    Not Stellody's volume: Windows keeps one per program and per device, out of
+    Stellody's reach; everything Stellody sends is multiplied by it. Measured
+    on 2026-10-25 at nought for an installed build that therefore played
+    nothing while its visualiser moved.
+    """
+
+    level: float
+    muted: bool
+
+    @property
+    def silences(self) -> bool:
+        """Whether nothing Stellody sends can be heard."""
+        return self.muted or self.level <= SILENT_VOLUME
+
+
 def bit_perfect_as_played(
     report: OutputReport, loudness: Loudness, equalisation: Equalisation
 ) -> bool:

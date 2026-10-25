@@ -20,6 +20,11 @@ from stellody.application.playback_ports import PlaybackPort
 from stellody.application.queue_order import QueueOrder, scattered
 from stellody.application.sound_settings import SoundSettings
 from stellody.application.stepping import Stepping
+from stellody.application.system_silence import (
+    SystemSilence,
+    SystemVolumeReader,
+    nothing_known,
+)
 from stellody.domain.album import Album
 from stellody.domain.equalising import Equalisation
 from stellody.domain.moving import Ordering
@@ -45,7 +50,13 @@ PlayedOut = Callable[[Album, Track], None]
 
 
 class Transport(
-    SoundSettings, QueueOrder, Stepping, Ending, OutputFollowing, OutputChoosing
+    SoundSettings,
+    QueueOrder,
+    Stepping,
+    Ending,
+    OutputFollowing,
+    OutputChoosing,
+    SystemSilence,
 ):
     """The transport the window drives: a queue, plus a device to play it on."""
 
@@ -54,8 +65,12 @@ class Transport(
         player: PlaybackPort,
         ordering: Ordering = scattered,
         played: PlayedOut = lambda _album, _track: None,
+        system_volume: SystemVolumeReader = nothing_known,
     ) -> None:
         self._player = player
+        # How the system's mixer holds Stellody, asked once per start.
+        self._system_volume = system_volume
+        self._volume_unasked = False
         # What the device has been told to run into next. Gapless
         # transitions happen inside the engine, so this is how the queue
         # finds out where the music already went.
@@ -246,6 +261,7 @@ class Transport(
                 return
             self._held = False
             self._player.play()
+            self._ask_about_volume()
             return
         self._load_current()
 
@@ -319,3 +335,4 @@ class Transport(
         self._line_up()
         if playing:
             self._player.play()
+            self._ask_about_volume()

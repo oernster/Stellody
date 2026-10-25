@@ -6,6 +6,7 @@ Each is something a listener would otherwise have to guess.
 
 from __future__ import annotations
 
+import pytest
 from output_support import (
     BATHYS,
     FOCUSRITE,
@@ -19,13 +20,20 @@ from output_support import (
 from playback_support import album, player, window
 from recording_player import RecordingPlayer
 
-from stellody.domain.playback import PlaybackState
+from stellody.domain.playback import (
+    SILENT_VOLUME,
+    UNITY_VOLUME,
+    PlaybackState,
+    SystemVolume,
+)
 from stellody.ui.choosing_outputs import (
     LOST_MESSAGE,
     MISSING_MESSAGE,
     PAUSED_BY_LOSS_MESSAGE,
     REFUSED_HELD_MESSAGE,
     REFUSED_MESSAGE,
+    SYSTEM_MUTED_MESSAGE,
+    SYSTEM_ZERO_MESSAGE,
 )
 from stellody.ui.settings_keys import SETTING_OUTPUT_DEVICE, SETTING_OUTPUT_DEVICE_NAME
 
@@ -39,6 +47,26 @@ def _said(window) -> str:
 def _playing(window) -> None:
     held = album()
     window._transport.play_album(held, held.ordered_tracks()[0])
+
+
+@pytest.mark.parametrize(
+    ("held", "words"),
+    [
+        (SystemVolume(level=SILENT_VOLUME, muted=False), SYSTEM_ZERO_MESSAGE),
+        (SystemVolume(level=UNITY_VOLUME, muted=True), SYSTEM_MUTED_MESSAGE),
+    ],
+)
+def test_windows_holding_stellody_silent_is_said(
+    choosing, held: SystemVolume, words: str
+) -> None:
+    """FR-O21: the poll says what the mixer is doing, with where to change it.
+
+    The answer is handed in rather than read off the machine.
+    """
+    choosing._transport._system_volume = lambda: held
+    _playing(choosing)
+    choosing._poll_transport()
+    assert _said(choosing) == words
 
 
 def test_a_refusal_is_said(choosing, player: RecordingPlayer) -> None:

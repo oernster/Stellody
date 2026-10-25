@@ -21,6 +21,7 @@ from stellody.application.scan import ScanLibrary
 from stellody.application.transport import Transport
 from stellody.application.values import FolderListing, FolderRecord, SourceRecord
 from stellody.domain.overrides import AlbumEdit, Override
+from stellody.infrastructure import unwinding
 from stellody.infrastructure.instance import SingleInstance
 from stellody.ui.main_window import MainWindow
 from stellody.ui.scan_summary import ScanSummaryDialog
@@ -346,11 +347,11 @@ class TestHowTheProcessIsLeft:
         def never(_code: int) -> None:
             raise AssertionError("nothing was outstanding")
 
-        monkeypatch.setattr(composition, "leave_at_once", never)
-        assert composition.left_with(0, _Settled()) == 0
+        monkeypatch.setattr(unwinding, "leave_at_once", never)
+        assert unwinding.left_with(0, _Settled()) == 0
 
     def test_a_lookup_still_reading_leaves_without_unwinding(self, monkeypatch) -> None:
         left: list[int] = []
-        monkeypatch.setattr(composition, "leave_at_once", left.append)
-        composition.left_with(3, _Straggler())
+        monkeypatch.setattr(unwinding, "leave_at_once", left.append)
+        unwinding.left_with(3, _Straggler())
         assert left == [3], "it left with the code it meant"

@@ -691,6 +691,13 @@ list is Qt's. On Linux `open_named` opens PortAudio's `pulse` device with
 refusing to open is answered by the default with a `Refusal` kept for the
 window once.
 
+**Windows' own mixer is read, never set (FR-O21).** Windows keeps a volume per
+program and per device that can silence Stellody whatever it plays.
+`infrastructure/session_volume.py` reads Stellody's active session over the
+same COM walk as `endpoints.py`; `output.system_volume` answers None off
+Windows. `SystemSilence` in `stellody/application/system_silence.py` asks once
+per start and hands a silencing `SystemVolume` to the window's poll once.
+
 **The window.** `stellody/ui/choosing_outputs.py` shows the list, stores the
 choice and reports refusal, absence and disconnection;
 `stellody/ui/output_menu.py` fills the strip's popup and the Sound menu from

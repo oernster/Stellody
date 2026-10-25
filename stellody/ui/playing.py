@@ -185,6 +185,7 @@ class Playing:
         self.follow_picture()
         self.say_output_refusal()
         self.say_playback_failure()
+        self.say_system_silence()
 
     def say_playback_failure(self) -> None:
         """Say once that a track stopped by itself, naming it and the reason.

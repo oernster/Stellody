@@ -25,8 +25,10 @@ than leaving the reason to a document nobody opens; see `offers_exclusive`.
 
 from __future__ import annotations
 
+import os
 import sys
 
+from stellody.domain.playback import SystemVolume
 from stellody.infrastructure import portaudio
 
 WINDOWS = "win32"
@@ -73,6 +75,24 @@ def exclusive_rates(device: int | None = None) -> tuple[int, ...] | None:
     if sys.platform == MACOS:
         return None
     return ()
+
+
+def system_volume() -> SystemVolume | None:
+    """How the system's mixer holds this program's sound; None if unknown.
+
+    Windows alone keeps a volume per program that can silence it without
+    Stellody knowing (FR-O21); elsewhere the answer is None, which claims
+    nothing. Never raises: it is asked while music is starting, where a
+    failure to ask must cost nothing more than the answer.
+    """
+    if sys.platform != WINDOWS:
+        return None
+    from stellody.infrastructure import session_volume
+
+    try:
+        return session_volume.program_volume(os.getpid())
+    except OSError:
+        return None
 
 
 def open_output(*args, **kwargs):

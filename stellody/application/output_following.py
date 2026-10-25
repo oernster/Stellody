@@ -100,3 +100,5 @@ class OutputFollowing:
             self._player.seek(heard.frame)
         self._held = False
         self._player.play()
+        # A new device has a volume of its own in the system's mixer.
+        self._ask_about_volume()

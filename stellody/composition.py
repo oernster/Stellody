@@ -69,6 +69,7 @@ from stellody.infrastructure.similarity import ListenBrainz
 from stellody.infrastructure.startup_log import clear, report_failure
 from stellody.infrastructure.store import SqliteLibraryStore
 from stellody.infrastructure.textfile import SidecarTextReader
+from stellody.infrastructure.unwinding import left_with
 from stellody.infrastructure.update_source import GitHubReleases
 from stellody.infrastructure.video import VideoReader
 from stellody.infrastructure.walker import FolderWalker
@@ -150,7 +151,9 @@ def build_window(
                 opener=devices.open_output,
                 dropouts=DropoutWatch(diary.note),
                 rates=devices.exclusive_rates,
-            )
+            ),
+            # FR-O21: what the system's own mixer does to the music.
+            system_volume=output.system_volume,
         ),
         settings=store,
         # The platform question is asked HERE, where infrastructure may be
@@ -256,44 +259,6 @@ def configure(application: QApplication) -> None:
     icon_path = resources.application_icon_path() or resources.window_icon_path()
     if icon_path is not None:
         application.setWindowIcon(QIcon(str(icon_path)))
-
-
-def leave_at_once(code: int) -> None:
-    """End the process where unwinding would end it worse.
-
-    A cover lookup is given up within one read slice (`SLICE_S`), inside the quit
-    wait: the archive asks whether anybody wants it between waits and in reads.
-    What no amount of asking covers is a socket that never comes back at all.
-    A thread still running when the application is torn down is one Qt ends the
-    process over: measured on 2026-09-05, `QThread: Destroyed while thread
-    is still running` from Qt6Core, an abort rather than an exit.
-
-    So this is the last resort rather than the ordinary path. It should never
-    be reached now; if it is, the alternative it replaces is a crash report.
-
-    So the process is left before the tearing down begins. Everything that
-    outlives a run has already been put away by the time this is reached: the
-    store is closed and the single-instance claim released. What is skipped is
-    the destruction of objects the operating system is about to reclaim
-    anyway; what is bought is a quit that reports the code it meant rather than
-    a crash the listener has to read as one.
-    """
-    sys.stdout.flush()
-    sys.stderr.flush()
-    os._exit(code)
-
-
-def left_with(code: int, window) -> int:
-    """Leave with this code, having decided how to leave with it.
-
-    Everything durable is already put away by the time this is asked. What is
-    left to decide is whether the ordinary unwinding is safe. It is not while
-    a cover lookup is still inside a read: see `leave_at_once`.
-    """
-    if window.lookups_in_flight:
-        diary.note("a cover lookup is still reading; leaving without unwinding")
-        leave_at_once(code)
-    return code
 
 
 def main(argv: list[str] | None = None) -> int:

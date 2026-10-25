@@ -18,6 +18,7 @@ from PySide6.QtCore import Slot
 
 from stellody.application.output_choosing import OutputChange
 from stellody.domain.outputs import OutputChoice, OutputDevice
+from stellody.shared.version import APP_NAME
 from stellody.ui.output_menu import fill_output_menu
 from stellody.ui.settings_keys import (
     SETTING_OUTPUT_DEVICE,
@@ -50,6 +51,19 @@ PAUSED_BY_LOSS_MESSAGE = (
 LOST_MESSAGE = (
     "{name} disconnected, so the music will play through the system default "
     "until it returns."
+)
+
+# FR-O21: the system's own mixer holding Stellody silent. Named as Windows
+# because Windows is the one platform that is asked; it says where the
+# setting lives, since nothing in Stellody can change it.
+SYSTEM_MUTED_MESSAGE = (
+    f"Windows has {APP_NAME} muted in its Volume mixer, so nothing can be heard. "
+    "Unmute it under Settings > System > Sound > Volume mixer while it plays."
+)
+SYSTEM_ZERO_MESSAGE = (
+    f"Windows has {APP_NAME}'s volume at 0 in its Volume mixer, so nothing can "
+    "be heard. Raise it under Settings > System > Sound > Volume mixer while it "
+    "plays."
 )
 
 ListOutputs = Callable[[], tuple[OutputDevice, ...]]
@@ -117,6 +131,19 @@ class ChoosingOutputs:
         words = REFUSED_MESSAGE if self._transport.playing else REFUSED_HELD_MESSAGE
         self._say_about_output(
             words.format(name=refusal.device.name, reason=refusal.reason)
+        )
+
+    def say_system_silence(self) -> None:
+        """Say once per start that Windows is holding the music silent. FR-O21.
+
+        Asked on the transport's poll, which is how it is asked once the
+        music is under way; the transport answers only the first time.
+        """
+        silence = self._transport.take_system_silence()
+        if silence is None:
+            return
+        self._say_about_output(
+            SYSTEM_MUTED_MESSAGE if silence.muted else SYSTEM_ZERO_MESSAGE
         )
 
     def show_outputs(self) -> None:

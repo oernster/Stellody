@@ -9,11 +9,15 @@ not used on Windows.
 Plain ctypes over COM rather than a COM library, the same choice the rest of
 the application makes for the platform: nothing is added to the install for
 four interface calls. Windows only; `output_list.py` asks it nowhere else.
+
+The walk over the devices and the calls it is made of are public because
+`session_volume.py` walks the same devices for another question (FR-O21).
 """
 
 from __future__ import annotations
 
 import ctypes
+from collections.abc import Callable
 from ctypes import (
     HRESULT,
     POINTER,
@@ -80,29 +84,41 @@ class PROPVARIANT(ctypes.Structure):
     ]
 
 
-def _guid(text: str) -> GUID:
-    guid = GUID()
-    ctypes.oledll.ole32.CLSIDFromString(c_wchar_p(text), byref(guid))
-    return guid
+def guid(text: str) -> GUID:
+    """A COM identity from its published text form."""
+    value = GUID()
+    ctypes.oledll.ole32.CLSIDFromString(c_wchar_p(text), byref(value))
+    return value
 
 
-def _call(obj: c_void_p, index: int, *args, argtypes=()) -> int:
+def call(obj: c_void_p, index: int, *args, argtypes=()) -> int:
     """Call method `index` of a COM object; a failure raises OSError."""
     table = ctypes.cast(obj, POINTER(POINTER(c_void_p)))[0]
     method = WINFUNCTYPE(HRESULT, c_void_p, *argtypes)(table[index])
     return method(obj, *args)
 
 
-def _release(obj: c_void_p) -> None:
+def release(obj: c_void_p) -> None:
+    """Let go of a COM object this side holds."""
     table = ctypes.cast(obj, POINTER(POINTER(c_void_p)))[0]
     WINFUNCTYPE(c_ulong, c_void_p)(table[RELEASE])(obj)
 
 
 def render_endpoints() -> tuple[OutputDevice, ...]:
-    """Every active playback device, in Windows' order. Raises OSError.
+    """Every active playback device, in Windows' order. Raises OSError."""
+    return each_render_device(
+        lambda device: OutputDevice(
+            identity=_identity(device), name=_friendly_name(device)
+        )
+    )
+
+
+def each_render_device[T](visit: Callable[[c_void_p], T]) -> tuple[T, ...]:
+    """`visit` asked of every active playback device, in Windows' order.
 
     COM is set up for the calling thread where it is not already, then taken
-    down again after; a thread that already has it keeps it as it was.
+    down again after; a thread that already has it keeps it as it was. Each
+    device is let go of once visited. Raises OSError.
     """
     ole32 = ctypes.oledll.ole32
     try:
@@ -113,24 +129,24 @@ def render_endpoints() -> tuple[OutputDevice, ...]:
             raise
         started = False
     try:
-        return _enumerated(ole32)
+        return _enumerated(ole32, visit)
     finally:
         if started:
             ctypes.windll.ole32.CoUninitialize()
 
 
-def _enumerated(ole32) -> tuple[OutputDevice, ...]:
+def _enumerated[T](ole32, visit: Callable[[c_void_p], T]) -> tuple[T, ...]:
     enumerator = c_void_p()
     ole32.CoCreateInstance(
-        byref(_guid(CLSID_MM_DEVICE_ENUMERATOR)),
+        byref(guid(CLSID_MM_DEVICE_ENUMERATOR)),
         None,
         CLSCTX_ALL,
-        byref(_guid(IID_IMM_DEVICE_ENUMERATOR)),
+        byref(guid(IID_IMM_DEVICE_ENUMERATOR)),
         byref(enumerator),
     )
     try:
         collection = c_void_p()
-        _call(
+        call(
             enumerator,
             ENUM_AUDIO_ENDPOINTS,
             E_RENDER,
@@ -140,22 +156,22 @@ def _enumerated(ole32) -> tuple[OutputDevice, ...]:
         )
         try:
             count = c_uint()
-            _call(
+            call(
                 collection,
                 COLLECTION_GET_COUNT,
                 byref(count),
                 argtypes=(POINTER(c_uint),),
             )
-            return tuple(_item(collection, at) for at in range(count.value))
+            return tuple(_item(collection, at, visit) for at in range(count.value))
         finally:
-            _release(collection)
+            release(collection)
     finally:
-        _release(enumerator)
+        release(enumerator)
 
 
-def _item(collection: c_void_p, at: int) -> OutputDevice:
+def _item[T](collection: c_void_p, at: int, visit: Callable[[c_void_p], T]) -> T:
     device = c_void_p()
-    _call(
+    call(
         collection,
         COLLECTION_ITEM,
         at,
@@ -163,14 +179,14 @@ def _item(collection: c_void_p, at: int) -> OutputDevice:
         argtypes=(c_uint, POINTER(c_void_p)),
     )
     try:
-        return OutputDevice(identity=_identity(device), name=_friendly_name(device))
+        return visit(device)
     finally:
-        _release(device)
+        release(device)
 
 
 def _identity(device: c_void_p) -> str:
     text = c_wchar_p()
-    _call(device, DEVICE_GET_ID, byref(text), argtypes=(POINTER(c_wchar_p),))
+    call(device, DEVICE_GET_ID, byref(text), argtypes=(POINTER(c_wchar_p),))
     try:
         return text.value or ""
     finally:
@@ -179,7 +195,7 @@ def _identity(device: c_void_p) -> str:
 
 def _friendly_name(device: c_void_p) -> str:
     store = c_void_p()
-    _call(
+    call(
         device,
         DEVICE_OPEN_PROPERTY_STORE,
         STGM_READ,
@@ -187,9 +203,9 @@ def _friendly_name(device: c_void_p) -> str:
         argtypes=(c_uint, POINTER(c_void_p)),
     )
     try:
-        key = PROPERTYKEY(_guid(PKEY_DEVICE_FRIENDLY_NAME), FRIENDLY_NAME_PID)
+        key = PROPERTYKEY(guid(PKEY_DEVICE_FRIENDLY_NAME), FRIENDLY_NAME_PID)
         value = PROPVARIANT()
-        _call(
+        call(
             store,
             STORE_GET_VALUE,
             byref(key),
@@ -201,4 +217,4 @@ def _friendly_name(device: c_void_p) -> str:
         finally:
             ctypes.oledll.ole32.PropVariantClear(byref(value))
     finally:
-        _release(store)
+        release(store)

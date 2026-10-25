@@ -134,6 +134,7 @@ class Ending:
             return
         self._held = False
         self._player.play()
+        self._ask_about_volume()
 
     def _report_played(self) -> None:
         """Say that the track in hand reached its end, to whoever counts."""
