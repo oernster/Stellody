@@ -746,7 +746,8 @@ failure.
 **Each platform builds on itself.** `buildexe.py` with `buildinstaller.py`
 (Windows), `builddmg.py` (macOS, notarized and stapled by default),
 `build_flatpak.sh` (Linux), with `clean_flatpak.sh` touching application data
-only under `--purge-data`. Output paths are independent.
+only under `--purge-data`. Output paths are independent; the staged assets
+folder is the one place three builds write alike.
 
 `generate_icons.py` writes the icon set into `assets/` and copies the site's
 icons into `docs/`. `stamp_version.py` writes the version from `VERSION` into
@@ -756,6 +757,14 @@ Nuitka compiles on Windows and macOS, both naming `av.utils` explicitly.
 PortAudio is built from source in the Flatpak. The Flatpak is granted the home
 directory, `/media` and `/run/media` read only, putting the sandbox behind
 invariants 1 and 2.
+
+**What ships is trimmed in one place.** `stage_assets` in `buildexe.py` writes
+the assets the application ships on every platform into `ASSET_STAGE_DIR`,
+without `OTHER_PLATFORM_ASSETS` and with no picture larger than
+`icon_edge_px()`. The setup program stages only its `SETUP_ASSETS` (in
+`buildinstaller.py`) through the same function. `exclusions()` beside it
+leaves `UNUSED_QT_LIBRARIES` and `UNUSED_MODULES` out of every Nuitka build.
+The masters in `assets/` are never touched.
 
 ## The window
 

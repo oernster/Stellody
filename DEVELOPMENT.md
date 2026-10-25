@@ -16,7 +16,7 @@ developer meets beyond it:
 | Device lists | Windows' endpoint enumeration (ctypes over COM) on Windows, Qt Multimedia elsewhere; on Linux a chosen device is reached through PortAudio's `pulse` device with `PULSE_SINK` |
 | Buffers | numpy |
 | Checks | black, flake8, ruff, pytest, pytest-cov, pytest-qt |
-| Icons | Pillow |
+| Icons and the shipped assets | Pillow, a build dependency of every build |
 
 `requirements.txt` pins the runtime exactly, so a build of one commit is the
 same build whenever it is made; `tests/structural/test_environment.py` fails
@@ -37,6 +37,18 @@ Each platform builds on itself; none cross-compiles. `buildexe.py`,
 installed Nuitka is at least `NUITKA_MINIMUM` and below `NUITKA_CEILING`
 (`buildexe.py`); `requirements-dev.txt` holds the same range.
 
+**What every build ships.** No build ships `assets/` itself. `stage_assets` in
+`buildexe.py` writes a copy into `installer/payload/assets-stage`, leaving out
+`OTHER_PLATFORM_ASSETS` and writing each PNG larger than `icon_edge_px()` on
+its longer side at that size: the largest icon (`ICON_PX`) at
+`INTERFACE_SCALE` times `WINDOWS_MAX_DISPLAY_SCALE`. Both constants are read
+from the source by `source_constant` rather than imported, so staging needs
+Pillow alone; that makes Pillow a build dependency on every platform.
+`exclusions()` in the same file adds `--noinclude-dlls` for each pattern in
+`UNUSED_QT_LIBRARIES` and `--nofollow-import-to` for each package in
+`UNUSED_MODULES`; the application, setup program and macOS builds all pass it
+to Nuitka.
+
 **Windows**
 
 ```powershell
@@ -44,12 +56,13 @@ python buildexe.py
 python buildinstaller.py
 ```
 
-`buildexe.py` stamps the site (below), then compiles the application with
-Nuitka into one file using every core; `--standalone` gives a directory bundle
-instead, quicker to inspect. `buildinstaller.py` stamps the site, stages the
-built application as a zipped payload, then compiles the setup program around
-it into `dist-installer\StellodySetup.exe`. Everything the setup program writes
-is per user.
+`buildexe.py` stamps the site (below), stages the assets, then compiles the
+application with Nuitka into one file using every core; `--standalone` gives a
+directory bundle instead, quicker to inspect. `buildinstaller.py` stamps the
+site, stages the built application as a zipped payload, then compiles the
+setup program around it into `dist-installer\StellodySetup.exe`. The setup
+program carries only `SETUP_ASSETS`, the four pictures it draws, staged by the
+same `stage_assets`. Everything the setup program writes is per user.
 
 **macOS**
 
@@ -57,8 +70,10 @@ is per user.
 python builddmg.py
 ```
 
-In order: checks the platform, dependencies, bundled assets and notarization
-credentials; stamps the site; compiles with Nuitka; strips the object files
+In order: checks the platform and dependencies; stages the assets and checks
+everything the bundle names is on disk; checks the notarization credentials;
+stamps the site; compiles with Nuitka; checks the bundle carries what it was
+given and moves that data into `Contents/Resources`; strips the object files
 PySide6 ships inside its QML plugins; signs and notarizes the application then
 staples it; builds the disk image, sets its icons, signs, notarizes, staples
 and verifies it. The credential is a keychain profile stored once with
@@ -72,10 +87,15 @@ notarizing for local testing only.
 ./clean_flatpak.sh
 ```
 
-The build fetches wheels and source archives first, then builds offline,
-compiling PortAudio and the Kerberos client library into the bundle since the
-runtime carries neither. It produces `stellody.flatpak`. The cleaner undoes
-what the build wrote; `--purge-data` also removes the listener's data.
+The build fetches wheels and source archives first. It stages the assets in a
+throwaway environment holding Pillow alone (`.flatpak-stage-venv`, at the
+version `requirements-dev.txt` names), then builds offline, compiling
+PortAudio and the Kerberos client library into the bundle since the runtime
+carries neither. The staged folder ships as the application's assets; the
+launcher icons are installed from `assets/`. It produces `stellody.flatpak`.
+The cleaner uninstalls the application and removes what the build wrote at
+the repository root; the staged assets under `installer/payload/` stay.
+`--purge-data` also removes the listener's data.
 
 ## Generated assets
 

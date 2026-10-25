@@ -394,11 +394,22 @@ screen.
 
 ## Building and installing
 
-### Nuitka, each platform on itself
+### Nuitka on Windows and macOS, each platform on itself
 
-Compiled with Nuitka rather than PyInstaller for smaller packages, each built
-on its own platform with macOS signed and notarised. Some modules must be
-named explicitly; it needs a machine of each kind and an Apple account.
+Windows and macOS are compiled with Nuitka rather than PyInstaller for
+smaller packages; the Linux Flatpak runs the source on its runtime's Python.
+Each is built on its own platform with macOS signed and notarised. Some
+modules must be named explicitly; it needs a machine of each kind and an
+Apple account.
+
+### Ship what a screen can show, nothing the program never loads
+
+Pictures ship scaled to the most pixels any screen can draw them rather than
+as the full masters. Every package leaves out the other platforms' icons; the
+compiled ones also leave out the Qt plugins and libraries Stellody never
+loads. The download is less than half the size of shipping everything. The
+cost is a build step plus a rule: a new picture format or a larger icon has to
+be reflected in the build.
 
 ### Installed for one user by a setup program of its own
 
