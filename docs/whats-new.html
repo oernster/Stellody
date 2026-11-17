@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What's new in Stellody: release history</title>
+  <meta name="description" content="Stellody's release history: a much smaller download, a warning when Windows keeps it silent, cover art that appears again, taste profiles, library backups, discovery by year and by series, a choice of output device, exclusive output and every release before them.">
+  <link rel="canonical" href="https://stellody.co.uk/whats-new.html">
+  <meta name="theme-color" content="#0d1220">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Stellody">
+  <meta property="og:url" content="https://stellody.co.uk/whats-new.html">
+  <meta property="og:title" content="What's new in Stellody: release history">
+  <meta property="og:description" content="Stellody's release history: a much smaller download, a warning when Windows keeps it silent, cover art that appears again, taste profiles, library backups, discovery by year and by series, a choice of output device, exclusive output and every release before them.">
+  <meta property="og:image" content="https://stellody.co.uk/stellody-512.png">
+  <meta property="og:image:alt" content="Stellody app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "What's new in Stellody: release history",
+    "description": "Stellody's release history: a much smaller download, a warning when Windows keeps it silent, cover art that appears again, taste profiles, library backups, discovery by year and by series, a choice of output device, exclusive output and every release before them.",
+    "url": "https://stellody.co.uk/whats-new.html",
+    "primaryImageOfPage": "https://stellody.co.uk/stellody-512.png",
+    "isPartOf": {"@type": "WebSite", "@id": "https://stellody.co.uk/#site",
+                 "name": "Stellody", "url": "https://stellody.co.uk/"},
+    "about": {"@id": "https://stellody.co.uk/#app"},
+    "inLanguage": "en-GB"
+  }
+  </script>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=b2ffcfe3b4">
+<script>window.goatcounter = {path: function (p) { return location.host + p }}</script>
+<script data-goatcounter="https://oernster.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="./">
+    <img src="stellody-512.png" alt="Stellody icon">
+    <span>Stellody</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="whats-new.html">What's New</a>
+    <a class="btn-primary" href="download.html">Download</a>
+  </div>
+</nav>
+
+<!-- What's New: one entry per published release, newest first -->
+<section class="section" id="whats-new">
+  <div class="section-label">Changelog</div>
+  <h2 class="section-title">What's new.</h2>
+  <p style="max-width:70ch;">
+    Recent releases have turned on discovery: finding the records you are missing by year, by
+    compilation series and by DJ mix, keeping a selection you like as a taste profile and filtering an
+    answer the same way the library is filtered. Alongside it came a backup of everything Stellody
+    knows about your library, a choice of output device and exclusive output for bit perfect playback.
+    The newest releases bring cover art searches back to life, say when Windows is holding Stellody
+    silent and cut the download to less than half its size.
+  </p>
+
+  <div class="changelog-grid">
+
+    <div class="cl-entry">
+      <div class="ver-tag">v<!--VERSION-->1.20.0<!--/VERSION--></div>
+      <h3>A much smaller download</h3>
+      <ul>
+        <li>On Windows the setup program is now about 107 MB rather than about 247 MB; Stellody itself takes about 56 MB instead of about 123 MB. The macOS and Linux builds shrink the same way</li>
+        <li>Nothing you can see or use has changed. The buttons were shipped as pictures about 1,250 pixels across; they now ship at the most pixels a button can fill at Windows' highest display scaling, so they look the same everywhere</li>
+        <li>The setup program no longer carries a second copy of every picture it never shows. Parts of the underlying libraries Stellody never loads are left out, such as readers for picture formats it never opens</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.19.0</div>
+      <h3>Stellody says when Windows is keeping it silent</h3>
+      <ul>
+        <li>Windows keeps its own volume for every program on every output device. If Stellody's entry in the Volume mixer is at 0 or muted, nothing can be heard while the track counts on and the visualiser moves</li>
+        <li>On Windows Stellody now checks that entry whenever music starts, resumes or moves to another output device. If it is held at 0 or muted, the status line says so and where to change it</li>
+        <li>Stellody only reads the setting; it never changes it, since it is yours to set. Nothing is asked on macOS or Linux</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.18.0</div>
+      <h3>Cover art pictures appear again</h3>
+      <ul>
+        <li>Choosing cover art offered a grid of tiles that never filled in: the Cover Art Archive lists its pictures at plain http addresses, which Stellody refuses to open. Those addresses are now fetched over https, so the thumbnails draw and a picked picture is kept</li>
+        <li>MusicBrainz and the archive sometimes answer slowly or fail a request in passing. Stellody now waits longer and asks again, so a search usually answers on a second or third try. Quitting during a search can take a few seconds longer as a result</li>
+        <li>A search that could not be made at all now says so and to try again in a moment, rather than claiming the album has no art</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.17.1</div>
+      <h3>Go to playing album works at every cover size</h3>
+      <ul>
+        <li>Changing the size of the covers could move the open album's sleeve out of view, after which Go to playing album (Ctrl+J) did nothing. It now scrolls back to the playing album at any size</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.17.0</div>
+      <h3>Long titles read whole; back to the playing album in one click</h3>
+      <ul>
+        <li>A title or artist cut short on its tile in the wall of covers now shows in full when you rest the pointer on it</li>
+        <li>Click the playing track's name at the foot of the window, press Ctrl+J or choose View &gt; Go to playing album: the album opens with the playing track picked out. Where a search or the genre filter hides it, the foot says so</li>
+        <li>The Taste profiles list now sits flush with the right edge of its dialog rather than hanging part way across it</li>
+        <li>A discovery search run from a console no longer prints a socket warning while it rests between passes; nothing was ever lost</li>
+        <li>The notes beside 7digital and Boomkat in the shops list now say what each shop sells. A note you edited yourself keeps your wording</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.16.0</div>
+      <h3>Both genre filters take years</h3>
+      <ul>
+        <li>The library's Filter by genre and the filter on a discovery answer now carry the same Released from and to fields as Discover. Years alone are enough to filter by; an album with no year is left out while years are set</li>
+        <li>Similar artists in an answer carry no year, so the years leave them alone</li>
+        <li>Choosing a taste profile in either filter now puts its years back along with its genres; saving offers the genres and the years together</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.15.0</div>
+      <h3>Both genre filters offer to save a taste profile</h3>
+      <ul>
+        <li>A taste profile could only be saved from Discover. Pressing Show or Filter with genres ticked that no profile holds now offers to keep them under a name in both genre filters too</li>
+        <li>Not now carries on filtering with nothing saved</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.14.1</div>
+      <h3>The Guide matches the screens again</h3>
+      <ul>
+        <li>The Guide described parts of the previous release wrongly: what choosing a taste profile puts back, where Filter stands and where Cancel stands. Each now reads as the screen does</li>
+        <li>It now also covers the taste profiles in both genre filters, the way out on the left of each dialog and the visualiser styles under View</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.14.0</div>
+      <h3>Library backups, taste profiles and ten visualiser styles</h3>
+      <ul>
+        <li>File &gt; Back up library writes one zip holding your ratings, play counts, corrections, stated tags, settings, taste profiles, the last discovery answer and your shop list. The music itself is yours to copy</li>
+        <li>Restore from backup checks the zip first, backs up the library as it is now, then restarts Stellody to put the restored one in place. Should that go wrong part way, the library you had is put back. A backup from this version on will still restore after Stellody changes how it stores things</li>
+        <li>Pressing Find on a new selection in Discover offers to keep its genres, Include boxes and years as a named taste profile. The Taste profiles button puts any of them back; the same list appears in both genre filters</li>
+        <li>Close or Cancel now stands alone on the left of Discover, the results, both genre filters and the shops windows</li>
+        <li>The visualiser draws in ten named styles, chosen from its own button or from View &gt; Visualiser style</li>
+        <li>Discover now opens at once on its first press; a run's estimate of the time left counts only the artists it actually has to ask about</li>
+        <li>On Windows, opening a dialog could leave File, Edit and View unable to be clicked for the rest of the session. That no longer happens</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.13.3</div>
+      <h3>Compilations sort together and read in order</h3>
+      <ul>
+        <li>Albums tagged "Various" or "VA" are now shown and sorted as Various Artists beside the rest; the files themselves are left exactly as they are</li>
+        <li>Compilations are ordered by title, so the volumes of a series sit together. Each artist's own albums still run from first to latest</li>
+        <li>Numbers in an album title count as numbers, so #2 comes before #10</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.13.2</div>
+      <h3>A proper button for the artists discovery could not answer for</h3>
+      <ul>
+        <li>The count of artists a discovery run could not answer for used to sit in a plain text button in the status bar. It is now a picture button beside Discover, with the count in a red badge; pressing it lists those artists under what went wrong. File &gt; Show unanswered artists offers the same list</li>
+        <li>On a machine where Stellody cannot work out your home folder, its activity log now gives up quietly instead of stopping the application</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.13.1</div>
+      <h3>Ticking an album further down the results</h3>
+      <ul>
+        <li>With the discovery results scrolled down, the first click on an album's box could throw the list back towards the top. It now ticks the box you clicked and the list stays where it was</li>
+        <li>The Guide and the site now say what Back really does: it goes to the start of the song (then to the one before) and waits there until you press play</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.13.0</div>
+      <h3>Mono plays; honest claims; nothing lost when something fails</h3>
+      <ul>
+        <li>A mono file used to play silence; it now plays on both speakers. A file with more channels than the output can carry is refused with both channel counts named</li>
+        <li>Floating-point WAV and AIFF files now play in exclusive mode on Windows. They are no longer called bit perfect, since converting them for the device is not bit exact</li>
+        <li>Two songs join without a gap only when they share their depth and kind of sample, so a lossy song after a lossless one no longer inherits its bit perfect report</li>
+        <li>Switching off the chosen output just as a song ends now pauses the music rather than carrying the next song to the speakers</li>
+        <li>A database that will not open is set aside with its write-ahead log kept beside it, so your latest ratings are not lost from it; the message gives its full path</li>
+        <li>A folder Stellody cannot read is no longer reported as gone. A cue sheet or cover added to a folder later is noticed by a rescan; a rating that cannot be saved says so</li>
+        <li>Discovery, the cover search and the update check refuse a redirect to any other server and anything but a secure connection</li>
+        <li>A cue sheet saved as UTF-16 is read; a folder name ending in a disc marker such as SACD 2 no longer loses its last letters</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.12.0</div>
+      <h3>DJ mixes and the series behind them</h3>
+      <ul>
+        <li>An artist's own list in the discovery results now offers their DJ mixes. A plain compilation or a greatest hits package is still left out</li>
+        <li>A compilation filed under its DJ, such as a Global Underground or fabric volume, now leads to the other volumes of its series</li>
+        <li>Include compilations is now three boxes, each remembered: Artists on compilations, Other volumes of series and DJ mixes</li>
+        <li>A Checking series bar sits between the other two. Filter the answer gains a Show row for Albums, DJ mixes, Series and Similar artists</li>
+        <li>Bit perfect is now claimed only with exclusive output at the file's own rate and depth, the volume at full, nothing muted and no equalizer curve applied</li>
+        <li>Select all no longer holds the Discover dialog still for several seconds</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.11.0</div>
+      <h3>The other volumes of the compilations you hold</h3>
+      <ul>
+        <li>With Include compilations ticked, discovery offers the volumes of a compilation series you do not hold yet. It finds them from MusicBrainz's own series and from titles that differ only by the volume number; albums you already hold are never offered back</li>
+        <li>An artist that turned up nothing is no longer shown as an empty heading</li>
+        <li>A genre filter now names the genres it is set to. A similar artist with no genre of its own is judged by the genres on your own albums by the artist it was suggested for</li>
+        <li>A genre now counts for an artist only with at least half the votes of their leading genre, so a single stray tag no longer puts an artist under a genre they hardly play</li>
+        <li>Electronic is split into Dance, Electronic, House and Techno &amp; Electro; Pop gains eight styles, making 57 genres in 21 categories. Many more of MusicBrainz's genre names are recognised</li>
+        <li>Every genre category folds away behind an arrow, with the boxes in three columns, so the list fits a laptop screen</li>
+        <li>The first run after updating asks MusicBrainz again what each similar artist plays; on a large answer that is roughly twenty minutes</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.10.1</div>
+      <h3>A new donation page</h3>
+      <ul>
+        <li>The Donate button now opens a new PayPal page that suggests £5 and lets you give any amount you choose. Nothing else has changed</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.10.0</div>
+      <h3>Artists who share their name are looked up</h3>
+      <ul>
+        <li>Discovery used to skip any artist whose name MusicBrainz knows under more than one person, Anyma and Bonobo among them. Stellody now works out which one you mean from who is credited on the albums and tracks you hold; it never picks one on a guess</li>
+        <li>Names are matched with accents and typographic dashes set aside, so a tag typed on an ordinary keyboard finds Hernán Cattáneo</li>
+        <li>A name nobody is found under is asked about by the artists inside it, so a credit naming three DJs reaches all three</li>
+        <li>Electro house and ambient techno now count as House and Techno</li>
+        <li>The first discovery run after updating takes a few minutes longer while your artists are matched again</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.9.0</div>
+      <h3>Discover music from the years you choose</h3>
+      <ul>
+        <li>Discover has two optional fields, Released from and to. The years decide what is offered, never what is learned from: every album you hold still counts towards what the run understands about your taste</li>
+        <li>An album's year is the year it first came out; one whose year the catalogue does not state is left out while years are set. Suggested artists are offered only if they released something inside the years</li>
+        <li>Every album in the results now shows the year it first came out beside its title</li>
+        <li>An artist spelled with different capitals or spacing across your tags is now one artist, so an album you own under one spelling is no longer offered back under the other</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.8.4</div>
+      <h3>Closing the shops clears the ticks</h3>
+      <ul>
+        <li>Closing the shops window now clears every tick in the discovery results, including ticks under a rolled-up artist or hidden by a filter, so none of them goes to a shop by mistake next time</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.8.3</div>
+      <h3>Find in shops opens only what is ticked now</h3>
+      <ul>
+        <li>The shops dialog now follows the ticks as they change, so choosing a shop opens exactly the albums ticked at that moment. There is only ever one shops dialog</li>
+        <li>The controls for turning the discovery results a page at a time now sit in the middle of the window</li>
+        <li>For anybody running the tests: a plain pytest run now keeps every window off the screen</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.8.2</div>
+      <h3>The output device list closes on a second press</h3>
+      <ul>
+        <li>Pressing the output device button a second time now closes its list and leaves it closed, rather than opening a fresh one a moment later</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.8.1</div>
+      <h3>No ring left behind after a popup</h3>
+      <ul>
+        <li>A button could keep its green ring after a popup opened over it. Every button and field now redraws as the pointer leaves, so a ring stays only where the pointer or the keyboard actually is</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.8.0</div>
+      <h3>Choose where the music plays</h3>
+      <ul>
+        <li>A new button on the bottom strip, also Sound &gt; Output device, lists System default and every device your system offers. Choosing one moves the song there at once; the choice is remembered</li>
+        <li>A chosen device that is missing is kept rather than forgotten: the music plays through the system default until it is back, pauses if it is disconnected mid-song and moves back by itself when it returns</li>
+        <li>While System default is your choice, headphones that connect and become the default take the song with them. A device going away still pauses the music</li>
+        <li>Switching headphones off no longer skips a song</li>
+        <li>Every Stellody window now shows its tooltips whichever application is in front</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.7.0</div>
+      <h3>Exclusive output</h3>
+      <ul>
+        <li>A new switch on the bottom strip hands the sound device the music exactly as the file holds it, with the system mixer out of the way: WASAPI exclusive mode on Windows, the song's own rate through CoreAudio on macOS. Linux does not offer it</li>
+        <li>A new line beside the playing time says what the device took: the mode, the rate, the depth plus bit perfect where that is true</li>
+        <li>The switch is offered only for a song the device can take untouched; otherwise it is shut off with the reason on it</li>
+        <li>Discovery requests no longer carry your computer's language. An artist with more than 100 albums is read to the end; two overlapping searches no longer throw away each other's answers</li>
+        <li>The playing song keeps its mark after a rescan. Play carries on from where it was paused under the sleeves; the lines between groups of buttons no longer vanish</li>
+        <li>A long album no longer crowds out the sleeves: they keep half the page and the listing scrolls</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.6.1</div>
+      <h3>A page of text is no longer outlined</h3>
+      <ul>
+        <li>Tabbing onto a licence, About, the Guide or any other page of text no longer draws a green ring round the whole page. A long page can still be reached with Tab and read from the keyboard</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.6.0</div>
+      <h3>Discovery results that fit and work from the keyboard</h3>
+      <ul>
+        <li>On a small high resolution display beside a wider monitor, the discovery results could open spread across every screen. Every dialog now opens at its own size inside the screen it opens on</li>
+        <li>Three columns of results now sit side by side on a 13 inch display</li>
+        <li>The results work from the keyboard: Up and Down move between rows, Right and Left open and close an artist, Enter or Space ticks and Tab moves between the lists and the buttons</li>
+        <li>A damaged shop list now goes straight back to the shops Stellody installs with</li>
+        <li>The Windows setup program now says that Stellody itself is dual licensed: its model under the GPL-3.0 and its user interface under the LGPL-3.0</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.5.0</div>
+      <h3>Rate songs where you read them; every button on a menu</h3>
+      <ul>
+        <li>Every song carries its rating in a column of its own beside its play count. Click a star to rate it, else press 1 to 5; 0 clears it</li>
+        <li>Volume, mute and the equalizer moved to the right end of the bottom strip, ahead of shuffle and repeat</li>
+        <li>New Edit and Control menus put everything a picture button does on the menu bar too, with a tick showing what is really on</li>
+        <li>A new application icon everywhere Stellody appears, plus new equalizer artwork</li>
+        <li>The play controls are centred on the window. Playback no longer breaks into static while the computer is busy, since about a fifth of a second of music is now kept queued</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.4.1</div>
+      <h3>Play counts get a column of their own</h3>
+      <ul>
+        <li>Play counts now stand in their own column, lined up at the right, rather than sharing one with the sample rate and bit depth</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.4.0</div>
+      <h3>No more static with the equalizer on</h3>
+      <ul>
+        <li>Raising an equalizer band could push a loud record into crackle. The equalizer now makes room for its own lift first, so a curve that lifts plays a little quieter without clipping; raise the volume to taste</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.3.0</div>
+      <h3>Following your sound output; smaller covers</h3>
+      <ul>
+        <li>Connecting headphones or switching the output in Windows now pauses the music and says why. Press play and it carries on through the new output</li>
+        <li>All three cover sizes are three quarters of what they were, so more of your collection fits on the screen</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.2.2</div>
+      <h3>An album pane that fits; discovery fixes</h3>
+      <ul>
+        <li>An open album takes the height its tracks need, growing only until a whole row of covers still shows above it</li>
+        <li>A value typed for one track of a cue sheet album now shows on that track</li>
+        <li>Quitting during a discovery run stops the run. A suggested artist the catalogue failed to describe is asked about again rather than remembered as playing nothing</li>
+        <li>Stopping a run and starting another straight away is safe; a cover search during a run keeps to MusicBrainz's pace</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.2.1</div>
+      <h3>Stellody fits a 13 inch screen</h3>
+      <ul>
+        <li>Everything is drawn at nine tenths of its old size, so the whole window fits a 13 inch 4K laptop at 300% scaling. Set the QT_SCALE_FACTOR environment variable to choose another size</li>
+        <li>The README and the home page now carry a donate button</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.2.0</div>
+      <h3>Discovery reaches further; edit the shop list</h3>
+      <ul>
+        <li>A new box asks about the artists on your compilations, saying beforehand roughly how many minutes that adds</li>
+        <li>A long answer can be filtered by genre; Copy and Find in shops act only on the albums you can see</li>
+        <li>Add, edit, delete and reorder shops inside Stellody. Try opens a shop's search before you save it; one press puts the original shops back</li>
+        <li>The playing track is marked in the list and the open album; its title and artists sit along the foot of the window</li>
+        <li>Reset album takes back every correction accepted in one album in a single press</li>
+        <li>On Windows a fresh install opens maximised on the monitor the setup program was on</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.1.1</div>
+      <h3>The documents match the program</h3>
+      <ul>
+        <li>The scan report no longer blames an unplugged drive for missing albums; it names a folder renamed, moved or removed</li>
+        <li>Every document was checked against the code, correcting what the Linux download can read and how many parts of Stellody can reach the internet</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.1.0</div>
+      <h3>WMA, WavPack and AAC play</h3>
+      <ul>
+        <li>Three more formats scan and play through the decoder already bundled, so the download does not grow. WMA and AAC are lossy and are never called bit perfect</li>
+        <li>A rescan no longer reports the same albums arriving and leaving every time</li>
+        <li>Rescanning with the music drive unplugged changes nothing; it says the music folder cannot be reached</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.0.0</div>
+      <h3>Find music you do not own</h3>
+      <ul>
+        <li>Tick the genres worth looking in: a run asks MusicBrainz and ListenBrainz what the artists in them made that you do not hold, plus who sounds like them. Bars show how far it has got and how long is left</li>
+        <li>The answer names what it could not answer for. Every answer is written down as it arrives, so a stopped run keeps what it had already learned</li>
+        <li>Only the artist names in the genres you ticked leave your machine; tick nothing and nothing leaves</li>
+        <li>Tick albums to open a shop's own search for each in your browser, else copy them to the clipboard. Stellody takes nothing from any sale</li>
+        <li>The Guide now explains how to lay a library out; accepting corrections works on albums held as one file with a cue sheet</li>
+        <li>Logs sit in Stellody's own data folder; a fresh install opens maximised. The count of things that reach outside your computer is corrected to five, each written out</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.14.0</div>
+      <h3>macOS and Linux</h3>
+      <ul>
+        <li>A signed disk image for macOS and a Flatpak for Linux join the Windows setup program. Each installs for one user; none asks for an administrator or root password</li>
+        <li>On macOS and Linux the sound goes through the system mixer, so playback there is not bit perfect; Stellody says so</li>
+        <li>The Flatpak is given your home folder read only, so on Linux the system itself stops Stellody writing to your music</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.13.0</div>
+      <h3>Stellody can show you around</h3>
+      <ul>
+        <li>Help &gt; Guide names every button beside the picture the window draws, then states the rules no single screen can: your files are only read, folders make albums while tags name them, a correction is not a stated tag, ratings follow the album</li>
+        <li>The Guide, About, the licences and the health report now open on Close rather than with a green ring round the page</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.12.0</div>
+      <h3>State what an album is; filter by genre; videos play</h3>
+      <ul>
+        <li>An album's artist, title, date and genre can be stated by hand without a file being touched. Give one folder the artist and title another carries and the two become one album</li>
+        <li>Genres come from a settled list of 34 boxes; the library can be narrowed to what you tick, with a box for albums that state no genre</li>
+        <li>Folders that name the same album are now one album</li>
+        <li>Bonus video tracks scan and play inside their albums, keeping their shape and following the sound</li>
+        <li>Correcting an album leaves the library where you were; the keyboard reaches the whole window; a cover lookup gives up within a quarter of a second of you moving on</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.11.0</div>
+      <h3>The waveform is a shape again</h3>
+      <ul>
+        <li>The waveform draws how loud each slice is rather than its loudest single sample, as finely for a track cut from a cue sheet album as for one in its own file</li>
+        <li>Switching between the list and the sleeves lands on the playing album, unless you had browsed elsewhere</li>
+        <li>A chevron on the Title heading opens or closes every album at once</li>
+        <li>A window left filling the screen reopens maximised rather than just past its edge; Stellody now calls itself a music player rather than a FLAC player</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.10.0</div>
+      <h3>Corrections you can keep; M4A plays</h3>
+      <ul>
+        <li>The corrections Stellody works out can be accepted one at a time, an album at once or all together; accepted ones stop being reported. Every acceptance can be taken back and your files are never touched</li>
+        <li>M4A plays, whether it carries AAC or ALAC, covers included</li>
+        <li>Albums in a format Stellody cannot decode are named in the health report rather than simply missing</li>
+        <li>Where a lossless and a lossy copy of an album share a folder, each track is listed once and the lossless one plays</li>
+        <li>A track that will not play says why; play after pause carries on from where you stopped</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.9.0</div>
+      <h3>It plays more than FLAC</h3>
+      <ul>
+        <li>MP3, Ogg Vorbis, Opus, WAV and AIFF now play beside FLAC, with cover art and tags read from each</li>
+        <li>A lossy file is never claimed to be bit perfect</li>
+        <li>A finished scan opens a report naming the new albums and any that are no longer there</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.8.0</div>
+      <h3>Gapless playback, an equalizer and a visualiser</h3>
+      <ul>
+        <li>The next track is opened while the current one plays, so an album mixed to play through now plays through</li>
+        <li>A ten-band equalizer under a new Sound menu; switched off or left flat it does nothing at all to the sound</li>
+        <li>A visualiser of twenty bars in the middle of the bottom strip, on the equalizer's own bands</li>
+        <li>The buttons are grouped by what they are about; the window opens about a fifth wider</li>
+        <li>The grid of sleeves slides rather than jumps; a checkbox shows the green ring when it has focus</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.7.0</div>
+      <h3>Repeat holds one track</h3>
+      <ul>
+        <li>Repeat steps through off, the album and the one track you are on, each with its own picture</li>
+        <li>Every switch now shows what pressing it would do</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.6.0</div>
+      <h3>Ratings, play counts and update checks</h3>
+      <ul>
+        <li>Rate any track or any album out of five stars; neither ever reaches your music files</li>
+        <li>Play counts sit on each track's row; reaching the end of a track is what counts as a play</li>
+        <li>A Help menu carries Check for updates. Stellody asks GitHub shortly after opening then once a day, says nothing unless there is a newer version and sends nothing about you</li>
+        <li>Stellody has a site, at stellody.co.uk</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.5.0</div>
+      <h3>Search the library</h3>
+      <ul>
+        <li>Type into the search box and the library narrows to matching album titles, artists and track titles as you type, with the matching track highlighted</li>
+        <li>Volume sits beside mute; tooltips arrive almost immediately</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.4.0</div>
+      <h3>Find cover art online</h3>
+      <ul>
+        <li>Right click an album and choose Find cover art online for a grid of every picture MusicBrainz and the Cover Art Archive hold for it; the one you pick is kept</li>
+        <li>A refused search is asked again; one refused every time says so rather than claiming there is no art</li>
+        <li>A track shows its waveform before it plays, drawn as it is read</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.3.0</div>
+      <h3>Album covers and a grid of sleeves</h3>
+      <ul>
+        <li>Each album shows its cover, read from a file beside the music or from inside the audio itself; nothing reaches the network</li>
+        <li>The library can be shown as a wall of sleeves; picking one opens the album beneath the grid, its tracks in two columns</li>
+        <li>Sleeves come in three sizes; a bonus disc joins the album it belongs to</li>
+        <li>The window opens larger and comes back at the size you left it</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.2.0</div>
+      <h3>The track's own waveform</h3>
+      <ul>
+        <li>The bar along the bottom draws the track's own waveform, with a line marking where playback has reached</li>
+        <li>Click anywhere along it to move there; the time is shown either side of it</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.1.1</div>
+      <h3>Tidier wording</h3>
+      <ul>
+        <li>The README now calls the toolbar the toolbar, rather than using one word for it and the notification area. Nothing the application does has changed</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.1.0</div>
+      <h3>The first release</h3>
+      <ul>
+        <li>Stellody reads a FLAC library, shows it, plays it and never writes to it; tests enforce that rather than leaving it to intention</li>
+        <li>A folder is one album; an album held as one file with a cue sheet behaves exactly like one ripped as separate tracks</li>
+        <li>Play, pause, stop, previous and next; volume, mute, shuffle and repeat are remembered between sessions</li>
+        <li>Only one Stellody runs at a time; closing the window can leave it in the notification area</li>
+        <li>Everything can be reached from the keyboard, in light and dark appearances</li>
+        <li>A per-user setup program for Windows that never asks for administrator rights</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <p style="text-align:center;margin-top:2.5rem;">
+    <a class="btn-secondary" href="https://github.com/oernster/stellody/releases">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      View all releases on GitHub
+    </a>
+  </p>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="stellody-512.png" alt="Stellody">
+        <span>Stellody</span>
+      </a>
+      <nav class="footer-links">
+        <a href="./">Home</a>
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="whats-new.html">What's New</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/oernster/stellody/releases">Releases</a>
+        <a href="https://github.com/oernster/stellody/blob/main/LICENSE">Licence</a>
+        <a href="https://ernster.dev">More of my work</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A free, quiet music player for the collection you already own. No cloud, no account.
+      Version <!--VERSION-->1.20.0<!--/VERSION-->, model under GPL-3.0, user interface under LGPL-3.0.
+      A commercial licence for my own code is also available, separately from the open-source licences: see <a href="https://ernster.dev/commercial-licensing.html">commercial licensing</a>.
+      &copy; Oliver Ernster</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

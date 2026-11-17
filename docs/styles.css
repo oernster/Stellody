@@ -548,3 +548,50 @@ footer { border-top: 1px solid var(--surface0); padding: 3rem 2rem; }
 .prose a { color: var(--accent); text-decoration: none; }
 .prose a:hover { text-decoration: underline; }
 .cta-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+
+/* What's New (whats-new.html): one card per release, newest first. The card
+   is a .feat without the hover lift, since nothing on it is pressed; the
+   version wears the hero badge's pill; the bullets are the split band's. */
+.changelog-grid { display: flex; flex-direction: column; gap: 1.25rem; max-width: 860px; margin-top: 2.5rem; }
+.cl-entry {
+  background: var(--mantle);
+  border: 1px solid var(--surface0);
+  border-radius: 16px;
+  padding: 1.75rem;
+}
+.ver-tag {
+  display: inline-block;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.8rem;
+  border-radius: 99px;
+  margin-bottom: 0.85rem;
+}
+.cl-entry h3 { font-size: 1.05rem; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 0.75rem; }
+.cl-entry ul { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+.cl-entry li {
+  font-size: 0.9rem;
+  color: var(--subtext1);
+  line-height: 1.65;
+  padding-left: 1.4rem;
+  position: relative;
+  overflow-wrap: anywhere;
+}
+.cl-entry li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+@media (max-width: 640px) {
+  .cl-entry { padding: 1.25rem; }
+}
